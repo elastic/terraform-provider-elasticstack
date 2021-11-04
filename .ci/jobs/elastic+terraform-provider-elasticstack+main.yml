@@ -1,0 +1,13 @@
+---
+- job:
+  name: elastic+terraform-provider-elasticstack+main
+  display-name: elastic / terraform-provider-elasticstack - main
+  description: Main branch testing
+  project-type: pipeline
+  triggers:
+    - github
+  pipeline-scm:
+    scm:
+      - git:
+          branches:
+            - main
