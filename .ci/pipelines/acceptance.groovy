@@ -1,7 +1,7 @@
 @Library('estc') _
 
 pipeline {
-  agent { label('linux && immutable') }
+  agent { label('linux && immutable && docker') }
     environment {
       HOME = "${env.JENKINS_HOME}" 
       REPOSITORY = "terraform-provider-elasticstack"
