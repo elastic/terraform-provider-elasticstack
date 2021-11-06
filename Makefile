@@ -26,12 +26,12 @@ build: lint ## build the terraform provider
 
 .PHONY: testacc
 testacc: lint ## Run acceptance tests
-	TF_ACC=1 go test ./... -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	TF_ACC=1 go test -v ./... -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 
 .PHONY: test
 test: lint ## Run unit tests
-	go test $(TEST) $(TESTARGS) -timeout=5m -parallel=4
+	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
 
 
 .PHONY: docs-generate

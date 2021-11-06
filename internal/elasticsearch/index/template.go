@@ -136,7 +136,7 @@ func ResourceTemplate() *schema.Resource {
 						Description:      "Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings",
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: utils.DiffIndexTemplateSettingSuppress,
 						ValidateFunc:     validation.StringIsJSON,
 					},
 				},
@@ -396,10 +396,6 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 		tmpl["mappings"] = string(m)
 	}
 	if template.Settings != nil {
-		if index, ok := template.Settings["index"]; ok {
-			delete(template.Settings, "index")
-			template.Settings = index.(map[string]interface{})
-		}
 		s, err := json.Marshal(template.Settings)
 		if err != nil {
 			return nil, diag.FromErr(err)
