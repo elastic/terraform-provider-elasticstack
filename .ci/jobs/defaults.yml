@@ -20,7 +20,7 @@
           description: "the Git branch specifier to build (&lt;branchName&gt;, &lt;tagName&gt;,&lt;commitId&gt;, etc.)"
     properties:
       - github:
-          url: https://github.com/elastic/terraform-provider-elasticstack
+          url: git@github.com:elastic/terraform-provider-elasticstack.git
       - inject:
           properties-content: HOME=$JENKINS_HOME
     pipeline-scm:
@@ -31,7 +31,7 @@
             reference-repo: /var/lib/jenkins/.git-references/terraform-provider-elasticstack.git
             branches:
               - ${branch_specifier}
-            url: https://github.com/elastic/terraform-provider-elasticstack
+            url: git@github.com:elastic/terraform-provider-elasticstack.git
     vault: []
     wrappers:
       - ansicolor
