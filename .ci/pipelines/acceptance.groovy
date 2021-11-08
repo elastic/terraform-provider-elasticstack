@@ -25,7 +25,9 @@ pipeline {
     }
     stage('Acceptance Tests') {
       steps {
-        sh(label: 'Run ATs in docker', script: 'make docker-testacc')
+        dir('.') {
+          sh(label: 'Run ATs in docker', script: 'make docker-testacc')
+        }
       }
     }
   }
