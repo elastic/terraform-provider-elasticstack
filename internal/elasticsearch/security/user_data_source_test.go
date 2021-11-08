@@ -24,6 +24,10 @@ func TestAccDataSourceSecurityUser(t *testing.T) {
 }
 
 const testAccDataSourceSecurityUser = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 data "elasticstack_elasticsearch_security_user" "test" {
   username = "elastic"
 }

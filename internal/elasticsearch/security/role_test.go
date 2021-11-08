@@ -49,6 +49,10 @@ func TestAccResourceSecurityRole(t *testing.T) {
 
 func testAccResourceSecurityRoleCreate(roleName string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_security_role" "test" {
   name    = "%s"
   cluster = ["all"]
@@ -75,6 +79,10 @@ resource "elasticstack_elasticsearch_security_role" "test" {
 
 func testAccResourceSecurityRoleUpdate(roleName string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_security_role" "test" {
   name    = "%s"
   cluster = ["all"]
