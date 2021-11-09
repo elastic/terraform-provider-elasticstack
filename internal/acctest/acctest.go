@@ -21,11 +21,11 @@ func init() {
 }
 
 func PreCheck(t *testing.T) {
-	_, urlOk := os.LookupEnv("ELASTICSEARCH_URL")
+	_, endpointsOk := os.LookupEnv("ELASTICSEARCH_ENDPOINTS")
 	_, userOk := os.LookupEnv("ELASTICSEARCH_USERNAME")
 	_, passOk := os.LookupEnv("ELASTICSEARCH_PASSWORD")
 
-	if !urlOk || !userOk || !passOk {
-		t.Fatal("ELASTICSEARCH_URL, ELASTICSEARCH_USERNAME, ELASTICSEARCH_PASSWORD must be set for acceptance tests to run")
+	if !endpointsOk || !userOk || !passOk {
+		t.Fatal("ELASTICSEARCH_ENDPOINTS, ELASTICSEARCH_USERNAME, ELASTICSEARCH_PASSWORD must be set for acceptance tests to run")
 	}
 }

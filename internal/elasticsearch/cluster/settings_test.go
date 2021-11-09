@@ -71,6 +71,10 @@ func TestAccResourceClusterSettings(t *testing.T) {
 
 func testAccResourceClusterSettingsCreate() string {
 	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_cluster_settings" "test" {
   persistent {
     setting {
@@ -99,6 +103,10 @@ resource "elasticstack_elasticsearch_cluster_settings" "test" {
 
 func testAccResourceClusterSettingsUpdate() string {
 	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_cluster_settings" "test" {
   persistent {
     setting {

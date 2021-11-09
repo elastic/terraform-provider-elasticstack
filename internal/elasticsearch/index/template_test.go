@@ -34,6 +34,10 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 
 func testAccResourceIndexTemplateCreate(name string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_index_template" "test" {
   name = "%s"
 

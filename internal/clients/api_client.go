@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -49,11 +50,35 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 		var diags diag.Diagnostics
 		config := elasticsearch.Config{}
 
-		if username, ok := d.GetOk("username"); ok {
-			config.Username = username.(string)
-			config.Password = d.Get("password").(string)
+		if v, ok := d.GetOk("elasticsearch"); ok {
+			// if defined we must have only one entry
+			if esc := v.([]interface{})[0]; esc != nil {
+				esConfig := esc.(map[string]interface{})
+				if username, ok := esConfig["username"]; ok {
+					config.Username = username.(string)
+				}
+				if password, ok := esConfig["password"]; ok {
+					config.Password = password.(string)
+				}
+
+				// default endpoints taken from Env if set
+				if es := os.Getenv("ELASTICSEARCH_ENDPOINTS"); es != "" {
+					endpoints := make([]string, 0)
+					for _, e := range strings.Split(es, ",") {
+						endpoints = append(endpoints, strings.TrimSpace(e))
+					}
+					config.Addresses = endpoints
+				}
+				// setting endpoints from config block if provided
+				if eps, ok := esConfig["endpoints"]; ok && len(eps.([]interface{})) > 0 {
+					endpoints := make([]string, 0)
+					for _, e := range eps.([]interface{}) {
+						endpoints = append(endpoints, e.(string))
+					}
+					config.Addresses = endpoints
+				}
+			}
 		}
-		config.Addresses = []string{d.Get("url").(string)}
 
 		es, err := elasticsearch.NewClient(config)
 		if err != nil {

@@ -1,0 +1,4 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+

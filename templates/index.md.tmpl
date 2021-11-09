@@ -14,6 +14,36 @@ It is recommended to setup at least minimum security, https://www.elastic.co/gui
 in order to interract with the Elasticsearch and be able to use the provider's full capabilities
 
 
+## Authentication
+
+The Elasticstack provider offers few different ways of providing credentials for authentication.
+The following methods are supported:
+
+* Static credentials
+* Environment variables
+* Each `elasticseatch` resource supports `elasticsearch_connection` block - allowing using the same provider to configure many different clusters at the same time
+
+
+### Static credentials
+
+Default static credentials can be provided by adding the `username`, `password` and `endpoints` in `elasticsearch` block:
+
+{{tffile "examples/provider/provider.tf"}}
+
+
+### Environment Variables
+
+You can provide your credentials for the default connection via the `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD` and comma-separated list `ELASTICSEARCH_ENDPOINTS`,
+environment variables, representing your user, password and Elasticsearch API endpoints respectively.
+
+{{tffile "examples/provider/provider-env.tf"}}
+
+
+### Per resource credentials
+
+See docs related to the specific resources.
+
+
 ## Example Usage
 
 {{tffile "examples/provider/provider.tf"}}

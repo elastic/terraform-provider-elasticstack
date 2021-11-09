@@ -38,6 +38,10 @@ func TestAccResourceSecurityUser(t *testing.T) {
 
 func testAccResourceSecurityUserCreate(username string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_security_user" "test" {
   username  = "%s"
   roles     = ["kibana_user"]
@@ -49,6 +53,10 @@ resource "elasticstack_elasticsearch_security_user" "test" {
 
 func testAccResourceSecurityUpdate(username string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_security_user" "test" {
   username  = "%s"
   roles     = ["kibana_user"]
