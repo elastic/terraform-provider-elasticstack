@@ -1,5 +1,7 @@
 # Terraform Provider ElasticStack
 
+[![Acceptance Status](https://devops-ci.elastic.co/job/elastic+terraform-provider-elasticstack+main/badge/icon?subject=acceptance&style=flat-square)](https://devops-ci.elastic.co/job/elastic+terraform-provider-elasticstack+main/)
+
 ## Requirements
 
 -	[Terraform](https://www.terraform.io/downloads.html) >= 1.0.0
