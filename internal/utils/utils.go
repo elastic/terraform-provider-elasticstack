@@ -45,9 +45,37 @@ func MapsEqual(m1, m2 interface{}) bool {
 	return reflect.DeepEqual(m2, m1)
 }
 
-func DiffJsonSuppress(k, old, new string, d *schema.ResourceData) bool {
-	result, _ := JSONBytesEqual([]byte(old), []byte(new))
-	return result
+// Flattens the multilevel map, and concatenates keys together with dot "."
+// # Exmaples
+// map of form:
+//     map := map[string]interface{}{
+//             "index": map[string]interface{}{
+//                     "key": 1
+//             }
+//     }
+// becomes:
+//     map := map[string]interface{}{
+//             "index.key": 1
+//     }
+func FlattenMap(m map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{})
+
+	var flattener func(string, map[string]interface{}, map[string]interface{})
+	flattener = func(k string, src, dst map[string]interface{}) {
+		if len(k) > 0 {
+			k += "."
+		}
+		for key, v := range src {
+			switch inner := v.(type) {
+			case map[string]interface{}:
+				flattener(k+key, inner, dst)
+			default:
+				dst[k+key] = v
+			}
+		}
+	}
+	flattener("", m, out)
+	return out
 }
 
 // Returns the common connection schema for all the Elasticsearch resources,
