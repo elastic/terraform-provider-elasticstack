@@ -1,5 +1,7 @@
 # Terraform Provider ElasticStack
 
+[![Acceptance Status](https://devops-ci.elastic.co/job/elastic+terraform-provider-elasticstack+main/badge/icon?subject=acceptance&style=flat-square)](https://devops-ci.elastic.co/job/elastic+terraform-provider-elasticstack+main/)
+
 ## Requirements
 
 -	[Terraform](https://www.terraform.io/downloads.html) >= 1.0.0
@@ -30,7 +32,54 @@ Then commit the changes to `go.mod` and `go.sum`.
 
 ## Using the provider
 
-TODO
+The Elasticstack provider provides the resources to interact with Elastic stack products.
+
+
+It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
+in order to interract with the Elasticsearch and be able to use the provider's full capabilities
+
+
+### Authentication
+
+The Elasticstack provider offers few different ways of providing credentials for authentication.
+The following methods are supported:
+
+* Static credentials
+* Environment variables
+* Each `elasticseatch` resource supports `elasticsearch_connection` block - allowing using the same provider to configure many different clusters at the same time
+
+
+#### Static credentials
+
+Default static credentials can be provided by adding the `username`, `password` and `endpoints` in `elasticsearch` block:
+
+```terraform
+provider "elasticstack" {
+  elasticsearch {
+    username  = "elastic"
+    password  = "changeme"
+    endpoints = ["http://localhost:9200"]
+  }
+}
+```
+
+
+#### Environment Variables
+
+You can provide your credentials for the default connection via the `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD` and comma-separated list `ELASTICSEARCH_ENDPOINTS`,
+environment variables, representing your user, password and Elasticsearch API endpoints respectively.
+
+```terraform
+provider "elasticstack" {
+  elasticsearch {}
+}
+```
+
+
+#### Per resource credentials
+
+See docs related to the specific resources.
+
 
 ## Developing the Provider
 
