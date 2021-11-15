@@ -71,7 +71,21 @@ type TemplateAlias struct {
 type IndexTemplatesResponse struct {
 	IndexTemplates []IndexTemplateResponse `json:"index_templates"`
 }
+
 type IndexTemplateResponse struct {
 	Name          string        `json:"name"`
 	IndexTemplate IndexTemplate `json:"index_template"`
 }
+
+type Policy struct {
+	Name     string                 `json:"-"`
+	Metadata map[string]interface{} `json:"_meta,omitempty"`
+	Phases   map[string]Phase       `json:"phases"`
+}
+
+type Phase struct {
+	MinAge  string            `json:"min_age,omitempty"`
+	Actions map[string]Action `json:"actions"`
+}
+
+type Action map[string]interface{}

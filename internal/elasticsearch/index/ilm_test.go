@@ -1,0 +1,132 @@
+package index_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+)
+
+func TestAccResourceILM(t *testing.T) {
+	// generate a random policy name
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.UnitTest(t, resource.TestCase{
+		PreCheck:          func() { acctest.PreCheck(t) },
+		CheckDestroy:      checkResourceILMDestroy,
+		ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceILMCreate(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.min_age", "1h"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.set_priority.0.priority", "10"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.rollover.0.max_age", "1d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.readonly.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "delete.0.min_age", "0ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "delete.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "cold.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "frozen.#", "0"),
+				),
+			},
+			{
+				Config: testAccResourceILMRemoveActions(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.min_age", "1h"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.set_priority.0.priority", "10"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.rollover.0.max_age", "2d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.readonly.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "delete.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "cold.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "frozen.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceILMCreate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test" {
+  name = "%s"
+
+  hot {
+    min_age = "1h"
+
+    set_priority {
+      priority = 10
+    }
+
+    rollover {
+      max_age = "1d"
+    }
+
+    readonly {}
+  }
+
+  delete {
+    delete {}
+  }
+}
+ `, name)
+}
+
+func testAccResourceILMRemoveActions(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test" {
+  name = "%s"
+
+  hot {
+    min_age = "1h"
+
+    set_priority {
+      priority = 10
+    }
+
+    rollover {
+      max_age = "2d"
+    }
+  }
+}
+ `, name)
+}
+
+func checkResourceILMDestroy(s *terraform.State) error {
+	client := acctest.Provider.Meta().(*clients.ApiClient)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "elasticstack_elasticsearch_index_lifecycle" {
+			continue
+		}
+		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+
+		req := client.ILM.GetLifecycle.WithPolicy(compId.ResourceId)
+		res, err := client.ILM.GetLifecycle(req)
+		if err != nil {
+			return err
+		}
+
+		if res.StatusCode != 404 {
+			return fmt.Errorf("ILM policy (%s) still exists", compId.ResourceId)
+		}
+	}
+	return nil
+}
