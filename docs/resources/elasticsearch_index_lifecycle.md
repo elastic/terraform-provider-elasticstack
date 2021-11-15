@@ -3,12 +3,12 @@
 page_title: "elasticstack_elasticsearch_index_lifecycle Resource - terraform-provider-elasticstack"
 subcategory: ""
 description: |-
-  Creates or updates lifecycle policy. See,https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-put-lifecycle.html and  https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html
+  Creates or updates lifecycle policy. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-put-lifecycle.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html
 ---
 
 # elasticstack_elasticsearch_index_lifecycle (Resource)
 
-Creates or updates lifecycle policy. See,https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-put-lifecycle.html and  https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html
+Creates or updates lifecycle policy. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-put-lifecycle.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html
 
 ## Example Usage
 
@@ -355,4 +355,10 @@ Optional:
 
 - **enabled** (Boolean) Controls whether ILM makes the follower index a regular one.
 
+## Import
 
+Import is supported using the following syntax:
+
+```shell
+terraform import elasticstack_elasticsearch_index_lifecycle.my_ilm <cluster_uuid>/<ilm_name>
+```
