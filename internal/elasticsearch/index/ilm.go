@@ -123,18 +123,21 @@ var suportedActions = map[string]*schema.Schema{
 					Description:      "Assigns an index to nodes that have at least one of the specified custom attributes.",
 					Type:             schema.TypeString,
 					Optional:         true,
+					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
 				},
 				"exclude": {
 					Description:      "Assigns an index to nodes that have none of the specified custom attributes.",
 					Type:             schema.TypeString,
 					Optional:         true,
+					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
 				},
 				"require": {
 					Description:      "Assigns an index to nodes that have all of the specified custom attributes.",
 					Type:             schema.TypeString,
 					Optional:         true,
+					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
 				},
 			},
@@ -374,7 +377,7 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 		return diags
 	}
 
-	policy, diags := explandIlmPolicy(d)
+	policy, diags := expandIlmPolicy(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -399,7 +402,7 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	return resourceIlmRead(ctx, d, meta)
 }
 
-func explandIlmPolicy(d *schema.ResourceData) (*models.Policy, diag.Diagnostics) {
+func expandIlmPolicy(d *schema.ResourceData) (*models.Policy, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var policy models.Policy
 	phases := make(map[string]models.Phase)
