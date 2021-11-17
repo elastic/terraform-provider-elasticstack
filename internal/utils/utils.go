@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -76,6 +77,40 @@ func FlattenMap(m map[string]interface{}) map[string]interface{} {
 	}
 	flattener("", m, out)
 	return out
+}
+
+func MergeSchemaMaps(maps ...map[string]*schema.Schema) map[string]*schema.Schema {
+	result := make(map[string]*schema.Schema)
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
+}
+
+func IsEmpty(v interface{}) bool {
+	switch t := v.(type) {
+	case int, int8, int16, int32, int64, float32, float64:
+		if t == 0 {
+			return true
+		}
+	case string:
+		if strings.TrimSpace(t) == "" {
+			return true
+		}
+	case []interface{}:
+		if len(t) == 0 {
+			return true
+		}
+	case map[interface{}]interface{}:
+		if len(t) == 0 {
+			return true
+		}
+	case nil:
+		return true
+	}
+	return false
 }
 
 // Returns the common connection schema for all the Elasticsearch resources,

@@ -506,19 +506,8 @@ func expandAction(a []interface{}, settings ...string) map[string]interface{} {
 	if action := a[0]; action != nil {
 		for _, setting := range settings {
 			if v, ok := action.(map[string]interface{})[setting]; ok && v != nil {
-				switch t := v.(type) {
-				case int:
-					if t != 0 {
-						def[setting] = t
-					}
-				case string:
-					if t != "" {
-						def[setting] = t
-					}
-				case bool:
-					def[setting] = t
-				default:
-					// skip the rest
+				if !utils.IsEmpty(v) {
+					def[setting] = v
 				}
 			}
 		}

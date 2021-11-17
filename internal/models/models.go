@@ -89,3 +89,10 @@ type Phase struct {
 }
 
 type Action map[string]interface{}
+
+type SnapshotRepository struct {
+	Name     string                 `json:"-"`
+	Type     string                 `json:"type"`
+	Settings map[string]interface{} `json:"settings"`
+	Verify   bool                   `json:"verify"`
+}
