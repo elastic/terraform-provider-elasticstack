@@ -16,6 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+var supportedIlmPhases = [...]string{"hot", "warm", "cold", "frozen", "delete"}
+
 func ResourceIlm() *schema.Resource {
 	ilmSchema := map[string]*schema.Schema{
 		"name": {
@@ -417,45 +419,15 @@ func expandIlmPolicy(d *schema.ResourceData) (*models.Policy, diag.Diagnostics) 
 		policy.Metadata = metadata
 	}
 
-	if v, ok := d.GetOk("hot"); ok {
-		// if defined it must contain only 1 entry map
-		phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}))
-		if diags.HasError() {
-			return nil, diags
+	for _, ph := range supportedIlmPhases {
+		if v, ok := d.GetOk(ph); ok {
+			// if defined it must contain only 1 entry map
+			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}))
+			if diags.HasError() {
+				return nil, diags
+			}
+			phases[ph] = *phase
 		}
-		phases["hot"] = *phase
-	}
-	if v, ok := d.GetOk("warm"); ok {
-		// if defined it must contain only 1 entry map
-		phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}))
-		if diags.HasError() {
-			return nil, diags
-		}
-		phases["warm"] = *phase
-	}
-	if v, ok := d.GetOk("cold"); ok {
-		// if defined it must contain only 1 entry map
-		phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}))
-		if diags.HasError() {
-			return nil, diags
-		}
-		phases["cold"] = *phase
-	}
-	if v, ok := d.GetOk("frozen"); ok {
-		// if defined it must contain only 1 entry map
-		phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}))
-		if diags.HasError() {
-			return nil, diags
-		}
-		phases["frozen"] = *phase
-	}
-	if v, ok := d.GetOk("delete"); ok {
-		// if defined it must contain only 1 entry map
-		phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}))
-		if diags.HasError() {
-			return nil, diags
-		}
-		phases["delete"] = *phase
 	}
 
 	policy.Phases = phases
@@ -600,34 +572,12 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 			return diag.FromErr(err)
 		}
 	}
-	if v, ok := ilmDef.Policy.Phases["hot"]; ok {
-		phase := flattenPhase("hot", v, d)
-		if err := d.Set("hot", phase); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if v, ok := ilmDef.Policy.Phases["warm"]; ok {
-		phase := flattenPhase("warm", v, d)
-		if err := d.Set("warm", phase); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if v, ok := ilmDef.Policy.Phases["cold"]; ok {
-		phase := flattenPhase("cold", v, d)
-		if err := d.Set("cold", phase); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if v, ok := ilmDef.Policy.Phases["frozen"]; ok {
-		phase := flattenPhase("frozen", v, d)
-		if err := d.Set("frozen", phase); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if v, ok := ilmDef.Policy.Phases["delete"]; ok {
-		phase := flattenPhase("delete", v, d)
-		if err := d.Set("delete", phase); err != nil {
-			return diag.FromErr(err)
+	for _, ph := range supportedIlmPhases {
+		if v, ok := ilmDef.Policy.Phases[ph]; ok {
+			phase := flattenPhase(ph, v, d)
+			if err := d.Set(ph, phase); err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 
