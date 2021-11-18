@@ -1,0 +1,22 @@
+---
+subcategory: ""
+page_title: "Using the Elastic Stack provider with Elastic Cloud"
+description: |-
+    An example of how to spin up a deployment and configure it in a single plan.
+---
+
+# 
+
+A common scenario for using the Elastic Stack provider, is to manage & configure Elastic Cloud deployments.
+In order to do that, we'll use both the Elastic Cloud provider, as well as the Elastic Stack provider.
+Start off by configuring the two providers in a `provider.tf` file for example:
+
+{{ tffile "examples/cloud/provider.tf" }}
+
+Notice that the Elastic Stack  provider is not configured, since we'll be using an `elasticsearch_connection` block
+for each of our resources, to point to the Elastic Cloud deployment. This is because `terraform` can not configure providers that are dependent on one another.
+
+Next, we'll set up an Elastic Cloud `ec_deployment` resource, which represents an Elastic Stack deployment on Elastic Cloud.
+We shall configure the deployment using the credentials that it outputs once created
+
+{{ tffile "examples/cloud/deployment.tf" }}
