@@ -17,11 +17,11 @@ terraform {
 
   required_providers {
     ec = {
-        source = "elastic/ec"
-        version = "~>0.3.0"
+      source  = "elastic/ec"
+      version = "~>0.3.0"
     }
     elasticstack = {
-      source = "elastic/elasticstack"
+      source  = "elastic/elasticstack"
       version = "~>0.1.0"
     }
   }
@@ -40,12 +40,15 @@ provider "elasticstack" {
 Notice that the elasticstack provider is not configured, since we'll be using an `elasticsearch_connection` block
 for each of our resources, to point to the elastic cloud deployment. This is because `terraform` can not configure providers that are dependent on one anoher.
 
+Next, we'll set up an Elastic Cloud `ec_deployment` resource, which represents an Elastic stack deployment on Elastic Cloud.
+We shall configure the deployment using the credentials that it outputs once created
+
 ```terraform
 # Creating a deployment on Elastic Cloud GCP region,
 # with elasticsearch and kibana components.
 resource "ec_deployment" "cluster" {
   region                 = "gcp-us-central1"
-  name			         = "mydeployment"
+  name                   = "mydeployment"
   version                = data.ec_stack.latest.version
   deployment_template_id = "gcp-storage-optimized"
 
@@ -78,8 +81,8 @@ resource "elasticstack_elasticsearch_security_user" "user" {
   # This also allows the provider to create the proper relationships between the two resources.
   elasticsearch_connection {
     endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
-    username  = "${ec_deployment.cluster.elasticsearch_username}"
-    password  = "${ec_deployment.cluster.elasticsearch_password}"
+    username  = ec_deployment.cluster.elasticsearch_username
+    password  = ec_deployment.cluster.elasticsearch_password
   }
 }
 
@@ -87,7 +90,7 @@ resource "elasticstack_elasticsearch_security_user" "user" {
 resource "elasticstack_elasticsearch_index_template" "my_template" {
   name = "my_ingest_1"
 
-  priority = 42
+  priority       = 42
   index_patterns = ["server-logs*"]
 
   template {
@@ -95,22 +98,22 @@ resource "elasticstack_elasticsearch_index_template" "my_template" {
       name = "my_template_test"
     }
 
-      settings = jsonencode({
-        number_of_shards = "3"
-      })
+    settings = jsonencode({
+      number_of_shards = "3"
+    })
 
-      mappings = jsonencode({
-        properties: {
-          "@timestamp": { "type": "date" },
-          "username": {"type": "keyword" }
-        }
-      })
+    mappings = jsonencode({
+      properties : {
+        "@timestamp" : { "type" : "date" },
+        "username" : { "type" : "keyword" }
+      }
+    })
   }
 
   elasticsearch_connection {
     endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
-    username  = "${ec_deployment.cluster.elasticsearch_username}"
-    password  = "${ec_deployment.cluster.elasticsearch_password}"
+    username  = ec_deployment.cluster.elasticsearch_username
+    password  = ec_deployment.cluster.elasticsearch_password
   }
 }
 ```
