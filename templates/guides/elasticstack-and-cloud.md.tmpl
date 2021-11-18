@@ -13,7 +13,7 @@ Start off by configuring the two providers in a `provider.tf` file for example:
 
 {{ tffile "examples/cloud/provider.tf" }}
 
-Notice that the elasticstack provider is not configured, since we'll be using an `elasticsearch_connection` block
+Notice that the Elastic Stack  provider is not configured, since we'll be using an `elasticsearch_connection` block
 for each of our resources, to point to the elastic cloud deployment. This is because `terraform` can not configure providers that are dependent on one anoher.
 
 Next, we'll set up an Elastic Cloud `ec_deployment` resource, which represents an Elastic stack deployment on Elastic Cloud.
