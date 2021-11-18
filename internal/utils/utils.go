@@ -117,27 +117,27 @@ func IsEmpty(v interface{}) bool {
 // which defines the fields which can be used to configure the API access
 func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
 	providedSchema["elasticsearch_connection"] = &schema.Schema{
-		Description: "Used to establish connection to Elasticsearch server. Overrides environment variables if present",
+		Description: "Used to establish connection to Elasticsearch server. Overrides environment variables if present.",
 		Type:        schema.TypeList,
 		Optional:    true,
 		MaxItems:    1,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"username": {
-					Description:  "A username to use for API authentication to Elasticsearch",
+					Description:  "A username to use for API authentication to Elasticsearch.",
 					Type:         schema.TypeString,
 					Optional:     true,
 					RequiredWith: []string{"elasticsearch_connection.0.password"},
 				},
 				"password": {
-					Description:  "A password to use for API authentication to Elasticsearch",
+					Description:  "A password to use for API authentication to Elasticsearch.",
 					Type:         schema.TypeString,
 					Optional:     true,
 					Sensitive:    true,
 					RequiredWith: []string{"elasticsearch_connection.0.username"},
 				},
 				"endpoints": {
-					Description: "A list of endpoints where the terraform provider will point to. This must include the http(s) schema and port number.",
+					Description: "A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.",
 					Type:        schema.TypeList,
 					Optional:    true,
 					Sensitive:   true,

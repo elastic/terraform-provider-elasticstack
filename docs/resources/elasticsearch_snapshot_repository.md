@@ -46,8 +46,8 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 ### Optional
 
 - **azure** (Block List, Max: 1) Support for using Azure Blob storage as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-azure.html (see [below for nested schema](#nestedblock--azure))
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **fs** (Block List, Max: 1) Shared file system repository. Repositories of this type use a shared file system to store snapshots. This file system must accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
+- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- **fs** (Block List, Max: 1) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
 - **gcs** (Block List, Max: 1) Support for using the Google Cloud Storage service as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-gcs.html (see [below for nested schema](#nestedblock--gcs))
 - **hdfs** (Block List, Max: 1) Support for using HDFS File System as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-hdfs.html (see [below for nested schema](#nestedblock--hdfs))
 - **id** (String) The ID of this resource.
@@ -60,15 +60,15 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 
 Required:
 
-- **container** (String) Container name. You must create the azure container before creating the repository.
+- **container** (String) Container name. You must create the Azure container before creating the repository.
 
 Optional:
 
-- **base_path** (String) Specifies the path within container to repository data.
+- **base_path** (String) Specifies the path within the container to the repository data.
 - **chunk_size** (String) Maximum size of files in snapshots.
 - **client** (String) Azure named client to use.
 - **compress** (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
-- **location_mode** (String) Location mode. `primary_only` or `secondary_only`
+- **location_mode** (String) Location mode. `primary_only` or `secondary_only`. See: https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy
 - **max_restore_bytes_per_sec** (String) Maximum snapshot restore rate per node.
 - **max_snapshot_bytes_per_sec** (String) Maximum snapshot creation rate per node.
 - **readonly** (Boolean) If true, the repository is read-only.
@@ -79,9 +79,9 @@ Optional:
 
 Optional:
 
-- **endpoints** (List of String, Sensitive) A list of endpoints where the terraform provider will point to. This must include the http(s) schema and port number.
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch
-- **username** (String) A username to use for API authentication to Elasticsearch
+- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- **username** (String) A username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--fs"></a>
@@ -110,7 +110,7 @@ Required:
 
 Optional:
 
-- **base_path** (String) Specifies the path within bucket to repository data. Defaults to the root of the bucket.
+- **base_path** (String) Specifies the path within the bucket to the repository data. Defaults to the root of the bucket.
 - **chunk_size** (String) Maximum size of files in snapshots.
 - **client** (String) The name of the client to use to connect to Google Cloud Storage.
 - **compress** (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
@@ -124,7 +124,7 @@ Optional:
 
 Required:
 
-- **path** (String) The file path within the filesystem where data is stored/loaded
+- **path** (String) The file path within the filesystem where data is stored/loaded.
 - **uri** (String) The uri address for hdfs. ex: "hdfs://<host>:<port>/".
 
 Optional:
@@ -148,14 +148,14 @@ Optional:
 
 - **base_path** (String) Specifies the path to the repository data within its bucket.
 - **buffer_size** (String) Minimum threshold below which the chunk is uploaded using a single request.
-- **canned_acl** (String) The S3 repository supports all S3 canned ACLs
+- **canned_acl** (String) The S3 repository supports all S3 canned ACLs.
 - **chunk_size** (String) Maximum size of files in snapshots.
 - **client** (String) The name of the S3 client to use to connect to S3.
 - **compress** (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
 - **max_restore_bytes_per_sec** (String) Maximum snapshot restore rate per node.
 - **max_snapshot_bytes_per_sec** (String) Maximum snapshot creation rate per node.
 - **readonly** (Boolean) If true, the repository is read-only.
-- **server_side_encryption** (Boolean) When set to true files are encrypted on server side using AES256 algorithm
+- **server_side_encryption** (Boolean) When true, files are encrypted server-side using AES-256 algorithm.
 - **storage_class** (String) Sets the S3 storage class for objects stored in the snapshot repository.
 
 

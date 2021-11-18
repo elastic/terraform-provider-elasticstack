@@ -106,7 +106,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Default:     "default",
 		},
 		"base_path": {
-			Description: "Specifies the path within bucket to repository data. Defaults to the root of the bucket.",
+			Description: "Specifies the path within the bucket to the repository data. Defaults to the root of the bucket.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
@@ -115,7 +115,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 
 	azureSettings := map[string]*schema.Schema{
 		"container": {
-			Description: "Container name. You must create the azure container before creating the repository.",
+			Description: "Container name. You must create the Azure container before creating the repository.",
 			Type:        schema.TypeString,
 			Required:    true,
 		},
@@ -126,13 +126,13 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Default:     "default",
 		},
 		"base_path": {
-			Description: "Specifies the path within container to repository data.",
+			Description: "Specifies the path within the container to the repository data.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
 		},
 		"location_mode": {
-			Description:  "Location mode. `primary_only` or `secondary_only`",
+			Description:  "Location mode. `primary_only` or `secondary_only`. See: https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy",
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "primary_only",
@@ -159,19 +159,19 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Computed:    true,
 		},
 		"server_side_encryption": {
-			Description: "When set to true files are encrypted on server side using AES256 algorithm",
+			Description: "When true, files are encrypted server-side using AES-256 algorithm.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Default:     false,
 		},
 		"buffer_size": {
-			Description: "Minimum threshold below which the chunk is uploaded using a single request. ",
+			Description: "Minimum threshold below which the chunk is uploaded using a single request.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
 		},
 		"canned_acl": {
-			Description:  "The S3 repository supports all S3 canned ACLs ",
+			Description:  "The S3 repository supports all S3 canned ACLs.",
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "private",
@@ -193,7 +193,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Required:    true,
 		},
 		"path": {
-			Description: "The file path within the filesystem where data is stored/loaded",
+			Description: "The file path within the filesystem where data is stored/loaded.",
 			Type:        schema.TypeString,
 			Required:    true,
 		},
@@ -221,7 +221,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Default:     true,
 		},
 		"fs": {
-			Description:   "Shared file system repository. Repositories of this type use a shared file system to store snapshots. This file system must accessible to all master and data nodes in the cluster.",
+			Description:   "Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster.",
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
