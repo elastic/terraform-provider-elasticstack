@@ -7,8 +7,8 @@ description: |-
 
 # 
 
-A common scenario for using the Elastic Stack provider, is to manage & configure Elastic Cloud deploymemnts.
-in order to do that, we'll use both the Elastic Cloud provider, as well as the Elastic Stack provider.
+A common scenario for using the Elastic Stack provider, is to manage & configure Elastic Cloud deployments.
+In order to do that, we'll use both the Elastic Cloud provider, as well as the Elastic Stack provider.
 Start off by configuring the two providers in a `provider.tf` file for example:
 
 ```terraform
@@ -37,10 +37,10 @@ provider "elasticstack" {
 }
 ```
 
-Notice that the elasticstack provider is not configured, since we'll be using an `elasticsearch_connection` block
-for each of our resources, to point to the elastic cloud deployment. This is because `terraform` can not configure providers that are dependent on one anoher.
+Notice that the Elastic Stack  provider is not configured, since we'll be using an `elasticsearch_connection` block
+for each of our resources, to point to the Elastic Cloud deployment. This is because `terraform` can not configure providers that are dependent on one another.
 
-Next, we'll set up an Elastic Cloud `ec_deployment` resource, which represents an Elastic stack deployment on Elastic Cloud.
+Next, we'll set up an Elastic Cloud `ec_deployment` resource, which represents an Elastic Stack deployment on Elastic Cloud.
 We shall configure the deployment using the credentials that it outputs once created
 
 ```terraform
