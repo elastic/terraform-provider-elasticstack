@@ -60,7 +60,7 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 
 ### Optional
 
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **email** (String) The email of the user.
 - **enabled** (Boolean) Specifies whether the user is enabled. The default value is true.
 - **full_name** (String) The full name of the user.
@@ -75,9 +75,9 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 
 Optional:
 
-- **endpoints** (List of String, Sensitive) A list of endpoints where the terraform provider will point to. This must include the http(s) schema and port number.
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch
-- **username** (String) A username to use for API authentication to Elasticsearch
+- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- **username** (String) A username to use for API authentication to Elasticsearch.
 
 ## Import
 

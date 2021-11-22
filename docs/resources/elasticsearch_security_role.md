@@ -53,7 +53,7 @@ output "role" {
 
 - **applications** (Block Set) A list of application privilege entries. (see [below for nested schema](#nestedblock--applications))
 - **cluster** (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **global** (String) An object defining global privileges.
 - **id** (String) The ID of this resource.
 - **indices** (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
@@ -75,9 +75,9 @@ Required:
 
 Optional:
 
-- **endpoints** (List of String, Sensitive) A list of endpoints where the terraform provider will point to. This must include the http(s) schema and port number.
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch
-- **username** (String) A username to use for API authentication to Elasticsearch
+- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- **username** (String) A username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--indices"></a>

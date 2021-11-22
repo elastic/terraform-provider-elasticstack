@@ -49,7 +49,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 
 - **cold** (Block List, Max: 1) The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it’s okay if those queries are slower. (see [below for nested schema](#nestedblock--cold))
 - **delete** (Block List, Max: 1) The index is no longer needed and can safely be removed. (see [below for nested schema](#nestedblock--delete))
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **frozen** (Block List, Max: 1) The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it’s okay if those queries are extremely slow. (see [below for nested schema](#nestedblock--frozen))
 - **hot** (Block List, Max: 1) The index is actively being updated and queried. (see [below for nested schema](#nestedblock--hot))
 - **id** (String) The ID of this resource.
@@ -169,9 +169,9 @@ Required:
 
 Optional:
 
-- **endpoints** (List of String, Sensitive) A list of endpoints where the terraform provider will point to. This must include the http(s) schema and port number.
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch
-- **username** (String) A username to use for API authentication to Elasticsearch
+- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- **username** (String) A username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--frozen"></a>
