@@ -34,7 +34,6 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 }
 
 func TestAccResourceSnapRepoUrl(t *testing.T) {
-	// generate a random policy name
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.UnitTest(t, resource.TestCase{

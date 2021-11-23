@@ -19,4 +19,3 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
     max_restore_bytes_per_sec = "10mb"
   }
 }
-
