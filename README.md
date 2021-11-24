@@ -84,7 +84,7 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 If you have [Docker](https://docs.docker.com/get-docker/) installed, you can use following command to start the Elasticsearch container and run Acceptance tests against it:
 
 ```sh
-$ docker-testacc
+$ make docker-testacc
 ```
 
 To clean up the used containers and to free up the assigned container names, run `make docker-clean`.
