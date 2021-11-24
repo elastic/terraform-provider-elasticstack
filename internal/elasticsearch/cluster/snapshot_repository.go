@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"regexp"
 	"strconv"
 
@@ -16,8 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
-
-var supportedSnapRepoTypes = [...]string{"fs", "source", "url"}
 
 func ResourceSnapshotRepository() *schema.Resource {
 	commonStdSettings := map[string]*schema.Schema{
@@ -331,9 +330,11 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 		snapRepo.Verify = v.(bool)
 	}
 
-	// iterrate over supported repository types
-	for _, t := range supportedSnapRepoTypes {
-		if v, ok := d.GetOk(t); ok {
+	// find supported repository types and itterate over them
+	schemaTypes := ResourceSnapshotRepository().Schema
+	delete(schemaTypes, "elasticsearch_connection")
+	for t := range schemaTypes {
+		if v, ok := d.GetOk(t); ok && reflect.TypeOf(v).Kind() == reflect.Slice {
 			snapRepo.Type = t
 			expandFsSettings(v.([]interface{})[0].(map[string]interface{}), snapRepoSettings)
 		}
@@ -405,17 +406,10 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 		return diags
 	}
 
-	isSupported := false
-	for _, sr := range supportedSnapRepoTypes {
-		if sr == currentRepo.Type {
-			isSupported = true
-			break
-		}
-	}
-	if !isSupported {
+	if _, ok := ResourceSnapshotRepository().Schema[currentRepo.Type]; !ok {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "API responded with insupprted type of the snapshot repository.",
+			Summary:  "API responded with unsupported type of the snapshot repository.",
 			Detail:   "The type of the snapshot repository is not supported.",
 		})
 		return diags
