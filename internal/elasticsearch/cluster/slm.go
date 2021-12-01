@@ -379,5 +379,7 @@ func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete SLM policy: %s", id.ResourceId)); diags.HasError() {
 		return diags
 	}
+
+	d.SetId("")
 	return diags
 }
