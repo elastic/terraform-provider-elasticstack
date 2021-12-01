@@ -177,4 +177,10 @@ Optional:
 - **max_snapshot_bytes_per_sec** (String) Maximum snapshot creation rate per node.
 - **readonly** (Boolean) If true, the repository is read-only.
 
+## Import
 
+Import is supported using the following syntax:
+
+```shell
+terraform import elasticstack_elasticsearch_snapshot_repository.my_repository <cluster_uuid>/<repository name>
+```

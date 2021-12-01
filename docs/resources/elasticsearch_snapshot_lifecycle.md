@@ -90,4 +90,10 @@ Optional:
 - **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
 - **username** (String) A username to use for API authentication to Elasticsearch.
 
+## Import
 
+Import is supported using the following syntax:
+
+```shell
+terraform import elasticstack_elasticsearch_snapshot_lifecycle.my_policy <cluster_uuid>/<slm policy name>
+```
