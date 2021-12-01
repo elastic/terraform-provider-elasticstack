@@ -106,17 +106,17 @@ type SnapshotPolicy struct {
 }
 
 type SnapshortRetention struct {
-	ExpireAfter string `json:"expire_after,omitempty"`
-	MaxCount    int    `json:"max_count,omitempty"`
-	MinCount    int    `json:"min_count,omitempty"`
+	ExpireAfter *string `json:"expire_after,omitempty"`
+	MaxCount    *int    `json:"max_count,omitempty"`
+	MinCount    *int    `json:"min_count,omitempty"`
 }
 
 type SnapshotPolicyConfig struct {
-	ExpandWildcards    string   `json:"expand_wildcards"`
-	IgnoreUnavailable  bool     `json:"ignore_unavailable"`
-	IncludeGlobalState bool     `json:"include_global_state"`
-	Indices            []string `json:"indices"`
-	FeatureStates      []string `json:"feature_states"`
-	Metadata           string   `json:"metadata"`
-	Partial            bool     `json:"partial"`
+	ExpandWildcards    *string                `json:"expand_wildcards,omitempty"`
+	IgnoreUnavailable  *bool                  `json:"ignore_unavailable,omitempty"`
+	IncludeGlobalState *bool                  `json:"include_global_state,omitempty"`
+	Indices            []string               `json:"indices,omitempty"`
+	FeatureStates      []string               `json:"feature_states,omitempty"`
+	Metadata           map[string]interface{} `json:"metadata,omitempty"`
+	Partial            *bool                  `json:"partial,omitempty"`
 }

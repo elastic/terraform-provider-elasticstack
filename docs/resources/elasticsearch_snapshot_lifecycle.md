@@ -13,38 +13,28 @@ Creates or updates a snapshot lifecycle policy. See, https://www.elastic.co/guid
 ## Example Usage
 
 ```terraform
-terraform {
-  required_version = ">= 1.0.0"
-  required_providers {
-    elasticstack = {
-      source  = "elastic/elasticstack"
-      version = "~> 0.1.0"
-    }
-  }
-}
-
 provider "elasticstack" {
   elasticsearch {}
 }
 
-# create a snapshot repository
-resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
-  name = "my_fs_repo"
+// create a repository for snapshots
+resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
+  name = "my_snap_repo"
 
   fs {
-    location                  = "/tmp"
+    location                  = "/tmp/snapshots"
     compress                  = true
-    max_restore_bytes_per_sec = "10mb"
+    max_restore_bytes_per_sec = "20mb"
   }
 }
 
-# create a snapshot lifecycle policy and use the repository created above to store our snapshots
-resource "elasticstack_elasticsearch_snapshot_lifecycle" "my_slm" {
+// create a SLM policy and use the above created repository
+resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
   name = "my_slm_policy"
 
   schedule      = "0 30 1 * * ?"
   snapshot_name = "<daily-snap-{now/d}>"
-  repository    = elasticstack_elasticsearch_snapshot_repository.my_fs_repo.name
+  repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
 
   config {
     indices              = ["data-*", "important"]
