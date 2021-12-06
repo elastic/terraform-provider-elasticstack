@@ -96,3 +96,27 @@ type SnapshotRepository struct {
 	Settings map[string]interface{} `json:"settings"`
 	Verify   bool                   `json:"verify"`
 }
+
+type SnapshotPolicy struct {
+	Config     *SnapshotPolicyConfig `json:"config,omitempty"`
+	Name       string                `json:"name"`
+	Repository string                `json:"repository"`
+	Retention  *SnapshortRetention   `json:"retention,omitempty"`
+	Schedule   string                `json:"schedule"`
+}
+
+type SnapshortRetention struct {
+	ExpireAfter *string `json:"expire_after,omitempty"`
+	MaxCount    *int    `json:"max_count,omitempty"`
+	MinCount    *int    `json:"min_count,omitempty"`
+}
+
+type SnapshotPolicyConfig struct {
+	ExpandWildcards    *string                `json:"expand_wildcards,omitempty"`
+	IgnoreUnavailable  *bool                  `json:"ignore_unavailable,omitempty"`
+	IncludeGlobalState *bool                  `json:"include_global_state,omitempty"`
+	Indices            []string               `json:"indices,omitempty"`
+	FeatureStates      []string               `json:"feature_states,omitempty"`
+	Metadata           map[string]interface{} `json:"metadata,omitempty"`
+	Partial            *bool                  `json:"partial,omitempty"`
+}
