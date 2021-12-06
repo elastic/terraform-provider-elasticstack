@@ -21,11 +21,9 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
   snapshot_name = "<daily-snap-{now/d}>"
   repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
 
-  config {
-    indices              = ["data-*", "important"]
-    ignore_unavailable   = false
-    include_global_state = false
-  }
+  indices              = ["data-*", "important"]
+  ignore_unavailable   = false
+  include_global_state = false
 
   expire_after = "30d"
   min_count    = 5

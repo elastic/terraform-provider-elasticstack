@@ -36,11 +36,9 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
   snapshot_name = "<daily-snap-{now/d}>"
   repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
 
-  config {
-    indices              = ["data-*", "important"]
-    ignore_unavailable   = false
-    include_global_state = false
-  }
+  indices              = ["data-*", "important"]
+  ignore_unavailable   = false
+  include_global_state = false
 
   expire_after = "30d"
   min_count    = 5
@@ -53,7 +51,6 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
 
 ### Required
 
-- **config** (Block List, Min: 1, Max: 1) Configuration for each snapshot created by the policy. (see [below for nested schema](#nestedblock--config))
 - **name** (String) ID for the snapshot lifecycle policy you want to create or update.
 - **repository** (String) Repository used to store snapshots created by this policy.
 - **schedule** (String) Periodic or absolute schedule at which the policy creates snapshots.
@@ -61,25 +58,18 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
 ### Optional
 
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **expire_after** (String) Time period after which a snapshot is considered expired and eligible for deletion.
-- **id** (String) The ID of this resource.
-- **max_count** (Number) Maximum number of snapshots to retain, even if the snapshots have not yet expired.
-- **min_count** (Number) Minimum number of snapshots to retain, even if the snapshots have expired.
-- **snapshot_name** (String) Name automatically assigned to each snapshot created by the policy.
-
-<a id="nestedblock--config"></a>
-### Nested Schema for `config`
-
-Optional:
-
 - **expand_wildcards** (String) Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.
+- **expire_after** (String) Time period after which a snapshot is considered expired and eligible for deletion.
 - **feature_states** (Set of String) Feature states to include in the snapshot.
+- **id** (String) The ID of this resource.
 - **ignore_unavailable** (Boolean) If `false`, the snapshot fails if any data stream or index in indices is missing or closed. If `true`, the snapshot ignores missing or closed data streams and indices.
 - **include_global_state** (Boolean) If `true`, include the cluster state in the snapshot.
 - **indices** (Set of String) Comma-separated list of data streams and indices to include in the snapshot.
+- **max_count** (Number) Maximum number of snapshots to retain, even if the snapshots have not yet expired.
 - **metadata** (String) Attaches arbitrary metadata to the snapshot.
+- **min_count** (Number) Minimum number of snapshots to retain, even if the snapshots have expired.
 - **partial** (Boolean) If `false`, the entire snapshot will fail if one or more indices included in the snapshot do not have all primary shards available.
-
+- **snapshot_name** (String) Name automatically assigned to each snapshot created by the policy.
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

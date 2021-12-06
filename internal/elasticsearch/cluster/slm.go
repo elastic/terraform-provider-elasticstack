@@ -25,88 +25,76 @@ func ResourceSlm() *schema.Resource {
 			Required:    true,
 			ForceNew:    true,
 		},
-		"config": {
-			Description: "Configuration for each snapshot created by the policy.",
-			Type:        schema.TypeList,
-			Required:    true,
-			MaxItems:    1,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"expand_wildcards": {
-						Description: "Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.",
-						Type:        schema.TypeString,
-						Optional:    true,
-						Default:     "open,hidden",
-						ValidateDiagFunc: func(value interface{}, path cty.Path) diag.Diagnostics {
-							validValues := []string{"all", "open", "closed", "hidden", "none"}
+		"expand_wildcards": {
+			Description: "Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.",
+			Type:        schema.TypeString,
+			Optional:    true,
+			Default:     "open,hidden",
+			ValidateDiagFunc: func(value interface{}, path cty.Path) diag.Diagnostics {
+				validValues := []string{"all", "open", "closed", "hidden", "none"}
 
-							var diags diag.Diagnostics
-							for _, pv := range strings.Split(value.(string), ",") {
-								found := false
-								for _, vv := range validValues {
-									if vv == strings.TrimSpace(pv) {
-										found = true
-										break
-									}
-								}
-								if !found {
-									diags = append(diags, diag.Diagnostic{
-										Severity: diag.Error,
-										Summary:  "Invalid value was provided.",
-										Detail:   fmt.Sprintf(`"%s" is not valid value for this field.`, pv),
-									})
-									return diags
-								}
-							}
-							return diags
-						},
-					},
-					"ignore_unavailable": {
-						Description: "If `false`, the snapshot fails if any data stream or index in indices is missing or closed. If `true`, the snapshot ignores missing or closed data streams and indices.",
-						Type:        schema.TypeBool,
-						Optional:    true,
-						Default:     false,
-					},
-					"include_global_state": {
-						Description: "If `true`, include the cluster state in the snapshot.",
-						Type:        schema.TypeBool,
-						Optional:    true,
-						Default:     true,
-					},
-					"indices": {
-						Description: "Comma-separated list of data streams and indices to include in the snapshot.",
-						Type:        schema.TypeSet,
-						Optional:    true,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
-						},
-					},
-					"feature_states": {
-						Description: "Feature states to include in the snapshot.",
-						Type:        schema.TypeSet,
-						Optional:    true,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
-						},
-					},
-					"metadata": {
-						Description:      "Attaches arbitrary metadata to the snapshot.",
-						Type:             schema.TypeString,
-						Optional:         true,
-						Computed:         true,
-						ValidateFunc:     validation.StringIsJSON,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
-					},
-					"partial": {
-						Description: "If `false`, the entire snapshot will fail if one or more indices included in the snapshot do not have all primary shards available.",
-						Type:        schema.TypeBool,
-						Optional:    true,
-						Default:     false,
-					},
-				},
+				var diags diag.Diagnostics
+				for _, pv := range strings.Split(value.(string), ",") {
+					found := false
+					for _, vv := range validValues {
+						if vv == strings.TrimSpace(pv) {
+							found = true
+							break
+						}
+					}
+					if !found {
+						diags = append(diags, diag.Diagnostic{
+							Severity: diag.Error,
+							Summary:  "Invalid value was provided.",
+							Detail:   fmt.Sprintf(`"%s" is not valid value for this field.`, pv),
+						})
+						return diags
+					}
+				}
+				return diags
 			},
+		},
+		"ignore_unavailable": {
+			Description: "If `false`, the snapshot fails if any data stream or index in indices is missing or closed. If `true`, the snapshot ignores missing or closed data streams and indices.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
+		},
+		"include_global_state": {
+			Description: "If `true`, include the cluster state in the snapshot.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     true,
+		},
+		"indices": {
+			Description: "Comma-separated list of data streams and indices to include in the snapshot.",
+			Type:        schema.TypeSet,
+			Optional:    true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
+		"feature_states": {
+			Description: "Feature states to include in the snapshot.",
+			Type:        schema.TypeSet,
+			Optional:    true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
+		"metadata": {
+			Description:      "Attaches arbitrary metadata to the snapshot.",
+			Type:             schema.TypeString,
+			Optional:         true,
+			Computed:         true,
+			ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+		},
+		"partial": {
+			Description: "If `false`, the entire snapshot will fail if one or more indices included in the snapshot do not have all primary shards available.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
 		},
 		"snapshot_name": {
 			Description: "Name automatically assigned to each snapshot created by the policy.",
@@ -172,6 +160,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 
 	var slm models.SnapshotPolicy
+	var slmConfig models.SnapshotPolicyConfig
 	slmRetention := models.SnapshortRetention{}
 
 	slm.Repository = d.Get("repository").(string)
@@ -193,47 +182,47 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 	slm.Retention = &slmRetention
 
-	// config is required, so we know the block exists
-	config := d.Get("config").([]interface{})[0].(map[string]interface{})
-	if v := config["expand_wildcards"]; v != nil {
+	if v, ok := d.GetOk("expand_wildcards"); ok {
 		vv := v.(string)
-		slm.Config.ExpandWildcards = &vv
+		slmConfig.ExpandWildcards = &vv
 	}
-	if v := config["ignore_unavailable"]; v != nil {
+	if v, ok := d.GetOk("ignore_unavailable"); ok {
 		vv := v.(bool)
-		slm.Config.IgnoreUnavailable = &vv
+		slmConfig.IgnoreUnavailable = &vv
 	}
-	if v := config["include_global_state"]; v != nil {
+	if v, ok := d.GetOk("include_global_state"); ok {
 		vv := v.(bool)
-		slm.Config.IncludeGlobalState = &vv
+		slmConfig.IncludeGlobalState = &vv
 	}
-	if v := config["indices"]; v != nil {
+	indices := make([]string, 0)
+	if v, ok := d.GetOk("indices"); ok {
 		p := v.(*schema.Set)
-		indices := make([]string, p.Len())
-		for i, e := range p.List() {
-			indices[i] = e.(string)
+		for _, e := range p.List() {
+			indices = append(indices, e.(string))
 		}
-		slm.Config.Indices = indices
 	}
-	if v := config["feature_states"]; v != nil {
+	slmConfig.Indices = indices
+	states := make([]string, 0)
+	if v, ok := d.GetOk("feature_states"); ok {
 		p := v.(*schema.Set)
-		states := make([]string, p.Len())
-		for i, e := range p.List() {
-			states[i] = e.(string)
+		for _, e := range p.List() {
+			states = append(states, e.(string))
 		}
-		slm.Config.FeatureStates = states
 	}
-	if v := config["metadata"]; v != nil && v.(string) != "" {
+	slmConfig.FeatureStates = states
+	if v, ok := d.GetOk("metadata"); ok {
 		metadata := make(map[string]interface{})
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
-		slm.Config.Metadata = metadata
+		slmConfig.Metadata = metadata
 	}
-	if v := config["partial"]; v != nil {
+	if v, ok := d.GetOk("partial"); ok {
 		vv := v.(bool)
-		slm.Config.Partial = &vv
+		slmConfig.Partial = &vv
 	}
+
+	slm.Config = &slmConfig
 
 	slmBytes, err := json.Marshal(slm)
 	if err != nil {
@@ -319,45 +308,46 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 		}
 	}
 
-	config, err := flatteSlmConfig(slm.Config)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("config", config); err != nil {
-		return diag.FromErr(err)
+	if c := slm.Config; c != nil {
+		if c.ExpandWildcards != nil {
+			if err := d.Set("expand_wildcards", *c.ExpandWildcards); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+
+		if c.IncludeGlobalState != nil {
+			if err := d.Set("include_global_state", *c.IncludeGlobalState); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		if c.IgnoreUnavailable != nil {
+			if err := d.Set("ignore_unavailable", *c.IgnoreUnavailable); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		if c.Partial != nil {
+			if err := d.Set("partial", *c.Partial); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		if c.Metadata != nil {
+			meta, err := json.Marshal(c.Metadata)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			if err := d.Set("metadata", meta); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		if err := d.Set("indices", c.Indices); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("feature_states", c.FeatureStates); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
-}
-
-func flatteSlmConfig(c models.SnapshotPolicyConfig) ([]interface{}, error) {
-	config := make([]interface{}, 1)
-	configMap := make(map[string]interface{})
-
-	if c.ExpandWildcards != nil {
-		configMap["expand_wildcards"] = *c.ExpandWildcards
-	}
-	if c.IncludeGlobalState != nil {
-		configMap["include_global_state"] = *c.IncludeGlobalState
-	}
-	if c.IgnoreUnavailable != nil {
-		configMap["ignore_unavailable"] = *c.IgnoreUnavailable
-	}
-	if c.Partial != nil {
-		configMap["partial"] = *c.Partial
-	}
-	if c.Metadata != nil {
-		meta, err := json.Marshal(c.Metadata)
-		if err != nil {
-			return nil, err
-		}
-		configMap["partial"] = string(meta)
-	}
-	configMap["indices"] = c.Indices
-	configMap["feature_states"] = c.FeatureStates
-
-	config[0] = configMap
-	return config, nil
 }
 
 func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

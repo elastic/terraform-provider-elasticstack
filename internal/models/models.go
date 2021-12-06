@@ -98,11 +98,11 @@ type SnapshotRepository struct {
 }
 
 type SnapshotPolicy struct {
-	Config     SnapshotPolicyConfig `json:"config"`
-	Name       string               `json:"name"`
-	Repository string               `json:"repository"`
-	Retention  *SnapshortRetention  `json:"retention,omitempty"`
-	Schedule   string               `json:"schedule"`
+	Config     *SnapshotPolicyConfig `json:"config,omitempty"`
+	Name       string                `json:"name"`
+	Repository string                `json:"repository"`
+	Retention  *SnapshortRetention   `json:"retention,omitempty"`
+	Schedule   string                `json:"schedule"`
 }
 
 type SnapshortRetention struct {

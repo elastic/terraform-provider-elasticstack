@@ -29,9 +29,9 @@ func TestAccResourceSLM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "expire_after", "30d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "min_count", "5"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "max_count", "50"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "config.0.ignore_unavailable", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "config.0.include_global_state", "false"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "config.0.indices.*", "data-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "ignore_unavailable", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "include_global_state", "false"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.*", "data-*"),
 				),
 			},
 		},
@@ -61,11 +61,9 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm" {
   snapshot_name = "<daily-snap-{now/d}>"
   repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
 
-  config {
-    indices              = ["data-*", "important"]
-    ignore_unavailable   = false
-    include_global_state = false
-  }
+  indices              = ["data-*", "important"]
+  ignore_unavailable   = false
+  include_global_state = false
 
   expire_after = "30d"
   min_count    = 5
