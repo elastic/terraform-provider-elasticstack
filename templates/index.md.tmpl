@@ -21,7 +21,7 @@ The following methods are supported:
 
 * Static credentials
 * Environment variables
-* Each `elasticseatch` resource supports `elasticsearch_connection` block - allowing using the same provider to configure many different clusters at the same time
+* Each `elasticsearch` resource supports an `elasticsearch_connection` block, allowing use of the same provider to configure many different clusters at the same time
 
 
 ### Static credentials
