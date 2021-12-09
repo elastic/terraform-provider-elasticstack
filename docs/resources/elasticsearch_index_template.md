@@ -13,7 +13,9 @@ Creates or updates an index template. Index templates define settings, mappings,
 ## Example Usage
 
 ```terraform
-provider "elasticstack" {}
+provider "elasticstack" {
+  elasticsearch {}
+}
 
 resource "elasticstack_elasticsearch_index_template" "my_template" {
   name = "my_template"

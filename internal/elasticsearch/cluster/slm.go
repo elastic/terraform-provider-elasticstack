@@ -1,11 +1,9 @@
 package cluster
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -70,6 +68,7 @@ func ResourceSlm() *schema.Resource {
 			Description: "Comma-separated list of data streams and indices to include in the snapshot.",
 			Type:        schema.TypeSet,
 			Optional:    true,
+			Computed:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
@@ -78,6 +77,7 @@ func ResourceSlm() *schema.Resource {
 			Description: "Feature states to include in the snapshot.",
 			Type:        schema.TypeSet,
 			Optional:    true,
+			Computed:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
@@ -160,6 +160,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 
 	var slm models.SnapshotPolicy
+	slm.Id = slmId
 	var slmConfig models.SnapshotPolicyConfig
 	slmRetention := models.SnapshortRetention{}
 
@@ -224,21 +225,9 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 
 	slm.Config = &slmConfig
 
-	slmBytes, err := json.Marshal(slm)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	log.Printf("[TRACE] sending SLM to ES API: %s", slmBytes)
-	req := client.SlmPutLifecycle.WithBody(bytes.NewReader(slmBytes))
-	res, err := client.SlmPutLifecycle(slmId, req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update the SLM"); diags.HasError() {
+	if diags := client.PutElasticsearchSlm(&slm); diags.HasError() {
 		return diags
 	}
-
 	d.SetId(id.String())
 	return resourceSlmRead(ctx, d, meta)
 }
@@ -254,32 +243,10 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diags
 	}
 
-	type SlmReponse = map[string]struct {
-		Policy models.SnapshotPolicy `json:"policy"`
-	}
-	var slmResponse SlmReponse
-
-	req := client.SlmGetLifecycle.WithPolicyID(id.ResourceId)
-	res, err := client.SlmGetLifecycle(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to get SLM policy from ES API"); diags.HasError() {
+	slm, diags := client.GetElasticsearchSlm(id.ResourceId)
+	if diags.HasError() {
 		return diags
 	}
-	if err := json.NewDecoder(res.Body).Decode(&slmResponse); err != nil {
-		return diag.FromErr(err)
-	}
-	if _, ok := slmResponse[id.ResourceId]; !ok {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to find the SLM policy in the response",
-			Detail:   fmt.Sprintf(`Unable to find "%s" policy in the ES API response.`, id.ResourceId),
-		})
-		return diags
-	}
-	slm := slmResponse[id.ResourceId].Policy
 
 	if err := d.Set("snapshot_name", slm.Name); err != nil {
 		return diag.FromErr(err)
@@ -360,16 +327,9 @@ func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags.HasError() {
 		return diags
 	}
-
-	res, err := client.SlmDeleteLifecycle(id.ResourceId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete SLM policy: %s", id.ResourceId)); diags.HasError() {
+	if diags := client.DeleteElasticsearchSlm(id.ResourceId); diags.HasError() {
 		return diags
 	}
-
 	d.SetId("")
 	return diags
 }

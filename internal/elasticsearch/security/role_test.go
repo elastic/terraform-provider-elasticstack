@@ -108,8 +108,8 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.Security.GetRole.WithName(compId.ResourceId)
-		res, err := client.Security.GetRole(req)
+		req := client.GetESClient().Security.GetRole.WithName(compId.ResourceId)
+		res, err := client.GetESClient().Security.GetRole(req)
 		if err != nil {
 			return err
 		}

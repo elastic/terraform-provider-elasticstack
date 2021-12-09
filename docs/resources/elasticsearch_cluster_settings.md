@@ -13,6 +13,10 @@ Updates cluster-wide settings. If the Elasticsearch security features are enable
 ## Example Usage
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_cluster_settings" "my_cluster_settings" {
   persistent {
     setting {

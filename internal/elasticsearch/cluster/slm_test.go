@@ -85,8 +85,8 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 			}
 
 			compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
-			req := client.SlmGetLifecycle.WithPolicyID(compId.ResourceId)
-			res, err := client.SlmGetLifecycle(req)
+			req := client.GetESClient().SlmGetLifecycle.WithPolicyID(compId.ResourceId)
+			res, err := client.GetESClient().SlmGetLifecycle(req)
 			if err != nil {
 				return err
 			}

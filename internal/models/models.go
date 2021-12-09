@@ -1,7 +1,7 @@
 package models
 
 type User struct {
-	Username     string                 `json:"username,omitempty"`
+	Username     string                 `json:"-"`
 	FullName     string                 `json:"full_name"`
 	Email        string                 `json:"email"`
 	Roles        []string               `json:"roles"`
@@ -12,7 +12,7 @@ type User struct {
 }
 
 type Role struct {
-	Name         string                 `json:"name,omitempty"`
+	Name         string                 `json:"-"`
 	Applications []Application          `json:"applications,omitempty"`
 	Global       map[string]interface{} `json:"global,omitempty"`
 	Cluster      []string               `json:"cluster,omitempty"`
@@ -40,7 +40,7 @@ type Application struct {
 }
 
 type IndexTemplate struct {
-	Name          string                 `json:"name,omitempty"`
+	Name          string                 `json:"-"`
 	Create        bool                   `json:"-"`
 	Timeout       string                 `json:"-"`
 	ComposedOf    []string               `json:"composed_of"`
@@ -77,6 +77,11 @@ type IndexTemplateResponse struct {
 	IndexTemplate IndexTemplate `json:"index_template"`
 }
 
+type PolicyDefinition struct {
+	Policy   Policy `json:"policy"`
+	Modified string `json:"modified_date"`
+}
+
 type Policy struct {
 	Name     string                 `json:"-"`
 	Metadata map[string]interface{} `json:"_meta,omitempty"`
@@ -98,6 +103,7 @@ type SnapshotRepository struct {
 }
 
 type SnapshotPolicy struct {
+	Id         string                `json:"-"`
 	Config     *SnapshotPolicyConfig `json:"config,omitempty"`
 	Name       string                `json:"name"`
 	Repository string                `json:"repository"`

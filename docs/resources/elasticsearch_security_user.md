@@ -13,7 +13,9 @@ Adds and updates users in the native realm. These users are commonly referred to
 ## Example Usage
 
 ```terraform
-provider "elasticstack" {}
+provider "elasticstack" {
+  elasticsearch {}
+}
 
 resource "elasticstack_elasticsearch_security_user" "user" {
   username = "testuser"

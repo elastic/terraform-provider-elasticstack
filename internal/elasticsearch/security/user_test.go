@@ -76,8 +76,8 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.Security.GetUser.WithUsername(compId.ResourceId)
-		res, err := client.Security.GetUser(req)
+		req := client.GetESClient().Security.GetUser.WithUsername(compId.ResourceId)
+		res, err := client.GetESClient().Security.GetUser(req)
 		if err != nil {
 			return err
 		}

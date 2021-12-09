@@ -1,10 +1,8 @@
 package security
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"log"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -173,7 +171,7 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 	var role models.Role
-
+	role.Name = roleId
 	if v, ok := d.GetOk("applications"); ok {
 		definedApps := v.(*schema.Set)
 		applications := make([]models.Application, definedApps.Len())
@@ -264,13 +262,10 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 					}
 					fieldSecurity.Except = excepts
 				}
-
 				newIndex.FieldSecurity = &fieldSecurity
 			}
-
 			indices[i] = newIndex
 		}
-
 		role.Indices = indices
 	}
 
@@ -291,18 +286,7 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 		role.RusAs = runs
 	}
 
-	roleBytes, err := json.Marshal(role)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	log.Printf("[TRACE] sending request to ES: %s", roleBytes)
-
-	res, err := client.Security.PutRole(roleId, bytes.NewReader(roleBytes))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create role"); diags.HasError() {
+	if diags := client.PutElasticsearchRole(&role); diags.HasError() {
 		return diags
 	}
 
@@ -322,19 +306,9 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	roleId := compId.ResourceId
 
-	req := client.Security.GetRole.WithName(roleId)
-	res, err := client.Security.GetRole(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to get a role."); diags.HasError() {
+	role, diags := client.GetElasticsearchRole(roleId)
+	if diags.HasError() {
 		return diags
-	}
-
-	roles := make(map[string]models.Role)
-	if err := json.NewDecoder(res.Body).Decode(&roles); err != nil {
-		return diag.FromErr(err)
 	}
 
 	// set the fields
@@ -342,18 +316,18 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 		return diag.FromErr(err)
 	}
 
-	apps := roles[roleId].Applications
+	apps := role.Applications
 	applications := flattenApplicationsData(&apps)
 	if err := d.Set("applications", applications); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("cluster", roles[roleId].Cluster); err != nil {
+	if err := d.Set("cluster", role.Cluster); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if roles[roleId].Global != nil {
-		global, err := json.Marshal(roles[roleId].Global)
+	if role.Global != nil {
+		global, err := json.Marshal(role.Global)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -362,14 +336,14 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 		}
 	}
 
-	indexes := roles[roleId].Indices
+	indexes := role.Indices
 	indices := flattenIndicesData(&indexes)
 	if err := d.Set("indices", indices); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if roles[roleId].Metadata != nil {
-		metadata, err := json.Marshal(roles[roleId].Metadata)
+	if role.Metadata != nil {
+		metadata, err := json.Marshal(role.Metadata)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -378,7 +352,7 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 		}
 	}
 
-	if err := d.Set("run_as", roles[roleId].RusAs); err != nil {
+	if err := d.Set("run_as", role.RusAs); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -434,12 +408,7 @@ func resourceSecurityRoleDelete(ctx context.Context, d *schema.ResourceData, met
 		return diags
 	}
 
-	res, err := client.Security.DeleteRole(compId.ResourceId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete role"); diags.HasError() {
+	if diags := client.DeleteElasticsearchRole(compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

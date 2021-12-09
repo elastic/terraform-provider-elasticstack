@@ -13,7 +13,9 @@ Use this data source to get information about existing Elasticsearch user.
 ## Example Usage
 
 ```terraform
-provider "elasticstack" {}
+provider "elasticstack" {
+  elasticsearch {}
+}
 
 data "elasticstack_elasticsearch_security_user" "user" {
   username = "elastic"

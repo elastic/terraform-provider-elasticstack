@@ -1,11 +1,8 @@
 package cluster
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -106,22 +103,9 @@ func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, met
 			}
 		}
 	}
-
-	settingsBytes, err := json.Marshal(settings)
-	if err != nil {
-		diag.FromErr(err)
-	}
-	log.Printf("[TRACE] settings to set: %s", settingsBytes)
-
-	res, err := client.Cluster.PutSettings(bytes.NewReader(settingsBytes))
-	if err != nil {
-		diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to update cluster settings."); diags.HasError() {
+	if diags := client.PutElasticsearchSettings(settings); diags.HasError() {
 		return diags
 	}
-
 	d.SetId(id.String())
 	return resourceClusterSettingsRead(ctx, d, meta)
 }
@@ -220,20 +204,9 @@ func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	req := client.Cluster.GetSettings.WithFlatSettings(true)
-	res, err := client.Cluster.GetSettings(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to read cluster settings."); diags.HasError() {
+	clusterSettings, diags := client.GetElasticsearchSettings()
+	if diags.HasError() {
 		return diags
-	}
-
-	clusterSettings := make(map[string]interface{})
-	if err := json.NewDecoder(res.Body).Decode(&clusterSettings); err != nil {
-		return diag.FromErr(err)
 	}
 	configuredSettings, _ := getConfiguredSettings(d)
 	persitent := flattenSettings("persistent", configuredSettings, clusterSettings)
@@ -245,7 +218,6 @@ func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, me
 	if err := d.Set("transient", transient); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }
 
@@ -306,18 +278,7 @@ func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, 
 		"persistent": pSettings,
 		"transient":  tSettings,
 	}
-	settingsBytes, err := json.Marshal(settings)
-	if err != nil {
-		diag.FromErr(err)
-	}
-	log.Printf("[TRACE] settings to delete: %s", settingsBytes)
-
-	res, err := client.Cluster.PutSettings(bytes.NewReader(settingsBytes))
-	if err != nil {
-		diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete cluster settings."); diags.HasError() {
+	if diags := client.PutElasticsearchSettings(settings); diags.HasError() {
 		return diags
 	}
 

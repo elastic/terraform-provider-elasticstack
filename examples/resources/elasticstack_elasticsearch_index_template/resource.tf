@@ -1,4 +1,6 @@
-provider "elasticstack" {}
+provider "elasticstack" {
+  elasticsearch {}
+}
 
 resource "elasticstack_elasticsearch_index_template" "my_template" {
   name = "my_template"

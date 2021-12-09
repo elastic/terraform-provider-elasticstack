@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -71,41 +70,30 @@ func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, met
 		return diags
 	}
 
-	// create request and run it
-	req := client.Security.GetUser.WithUsername(usernameId)
-	res, err := client.Security.GetUser(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to get a user."); diags.HasError() {
+	user, diags := client.GetElasticsearchUser(usernameId)
+	if diags.HasError() {
 		return diags
 	}
 
-	// unmarshal our response to proper type
-	users := make(map[string]models.User)
-	if err := json.NewDecoder(res.Body).Decode(&users); err != nil {
-		return diag.FromErr(err)
-	}
-	metadata, err := json.Marshal(users[usernameId].Metadata)
+	metadata, err := json.Marshal(user.Metadata)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	// set the fields
-	if err := d.Set("email", users[usernameId].Email); err != nil {
+	if err := d.Set("email", user.Email); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("full_name", users[usernameId].FullName); err != nil {
+	if err := d.Set("full_name", user.FullName); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("roles", users[usernameId].Roles); err != nil {
+	if err := d.Set("roles", user.Roles); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("metadata", string(metadata)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("enabled", users[usernameId].Enabled); err != nil {
+	if err := d.Set("enabled", user.Enabled); err != nil {
 		return diag.FromErr(err)
 	}
 	d.SetId(id.String())
