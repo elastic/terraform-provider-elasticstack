@@ -1,3 +1,7 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_cluster_settings" "my_cluster_settings" {
   persistent {
     setting {

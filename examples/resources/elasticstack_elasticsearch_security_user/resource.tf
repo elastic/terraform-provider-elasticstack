@@ -1,4 +1,6 @@
-provider "elasticstack" {}
+provider "elasticstack" {
+  elasticsearch {}
+}
 
 resource "elasticstack_elasticsearch_security_user" "user" {
   username = "testuser"

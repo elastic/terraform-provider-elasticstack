@@ -13,7 +13,9 @@ Adds and updates roles in the native realm. See, https://www.elastic.co/guide/en
 ## Example Usage
 
 ```terraform
-provider "elasticstack" {}
+provider "elasticstack" {
+  elasticsearch {}
+}
 
 resource "elasticstack_elasticsearch_security_role" "role" {
   name    = "testrole"
