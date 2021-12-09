@@ -1,12 +1,17 @@
-# Terraform Provider ElasticStack
+# Terraform Provider Elastic Stack
 
 [![Acceptance Status](https://devops-ci.elastic.co/job/elastic+terraform-provider-elasticstack+main/badge/icon?subject=acceptance)](https://devops-ci.elastic.co/job/elastic+terraform-provider-elasticstack+main/)
 
+## Use of the provider
+The Elastic Stack provider allows you to manage and configure the Elastic stack (Elasticsearch, Kibana, etc) as code using `terraform`.
 
-## Using the provider
+Version `0.1.0` is an initial beta version of the Elastic Stack terraform provider. It is currently not yet fully supported by Elastic, but will be in subsequent versions.
 
-The Elasticstack provider provides the resources to interact with Elastic stack products.
+For this early release, we'd like to get feedback from early adopters. Any modifications made to resources in later versions will be communicated prior to release.
 
+## Getting started
+
+The provider supports Elastic Stack versions 7.x+
 
 It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
 in order to interact with the Elasticsearch and be able to use the provider's full capabilities.
