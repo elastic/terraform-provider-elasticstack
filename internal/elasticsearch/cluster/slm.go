@@ -68,6 +68,7 @@ func ResourceSlm() *schema.Resource {
 			Description: "Comma-separated list of data streams and indices to include in the snapshot.",
 			Type:        schema.TypeSet,
 			Optional:    true,
+			Computed:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
@@ -76,6 +77,7 @@ func ResourceSlm() *schema.Resource {
 			Description: "Feature states to include in the snapshot.",
 			Type:        schema.TypeSet,
 			Optional:    true,
+			Computed:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
