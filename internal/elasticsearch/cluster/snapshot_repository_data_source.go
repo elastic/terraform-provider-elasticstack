@@ -2,12 +2,9 @@ package cluster
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -260,36 +257,14 @@ func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta in
 	if diags.HasError() {
 		return diags
 	}
-
-	// create request and run it
-	req := client.Snapshot.GetRepository.WithRepository(repoName)
-	res, err := client.Snapshot.GetRepository(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to fetch %s snapshot repository.", repoName)); diags.HasError() {
+	currentRepo, diags := client.GetElasticsearchSnapshotRepository(repoName)
+	if diags.HasError() {
 		return diags
 	}
 
-	snapRepoResponse := make(map[string]models.SnapshotRepository)
-	if err := json.NewDecoder(res.Body).Decode(&snapRepoResponse); err != nil {
-		return diag.FromErr(err)
-	}
-	log.Printf("[TRACE] response ES API snapshot repository: %+v", snapRepoResponse)
-
-	currentRepo, ok := snapRepoResponse[id.ResourceId]
-	if !ok {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to find requested repository.",
-			Detail:   fmt.Sprintf(`Repository "%s" is missing in the ES API response.`, id.ResourceId),
-		})
-		return diags
-	}
 	// get the schema of the Elem of the current repo type
 	schemaSettings := DataSourceSnapshotRespository().Schema[currentRepo.Type].Elem.(*schema.Resource).Schema
-	settings, err := flattenRepoSettings(&currentRepo, schemaSettings)
+	settings, err := flattenRepoSettings(currentRepo, schemaSettings)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,

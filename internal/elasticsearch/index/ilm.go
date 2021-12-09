@@ -1,11 +1,9 @@
 package index
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -383,20 +381,9 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	if diags.HasError() {
 		return diags
 	}
+	policy.Name = ilmId
 
-	policyBytes, err := json.Marshal(map[string]interface{}{"policy": policy})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	log.Printf("[TRACE] sending new ILM policy to ES API: %s", policyBytes)
-
-	req := client.ILM.PutLifecycle.WithBody(bytes.NewReader(policyBytes))
-	res, err := client.ILM.PutLifecycle(ilmId, req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update the ILM policy"); diags.HasError() {
+	if diags := client.PutElasticsearchIlm(policy); diags.HasError() {
 		return diags
 	}
 
@@ -529,25 +516,10 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 	policyId := compId.ResourceId
 
-	req := client.ILM.GetLifecycle.WithPolicy(policyId)
-	res, err := client.ILM.GetLifecycle(req)
-	if err != nil {
-		diag.FromErr(err)
-	}
-	if diags := utils.CheckError(res, "Unable to fetch ILM policy from the cluster."); diags.HasError() {
+	ilmDef, diags := client.GetElasticsearchIlm(policyId)
+	if diags.HasError() {
 		return diags
 	}
-	defer res.Body.Close()
-
-	// our API response
-	ilm := map[string]struct {
-		Policy   models.Policy `json:"policy"`
-		Modified string        `json:"modified_date"`
-	}{}
-	if err := json.NewDecoder(res.Body).Decode(&ilm); err != nil {
-		return diag.FromErr(err)
-	}
-	ilmDef := ilm[policyId]
 
 	if err := d.Set("modified_date", ilmDef.Modified); err != nil {
 		return diag.FromErr(err)
@@ -625,12 +597,8 @@ func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags.HasError() {
 		return diags
 	}
-	res, err := client.ILM.DeleteLifecycle(compId.ResourceId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete ILM policy."); diags.HasError() {
+
+	if diags := client.DeleteElasticsearchIlm(compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

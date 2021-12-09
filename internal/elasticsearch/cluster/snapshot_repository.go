@@ -1,11 +1,8 @@
 package cluster
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -324,6 +321,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 
 	var snapRepo models.SnapshotRepository
+	snapRepo.Name = repoId
 	snapRepoSettings := make(map[string]interface{})
 
 	if v, ok := d.GetOk("verify"); ok {
@@ -339,23 +337,11 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 			expandFsSettings(v.([]interface{})[0].(map[string]interface{}), snapRepoSettings)
 		}
 	}
-
 	snapRepo.Settings = snapRepoSettings
-	snapRepoBytes, err := json.Marshal(snapRepo)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
-	log.Printf("[TRACE] sending snapshot repository definition to ES API: %s", snapRepoBytes)
-	res, err := client.Snapshot.CreateRepository(repoId, bytes.NewReader(snapRepoBytes))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update the snapshot repository"); diags.HasError() {
+	if diags := client.PutElasticsearchSnapshotRepository(&snapRepo); diags.HasError() {
 		return diags
 	}
-
 	d.SetId(id.String())
 	return resourceSnapRepoRead(ctx, d, meta)
 }
@@ -381,28 +367,8 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 		return diags
 	}
 
-	req := client.Snapshot.GetRepository.WithRepository(compId.ResourceId)
-	res, err := client.Snapshot.GetRepository(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get the information about snapshot repository: %s", compId.ResourceId)); diags.HasError() {
-		return diags
-	}
-	snapRepoResponse := make(map[string]models.SnapshotRepository)
-	if err := json.NewDecoder(res.Body).Decode(&snapRepoResponse); err != nil {
-		return diag.FromErr(err)
-	}
-	log.Printf("[TRACE] response ES API snapshot repository: %+v", snapRepoResponse)
-
-	currentRepo, ok := snapRepoResponse[compId.ResourceId]
-	if !ok {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to find requested repository",
-			Detail:   fmt.Sprintf(`Repository "%s" is missing in the ES API response`, compId.ResourceId),
-		})
+	currentRepo, diags := client.GetElasticsearchSnapshotRepository(compId.ResourceId)
+	if diags.HasError() {
 		return diags
 	}
 
@@ -418,7 +384,7 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 	// get the schema of the Elem of the current repo type
 	schemaSettings := ResourceSnapshotRepository().Schema[currentRepo.Type].Elem.(*schema.Resource).Schema
 
-	settings, err := flattenRepoSettings(&currentRepo, schemaSettings)
+	settings, err := flattenRepoSettings(currentRepo, schemaSettings)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -476,15 +442,9 @@ func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 
-	res, err := client.Snapshot.DeleteRepository([]string{compId.ResourceId})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete snapshot repository: %s", compId.ResourceId)); diags.HasError() {
+	if diags := client.DeleteElasticsearchSnapshotRepository(compId.ResourceId); diags.HasError() {
 		return diags
 	}
-
 	d.SetId("")
 	return diags
 }

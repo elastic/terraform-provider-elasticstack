@@ -145,8 +145,8 @@ func checkResourceClusterSettingsDestroy(s *terraform.State) error {
 			continue
 		}
 
-		req := client.Cluster.GetSettings.WithFlatSettings(true)
-		res, err := client.Cluster.GetSettings(req)
+		req := client.GetESClient().Cluster.GetSettings.WithFlatSettings(true)
+		res, err := client.GetESClient().Cluster.GetSettings(req)
 		if err != nil {
 			return err
 		}

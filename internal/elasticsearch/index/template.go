@@ -1,11 +1,8 @@
 package index
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"log"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -179,6 +176,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		return diags
 	}
 	var indexTemplate models.IndexTemplate
+	indexTemplate.Name = templateId
 
 	compsOf := make([]string, 0)
 	if v, ok := d.GetOk("composed_of"); ok {
@@ -280,18 +278,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		indexTemplate.Version = &definedVer
 	}
 
-	templateBytes, err := json.Marshal(indexTemplate)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	log.Printf("[TRACE] sending request to ES: %s to create template '%s' ", templateBytes, templateId)
-
-	res, err := client.Indices.PutIndexTemplate(templateId, bytes.NewReader(templateBytes))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create index template"); diags.HasError() {
+	if diags := client.PutElasticsearchIndexTemplate(&indexTemplate); diags.HasError() {
 		return diags
 	}
 
@@ -311,32 +298,10 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 	templateId := compId.ResourceId
 
-	req := client.Indices.GetIndexTemplate.WithName(templateId)
-	res, err := client.Indices.GetIndexTemplate(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to request index template."); diags.HasError() {
+	tpl, diags := client.GetElasticsearchIndexTemplate(templateId)
+	if diags.HasError() {
 		return diags
 	}
-
-	var indexTemplates models.IndexTemplatesResponse
-	if err := json.NewDecoder(res.Body).Decode(&indexTemplates); err != nil {
-		return diag.FromErr(err)
-	}
-	log.Printf("[TRACE] read data from API: %+v", indexTemplates)
-
-	// we requested only 1 template
-	if len(indexTemplates.IndexTemplates) != 1 {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Wrong number of templates returned",
-			Detail:   fmt.Sprintf("Elasticsearch API returned %d when requsted '%s' template.", len(indexTemplates.IndexTemplates), templateId),
-		})
-		return diags
-	}
-	tpl := indexTemplates.IndexTemplates[0]
 
 	// set the fields
 	if err := d.Set("name", tpl.Name); err != nil {
@@ -443,16 +408,9 @@ func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, me
 	if diags.HasError() {
 		return diags
 	}
-
-	res, err := client.Indices.DeleteIndexTemplate(compId.ResourceId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete index template"); diags.HasError() {
+	if diags := client.DeleteElasticsearchIndexTemplate(compId.ResourceId); diags.HasError() {
 		return diags
 	}
 	d.SetId("")
-
 	return diags
 }

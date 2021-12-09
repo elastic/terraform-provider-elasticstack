@@ -1,7 +1,6 @@
 package security
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"regexp"
@@ -110,6 +109,7 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	var user models.User
+	user.Username = usernameId
 	if pass, ok := d.GetOk("password"); ok {
 		password := pass.(string)
 		user.Password = &password
@@ -138,18 +138,7 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 		user.Metadata = metadata
 	}
 
-	// prepare request
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	// create / update the user
-	res, err := client.Security.PutUser(usernameId, bytes.NewReader(userBytes))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update a user"); diags.HasError() {
+	if diags := client.PutElasticsearchUser(&user); diags.HasError() {
 		return diags
 	}
 
@@ -169,44 +158,33 @@ func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	usernameId := compId.ResourceId
 
-	// create request and run it
-	req := client.Security.GetUser.WithUsername(usernameId)
-	res, err := client.Security.GetUser(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to get a user."); diags.HasError() {
+	user, diags := client.GetElasticsearchUser(usernameId)
+	if diags.HasError() {
 		return diags
 	}
 
-	// unmarshal our response to proper type
-	users := make(map[string]models.User)
-	if err := json.NewDecoder(res.Body).Decode(&users); err != nil {
-		return diag.FromErr(err)
-	}
-	metadata, err := json.Marshal(users[usernameId].Metadata)
+	metadata, err := json.Marshal(user.Metadata)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	// set the fields
-	if err := d.Set("username", users[usernameId].Username); err != nil {
+	if err := d.Set("username", usernameId); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("email", users[usernameId].Email); err != nil {
+	if err := d.Set("email", user.Email); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("full_name", users[usernameId].FullName); err != nil {
+	if err := d.Set("full_name", user.FullName); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("roles", users[usernameId].Roles); err != nil {
+	if err := d.Set("roles", user.Roles); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("metadata", string(metadata)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("enabled", users[usernameId].Enabled); err != nil {
+	if err := d.Set("enabled", user.Enabled); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -224,12 +202,7 @@ func resourceSecurityUserDelete(ctx context.Context, d *schema.ResourceData, met
 		return diags
 	}
 
-	res, err := client.Security.DeleteUser(compId.ResourceId)
-	if err != nil && res.IsError() {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete a user"); diags.HasError() {
+	if diags := client.DeleteElasticsearchUser(compId.ResourceId); diags.HasError() {
 		return diags
 	}
 
