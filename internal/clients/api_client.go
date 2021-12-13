@@ -132,34 +132,41 @@ func (a *ApiClient) GetESClient() *elasticsearch.Client {
 
 func (a *ApiClient) ID(resourceId string) (*CompositeId, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	clusterId, err := a.ClusterID()
+	clusterId, diags := a.ClusterID()
+	if diags.HasError() {
+		return nil, diags
+	}
+	log.Printf("[TRACE] cluster UUID: %s", *clusterId)
+	return &CompositeId{*clusterId, resourceId}, diags
+}
+
+func (a *ApiClient) ClusterID() (*string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	res, err := a.es.Info()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	log.Printf("[TRACE] cluster UUID: %s", clusterId)
-	return &CompositeId{clusterId, resourceId}, diags
-}
-
-func (a *ApiClient) ClusterID() (string, error) {
-	res, err := a.es.Info()
-	if err != nil {
-		return "", err
-	}
 	defer res.Body.Close()
 	if diags := utils.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
-		return "", fmt.Errorf("Unable to get cluster info")
+		return nil, diags
 	}
 
 	info := make(map[string]interface{})
 	if err := json.NewDecoder(res.Body).Decode(&info); err != nil {
-		return "", err
+		return nil, diag.FromErr(err)
 	}
 	if uuid := info["cluster_uuid"].(string); uuid != "" && uuid != "_na_" {
 		log.Printf("[TRACE] cluster UUID: %s", uuid)
-		return uuid, nil
+		return &uuid, diags
 	}
 
-	return "", fmt.Errorf("Unable to get cluster uuid")
+	diags = append(diags, diag.Diagnostic{
+		Severity: diag.Error,
+		Summary:  "Unable to get cluster UUID",
+		Detail: `Unable to get cluster UUID.
+		There might be a problem with permissions or cluster is still starting up and UUID has not been populated yet.`,
+	})
+	return nil, diags
 }
 
 func (a *ApiClient) PutElasticsearchUser(user *models.User) diag.Diagnostics {
