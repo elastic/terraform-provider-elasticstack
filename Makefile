@@ -60,6 +60,7 @@ tools: $(GOBIN) ## Install useful tools for linting, docs generation and develop
 	@ cd tools && go install github.com/client9/misspell/cmd/misspell
 	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	@ cd tools && go install github.com/goreleaser/goreleaser
 
 
 .PHONY: misspell
