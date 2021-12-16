@@ -97,7 +97,7 @@ release: tools check-sign-release check-publish-release ## Build, sign, and uplo
 	@ $(GOBIN)/goreleaser release --rm-dist
 
 
-.PHONY: check-sing-release
+.PHONY: check-sign-release
 check-sign-release:
 ifndef GPG_FINGERPRINT
 	$(error GPG_FINGERPRINT is undefined, but required for signing the release)
