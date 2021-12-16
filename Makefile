@@ -82,6 +82,35 @@ lint: setup misspell golangci-lint ## Run lints to check the spelling and common
 setup: tools ## Setup the dev environment
 
 
+.PHONY: release-snapshot
+release-snapshot: tools ## Make local-only test release to see if it works using "release" command
+	@ $(GOBIN)/goreleaser release --snapshot --rm-dist
+
+
+.PHONY: release-no-publish
+release-no-publish: tools check-sign-release ## Make a release without publishing artifacts
+	@ $(GOBIN)/goreleaser release --skip-publish --skip-announce --skip-validate
+
+
+.PHONY: release
+release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
+	@ $(GOBIN)/goreleaser release --rm-dist
+
+
+.PHONY: check-sing-release
+check-sign-release:
+ifndef GPG_FINGERPRINT
+	$(error GPG_FINGERPRINT is undefined, but required for signing the release)
+endif
+
+
+.PHONY: check-publish-release
+check-publish-release:
+ifndef GITHUB_TOKEN
+	$(error GITHUB_TOKEN is undefined, but required to make build and upload the released artifacts)
+endif
+
+
 .PHONY: help
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
