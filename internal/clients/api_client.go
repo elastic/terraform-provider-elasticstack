@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -44,13 +45,15 @@ func (c *CompositeId) String() string {
 }
 
 type ApiClient struct {
-	es *elasticsearch.Client
+	es      *elasticsearch.Client
+	version string
 }
 
 func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		var diags diag.Diagnostics
 		config := elasticsearch.Config{}
+		config.Header = http.Header{"User-Agent": []string{fmt.Sprintf("elasticstack-terraform-provider/%s", version)}}
 
 		if v, ok := d.GetOk("elasticsearch"); ok {
 			// if defined we must have only one entry
@@ -91,14 +94,17 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 			})
 		}
 
-		return &ApiClient{es}, diags
+		return &ApiClient{es, version}, diags
 	}
 }
 
 func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) {
+	defaultClient := meta.(*ApiClient)
 	// if the config provided let's use it
 	if esConn, ok := d.GetOk("elasticsearch_connection"); ok {
 		config := elasticsearch.Config{}
+		config.Header = http.Header{"User-Agent": []string{fmt.Sprintf("elasticstack-terraform-provider/%s", defaultClient.version)}}
+
 		// there is always only 1 connection per resource
 		conn := esConn.([]interface{})[0].(map[string]interface{})
 
@@ -120,9 +126,9 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 		if err != nil {
 			return nil, fmt.Errorf("Unable to create Elasticsearch client")
 		}
-		return &ApiClient{es}, nil
+		return &ApiClient{es, defaultClient.version}, nil
 	} else { // or return the default client
-		return meta.(*ApiClient), nil
+		return defaultClient, nil
 	}
 }
 
