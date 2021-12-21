@@ -1,5 +1,5 @@
 ---
-subcategory: ""
+subcategory: "Snapshot"
 layout: ""
 page_title: "Elasticstack: elasticstack_elasticsearch_snapshot_repository Resource"
 description: |-
