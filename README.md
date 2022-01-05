@@ -39,7 +39,7 @@ The following methods are supported:
 
 * Static credentials
 * Environment variables
-* Each `elasticseatch` resource supports `elasticsearch_connection` block - allowing using the same provider to configure many different clusters at the same time
+* Each `elasticsearch` resource supports `elasticsearch_connection` block - allowing using the same provider to configure many different clusters at the same time
 
 
 #### Static credentials
@@ -82,7 +82,7 @@ To compile the provider, run `go install`. This will build the provider and put 
 
 To install the provider locally into the `~/.terraform.d/plugins/...` directory one can use `make install` command. This will allow to refer this provider dirrecty in the Terraform configuration without needing to download it from the registry.
 
-To generate or update documentation, run `make gen`. All the generated docs will have to be commited to the repository as well.
+To generate or update documentation, run `make gen`. All the generated docs will have to be committed to the repository as well.
 
 In order to run the full suite of Acceptance tests, run `make testacc`.
 

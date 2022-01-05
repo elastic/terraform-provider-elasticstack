@@ -1,0 +1,17 @@
+---
+subcategory: "Cluster"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_cluster_settings Resource"
+description: |-
+  Updates cluster-wide settings.
+---
+
+# Resource: elasticstack_elasticsearch_cluster_settings
+
+Updates cluster-wide settings. If the Elasticsearch security features are enabled, you must have the manage cluster privilege to use this API. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-update-settings.html
+
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_elasticsearch_cluster_settings/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
