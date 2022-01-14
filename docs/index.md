@@ -81,5 +81,6 @@ provider "elasticstack" {
 Optional:
 
 - **endpoints** (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- **insecure** (Boolean) Disable TLS certificate validation
 - **password** (String, Sensitive) Password to use for API authentication to Elasticsearch.
 - **username** (String) Username to use for API authentication to Elasticsearch.
