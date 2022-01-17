@@ -74,8 +74,8 @@ func ResourceTemplate() *schema.Resource {
 			MaxItems:    1,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
-					"aliases": {
-						Description: "Aliases to add.",
+					"alias": {
+						Description: "Alias to add.",
 						Type:        schema.TypeSet,
 						Optional:    true,
 						Elem: &schema.Resource{
@@ -93,7 +93,7 @@ func ResourceTemplate() *schema.Resource {
 									ValidateFunc:     validation.StringIsJSON,
 								},
 								"index_routing": {
-									Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.",
+									Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
 									Type:        schema.TypeString,
 									Optional:    true,
 								},
@@ -217,7 +217,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("template"); ok {
 		// only one template block allowed to be declared
 		definedTempl := v.([]interface{})[0].(map[string]interface{})
-		definedAliases := definedTempl["aliases"].(*schema.Set)
+		definedAliases := definedTempl["alias"].(*schema.Set)
 		templ := models.Template{}
 
 		aliases := make(map[string]models.TemplateAlias, definedAliases.Len())
@@ -390,7 +390,7 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 
 			aliases = append(aliases, alias)
 		}
-		tmpl["aliases"] = aliases
+		tmpl["alias"] = aliases
 	}
 
 	return []interface{}{tmpl}, diags
