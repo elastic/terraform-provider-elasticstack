@@ -90,6 +90,7 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 					tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 					config.Transport = tr
 				}
+
 				if caFile, ok := esConfig["ca_file"]; ok && caFile.(string) != "" {
 					caCert, err := ioutil.ReadFile(caFile.(string))
 					if err != nil {
