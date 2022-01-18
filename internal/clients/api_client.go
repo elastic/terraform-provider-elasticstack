@@ -146,6 +146,13 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 			config.Transport = tr
 		}
+		if caFile, ok := conn["ca_file"]; ok && caFile.(string) != "" {
+			caCert, err := ioutil.ReadFile(caFile.(string))
+			if err != nil {
+				return nil, fmt.Errorf("Unable to read ca_file: %w", err)
+			}
+			config.CACert = caCert
+		}
 
 		es, err := elasticsearch.NewClient(config)
 		if err != nil {
