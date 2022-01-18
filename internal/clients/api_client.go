@@ -98,6 +98,7 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 							Summary:  "Unable to read CA File",
 							Detail:   err.Error(),
 						})
+						return nil, diags
 					}
 					config.CACert = caCert
 				}
