@@ -3,6 +3,7 @@ package clients
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -82,6 +83,12 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 					}
 					config.Addresses = endpoints
 				}
+
+				if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
+					tr := http.DefaultTransport.(*http.Transport)
+					tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+					config.Transport = tr
+				}
 			}
 		}
 
@@ -120,6 +127,11 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 				addrs = append(addrs, e.(string))
 			}
 			config.Addresses = addrs
+		}
+		if insecure := conn["insecure"]; insecure.(bool) {
+			tr := http.DefaultTransport.(*http.Transport)
+			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			config.Transport = tr
 		}
 
 		es, err := elasticsearch.NewClient(config)

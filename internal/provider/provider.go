@@ -48,6 +48,12 @@ func New(version string) func() *schema.Provider {
 									Type: schema.TypeString,
 								},
 							},
+							"insecure": {
+								Description: "Disable TLS certificate validation",
+								Type:        schema.TypeBool,
+								Optional:    true,
+								Default:     false,
+							},
 						},
 					},
 				},
