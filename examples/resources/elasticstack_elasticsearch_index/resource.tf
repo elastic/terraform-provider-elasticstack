@@ -18,7 +18,12 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 
   mappings = jsonencode({
     properties = {
-      field1 = { type = "text" }
+      field1 = { type = "keyword" }
+      field2 = { type = "text" }
+      field3 = { properties = {
+        inner_field1 = { type = "text", index = false }
+        inner_field2 = { type = "integer", index = false }
+      } }
     }
   })
 

@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -83,13 +86,12 @@ func ResourceIndex() *schema.Resource {
 		"mappings": {
 			Description: `Mapping for fields in the index.
 If specified, this mapping can include: field names, field data types (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), mapping parameters (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** changing _mappings_ will force the re-creation of the index.`,
+**NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.`,
 			Type:             schema.TypeString,
 			Optional:         true,
-			Computed:         true,
-			ForceNew:         true,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			ValidateFunc:     validation.StringIsJSON,
+			Default:          "{}",
 		},
 		"settings": {
 			Description: `Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
@@ -142,6 +144,68 @@ If specified, this mapping can include: field names, field data types (https://w
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
+
+		CustomizeDiff: customdiff.ForceNewIfChange("mappings", func(ctx context.Context, old, new, meta interface{}) bool {
+			o := make(map[string]interface{})
+			if err := json.NewDecoder(strings.NewReader(old.(string))).Decode(&o); err != nil {
+				return true
+			}
+			n := make(map[string]interface{})
+			if err := json.NewDecoder(strings.NewReader(new.(string))).Decode(&n); err != nil {
+				return true
+			}
+			log.Printf("[TRACE] mappings custom diff old = %+v new = %+v", o, n)
+
+			var isForsable func(map[string]interface{}, map[string]interface{}) bool
+			isForsable = func(old, new map[string]interface{}) bool {
+				for k, v := range old {
+					oldFieldSettings := v.(map[string]interface{})
+					if newFieldSettings, ok := new[k]; ok {
+						newSettings := newFieldSettings.(map[string]interface{})
+						// check if the "type" field exists and match with new one
+						if s, ok := oldFieldSettings["type"]; ok {
+							if ns, ok := newSettings["type"]; ok {
+								if !reflect.DeepEqual(s, ns) {
+									return true
+								}
+								continue
+							} else {
+								return true
+							}
+						}
+
+						// if we have "mapping" field, let's call ourself to check again
+						if s, ok := oldFieldSettings["properties"]; ok {
+							if ns, ok := newSettings["properties"]; ok {
+								if isForsable(s.(map[string]interface{}), ns.(map[string]interface{})) {
+									return true
+								}
+								continue
+							} else {
+								return true
+							}
+						}
+					} else {
+						// if the key not found in the new props, force new resource
+						return true
+					}
+				}
+				return false
+			}
+
+			// if old defined we must check if the type of the existing fields were changed
+			if oldProps, ok := o["properties"]; ok {
+				newProps, ok := n["properties"]
+				// if the old has props but new one not, immediately force new resource
+				if !ok {
+					return true
+				}
+				return isForsable(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
+			}
+
+			// if all check passed, we can update the map
+			return false
+		}),
 
 		Schema: indexSchema,
 	}
@@ -199,7 +263,6 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 }
 
 // Because of limitation of ES API we must handle changes to aliases, mappings and settings separately
-// NOTE: currently any changes to mappings will trigged index re-creation
 func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client, err := clients.NewApiClient(d, meta)
 	if err != nil {
@@ -255,6 +318,15 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 		log.Printf("[TRACE] settings to update: %+v", ns)
 		if diags := client.UpdateElasticsearcIndexSettings(indexName, ns); diags.HasError() {
+			return diags
+		}
+	}
+
+	// mappings
+	if d.HasChange("mappings") {
+		// at this point we know there are mappings defined and there is a change which we can apply
+		mappings := d.Get("mappings").(string)
+		if diags := client.UpdateElasticsearcIndexMappings(indexName, mappings); diags.HasError() {
 			return diags
 		}
 	}

@@ -698,3 +698,18 @@ func (a *ApiClient) UpdateElasticsearcIndexSettings(index string, settings map[s
 	}
 	return diags
 }
+
+func (a *ApiClient) UpdateElasticsearcIndexMappings(index, mappings string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	log.Printf("[TRACE] updaing index %s mappings: %s", index, mappings)
+	req := a.es.Indices.PutMapping.WithIndex(index)
+	res, err := a.es.Indices.PutMapping(strings.NewReader(mappings), req)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to update index mappings"); diags.HasError() {
+		return diags
+	}
+	return diags
+}

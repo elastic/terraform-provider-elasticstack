@@ -33,7 +33,12 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 
   mappings = jsonencode({
     properties = {
-      field1 = { type = "text" }
+      field1 = { type = "keyword" }
+      field2 = { type = "text" }
+      field3 = { properties = {
+        inner_field1 = { type = "text", index = false }
+        inner_field2 = { type = "integer", index = false }
+      } }
     }
   })
 
@@ -64,7 +69,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - **id** (String) The ID of this resource.
 - **mappings** (String) Mapping for fields in the index.
 If specified, this mapping can include: field names, field data types (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), mapping parameters (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** changing _mappings_ will force the re-creation of the index.
+**NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.
 - **settings** (Block List, Max: 1) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
 **NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error (see [below for nested schema](#nestedblock--settings))
 
