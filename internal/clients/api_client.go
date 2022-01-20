@@ -3,8 +3,10 @@ package clients
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -82,6 +84,25 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 					}
 					config.Addresses = endpoints
 				}
+
+				if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
+					tr := http.DefaultTransport.(*http.Transport)
+					tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+					config.Transport = tr
+				}
+
+				if caFile, ok := esConfig["ca_file"]; ok && caFile.(string) != "" {
+					caCert, err := ioutil.ReadFile(caFile.(string))
+					if err != nil {
+						diags = append(diags, diag.Diagnostic{
+							Severity: diag.Error,
+							Summary:  "Unable to read CA File",
+							Detail:   err.Error(),
+						})
+						return nil, diags
+					}
+					config.CACert = caCert
+				}
 			}
 		}
 
@@ -120,6 +141,18 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 				addrs = append(addrs, e.(string))
 			}
 			config.Addresses = addrs
+		}
+		if insecure := conn["insecure"]; insecure.(bool) {
+			tr := http.DefaultTransport.(*http.Transport)
+			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			config.Transport = tr
+		}
+		if caFile, ok := conn["ca_file"]; ok && caFile.(string) != "" {
+			caCert, err := ioutil.ReadFile(caFile.(string))
+			if err != nil {
+				return nil, fmt.Errorf("Unable to read ca_file: %w", err)
+			}
+			config.CACert = caCert
 		}
 
 		es, err := elasticsearch.NewClient(config)

@@ -145,6 +145,17 @@ func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
 						Type: schema.TypeString,
 					},
 				},
+				"insecure": {
+					Description: "Disable TLS certificate validation",
+					Type:        schema.TypeBool,
+					Optional:    true,
+					Default:     false,
+				},
+				"ca_file": {
+					Description: "Path to a custom Certificate Authority certificate",
+					Type:        schema.TypeString,
+					Optional:    true,
+				},
 			},
 		},
 	}
