@@ -630,6 +630,11 @@ func (a *ApiClient) GetElasticsearchIndex(name string) (*models.Index, diag.Diag
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
+	// if there is no index found, return the empty struct, which should force the creation of the index
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
 	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested index: %s", name)); diags.HasError() {
 		return nil, diags
 	}

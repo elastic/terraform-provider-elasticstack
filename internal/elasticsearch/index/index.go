@@ -82,8 +82,8 @@ func ResourceIndex() *schema.Resource {
 		},
 		"mappings": {
 			Description: `Mapping for fields in the index.
-			If specified, this mapping can include: field names, field data types (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), mapping parameters (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-			**NOTE:** changing _mappings_ will force the re-creation of the index.`,
+If specified, this mapping can include: field names, field data types (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), mapping parameters (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
+**NOTE:** changing _mappings_ will force the re-creation of the index.`,
 			Type:             schema.TypeString,
 			Optional:         true,
 			Computed:         true,
@@ -93,7 +93,7 @@ func ResourceIndex() *schema.Resource {
 		},
 		"settings": {
 			Description: `Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
-			**NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error`,
+**NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error`,
 			Type:     schema.TypeList,
 			MaxItems: 1,
 			Optional: true,
@@ -291,6 +291,11 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	}
 
 	index, diags := client.GetElasticsearchIndex(indexName)
+	if index == nil && diags == nil {
+		// no index found on ES side
+		d.SetId("")
+		return diags
+	}
 	if diags.HasError() {
 		return diags
 	}
