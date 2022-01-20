@@ -51,6 +51,7 @@ output "user" {
 
 Optional:
 
+- **ca_file** (String) Path to a custom Certificate Authority certificate
 - **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
 - **insecure** (Boolean) Disable TLS certificate validation
 - **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
