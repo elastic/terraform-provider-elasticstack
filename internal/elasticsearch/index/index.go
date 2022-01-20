@@ -286,6 +286,10 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	}
 	indexName := compId.ResourceId
 
+	if err := d.Set("name", indexName); err != nil {
+		return diag.FromErr(err)
+	}
+
 	index, diags := client.GetElasticsearchIndex(indexName)
 	if diags.HasError() {
 		return diags
