@@ -13,7 +13,7 @@ func DiffJsonSuppress(k, old, new string, d *schema.ResourceData) bool {
 	return result
 }
 
-func DiffIndexTemplateSettingSuppress(k, old, new string, d *schema.ResourceData) bool {
+func DiffIndexSettingSuppress(k, old, new string, d *schema.ResourceData) bool {
 	var o, n map[string]interface{}
 	if err := json.Unmarshal([]byte(old), &o); err != nil {
 		return false
@@ -21,10 +21,10 @@ func DiffIndexTemplateSettingSuppress(k, old, new string, d *schema.ResourceData
 	if err := json.Unmarshal([]byte(new), &n); err != nil {
 		return false
 	}
-	return MapsEqual(normalizeIndexSettings(FlattenMap(o)), normalizeIndexSettings(FlattenMap(n)))
+	return MapsEqual(NormalizeIndexSettings(FlattenMap(o)), NormalizeIndexSettings(FlattenMap(n)))
 }
 
-func normalizeIndexSettings(m map[string]interface{}) map[string]interface{} {
+func NormalizeIndexSettings(m map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{}, len(m))
 	for k, v := range m {
 		if strings.HasPrefix(k, "index.") {
