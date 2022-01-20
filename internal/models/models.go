@@ -53,19 +53,9 @@ type IndexTemplate struct {
 }
 
 type Template struct {
-	Aliases  map[string]TemplateAlias `json:"aliases,omitempty"`
-	Mappings map[string]interface{}   `json:"mappings,omitempty"`
-	Settings map[string]interface{}   `json:"settings,omitempty"`
-}
-
-type TemplateAlias struct {
-	Name          string                 `json:"-"`
-	Filter        map[string]interface{} `json:"filter,omitempty"`
-	IndexRouting  string                 `json:"index_routing,omitempty"`
-	IsHidden      bool                   `json:"is_hidden,omitempty"`
-	IsWriteIndex  bool                   `json:"is_write_index,omitempty"`
-	Routing       string                 `json:"routing,omitempty"`
-	SearchRouting string                 `json:"search_routing,omitempty"`
+	Aliases  map[string]IndexAlias  `json:"aliases,omitempty"`
+	Mappings map[string]interface{} `json:"mappings,omitempty"`
+	Settings map[string]interface{} `json:"settings,omitempty"`
 }
 
 type IndexTemplatesResponse struct {
@@ -125,4 +115,21 @@ type SnapshotPolicyConfig struct {
 	FeatureStates      []string               `json:"feature_states,omitempty"`
 	Metadata           map[string]interface{} `json:"metadata,omitempty"`
 	Partial            *bool                  `json:"partial,omitempty"`
+}
+
+type Index struct {
+	Name     string                 `json:"-"`
+	Aliases  map[string]IndexAlias  `json:"aliases,omitempty"`
+	Mappings map[string]interface{} `json:"mappings,omitempty"`
+	Settings map[string]interface{} `json:"settings,omitempty"`
+}
+
+type IndexAlias struct {
+	Name          string                 `json:"-"`
+	Filter        map[string]interface{} `json:"filter,omitempty"`
+	IndexRouting  string                 `json:"index_routing,omitempty"`
+	IsHidden      bool                   `json:"is_hidden,omitempty"`
+	IsWriteIndex  bool                   `json:"is_wtite_index,omitempty"`
+	Routing       string                 `json:"routing,omitempty"`
+	SearchRouting string                 `json:"search_routing,omitempty"`
 }

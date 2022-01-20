@@ -407,6 +407,7 @@ func (a *ApiClient) GetElasticsearchIndexTemplate(templateName string) (*models.
 		return nil, diags
 	}
 	tpl := indexTemplates.IndexTemplates[0]
+	log.Printf("[TRACE] read index template from API: %+v", tpl)
 	return &tpl, diags
 }
 
@@ -583,4 +584,112 @@ func (a *ApiClient) GetElasticsearchSettings() (map[string]interface{}, diag.Dia
 		return nil, diag.FromErr(err)
 	}
 	return clusterSettings, diags
+}
+
+func (a *ApiClient) PutElasticsearchIndex(index *models.Index) diag.Diagnostics {
+	var diags diag.Diagnostics
+	indexBytes, err := json.Marshal(index)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	log.Printf("[TRACE] index definition: %s", indexBytes)
+
+	req := a.es.Indices.Create.WithBody(bytes.NewReader(indexBytes))
+	res, err := a.es.Indices.Create(index.Name, req)
+	if err != nil {
+		diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create index: %s", index.Name)); diags.HasError() {
+		return diags
+	}
+	return diags
+}
+
+func (a *ApiClient) DeleteElasticsearchIndex(name string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	res, err := a.es.Indices.Delete([]string{name})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete the index: %s", name)); diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
+
+func (a *ApiClient) GetElasticsearchIndex(name string) (*models.Index, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	req := a.es.Indices.Get.WithFlatSettings(true)
+	res, err := a.es.Indices.Get([]string{name}, req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested index: %s", name)); diags.HasError() {
+		return nil, diags
+	}
+
+	indices := make(map[string]models.Index)
+	if err := json.NewDecoder(res.Body).Decode(&indices); err != nil {
+		return nil, diag.FromErr(err)
+	}
+	index := indices[name]
+	return &index, diags
+}
+
+func (a *ApiClient) DeleteElasticsearchIndexAlias(index string, aliases []string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	log.Printf("[TRACE] Deleting aliases for index %s: %v", index, aliases)
+	res, err := a.es.Indices.DeleteAlias([]string{index}, aliases)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete aliases '%v' for index '%s'", index, aliases)); diags.HasError() {
+		return diags
+	}
+	return diags
+}
+
+func (a *ApiClient) UpdateElasticsearcIndexAlias(index string, alias *models.IndexAlias) diag.Diagnostics {
+	var diags diag.Diagnostics
+	aliasBytes, err := json.Marshal(alias)
+	if err != nil {
+		diag.FromErr(err)
+	}
+	log.Printf("[TRACE] updaing index %s alias: %s", index, aliasBytes)
+	req := a.es.Indices.PutAlias.WithBody(bytes.NewReader(aliasBytes))
+	res, err := a.es.Indices.PutAlias([]string{index}, alias.Name, req)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to update alias '%v' for index '%s'", index, alias.Name)); diags.HasError() {
+		return diags
+	}
+	return diags
+}
+
+func (a *ApiClient) UpdateElasticsearcIndexSettings(index string, settings map[string]interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+	settingsBytes, err := json.Marshal(settings)
+	if err != nil {
+		diag.FromErr(err)
+	}
+	log.Printf("[TRACE] updaing index %s settings: %s", index, settingsBytes)
+	req := a.es.Indices.PutSettings.WithIndex(index)
+	res, err := a.es.Indices.PutSettings(bytes.NewReader(settingsBytes), req)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to update index settings"); diags.HasError() {
+		return diags
+	}
+	return diags
 }
