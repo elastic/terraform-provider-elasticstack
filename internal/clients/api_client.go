@@ -694,7 +694,7 @@ func (a *ApiClient) DeleteElasticsearchIndexAlias(index string, aliases []string
 	return diags
 }
 
-func (a *ApiClient) UpdateElasticsearcIndexAlias(index string, alias *models.IndexAlias) diag.Diagnostics {
+func (a *ApiClient) UpdateElasticsearchIndexAlias(index string, alias *models.IndexAlias) diag.Diagnostics {
 	var diags diag.Diagnostics
 	aliasBytes, err := json.Marshal(alias)
 	if err != nil {
@@ -713,7 +713,7 @@ func (a *ApiClient) UpdateElasticsearcIndexAlias(index string, alias *models.Ind
 	return diags
 }
 
-func (a *ApiClient) UpdateElasticsearcIndexSettings(index string, settings map[string]interface{}) diag.Diagnostics {
+func (a *ApiClient) UpdateElasticsearchIndexSettings(index string, settings map[string]interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
@@ -732,7 +732,7 @@ func (a *ApiClient) UpdateElasticsearcIndexSettings(index string, settings map[s
 	return diags
 }
 
-func (a *ApiClient) UpdateElasticsearcIndexMappings(index, mappings string) diag.Diagnostics {
+func (a *ApiClient) UpdateElasticsearchIndexMappings(index, mappings string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	log.Printf("[TRACE] updaing index %s mappings: %s", index, mappings)
 	req := a.es.Indices.PutMapping.WithIndex(index)

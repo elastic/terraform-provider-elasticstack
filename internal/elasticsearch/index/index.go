@@ -156,8 +156,8 @@ If specified, this mapping can include: field names, field data types (https://w
 			}
 			log.Printf("[TRACE] mappings custom diff old = %+v new = %+v", o, n)
 
-			var isForsable func(map[string]interface{}, map[string]interface{}) bool
-			isForsable = func(old, new map[string]interface{}) bool {
+			var isForceable func(map[string]interface{}, map[string]interface{}) bool
+			isForceable = func(old, new map[string]interface{}) bool {
 				for k, v := range old {
 					oldFieldSettings := v.(map[string]interface{})
 					if newFieldSettings, ok := new[k]; ok {
@@ -177,7 +177,7 @@ If specified, this mapping can include: field names, field data types (https://w
 						// if we have "mapping" field, let's call ourself to check again
 						if s, ok := oldFieldSettings["properties"]; ok {
 							if ns, ok := newSettings["properties"]; ok {
-								if isForsable(s.(map[string]interface{}), ns.(map[string]interface{})) {
+								if isForceable(s.(map[string]interface{}), ns.(map[string]interface{})) {
 									return true
 								}
 								continue
@@ -200,7 +200,7 @@ If specified, this mapping can include: field names, field data types (https://w
 				if !ok {
 					return true
 				}
-				return isForsable(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
+				return isForceable(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
 			}
 
 			// if all check passed, we can update the map
@@ -298,7 +298,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 
 		// keep new aliases up-to-date
 		for _, v := range enew {
-			if diags := client.UpdateElasticsearcIndexAlias(indexName, &v); diags.HasError() {
+			if diags := client.UpdateElasticsearchIndexAlias(indexName, &v); diags.HasError() {
 				return diags
 			}
 		}
@@ -317,7 +317,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 			}
 		}
 		log.Printf("[TRACE] settings to update: %+v", ns)
-		if diags := client.UpdateElasticsearcIndexSettings(indexName, ns); diags.HasError() {
+		if diags := client.UpdateElasticsearchIndexSettings(indexName, ns); diags.HasError() {
 			return diags
 		}
 	}
@@ -326,7 +326,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 	if d.HasChange("mappings") {
 		// at this point we know there are mappings defined and there is a change which we can apply
 		mappings := d.Get("mappings").(string)
-		if diags := client.UpdateElasticsearcIndexMappings(indexName, mappings); diags.HasError() {
+		if diags := client.UpdateElasticsearchIndexMappings(indexName, mappings); diags.HasError() {
 			return diags
 		}
 	}
