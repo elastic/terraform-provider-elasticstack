@@ -167,7 +167,7 @@ func expandSettings(s interface{}) (map[string]interface{}, diag.Diagnostics) {
 		if _, ok := result[settingName]; ok {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf(`Unble to set "%s".`, settingName),
+				Summary:  fmt.Sprintf(`Unable to set "%s".`, settingName),
 				Detail:   fmt.Sprintf(`Found setting "%s" have been already configured.`, settingName),
 			})
 		}

@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccResourceIndexTemplate(t *testing.T) {
-	// generate a random username
+	// generate random template name
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.UnitTest(t, resource.TestCase{
@@ -45,7 +45,7 @@ resource "elasticstack_elasticsearch_index_template" "test" {
   index_patterns = ["%s-logs-*"]
 
   template {
-    aliases {
+    alias {
       name = "my_template_test"
     }
 

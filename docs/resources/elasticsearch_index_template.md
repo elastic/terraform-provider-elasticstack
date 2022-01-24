@@ -24,8 +24,11 @@ resource "elasticstack_elasticsearch_index_template" "my_template" {
   index_patterns = ["logstash*", "filebeat*"]
 
   template {
-    aliases {
+    alias {
       name = "my_template_test"
+    }
+    alias {
+      name = "another_test"
     }
 
     settings = jsonencode({
@@ -86,21 +89,21 @@ Optional:
 
 Optional:
 
-- **aliases** (Block Set) Aliases to add. (see [below for nested schema](#nestedblock--template--aliases))
+- **alias** (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
 - **mappings** (String) Mapping for fields in the index.
 - **settings** (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
 
-<a id="nestedblock--template--aliases"></a>
-### Nested Schema for `template.aliases`
+<a id="nestedblock--template--alias"></a>
+### Nested Schema for `template.alias`
 
 Required:
 
-- **name** (String) The alias name. Index alias names support date math. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html
+- **name** (String) The alias name.
 
 Optional:
 
 - **filter** (String) Query used to limit documents the alias can access.
-- **index_routing** (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.
+- **index_routing** (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.
 - **is_hidden** (Boolean) If true, the alias is hidden.
 - **is_write_index** (Boolean) If true, the index is the write index for the alias.
 - **routing** (String) Value used to route indexing and search operations to a specific shard.

@@ -9,8 +9,11 @@ resource "elasticstack_elasticsearch_index_template" "my_template" {
   index_patterns = ["logstash*", "filebeat*"]
 
   template {
-    aliases {
+    alias {
       name = "my_template_test"
+    }
+    alias {
+      name = "another_test"
     }
 
     settings = jsonencode({

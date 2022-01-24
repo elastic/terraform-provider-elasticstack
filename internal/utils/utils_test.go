@@ -79,7 +79,7 @@ func TestDiffIndexTemplateSuppress(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		if sup := utils.DiffIndexTemplateSettingSuppress("", tc.old, tc.new, nil); sup != tc.equal {
+		if sup := utils.DiffIndexSettingSuppress("", tc.old, tc.new, nil); sup != tc.equal {
 			t.Errorf("Failed for test case: %+v", tc)
 		}
 	}

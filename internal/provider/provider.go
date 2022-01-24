@@ -69,6 +69,7 @@ func New(version string) func() *schema.Provider {
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
+				"elasticstack_elasticsearch_index":               index.ResourceIndex(),
 				"elasticstack_elasticsearch_index_lifecycle":     index.ResourceIlm(),
 				"elasticstack_elasticsearch_index_template":      index.ResourceTemplate(),
 				"elasticstack_elasticsearch_security_role":       security.ResourceRole(),

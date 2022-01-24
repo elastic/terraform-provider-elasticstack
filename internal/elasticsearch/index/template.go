@@ -74,14 +74,14 @@ func ResourceTemplate() *schema.Resource {
 			MaxItems:    1,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
-					"aliases": {
-						Description: "Aliases to add.",
+					"alias": {
+						Description: "Alias to add.",
 						Type:        schema.TypeSet,
 						Optional:    true,
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
-									Description: "The alias name. Index alias names support date math. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html",
+									Description: "The alias name.",
 									Type:        schema.TypeString,
 									Required:    true,
 								},
@@ -89,13 +89,15 @@ func ResourceTemplate() *schema.Resource {
 									Description:      "Query used to limit documents the alias can access.",
 									Type:             schema.TypeString,
 									Optional:         true,
+									Default:          "",
 									DiffSuppressFunc: utils.DiffJsonSuppress,
 									ValidateFunc:     validation.StringIsJSON,
 								},
 								"index_routing": {
-									Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.",
+									Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
 									Type:        schema.TypeString,
 									Optional:    true,
+									Default:     "",
 								},
 								"is_hidden": {
 									Description: "If true, the alias is hidden.",
@@ -113,11 +115,13 @@ func ResourceTemplate() *schema.Resource {
 									Description: "Value used to route indexing and search operations to a specific shard.",
 									Type:        schema.TypeString,
 									Optional:    true,
+									Default:     "",
 								},
 								"search_routing": {
 									Description: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
 									Type:        schema.TypeString,
 									Optional:    true,
+									Default:     "",
 								},
 							},
 						},
@@ -133,7 +137,7 @@ func ResourceTemplate() *schema.Resource {
 						Description:      "Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings",
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffIndexTemplateSettingSuppress,
+						DiffSuppressFunc: utils.DiffIndexSettingSuppress,
 						ValidateFunc:     validation.StringIsJSON,
 					},
 				},
@@ -215,38 +219,13 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 
 	if v, ok := d.GetOk("template"); ok {
+		templ := models.Template{}
 		// only one template block allowed to be declared
 		definedTempl := v.([]interface{})[0].(map[string]interface{})
-		definedAliases := definedTempl["aliases"].(*schema.Set)
-		templ := models.Template{}
 
-		aliases := make(map[string]models.TemplateAlias, definedAliases.Len())
-		for _, a := range definedAliases.List() {
-			alias := a.(map[string]interface{})
-			templAlias := models.TemplateAlias{}
-
-			if f, ok := alias["filter"]; ok {
-				if f.(string) != "" {
-					filterMap := make(map[string]interface{})
-					if err := json.Unmarshal([]byte(f.(string)), &filterMap); err != nil {
-						return diag.FromErr(err)
-					}
-					templAlias.Filter = filterMap
-				}
-			}
-			if ir, ok := alias["index_routing"]; ok {
-				templAlias.IndexRouting = ir.(string)
-			}
-			templAlias.IsHidden = alias["is_hidden"].(bool)
-			templAlias.IsWriteIndex = alias["is_write_index"].(bool)
-			if r, ok := alias["routing"]; ok {
-				templAlias.Routing = r.(string)
-			}
-			if sr, ok := alias["search_routing"]; ok {
-				templAlias.SearchRouting = sr.(string)
-			}
-
-			aliases[alias["name"].(string)] = templAlias
+		aliases, diags := ExpandIndexAliases(definedTempl["alias"].(*schema.Set))
+		if diags.HasError() {
+			return diags
 		}
 		templ.Aliases = aliases
 
@@ -369,28 +348,11 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 	}
 
 	if template.Aliases != nil {
-		aliases := make([]interface{}, 0)
-		for k, v := range template.Aliases {
-			alias := make(map[string]interface{})
-			alias["name"] = k
-
-			if v.Filter != nil {
-				f, err := json.Marshal(v.Filter)
-				if err != nil {
-					return nil, diag.FromErr(err)
-				}
-				alias["filter"] = string(f)
-			}
-
-			alias["index_routing"] = v.IndexRouting
-			alias["is_hidden"] = v.IsHidden
-			alias["is_write_index"] = v.IsWriteIndex
-			alias["routing"] = v.Routing
-			alias["search_routing"] = v.SearchRouting
-
-			aliases = append(aliases, alias)
+		aliases, diags := FlattenIndexAliases(template.Aliases)
+		if diags.HasError() {
+			return nil, diags
 		}
-		tmpl["aliases"] = aliases
+		tmpl["alias"] = aliases
 	}
 
 	return []interface{}{tmpl}, diags
