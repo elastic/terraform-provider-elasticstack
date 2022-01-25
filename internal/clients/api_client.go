@@ -234,6 +234,9 @@ func (a *ApiClient) GetElasticsearchUser(username string) (*models.User, diag.Di
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if diags := utils.CheckError(res, "Unable to get a user."); diags.HasError() {
 		return nil, diags
 	}
@@ -298,6 +301,9 @@ func (a *ApiClient) GetElasticsearchRole(rolename string) (*models.Role, diag.Di
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if diags := utils.CheckError(res, "Unable to get a role."); diags.HasError() {
 		return nil, diags
 	}
@@ -357,10 +363,13 @@ func (a *ApiClient) GetElasticsearchIlm(policyName string) (*models.PolicyDefini
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if diags := utils.CheckError(res, "Unable to fetch ILM policy from the cluster."); diags.HasError() {
 		return nil, diags
 	}
-	defer res.Body.Close()
 
 	// our API response
 	ilm := make(map[string]models.PolicyDefinition)
@@ -421,6 +430,9 @@ func (a *ApiClient) GetElasticsearchIndexTemplate(templateName string) (*models.
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if diags := utils.CheckError(res, "Unable to request index template."); diags.HasError() {
 		return nil, diags
 	}
@@ -484,6 +496,9 @@ func (a *ApiClient) GetElasticsearchSnapshotRepository(name string) (*models.Sna
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get the information about snapshot repository: %s", name)); diags.HasError() {
 		return nil, diags
 	}
@@ -547,6 +562,9 @@ func (a *ApiClient) GetElasticsearchSlm(slmName string) (*models.SnapshotPolicy,
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if diags := utils.CheckError(res, "Unable to get SLM policy from ES API"); diags.HasError() {
 		return nil, diags
 	}

@@ -368,6 +368,10 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 	}
 
 	currentRepo, diags := client.GetElasticsearchSnapshotRepository(compId.ResourceId)
+	if currentRepo == nil && diags == nil {
+		d.SetId("")
+		return diags
+	}
 	if diags.HasError() {
 		return diags
 	}

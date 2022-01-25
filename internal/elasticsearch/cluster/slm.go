@@ -244,6 +244,10 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 
 	slm, diags := client.GetElasticsearchSlm(id.ResourceId)
+	if slm == nil && diags == nil {
+		d.SetId("")
+		return diags
+	}
 	if diags.HasError() {
 		return diags
 	}

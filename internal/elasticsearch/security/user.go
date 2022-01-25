@@ -159,6 +159,10 @@ func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta 
 	usernameId := compId.ResourceId
 
 	user, diags := client.GetElasticsearchUser(usernameId)
+	if user == nil && diags == nil {
+		d.SetId("")
+		return diags
+	}
 	if diags.HasError() {
 		return diags
 	}
