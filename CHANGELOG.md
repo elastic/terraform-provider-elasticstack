@@ -1,3 +1,22 @@
-## 0.1.0 (Unreleased)
+## [Unreleased]
+### Added
+- New resource to manage Elasticsearch indices ([#38](https://github.com/elastic/terraform-provider-elasticstack/pull/38))
+- The `insecure` option to the Elasticsearch provider configuration to ignore certificate verification ([#36](https://github.com/elastic/terraform-provider-elasticstack/pull/36))
+- The `ca_file` option to the Elasticsearch provider configuration to provide path to the custom root certificate file ([#35](https://github.com/elastic/terraform-provider-elasticstack/pull/35))
+- Documentation templates for all the exisiting resources ([#32](https://github.com/elastic/terraform-provider-elasticstack/pull/32))
 
-BACKWARDS INCOMPATIBILITIES / NOTES:
+### Fixed
+- Identify missing or deleted resources in the Elasticsearch cluster and make sure Terraform can re-create them ([#40](https://github.com/elastic/terraform-provider-elasticstack/pull/40))
+
+### Changed
+- **[Breaking]** Rename `aliases` configuration option in
+`elasticstack_elasticsearch_index_template` resource to singular `alias`
+
+## [0.1.0] - 2021-12-20
+### Added
+- Initial set of the resources to gather feedback from the community
+- Initial set of docs
+- CI integration
+
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/elastic/terraform-provider-elasticstack/releases/tag/v0.1.0
