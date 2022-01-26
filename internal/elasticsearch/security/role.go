@@ -307,6 +307,10 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 	roleId := compId.ResourceId
 
 	role, diags := client.GetElasticsearchRole(roleId)
+	if role == nil && diags == nil {
+		d.SetId("")
+		return diags
+	}
 	if diags.HasError() {
 		return diags
 	}

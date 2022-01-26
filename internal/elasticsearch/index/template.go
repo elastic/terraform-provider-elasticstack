@@ -278,6 +278,10 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	templateId := compId.ResourceId
 
 	tpl, diags := client.GetElasticsearchIndexTemplate(templateId)
+	if tpl == nil && diags == nil {
+		d.SetId("")
+		return diags
+	}
 	if diags.HasError() {
 		return diags
 	}

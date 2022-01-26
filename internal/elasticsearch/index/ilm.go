@@ -517,6 +517,10 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	policyId := compId.ResourceId
 
 	ilmDef, diags := client.GetElasticsearchIlm(policyId)
+	if ilmDef == nil && diags == nil {
+		d.SetId("")
+		return diags
+	}
 	if diags.HasError() {
 		return diags
 	}
