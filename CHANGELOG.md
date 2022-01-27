@@ -1,4 +1,6 @@
 ## [Unreleased]
+
+## [0.2.0] - 2022-01-27
 ### Added
 - New resource to manage Elasticsearch indices ([#38](https://github.com/elastic/terraform-provider-elasticstack/pull/38))
 - The `insecure` option to the Elasticsearch provider configuration to ignore certificate verification ([#36](https://github.com/elastic/terraform-provider-elasticstack/pull/36))
@@ -18,5 +20,6 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/elastic/terraform-provider-elasticstack/releases/tag/v0.1.0
