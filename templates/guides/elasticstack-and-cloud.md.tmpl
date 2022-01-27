@@ -5,7 +5,7 @@ description: |-
     An example of how to spin up a deployment and configure it in a single plan.
 ---
 
-# 
+# Using the Elastic Stack provider with Elastic Cloud
 
 A common scenario for using the Elastic Stack provider, is to manage & configure Elastic Cloud deployments.
 In order to do that, we'll use both the Elastic Cloud provider, as well as the Elastic Stack provider.
