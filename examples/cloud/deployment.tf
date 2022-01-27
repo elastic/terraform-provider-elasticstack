@@ -48,7 +48,7 @@ resource "elasticstack_elasticsearch_index_template" "my_template" {
   index_patterns = ["server-logs*"]
 
   template {
-    aliases {
+    alias {
       name = "my_template_test"
     }
 
