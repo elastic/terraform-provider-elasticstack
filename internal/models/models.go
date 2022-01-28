@@ -133,3 +133,26 @@ type IndexAlias struct {
 	Routing       string                 `json:"routing,omitempty"`
 	SearchRouting string                 `json:"search_routing,omitempty"`
 }
+
+type DataStream struct {
+	Name           string                 `json:"name"`
+	TimestampField TimestampField         `json:"timestamp_field"`
+	Indices        []DataStreamIndex      `json:"indices"`
+	Generation     uint64                 `json:"generation"`
+	Meta           map[string]interface{} `json:"_meta"`
+	Status         string                 `json:"status"`
+	Template       string                 `json:"template"`
+	IlmPolicy      string                 `json:"ilm_policy"`
+	Hidden         bool                   `json:"hidden"`
+	System         bool                   `json:"system"`
+	Replicated     bool                   `json:"replicated"`
+}
+
+type DataStreamIndex struct {
+	IndexName string `json:"index_name"`
+	IndexUUID string `json:"index_uuid"`
+}
+
+type TimestampField struct {
+	Name string `json:"name"`
+}

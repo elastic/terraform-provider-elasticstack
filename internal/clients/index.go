@@ -272,3 +272,58 @@ func (a *ApiClient) UpdateElasticsearchIndexMappings(index, mappings string) dia
 	}
 	return diags
 }
+
+func (a *ApiClient) PutElasticsearchDataStream(dataStreamName string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	res, err := a.es.Indices.CreateDataStream(dataStreamName)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create DataStream: %s", dataStreamName)); diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
+
+func (a *ApiClient) GetElasticsearchDataStream(dataStreamName string) (*models.DataStream, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	req := a.es.Indices.GetDataStream.WithName(dataStreamName)
+	res, err := a.es.Indices.GetDataStream(req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested DataStream: %s", dataStreamName)); diags.HasError() {
+		return nil, diags
+	}
+
+	dStreams := make(map[string][]models.DataStream)
+	if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
+		return nil, diag.FromErr(err)
+	}
+	log.Printf("[TRACE] get data stream '%v' from ES api: %+v", dataStreamName, dStreams)
+	// if the DataStream found in must be the first index in the data_stream object
+	ds := dStreams["data_streams"][0]
+	return &ds, diags
+}
+
+func (a *ApiClient) DeleteElasticsearchDataStream(dataStreamName string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	res, err := a.es.Indices.DeleteDataStream([]string{dataStreamName})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete DataStream: %s", dataStreamName)); diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
