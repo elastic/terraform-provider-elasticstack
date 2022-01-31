@@ -52,9 +52,12 @@ resource "elasticstack_elasticsearch_cluster_settings" "my_cluster_settings" {
 ### Optional
 
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **id** (String) The ID of this resource.
 - **persistent** (Block List, Max: 1) Settings will apply across restarts. (see [below for nested schema](#nestedblock--persistent))
 - **transient** (Block List, Max: 1) Settings do not survive a full cluster restart. (see [below for nested schema](#nestedblock--transient))
+
+### Read-Only
+
+- **id** (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

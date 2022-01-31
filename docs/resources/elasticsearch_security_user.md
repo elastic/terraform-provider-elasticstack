@@ -66,11 +66,14 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 - **email** (String) The email of the user.
 - **enabled** (Boolean) Specifies whether the user is enabled. The default value is true.
 - **full_name** (String) The full name of the user.
-- **id** (String) The ID of this resource.
 - **metadata** (String) Arbitrary metadata that you want to associate with the user.
 - **password** (String, Sensitive) The user’s password. Passwords must be at least 6 characters long.
 - **password_hash** (String, Sensitive) A hash of the user’s password. This must be produced using the same hashing algorithm as has been configured for password storage (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings).
 - **roles** (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
+
+### Read-Only
+
+- **id** (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

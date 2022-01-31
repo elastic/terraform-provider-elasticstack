@@ -66,7 +66,6 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 
 - **alias** (Block Set) Aliases for the index. (see [below for nested schema](#nestedblock--alias))
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **id** (String) The ID of this resource.
 - **mappings** (String) Mapping for fields in the index.
 If specified, this mapping can include: field names, field data types (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), mapping parameters (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
 **NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.
@@ -75,6 +74,7 @@ If specified, this mapping can include: field names, field data types (https://w
 
 ### Read-Only
 
+- **id** (String) Internal identifier of the resource
 - **settings_raw** (String) All raw settings fetched from the cluster.
 
 <a id="nestedblock--alias"></a>

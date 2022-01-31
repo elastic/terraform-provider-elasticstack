@@ -16,6 +16,11 @@ import (
 
 func ResourceUser() *schema.Resource {
 	userSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"username": {
 			Description: "An identifier for the user (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params).",
 			Type:        schema.TypeString,

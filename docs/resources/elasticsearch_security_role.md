@@ -57,10 +57,13 @@ output "role" {
 - **cluster** (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **global** (String) An object defining global privileges.
-- **id** (String) The ID of this resource.
 - **indices** (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
 - **metadata** (String) Optional meta-data.
 - **run_as** (Set of String) A list of users that the owners of this role can impersonate.
+
+### Read-Only
+
+- **id** (String) Internal identifier of the resource
 
 <a id="nestedblock--applications"></a>
 ### Nested Schema for `applications`

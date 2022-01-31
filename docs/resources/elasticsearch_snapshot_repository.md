@@ -50,10 +50,13 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 - **fs** (Block List, Max: 1) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
 - **gcs** (Block List, Max: 1) Support for using the Google Cloud Storage service as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-gcs.html (see [below for nested schema](#nestedblock--gcs))
 - **hdfs** (Block List, Max: 1) Support for using HDFS File System as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-hdfs.html (see [below for nested schema](#nestedblock--hdfs))
-- **id** (String) The ID of this resource.
 - **s3** (Block List, Max: 1) Support for using AWS S3 as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3-repository.html (see [below for nested schema](#nestedblock--s3))
 - **url** (Block List, Max: 1) URL repository. Repositories of this type are read-only for the cluster. This means the cluster can retrieve or restore snapshots from the repository but cannot write or create snapshots in it. (see [below for nested schema](#nestedblock--url))
 - **verify** (Boolean) If true, the request verifies the repository is functional on all master and data nodes in the cluster.
+
+### Read-Only
+
+- **id** (String) Internal identifier of the resource
 
 <a id="nestedblock--azure"></a>
 ### Nested Schema for `azure`

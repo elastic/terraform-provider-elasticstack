@@ -15,6 +15,11 @@ import (
 
 func ResourceRole() *schema.Resource {
 	roleSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"name": {
 			Description: "The name of the role.",
 			Type:        schema.TypeString,
