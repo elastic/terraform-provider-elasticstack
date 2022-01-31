@@ -17,6 +17,11 @@ import (
 
 func ResourceSlm() *schema.Resource {
 	slmSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"name": {
 			Description: "ID for the snapshot lifecycle policy you want to create or update.",
 			Type:        schema.TypeString,

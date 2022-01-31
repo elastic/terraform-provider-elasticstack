@@ -18,6 +18,11 @@ var supportedIlmPhases = [...]string{"hot", "warm", "cold", "frozen", "delete"}
 
 func ResourceIlm() *schema.Resource {
 	ilmSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"name": {
 			Description: "Identifier for the policy.",
 			Type:        schema.TypeString,

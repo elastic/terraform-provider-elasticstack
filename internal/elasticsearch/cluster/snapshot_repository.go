@@ -204,6 +204,11 @@ func ResourceSnapshotRepository() *schema.Resource {
 	//--
 
 	snapRepoSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"name": {
 			Description: "Name of the snapshot repository to register or update.",
 			Type:        schema.TypeString,

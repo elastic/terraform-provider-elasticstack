@@ -45,6 +45,11 @@ func ResourceSettings() *schema.Resource {
 	}
 
 	settingsSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"persistent": {
 			Description: "Settings will apply across restarts.",
 			Type:        schema.TypeList,

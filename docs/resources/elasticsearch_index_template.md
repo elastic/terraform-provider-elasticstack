@@ -58,11 +58,14 @@ resource "elasticstack_elasticsearch_index_template" "my_data_stream" {
 - **composed_of** (List of String) An ordered list of component template names.
 - **data_stream** (Block List, Max: 1) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedblock--data_stream))
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **id** (String) The ID of this resource.
 - **metadata** (String) Optional user metadata about the index template.
 - **priority** (Number) Priority to determine index template precedence when a new data stream or index is created.
 - **template** (Block List, Max: 1) Template to be applied. It may optionally include an aliases, mappings, or settings configuration. (see [below for nested schema](#nestedblock--template))
 - **version** (Number) Version number used to manage index templates externally.
+
+### Read-Only
+
+- **id** (String) Internal identifier of the resource
 
 <a id="nestedblock--data_stream"></a>
 ### Nested Schema for `data_stream`

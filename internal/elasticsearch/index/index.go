@@ -19,6 +19,11 @@ import (
 
 func ResourceIndex() *schema.Resource {
 	indexSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"name": {
 			Description: "Name of the index you wish to create.",
 			Type:        schema.TypeString,

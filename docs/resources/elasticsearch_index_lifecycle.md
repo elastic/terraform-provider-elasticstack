@@ -52,12 +52,12 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **frozen** (Block List, Max: 1) The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it’s okay if those queries are extremely slow. (see [below for nested schema](#nestedblock--frozen))
 - **hot** (Block List, Max: 1) The index is actively being updated and queried. (see [below for nested schema](#nestedblock--hot))
-- **id** (String) The ID of this resource.
 - **metadata** (String) Optional user metadata about the ilm policy.
 - **warm** (Block List, Max: 1) The index is no longer being updated but is still being queried. (see [below for nested schema](#nestedblock--warm))
 
 ### Read-Only
 
+- **id** (String) Internal identifier of the resource
 - **modified_date** (String) The DateTime of the last modification.
 
 <a id="nestedblock--cold"></a>
