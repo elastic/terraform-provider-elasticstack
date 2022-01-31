@@ -75,12 +75,12 @@ resource "elasticstack_elasticsearch_data_stream" "my_data_stream" {
 ### Optional
 
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **id** (String) The ID of this resource.
 
 ### Read-Only
 
 - **generation** (Number) Current generation for the data stream.
 - **hidden** (Boolean) If `true`, the data stream is hidden.
+- **id** (String) Internal identifier of the resource
 - **ilm_policy** (String) Name of the current ILM lifecycle policy in the stream’s matching index template.
 - **indices** (List of Object) Array of objects containing information about the data stream’s backing indices. The last item in this array contains information about the stream’s current write index. (see [below for nested schema](#nestedatt--indices))
 - **metadata** (String) Custom metadata for the stream, copied from the _meta object of the stream’s matching index template.
