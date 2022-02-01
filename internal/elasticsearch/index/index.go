@@ -3,6 +3,7 @@ package index
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"reflect"
 	"regexp"
@@ -147,7 +148,55 @@ If specified, this mapping can include: field names, field data types (https://w
 		DeleteContext: resourceIndexDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: func(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+				// default settings populated by Elasticsearch, which we do not support and should ignore
+				var ignoredDefaults = map[string]struct{}{
+					"index.creation_date":   struct{}{},
+					"index.provided_name":   struct{}{},
+					"index.uuid":            struct{}{},
+					"index.version.created": struct{}{},
+				}
+
+				// first populate what we can with Read
+				diags := resourceIndexRead(ctx, d, m)
+				if diags.HasError() {
+					return nil, fmt.Errorf("Unable to import requested index")
+				}
+
+				client, err := clients.NewApiClient(d, m)
+				if err != nil {
+					return nil, err
+				}
+				compId, diags := clients.CompositeIdFromStr(d.Id())
+				if diags.HasError() {
+					return nil, fmt.Errorf("Failed to parse provided ID")
+				}
+				indexName := compId.ResourceId
+				index, diags := client.GetElasticsearchIndex(indexName)
+				if diags.HasError() {
+					return nil, fmt.Errorf("Failed to get an ES Index")
+				}
+				// check the settings and import those as well
+				if index.Settings != nil {
+					settings := make(map[string]interface{})
+					result := make([]interface{}, 0)
+					for k, v := range index.Settings {
+						if _, ok := ignoredDefaults[k]; ok {
+							continue
+						}
+						setting := make(map[string]interface{})
+						setting["name"] = k
+						setting["value"] = v
+						result = append(result, setting)
+					}
+					settings["setting"] = result
+
+					if err := d.Set("settings", []interface{}{settings}); err != nil {
+						return nil, err
+					}
+				}
+				return []*schema.ResourceData{d}, nil
+			},
 		},
 
 		CustomizeDiff: customdiff.ForceNewIfChange("mappings", func(ctx context.Context, old, new, meta interface{}) bool {
@@ -402,51 +451,15 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		}
 	}
 	if index.Settings != nil {
-		// normalize settings before saving raw settings
-		s, err := json.Marshal(utils.NormalizeIndexSettings(index.Settings))
+		s, err := json.Marshal(index.Settings)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 		if err := d.Set("settings_raw", string(s)); err != nil {
 			return diag.FromErr(err)
 		}
-		// we also need to populate the managed settings, important for import
-		existingSettings := make(map[string]interface{})
-		if setts, ok := d.GetOk("settings"); ok {
-			existingSettings = flattenIndexSettings(setts.([]interface{}))
-		}
-		settings := make(map[string]interface{})
-		result := make([]interface{}, 0)
-		for k, v := range index.Settings {
-			// if there are defined settings, use them for to populate the config map
-			if len(existingSettings) > 0 {
-				if _, ok := existingSettings[k]; !ok {
-					continue
-				}
-				// or import everything ignoring defaults
-			} else if _, ok := ignoredDefaults[k]; ok {
-				continue
-			}
-			setting := make(map[string]interface{})
-			setting["name"] = k
-			setting["value"] = v
-			result = append(result, setting)
-		}
-		settings["setting"] = result
-
-		if err := d.Set("settings", []interface{}{settings}); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 	return diags
-}
-
-// default settings populated by Elasticsearch, which we do not support and should ignore
-var ignoredDefaults = map[string]struct{}{
-	"index.creation_date":   struct{}{},
-	"index.provided_name":   struct{}{},
-	"index.uuid":            struct{}{},
-	"index.version.created": struct{}{},
 }
 
 func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
