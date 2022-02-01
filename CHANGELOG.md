@@ -2,6 +2,9 @@
 ### Added
 - New resource `elasticstack_elasticsearch_data_stream` to manage Elasticsearch [data streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html) ([#45](https://github.com/elastic/terraform-provider-elasticstack/pull/45))
 
+### Fixed
+- Update only changed index settings ([#52](https://github.com/elastic/terraform-provider-elasticstack/issues/52))
+
 ## [0.2.0] - 2022-01-27
 ### Added
 - New resource to manage Elasticsearch indices ([#38](https://github.com/elastic/terraform-provider-elasticstack/pull/38))
