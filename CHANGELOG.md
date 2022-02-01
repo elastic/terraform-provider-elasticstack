@@ -4,6 +4,7 @@
 
 ### Fixed
 - Update only changed index settings ([#52](https://github.com/elastic/terraform-provider-elasticstack/issues/52))
+- Enable import of index settings ([#53](https://github.com/elastic/terraform-provider-elasticstack/issues/53))
 
 ## [0.2.0] - 2022-01-27
 ### Added
