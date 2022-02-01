@@ -29,6 +29,10 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 
   settings {
     setting {
+      name  = "index.number_of_shards"
+      value = "1"
+    }
+    setting {
       name  = "index.number_of_replicas"
       value = "2"
     }

@@ -316,9 +316,14 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 		ns := flattenIndexSettings(newSettings.([]interface{}))
 		log.Printf("[TRACE] Change in the settings detected old settings = %+v, new  settings = %+v", os, ns)
 		// make sure to add setting to the new map which were removed
-		for k := range os {
+		for k, ov := range os {
 			if _, ok := ns[k]; !ok {
 				ns[k] = nil
+			}
+			// remove the keys if the new value matches old one
+			// we need to update only changed settings
+			if nv, ok := ns[k]; ok && nv == ov {
+				delete(ns, k)
 			}
 		}
 		log.Printf("[TRACE] settings to update: %+v", ns)
@@ -397,7 +402,7 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		}
 	}
 	if index.Settings != nil {
-		// normalize settings before saving them
+		// normalize settings before saving raw settings
 		s, err := json.Marshal(utils.NormalizeIndexSettings(index.Settings))
 		if err != nil {
 			return diag.FromErr(err)
@@ -406,7 +411,6 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 			return diag.FromErr(err)
 		}
 	}
-
 	return diags
 }
 
