@@ -411,10 +411,20 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 			return diag.FromErr(err)
 		}
 		// we also need to populate the managed settings, important for import
+		existingSettings := make(map[string]interface{})
+		if setts, ok := d.GetOk("settings"); ok {
+			existingSettings = flattenIndexSettings(setts.([]interface{}))
+		}
 		settings := make(map[string]interface{})
 		result := make([]interface{}, 0)
 		for k, v := range index.Settings {
-			if _, ok := ignoredDefaults[k]; ok {
+			// if there are defined settings, use them for to populate the config map
+			if len(existingSettings) > 0 {
+				if _, ok := existingSettings[k]; !ok {
+					continue
+				}
+				// or import everything ignoring defaults
+			} else if _, ok := ignoredDefaults[k]; ok {
 				continue
 			}
 			setting := make(map[string]interface{})
