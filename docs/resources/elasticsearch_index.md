@@ -127,8 +127,15 @@ Required:
 
 ## Import
 
+**NOTE:** While importing index resource, keep in mind, that some of the default index settings will be imported into the TF state too.
+You can later adjust the index configuration to account for those imported settings.
+
+Some of the default settings, which could be imported are: `index.number_of_replicas`, `index.number_of_shards` and `index.routing.allocation.include._tier_preference`.
+
 Import is supported using the following syntax:
 
 ```shell
+# NOTE: while importing index resource, keep in mind, that some of the default index settings will be imported into the TF state too
+# You can later adjust the index configuration to account for those imported settings
 terraform import elasticstack_elasticsearch_index.my_index <cluster_uuid>/<index_name>
 ```
