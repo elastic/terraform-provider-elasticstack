@@ -410,8 +410,33 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		if err := d.Set("settings_raw", string(s)); err != nil {
 			return diag.FromErr(err)
 		}
+		// we also need to populate the managed settings, important for import
+		settings := make(map[string]interface{})
+		result := make([]interface{}, 0)
+		for k, v := range index.Settings {
+			if _, ok := ignoredDefaults[k]; ok {
+				continue
+			}
+			setting := make(map[string]interface{})
+			setting["name"] = k
+			setting["value"] = v
+			result = append(result, setting)
+		}
+		settings["setting"] = result
+
+		if err := d.Set("settings", []interface{}{settings}); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	return diags
+}
+
+// default settings populated by Elasticsearch, which we do not support and should ignore
+var ignoredDefaults = map[string]struct{}{
+	"index.creation_date":   struct{}{},
+	"index.provided_name":   struct{}{},
+	"index.uuid":            struct{}{},
+	"index.version.created": struct{}{},
 }
 
 func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
