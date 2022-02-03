@@ -67,6 +67,22 @@ type IndexTemplateResponse struct {
 	IndexTemplate IndexTemplate `json:"index_template"`
 }
 
+type ComponentTemplate struct {
+	Name     string                 `json:"-"`
+	Meta     map[string]interface{} `json:"_meta,omitempty"`
+	Template *Template              `json:"template,omitempty"`
+	Version  *int                   `json:"version,omitempty"`
+}
+
+type ComponentTemplatesResponse struct {
+	ComponentTemplates []ComponentTemplateResponse `json:"component_templates"`
+}
+
+type ComponentTemplateResponse struct {
+	Name              string            `json:"name"`
+	ComponentTemplate ComponentTemplate `json:"component_template"`
+}
+
 type PolicyDefinition struct {
 	Policy   Policy `json:"policy"`
 	Modified string `json:"modified_date"`
