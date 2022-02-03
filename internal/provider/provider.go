@@ -4,6 +4,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -73,6 +74,7 @@ func New(version string) func() *schema.Provider {
 				"elasticstack_elasticsearch_index":               index.ResourceIndex(),
 				"elasticstack_elasticsearch_index_lifecycle":     index.ResourceIlm(),
 				"elasticstack_elasticsearch_index_template":      index.ResourceTemplate(),
+				"elasticstack_elasticsearch_ingest_pipeline":     ingest.ResourceIngestPipeline(),
 				"elasticstack_elasticsearch_security_role":       security.ResourceRole(),
 				"elasticstack_elasticsearch_security_user":       security.ResourceUser(),
 				"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),

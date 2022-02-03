@@ -327,3 +327,63 @@ func (a *ApiClient) DeleteElasticsearchDataStream(dataStreamName string) diag.Di
 
 	return diags
 }
+
+func (a *ApiClient) PutElasticsearchIngestPipeline(pipeline *models.IngestPipeline) diag.Diagnostics {
+	var diags diag.Diagnostics
+	pipelineBytes, err := json.Marshal(pipeline)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	log.Printf("[TRACE] creating ingest pipeline %s: %s", pipeline.Name, pipelineBytes)
+
+	res, err := a.es.Ingest.PutPipeline(pipeline.Name, bytes.NewReader(pipelineBytes))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create or update ingest pipeline: %s", pipeline.Name)); diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
+
+func (a *ApiClient) GetElasticsearchIngestPipeline(name *string) (*models.IngestPipeline, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	req := a.es.Ingest.GetPipeline.WithPipelineID(*name)
+	res, err := a.es.Ingest.GetPipeline(req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested ingest pipeline: %s", *name)); diags.HasError() {
+		return nil, diags
+	}
+
+	pipelines := make(map[string]models.IngestPipeline)
+	if err := json.NewDecoder(res.Body).Decode(&pipelines); err != nil {
+		return nil, diag.FromErr(err)
+	}
+	pipeline := pipelines[*name]
+	pipeline.Name = *name
+	log.Printf("[TRACE] get ingest pipeline %s from ES API: %#+v", *name, pipeline)
+
+	return &pipeline, diags
+}
+
+func (a *ApiClient) DeleteElasticsearchIngestPipeline(name *string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	res, err := a.es.Ingest.DeletePipeline(*name)
+	if err != nil {
+		return diags
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete ingest pipeline: %s", *name)); diags.HasError() {
+		return diags
+	}
+	return diags
+}
