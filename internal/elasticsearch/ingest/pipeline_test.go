@@ -82,7 +82,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
   processors = [
     jsonencode({
       set = {
-        description = "My set processor descirption"
+        description = "My set processor description"
         field       = "_meta"
         value       = "indexed"
       }
