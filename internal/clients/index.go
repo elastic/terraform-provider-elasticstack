@@ -52,6 +52,7 @@ func (a *ApiClient) GetElasticsearchIlm(policyName string) (*models.PolicyDefini
 	if err := json.NewDecoder(res.Body).Decode(&ilm); err != nil {
 		return nil, diag.FromErr(err)
 	}
+	log.Printf("[TRACE] get ILM policy '%s' from ES API: %#+v", policyName, ilm)
 
 	if ilm, ok := ilm[policyName]; ok {
 		return &ilm, diags

@@ -16,6 +16,20 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
     readonly {}
   }
 
+  warm {
+    min_age = "0ms"
+    set_priority {
+      priority = 60
+    }
+    readonly {}
+    allocate {
+      exclude = jsonencode({
+        box_type = "hot"
+      })
+      number_of_replicas = 0
+    }
+  }
+
   delete {
     min_age = "2d"
     delete {}
