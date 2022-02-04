@@ -11,7 +11,7 @@ For this early release, we'd like to get feedback from early adopters. Any modif
 
 ## Getting started
 
-The provider supports Elastic Stack versions 7.x+
+__The provider supports Elastic Stack versions 7.x+__
 
 It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
 in order to interact with the Elasticsearch and be able to use the provider's full capabilities.
