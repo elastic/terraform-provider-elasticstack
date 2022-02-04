@@ -30,7 +30,7 @@ func ResourceIlm() *schema.Resource {
 			ForceNew:    true,
 		},
 		"metadata": {
-			Description:      "Optional user metadata about the ilm policy.",
+			Description:      "Optional user metadata about the ilm policy. Must be valid JSON document.",
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
@@ -125,23 +125,26 @@ var suportedActions = map[string]*schema.Schema{
 					Optional:    true,
 				},
 				"include": {
-					Description:      "Assigns an index to nodes that have at least one of the specified custom attributes.",
+					Description:      "Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.",
 					Type:             schema.TypeString,
 					Optional:         true,
+					Computed:         true,
 					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
 				},
 				"exclude": {
-					Description:      "Assigns an index to nodes that have none of the specified custom attributes.",
+					Description:      "Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.",
 					Type:             schema.TypeString,
 					Optional:         true,
+					Computed:         true,
 					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
 				},
 				"require": {
-					Description:      "Assigns an index to nodes that have all of the specified custom attributes.",
+					Description:      "Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.",
 					Type:             schema.TypeString,
 					Optional:         true,
+					Computed:         true,
 					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
 				},
@@ -440,44 +443,44 @@ func expandPhase(p map[string]interface{}) (*models.Phase, diag.Diagnostics) {
 		if a := action.([]interface{}); len(a) > 0 {
 			switch actionName {
 			case "allocate":
-				actions[actionName] = expandAction(a, "number_of_replicas", "include", "exclude", "require")
+				actions[actionName], diags = expandAction(a, "number_of_replicas", "include", "exclude", "require")
 			case "delete":
-				actions[actionName] = expandAction(a, "delete_searchable_snapshot")
+				actions[actionName], diags = expandAction(a, "delete_searchable_snapshot")
 			case "forcemerge":
-				actions[actionName] = expandAction(a, "max_num_segments", "index_codec")
+				actions[actionName], diags = expandAction(a, "max_num_segments", "index_codec")
 			case "freeze":
 				if a[0] != nil {
 					ac := a[0].(map[string]interface{})
 					if ac["enabled"].(bool) {
-						actions[actionName] = expandAction(a)
+						actions[actionName], diags = expandAction(a)
 					}
 				}
 			case "migrate":
-				actions[actionName] = expandAction(a, "enabled")
+				actions[actionName], diags = expandAction(a, "enabled")
 			case "readonly":
 				if a[0] != nil {
 					ac := a[0].(map[string]interface{})
 					if ac["enabled"].(bool) {
-						actions[actionName] = expandAction(a)
+						actions[actionName], diags = expandAction(a)
 					}
 				}
 			case "rollover":
-				actions[actionName] = expandAction(a, "max_age", "max_docs", "max_size", "max_primary_shard_size")
+				actions[actionName], diags = expandAction(a, "max_age", "max_docs", "max_size", "max_primary_shard_size")
 			case "searchable_snapshot":
-				actions[actionName] = expandAction(a, "snapshot_repository", "force_merge_index")
+				actions[actionName], diags = expandAction(a, "snapshot_repository", "force_merge_index")
 			case "set_priority":
-				actions[actionName] = expandAction(a, "priority")
+				actions[actionName], diags = expandAction(a, "priority")
 			case "shrink":
-				actions[actionName] = expandAction(a, "number_of_shards", "max_primary_shard_size")
+				actions[actionName], diags = expandAction(a, "number_of_shards", "max_primary_shard_size")
 			case "unfollow":
 				if a[0] != nil {
 					ac := a[0].(map[string]interface{})
 					if ac["enabled"].(bool) {
-						actions[actionName] = expandAction(a)
+						actions[actionName], diags = expandAction(a)
 					}
 				}
 			case "wait_for_snapshot":
-				actions[actionName] = expandAction(a, "policy")
+				actions[actionName], diags = expandAction(a, "policy")
 			default:
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
@@ -493,18 +496,28 @@ func expandPhase(p map[string]interface{}) (*models.Phase, diag.Diagnostics) {
 	return &phase, diags
 }
 
-func expandAction(a []interface{}, settings ...string) map[string]interface{} {
+func expandAction(a []interface{}, settings ...string) (map[string]interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	def := make(map[string]interface{})
 	if action := a[0]; action != nil {
 		for _, setting := range settings {
 			if v, ok := action.(map[string]interface{})[setting]; ok && v != nil {
 				if !utils.IsEmpty(v) {
-					def[setting] = v
+					// these 3 fields must be treated as JSON objects
+					if setting == "include" || setting == "exclude" || setting == "require" {
+						res := make(map[string]interface{})
+						if err := json.Unmarshal([]byte(v.(string)), &res); err != nil {
+							return nil, diag.FromErr(err)
+						}
+						def[setting] = res
+					} else {
+						def[setting] = v
+					}
 				}
 			}
 		}
 	}
-	return def
+	return def, diags
 }
 
 func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -544,7 +557,10 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 	for _, ph := range supportedIlmPhases {
 		if v, ok := ilmDef.Policy.Phases[ph]; ok {
-			phase := flattenPhase(ph, v, d)
+			phase, diags := flattenPhase(ph, v, d)
+			if diags.HasError() {
+				return diags
+			}
 			if err := d.Set(ph, phase); err != nil {
 				return diag.FromErr(err)
 			}
@@ -554,7 +570,8 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	return diags
 }
 
-func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) interface{} {
+func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	out := make([]interface{}, 1)
 	phase := make(map[string]interface{})
 	enabled := make(map[string]interface{})
@@ -565,14 +582,14 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) inte
 		ns = new.([]interface{})[0].(map[string]interface{})
 	}
 
-	existsAndNotEMpty := func(key string, m map[string]interface{}) bool {
+	existsAndNotEmpty := func(key string, m map[string]interface{}) bool {
 		if v, ok := m[key]; ok && len(v.([]interface{})) > 0 {
 			return true
 		}
 		return false
 	}
 	for _, aCase := range []string{"readonly", "freeze", "unfollow"} {
-		if existsAndNotEMpty(aCase, ns) {
+		if existsAndNotEmpty(aCase, ns) {
 			enabled["enabled"] = false
 			phase[aCase] = []interface{}{enabled}
 		}
@@ -586,12 +603,27 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) inte
 		case "readonly", "freeze", "unfollow":
 			enabled["enabled"] = true
 			phase[actionName] = []interface{}{enabled}
+		case "allocate":
+			allocateAction := make(map[string]interface{})
+			if v, ok := action["number_of_replicas"]; ok {
+				allocateAction["number_of_replicas"] = v
+			}
+			for _, f := range []string{"include", "require", "exclude"} {
+				if v, ok := action[f]; ok {
+					res, err := json.Marshal(v)
+					if err != nil {
+						return nil, diag.FromErr(err)
+					}
+					allocateAction[f] = string(res)
+				}
+			}
+			phase[actionName] = []interface{}{allocateAction}
 		default:
 			phase[actionName] = []interface{}{action}
 		}
 	}
 	out[0] = phase
-	return out
+	return out, diags
 }
 
 func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

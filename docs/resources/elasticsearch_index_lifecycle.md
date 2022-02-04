@@ -31,6 +31,20 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
     readonly {}
   }
 
+  warm {
+    min_age = "0ms"
+    set_priority {
+      priority = 60
+    }
+    readonly {}
+    allocate {
+      exclude = jsonencode({
+        box_type = "hot"
+      })
+      number_of_replicas = 0
+    }
+  }
+
   delete {
     min_age = "2d"
     delete {}
@@ -52,7 +66,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **frozen** (Block List, Max: 1) The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it’s okay if those queries are extremely slow. (see [below for nested schema](#nestedblock--frozen))
 - **hot** (Block List, Max: 1) The index is actively being updated and queried. (see [below for nested schema](#nestedblock--hot))
-- **metadata** (String) Optional user metadata about the ilm policy.
+- **metadata** (String) Optional user metadata about the ilm policy. Must be valid JSON document.
 - **warm** (Block List, Max: 1) The index is no longer being updated but is still being queried. (see [below for nested schema](#nestedblock--warm))
 
 ### Read-Only
@@ -79,10 +93,10 @@ Optional:
 
 Optional:
 
-- **exclude** (String) Assigns an index to nodes that have none of the specified custom attributes.
-- **include** (String) Assigns an index to nodes that have at least one of the specified custom attributes.
+- **exclude** (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
+- **include** (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
 - **number_of_replicas** (Number) Number of replicas to assign to the index.
-- **require** (String) Assigns an index to nodes that have all of the specified custom attributes.
+- **require** (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
 
 
 <a id="nestedblock--cold--freeze"></a>
@@ -299,10 +313,10 @@ Optional:
 
 Optional:
 
-- **exclude** (String) Assigns an index to nodes that have none of the specified custom attributes.
-- **include** (String) Assigns an index to nodes that have at least one of the specified custom attributes.
+- **exclude** (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
+- **include** (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
 - **number_of_replicas** (Number) Number of replicas to assign to the index.
-- **require** (String) Assigns an index to nodes that have all of the specified custom attributes.
+- **require** (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
 
 
 <a id="nestedblock--warm--forcemerge"></a>
