@@ -156,11 +156,3 @@ type DataStreamIndex struct {
 type TimestampField struct {
 	Name string `json:"name"`
 }
-
-type IngestPipeline struct {
-	Name        string                   `json:"-"`
-	Description *string                  `json:"description,omitempty"`
-	OnFailure   []map[string]interface{} `json:"on_failure,omitempty"`
-	Processors  []map[string]interface{} `json:"processors"`
-	Metadata    map[string]interface{}   `json:"_meta,omitempty"`
-}
