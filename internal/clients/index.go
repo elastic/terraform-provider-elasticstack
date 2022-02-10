@@ -79,6 +79,72 @@ func (a *ApiClient) DeleteElasticsearchIlm(policyName string) diag.Diagnostics {
 	return diags
 }
 
+func (a *ApiClient) PutElasticsearchComponentTemplate(template *models.ComponentTemplate) diag.Diagnostics {
+	var diags diag.Diagnostics
+	templateBytes, err := json.Marshal(template)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	log.Printf("[TRACE] sending request to ES: %s to create component template '%s' ", templateBytes, template.Name)
+
+	res, err := a.es.Cluster.PutComponentTemplate(template.Name, bytes.NewReader(templateBytes))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to create component template"); diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
+
+func (a *ApiClient) GetElasticsearchComponentTemplate(templateName string) (*models.ComponentTemplateResponse, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	req := a.es.Cluster.GetComponentTemplate.WithName(templateName)
+	res, err := a.es.Cluster.GetComponentTemplate(req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if diags := utils.CheckError(res, "Unable to request index template."); diags.HasError() {
+		return nil, diags
+	}
+
+	var componentTemplates models.ComponentTemplatesResponse
+	if err := json.NewDecoder(res.Body).Decode(&componentTemplates); err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	// we requested only 1 template
+	if len(componentTemplates.ComponentTemplates) != 1 {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Wrong number of templates returned",
+			Detail:   fmt.Sprintf("Elasticsearch API returned %d when requested '%s' component template.", len(componentTemplates.ComponentTemplates), templateName),
+		})
+		return nil, diags
+	}
+	tpl := componentTemplates.ComponentTemplates[0]
+	return &tpl, diags
+}
+
+func (a *ApiClient) DeleteElasticsearchComponentTemplate(templateName string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	res, err := a.es.Cluster.DeleteComponentTemplate(templateName)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to delete component template"); diags.HasError() {
+		return diags
+	}
+	return diags
+}
+
 func (a *ApiClient) PutElasticsearchIndexTemplate(template *models.IndexTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	templateBytes, err := json.Marshal(template)
