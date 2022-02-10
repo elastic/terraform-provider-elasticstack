@@ -12,6 +12,8 @@ Helper data source to which can be used to create a processor to convert a human
 
 Supported human readable units are "b", "kb", "mb", "gb", "tb", "pb" case insensitive. An error will occur if the field is not a supported format or resultant value exceeds 2^63.
 
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/bytes-processor.html
+
 ## Example Usage
 
 ```terraform

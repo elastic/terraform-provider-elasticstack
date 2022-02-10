@@ -75,7 +75,7 @@ func DataSourceProcessorBytes() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "",
+		Description: "Converts a human readable byte value (e.g. 1kb) to its value in bytes (e.g. 1024). See: https://www.elastic.co/guide/en/elasticsearch/reference/current/bytes-processor.html",
 
 		ReadContext: dataSourceProcessorBytesRead,
 

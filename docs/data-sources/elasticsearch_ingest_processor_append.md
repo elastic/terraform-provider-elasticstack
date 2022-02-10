@@ -11,6 +11,8 @@ description: |-
 Helper data source to which can be used to create a processor to append one or more values to an existing array if the field already exists and it is an array.
 Converts a scalar to an array and appends one or more values to it if the field exists and it is a scalar. Creates an array containing the provided values if the field doesn’t exist.
 
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/append-processor.html
+
 ## Example Usage
 
 ```terraform
