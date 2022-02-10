@@ -8,14 +8,27 @@ type IngestPipeline struct {
 	Metadata    map[string]interface{}   `json:"_meta,omitempty"`
 }
 
+type CommonProcessor struct {
+	Description   string                   `json:"description,omitempty"`
+	If            string                   `json:"if,omitempty"`
+	IgnoreFailure bool                     `json:"ignore_failure"`
+	OnFailure     []map[string]interface{} `json:"on_failure,omitempty"`
+	Tag           string                   `json:"tag,omitempty"`
+}
+
 type ProcessorAppend struct {
-	Field           string                   `json:"field"`
-	Value           []string                 `json:"value"`
-	AllowDuplicates bool                     `json:"allow_duplicates"`
-	MediaType       string                   `json:"media_type"`
-	Description     string                   `json:"description,omitempty"`
-	If              string                   `json:"if,omitempty"`
-	IgnoreFailure   bool                     `json:"ignore_failure"`
-	OnFailure       []map[string]interface{} `json:"on_failure,omitempty"`
-	Tag             string                   `json:"tag,omitempty"`
+	CommonProcessor
+
+	Field           string   `json:"field"`
+	Value           []string `json:"value"`
+	AllowDuplicates bool     `json:"allow_duplicates"`
+	MediaType       string   `json:"media_type"`
+}
+
+type ProcessorBytes struct {
+	CommonProcessor
+
+	Field         string `json:"field"`
+	TargetField   string `json:"target_field,omitempty"`
+	IgnoreMissing bool   `json:"ignore_missing"`
 }

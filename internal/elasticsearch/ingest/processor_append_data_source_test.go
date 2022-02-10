@@ -15,15 +15,15 @@ func TestAccDataSourceIngestProcessorAppend(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorAppend,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.tags", "field", "tags"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_append.tags", "json", expectedJson),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "field", "tags"),
+					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_append.test", "json", expectedJsonAppend),
 				),
 			},
 		},
 	})
 }
 
-const expectedJson = `{
+const expectedJsonAppend = `{
 	"append": {
 		"field": "tags", 
 		"value": ["production", "{{{app}}}", "{{{owner}}}"], 
@@ -39,7 +39,7 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-data "elasticstack_elasticsearch_ingest_processor_append" "tags" {
+data "elasticstack_elasticsearch_ingest_processor_append" "test" {
   description      = "Append tags to the doc"
   field            = "tags"
   value            = ["production", "{{{app}}}", "{{{owner}}}"]

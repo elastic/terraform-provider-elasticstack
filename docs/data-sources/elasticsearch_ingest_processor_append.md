@@ -45,7 +45,6 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 - **allow_duplicates** (Boolean) If `false`, the processor does not append values already present in the field.
 - **description** (String) Description of the processor.
-- **id** (String) The ID of this resource.
 - **if** (String) Conditionally execute the processor
 - **ignore_failure** (Boolean) Ignore failures for the processor.
 - **media_type** (String) The media type for encoding value. Applies only when value is a template snippet. Must be one of `application/json`, `text/plain`, or `application/x-www-form-urlencoded`.
@@ -54,5 +53,6 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Read-Only
 
+- **id** (String) Internal identifier of the resource
 - **json** (String) JSON representation of this data source.
 

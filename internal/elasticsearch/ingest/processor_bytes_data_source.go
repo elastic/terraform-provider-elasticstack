@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func DataSourceProcessorAppend() *schema.Resource {
+func DataSourceProcessorBytes() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
 		"id": {
 			Description: "Internal identifier of the resource",
@@ -20,30 +20,20 @@ func DataSourceProcessorAppend() *schema.Resource {
 			Computed:    true,
 		},
 		"field": {
-			Description: "The field to be appended to.",
+			Description: "The field to convert",
 			Type:        schema.TypeString,
 			Required:    true,
 		},
-		"value": {
-			Description: "The value to be appended. ",
-			Type:        schema.TypeList,
-			Required:    true,
-			MinItems:    1,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
-			},
+		"target_field": {
+			Description: "The field to assign the converted value to, by default `field` is updated in-place",
+			Type:        schema.TypeString,
+			Optional:    true,
 		},
-		"allow_duplicates": {
-			Description: "If `false`, the processor does not append values already present in the field.",
+		"ignore_missing": {
+			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Default:     true,
-		},
-		"media_type": {
-			Description: "The media type for encoding value. Applies only when value is a template snippet. Must be one of `application/json`, `text/plain`, or `application/x-www-form-urlencoded`.",
-			Type:        schema.TypeString,
-			Optional:    true,
-			Default:     "application/json",
+			Default:     false,
 		},
 		"description": {
 			Description: "Description of the processor. ",
@@ -85,28 +75,25 @@ func DataSourceProcessorAppend() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Appends one or more values to an existing array if the field already exists and it is an array. Converts a scalar to an array and appends one or more values to it if the field exists and it is a scalar. Creates an array containing the provided values if the field doesn’t exist.",
+		Description: "",
 
-		ReadContext: dataSourceProcessorAppendRead,
+		ReadContext: dataSourceProcessorBytesRead,
 
 		Schema: processorSchema,
 	}
 }
 
-func dataSourceProcessorAppendRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorBytesRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	processor := &models.ProcessorAppend{}
+	processor := &models.ProcessorBytes{}
 
 	processor.Field = d.Get("field").(string)
-	values := make([]string, 0)
-	for _, v := range d.Get("value").([]interface{}) {
-		values = append(values, v.(string))
-	}
-	processor.Value = values
-	processor.AllowDuplicates = d.Get("allow_duplicates").(bool)
 	processor.IgnoreFailure = d.Get("ignore_failure").(bool)
-	processor.MediaType = d.Get("media_type").(string)
+	processor.IgnoreMissing = d.Get("ignore_missing").(bool)
+	if v, ok := d.GetOk("target_field"); ok {
+		processor.TargetField = v.(string)
+	}
 	if v, ok := d.GetOk("description"); ok {
 		processor.Description = v.(string)
 	}
@@ -128,7 +115,7 @@ func dataSourceProcessorAppendRead(ctx context.Context, d *schema.ResourceData, 
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorAppend{"append": processor}, "", " ")
+	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorBytes{"bytes": processor}, "", " ")
 	if err != nil {
 		diag.FromErr(err)
 	}
