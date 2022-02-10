@@ -16,6 +16,12 @@ type CommonProcessor struct {
 	Tag           string                   `json:"tag,omitempty"`
 }
 
+type ProcessortFields struct {
+	Field         string `json:"field"`
+	TargetField   string `json:"target_field,omitempty"`
+	IgnoreMissing bool   `json:"ignore_missing"`
+}
+
 type ProcessorAppend struct {
 	CommonProcessor
 
@@ -27,8 +33,13 @@ type ProcessorAppend struct {
 
 type ProcessorBytes struct {
 	CommonProcessor
+	ProcessortFields
+}
 
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+type ProcessorCircle struct {
+	CommonProcessor
+	ProcessortFields
+
+	ErrorDistance float64 `json:"error_distance"`
+	ShapeType     string  `json:"shape_type"`
 }

@@ -67,6 +67,7 @@ func New(version string) func() *schema.Provider {
 			DataSourcesMap: map[string]*schema.Resource{
 				"elasticstack_elasticsearch_ingest_processor_append": ingest.DataSourceProcessorAppend(),
 				"elasticstack_elasticsearch_ingest_processor_bytes":  ingest.DataSourceProcessorBytes(),
+				"elasticstack_elasticsearch_ingest_processor_circle": ingest.DataSourceProcessorCircle(),
 				"elasticstack_elasticsearch_security_user":           security.DataSourceUser(),
 				"elasticstack_elasticsearch_snapshot_repository":     cluster.DataSourceSnapshotRespository(),
 			},
