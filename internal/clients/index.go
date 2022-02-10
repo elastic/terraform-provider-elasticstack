@@ -107,6 +107,9 @@ func (a *ApiClient) GetElasticsearchComponentTemplate(templateName string) (*mod
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if diags := utils.CheckError(res, "Unable to request index template."); diags.HasError() {
 		return nil, diags
 	}
