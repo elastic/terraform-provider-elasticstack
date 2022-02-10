@@ -1,0 +1,23 @@
+---
+subcategory: "Index"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_component_template Resource"
+description: |-
+  Creates or updates a component template.
+---
+
+# Resource: elasticstack_elasticsearch_component_template
+
+Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html
+
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_elasticsearch_component_template/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+Import is supported using the following syntax:
+
+{{ codefile "shell" "examples/resources/elasticstack_elasticsearch_component_template/import.sh" }}
