@@ -110,3 +110,11 @@ type ProcessorDissect struct {
 	AppendSeparator string `json:"append_separator"`
 	IgnoreMissing   bool   `json:"ignore_missing"`
 }
+
+type ProcessorDotExpander struct {
+	CommonProcessor
+
+	Field    string `json:"field"`
+	Path     string `json:"path,omitempty"`
+	Override bool   `json:"override"`
+}
