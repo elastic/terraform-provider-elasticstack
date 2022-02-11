@@ -113,11 +113,11 @@ type SnapshotPolicy struct {
 	Config     *SnapshotPolicyConfig `json:"config,omitempty"`
 	Name       string                `json:"name"`
 	Repository string                `json:"repository"`
-	Retention  *SnapshortRetention   `json:"retention,omitempty"`
+	Retention  *SnapshotRetention    `json:"retention,omitempty"`
 	Schedule   string                `json:"schedule"`
 }
 
-type SnapshortRetention struct {
+type SnapshotRetention struct {
 	ExpireAfter *string `json:"expire_after,omitempty"`
 	MaxCount    *int    `json:"max_count,omitempty"`
 	MinCount    *int    `json:"min_count,omitempty"`
@@ -179,4 +179,13 @@ type IngestPipeline struct {
 	OnFailure   []map[string]interface{} `json:"on_failure,omitempty"`
 	Processors  []map[string]interface{} `json:"processors"`
 	Metadata    map[string]interface{}   `json:"_meta,omitempty"`
+}
+
+type RoleMapping struct {
+	Name          string                   `json:"-"`
+	Enabled       bool                     `json:"enabled"`
+	Roles         []string                 `json:"roles,omitempty"`
+	RoleTemplates []map[string]interface{} `json:"role_templates,omitempty"`
+	Rules         map[string]interface{}   `json:"rules"`
+	Metadata      map[string]interface{}   `json:"metadata,omitempty"`
 }

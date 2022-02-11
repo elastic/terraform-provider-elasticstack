@@ -167,7 +167,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	var slm models.SnapshotPolicy
 	slm.Id = slmId
 	var slmConfig models.SnapshotPolicyConfig
-	slmRetention := models.SnapshortRetention{}
+	slmRetention := models.SnapshotRetention{}
 
 	slm.Repository = d.Get("repository").(string)
 	slm.Schedule = d.Get("schedule").(string)
