@@ -140,3 +140,68 @@ func (a *ApiClient) DeleteElasticsearchRole(rolename string) diag.Diagnostics {
 
 	return diags
 }
+
+func (a ApiClient) PutElasticsearchRoleMapping(roleMapping *models.RoleMapping) diag.Diagnostics {
+	var diags diag.Diagnostics
+	roleMappingBytes, err := json.Marshal(roleMapping)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	log.Printf("[TRACE] creating role mapping %s: %s", roleMapping.Name, roleMappingBytes)
+
+	res, err := a.es.Security.PutRoleMapping(roleMapping.Name, bytes.NewReader(roleMappingBytes))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags = utils.CheckError(res, fmt.Sprintf("Unable to create or update role mapping: %s", roleMapping.Name)); diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
+
+func (a ApiClient) GetElasticsearchRoleMapping(roleMappingName string) (*models.RoleMapping, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	req := a.es.Security.GetRoleMapping.WithName(roleMappingName)
+	res, err := a.es.Security.GetRoleMapping(req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested role mapping: %s", roleMappingName)); diags.HasError() {
+		return nil, diags
+	}
+
+	roleMappings := make(map[string]models.RoleMapping)
+	if err := json.NewDecoder(res.Body).Decode(&roleMappings); err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	if role, ok := roleMappings[roleMappingName]; ok {
+		return &role, diags
+	}
+	diags = append(diags, diag.Diagnostic{
+		Severity: diag.Error,
+		Summary:  "Unable to find the role mapping in the cluster",
+		Detail:   fmt.Sprintf(`Unable to find "%s" role in the cluster`, roleMappingName),
+	})
+	return nil, diags
+}
+
+func (a *ApiClient) DeleteElasticsearchRoleMapping(roleMappingName string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	res, err := a.es.Security.DeleteRoleMapping(roleMappingName)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete role mapping: %s", roleMappingName)); diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
