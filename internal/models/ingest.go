@@ -43,3 +43,19 @@ type ProcessorCircle struct {
 	ErrorDistance float64 `json:"error_distance"`
 	ShapeType     string  `json:"shape_type"`
 }
+
+type ProcessorCommunityId struct {
+	CommonProcessor
+
+	SourceIp        string `json:"source_ip,omitempty"`
+	SourcePort      *int   `json:"source_port,omitempty"`
+	DestinationIp   string `json:"destination_ip,omitempty"`
+	DestinationPort *int   `json:"destination_port,omitempty"`
+	IanaNumber      string `json:"iana_number,omitempty"`
+	IcmpType        *int   `json:"icmp_type,omitempty"`
+	IcmpCode        *int   `json:"icmp_code,omitempty"`
+	Transport       string `json:"transport,omitempty"`
+	TargetField     string `json:"target_field,omitempty"`
+	Seed            *int   `json:"seed"`
+	IgnoreMissing   bool   `json:"ignore_missing"`
+}

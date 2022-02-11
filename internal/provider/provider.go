@@ -65,11 +65,12 @@ func New(version string) func() *schema.Provider {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
-				"elasticstack_elasticsearch_ingest_processor_append": ingest.DataSourceProcessorAppend(),
-				"elasticstack_elasticsearch_ingest_processor_bytes":  ingest.DataSourceProcessorBytes(),
-				"elasticstack_elasticsearch_ingest_processor_circle": ingest.DataSourceProcessorCircle(),
-				"elasticstack_elasticsearch_security_user":           security.DataSourceUser(),
-				"elasticstack_elasticsearch_snapshot_repository":     cluster.DataSourceSnapshotRespository(),
+				"elasticstack_elasticsearch_ingest_processor_append":       ingest.DataSourceProcessorAppend(),
+				"elasticstack_elasticsearch_ingest_processor_bytes":        ingest.DataSourceProcessorBytes(),
+				"elasticstack_elasticsearch_ingest_processor_circle":       ingest.DataSourceProcessorCircle(),
+				"elasticstack_elasticsearch_ingest_processor_community_id": ingest.DataSourceProcessorCommunityId(),
+				"elasticstack_elasticsearch_security_user":                 security.DataSourceUser(),
+				"elasticstack_elasticsearch_snapshot_repository":           cluster.DataSourceSnapshotRespository(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
