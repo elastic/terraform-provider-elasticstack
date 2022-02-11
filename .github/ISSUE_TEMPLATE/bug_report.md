@@ -25,10 +25,11 @@ Run `terraform` command with `TF_LOG=trace` and provide extended information on 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
+**Versions (please complete the following information):**
  - OS: [e.g. Linux]
  - Terraform Version [e.g. 1.0.0]
  - Provider version [e.g. v0.1.0]
+ - Elasticsearch Version [e.g. 7.16.0]
 
 **Additional context**
 Add any other context about the problem here.
