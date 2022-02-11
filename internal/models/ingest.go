@@ -89,3 +89,15 @@ type ProcessorDate struct {
 	Locale       string   `json:"locale,omitempty"`
 	OutputFormat string   `json:"output_format,omitempty"`
 }
+
+type ProcessorDateIndexName struct {
+	CommonProcessor
+
+	Field           string   `json:"field"`
+	IndexNamePrefix string   `json:"index_name_prefix,omitempty"`
+	DateRounding    string   `json:"date_rounding"`
+	DateFormats     []string `json:"date_formats,omitempty"`
+	Timezone        string   `json:"timezone,omitempty"`
+	Locale          string   `json:"locale,omitempty"`
+	IndexNameFormat string   `json:"index_name_format,omitempty"`
+}
