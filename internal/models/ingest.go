@@ -66,3 +66,15 @@ type ProcessorConvert struct {
 
 	Type string `json:"type"`
 }
+
+type ProcessorCSV struct {
+	CommonProcessor
+
+	Field         string   `json:"field"`
+	TargetFields  []string `json:"target_fields"`
+	IgnoreMissing bool     `json:"ignore_missing"`
+	Separator     string   `json:"separator"`
+	Quote         string   `json:"quote"`
+	Trim          bool     `json:"trim"`
+	EmptyValue    string   `json:"empty_value,omitempty"`
+}
