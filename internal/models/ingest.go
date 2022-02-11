@@ -132,3 +132,9 @@ type ProcessorEnrich struct {
 	MaxMatches    int    `json:"max_matches"`
 	ShapeRelation string `json:"shape_relation,omitempty"`
 }
+
+type ProcessorFail struct {
+	CommonProcessor
+
+	Message string `json:"message"`
+}
