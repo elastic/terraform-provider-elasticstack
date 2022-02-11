@@ -122,3 +122,13 @@ type ProcessorDotExpander struct {
 type ProcessorDrop struct {
 	CommonProcessor
 }
+
+type ProcessorEnrich struct {
+	CommonProcessor
+	ProcessortFields
+
+	PolicyName    string `json:"policy_name"`
+	Override      bool   `json:"override"`
+	MaxMatches    int    `json:"max_matches"`
+	ShapeRelation string `json:"shape_relation,omitempty"`
+}
