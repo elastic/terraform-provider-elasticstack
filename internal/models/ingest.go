@@ -118,3 +118,7 @@ type ProcessorDotExpander struct {
 	Path     string `json:"path,omitempty"`
 	Override bool   `json:"override"`
 }
+
+type ProcessorDrop struct {
+	CommonProcessor
+}
