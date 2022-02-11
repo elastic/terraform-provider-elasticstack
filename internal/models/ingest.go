@@ -59,3 +59,10 @@ type ProcessorCommunityId struct {
 	Seed            *int   `json:"seed"`
 	IgnoreMissing   bool   `json:"ignore_missing"`
 }
+
+type ProcessorConvert struct {
+	CommonProcessor
+	ProcessortFields
+
+	Type string `json:"type"`
+}
