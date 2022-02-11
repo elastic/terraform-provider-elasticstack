@@ -101,3 +101,12 @@ type ProcessorDateIndexName struct {
 	Locale          string   `json:"locale,omitempty"`
 	IndexNameFormat string   `json:"index_name_format,omitempty"`
 }
+
+type ProcessorDissect struct {
+	CommonProcessor
+
+	Field           string `json:"field"`
+	Pattern         string `json:"pattern"`
+	AppendSeparator string `json:"append_separator"`
+	IgnoreMissing   bool   `json:"ignore_missing"`
+}
