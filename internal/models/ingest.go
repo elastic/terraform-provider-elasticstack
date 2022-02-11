@@ -78,3 +78,14 @@ type ProcessorCSV struct {
 	Trim          bool     `json:"trim"`
 	EmptyValue    string   `json:"empty_value,omitempty"`
 }
+
+type ProcessorDate struct {
+	CommonProcessor
+
+	Field        string   `json:"field"`
+	TargetField  string   `json:"target_field,omitempty"`
+	Formats      []string `json:"formats"`
+	Timezone     string   `json:"timezone,omitempty"`
+	Locale       string   `json:"locale,omitempty"`
+	OutputFormat string   `json:"output_format,omitempty"`
+}

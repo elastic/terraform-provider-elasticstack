@@ -71,6 +71,7 @@ func New(version string) func() *schema.Provider {
 				"elasticstack_elasticsearch_ingest_processor_community_id": ingest.DataSourceProcessorCommunityId(),
 				"elasticstack_elasticsearch_ingest_processor_convert":      ingest.DataSourceProcessorConvert(),
 				"elasticstack_elasticsearch_ingest_processor_csv":          ingest.DataSourceProcessorCSV(),
+				"elasticstack_elasticsearch_ingest_processor_date":         ingest.DataSourceProcessorDate(),
 				"elasticstack_elasticsearch_security_user":                 security.DataSourceUser(),
 				"elasticstack_elasticsearch_snapshot_repository":           cluster.DataSourceSnapshotRespository(),
 			},
