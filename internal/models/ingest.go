@@ -148,3 +148,11 @@ type ProcessorFingerprint struct {
 	Salt          string   `json:"salt,omitempty"`
 	Method        string   `json:"method,omitempty"`
 }
+
+type ProcessorForeach struct {
+	CommonProcessor
+
+	Field         string                 `json:"field"`
+	IgnoreMissing bool                   `json:"ignore_missing"`
+	Processor     map[string]interface{} `json:"processor"`
+}
