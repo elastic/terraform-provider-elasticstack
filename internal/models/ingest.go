@@ -156,3 +156,11 @@ type ProcessorForeach struct {
 	IgnoreMissing bool                   `json:"ignore_missing"`
 	Processor     map[string]interface{} `json:"processor"`
 }
+
+type ProcessorGeoip struct {
+	ProcessortFields
+
+	DatabaseFile string   `json:"database_file,omitempty"`
+	Properties   []string `json:"properties,omitempty"`
+	FirstOnly    bool     `json:"first_only"`
+}
