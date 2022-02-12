@@ -164,3 +164,14 @@ type ProcessorGeoip struct {
 	Properties   []string `json:"properties,omitempty"`
 	FirstOnly    bool     `json:"first_only"`
 }
+
+type ProcessorGrok struct {
+	CommonProcessor
+
+	Field              string            `json:"field"`
+	Patterns           []string          `json:"patterns"`
+	PatternDefinitions map[string]string `json:"pattern_definitions,omitempty"`
+	EcsCompatibility   string            `json:"ecs_compatibility,omitempty"`
+	TraceMatch         bool              `json:"trace_match"`
+	IgnoreMissing      bool              `json:"ignore_missing"`
+}

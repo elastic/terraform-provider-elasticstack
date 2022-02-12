@@ -1,0 +1,25 @@
+---
+subcategory: "Ingest"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_ingest_processor_grok Data Source"
+description: |-
+  Helper data source to create a processor which extracts structured fields out of a single text field within a document.
+---
+
+# Data Source: elasticstack_elasticsearch_ingest_processor_grok
+
+Extracts structured fields out of a single text field within a document. You choose which field to extract matched fields from, as well as the grok pattern you expect will match. A grok pattern is like a regular expression that supports aliased expressions that can be reused.
+
+This processor comes packaged with many [reusable patterns](https://github.com/elastic/elasticsearch/blob/8.0/libs/grok/src/main/resources/patterns).
+
+If you need help building patterns to match your logs, you will find the [Grok Debugger](https://www.elastic.co/guide/en/kibana/8.0/xpack-grokdebugger.html) tool quite useful! [The Grok Constructor](https://grokconstructor.appspot.com/) is also a useful tool.
+
+
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/grok-processor.html
+
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_ingest_processor_grok/data-source.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
