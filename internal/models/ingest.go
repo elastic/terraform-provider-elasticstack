@@ -138,3 +138,13 @@ type ProcessorFail struct {
 
 	Message string `json:"message"`
 }
+
+type ProcessorFingerprint struct {
+	CommonProcessor
+
+	Fields        []string `json:"fields"`
+	TargetField   string   `json:"target_field,omitempty"`
+	IgnoreMissing bool     `json:"ignore_missing"`
+	Salt          string   `json:"salt,omitempty"`
+	Method        string   `json:"method,omitempty"`
+}
