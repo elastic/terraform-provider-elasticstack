@@ -3,6 +3,7 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -29,7 +30,6 @@ func ResourceRoleMapping() *schema.Resource {
 			Description: "Specifies whether the role mapping is enabled. The default value is true.",
 			Type:        schema.TypeBool,
 			Required:    true,
-			Default:     true,
 		},
 		"roles": {
 			Description: " A list of role names that are granted to the users that match the role mapping rule. Default is [].",
@@ -53,8 +53,7 @@ func ResourceRoleMapping() *schema.Resource {
 		"rules": {
 			Description:  "The rules that determine which users should be matched by the mapping.",
 			Type:         schema.TypeString,
-			Optional:     true,
-			Computed:     true,
+			Required:     true,
 			ValidateFunc: validation.StringIsJSON,
 		},
 		"metadata": {
@@ -139,6 +138,9 @@ func resourceSecurityRoleMappingPut(ctx context.Context, d *schema.ResourceData,
 		}
 		roleMapping.Metadata = metadata
 	}
+
+	debugMapping, _ := json.Marshal(&roleMapping)
+	fmt.Println(string(debugMapping))
 
 	if diags := client.PutElasticsearchRoleMapping(&roleMapping); diags.HasError() {
 		return diags
