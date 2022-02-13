@@ -225,3 +225,14 @@ type ProcessorLowercase struct {
 	CommonProcessor
 	ProcessortFields
 }
+
+type ProcessorNetworkDirection struct {
+	CommonProcessor
+
+	SourceIp              string   `json:"source_ip,omitempty"`
+	DestinationIp         string   `json:"destination_ip,omitempty"`
+	TargetField           string   `json:"target_field,omitempty"`
+	InternalNetworks      []string `json:"internal_networks,omitempty"`
+	InternalNetworksField string   `json:"internal_networks_field,omitempty"`
+	IgnoreMissing         bool     `json:"ignore_missing"`
+}
