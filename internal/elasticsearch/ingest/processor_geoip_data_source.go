@@ -80,9 +80,9 @@ func dataSourceProcessorGeoipRead(ctx context.Context, d *schema.ResourceData, m
 	processor.TargetField = d.Get("target_field").(string)
 
 	if v, ok := d.GetOk("properties"); ok {
-		props := v.([]interface{})
-		properties := make([]string, len(props))
-		for i, p := range props {
+		props := v.(*schema.Set)
+		properties := make([]string, props.Len())
+		for i, p := range props.List() {
 			properties[i] = p.(string)
 		}
 		processor.Properties = properties
