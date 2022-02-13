@@ -247,3 +247,10 @@ type ProcessorRegisteredDomain struct {
 	CommonProcessor
 	ProcessortFields
 }
+
+type ProcessorRemove struct {
+	CommonProcessor
+
+	Field         []string `json:"field"`
+	IgnoreMissing bool     `json:"ignore_missing"`
+}
