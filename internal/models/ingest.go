@@ -259,3 +259,12 @@ type ProcessorRename struct {
 	CommonProcessor
 	ProcessortFields
 }
+
+type ProcessorScript struct {
+	CommonProcessor
+
+	Lang     string                 `json:"lang,omitempty"`
+	ScriptId string                 `json:"id,omitempty"`
+	Source   string                 `json:"source,omitempty"`
+	Params   map[string]interface{} `json:"params,omitempty"`
+}
