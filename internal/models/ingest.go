@@ -236,3 +236,9 @@ type ProcessorNetworkDirection struct {
 	InternalNetworksField string   `json:"internal_networks_field,omitempty"`
 	IgnoreMissing         bool     `json:"ignore_missing"`
 }
+
+type ProcessorPipeline struct {
+	CommonProcessor
+
+	Name string `json:"name"`
+}
