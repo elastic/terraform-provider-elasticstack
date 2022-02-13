@@ -188,3 +188,11 @@ type ProcessorHtmlStrip struct {
 	CommonProcessor
 	ProcessortFields
 }
+
+type ProcessorJoin struct {
+	CommonProcessor
+
+	Field       string `json:"field"`
+	Separator   string `json:"separator"`
+	TargetField string `json:"target_field,omitempty"`
+}
