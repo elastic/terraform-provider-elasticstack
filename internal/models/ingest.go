@@ -254,3 +254,8 @@ type ProcessorRemove struct {
 	Field         []string `json:"field"`
 	IgnoreMissing bool     `json:"ignore_missing"`
 }
+
+type ProcessorRename struct {
+	CommonProcessor
+	ProcessortFields
+}
