@@ -206,3 +206,17 @@ type ProcessorJson struct {
 	AddToRootConflictStrategy string `json:"add_to_root_conflict_strategy,omitempty"`
 	AllowDuplicateKeys        *bool  `json:"allow_duplicate_keys,omitempty"`
 }
+
+type ProcessorKV struct {
+	CommonProcessor
+	ProcessortFields
+
+	FieldSplit    string   `json:"field_split"`
+	ValueSplit    string   `json:"value_split"`
+	IncludeKeys   []string `json:"include_keys,omitempty"`
+	ExcludeKeys   []string `json:"exclude_keys,omitempty"`
+	Prefix        string   `json:"prefix,omitempty"`
+	TrimKey       string   `json:"trim_key,omitempty"`
+	TrimValue     string   `json:"trim_value,omitempty"`
+	StripBrackets bool     `json:"strip_brackets"`
+}
