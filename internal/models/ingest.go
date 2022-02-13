@@ -175,3 +175,11 @@ type ProcessorGrok struct {
 	TraceMatch         bool              `json:"trace_match"`
 	IgnoreMissing      bool              `json:"ignore_missing"`
 }
+
+type ProcessorGsub struct {
+	CommonProcessor
+	ProcessortFields
+
+	Pattern     string `json:"pattern"`
+	Replacement string `json:"replacement"`
+}
