@@ -242,3 +242,8 @@ type ProcessorPipeline struct {
 
 	Name string `json:"name"`
 }
+
+type ProcessorRegisteredDomain struct {
+	CommonProcessor
+	ProcessortFields
+}
