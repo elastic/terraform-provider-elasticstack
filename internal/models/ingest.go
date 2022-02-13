@@ -196,3 +196,13 @@ type ProcessorJoin struct {
 	Separator   string `json:"separator"`
 	TargetField string `json:"target_field,omitempty"`
 }
+
+type ProcessorJson struct {
+	CommonProcessor
+
+	Field                     string `json:"field"`
+	TargetField               string `json:"target_field,omitempty"`
+	AddToRoot                 *bool  `json:"add_to_root,omitempty"`
+	AddToRootConflictStrategy string `json:"add_to_root_conflict_strategy,omitempty"`
+	AllowDuplicateKeys        *bool  `json:"allow_duplicate_keys,omitempty"`
+}
