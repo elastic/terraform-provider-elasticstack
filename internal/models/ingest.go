@@ -220,3 +220,8 @@ type ProcessorKV struct {
 	TrimValue     string   `json:"trim_value,omitempty"`
 	StripBrackets bool     `json:"strip_brackets"`
 }
+
+type ProcessorLowercase struct {
+	CommonProcessor
+	ProcessortFields
+}

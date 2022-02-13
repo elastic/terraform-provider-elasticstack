@@ -87,6 +87,7 @@ func New(version string) func() *schema.Provider {
 				"elasticstack_elasticsearch_ingest_processor_join":            ingest.DataSourceProcessorJoin(),
 				"elasticstack_elasticsearch_ingest_processor_json":            ingest.DataSourceProcessorJson(),
 				"elasticstack_elasticsearch_ingest_processor_kv":              ingest.DataSourceProcessorKV(),
+				"elasticstack_elasticsearch_ingest_processor_lowercase":       ingest.DataSourceProcessorLowercase(),
 				"elasticstack_elasticsearch_security_user":                    security.DataSourceUser(),
 				"elasticstack_elasticsearch_snapshot_repository":              cluster.DataSourceSnapshotRespository(),
 			},
