@@ -183,3 +183,8 @@ type ProcessorGsub struct {
 	Pattern     string `json:"pattern"`
 	Replacement string `json:"replacement"`
 }
+
+type ProcessorHtmlStrip struct {
+	CommonProcessor
+	ProcessortFields
+}

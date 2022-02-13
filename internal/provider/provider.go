@@ -83,6 +83,7 @@ func New(version string) func() *schema.Provider {
 				"elasticstack_elasticsearch_ingest_processor_geoip":           ingest.DataSourceProcessorGeoip(),
 				"elasticstack_elasticsearch_ingest_processor_grok":            ingest.DataSourceProcessorGrok(),
 				"elasticstack_elasticsearch_ingest_processor_gsub":            ingest.DataSourceProcessorGsub(),
+				"elasticstack_elasticsearch_ingest_processor_html_strip":      ingest.DataSourceProcessorHtmlStrip(),
 				"elasticstack_elasticsearch_security_user":                    security.DataSourceUser(),
 				"elasticstack_elasticsearch_snapshot_repository":              cluster.DataSourceSnapshotRespository(),
 			},
