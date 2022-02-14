@@ -94,6 +94,7 @@ func New(version string) func() *schema.Provider {
 				"elasticstack_elasticsearch_ingest_processor_remove":            ingest.DataSourceProcessorRemove(),
 				"elasticstack_elasticsearch_ingest_processor_rename":            ingest.DataSourceProcessorRename(),
 				"elasticstack_elasticsearch_ingest_processor_script":            ingest.DataSourceProcessorScript(),
+				"elasticstack_elasticsearch_ingest_processor_set":               ingest.DataSourceProcessorSet(),
 				"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
 				"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
 			},

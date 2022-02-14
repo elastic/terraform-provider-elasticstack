@@ -268,3 +268,14 @@ type ProcessorScript struct {
 	Source   string                 `json:"source,omitempty"`
 	Params   map[string]interface{} `json:"params,omitempty"`
 }
+
+type ProcessorSet struct {
+	CommonProcessor
+
+	Field            string `json:"field"`
+	Value            string `json:"value,omitempty"`
+	CopyFrom         string `json:"copy_from,omitempty"`
+	Override         bool   `json:"override"`
+	IgnoreEmptyValue bool   `json:"ignore_empty_value"`
+	MediaType        string `json:"media_type,omitempty"`
+}
