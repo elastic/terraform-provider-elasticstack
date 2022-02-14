@@ -2,8 +2,8 @@ package models
 
 type User struct {
 	Username     string                 `json:"-"`
-	FullName     string                 `json:"full_name"`
-	Email        string                 `json:"email"`
+	FullName     string                 `json:"full_name,omitempty"`
+	Email        string                 `json:"email,omitempty"`
 	Roles        []string               `json:"roles"`
 	Password     *string                `json:"password,omitempty"`
 	PasswordHash *string                `json:"password_hash,omitempty"`
