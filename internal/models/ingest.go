@@ -307,3 +307,8 @@ type ProcessorTrim struct {
 	CommonProcessor
 	ProcessortFields
 }
+
+type ProcessorUppercase struct {
+	CommonProcessor
+	ProcessortFields
+}
