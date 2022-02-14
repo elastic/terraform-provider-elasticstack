@@ -294,3 +294,11 @@ type ProcessorSort struct {
 	Order       string `json:"order,omitempty"`
 	TargetField string `json:"target_field,omitempty"`
 }
+
+type ProcessorSplit struct {
+	CommonProcessor
+	ProcessortFields
+
+	Separator        string `json:"separator"`
+	PreserveTrailing bool   `json:"preserve_trailing"`
+}

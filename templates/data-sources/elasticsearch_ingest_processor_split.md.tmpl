@@ -1,0 +1,20 @@
+---
+subcategory: "Ingest"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_ingest_processor_split Data Source"
+description: |-
+  Helper data source to create a processor which splits a field into an array using a separator character. 
+---
+
+# Data Source: elasticstack_elasticsearch_ingest_processor_split
+
+Splits a field into an array using a separator character. Only works on string fields.
+
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/split-processor.html
+
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_ingest_processor_split/data-source.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
