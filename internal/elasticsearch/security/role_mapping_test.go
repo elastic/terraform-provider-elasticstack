@@ -13,7 +13,7 @@ import (
 )
 
 func TestAccResourceSecurityRoleMapping(t *testing.T) {
-	roleMappingName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	roleMappingName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.UnitTest(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
@@ -26,7 +26,7 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles.*", "apm_system"),
-					// TODO: Check attributes
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "role_templates"),
 				),
 			},
 			{
@@ -36,12 +36,11 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles.*", "apm_system"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles.*", "beats_system"),
-					// TODO: Check attributes
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "role_templates"),
 				),
 			},
 		},
 	})
-
 }
 
 func testAccResourceSecurityRoleMappingCreate(roleMappingName string) string {
@@ -85,6 +84,21 @@ resource "elasticstack_elasticsearch_security_role_mapping" "test" {
     "apm_system",
 	"beats_system"
   ]
+
+  rules = jsonencode({
+    any = [
+      {
+        field = {
+          username = "*"
+        }
+      },
+      {
+        field = {
+          groups = "*"
+        }
+      }
+    ]
+  })
 }
 `, roleMappingName)
 }
