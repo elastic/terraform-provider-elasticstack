@@ -286,3 +286,11 @@ type ProcessorSetSecurityUser struct {
 	Field      string   `json:"field"`
 	Properties []string `json:"properties,omitempty"`
 }
+
+type ProcessorSort struct {
+	CommonProcessor
+
+	Field       string `json:"field"`
+	Order       string `json:"order,omitempty"`
+	TargetField string `json:"target_field,omitempty"`
+}
