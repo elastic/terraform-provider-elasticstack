@@ -302,3 +302,8 @@ type ProcessorSplit struct {
 	Separator        string `json:"separator"`
 	PreserveTrailing bool   `json:"preserve_trailing"`
 }
+
+type ProcessorTrim struct {
+	CommonProcessor
+	ProcessortFields
+}
