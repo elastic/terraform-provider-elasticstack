@@ -3,6 +3,7 @@
 - New resource `elasticstack_elasticsearch_data_stream` to manage Elasticsearch [data streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html) ([#45](https://github.com/elastic/terraform-provider-elasticstack/pull/45))
 - New resource `elasticstack_elasticsearch_ingest_pipeline` to manage Elasticsearch [ingest pipelines](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/ingest.html) ([#56](https://github.com/elastic/terraform-provider-elasticstack/issues/56))
 - New resource `elasticstack_elasticsearch_component_template` to manage Elasticsearch [component templates](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) ([#39](https://github.com/elastic/terraform-provider-elasticstack/pull/39))
+- New resource `elasticstack_elasticsearch_component_template` to manage Elasticsearch [role mappings](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html) ([#69](https://github.com/elastic/terraform-provider-elasticstack/pull/69))
 
 ### Fixed
 - Update only changed index settings ([#52](https://github.com/elastic/terraform-provider-elasticstack/issues/52))
