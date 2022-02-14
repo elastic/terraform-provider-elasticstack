@@ -317,3 +317,12 @@ type ProcessorUrldecode struct {
 	CommonProcessor
 	ProcessortFields
 }
+
+type ProcessorUriParts struct {
+	CommonProcessor
+
+	Field              string `json:"field"`
+	TargetField        string `json:"target_field,omitempty"`
+	KeepOriginal       bool   `json:"keep_original"`
+	RemoveIfSuccessful bool   `json:"remove_if_successful"`
+}
