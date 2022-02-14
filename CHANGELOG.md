@@ -8,6 +8,7 @@
 - Update only changed index settings ([#52](https://github.com/elastic/terraform-provider-elasticstack/issues/52))
 - Enable import of index settings ([#53](https://github.com/elastic/terraform-provider-elasticstack/issues/53))
 - Handle `allocate` action in ILM policy ([#59](https://github.com/elastic/terraform-provider-elasticstack/issues/59))
+- Send only initialized values to Elasticsearch API when managing the users ([#66](https://github.com/elastic/terraform-provider-elasticstack/issues/66))
 
 ## [0.2.0] - 2022-01-27
 ### Added
