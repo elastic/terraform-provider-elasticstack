@@ -326,3 +326,11 @@ type ProcessorUriParts struct {
 	KeepOriginal       bool   `json:"keep_original"`
 	RemoveIfSuccessful bool   `json:"remove_if_successful"`
 }
+
+type ProcessorUserAgent struct {
+	ProcessortFields
+
+	RegexFile         string   `json:"regex_file,omitempty"`
+	Properties        []string `json:"properties,omitempty"`
+	ExtractDeviceType *bool    `json:"extract_device_type,omitempty"`
+}
