@@ -312,3 +312,8 @@ type ProcessorUppercase struct {
 	CommonProcessor
 	ProcessortFields
 }
+
+type ProcessorUrldecode struct {
+	CommonProcessor
+	ProcessortFields
+}
