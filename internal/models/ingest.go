@@ -279,3 +279,10 @@ type ProcessorSet struct {
 	IgnoreEmptyValue bool   `json:"ignore_empty_value"`
 	MediaType        string `json:"media_type,omitempty"`
 }
+
+type ProcessorSetSecurityUser struct {
+	CommonProcessor
+
+	Field      string   `json:"field"`
+	Properties []string `json:"properties,omitempty"`
+}
