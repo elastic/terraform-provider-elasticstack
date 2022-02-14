@@ -58,8 +58,9 @@ output "role_mapping" {
 
 ### Required
 
-- **enabled** (Boolean) Specifies whether the role mapping is enabled. The default value is true.
+- **enabled** (Boolean) Specifies whether the role mapping is enabled.
 - **name** (String) The name of the role mapping.
+- **rules** (String) The rules that determine which users should be matched by the mapping.
 
 ### Optional
 
@@ -67,7 +68,6 @@ output "role_mapping" {
 - **metadata** (String) Optional meta-data.
 - **role_templates** (List of String) A list of mustache templates that will be evaluated to determine the roles names that should granted to the users that match the role mapping rules. Each record must be a valid JSON document.
 - **roles** (Set of String) A list of role names that are granted to the users that match the role mapping rule. Default is [].
-- **rules** (String) The rules that determine which users should be matched by the mapping.
 
 ### Read-Only
 
