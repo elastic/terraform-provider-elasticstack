@@ -58,6 +58,7 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 
 ### Required
 
+- **roles** (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
 - **username** (String) An identifier for the user (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params).
 
 ### Optional
@@ -69,7 +70,6 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 - **metadata** (String) Arbitrary metadata that you want to associate with the user.
 - **password** (String, Sensitive) The user’s password. Passwords must be at least 6 characters long.
 - **password_hash** (String, Sensitive) A hash of the user’s password. This must be produced using the same hashing algorithm as has been configured for password storage (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings).
-- **roles** (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
 
 ### Read-Only
 

@@ -62,8 +62,8 @@ func ResourceUser() *schema.Resource {
 		"roles": {
 			Description: "A set of roles the user has. The roles determine the user’s access permissions. Default is [].",
 			Type:        schema.TypeSet,
-			Optional:    true,
-			Computed:    true,
+			Required:    true,
+			MinItems:    1,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
@@ -115,16 +115,21 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 
 	var user models.User
 	user.Username = usernameId
-	if pass, ok := d.GetOk("password"); ok {
-		password := pass.(string)
+	if v, ok := d.GetOk("password"); ok {
+		password := v.(string)
 		user.Password = &password
-	} else {
-		pass_hash := d.Get("password_hash").(string)
+	}
+	if v, ok := d.GetOk("password_hash"); ok {
+		pass_hash := v.(string)
 		user.PasswordHash = &pass_hash
 	}
 
-	user.Email = d.Get("email").(string)
-	user.FullName = d.Get("full_name").(string)
+	if v, ok := d.GetOk("email"); ok {
+		user.Email = v.(string)
+	}
+	if v, ok := d.GetOk("full_name"); ok {
+		user.FullName = v.(string)
+	}
 	user.Enabled = d.Get("enabled").(bool)
 
 	roles := make([]string, 0)
