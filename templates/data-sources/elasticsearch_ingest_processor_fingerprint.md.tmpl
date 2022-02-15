@@ -1,0 +1,19 @@
+---
+subcategory: "Ingest"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_ingest_processor_fingerprint Data Source"
+description: |-
+  Helper data source to create a processor which computes a hash of the document’s content.
+---
+
+# Data Source: elasticstack_elasticsearch_ingest_processor_fingerprint
+
+Computes a hash of the document’s content. You can use this hash for content fingerprinting.
+
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/fingerprint-processor.html
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_ingest_processor_fingerprint/data-source.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}

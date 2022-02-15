@@ -12,6 +12,11 @@ import (
 
 func DataSourceUser() *schema.Resource {
 	userSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"username": {
 			Description: "An identifier for the user",
 			Type:        schema.TypeString,

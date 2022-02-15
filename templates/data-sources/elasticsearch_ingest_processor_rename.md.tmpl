@@ -1,0 +1,20 @@
+---
+subcategory: "Ingest"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_ingest_processor_rename Data Source"
+description: |-
+  Helper data source to create a processor which renames an existing field.
+---
+
+# Data Source: elasticstack_elasticsearch_ingest_processor_rename
+
+Renames an existing field. If the field doesn’t exist or the new name is already used, an exception will be thrown.
+
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/rename-processor.html
+
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_ingest_processor_rename/data-source.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}

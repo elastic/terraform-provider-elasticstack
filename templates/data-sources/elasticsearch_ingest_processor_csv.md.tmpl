@@ -1,0 +1,22 @@
+---
+subcategory: "Ingest"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_ingest_processor_csv Data Source"
+description: |-
+  Helper data source to create a processor which extracts fields from CSV line out of a single text field within a document.
+---
+
+# Data Source: elasticstack_elasticsearch_ingest_processor_csv
+
+Helper data source to which can be used to extract fields from CSV line out of a single text field within a document. Any empty field in CSV will be skipped.
+
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/csv-processor.html
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_ingest_processor_csv/data-source.tf" }}
+
+If the `trim` option is enabled then any whitespace in the beginning and in the end of each unquoted field will be trimmed. For example with configuration above, a value of A, B will result in field field2 having value {nbsp}B (with space at the beginning). If trim is enabled A, B will result in field field2 having value B (no whitespace). Quoted fields will be left untouched.
+
+{{ .SchemaMarkdown | trimspace }}
+
