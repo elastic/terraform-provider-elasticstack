@@ -62,7 +62,6 @@ output "repo_url" {
 ### Optional
 
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **id** (String) The ID of this resource.
 
 ### Read-Only
 
@@ -70,6 +69,7 @@ output "repo_url" {
 - **fs** (List of Object) Shared filesystem repository. Set only if the type of the fetched repo is `fs`. (see [below for nested schema](#nestedatt--fs))
 - **gcs** (List of Object) Google Cloud Storage service as a repository. Set only if the type of the fetched repo is `gcs`. (see [below for nested schema](#nestedatt--gcs))
 - **hdfs** (List of Object) HDFS File System as a repository. Set only if the type of the fetched repo is `hdfs`. (see [below for nested schema](#nestedatt--hdfs))
+- **id** (String) Internal identifier of the resource
 - **s3** (List of Object) AWS S3 as a repository. Set only if the type of the fetched repo is `s3`. (see [below for nested schema](#nestedatt--s3))
 - **type** (String) Repository type.
 - **url** (List of Object) URL repository. Set only if the type of the fetched repo is `url`. (see [below for nested schema](#nestedatt--url))

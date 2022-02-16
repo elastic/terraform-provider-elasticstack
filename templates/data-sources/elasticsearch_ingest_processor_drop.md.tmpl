@@ -1,0 +1,20 @@
+---
+subcategory: "Ingest"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_ingest_processor_drop Data Source"
+description: |-
+  Helper data source to create a processor which drops the document without raising any errors.
+---
+
+# Data Source: elasticstack_elasticsearch_ingest_processor_drop
+
+Drops the document without raising any errors. This is useful to prevent the document from getting indexed based on some condition.
+
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/drop-processor.html
+
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_ingest_processor_drop/data-source.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}

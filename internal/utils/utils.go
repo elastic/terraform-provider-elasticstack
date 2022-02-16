@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -159,4 +160,15 @@ func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
 			},
 		},
 	}
+}
+
+func StringToHash(s string) (*string, error) {
+	h := sha1.New()
+	_, err := h.Write([]byte(s))
+	if err != nil {
+		return nil, err
+	}
+	bs := h.Sum(nil)
+	hash := fmt.Sprintf("%x", bs)
+	return &hash, nil
 }

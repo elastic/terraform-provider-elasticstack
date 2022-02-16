@@ -1,0 +1,20 @@
+---
+subcategory: "Ingest"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_ingest_processor_dot_expander Data Source"
+description: |-
+  Helper data source to create a processor which expands a field with dots into an object field. 
+---
+
+# Data Source: elasticstack_elasticsearch_ingest_processor_dot_expander
+
+Expands a field with dots into an object field. This processor allows fields with dots in the name to be accessible by other processors in the pipeline. Otherwise these fields can’t be accessed by any processor.
+
+See: elastic.co/guide/en/elasticsearch/reference/current/dot-expand-processor.html
+
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_ingest_processor_dot_expander/data-source.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}

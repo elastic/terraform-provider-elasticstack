@@ -36,13 +36,13 @@ output "user" {
 ### Optional
 
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **id** (String) The ID of this resource.
 
 ### Read-Only
 
 - **email** (String) The email of the user.
 - **enabled** (Boolean) Specifies whether the user is enabled. The default value is true.
 - **full_name** (String) The full name of the user.
+- **id** (String) Internal identifier of the resource
 - **metadata** (String) Arbitrary metadata that you want to associate with the user.
 - **roles** (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
 

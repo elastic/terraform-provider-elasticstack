@@ -12,7 +12,15 @@ Use ingest APIs to manage tasks and resources related to ingest pipelines and pr
 
 ## Example Usage
 
+You can provide your custom JSON definitions for the ingest processors:
+
 {{ tffile "examples/resources/elasticstack_elasticsearch_ingest_pipeline/resource.tf" }}
+
+
+Or you can use data sources and Terraform declarative way of defining the ingest processors:
+
+{{ tffile "examples/resources/elasticstack_elasticsearch_ingest_pipeline/resource2.tf" }}
+
 
 {{ .SchemaMarkdown | trimspace }}
 
