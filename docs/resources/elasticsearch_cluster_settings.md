@@ -28,8 +28,8 @@ resource "elasticstack_elasticsearch_cluster_settings" "my_cluster_settings" {
       value = "50mb"
     }
     setting {
-      name  = "indices.breaker.accounting.limit"
-      value = "100%"
+      name  = "indices.breaker.total.limit"
+      value = "65%"
     }
     setting {
       name       = "xpack.security.audit.logfile.events.include"
@@ -39,8 +39,8 @@ resource "elasticstack_elasticsearch_cluster_settings" "my_cluster_settings" {
 
   transient {
     setting {
-      name  = "indices.breaker.accounting.limit"
-      value = "99%"
+      name  = "indices.breaker.total.limit"
+      value = "60%"
     }
   }
 }

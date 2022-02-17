@@ -32,13 +32,13 @@ func TestAccResourceClusterSettings(t *testing.T) {
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.breaker.accounting.limit",
-							"value": "100%",
+							"name":  "indices.breaker.total.limit",
+							"value": "65%",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*",
 						map[string]string{
-							"name":  "indices.breaker.accounting.limit",
-							"value": "99%",
+							"name":  "indices.breaker.total.limit",
+							"value": "60%",
 						}),
 				),
 			},
@@ -57,8 +57,8 @@ func TestAccResourceClusterSettings(t *testing.T) {
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.breaker.accounting.limit",
-							"value": "100%",
+							"name":  "indices.breaker.total.limit",
+							"value": "60%",
 						}),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_DENIED"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_GRANTED"),
@@ -86,15 +86,15 @@ resource "elasticstack_elasticsearch_cluster_settings" "test" {
       value = "50mb"
     }
     setting {
-      name  = "indices.breaker.accounting.limit"
-      value = "100%"
+      name  = "indices.breaker.total.limit"
+      value = "65%"
     }
   }
 
   transient {
     setting {
-      name  = "indices.breaker.accounting.limit"
-      value = "99%"
+      name  = "indices.breaker.total.limit"
+      value = "60%"
     }
   }
 }
@@ -118,8 +118,8 @@ resource "elasticstack_elasticsearch_cluster_settings" "test" {
       value = "40mb"
     }
     setting {
-      name  = "indices.breaker.accounting.limit"
-      value = "100%"
+      name  = "indices.breaker.total.limit"
+      value = "60%"
     }
     setting {
       name       = "xpack.security.audit.logfile.events.include"
@@ -136,7 +136,7 @@ func checkResourceClusterSettingsDestroy(s *terraform.State) error {
 	listOfSettings := []string{
 		"indices.lifecycle.poll_interval",
 		"indices.recovery.max_bytes_per_sec",
-		"indices.breaker.accounting.limit",
+		"indices.breaker.total.limit",
 		"xpack.security.audit.logfile.events.include",
 	}
 
