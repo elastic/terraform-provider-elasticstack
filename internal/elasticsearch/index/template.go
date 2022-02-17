@@ -3,6 +3,7 @@ package index
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -46,6 +47,11 @@ func ResourceTemplate() *schema.Resource {
 						Description: "If true, the data stream is hidden.",
 						Type:        schema.TypeBool,
 						Default:     false,
+						Optional:    true,
+					},
+					"allow_custom_routing": {
+						Description: "If `true`, the data stream supports custom routing. Defaults to `false`. Available only in *8.x*",
+						Type:        schema.TypeBool,
 						Optional:    true,
 					},
 				},
@@ -195,10 +201,39 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	indexTemplate.ComposedOf = compsOf
 
-	if v, ok := d.GetOk("data_stream"); ok {
-		// only one definition of stream allowed
-		stream := v.([]interface{})[0].(map[string]interface{})
-		indexTemplate.DataStream = stream
+	if d.HasChange("data_stream") {
+		old, new := d.GetChange("data_stream")
+		log.Printf("[TRACE] old data stream settings <%v> new settings <%v>", old, new)
+
+		// 8.x workaround
+		hasAllowCustomRouting := false
+		//for _, s := range []interface{}{old} {
+		if old != nil && len(old.([]interface{})) == 1 {
+			if old.([]interface{})[0] != nil {
+				setting := old.([]interface{})[0].(map[string]interface{})
+				if _, ok := setting["allow_custom_routing"]; ok {
+					hasAllowCustomRouting = true
+				}
+			}
+		}
+		//	}
+
+		if v, ok := d.GetOk("data_stream"); ok {
+			// only one definition of stream allowed
+			if v.([]interface{})[0] != nil {
+				stream := v.([]interface{})[0].(map[string]interface{})
+				dSettings := &models.DataStreamSettings{}
+				if s, ok := stream["hidden"]; ok {
+					hidden := s.(bool)
+					dSettings.Hidden = &hidden
+				}
+				if s, ok := stream["allow_custom_routing"]; ok && hasAllowCustomRouting && s.(bool) {
+					allow := s.(bool)
+					dSettings.AllowCustomRouting = &allow
+				}
+				indexTemplate.DataStream = dSettings
+			}
+		}
 	}
 
 	if v, ok := d.GetOk("index_patterns"); ok {
@@ -298,9 +333,16 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	if err := d.Set("composed_of", tpl.IndexTemplate.ComposedOf); err != nil {
 		return diag.FromErr(err)
 	}
-	if tpl.IndexTemplate.DataStream != nil {
-		ds := make([]interface{}, 0)
-		ds = append(ds, tpl.IndexTemplate.DataStream)
+	if stream := tpl.IndexTemplate.DataStream; stream != nil {
+		ds := make([]interface{}, 1)
+		dSettings := make(map[string]interface{})
+		if v := stream.Hidden; v != nil {
+			dSettings["hidden"] = *v
+		}
+		if v := stream.AllowCustomRouting; v != nil {
+			dSettings["allow_custom_routing"] = *v
+		}
+		ds[0] = dSettings
 		if err := d.Set("data_stream", ds); err != nil {
 			return diag.FromErr(err)
 		}

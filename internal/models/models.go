@@ -44,12 +44,17 @@ type IndexTemplate struct {
 	Create        bool                   `json:"-"`
 	Timeout       string                 `json:"-"`
 	ComposedOf    []string               `json:"composed_of"`
-	DataStream    map[string]interface{} `json:"data_stream,omitempty"`
+	DataStream    *DataStreamSettings    `json:"data_stream,omitempty"`
 	IndexPatterns []string               `json:"index_patterns"`
 	Meta          map[string]interface{} `json:"_meta,omitempty"`
 	Priority      *int                   `json:"priority,omitempty"`
 	Template      *Template              `json:"template,omitempty"`
 	Version       *int                   `json:"version,omitempty"`
+}
+
+type DataStreamSettings struct {
+	Hidden             *bool `json:"hidden,omitempty"`
+	AllowCustomRouting *bool `json:"allow_custom_routing,omitempty"`
 }
 
 type Template struct {
