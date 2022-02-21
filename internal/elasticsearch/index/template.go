@@ -3,7 +3,6 @@ package index
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -202,12 +201,10 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	indexTemplate.ComposedOf = compsOf
 
 	if d.HasChange("data_stream") {
-		old, new := d.GetChange("data_stream")
-		log.Printf("[TRACE] old data stream settings <%v> new settings <%v>", old, new)
+		old, _ := d.GetChange("data_stream")
 
 		// 8.x workaround
 		hasAllowCustomRouting := false
-		//for _, s := range []interface{}{old} {
 		if old != nil && len(old.([]interface{})) == 1 {
 			if old.([]interface{})[0] != nil {
 				setting := old.([]interface{})[0].(map[string]interface{})
@@ -216,7 +213,6 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 				}
 			}
 		}
-		//	}
 
 		if v, ok := d.GetOk("data_stream"); ok {
 			// only one definition of stream allowed
