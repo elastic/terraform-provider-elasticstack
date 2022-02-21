@@ -49,7 +49,7 @@ func ResourceTemplate() *schema.Resource {
 						Optional:    true,
 					},
 					"allow_custom_routing": {
-						Description: "If `true`, the data stream supports custom routing. Defaults to `false`. Available only in *8.x*",
+						Description: "If `true`, the data stream supports custom routing. Defaults to `false`. Available only in **8.x**",
 						Type:        schema.TypeBool,
 						Optional:    true,
 					},
@@ -223,7 +223,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 					hidden := s.(bool)
 					dSettings.Hidden = &hidden
 				}
-				if s, ok := stream["allow_custom_routing"]; ok && hasAllowCustomRouting && s.(bool) {
+				if s, ok := stream["allow_custom_routing"]; ok && (hasAllowCustomRouting || s.(bool)) {
 					allow := s.(bool)
 					dSettings.AllowCustomRouting = &allow
 				}
