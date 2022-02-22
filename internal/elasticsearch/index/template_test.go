@@ -26,6 +26,19 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "index_patterns.*", fmt.Sprintf("%s-logs-*", templateName)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "priority", "42"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "name", fmt.Sprintf("%s-stream", templateName)),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "data_stream.0.allow_custom_routing", "true"),
+				),
+			},
+			{
+				Config: testAccResourceIndexTemplateUpdate(templateName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "index_patterns.*", fmt.Sprintf("%s-logs-*", templateName)),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "name", fmt.Sprintf("%s-stream", templateName)),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "data_stream.0.allow_custom_routing", "false"),
 				),
 			},
 		},
@@ -54,7 +67,52 @@ resource "elasticstack_elasticsearch_index_template" "test" {
     })
   }
 }
-	`, name, name)
+
+resource "elasticstack_elasticsearch_index_template" "test2" {
+  name = "%s-stream"
+
+  index_patterns = ["index-pattern-streams*"]
+  data_stream {
+    allow_custom_routing = true
+  }
+}
+	`, name, name, name)
+}
+
+func testAccResourceIndexTemplateUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_template" "test" {
+  name = "%s"
+
+  index_patterns = ["%s-logs-*"]
+
+  template {
+    alias {
+      name = "my_template_test"
+    }
+    alias {
+      name = "alias2"
+    }
+
+    settings = jsonencode({
+      number_of_shards = "3"
+    })
+  }
+}
+
+resource "elasticstack_elasticsearch_index_template" "test2" {
+  name = "%s-stream"
+
+  index_patterns = ["index-pattern-streams*"]
+  data_stream {
+    allow_custom_routing = false
+  }
+}
+	`, name, name, name)
 }
 
 func checkResourceIndexTemplateDestroy(s *terraform.State) error {
