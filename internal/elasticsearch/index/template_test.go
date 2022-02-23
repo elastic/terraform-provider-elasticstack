@@ -28,7 +28,7 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "priority", "42"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "name", fmt.Sprintf("%s-stream", templateName)),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "data_stream.0.allow_custom_routing", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "data_stream.0.hidden", "true"),
 				),
 			},
 			{
@@ -38,7 +38,7 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "index_patterns.*", fmt.Sprintf("%s-logs-*", templateName)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "name", fmt.Sprintf("%s-stream", templateName)),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "data_stream.0.allow_custom_routing", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "data_stream.0.hidden", "false"),
 				),
 			},
 		},
@@ -73,7 +73,7 @@ resource "elasticstack_elasticsearch_index_template" "test2" {
 
   index_patterns = ["index-pattern-streams*"]
   data_stream {
-    allow_custom_routing = true
+    hidden = true
   }
 }
 	`, name, name, name)
@@ -109,7 +109,7 @@ resource "elasticstack_elasticsearch_index_template" "test2" {
 
   index_patterns = ["index-pattern-streams*"]
   data_stream {
-    allow_custom_routing = false
+    hidden = false
   }
 }
 	`, name, name, name)

@@ -208,7 +208,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		if old != nil && len(old.([]interface{})) == 1 {
 			if old.([]interface{})[0] != nil {
 				setting := old.([]interface{})[0].(map[string]interface{})
-				if _, ok := setting["allow_custom_routing"]; ok {
+				if acr, ok := setting["allow_custom_routing"]; ok && acr.(bool) {
 					hasAllowCustomRouting = true
 				}
 			}
