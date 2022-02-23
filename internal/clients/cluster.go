@@ -40,7 +40,12 @@ func (a *ApiClient) GetElasticsearchSnapshotRepository(name string) (*models.Sna
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to find requested repository",
+			Detail:   fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name),
+		})
+		return nil, diags
 	}
 	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get the information about snapshot repository: %s", name)); diags.HasError() {
 		return nil, diags

@@ -39,7 +39,12 @@ func (a *ApiClient) GetElasticsearchUser(username string) (*models.User, diag.Di
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
+		diags := append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to find a user in the cluster.",
+			Detail:   fmt.Sprintf("Unable to get user: '%s' from the cluster.", username),
+		})
+		return nil, diags
 	}
 	if diags := utils.CheckError(res, "Unable to get a user."); diags.HasError() {
 		return nil, diags
@@ -50,6 +55,7 @@ func (a *ApiClient) GetElasticsearchUser(username string) (*models.User, diag.Di
 	if err := json.NewDecoder(res.Body).Decode(&users); err != nil {
 		return nil, diag.FromErr(err)
 	}
+	log.Printf("[TRACE] Fetch users from ES API: %#+v", users)
 
 	if user, ok := users[username]; ok {
 		return &user, diags
