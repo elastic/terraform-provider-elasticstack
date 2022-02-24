@@ -150,7 +150,7 @@ type IndexAlias struct {
 	Filter        map[string]interface{} `json:"filter,omitempty"`
 	IndexRouting  string                 `json:"index_routing,omitempty"`
 	IsHidden      bool                   `json:"is_hidden,omitempty"`
-	IsWriteIndex  bool                   `json:"is_wtite_index,omitempty"`
+	IsWriteIndex  bool                   `json:"is_write_index,omitempty"`
 	Routing       string                 `json:"routing,omitempty"`
 	SearchRouting string                 `json:"search_routing,omitempty"`
 }
