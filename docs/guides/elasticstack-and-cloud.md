@@ -32,13 +32,13 @@ provider "ec" {
 }
 
 provider "elasticstack" {
-  # In this example, connectivity to Elasticsearch is defined per resource,
-  # so it can be used together with the Elastic Cloud terraform provider.
+  # In this example, connectivity to Elasticsearch is defined per resource
+  elasticsearch {}
 }
 ```
 
-Notice that the Elastic Stack  provider is not configured, since we'll be using an `elasticsearch_connection` block
-for each of our resources, to point to the Elastic Cloud deployment. This is because `terraform` can not configure providers that are dependent on one another.
+Notice that the Elastic Stack  provider setup with empty `elasticsearch {}` block, since we'll be using an `elasticsearch_connection` block
+for each of our resources, to point to the Elastic Cloud deployment.
 
 Next, we'll set up an Elastic Cloud `ec_deployment` resource, which represents an Elastic Stack deployment on Elastic Cloud.
 We shall configure the deployment using the credentials that it outputs once created

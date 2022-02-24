@@ -18,6 +18,6 @@ provider "ec" {
 }
 
 provider "elasticstack" {
-  # In this example, connectivity to Elasticsearch is defined per resource,
-  # so it can be used together with the Elastic Cloud terraform provider.
+  # In this example, connectivity to Elasticsearch is defined per resource
+  elasticsearch {}
 }
