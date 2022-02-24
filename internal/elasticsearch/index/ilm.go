@@ -120,33 +120,34 @@ var suportedActions = map[string]*schema.Schema{
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"number_of_replicas": {
-					Description: "Number of replicas to assign to the index.",
+					Description: "Number of replicas to assign to the index. Default: `0`",
 					Type:        schema.TypeInt,
 					Optional:    true,
+					Default:     0,
 				},
 				"include": {
 					Description:      "Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.",
 					Type:             schema.TypeString,
 					Optional:         true,
-					Computed:         true,
 					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
+					Default:          "{}",
 				},
 				"exclude": {
 					Description:      "Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.",
 					Type:             schema.TypeString,
 					Optional:         true,
-					Computed:         true,
 					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
+					Default:          "{}",
 				},
 				"require": {
 					Description:      "Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.",
 					Type:             schema.TypeString,
 					Optional:         true,
-					Computed:         true,
 					ValidateFunc:     validation.StringIsJSON,
 					DiffSuppressFunc: utils.DiffJsonSuppress,
+					Default:          "{}",
 				},
 			},
 		},
@@ -416,8 +417,7 @@ func expandIlmPolicy(d *schema.ResourceData) (*models.Policy, diag.Diagnostics) 
 
 	for _, ph := range supportedIlmPhases {
 		if v, ok := d.GetOk(ph); ok {
-			// if defined it must contain only 1 entry map
-			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}))
+			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}), d)
 			if diags.HasError() {
 				return nil, diags
 			}
@@ -429,7 +429,7 @@ func expandIlmPolicy(d *schema.ResourceData) (*models.Policy, diag.Diagnostics) 
 	return &policy, diags
 }
 
-func expandPhase(p map[string]interface{}) (*models.Phase, diag.Diagnostics) {
+func expandPhase(p map[string]interface{}, d *schema.ResourceData) (*models.Phase, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var phase models.Phase
 
@@ -499,10 +499,14 @@ func expandPhase(p map[string]interface{}) (*models.Phase, diag.Diagnostics) {
 func expandAction(a []interface{}, settings ...string) (map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	def := make(map[string]interface{})
+
+	// can be zero, so we must skip the empty check
+	settingsToSkip := map[string]struct{}{"number_of_replicas": struct{}{}}
+
 	if action := a[0]; action != nil {
 		for _, setting := range settings {
 			if v, ok := action.(map[string]interface{})[setting]; ok && v != nil {
-				if !utils.IsEmpty(v) {
+				if _, ok := settingsToSkip[setting]; ok || !utils.IsEmpty(v) {
 					// these 3 fields must be treated as JSON objects
 					if setting == "include" || setting == "exclude" || setting == "require" {
 						res := make(map[string]interface{})
@@ -578,6 +582,7 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (int
 	ns := make(map[string]interface{})
 
 	_, new := d.GetChange(phaseName)
+
 	if new != nil && len(new.([]interface{})) > 0 {
 		ns = new.([]interface{})[0].(map[string]interface{})
 	}
