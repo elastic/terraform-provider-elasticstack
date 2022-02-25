@@ -41,7 +41,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
       exclude = jsonencode({
         box_type = "hot"
       })
-      number_of_replicas = 0
+      number_of_replicas = 1
     }
   }
 
@@ -95,7 +95,7 @@ Optional:
 
 - **exclude** (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
 - **include** (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
-- **number_of_replicas** (Number) Number of replicas to assign to the index.
+- **number_of_replicas** (Number) Number of replicas to assign to the index. Default: `0`
 - **require** (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
 
 
@@ -315,7 +315,7 @@ Optional:
 
 - **exclude** (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
 - **include** (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
-- **number_of_replicas** (Number) Number of replicas to assign to the index.
+- **number_of_replicas** (Number) Number of replicas to assign to the index. Default: `0`
 - **require** (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
 
 
