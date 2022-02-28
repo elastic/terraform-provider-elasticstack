@@ -1,4 +1,6 @@
 ## [Unreleased]
+
+## [0.3.2] - 2022-02-28
 ### Fixed
 - Properly apply `number_of_replicas` setting in `allocate` action in ILM ([#80](https://github.com/elastic/terraform-provider-elasticstack/issues/80))
 
@@ -41,7 +43,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.2...HEAD
+[0.3.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.1.0...v0.2.0
