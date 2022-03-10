@@ -173,11 +173,18 @@ type TimestampField struct {
 	Name string `json:"name"`
 }
 
+type RoleTemplate struct {
+	Template struct {
+		Source string `json:"source"`
+	} `json:"template"`
+	Format string `json:"format,omitempty"`
+}
+
 type RoleMapping struct {
-	Name          string                   `json:"-"`
-	Enabled       bool                     `json:"enabled"`
-	Roles         []string                 `json:"roles,omitempty"`
-	RoleTemplates []map[string]interface{} `json:"role_templates,omitempty"`
-	Rules         map[string]interface{}   `json:"rules"`
-	Metadata      map[string]interface{}   `json:"metadata,omitempty"`
+	Name          string                 `json:"-"`
+	Enabled       bool                   `json:"enabled"`
+	Roles         []string               `json:"roles,omitempty"`
+	RoleTemplates []RoleTemplate         `json:"role_templates,omitempty"`
+	Rules         map[string]interface{} `json:"rules"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
