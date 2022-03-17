@@ -559,6 +559,9 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 			return diag.FromErr(err)
 		}
 	}
+	if err := d.Set("name", policyId); err != nil {
+		return diag.FromErr(err)
+	}
 	for _, ph := range supportedIlmPhases {
 		if v, ok := ilmDef.Policy.Phases[ph]; ok {
 			phase, diags := flattenPhase(ph, v, d)
