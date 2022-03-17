@@ -8,7 +8,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
   hot {
     min_age = "1h"
     set_priority {
-      priority = 10
+      priority = 0
     }
     rollover {
       max_age = "1d"
@@ -19,7 +19,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
   warm {
     min_age = "0ms"
     set_priority {
-      priority = 60
+      priority = 10
     }
     readonly {}
     allocate {

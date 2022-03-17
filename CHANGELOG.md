@@ -1,4 +1,6 @@
 ## [Unreleased]
+### Fixed
+- Make sure it is possible to set priority to `0` in ILM template ([#88](https://github.com/elastic/terraform-provider-elasticstack/issues/88))
 
 ## [0.3.2] - 2022-02-28
 ### Fixed
