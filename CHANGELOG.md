@@ -1,4 +1,6 @@
 ## [Unreleased]
+### Fixed
+- Set the ILM name on read operation ([#87](https://github.com/elastic/terraform-provider-elasticstack/issues/87))
 
 ## [0.3.2] - 2022-02-28
 ### Fixed
