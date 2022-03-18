@@ -5,9 +5,6 @@
 ## Use of the provider
 The Elastic Stack provider allows you to manage and configure the Elastic stack (Elasticsearch, Kibana, etc) as code using `terraform`.
 
-Version `0.1.0` is an initial beta version of the Elastic Stack terraform provider. It is currently not yet fully supported by Elastic, but will be in subsequent versions.
-
-For this early release, we'd like to get feedback from early adopters. Any modifications made to resources in later versions will be communicated prior to release.
 
 ## Getting started
 
