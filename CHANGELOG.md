@@ -1,6 +1,7 @@
 ## [Unreleased]
 ### Fixed
 - Make sure it is possible to set priority to `0` in ILM template ([#88](https://github.com/elastic/terraform-provider-elasticstack/issues/88))
+- Set the ILM name on read operation ([#87](https://github.com/elastic/terraform-provider-elasticstack/issues/87))
 
 ## [0.3.2] - 2022-02-28
 ### Fixed
