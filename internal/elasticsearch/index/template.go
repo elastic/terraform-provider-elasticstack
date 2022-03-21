@@ -200,35 +200,35 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	indexTemplate.ComposedOf = compsOf
 
-	if d.HasChange("data_stream") {
-		old, _ := d.GetChange("data_stream")
-
+	if v, ok := d.GetOk("data_stream"); ok {
 		// 8.x workaround
 		hasAllowCustomRouting := false
-		if old != nil && len(old.([]interface{})) == 1 {
-			if old.([]interface{})[0] != nil {
-				setting := old.([]interface{})[0].(map[string]interface{})
-				if acr, ok := setting["allow_custom_routing"]; ok && acr.(bool) {
-					hasAllowCustomRouting = true
+		if d.HasChange("data_stream") {
+			old, _ := d.GetChange("data_stream")
+
+			if old != nil && len(old.([]interface{})) == 1 {
+				if old.([]interface{})[0] != nil {
+					setting := old.([]interface{})[0].(map[string]interface{})
+					if acr, ok := setting["allow_custom_routing"]; ok && acr.(bool) {
+						hasAllowCustomRouting = true
+					}
 				}
 			}
 		}
 
-		if v, ok := d.GetOk("data_stream"); ok {
-			// only one definition of stream allowed
-			if v.([]interface{})[0] != nil {
-				stream := v.([]interface{})[0].(map[string]interface{})
-				dSettings := &models.DataStreamSettings{}
-				if s, ok := stream["hidden"]; ok {
-					hidden := s.(bool)
-					dSettings.Hidden = &hidden
-				}
-				if s, ok := stream["allow_custom_routing"]; ok && (hasAllowCustomRouting || s.(bool)) {
-					allow := s.(bool)
-					dSettings.AllowCustomRouting = &allow
-				}
-				indexTemplate.DataStream = dSettings
+		// only one definition of stream allowed
+		if v.([]interface{})[0] != nil {
+			stream := v.([]interface{})[0].(map[string]interface{})
+			dSettings := &models.DataStreamSettings{}
+			if s, ok := stream["hidden"]; ok {
+				hidden := s.(bool)
+				dSettings.Hidden = &hidden
 			}
+			if s, ok := stream["allow_custom_routing"]; ok && (hasAllowCustomRouting || s.(bool)) {
+				allow := s.(bool)
+				dSettings.AllowCustomRouting = &allow
+			}
+			indexTemplate.DataStream = dSettings
 		}
 	}
 
