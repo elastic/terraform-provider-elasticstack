@@ -11,7 +11,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
     // using the jsonencode function, which is the recomended way if you want to provide JSON object by yourself
     jsonencode({
       set = {
-        description = "My set processor descirption"
+        description = "My set processor description"
         field       = "_meta"
         value       = "indexed"
       }
