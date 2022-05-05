@@ -1,4 +1,6 @@
 ## [Unreleased]
+### Fixed
+- Correctly identify a missing security user ([#101](https://github.com/elastic/terraform-provider-elasticstack/issues/101))
 
 ## [0.3.3] - 2023-03-22
 ### Fixed
