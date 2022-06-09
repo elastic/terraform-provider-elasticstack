@@ -11,7 +11,7 @@ pipeline {
         axes {
           axis {
             name 'ES_VERSION'
-            values '8.0.0', '7.15.1'
+            values '7.11.2', '7.12.1', '7.13.4', '7.14.2', '7.15.2', '7.16.3', '7.17.4', '8.0.1', '8.1.3', '8.2.2'
           }
         }
         agent { label('linux && immutable && docker') }
