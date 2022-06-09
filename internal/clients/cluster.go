@@ -57,6 +57,9 @@ func (a *ApiClient) GetElasticsearchSnapshotRepository(name string) (*models.Sna
 	log.Printf("[TRACE] response ES API snapshot repository: %+v", snapRepoResponse)
 
 	if currentRepo, ok := snapRepoResponse[name]; ok {
+		if len(currentRepo.Name) <= 0 {
+			currentRepo.Name = name
+		}
 		return &currentRepo, diags
 	}
 
