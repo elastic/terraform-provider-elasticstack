@@ -405,6 +405,11 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 	if err := d.Set(currentRepo.Type, settings); err != nil {
 		return diag.FromErr(err)
 	}
+	if d.Get("name") == "" {
+		if err := d.Set("name", currentRepo.Name); err != nil {
+		return diag.FromErr(err)
+		}
+	}
 
 	return diags
 }
