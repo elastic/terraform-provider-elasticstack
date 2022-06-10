@@ -112,7 +112,7 @@ func ResourceIlm() *schema.Resource {
 	}
 }
 
-var suportedActions = map[string]*schema.Schema{
+var supportedActions = map[string]*schema.Schema{
 	"allocate": {
 		Description: "Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas.",
 		Type:        schema.TypeList,
@@ -361,7 +361,7 @@ var suportedActions = map[string]*schema.Schema{
 func getSchema(actions ...string) map[string]*schema.Schema {
 	sch := make(map[string]*schema.Schema)
 	for _, a := range actions {
-		if action, ok := suportedActions[a]; ok {
+		if action, ok := supportedActions[a]; ok {
 			sch[a] = action
 		}
 	}
