@@ -123,7 +123,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test" {
         box_type = "hot"
       })
       number_of_replicas = 1
-	  total_shards_per_node = 200
+      total_shards_per_node = 200
     }
   }
 
