@@ -28,7 +28,7 @@ type ProcessorAppend struct {
 	Field           string   `json:"field"`
 	Value           []string `json:"value"`
 	AllowDuplicates bool     `json:"allow_duplicates"`
-	MediaType       string   `json:"media_type"`
+	MediaType       string   `json:"media_type,omitempty"`
 }
 
 type ProcessorBytes struct {
