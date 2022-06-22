@@ -40,10 +40,9 @@ func DataSourceProcessorAppend() *schema.Resource {
 			Default:     true,
 		},
 		"media_type": {
-			Description: "The media type for encoding value. Applies only when value is a template snippet. Must be one of `application/json`, `text/plain`, or `application/x-www-form-urlencoded`.",
+			Description: "The media type for encoding value. Applies only when value is a template snippet. Must be one of `application/json`, `text/plain`, or `application/x-www-form-urlencoded`. Supported only from Elasticsearch version **7.15**.",
 			Type:        schema.TypeString,
 			Optional:    true,
-			Default:     "application/json",
 		},
 		"description": {
 			Description: "Description of the processor. ",

@@ -27,8 +27,7 @@ const expectedJsonAppend = `{
 	"append": {
 		"field": "tags", 
 		"value": ["production", "{{{app}}}", "{{{owner}}}"], 
-		"allow_duplicates": true, 
-		"media_type": "application/json", 
+		"allow_duplicates": true,
 		"description": "Append tags to the doc", 
 		"ignore_failure": false
 	}
