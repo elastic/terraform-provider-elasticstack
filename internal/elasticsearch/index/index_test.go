@@ -169,10 +169,6 @@ resource "elasticstack_elasticsearch_index" "test" {
       value = "2"
     }
     setting {
-        name  = "index.total_shards_per_node"
-        value = "200"
-    }
-    setting {
       name  = "index.search.idle.after"
       value = "20s"
     }
