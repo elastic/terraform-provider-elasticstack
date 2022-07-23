@@ -58,8 +58,8 @@ resource "elasticstack_elasticsearch_security_role" "test" {
   cluster = ["all"]
 
   indices {
-    names      = ["index1", "index2"]
-    privileges = ["all"]
+    names                    = ["index1", "index2"]
+    privileges               = ["all"]
   }
 
   applications {

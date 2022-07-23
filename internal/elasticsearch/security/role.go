@@ -126,6 +126,11 @@ func ResourceRole() *schema.Resource {
 						DiffSuppressFunc: utils.DiffJsonSuppress,
 						Optional:         true,
 					},
+					"allow_restricted_indices": {
+						Description: "Include matching restricted indices in names parameter.",
+						Type:        schema.TypeBool,
+						Optional:    true,
+					},
 				},
 			},
 		},
@@ -269,6 +274,10 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 				}
 				newIndex.FieldSecurity = &fieldSecurity
 			}
+
+			allowRestrictedIndices := index["allow_restricted_indices"].(bool)
+			newIndex.AllowRestrictedIndices = &allowRestrictedIndices
+
 			indices[i] = newIndex
 		}
 		role.Indices = indices
@@ -392,6 +401,7 @@ func flattenIndicesData(indices *[]models.IndexPerms) []interface{} {
 			oi["names"] = index.Names
 			oi["privileges"] = index.Privileges
 			oi["query"] = index.Query
+			oi["allow_restricted_indices"] = index.AllowRestrictedIndices
 
 			if index.FieldSecurity != nil {
 				fsec := make(map[string]interface{})
