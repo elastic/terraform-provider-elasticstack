@@ -71,7 +71,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - **alias** (Block Set) Aliases for the index. (see [below for nested schema](#nestedblock--alias))
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **mappings** (String) Mapping for fields in the index.
-If specified, this mapping can include: field names, field data types (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), mapping parameters (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
+If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
 **NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.
 - **settings** (Block List, Max: 1) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
 **NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error (see [below for nested schema](#nestedblock--settings))
