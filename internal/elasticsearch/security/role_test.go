@@ -24,6 +24,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				Config: testAccResourceSecurityRoleCreate(roleName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
@@ -41,6 +42,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "applications"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices"),
 				),
 			},
 		},
@@ -58,8 +60,9 @@ resource "elasticstack_elasticsearch_security_role" "test" {
   cluster = ["all"]
 
   indices {
-    names      = ["index1", "index2"]
-    privileges = ["all"]
+    names                    = ["index1", "index2"]
+    privileges               = ["all"]
+    allow_restricted_indices = true
   }
 
   applications {

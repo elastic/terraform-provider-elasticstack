@@ -22,10 +22,11 @@ type Role struct {
 }
 
 type IndexPerms struct {
-	FieldSecurity *FieldSecurity `json:"field_security,omitempty"`
-	Names         []string       `json:"names"`
-	Privileges    []string       `json:"privileges"`
-	Query         *string        `json:"query,omitempty"`
+	FieldSecurity          *FieldSecurity `json:"field_security,omitempty"`
+	Names                  []string       `json:"names"`
+	Privileges             []string       `json:"privileges"`
+	Query                  *string        `json:"query,omitempty"`
+	AllowRestrictedIndices *bool          `json:"allow_restricted_indices,omitempty"`
 }
 
 type FieldSecurity struct {

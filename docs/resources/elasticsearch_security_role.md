@@ -99,6 +99,7 @@ Optional:
 
 - **field_security** (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--indices--field_security))
 - **query** (String) A search query that defines the documents the owners of the role have read access to.
+- **allow_restricted_indices** (Boolean) Include matching restricted indices in names parameter (usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information).
 
 <a id="nestedblock--indices--field_security"></a>
 ### Nested Schema for `indices.field_security`
