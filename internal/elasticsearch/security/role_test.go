@@ -62,7 +62,7 @@ resource "elasticstack_elasticsearch_security_role" "test" {
   indices {
     names                    = ["index1", "index2"]
     privileges               = ["all"]
-		allow_restricted_indices = true
+    allow_restricted_indices = true
   }
 
   applications {
