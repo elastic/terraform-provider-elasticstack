@@ -9,7 +9,6 @@
 - Add `allow_restricted_indices` setting to security role ([#125](https://github.com/elastic/terraform-provider-elasticstack/issues/125))
 - Add conditional to only set `password` and `password_hash` when a new value is defined ([#127](https://github.com/elastic/terraform-provider-elasticstack/pull/128))
 
-
 ## [0.3.3] - 2023-03-22
 ### Fixed
 - Make sure it is possible to set priority to `0` in ILM template ([#88](https://github.com/elastic/terraform-provider-elasticstack/issues/88))
