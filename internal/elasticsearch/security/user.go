@@ -115,13 +115,18 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 
 	var user models.User
 	user.Username = usernameId
+
 	if v, ok := d.GetOk("password"); ok {
 		password := v.(string)
-		user.Password = &password
+		if d.HasChange("password") {
+			user.Password = &password
+		}
 	}
 	if v, ok := d.GetOk("password_hash"); ok {
 		pass_hash := v.(string)
-		user.PasswordHash = &pass_hash
+		if d.HasChange("password_hash") {
+			user.PasswordHash = &pass_hash
+		}
 	}
 
 	if v, ok := d.GetOk("email"); ok {
