@@ -40,6 +40,13 @@ func New(version string) func() *schema.Provider {
 								Sensitive:   true,
 								DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
 							},
+							"api_key": {
+								Description: "API Key to use for authentication to Elasticsearch",
+								Type:        schema.TypeString,
+								Optional:    true,
+								Sensitive:   true,
+								DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_API_KEY", nil),
+							},
 							"endpoints": {
 								Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 								Type:        schema.TypeList,

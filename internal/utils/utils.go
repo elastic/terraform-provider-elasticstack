@@ -137,6 +137,13 @@ func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
 					Sensitive:    true,
 					RequiredWith: []string{"elasticsearch_connection.0.username"},
 				},
+				"api_key": {
+					Description:   "API Key to use for authentication to Elasticsearch",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					ConflictsWith: []string{"elasticsearch_connection.0.username", "elasticsearch_connection.0.password"},
+				},
 				"endpoints": {
 					Description: "A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.",
 					Type:        schema.TypeList,

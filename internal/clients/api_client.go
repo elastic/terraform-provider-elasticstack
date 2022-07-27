@@ -65,6 +65,9 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 				if password, ok := esConfig["password"]; ok {
 					config.Password = password.(string)
 				}
+				if apikey, ok := esConfig["api_key"]; ok {
+					config.APIKey = apikey.(string)
+				}
 
 				// default endpoints taken from Env if set
 				if es := os.Getenv("ELASTICSEARCH_ENDPOINTS"); es != "" {
@@ -132,6 +135,9 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 		}
 		if p := conn["password"]; p != nil {
 			config.Password = p.(string)
+		}
+		if k := conn["api_key"]; k != nil {
+			config.APIKey = k.(string)
 		}
 		if endpoints := conn["endpoints"]; endpoints != nil {
 			var addrs []string
