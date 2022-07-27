@@ -38,11 +38,23 @@ provider "elasticstack" {
 }
 ```
 
+Alternatively an `api_key` can be specified instead of `username` and `password`:
+
+```terraform
+provider "elasticstack" {
+  elasticsearch {
+    api_key  = "base64encodedapikeyhere=="
+    endpoints = ["http://localhost:9200"]
+  }
+}
+```
 
 ### Environment Variables
 
 You can provide your credentials for the default connection via the `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD` and comma-separated list `ELASTICSEARCH_ENDPOINTS`,
 environment variables, representing your user, password and Elasticsearch API endpoints respectively.
+
+Alternatively the `ELASTICSEARCH_API_KEY` variable can be specified instead of `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD`.
 
 ```terraform
 provider "elasticstack" {
@@ -80,6 +92,7 @@ provider "elasticstack" {
 
 Optional:
 
+- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
 - **ca_file** (String) Path to a custom Certificate Authority certificate
 - **endpoints** (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - **insecure** (Boolean) Disable TLS certificate validation
