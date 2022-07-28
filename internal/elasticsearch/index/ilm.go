@@ -127,7 +127,7 @@ var supportedActions = map[string]*schema.Schema{
 					Default:     0,
 				},
 				"total_shards_per_node": {
-					Description: "The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited)",
+					Description: "The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**",
 					Type:        schema.TypeInt,
 					Optional:    true,
 					Default:     -1,
