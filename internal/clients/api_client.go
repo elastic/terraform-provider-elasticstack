@@ -173,9 +173,9 @@ func (a *ApiClient) GetESClient() *elasticsearch.Client {
 	return a.es
 }
 
-func (a *ApiClient) ID(resourceId string) (*CompositeId, diag.Diagnostics) {
+func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	clusterId, diags := a.ClusterID()
+	clusterId, diags := a.ClusterID(ctx)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -183,9 +183,9 @@ func (a *ApiClient) ID(resourceId string) (*CompositeId, diag.Diagnostics) {
 	return &CompositeId{*clusterId, resourceId}, diags
 }
 
-func (a *ApiClient) ClusterID() (*string, diag.Diagnostics) {
+func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	res, err := a.es.Info()
+	res, err := a.es.Info(a.es.Info.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}

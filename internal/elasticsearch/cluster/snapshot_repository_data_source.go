@@ -47,7 +47,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 		},
 	}
 
-	//-- repos specific settings
+	// -- repos specific settings
 
 	fsSettings := map[string]*schema.Schema{
 		"location": {
@@ -172,7 +172,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 		},
 	}
 
-	//--
+	// --
 
 	snapRepoSchema := map[string]*schema.Schema{
 		"id": {
@@ -258,11 +258,11 @@ func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta in
 		return diag.FromErr(err)
 	}
 	repoName := d.Get("name").(string)
-	id, diags := client.ID(repoName)
+	id, diags := client.ID(ctx, repoName)
 	if diags.HasError() {
 		return diags
 	}
-	currentRepo, diags := client.GetElasticsearchSnapshotRepository(repoName)
+	currentRepo, diags := client.GetElasticsearchSnapshotRepository(ctx, repoName)
 	if diags.HasError() {
 		return diags
 	}

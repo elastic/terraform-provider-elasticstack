@@ -2,6 +2,7 @@ package clients
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,14 +13,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func (a *ApiClient) PutElasticsearchUser(user *models.User) diag.Diagnostics {
+func (a *ApiClient) PutElasticsearchUser(ctx context.Context, user *models.User) diag.Diagnostics {
 	var diags diag.Diagnostics
 	userBytes, err := json.Marshal(user)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	log.Printf("[TRACE] sending request to ES: %s", userBytes)
-	res, err := a.es.Security.PutUser(user.Username, bytes.NewReader(userBytes))
+	res, err := a.es.Security.PutUser(user.Username, bytes.NewReader(userBytes), a.es.Security.PutUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -30,10 +31,10 @@ func (a *ApiClient) PutElasticsearchUser(user *models.User) diag.Diagnostics {
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchUser(username string) (*models.User, diag.Diagnostics) {
+func (a *ApiClient) GetElasticsearchUser(ctx context.Context, username string) (*models.User, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	req := a.es.Security.GetUser.WithUsername(username)
-	res, err := a.es.Security.GetUser(req)
+	res, err := a.es.Security.GetUser(req, a.es.Security.GetUser.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -64,9 +65,9 @@ func (a *ApiClient) GetElasticsearchUser(username string) (*models.User, diag.Di
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchUser(username string) diag.Diagnostics {
+func (a *ApiClient) DeleteElasticsearchUser(ctx context.Context, username string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Security.DeleteUser(username)
+	res, err := a.es.Security.DeleteUser(username, a.es.Security.DeleteUser.WithContext(ctx))
 	if err != nil && res.IsError() {
 		return diag.FromErr(err)
 	}
@@ -77,7 +78,7 @@ func (a *ApiClient) DeleteElasticsearchUser(username string) diag.Diagnostics {
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchRole(role *models.Role) diag.Diagnostics {
+func (a *ApiClient) PutElasticsearchRole(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	roleBytes, err := json.Marshal(role)
@@ -85,7 +86,7 @@ func (a *ApiClient) PutElasticsearchRole(role *models.Role) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 	log.Printf("[TRACE] sending request to ES: %s", roleBytes)
-	res, err := a.es.Security.PutRole(role.Name, bytes.NewReader(roleBytes))
+	res, err := a.es.Security.PutRole(role.Name, bytes.NewReader(roleBytes), a.es.Security.PutRole.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -97,11 +98,11 @@ func (a *ApiClient) PutElasticsearchRole(role *models.Role) diag.Diagnostics {
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchRole(rolename string) (*models.Role, diag.Diagnostics) {
+func (a *ApiClient) GetElasticsearchRole(ctx context.Context, rolename string) (*models.Role, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	req := a.es.Security.GetRole.WithName(rolename)
-	res, err := a.es.Security.GetRole(req)
+	res, err := a.es.Security.GetRole(req, a.es.Security.GetRole.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -128,9 +129,9 @@ func (a *ApiClient) GetElasticsearchRole(rolename string) (*models.Role, diag.Di
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchRole(rolename string) diag.Diagnostics {
+func (a *ApiClient) DeleteElasticsearchRole(ctx context.Context, rolename string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Security.DeleteRole(rolename)
+	res, err := a.es.Security.DeleteRole(rolename, a.es.Security.DeleteRole.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -159,7 +159,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 		return diag.FromErr(err)
 	}
 	slmId := d.Get("name").(string)
-	id, diags := client.ID(slmId)
+	id, diags := client.ID(ctx, slmId)
 	if diags.HasError() {
 		return diags
 	}
@@ -230,7 +230,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 
 	slm.Config = &slmConfig
 
-	if diags := client.PutElasticsearchSlm(&slm); diags.HasError() {
+	if diags := client.PutElasticsearchSlm(ctx, &slm); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -248,7 +248,7 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diags
 	}
 
-	slm, diags := client.GetElasticsearchSlm(id.ResourceId)
+	slm, diags := client.GetElasticsearchSlm(ctx, id.ResourceId)
 	if slm == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -336,7 +336,7 @@ func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchSlm(id.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchSlm(ctx, id.ResourceId); diags.HasError() {
 		return diags
 	}
 	d.SetId("")

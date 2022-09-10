@@ -185,7 +185,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		return diag.FromErr(err)
 	}
 	templateId := d.Get("name").(string)
-	id, diags := client.ID(templateId)
+	id, diags := client.ID(ctx, templateId)
 	if diags.HasError() {
 		return diags
 	}
@@ -293,7 +293,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		indexTemplate.Version = &definedVer
 	}
 
-	if diags := client.PutElasticsearchIndexTemplate(&indexTemplate); diags.HasError() {
+	if diags := client.PutElasticsearchIndexTemplate(ctx, &indexTemplate); diags.HasError() {
 		return diags
 	}
 
@@ -313,7 +313,7 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 	templateId := compId.ResourceId
 
-	tpl, diags := client.GetElasticsearchIndexTemplate(templateId)
+	tpl, diags := client.GetElasticsearchIndexTemplate(ctx, templateId)
 	if tpl == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -417,7 +417,7 @@ func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, me
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchIndexTemplate(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchIndexTemplate(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 	d.SetId("")

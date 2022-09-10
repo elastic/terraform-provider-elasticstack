@@ -172,7 +172,7 @@ If specified, this mapping can include: field names, [field data types](https://
 					return nil, fmt.Errorf("Failed to parse provided ID")
 				}
 				indexName := compId.ResourceId
-				index, diags := client.GetElasticsearchIndex(indexName)
+				index, diags := client.GetElasticsearchIndex(ctx, indexName)
 				if diags.HasError() {
 					return nil, fmt.Errorf("Failed to get an ES Index")
 				}
@@ -271,7 +271,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 		return diag.FromErr(err)
 	}
 	indexName := d.Get("name").(string)
-	id, diags := client.ID(indexName)
+	id, diags := client.ID(ctx, indexName)
 	if diags.HasError() {
 		return diags
 	}
@@ -308,7 +308,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 		index.Settings = sets
 	}
 
-	if diags := client.PutElasticsearchIndex(&index); diags.HasError() {
+	if diags := client.PutElasticsearchIndex(ctx, &index); diags.HasError() {
 		return diags
 	}
 
@@ -345,14 +345,14 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 			}
 		}
 		if len(aliasesToDelete) > 0 {
-			if diags := client.DeleteElasticsearchIndexAlias(indexName, aliasesToDelete); diags.HasError() {
+			if diags := client.DeleteElasticsearchIndexAlias(ctx, indexName, aliasesToDelete); diags.HasError() {
 				return diags
 			}
 		}
 
 		// keep new aliases up-to-date
 		for _, v := range enew {
-			if diags := client.UpdateElasticsearchIndexAlias(indexName, &v); diags.HasError() {
+			if diags := client.UpdateElasticsearchIndexAlias(ctx, indexName, &v); diags.HasError() {
 				return diags
 			}
 		}
@@ -376,7 +376,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 			}
 		}
 		log.Printf("[TRACE] settings to update: %+v", ns)
-		if diags := client.UpdateElasticsearchIndexSettings(indexName, ns); diags.HasError() {
+		if diags := client.UpdateElasticsearchIndexSettings(ctx, indexName, ns); diags.HasError() {
 			return diags
 		}
 	}
@@ -385,7 +385,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 	if d.HasChange("mappings") {
 		// at this point we know there are mappings defined and there is a change which we can apply
 		mappings := d.Get("mappings").(string)
-		if diags := client.UpdateElasticsearchIndexMappings(indexName, mappings); diags.HasError() {
+		if diags := client.UpdateElasticsearchIndexMappings(ctx, indexName, mappings); diags.HasError() {
 			return diags
 		}
 	}
@@ -421,7 +421,7 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.FromErr(err)
 	}
 
-	index, diags := client.GetElasticsearchIndex(indexName)
+	index, diags := client.GetElasticsearchIndex(ctx, indexName)
 	if index == nil && diags == nil {
 		// no index found on ES side
 		d.SetId("")
@@ -473,7 +473,7 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchIndex(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchIndex(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 	d.SetId("")

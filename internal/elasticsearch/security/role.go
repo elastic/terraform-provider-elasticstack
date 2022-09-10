@@ -176,7 +176,7 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 		return diag.FromErr(err)
 	}
 	roleId := d.Get("name").(string)
-	id, diags := client.ID(roleId)
+	id, diags := client.ID(ctx, roleId)
 	if diags.HasError() {
 		return diags
 	}
@@ -300,7 +300,7 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 		role.RusAs = runs
 	}
 
-	if diags := client.PutElasticsearchRole(&role); diags.HasError() {
+	if diags := client.PutElasticsearchRole(ctx, &role); diags.HasError() {
 		return diags
 	}
 
@@ -320,7 +320,7 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	roleId := compId.ResourceId
 
-	role, diags := client.GetElasticsearchRole(roleId)
+	role, diags := client.GetElasticsearchRole(ctx, roleId)
 	if role == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -427,7 +427,7 @@ func resourceSecurityRoleDelete(ctx context.Context, d *schema.ResourceData, met
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchRole(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchRole(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

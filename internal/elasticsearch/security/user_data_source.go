@@ -70,12 +70,12 @@ func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, met
 		return diag.FromErr(err)
 	}
 	usernameId := d.Get("username").(string)
-	id, diags := client.ID(usernameId)
+	id, diags := client.ID(ctx, usernameId)
 	if diags.HasError() {
 		return diags
 	}
 
-	user, diags := client.GetElasticsearchUser(usernameId)
+	user, diags := client.GetElasticsearchUser(ctx, usernameId)
 	if diags.HasError() {
 		return diags
 	}

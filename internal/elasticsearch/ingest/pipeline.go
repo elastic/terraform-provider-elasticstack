@@ -86,7 +86,7 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 	pipelineId := d.Get("name").(string)
-	id, diags := client.ID(pipelineId)
+	id, diags := client.ID(ctx, pipelineId)
 	if diags.HasError() {
 		return diags
 	}
@@ -126,7 +126,7 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 		pipeline.Metadata = metadata
 	}
 
-	if diags := client.PutElasticsearchIngestPipeline(&pipeline); diags.HasError() {
+	if diags := client.PutElasticsearchIngestPipeline(ctx, &pipeline); diags.HasError() {
 		return diags
 	}
 
@@ -146,7 +146,7 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 		return diags
 	}
 
-	pipeline, diags := client.GetElasticsearchIngestPipeline(&compId.ResourceId)
+	pipeline, diags := client.GetElasticsearchIngestPipeline(ctx, &compId.ResourceId)
 	if pipeline == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -214,7 +214,7 @@ func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.Resourc
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchIngestPipeline(&compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchIngestPipeline(ctx, &compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

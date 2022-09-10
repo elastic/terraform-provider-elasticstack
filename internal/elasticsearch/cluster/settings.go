@@ -90,7 +90,7 @@ func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, met
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	id, diags := client.ID("cluster-settings")
+	id, diags := client.ID(ctx, "cluster-settings")
 	if diags.HasError() {
 		return diags
 	}
@@ -108,7 +108,7 @@ func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, met
 			}
 		}
 	}
-	if diags := client.PutElasticsearchSettings(settings); diags.HasError() {
+	if diags := client.PutElasticsearchSettings(ctx, settings); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -209,7 +209,7 @@ func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	clusterSettings, diags := client.GetElasticsearchSettings()
+	clusterSettings, diags := client.GetElasticsearchSettings(ctx)
 	if diags.HasError() {
 		return diags
 	}
@@ -283,7 +283,7 @@ func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, 
 		"persistent": pSettings,
 		"transient":  tSettings,
 	}
-	if diags := client.PutElasticsearchSettings(settings); diags.HasError() {
+	if diags := client.PutElasticsearchSettings(ctx, settings); diags.HasError() {
 		return diags
 	}
 
