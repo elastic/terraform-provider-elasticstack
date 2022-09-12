@@ -2,6 +2,7 @@
 ### Added
 - Allow use of `api_key` instead of `username`/`password` for authentication ([#130](https://github.com/elastic/terraform-provider-elasticstack/pull/130))
 ### Fixed
+- Upgrade Go version to 1.19 and sdk version to v2.22.0 ([#138](https://github.com/elastic/terraform-provider-elasticstack/pull/139))
 - Make API calls context aware to be able to handle timeouts ([#138](https://github.com/elastic/terraform-provider-elasticstack/pull/138))
 - Correctly identify a missing security user ([#101](https://github.com/elastic/terraform-provider-elasticstack/issues/101))
 - Support **7.x** Elasticsearch < **7.15** by removing the default `media_type` attribute in the Append processor ([#118](https://github.com/elastic/terraform-provider-elasticstack/pull/118))
