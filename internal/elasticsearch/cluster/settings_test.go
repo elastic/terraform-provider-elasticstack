@@ -62,7 +62,7 @@ func TestAccResourceClusterSettings(t *testing.T) {
 						}),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_DENIED"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_GRANTED"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#"),
 				),
 			},
 		},
