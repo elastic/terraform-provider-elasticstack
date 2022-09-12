@@ -5,14 +5,15 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -114,7 +115,9 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 				Detail:   err.Error(),
 			})
 		}
-
+		if logging.IsDebugOrHigher() {
+			es.Transport = newDebugTransport("elasticsearch", es.Transport)
+		}
 		return &ApiClient{es, version}, diags
 	}
 }
@@ -162,6 +165,9 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 		if err != nil {
 			return nil, fmt.Errorf("Unable to create Elasticsearch client")
 		}
+		if logging.IsDebugOrHigher() {
+			es.Transport = newDebugTransport("elasticsearch", es.Transport)
+		}
 		return &ApiClient{es, defaultClient.version}, nil
 	} else { // or return the default client
 		return defaultClient, nil
@@ -178,7 +184,6 @@ func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, di
 	if diags.HasError() {
 		return nil, diags
 	}
-	log.Printf("[TRACE] cluster UUID: %s", *clusterId)
 	return &CompositeId{*clusterId, resourceId}, diags
 }
 
@@ -198,7 +203,7 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 		return nil, diag.FromErr(err)
 	}
 	if uuid := info["cluster_uuid"].(string); uuid != "" && uuid != "_na_" {
-		log.Printf("[TRACE] cluster UUID: %s", uuid)
+		tflog.Trace(ctx, fmt.Sprintf("cluster UUID: %s", uuid))
 		return &uuid, diags
 	}
 

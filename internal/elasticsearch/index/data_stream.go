@@ -3,7 +3,6 @@ package index
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -156,7 +155,6 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 	if diags.HasError() {
 		return diags
 	}
-	log.Printf("[TRACE] read the data stream data: %+v", ds)
 
 	if err := d.Set("name", ds.Name); err != nil {
 		return diag.FromErr(err)

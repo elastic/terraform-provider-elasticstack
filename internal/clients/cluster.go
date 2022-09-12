@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -19,7 +18,6 @@ func (a *ApiClient) PutElasticsearchSnapshotRepository(ctx context.Context, repo
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] sending snapshot repository definition to ES API: %s", snapRepoBytes)
 	res, err := a.es.Snapshot.CreateRepository(repository.Name, bytes.NewReader(snapRepoBytes), a.es.Snapshot.CreateRepository.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -55,7 +53,6 @@ func (a *ApiClient) GetElasticsearchSnapshotRepository(ctx context.Context, name
 	if err := json.NewDecoder(res.Body).Decode(&snapRepoResponse); err != nil {
 		return nil, diag.FromErr(err)
 	}
-	log.Printf("[TRACE] response ES API snapshot repository: %+v", snapRepoResponse)
 
 	if currentRepo, ok := snapRepoResponse[name]; ok {
 		return &currentRepo, diags
@@ -89,7 +86,6 @@ func (a *ApiClient) PutElasticsearchSlm(ctx context.Context, slm *models.Snapsho
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] sending SLM to ES API: %s", slmBytes)
 	req := a.es.SlmPutLifecycle.WithBody(bytes.NewReader(slmBytes))
 	res, err := a.es.SlmPutLifecycle(slm.Id, req, a.es.SlmPutLifecycle.WithContext(ctx))
 	if err != nil {
@@ -155,7 +151,6 @@ func (a *ApiClient) PutElasticsearchSettings(ctx context.Context, settings map[s
 	if err != nil {
 		diag.FromErr(err)
 	}
-	log.Printf("[TRACE] settings to set: %s", settingsBytes)
 	res, err := a.es.Cluster.PutSettings(bytes.NewReader(settingsBytes), a.es.Cluster.PutSettings.WithContext(ctx))
 	if err != nil {
 		diag.FromErr(err)
