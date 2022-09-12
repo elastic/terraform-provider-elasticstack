@@ -647,7 +647,7 @@ func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchIlm(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchIlm(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 
