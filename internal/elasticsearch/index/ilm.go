@@ -381,7 +381,7 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 		return diag.FromErr(err)
 	}
 	ilmId := d.Get("name").(string)
-	id, diags := client.ID(ilmId)
+	id, diags := client.ID(ctx, ilmId)
 	if diags.HasError() {
 		return diags
 	}
@@ -392,7 +392,7 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 	policy.Name = ilmId
 
-	if diags := client.PutElasticsearchIlm(policy); diags.HasError() {
+	if diags := client.PutElasticsearchIlm(ctx, policy); diags.HasError() {
 		return diags
 	}
 
@@ -538,7 +538,7 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 	policyId := compId.ResourceId
 
-	ilmDef, diags := client.GetElasticsearchIlm(policyId)
+	ilmDef, diags := client.GetElasticsearchIlm(ctx, policyId)
 	if ilmDef == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -647,7 +647,7 @@ func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchIlm(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchIlm(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

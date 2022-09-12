@@ -108,7 +108,7 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 		return diag.FromErr(err)
 	}
 	usernameId := d.Get("username").(string)
-	id, diags := client.ID(usernameId)
+	id, diags := client.ID(ctx, usernameId)
 	if diags.HasError() {
 		return diags
 	}
@@ -148,7 +148,7 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 		user.Metadata = metadata
 	}
 
-	if diags := client.PutElasticsearchUser(&user); diags.HasError() {
+	if diags := client.PutElasticsearchUser(ctx, &user); diags.HasError() {
 		return diags
 	}
 
@@ -168,7 +168,7 @@ func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	usernameId := compId.ResourceId
 
-	user, diags := client.GetElasticsearchUser(usernameId)
+	user, diags := client.GetElasticsearchUser(ctx, usernameId)
 	if user == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -216,7 +216,7 @@ func resourceSecurityUserDelete(ctx context.Context, d *schema.ResourceData, met
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchUser(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchUser(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

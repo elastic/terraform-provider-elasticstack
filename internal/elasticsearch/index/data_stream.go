@@ -122,12 +122,12 @@ func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 	dsId := d.Get("name").(string)
-	id, diags := client.ID(dsId)
+	id, diags := client.ID(ctx, dsId)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := client.PutElasticsearchDataStream(dsId); diags.HasError() {
+	if diags := client.PutElasticsearchDataStream(ctx, dsId); diags.HasError() {
 		return diags
 	}
 
@@ -147,7 +147,7 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 
-	ds, diags := client.GetElasticsearchDataStream(compId.ResourceId)
+	ds, diags := client.GetElasticsearchDataStream(ctx, compId.ResourceId)
 	if ds == nil && diags == nil {
 		// no data stream found on ES side
 		d.SetId("")
@@ -220,7 +220,7 @@ func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta 
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchDataStream(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchDataStream(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

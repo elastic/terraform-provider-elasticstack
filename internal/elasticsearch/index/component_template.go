@@ -137,7 +137,7 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 	componentId := d.Get("name").(string)
-	id, diags := client.ID(componentId)
+	id, diags := client.ID(ctx, componentId)
 	if diags.HasError() {
 		return diags
 	}
@@ -216,7 +216,7 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 		componentTemplate.Version = &definedVer
 	}
 
-	if diags := client.PutElasticsearchComponentTemplate(&componentTemplate); diags.HasError() {
+	if diags := client.PutElasticsearchComponentTemplate(ctx, &componentTemplate); diags.HasError() {
 		return diags
 	}
 
@@ -236,7 +236,7 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 	}
 	templateId := compId.ResourceId
 
-	tpl, diags := client.GetElasticsearchComponentTemplate(templateId)
+	tpl, diags := client.GetElasticsearchComponentTemplate(ctx, templateId)
 	if tpl == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -290,7 +290,7 @@ func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchComponentTemplate(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchComponentTemplate(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 	d.SetId("")

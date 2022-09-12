@@ -57,7 +57,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 		},
 	}
 
-	//-- repos specific settings
+	// -- repos specific settings
 
 	fsSettings := map[string]*schema.Schema{
 		"location": {
@@ -201,7 +201,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 		},
 	}
 
-	//--
+	// --
 
 	snapRepoSchema := map[string]*schema.Schema{
 		"id": {
@@ -320,7 +320,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 		return diag.FromErr(err)
 	}
 	repoId := d.Get("name").(string)
-	id, diags := client.ID(repoId)
+	id, diags := client.ID(ctx, repoId)
 	if diags.HasError() {
 		return diags
 	}
@@ -344,7 +344,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 	snapRepo.Settings = snapRepoSettings
 
-	if diags := client.PutElasticsearchSnapshotRepository(&snapRepo); diags.HasError() {
+	if diags := client.PutElasticsearchSnapshotRepository(ctx, &snapRepo); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -372,7 +372,7 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 		return diags
 	}
 
-	currentRepo, diags := client.GetElasticsearchSnapshotRepository(compId.ResourceId)
+	currentRepo, diags := client.GetElasticsearchSnapshotRepository(ctx, compId.ResourceId)
 	if currentRepo == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -451,7 +451,7 @@ func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchSnapshotRepository(compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteElasticsearchSnapshotRepository(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 	d.SetId("")
