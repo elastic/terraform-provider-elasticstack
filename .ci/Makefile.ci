@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-GOVERSION ?= 1.17
+GOVERSION ?= 1.19
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
