@@ -12,7 +12,7 @@ import (
 func TestAccDataSourceSnapRepoFs(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
@@ -57,7 +57,7 @@ data "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
 func TestAccDataSourceSnapRepoUrl(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{

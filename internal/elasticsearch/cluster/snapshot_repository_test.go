@@ -15,7 +15,7 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 	// generate a random policy name
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkRepoDestroy(name),
 		ProviderFactories: acctest.Providers,
@@ -36,7 +36,7 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 func TestAccResourceSnapRepoUrl(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkRepoDestroy(name),
 		ProviderFactories: acctest.Providers,

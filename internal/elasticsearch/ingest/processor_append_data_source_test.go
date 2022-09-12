@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccDataSourceIngestProcessorAppend(t *testing.T) {
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{

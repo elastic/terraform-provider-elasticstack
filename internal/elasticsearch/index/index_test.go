@@ -15,7 +15,7 @@ func TestAccResourceIndex(t *testing.T) {
 	// generate renadom index name
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceIndexDestroy,
 		ProviderFactories: acctest.Providers,

@@ -15,7 +15,7 @@ func TestAccResourceSecurityUser(t *testing.T) {
 	// generate a random username
 	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceSecurityUserDestroy,
 		ProviderFactories: acctest.Providers,
