@@ -26,7 +26,9 @@ func TestAccResourceSecurityUser(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "email", ""),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "metadata", `{"test":"abc"}`),
 				),
+				ExpectNonEmptyPlan: true,
 			},
 			{
 				Config: testAccResourceSecurityUpdate(username),
@@ -47,6 +49,10 @@ resource "elasticstack_elasticsearch_security_user" "test" {
   roles     = ["kibana_user"]
   full_name = "Test User"
   password  = "qwerty123"
+  metadata = jsonencode({
+    test     = "abc"
+    _ignored = true
+  })
 }
 	`, username)
 }

@@ -3,12 +3,14 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -144,6 +146,12 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 		metadata := make(map[string]interface{})
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
+		}
+		for k := range metadata {
+			if strings.HasPrefix(k, "_") {
+				tflog.Warn(ctx, fmt.Sprintf("user metadata '%s' is ignored due to having not allowed '_' prefix", k))
+				delete(metadata, k)
+			}
 		}
 		user.Metadata = metadata
 	}
