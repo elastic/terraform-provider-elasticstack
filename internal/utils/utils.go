@@ -50,15 +50,18 @@ func MapsEqual(m1, m2 interface{}) bool {
 // Flattens the multilevel map, and concatenates keys together with dot "."
 // # Exmaples
 // map of form:
-//     map := map[string]interface{}{
-//             "index": map[string]interface{}{
-//                     "key": 1
-//             }
-//     }
+//
+//	map := map[string]interface{}{
+//	        "index": map[string]interface{}{
+//	                "key": 1
+//	        }
+//	}
+//
 // becomes:
-//     map := map[string]interface{}{
-//             "index.key": 1
-//     }
+//
+//	map := map[string]interface{}{
+//	        "index.key": 1
+//	}
 func FlattenMap(m map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{})
 
@@ -160,9 +163,16 @@ func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
 					Default:     false,
 				},
 				"ca_file": {
-					Description: "Path to a custom Certificate Authority certificate",
-					Type:        schema.TypeString,
-					Optional:    true,
+					Description:   "Path to a custom Certificate Authority certificate",
+					Type:          schema.TypeString,
+					Optional:      true,
+					ConflictsWith: []string{"elasticsearch_connection.ca_data"},
+				},
+				"ca_data": {
+					Description:   "PEM-encoded custom Certificate Authority certificate",
+					Type:          schema.TypeString,
+					Optional:      true,
+					ConflictsWith: []string{"elasticsearch_connection.ca_file"},
 				},
 			},
 		},

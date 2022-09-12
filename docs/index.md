@@ -93,6 +93,7 @@ provider "elasticstack" {
 Optional:
 
 - **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
+- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
 - **ca_file** (String) Path to a custom Certificate Authority certificate
 - **endpoints** (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - **insecure** (Boolean) Disable TLS certificate validation
