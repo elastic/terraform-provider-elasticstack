@@ -67,7 +67,7 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 - **email** (String) The email of the user.
 - **enabled** (Boolean) Specifies whether the user is enabled. The default value is true.
 - **full_name** (String) The full name of the user.
-- **metadata** (String) Arbitrary metadata that you want to associate with the user.
+- **metadata** (String) Arbitrary metadata JSON string that you want to associate with the user. The metadata key can't start with `_`.
 - **password** (String, Sensitive) The user’s password. Passwords must be at least 6 characters long.
 - **password_hash** (String, Sensitive) A hash of the user’s password. This must be produced using the same hashing algorithm as has been configured for password storage (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings).
 

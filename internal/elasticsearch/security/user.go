@@ -71,7 +71,7 @@ func ResourceUser() *schema.Resource {
 			},
 		},
 		"metadata": {
-			Description:      "Arbitrary metadata that you want to associate with the user.",
+			Description:      "Arbitrary metadata JSON string that you want to associate with the user. The metadata key can't start with `_`.",
 			Type:             schema.TypeString,
 			Optional:         true,
 			Computed:         true,
