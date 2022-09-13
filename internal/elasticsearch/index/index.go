@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -208,7 +208,7 @@ If specified, this mapping can include: field names, [field data types](https://
 			if err := json.NewDecoder(strings.NewReader(new.(string))).Decode(&n); err != nil {
 				return true
 			}
-			log.Printf("[TRACE] mappings custom diff old = %+v new = %+v", o, n)
+			tflog.Trace(ctx, "mappings custom diff old = %+v new = %+v", o, n)
 
 			var isForceable func(map[string]interface{}, map[string]interface{}) bool
 			isForceable = func(old, new map[string]interface{}) bool {
@@ -363,7 +363,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 		oldSettings, newSettings := d.GetChange("settings")
 		os := flattenIndexSettings(oldSettings.([]interface{}))
 		ns := flattenIndexSettings(newSettings.([]interface{}))
-		log.Printf("[TRACE] Change in the settings detected old settings = %+v, new  settings = %+v", os, ns)
+		tflog.Trace(ctx, fmt.Sprintf("Change in the settings detected old settings = %+v, new  settings = %+v", os, ns))
 		// make sure to add setting to the new map which were removed
 		for k, ov := range os {
 			if _, ok := ns[k]; !ok {
@@ -375,7 +375,6 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 				delete(ns, k)
 			}
 		}
-		log.Printf("[TRACE] settings to update: %+v", ns)
 		if diags := client.UpdateElasticsearchIndexSettings(ctx, indexName, ns); diags.HasError() {
 			return diags
 		}
@@ -430,7 +429,6 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags.HasError() {
 		return diags
 	}
-	log.Printf("[TRACE] read the index data: %+v", index)
 
 	if index.Aliases != nil {
 		aliases, diags := FlattenIndexAliases(index.Aliases)

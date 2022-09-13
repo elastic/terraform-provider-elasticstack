@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -20,7 +19,6 @@ func (a *ApiClient) PutElasticsearchIlm(ctx context.Context, policy *models.Poli
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] sending new ILM policy to ES API: %s", policyBytes)
 	req := a.es.ILM.PutLifecycle.WithBody(bytes.NewReader(policyBytes))
 	res, err := a.es.ILM.PutLifecycle(policy.Name, req, a.es.ILM.PutLifecycle.WithContext(ctx))
 	if err != nil {
@@ -53,7 +51,6 @@ func (a *ApiClient) GetElasticsearchIlm(ctx context.Context, policyName string) 
 	if err := json.NewDecoder(res.Body).Decode(&ilm); err != nil {
 		return nil, diag.FromErr(err)
 	}
-	log.Printf("[TRACE] get ILM policy '%s' from ES API: %#+v", policyName, ilm)
 
 	if ilm, ok := ilm[policyName]; ok {
 		return &ilm, diags
@@ -86,7 +83,6 @@ func (a *ApiClient) PutElasticsearchComponentTemplate(ctx context.Context, templ
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] sending request to ES: %s to create component template '%s' ", templateBytes, template.Name)
 
 	res, err := a.es.Cluster.PutComponentTemplate(template.Name, bytes.NewReader(templateBytes), a.es.Cluster.PutComponentTemplate.WithContext(ctx))
 	if err != nil {
@@ -152,7 +148,6 @@ func (a *ApiClient) PutElasticsearchIndexTemplate(ctx context.Context, template 
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] sending request to ES: %s to create template '%s' ", templateBytes, template.Name)
 
 	res, err := a.es.Indices.PutIndexTemplate(template.Name, bytes.NewReader(templateBytes), a.es.Indices.PutIndexTemplate.WithContext(ctx))
 	if err != nil {
@@ -196,7 +191,6 @@ func (a *ApiClient) GetElasticsearchIndexTemplate(ctx context.Context, templateN
 		return nil, diags
 	}
 	tpl := indexTemplates.IndexTemplates[0]
-	log.Printf("[TRACE] read index template from API: %+v", tpl)
 	return &tpl, diags
 }
 
@@ -219,7 +213,6 @@ func (a *ApiClient) PutElasticsearchIndex(ctx context.Context, index *models.Ind
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] index definition: %s", indexBytes)
 
 	req := a.es.Indices.Create.WithBody(bytes.NewReader(indexBytes))
 	res, err := a.es.Indices.Create(index.Name, req, a.es.Indices.Create.WithContext(ctx))
@@ -276,7 +269,6 @@ func (a *ApiClient) GetElasticsearchIndex(ctx context.Context, name string) (*mo
 
 func (a *ApiClient) DeleteElasticsearchIndexAlias(ctx context.Context, index string, aliases []string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	log.Printf("[TRACE] Deleting aliases for index %s: %v", index, aliases)
 	res, err := a.es.Indices.DeleteAlias([]string{index}, aliases, a.es.Indices.DeleteAlias.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -294,7 +286,6 @@ func (a *ApiClient) UpdateElasticsearchIndexAlias(ctx context.Context, index str
 	if err != nil {
 		diag.FromErr(err)
 	}
-	log.Printf("[TRACE] updaing index %s alias: %s", index, aliasBytes)
 	req := a.es.Indices.PutAlias.WithBody(bytes.NewReader(aliasBytes))
 	res, err := a.es.Indices.PutAlias([]string{index}, alias.Name, req, a.es.Indices.PutAlias.WithContext(ctx))
 	if err != nil {
@@ -313,7 +304,6 @@ func (a *ApiClient) UpdateElasticsearchIndexSettings(ctx context.Context, index 
 	if err != nil {
 		diag.FromErr(err)
 	}
-	log.Printf("[TRACE] updaing index %s settings: %s", index, settingsBytes)
 	req := a.es.Indices.PutSettings.WithIndex(index)
 	res, err := a.es.Indices.PutSettings(bytes.NewReader(settingsBytes), req, a.es.Indices.PutSettings.WithContext(ctx))
 	if err != nil {
@@ -328,7 +318,6 @@ func (a *ApiClient) UpdateElasticsearchIndexSettings(ctx context.Context, index 
 
 func (a *ApiClient) UpdateElasticsearchIndexMappings(ctx context.Context, index, mappings string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	log.Printf("[TRACE] updaing index %s mappings: %s", index, mappings)
 	req := a.es.Indices.PutMapping.WithIndex(index)
 	res, err := a.es.Indices.PutMapping(strings.NewReader(mappings), req, a.es.Indices.PutMapping.WithContext(ctx))
 	if err != nil {
@@ -375,7 +364,6 @@ func (a *ApiClient) GetElasticsearchDataStream(ctx context.Context, dataStreamNa
 	if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
 		return nil, diag.FromErr(err)
 	}
-	log.Printf("[TRACE] get data stream '%v' from ES api: %+v", dataStreamName, dStreams)
 	// if the DataStream found in must be the first index in the data_stream object
 	ds := dStreams["data_streams"][0]
 	return &ds, diags
@@ -402,7 +390,6 @@ func (a *ApiClient) PutElasticsearchIngestPipeline(ctx context.Context, pipeline
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] creating ingest pipeline %s: %s", pipeline.Name, pipelineBytes)
 
 	res, err := a.es.Ingest.PutPipeline(pipeline.Name, bytes.NewReader(pipelineBytes), a.es.Ingest.PutPipeline.WithContext(ctx))
 	if err != nil {
@@ -437,7 +424,6 @@ func (a *ApiClient) GetElasticsearchIngestPipeline(ctx context.Context, name *st
 	}
 	pipeline := pipelines[*name]
 	pipeline.Name = *name
-	log.Printf("[TRACE] get ingest pipeline %s from ES API: %#+v", *name, pipeline)
 
 	return &pipeline, diags
 }

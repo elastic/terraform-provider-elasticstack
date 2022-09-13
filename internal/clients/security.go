@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -19,7 +18,6 @@ func (a *ApiClient) PutElasticsearchUser(ctx context.Context, user *models.User)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] sending request to ES: %s", userBytes)
 	res, err := a.es.Security.PutUser(user.Username, bytes.NewReader(userBytes), a.es.Security.PutUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -51,7 +49,6 @@ func (a *ApiClient) GetElasticsearchUser(ctx context.Context, username string) (
 	if err := json.NewDecoder(res.Body).Decode(&users); err != nil {
 		return nil, diag.FromErr(err)
 	}
-	log.Printf("[TRACE] Fetch users from ES API: %#+v", users)
 
 	if user, ok := users[username]; ok {
 		return &user, diags
@@ -85,7 +82,6 @@ func (a *ApiClient) PutElasticsearchRole(ctx context.Context, role *models.Role)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	log.Printf("[TRACE] sending request to ES: %s", roleBytes)
 	res, err := a.es.Security.PutRole(role.Name, bytes.NewReader(roleBytes), a.es.Security.PutRole.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
