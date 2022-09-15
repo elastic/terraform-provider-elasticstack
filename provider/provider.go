@@ -60,7 +60,7 @@ func New(version string) func() *schema.Provider {
 								Description: "Disable TLS certificate validation",
 								Type:        schema.TypeBool,
 								Optional:    true,
-								Default:     false,
+								DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_INSECURE", false),
 							},
 							"ca_file": {
 								Description: "Path to a custom Certificate Authority certificate",
