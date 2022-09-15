@@ -119,10 +119,11 @@ func ResourceIndex() *schema.Resource {
 			Optional:    true,
 		},
 		"codec": {
-			Type:        schema.TypeString,
-			Description: "The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.",
-			ForceNew:    true,
-			Optional:    true,
+			Type:         schema.TypeString,
+			Description:  "The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.",
+			ForceNew:     true,
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice([]string{"best_compression"}, false),
 		},
 		"routing_partition_size": {
 			Type:        schema.TypeInt,
@@ -137,11 +138,11 @@ func ResourceIndex() *schema.Resource {
 			Optional:    true,
 		},
 		"shard_check_on_startup": {
-			Type:        schema.TypeString,
-			Elem:        &schema.Schema{Type: schema.TypeString},
-			Description: "Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.",
-			ForceNew:    true,
-			Optional:    true,
+			Type:         schema.TypeString,
+			Description:  "Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.",
+			ForceNew:     true,
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice([]string{"false", "true", "checksum"}, false),
 		},
 		"sort_field": {
 			Type:        schema.TypeSet,
@@ -150,6 +151,7 @@ func ResourceIndex() *schema.Resource {
 			ForceNew:    true,
 			Optional:    true,
 		},
+		// sort_order can't be set type since it can have dup strings like ["asc", "asc"]
 		"sort_order": {
 			Type:        schema.TypeList,
 			Elem:        &schema.Schema{Type: schema.TypeString},
@@ -338,9 +340,10 @@ func ResourceIndex() *schema.Resource {
 			Optional:    true,
 		},
 		"search_slowlog_level": {
-			Type:        schema.TypeString,
-			Description: "Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`",
-			Optional:    true,
+			Type:         schema.TypeString,
+			Description:  "Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`",
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice([]string{"warn", "info", "debug", "trace"}, false),
 		},
 		"indexing_slowlog_threshold_index_warn": {
 			Type:        schema.TypeString,
@@ -363,9 +366,10 @@ func ResourceIndex() *schema.Resource {
 			Optional:    true,
 		},
 		"indexing_slowlog_level": {
-			Type:        schema.TypeString,
-			Description: "Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`",
-			Optional:    true,
+			Type:         schema.TypeString,
+			Description:  "Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`",
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice([]string{"warn", "info", "debug", "trace"}, false),
 		},
 		"indexing_slowlog_source": {
 			Type:        schema.TypeString,
@@ -543,20 +547,20 @@ If specified, this mapping can include: field names, [field data types](https://
 						} else if v, ok := index.Settings["index."+key]; ok {
 							value = v
 						} else {
-							tflog.Warn(ctx, fmt.Sprintf("setting '%s' is not currently managed by terraform provider and inored", key))
+							tflog.Warn(ctx, fmt.Sprintf("setting '%s' is not currently managed by terraform provider and has been ignored", key))
 							continue
 						}
 						switch typ {
 						case schema.TypeInt:
 							v, err := strconv.Atoi(value.(string))
 							if err != nil {
-								return nil, fmt.Errorf("failed to convert setting '%s' value %v to int: %v", key, value, err)
+								return nil, fmt.Errorf("failed to convert setting '%s' value %v to int: %w", key, value, err)
 							}
 							value = v
 						case schema.TypeBool:
 							v, err := strconv.ParseBool(value.(string))
 							if err != nil {
-								return nil, fmt.Errorf("failed to convert setting '%s' value %v to bool: %v", key, value, err)
+								return nil, fmt.Errorf("failed to convert setting '%s' value %v to bool: %w", key, value, err)
 							}
 							value = v
 						}
@@ -720,7 +724,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 			setting := s.(map[string]interface{})
 			name := setting["name"].(string)
 			if _, ok := index.Settings[name]; ok {
-				return diag.FromErr(fmt.Errorf("setting '%s' is already defined by the other field, please remove it from `settings` not to produce unexpected settings", name))
+				return diag.FromErr(fmt.Errorf("setting '%s' is already defined by the other field, please remove it from `settings` to avoid unexpected settings", name))
 			}
 			index.Settings[name] = setting["value"]
 		}
@@ -802,7 +806,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 		for k, v := range ns {
 			if _, ok := updatedSettings[k]; ok && v != nil {
-				return diag.FromErr(fmt.Errorf("setting '%s' is already updated by the other field, please remove it from `settings` not to produce unexpected settings", k))
+				return diag.FromErr(fmt.Errorf("setting '%s' is already updated by the other field, please remove it from `settings` to avoid unexpected settings", k))
 			} else {
 				updatedSettings[k] = v
 			}

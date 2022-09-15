@@ -131,7 +131,7 @@ func TestAccResourceIndexSettingsConflict(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccResourceIndexSettingsConflict(indexName),
-				ExpectError: regexp.MustCompile("setting 'number_of_shards' is already defined by the other field, please remove it from `settings` not to produce unexpected settings"),
+				ExpectError: regexp.MustCompile("setting 'number_of_shards' is already defined by the other field, please remove it from `settings` to avoid unexpected settings"),
 			},
 		},
 	})
