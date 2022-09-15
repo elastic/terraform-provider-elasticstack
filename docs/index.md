@@ -43,7 +43,7 @@ Alternatively an `api_key` can be specified instead of `username` and `password`
 ```terraform
 provider "elasticstack" {
   elasticsearch {
-    api_key  = "base64encodedapikeyhere=="
+    api_key   = "base64encodedapikeyhere=="
     endpoints = ["http://localhost:9200"]
   }
 }
