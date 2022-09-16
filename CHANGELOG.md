@@ -1,5 +1,6 @@
 ## [Unreleased]
 ### Added
+- Add ca_data field to provider schema ([#145](https://github.com/elastic/terraform-provider-elasticstack/pull/145))
 - Add individual setting fields ([#137](https://github.com/elastic/terraform-provider-elasticstack/pull/137))
 - Allow use of `api_key` instead of `username`/`password` for authentication ([#130](https://github.com/elastic/terraform-provider-elasticstack/pull/130))
 ### Fixed

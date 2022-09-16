@@ -104,6 +104,9 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 					}
 					config.CACert = caCert
 				}
+				if caData, ok := esConfig["ca_data"]; ok && caData.(string) != "" {
+					config.CACert = []byte(caData.(string))
+				}
 			}
 		}
 
