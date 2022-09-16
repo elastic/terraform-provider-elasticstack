@@ -3,7 +3,7 @@
 - Add individual setting fields ([#137](https://github.com/elastic/terraform-provider-elasticstack/pull/137))
 - Allow use of `api_key` instead of `username`/`password` for authentication ([#130](https://github.com/elastic/terraform-provider-elasticstack/pull/130))
 ### Fixed
-- Ignore user's metadata with underscore prefix ([#143](https://github.com/elastic/terraform-provider-elasticstack/pull/143))
+- Refactor main function not to use deprecated debug method ([#149](https://github.com/elastic/terraform-provider-elasticstack/pull/149))
 - Expose provider package ([#142](https://github.com/elastic/terraform-provider-elasticstack/pull/142))
 - Upgrade Go version to 1.19 and sdk version to v2.22.0 ([#139](https://github.com/elastic/terraform-provider-elasticstack/pull/139))
 - Make API calls context aware to be able to handle timeouts ([#138](https://github.com/elastic/terraform-provider-elasticstack/pull/138))
