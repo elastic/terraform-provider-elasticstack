@@ -11,7 +11,7 @@ The Elasticstack provider provides the resources to interact with Elastic stack 
 
 
 It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
-in order to interract with the Elasticsearch and be able to use the provider's full capabilities
+in order to interact with the Elasticsearch and be able to use the provider's full capabilities
 
 
 ## Authentication

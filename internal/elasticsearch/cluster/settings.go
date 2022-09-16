@@ -214,10 +214,10 @@ func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, me
 		return diags
 	}
 	configuredSettings, _ := getConfiguredSettings(d)
-	persitent := flattenSettings("persistent", configuredSettings, clusterSettings)
+	persistent := flattenSettings("persistent", configuredSettings, clusterSettings)
 	transient := flattenSettings("transient", configuredSettings, clusterSettings)
 
-	if err := d.Set("persistent", persitent); err != nil {
+	if err := d.Set("persistent", persistent); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("transient", transient); err != nil {

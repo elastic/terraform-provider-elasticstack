@@ -48,17 +48,20 @@ func MapsEqual(m1, m2 interface{}) bool {
 }
 
 // Flattens the multilevel map, and concatenates keys together with dot "."
-// # Exmaples
+// # Examples
 // map of form:
-//     map := map[string]interface{}{
-//             "index": map[string]interface{}{
-//                     "key": 1
-//             }
-//     }
+//
+//	map := map[string]interface{}{
+//	        "index": map[string]interface{}{
+//	                "key": 1
+//	        }
+//	}
+//
 // becomes:
-//     map := map[string]interface{}{
-//             "index.key": 1
-//     }
+//
+//	map := map[string]interface{}{
+//	        "index.key": 1
+//	}
 func FlattenMap(m map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{})
 
