@@ -25,7 +25,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
   // processors can be defined in different way
   processors = [
-    // using the jsonencode function, which is the recomended way if you want to provide JSON object by yourself
+    // using the jsonencode function, which is the recommended way if you want to provide JSON object by yourself
     jsonencode({
       set = {
         description = "My set processor description"
@@ -95,6 +95,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "ingest" {
 Optional:
 
 - **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
+- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
 - **ca_file** (String) Path to a custom Certificate Authority certificate
 - **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
 - **insecure** (Boolean) Disable TLS certificate validation

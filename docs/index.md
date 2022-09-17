@@ -11,7 +11,7 @@ The Elasticstack provider provides the resources to interact with Elastic stack 
 
 
 It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
-in order to interract with the Elasticsearch and be able to use the provider's full capabilities
+in order to interact with the Elasticsearch and be able to use the provider's full capabilities
 
 
 ## Authentication
@@ -93,6 +93,7 @@ provider "elasticstack" {
 Optional:
 
 - **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
+- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
 - **ca_file** (String) Path to a custom Certificate Authority certificate
 - **endpoints** (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - **insecure** (Boolean) Disable TLS certificate validation

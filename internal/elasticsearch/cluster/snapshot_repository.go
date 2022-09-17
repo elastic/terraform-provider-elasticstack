@@ -333,7 +333,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 		snapRepo.Verify = v.(bool)
 	}
 
-	// find supported repository types and itterate over them
+	// find supported repository types and iterate over them
 	schemaTypes := ResourceSnapshotRepository().Schema
 	delete(schemaTypes, "elasticsearch_connection")
 	for t := range schemaTypes {

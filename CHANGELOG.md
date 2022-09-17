@@ -1,8 +1,12 @@
 ## [Unreleased]
 ### Added
+- Add ca_data field to provider schema ([#145](https://github.com/elastic/terraform-provider-elasticstack/pull/145))
+- Add individual setting fields ([#137](https://github.com/elastic/terraform-provider-elasticstack/pull/137))
 - Allow use of `api_key` instead of `username`/`password` for authentication ([#130](https://github.com/elastic/terraform-provider-elasticstack/pull/130))
 ### Fixed
-- Upgrade Go version to 1.19 and sdk version to v2.22.0 ([#138](https://github.com/elastic/terraform-provider-elasticstack/pull/139))
+- Ignore user's metadata with underscore prefix ([#143](https://github.com/elastic/terraform-provider-elasticstack/pull/143))
+- Expose provider package ([#142](https://github.com/elastic/terraform-provider-elasticstack/pull/142))
+- Upgrade Go version to 1.19 and sdk version to v2.22.0 ([#139](https://github.com/elastic/terraform-provider-elasticstack/pull/139))
 - Make API calls context aware to be able to handle timeouts ([#138](https://github.com/elastic/terraform-provider-elasticstack/pull/138))
 - Correctly identify a missing security user ([#101](https://github.com/elastic/terraform-provider-elasticstack/issues/101))
 - Support **7.x** Elasticsearch < **7.15** by removing the default `media_type` attribute in the Append processor ([#118](https://github.com/elastic/terraform-provider-elasticstack/pull/118))
@@ -44,7 +48,7 @@
 - New resource to manage Elasticsearch indices ([#38](https://github.com/elastic/terraform-provider-elasticstack/pull/38))
 - The `insecure` option to the Elasticsearch provider configuration to ignore certificate verification ([#36](https://github.com/elastic/terraform-provider-elasticstack/pull/36))
 - The `ca_file` option to the Elasticsearch provider configuration to provide path to the custom root certificate file ([#35](https://github.com/elastic/terraform-provider-elasticstack/pull/35))
-- Documentation templates for all the exisiting resources ([#32](https://github.com/elastic/terraform-provider-elasticstack/pull/32))
+- Documentation templates for all the existing resources ([#32](https://github.com/elastic/terraform-provider-elasticstack/pull/32))
 
 ### Fixed
 - Identify missing or deleted resources in the Elasticsearch cluster and make sure Terraform can re-create them ([#40](https://github.com/elastic/terraform-provider-elasticstack/pull/40))

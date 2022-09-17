@@ -69,12 +69,66 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 ### Optional
 
 - **alias** (Block Set) Aliases for the index. (see [below for nested schema](#nestedblock--alias))
+- **analysis_analyzer** (String) A JSON string describing the analyzers applied to the index.
+- **analysis_filter** (String) A JSON string describing the filters applied to the index.
+- **analysis_normalizer** (String) A JSON string describing the normalizers applied to the index.
+- **analysis_tokenizer** (String) A JSON string describing the tokenizers applied to the index.
+- **analyze_max_token_count** (Number) The maximum number of tokens that can be produced using _analyze API.
+- **auto_expand_replicas** (String) Set the number of replicas to the node count in the cluster. Set to a dash delimited lower and upper bound (e.g. 0-5) or use all for the upper bound (e.g. 0-all)
+- **blocks_metadata** (Boolean) Set to `true` to disable index metadata reads and writes.
+- **blocks_read** (Boolean) Set to `true` to disable read operations against the index.
+- **blocks_read_only** (Boolean) Set to `true` to make the index and index metadata read only, `false` to allow writes and metadata changes.
+- **blocks_read_only_allow_delete** (Boolean) Identical to `index.blocks.read_only` but allows deleting the index to free up resources.
+- **blocks_write** (Boolean) Set to `true` to disable data write operations against the index. This setting does not affect metadata.
+- **codec** (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
+- **default_pipeline** (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- **final_pipeline** (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
+- **gc_deletes** (String) The length of time that a deleted document's version number remains available for further versioned operations.
+- **highlight_max_analyzed_offset** (Number) The maximum number of characters that will be analyzed for a highlight request.
+- **indexing_slowlog_level** (String) Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`
+- **indexing_slowlog_source** (String) Set the number of characters of the `_source` to include in the slowlog lines, `false` or `0` will skip logging the source entirely and setting it to `true` will log the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.
+- **indexing_slowlog_threshold_index_debug** (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `2s`
+- **indexing_slowlog_threshold_index_info** (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `5s`
+- **indexing_slowlog_threshold_index_trace** (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `500ms`
+- **indexing_slowlog_threshold_index_warn** (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `10s`
+- **load_fixed_bitset_filters_eagerly** (Boolean) Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.
 - **mappings** (String) Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
 **NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.
-- **settings** (Block List, Max: 1) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
+- **max_docvalue_fields_search** (Number) The maximum number of `docvalue_fields` that are allowed in a query.
+- **max_inner_result_window** (Number) The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.
+- **max_ngram_diff** (Number) The maximum allowed difference between min_gram and max_gram for NGramTokenizer and NGramTokenFilter.
+- **max_refresh_listeners** (Number) Maximum number of refresh listeners available on each shard of the index.
+- **max_regex_length** (Number) The maximum length of regex that can be used in Regexp Query.
+- **max_rescore_window** (Number) The maximum value of `window_size` for `rescore` requests in searches of this index.
+- **max_result_window** (Number) The maximum value of `from + size` for searches to this index.
+- **max_script_fields** (Number) The maximum number of `script_fields` that are allowed in a query.
+- **max_shingle_diff** (Number) The maximum allowed difference between max_shingle_size and min_shingle_size for ShingleTokenFilter.
+- **max_terms_count** (Number) The maximum number of terms that can be used in Terms Query.
+- **number_of_replicas** (Number) Number of shard replicas.
+- **number_of_routing_shards** (Number) Value used with number_of_shards to route documents to a primary shard. This can be set only on creation.
+- **number_of_shards** (Number) Number of shards for the index. This can be set only on creation.
+- **query_default_field** (Set of String) Wildcard (*) patterns matching one or more fields. Defaults to '*', which matches all fields eligible for term-level queries, excluding metadata fields.
+- **refresh_interval** (String) How often to perform a refresh operation, which makes recent changes to the index visible to search. Can be set to `-1` to disable refresh.
+- **routing_allocation_enable** (String) Controls shard allocation for this index. It can be set to: `all` , `primaries` , `new_primaries` , `none`.
+- **routing_partition_size** (Number) The number of shards a custom routing value can go to. This can be set only on creation.
+- **routing_rebalance_enable** (String) Enables shard rebalancing for this index. It can be set to: `all`, `primaries` , `replicas` , `none`.
+- **search_idle_after** (String) How long a shard can not receive a search or get request until it’s considered search idle.
+- **search_slowlog_level** (String) Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`
+- **search_slowlog_threshold_fetch_debug** (String) Set the cutoff for shard level slow search logging of slow searches in the fetch phase, in time units, e.g. `2s`
+- **search_slowlog_threshold_fetch_info** (String) Set the cutoff for shard level slow search logging of slow searches in the fetch phase, in time units, e.g. `5s`
+- **search_slowlog_threshold_fetch_trace** (String) Set the cutoff for shard level slow search logging of slow searches in the fetch phase, in time units, e.g. `500ms`
+- **search_slowlog_threshold_fetch_warn** (String) Set the cutoff for shard level slow search logging of slow searches in the fetch phase, in time units, e.g. `10s`
+- **search_slowlog_threshold_query_debug** (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `2s`
+- **search_slowlog_threshold_query_info** (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `5s`
+- **search_slowlog_threshold_query_trace** (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `500ms`
+- **search_slowlog_threshold_query_warn** (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `10s`
+- **settings** (Block List, Max: 1, Deprecated) DEPRECATED: Please use dedicated setting field. Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
 **NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error (see [below for nested schema](#nestedblock--settings))
+- **shard_check_on_startup** (String) Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.
+- **sort_field** (Set of String) The field to sort shards in this index by.
+- **sort_order** (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
 
 ### Read-Only
 
@@ -104,6 +158,7 @@ Optional:
 Optional:
 
 - **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
+- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
 - **ca_file** (String) Path to a custom Certificate Authority certificate
 - **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
 - **insecure** (Boolean) Disable TLS certificate validation
