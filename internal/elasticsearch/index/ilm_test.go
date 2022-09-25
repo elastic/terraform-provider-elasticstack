@@ -1,9 +1,8 @@
 package index_test
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -80,29 +79,9 @@ func TestAccResourceILM(t *testing.T) {
 }
 func serverVersionLessThanTotalShardsPerNodeLimit() (bool, error) {
 	client := acctest.ApiClient()
-	res, err := client.GetESClient().Info()
-
-	if err != nil {
-		return false, err
-	}
-
-	defer res.Body.Close()
-
-	if res.IsError() {
-		body, err := io.ReadAll(res.Body)
-		return false, fmt.Errorf("failed to check elasticsearch version %s %s", err, body)
-	}
-
-	var body map[string]interface{}
-	// Deserialize the response into a map.
-	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
-		return false, fmt.Errorf("failed to parse the elasticsearch info body %w", err)
-	}
-
-	rawVersion := body["version"].(map[string]interface{})["number"].(string)
-	serverVersion, err := version.NewVersion(rawVersion)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse the elasticsearch version %w", err)
+	serverVersion, diags := client.ServerVersion(context.Background())
+	if diags.HasError() {
+		return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 	}
 
 	return serverVersion.LessThan(totalShardsPerNodeVersionLimit), nil

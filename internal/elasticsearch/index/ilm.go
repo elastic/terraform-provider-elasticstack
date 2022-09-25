@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -393,7 +394,12 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 		return diags
 	}
 
-	policy, diags := expandIlmPolicy(d)
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	policy, diags := expandIlmPolicy(d, serverVersion)
 	if diags.HasError() {
 		return diags
 	}
@@ -407,7 +413,7 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	return resourceIlmRead(ctx, d, meta)
 }
 
-func expandIlmPolicy(d *schema.ResourceData) (*models.Policy, diag.Diagnostics) {
+func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*models.Policy, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var policy models.Policy
 	phases := make(map[string]models.Phase)
@@ -424,7 +430,7 @@ func expandIlmPolicy(d *schema.ResourceData) (*models.Policy, diag.Diagnostics) 
 
 	for _, ph := range supportedIlmPhases {
 		if v, ok := d.GetOk(ph); ok {
-			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}), d)
+			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}), d, serverVersion)
 			if diags.HasError() {
 				return nil, diags
 			}
@@ -436,7 +442,7 @@ func expandIlmPolicy(d *schema.ResourceData) (*models.Policy, diag.Diagnostics) 
 	return &policy, diags
 }
 
-func expandPhase(p map[string]interface{}, d *schema.ResourceData) (*models.Phase, diag.Diagnostics) {
+func expandPhase(p map[string]interface{}, d *schema.ResourceData, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var phase models.Phase
 
@@ -450,44 +456,44 @@ func expandPhase(p map[string]interface{}, d *schema.ResourceData) (*models.Phas
 		if a := action.([]interface{}); len(a) > 0 {
 			switch actionName {
 			case "allocate":
-				actions[actionName], diags = expandAction(a, "number_of_replicas", "total_shards_per_node", "include", "exclude", "require")
+				actions[actionName], diags = expandAction(a, serverVersion, "number_of_replicas", "total_shards_per_node", "include", "exclude", "require")
 			case "delete":
-				actions[actionName], diags = expandAction(a, "delete_searchable_snapshot")
+				actions[actionName], diags = expandAction(a, serverVersion, "delete_searchable_snapshot")
 			case "forcemerge":
-				actions[actionName], diags = expandAction(a, "max_num_segments", "index_codec")
+				actions[actionName], diags = expandAction(a, serverVersion, "max_num_segments", "index_codec")
 			case "freeze":
 				if a[0] != nil {
 					ac := a[0].(map[string]interface{})
 					if ac["enabled"].(bool) {
-						actions[actionName], diags = expandAction(a)
+						actions[actionName], diags = expandAction(a, serverVersion)
 					}
 				}
 			case "migrate":
-				actions[actionName], diags = expandAction(a, "enabled")
+				actions[actionName], diags = expandAction(a, serverVersion, "enabled")
 			case "readonly":
 				if a[0] != nil {
 					ac := a[0].(map[string]interface{})
 					if ac["enabled"].(bool) {
-						actions[actionName], diags = expandAction(a)
+						actions[actionName], diags = expandAction(a, serverVersion)
 					}
 				}
 			case "rollover":
-				actions[actionName], diags = expandAction(a, "max_age", "max_docs", "max_size", "max_primary_shard_size")
+				actions[actionName], diags = expandAction(a, serverVersion, "max_age", "max_docs", "max_size", "max_primary_shard_size")
 			case "searchable_snapshot":
-				actions[actionName], diags = expandAction(a, "snapshot_repository", "force_merge_index")
+				actions[actionName], diags = expandAction(a, serverVersion, "snapshot_repository", "force_merge_index")
 			case "set_priority":
-				actions[actionName], diags = expandAction(a, "priority")
+				actions[actionName], diags = expandAction(a, serverVersion, "priority")
 			case "shrink":
-				actions[actionName], diags = expandAction(a, "number_of_shards", "max_primary_shard_size")
+				actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", "max_primary_shard_size")
 			case "unfollow":
 				if a[0] != nil {
 					ac := a[0].(map[string]interface{})
 					if ac["enabled"].(bool) {
-						actions[actionName], diags = expandAction(a)
+						actions[actionName], diags = expandAction(a, serverVersion)
 					}
 				}
 			case "wait_for_snapshot":
-				actions[actionName], diags = expandAction(a, "policy")
+				actions[actionName], diags = expandAction(a, serverVersion, "policy")
 			default:
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
@@ -503,17 +509,35 @@ func expandPhase(p map[string]interface{}, d *schema.ResourceData) (*models.Phas
 	return &phase, diags
 }
 
-func expandAction(a []interface{}, settings ...string) (map[string]interface{}, diag.Diagnostics) {
+var ilmActionSettingOptions = map[string]struct {
+	skipEmptyCheck bool
+	def            interface{}
+	minVersion     *version.Version
+}{
+	"number_of_replicas":    {skipEmptyCheck: true},
+	"total_shards_per_node": {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
+	"priority":              {skipEmptyCheck: true},
+}
+
+func expandAction(a []interface{}, serverVersion *version.Version, settings ...string) (map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	def := make(map[string]interface{})
-
-	// can be zero, so we must skip the empty check
-	settingsToSkip := map[string]struct{}{"number_of_replicas": {}, "priority": {}, "total_shards_per_node": {}}
 
 	if action := a[0]; action != nil {
 		for _, setting := range settings {
 			if v, ok := action.(map[string]interface{})[setting]; ok && v != nil {
-				if _, ok := settingsToSkip[setting]; ok || !utils.IsEmpty(v) {
+				options := ilmActionSettingOptions[setting]
+
+				if options.minVersion != nil && options.minVersion.GreaterThan(serverVersion) {
+					if v != options.def {
+						return nil, diag.Errorf("[%s] is not supported in the target Elasticsearch server. Remove the setting from your module definition or set it to the default [%s] value", setting, options.def)
+					}
+
+					// This setting is not supported, and shouldn't be set in the ILM policy object
+					continue
+				}
+
+				if options.skipEmptyCheck || !utils.IsEmpty(v) {
 					// these 3 fields must be treated as JSON objects
 					if setting == "include" || setting == "exclude" || setting == "require" {
 						res := make(map[string]interface{})
@@ -626,6 +650,9 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (int
 			}
 			if v, ok := action["total_shards_per_node"]; ok {
 				allocateAction["total_shards_per_node"] = v
+			} else {
+				// Specify the default for total_shards_per_node. This avoids an endless diff loop for ES 7.15 or lower which don't support this setting
+				allocateAction["total_shards_per_node"] = -1
 			}
 			for _, f := range []string{"include", "require", "exclude"} {
 				if v, ok := action[f]; ok {
