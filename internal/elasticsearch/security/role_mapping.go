@@ -28,15 +28,25 @@ func ResourceRoleMapping() *schema.Resource {
 			Type:             schema.TypeString,
 			Required:         true,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
-			Description:      "A list of mustache templates that will be evaluated to determine the role names that should granted to the users that match the role mapping rules. This matches fields of users, rules can be grouped into `all` and `any` top level keys.",
+			Description:      "The rules that determine which users should be matched by the mapping. A rule is a logical condition that is expressed by using a JSON DSL.",
 		},
 		"roles": {
 			Type: schema.TypeSet,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
-			Required:    true,
-			Description: "A list of role names that are granted to the users that match the role mapping rules.",
+			Description:   "A list of role names that are granted to the users that match the role mapping rules.",
+			Optional:      true,
+			ConflictsWith: []string{"role_templates"},
+			ExactlyOneOf:  []string{"roles", "role_templates"},
+		},
+		"role_templates": {
+			Type:             schema.TypeString,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Description:      "A list of mustache templates that will be evaluated to determine the roles names that should granted to the users that match the role mapping rules.",
+			Optional:         true,
+			ConflictsWith:    []string{"roles"},
+			ExactlyOneOf:     []string{"roles", "role_templates"},
 		},
 		"metadata": {
 			Type:             schema.TypeString,
@@ -81,12 +91,20 @@ func resourceSecurityRoleMappingPut(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
+	var roleTemplates []map[string]interface{}
+	if t, ok := d.GetOk("role_templates"); ok && t.(string) != "" {
+		if err := json.Unmarshal([]byte(t.(string)), &roleTemplates); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	roleMapping := models.RoleMapping{
-		Name:     roleMappingName,
-		Enabled:  d.Get("enabled").(bool),
-		Roles:    utils.ExpandStringSet(d.Get("roles").(*schema.Set)),
-		Rules:    rules,
-		Metadata: json.RawMessage(d.Get("metadata").(string)),
+		Name:          roleMappingName,
+		Enabled:       d.Get("enabled").(bool),
+		Roles:         utils.ExpandStringSet(d.Get("roles").(*schema.Set)),
+		RoleTemplates: roleTemplates,
+		Rules:         rules,
+		Metadata:      json.RawMessage(d.Get("metadata").(string)),
 	}
 	if diags := client.PutElasticsearchRoleMapping(ctx, &roleMapping); diags.HasError() {
 		return diags
@@ -127,8 +145,20 @@ func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData
 	if err := d.Set("name", roleMapping.Name); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("roles", roleMapping.Roles); err != nil {
-		return diag.FromErr(err)
+	if len(roleMapping.Roles) > 0 {
+		if err := d.Set("roles", roleMapping.Roles); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	if len(roleMapping.RoleTemplates) > 0 {
+		roleTemplates, err := json.Marshal(roleMapping.RoleTemplates)
+		if err != nil {
+			diag.FromErr(err)
+		}
+
+		if err := d.Set("role_templates", string(roleTemplates)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if err := d.Set("enabled", roleMapping.Enabled); err != nil {
 		return diag.FromErr(err)

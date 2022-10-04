@@ -22,11 +22,12 @@ type Role struct {
 }
 
 type RoleMapping struct {
-	Name     string                 `json:"-"`
-	Enabled  bool                   `json:"enabled"`
-	Roles    []string               `json:"roles"`
-	Rules    map[string]interface{} `json:"rules"`
-	Metadata interface{}            `json:"metadata"`
+	Name          string                   `json:"-"`
+	Enabled       bool                     `json:"enabled"`
+	Roles         []string                 `json:"roles,omitempty"`
+	RoleTemplates []map[string]interface{} `json:"role_templates,omitempty"`
+	Rules         map[string]interface{}   `json:"rules"`
+	Metadata      interface{}              `json:"metadata"`
 }
 
 type IndexPerms struct {

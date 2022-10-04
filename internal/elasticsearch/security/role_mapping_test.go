@@ -40,6 +40,16 @@ func TestResourceRoleMapping(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
 				),
 			},
+			{
+				Config: testAccResourceSecurityRoleMappingRoleTemplates(roleMappingName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "role_templates", `[{"format":"json","template":"{\"source\":\"{{#tojson}}groups{{/tojson}}\"}"}]`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
+				),
+			},
 		},
 	})
 }
@@ -81,6 +91,31 @@ resource "elasticstack_elasticsearch_security_role_mapping" "test" {
     "admin",
     "user"
   ]
+  rules = jsonencode({
+    any = [
+      { field = { username = "esadmin" } },
+      { field = { groups = "cn=admins,dc=example,dc=com" } },
+    ]
+  })
+}
+	`, roleMappingName)
+}
+
+func testAccResourceSecurityRoleMappingRoleTemplates(roleMappingName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role_mapping" "test" {
+  name = "%s"
+  enabled = false
+  role_templates = jsonencode([
+    {
+      template = jsonencode({ source = "{{#tojson}}groups{{/tojson}}" }),
+      format = "json"
+    }
+  ])
   rules = jsonencode({
     any = [
       { field = { username = "esadmin" } },
