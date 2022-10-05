@@ -138,3 +138,60 @@ func (a *ApiClient) DeleteElasticsearchRole(ctx context.Context, rolename string
 
 	return diags
 }
+
+func (a *ApiClient) PutElasticsearchRoleMapping(ctx context.Context, roleMapping *models.RoleMapping) diag.Diagnostics {
+	roleMappingBytes, err := json.Marshal(roleMapping)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := a.es.Security.PutRoleMapping(roleMapping.Name, bytes.NewReader(roleMappingBytes), a.es.Security.PutRoleMapping.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to put role mapping"); diags.HasError() {
+		return diags
+	}
+
+	return nil
+}
+
+func (a *ApiClient) GetElasticsearchRoleMapping(ctx context.Context, roleMappingName string) (*models.RoleMapping, diag.Diagnostics) {
+	req := a.es.Security.GetRoleMapping.WithName(roleMappingName)
+	res, err := a.es.Security.GetRoleMapping(req, a.es.Security.GetRoleMapping.WithContext(ctx))
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if diags := utils.CheckError(res, "Unable to get a role mapping."); diags.HasError() {
+		return nil, diags
+	}
+	roleMappings := make(map[string]models.RoleMapping)
+	if err := json.NewDecoder(res.Body).Decode(&roleMappings); err != nil {
+		return nil, diag.FromErr(err)
+
+	}
+	if roleMapping, ok := roleMappings[roleMappingName]; ok {
+		roleMapping.Name = roleMappingName
+		return &roleMapping, nil
+	}
+
+	return nil, diag.Errorf("unable to find role mapping '%s' in the cluster", roleMappingName)
+}
+
+func (a *ApiClient) DeleteElasticsearchRoleMapping(ctx context.Context, roleMappingName string) diag.Diagnostics {
+	res, err := a.es.Security.DeleteRoleMapping(roleMappingName, a.es.Security.DeleteRoleMapping.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to delete role mapping"); diags.HasError() {
+		return diags
+	}
+
+	return nil
+}

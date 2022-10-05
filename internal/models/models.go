@@ -21,6 +21,15 @@ type Role struct {
 	RusAs        []string               `json:"run_as,omitempty"`
 }
 
+type RoleMapping struct {
+	Name          string                   `json:"-"`
+	Enabled       bool                     `json:"enabled"`
+	Roles         []string                 `json:"roles,omitempty"`
+	RoleTemplates []map[string]interface{} `json:"role_templates,omitempty"`
+	Rules         map[string]interface{}   `json:"rules"`
+	Metadata      interface{}              `json:"metadata"`
+}
+
 type IndexPerms struct {
 	FieldSecurity          *FieldSecurity `json:"field_security,omitempty"`
 	Names                  []string       `json:"names"`

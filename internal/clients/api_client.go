@@ -40,6 +40,14 @@ func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
 		diags
 }
 
+func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
+	compID, diags := CompositeIdFromStr(id)
+	if diags.HasError() {
+		return "", diags
+	}
+	return compID.ResourceId, nil
+}
+
 func (c *CompositeId) String() string {
 	return fmt.Sprintf("%s/%s", c.ClusterId, c.ResourceId)
 }
