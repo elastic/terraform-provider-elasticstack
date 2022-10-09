@@ -187,3 +187,23 @@ type DataStreamIndex struct {
 type TimestampField struct {
 	Name string `json:"name"`
 }
+
+type LogstashPipeline struct {
+	PipelineID       string                    `json:"-"`
+	Description      string                    `json:"description,omitempty"`
+	LastModified     string                    `json:"last_modified,omitempty"`
+	Pipeline         string                    `json:"pipeline"`
+	PipelineMetadata map[string]interface{}    `json:"pipeline_metadata,omitempty"`
+	PipelineSettings *LogstashPipelineSettings `json:"pipeline_settings,omitempty"`
+	Username         string                    `json:"username,omitempty"`
+}
+
+type LogstashPipelineSettings struct {
+	PipelineWorkers       int    `json:"pipeline.workers,omitempty"`
+	PipelineBatchSize     int    `json:"pipeline.batch.size,omitempty"`
+	PipelineBatchDelay    int    `json:"pipeline.batch.delay,omitempty"`
+	QueueType             string `json:"queue.type,omitempty"`
+	QueueMaxBytesNumber   int    `json:"queue.max_bytes.number,omitempty"`
+	QueueMaxBytesUnits    string `json:"queue.max_bytes.units,omitempty"`
+	QueueCheckpointWrites int    `json:"queue.checkpoint.writes,omitempty"`
+}
