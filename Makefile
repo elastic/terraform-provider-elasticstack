@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.3.3
+VERSION ?= 0.4.0
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -113,7 +113,7 @@ endif
 
 .PHONY: release-notes
 release-notes: ## greps UNRELEASED notes from the CHANGELOG
-	@ awk '/## \[Unreleased\]/{flag=1;next}/## \[.*\] - /{flag=0}flag' CHANGELOG.md 
+	@ awk '/## \[Unreleased\]/{flag=1;next}/## \[.*\] - /{flag=0}flag' CHANGELOG.md
 
 
 .PHONY: help
