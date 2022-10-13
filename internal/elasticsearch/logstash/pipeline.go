@@ -3,11 +3,12 @@ package logstash
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -28,7 +29,8 @@ func ResourceLogstashPipeline() *schema.Resource {
 		"last_modified": {
 			Description: "Date the pipeline was last updated.",
 			Type:        schema.TypeString,
-			Computed:    true,
+			Optional:    true,
+			Default:     formatStrictDateTime(time.Now()),
 		},
 		"pipeline": {
 			Description: "Configuration for the pipeline.",
@@ -39,65 +41,21 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Description:      "Optional metadata about the pipeline.",
 			Type:             schema.TypeString,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
-			ValidateFunc:     validation.StringIsJSON,
 			Optional:         true,
 			Default:          "{}",
 		},
 		"pipeline_settings": {
-			Description: "Settings for the pipeline. Supports only flat keys in dot notation.",
-			Type:        schema.TypeSet,
-			Optional:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"pipeline.workers": {
-						Description: "The number of parallel workers used to run the filter and output stages of the pipeline.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     1,
-					},
-					"pipeline.batch.size": {
-						Description: "The maximum number of events an individual worker thread collects before executing filters and outputs.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     125,
-					},
-					"pipeline.batch.delay": {
-						Description: "Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     50,
-					},
-					"queue.type": {
-						Description: "The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.",
-						Type:        schema.TypeString,
-						Optional:    true,
-						Default:     "memory",
-					},
-					"queue.max_bytes.number": {
-						Description: "The total capacity of the queue when persistent queues are enabled.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     1,
-					},
-					"queue.max_bytes.units": {
-						Description: "Units for the total capacity of the queue when persistent queues are enabled.",
-						Type:        schema.TypeString,
-						Optional:    true,
-						Default:     "gb",
-					},
-					"queue.checkpoint.writes": {
-						Description: "The maximum number of events written before a checkpoint is forced when persistent queues are enabled.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     1024,
-					},
-				},
-			},
+			Description:      "Settings for the pipeline. Supports only flat keys in dot notation.",
+			Type:             schema.TypeString,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Optional:         true,
+			Default:          "{}",
 		},
 		"username": {
 			Description: "User who last updated the pipeline.",
 			Type:        schema.TypeString,
-			Computed:    true,
+			Optional:    true,
+			Default:     "elastic",
 		},
 	}
 
@@ -136,17 +94,9 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	logstashPipeline.Description = d.Get("description").(string)
 	logstashPipeline.LastModified = d.Get("last_modified").(string)
 	logstashPipeline.Pipeline = d.Get("pipeline").(string)
-
-	if v, ok := d.GetOk("pipeline_settings"); ok {
-		pipelineSettings := v.(map[string]interface{})
-		settings, diags := expandPipelineSettings(pipelineSettings)
-		if diags.HasError() {
-			return diags
-		}
-		logstashPipeline.PipelineSettings = settings
-	}
-
-	logstashPipeline.Username = client // How to acheive this?
+	logstashPipeline.PipelineMetadata = json.RawMessage(d.Get("pipeline_metadata").(string))
+	logstashPipeline.PipelineSettings = json.RawMessage(d.Get("pipeline_settings").(string))
+	logstashPipeline.Username = d.Get("username").(string)
 
 	if diags := client.PutLogstashPipeline(ctx, &logstashPipeline); diags.HasError() {
 		return diags
@@ -165,6 +115,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	if diags.HasError() {
 		return diags
 	}
+
 	logstashPipeline, diags := client.GetLogstashPipeline(ctx, resourceID)
 	if logstashPipeline == nil && diags == nil {
 		d.SetId("")
@@ -174,31 +125,38 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 		return diags
 	}
 
+	if err := d.Set("pipeline_id", logstashPipeline.PipelineID); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("description", logstashPipeline.Description); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("last_modified", logstashPipeline.LastModified); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("pipeline", logstashPipeline.Pipeline); err != nil {
+		return diag.FromErr(err)
+	}
+
 	pipelineMetadata, err := json.Marshal(logstashPipeline.PipelineMetadata)
 	if err != nil {
 		diag.FromErr(err)
 	}
-
-	pipelineSettings := flattenPipelineSettings(logstashPipeline.PipelineSettings)
-
-	if err := d.Set("pipeline_id", logstashPipeline.PipelineID); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("description", logstashPipeline.Description); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("last_modified", logstashPipeline.LastModified); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("pipeline", logstashPipeline.Pipeline); err != nil {
-		return diag.FromErr(err)
-	}
 	if err := d.Set("pipeline_metadata", string(pipelineMetadata)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("pipeline_settings", pipelineSettings); err != nil {
+
+	pipelineSettings, err := json.Marshal(logstashPipeline.PipelineSettings)
+	if err != nil {
+		diag.FromErr(err)
+	}
+	if err := d.Set("pipeline_settings", string(pipelineSettings)); err != nil {
 		return diag.FromErr(err)
 	}
+
 	if err := d.Set("username", logstashPipeline.Username); err != nil {
 		return diag.FromErr(err)
 	}
@@ -225,31 +183,7 @@ func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData,
 	return diags
 }
 
-func flattenPipelineSettings(pipelineSettings *models.LogstashPipelineSettings) map[string]interface{} {
-	settings := make(map[string]interface{})
-	if pipelineSettings != nil {
-		settings["pipeline.workers"] = pipelineSettings.PipelineWorkers
-		settings["pipeline.batch.size"] = pipelineSettings.PipelineBatchSize
-		settings["pipeline.batch.delay"] = pipelineSettings.PipelineBatchDelay
-		settings["queue.type"] = pipelineSettings.QueueType
-		settings["queue.max_bytes.number"] = pipelineSettings.QueueMaxBytesNumber
-		settings["queue.max_bytes.units"] = pipelineSettings.QueueMaxBytesUnits
-		settings["queue.checkpoint.writes"] = pipelineSettings.QueueCheckpointWrites
-	}
-	return settings
-}
-
-func expandPipelineSettings(pipelineSettings map[string]interface{}) (*models.LogstashPipelineSettings, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	settings := models.LogstashPipelineSettings{}
-
-	settings.PipelineWorkers = pipelineSettings["pipeline.workers"].(int)
-	settings.PipelineBatchSize = pipelineSettings["pipeline.batch.size"].(int)
-	settings.PipelineBatchDelay = pipelineSettings["pipeline.batch.delay"].(int)
-	settings.QueueType = pipelineSettings["queue.type"].(string)
-	settings.QueueMaxBytesNumber = pipelineSettings["queue.max_bytes.number"].(int)
-	settings.QueueMaxBytesUnits = pipelineSettings["queue.max_bytes.units"].(string)
-	settings.QueueCheckpointWrites = pipelineSettings["queue.checkpoint.writes"].(int)
-
-	return &settings, diags
+func formatStrictDateTime(t time.Time) string {
+	formattedTime := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d.%03dZ", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond())
+	return formattedTime
 }

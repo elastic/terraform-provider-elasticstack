@@ -29,9 +29,9 @@ func (a *ApiClient) PutLogstashPipeline(ctx context.Context, logstashPipeline *m
 	return diags
 }
 
-func (a *ApiClient) GetLogstashPipeline(ctx context.Context, pipeline_id string) (*models.LogstashPipeline, diag.Diagnostics) {
+func (a *ApiClient) GetLogstashPipeline(ctx context.Context, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	res, err := a.es.LogstashGetPipeline(pipeline_id, a.es.LogstashGetPipeline.WithContext(ctx))
+	res, err := a.es.LogstashGetPipeline(pipelineID, a.es.LogstashGetPipeline.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -48,14 +48,14 @@ func (a *ApiClient) GetLogstashPipeline(ctx context.Context, pipeline_id string)
 		return nil, diag.FromErr(err)
 	}
 
-	if logstashPipeline, ok := logstashPipeline[pipeline_id]; ok {
+	if logstashPipeline, ok := logstashPipeline[pipelineID]; ok {
 		return &logstashPipeline, diags
 	}
 
 	diags = append(diags, diag.Diagnostic{
 		Severity: diag.Error,
 		Summary:  "Unable to find logstash pipeline in the cluster",
-		Detail:   fmt.Sprintf(`Unable to find "%s" logstash pipeline in the cluster`, pipeline_id),
+		Detail:   fmt.Sprintf(`Unable to find "%s" logstash pipeline in the cluster`, pipelineID),
 	})
 	return nil, diags
 }
