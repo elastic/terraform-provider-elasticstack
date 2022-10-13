@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -30,15 +31,15 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Computed:    true,
 		},
 		"pipeline": {
-			Description:      "Configuration for the pipeline.",
-			Type:             schema.TypeString,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
-			Required:         true,
+			Description: "Configuration for the pipeline.",
+			Type:        schema.TypeString,
+			Required:    true,
 		},
 		"pipeline_metadata": {
 			Description:      "Optional metadata about the pipeline.",
 			Type:             schema.TypeString,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
+			ValidateFunc:     validation.StringIsJSON,
 			Optional:         true,
 			Default:          "{}",
 		},
@@ -119,7 +120,40 @@ func ResourceLogstashPipeline() *schema.Resource {
 }
 
 func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// TO DO
+	client, err := clients.NewApiClient(d, meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	pipelineID := d.Get("pipeline_id").(string)
+	id, diags := client.ID(ctx, pipelineID)
+	if diags.HasError() {
+		return diags
+	}
+
+	var logstashPipeline models.LogstashPipeline
+	logstashPipeline.PipelineID = pipelineID
+	logstashPipeline.Description = d.Get("description").(string)
+	logstashPipeline.LastModified = d.Get("last_modified").(string)
+	logstashPipeline.Pipeline = d.Get("pipeline").(string)
+
+	if v, ok := d.GetOk("pipeline_settings"); ok {
+		pipelineSettings := v.(map[string]interface{})
+		settings, diags := expandPipelineSettings(pipelineSettings)
+		if diags.HasError() {
+			return diags
+		}
+		logstashPipeline.PipelineSettings = settings
+	}
+
+	logstashPipeline.Username = client // How to acheive this?
+
+	if diags := client.PutLogstashPipeline(ctx, &logstashPipeline); diags.HasError() {
+		return diags
+	}
+
+	d.SetId(id.String())
+	return resourceLogstashPipelineRead(ctx, d, meta)
 }
 
 func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -203,4 +237,19 @@ func flattenPipelineSettings(pipelineSettings *models.LogstashPipelineSettings) 
 		settings["queue.checkpoint.writes"] = pipelineSettings.QueueCheckpointWrites
 	}
 	return settings
+}
+
+func expandPipelineSettings(pipelineSettings map[string]interface{}) (*models.LogstashPipelineSettings, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	settings := models.LogstashPipelineSettings{}
+
+	settings.PipelineWorkers = pipelineSettings["pipeline.workers"].(int)
+	settings.PipelineBatchSize = pipelineSettings["pipeline.batch.size"].(int)
+	settings.PipelineBatchDelay = pipelineSettings["pipeline.batch.delay"].(int)
+	settings.QueueType = pipelineSettings["queue.type"].(string)
+	settings.QueueMaxBytesNumber = pipelineSettings["queue.max_bytes.number"].(int)
+	settings.QueueMaxBytesUnits = pipelineSettings["queue.max_bytes.units"].(string)
+	settings.QueueCheckpointWrites = pipelineSettings["queue.checkpoint.writes"].(int)
+
+	return &settings, diags
 }
