@@ -33,8 +33,15 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "description", "Updated description of Logstash Pipeline"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline", "input{} \nfilter{} \noutput{}"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata", `{"type":"logstash_pipeline","version":"1"}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings", `{"pipeline.workers":"2"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata.type", "logstash_pipeline"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata.version", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.pipeline.workers", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.pipeline.batch.size", "250"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.pipeline.batch.delay", "100"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.queue.type", "persisted"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.queue.max_bytes.number", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.queue.max_bytes.units", "mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.queue.checkpoint.writes", "2048"),
 				),
 			},
 		},
@@ -65,13 +72,21 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   pipeline_id = "%s"
 	description = "Updated description of Logstash Pipeline"
 	pipeline = "input{} \nfilter{} \noutput{}"
-	pipeline_metadata = jsonencode({
-		"type" = "logstash_pipeline",
-    "version" = "1"
-	})
-	pipeline_settings = jsonencode({
-		"pipeline.workers": "2"
-	})
+
+	pipeline_metadata = {
+		"type" = "logstash_pipeline"
+    "version" = 1
+	}
+
+	pipeline_settings = {
+		"pipeline.workers" = 2
+    "pipeline.batch.size" = 250
+    "pipeline.batch.delay" = 100
+    "queue.type" = "persisted"
+    "queue.max_bytes.number" = 2
+    "queue.max_bytes.units" = "mb"
+    "queue.checkpoint.writes" = 2048
+	}
 }
 	`, pipelineID)
 }

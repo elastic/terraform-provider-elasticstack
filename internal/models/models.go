@@ -189,11 +189,11 @@ type TimestampField struct {
 }
 
 type LogstashPipeline struct {
-	PipelineID       string      `json:"-"`
-	Description      string      `json:"description,omitempty"`
-	LastModified     string      `json:"last_modified"`
-	Pipeline         string      `json:"pipeline"`
-	PipelineMetadata interface{} `json:"pipeline_metadata"`
-	PipelineSettings interface{} `json:"pipeline_settings"`
-	Username         string      `json:"username"`
+	PipelineID       string                 `json:"-"`
+	Description      string                 `json:"description,omitempty"`
+	LastModified     string                 `json:"last_modified"`
+	Pipeline         string                 `json:"pipeline"`
+	PipelineMetadata map[string]interface{} `json:"pipeline_metadata"`
+	PipelineSettings map[string]interface{} `json:"pipeline_settings"`
+	Username         string                 `json:"username"`
 }

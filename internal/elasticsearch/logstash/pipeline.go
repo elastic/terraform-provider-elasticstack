@@ -2,7 +2,6 @@ package logstash
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -10,7 +9,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceLogstashPipeline() *schema.Resource {
@@ -37,20 +35,22 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Required:    true,
 		},
 		"pipeline_metadata": {
-			Description:      "Optional metadata about the pipeline.",
-			Type:             schema.TypeString,
-			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
-			Optional:         true,
-			Default:          "{}",
+			Description: "Optional metadata about the pipeline.",
+			Type:        schema.TypeMap,
+			Optional:    true,
+			Elem: &schema.Schema{
+				Type:    schema.TypeString,
+				Default: nil,
+			},
 		},
 		"pipeline_settings": {
-			Description:      "Settings for the pipeline. Supports only flat keys in dot notation.",
-			Type:             schema.TypeString,
-			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
-			Optional:         true,
-			Default:          "{}",
+			Description: "Settings for the pipeline. Supports only flat keys in dot notation.",
+			Type:        schema.TypeMap,
+			Optional:    true,
+			Elem: &schema.Schema{
+				Type:    schema.TypeString,
+				Default: nil,
+			},
 		},
 		"username": {
 			Description: "User who last updated the pipeline.",
@@ -95,8 +95,8 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 		Description:      d.Get("description").(string),
 		LastModified:     utils.FormatStrictDateTime(time.Now()),
 		Pipeline:         d.Get("pipeline").(string),
-		PipelineMetadata: json.RawMessage(d.Get("pipeline_metadata").(string)),
-		PipelineSettings: json.RawMessage(d.Get("pipeline_settings").(string)),
+		PipelineMetadata: d.Get("pipeline_metadata").(map[string]interface{}),
+		PipelineSettings: d.Get("pipeline_settings").(map[string]interface{}),
 		Username:         d.Get("username").(string),
 	}
 
@@ -130,35 +130,21 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	if err := d.Set("pipeline_id", logstashPipeline.PipelineID); err != nil {
 		return diag.FromErr(err)
 	}
-
 	if err := d.Set("description", logstashPipeline.Description); err != nil {
 		return diag.FromErr(err)
 	}
-
 	if err := d.Set("last_modified", logstashPipeline.LastModified); err != nil {
 		return diag.FromErr(err)
 	}
-
 	if err := d.Set("pipeline", logstashPipeline.Pipeline); err != nil {
 		return diag.FromErr(err)
 	}
-
-	pipelineMetadata, err := json.Marshal(logstashPipeline.PipelineMetadata)
-	if err != nil {
-		diag.FromErr(err)
-	}
-	if err := d.Set("pipeline_metadata", string(pipelineMetadata)); err != nil {
+	if err := d.Set("pipeline_metadata", logstashPipeline.PipelineMetadata); err != nil {
 		return diag.FromErr(err)
 	}
-
-	pipelineSettings, err := json.Marshal(logstashPipeline.PipelineSettings)
-	if err != nil {
-		diag.FromErr(err)
-	}
-	if err := d.Set("pipeline_settings", string(pipelineSettings)); err != nil {
+	if err := d.Set("pipeline_settings", logstashPipeline.PipelineSettings); err != nil {
 		return diag.FromErr(err)
 	}
-
 	if err := d.Set("username", logstashPipeline.Username); err != nil {
 		return diag.FromErr(err)
 	}

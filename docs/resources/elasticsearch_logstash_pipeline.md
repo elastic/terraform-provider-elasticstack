@@ -61,8 +61,8 @@ output "pipeline" {
 - **description** (String) Description of the pipeline.
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **id** (String) The ID of this resource.
-- **pipeline_metadata** (String) Optional metadata about the pipeline.
-- **pipeline_settings** (String) Settings for the pipeline. Supports only flat keys in dot notation.
+- **pipeline_metadata** (Map of String) Optional metadata about the pipeline.
+- **pipeline_settings** (Map of String) Settings for the pipeline. Supports only flat keys in dot notation.
 - **username** (String) User who last updated the pipeline.
 
 ### Read-Only
