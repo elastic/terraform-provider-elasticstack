@@ -3,8 +3,8 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_logstash_pipeline" "example" {
-  pipeline_id    = "test_pipeline"
-  description    = "This is an example pipeline"
+  pipeline_id = "test_pipeline"
+  description = "This is an example pipeline"
 
   pipeline = <<-EOF
   input{}
@@ -18,13 +18,13 @@ EOF
   })
 
   pipeline_settings = jsonencode({
-    "pipeline.workers": 1,
-    "pipeline.batch.size": 125,
-    "pipeline.batch.delay": 50,
-    "queue.type": "memory",
-    "queue.max_bytes.number": 1,
-    "queue.max_bytes.units": "gb",
-    "queue.checkpoint.writes": 1024
+    "pipeline.workers" : 1,
+    "pipeline.batch.size" : 125,
+    "pipeline.batch.delay" : 50,
+    "queue.type" : "memory",
+    "queue.max_bytes.number" : 1,
+    "queue.max_bytes.units" : "gb",
+    "queue.checkpoint.writes" : 1024
   })
 }
 
