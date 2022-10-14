@@ -6,7 +6,7 @@ description: |-
   Manage role mappings. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html
 ---
 
-# Resource: elasticstack_elasticsearch_security_role
+# Resource: elasticstack_elasticsearch_security_role_mapping
 
 Manage role mappings. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html
 
