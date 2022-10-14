@@ -48,10 +48,13 @@ output "role" {
 
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **enabled** (Boolean) Mappings that have `enabled` set to `false` are ignored when role mapping is performed.
-- **id** (String) The ID of this resource.
 - **metadata** (String) Additional metadata that helps define which roles are assigned to each user. Keys beginning with `_` are reserved for system usage.
 - **role_templates** (String) A list of mustache templates that will be evaluated to determine the roles names that should granted to the users that match the role mapping rules.
 - **roles** (Set of String) A list of role names that are granted to the users that match the role mapping rules.
+
+### Read-Only
+
+- **id** (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

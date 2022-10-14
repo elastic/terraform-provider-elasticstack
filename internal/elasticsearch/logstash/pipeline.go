@@ -13,6 +13,11 @@ import (
 
 func ResourceLogstashPipeline() *schema.Resource {
 	logstashPipelineSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"pipeline_id": {
 			Description: "Identifier for the pipeline.",
 			Type:        schema.TypeString,
@@ -56,7 +61,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Description: "User who last updated the pipeline.",
 			Type:        schema.TypeString,
 			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", "unknown_user"),
+			DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", "api_key"),
 		},
 	}
 
