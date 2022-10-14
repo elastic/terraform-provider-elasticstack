@@ -3,7 +3,6 @@ package logstash
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -94,7 +93,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	logstashPipeline := models.LogstashPipeline{
 		PipelineID:       pipelineID,
 		Description:      d.Get("description").(string),
-		LastModified:     formatStrictDateTime(time.Now()),
+		LastModified:     utils.FormatStrictDateTime(time.Now()),
 		Pipeline:         d.Get("pipeline").(string),
 		PipelineMetadata: json.RawMessage(d.Get("pipeline_metadata").(string)),
 		PipelineSettings: json.RawMessage(d.Get("pipeline_settings").(string)),
@@ -181,9 +180,4 @@ func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData,
 		return diags
 	}
 	return nil
-}
-
-func formatStrictDateTime(t time.Time) string {
-	strictDateTime := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d.%03dZ", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond())
-	return strictDateTime
 }

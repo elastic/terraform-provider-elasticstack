@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -188,4 +189,9 @@ func StringToHash(s string) (*string, error) {
 	bs := h.Sum(nil)
 	hash := fmt.Sprintf("%x", bs)
 	return &hash, nil
+}
+
+func FormatStrictDateTime(t time.Time) string {
+	strictDateTime := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d.%03dZ", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond())
+	return strictDateTime
 }

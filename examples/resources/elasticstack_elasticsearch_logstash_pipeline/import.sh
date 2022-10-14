@@ -1,0 +1,1 @@
+terraform import elasticstack_elasticsearch_security_logstash_pipeline.my_pipeline <cluster_uuid>/<pipeline ID>
