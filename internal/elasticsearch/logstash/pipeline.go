@@ -11,6 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceLogstashPipeline() *schema.Resource {
@@ -29,8 +30,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 		"last_modified": {
 			Description: "Date the pipeline was last updated.",
 			Type:        schema.TypeString,
-			Optional:    true,
-			Default:     formatStrictDateTime(time.Now()),
+			Computed:    true,
 		},
 		"pipeline": {
 			Description: "Configuration for the pipeline.",
@@ -40,6 +40,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 		"pipeline_metadata": {
 			Description:      "Optional metadata about the pipeline.",
 			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Optional:         true,
 			Default:          "{}",
@@ -47,6 +48,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 		"pipeline_settings": {
 			Description:      "Settings for the pipeline. Supports only flat keys in dot notation.",
 			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Optional:         true,
 			Default:          "{}",
@@ -55,7 +57,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Description: "User who last updated the pipeline.",
 			Type:        schema.TypeString,
 			Optional:    true,
-			Default:     "elastic",
+			DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", "unknown_user"),
 		},
 	}
 
@@ -89,14 +91,15 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 		return diags
 	}
 
-	var logstashPipeline models.LogstashPipeline
-	logstashPipeline.PipelineID = pipelineID
-	logstashPipeline.Description = d.Get("description").(string)
-	logstashPipeline.LastModified = d.Get("last_modified").(string)
-	logstashPipeline.Pipeline = d.Get("pipeline").(string)
-	logstashPipeline.PipelineMetadata = json.RawMessage(d.Get("pipeline_metadata").(string))
-	logstashPipeline.PipelineSettings = json.RawMessage(d.Get("pipeline_settings").(string))
-	logstashPipeline.Username = d.Get("username").(string)
+	logstashPipeline := models.LogstashPipeline{
+		PipelineID:       pipelineID,
+		Description:      d.Get("description").(string),
+		LastModified:     formatStrictDateTime(time.Now()),
+		Pipeline:         d.Get("pipeline").(string),
+		PipelineMetadata: json.RawMessage(d.Get("pipeline_metadata").(string)),
+		PipelineSettings: json.RawMessage(d.Get("pipeline_settings").(string)),
+		Username:         d.Get("username").(string),
+	}
 
 	if diags := client.PutLogstashPipeline(ctx, &logstashPipeline); diags.HasError() {
 		return diags
