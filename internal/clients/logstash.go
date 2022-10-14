@@ -26,6 +26,7 @@ func (a *ApiClient) PutLogstashPipeline(ctx context.Context, logstashPipeline *m
 	if diags := utils.CheckError(res, "Unable to create or update logstash pipeline"); diags.HasError() {
 		return diags
 	}
+
 	return diags
 }
 
@@ -49,6 +50,7 @@ func (a *ApiClient) GetLogstashPipeline(ctx context.Context, pipelineID string) 
 	}
 
 	if logstashPipeline, ok := logstashPipeline[pipelineID]; ok {
+		logstashPipeline.PipelineID = pipelineID
 		return &logstashPipeline, diags
 	}
 

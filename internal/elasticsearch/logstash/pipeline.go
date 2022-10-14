@@ -165,25 +165,22 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
 	client, err := clients.NewApiClient(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
+	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := client.DeleteLogstashPipeline(ctx, compId.ResourceId); diags.HasError() {
+	if diags := client.DeleteLogstashPipeline(ctx, resourceID); diags.HasError() {
 		return diags
 	}
-
-	d.SetId("")
-	return diags
+	return nil
 }
 
 func formatStrictDateTime(t time.Time) string {
-	formattedTime := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d.%03dZ", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond())
-	return formattedTime
+	strictDateTime := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d.%03dZ", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond())
+	return strictDateTime
 }

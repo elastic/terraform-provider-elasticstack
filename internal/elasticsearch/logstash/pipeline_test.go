@@ -3,7 +3,6 @@ package logstash_test
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestResourceLogstashPipeline(t *testing.T) {
-	pipelineID := strings.ToLower(sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	pipelineID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceLogstashPipelineDestroy,
@@ -28,10 +27,16 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline", "input{} filter{} output{}"),
 				),
 			},
-			// {
-			// 	Config: testAccResourceLogstashPipelineUpdate(pipelineID),
-			// 	Check:  resource.ComposeTestCheckFunc(),
-			// },
+			{
+				Config: testAccResourceLogstashPipelineUpdate(pipelineID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_id", pipelineID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "description", "Updated description of Logstash Pipeline"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline", "input{} \nfilter{} \noutput{}"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata", `{"type":"logstash_pipeline","version":"1"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings", `{"pipeline.batch.size":"150"}`),
+				),
+			},
 		},
 	})
 }
@@ -50,9 +55,26 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
 	`, pipelineID)
 }
 
-// func testAccResourceLogstashPipelineUpdate(pipelineID string) string {
+func testAccResourceLogstashPipelineUpdate(pipelineID string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
 
-// }
+resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
+  pipeline_id = "%s"
+	description = "Updated description of Logstash Pipeline"
+	pipeline = "input{} \nfilter{} \noutput{}"
+	pipeline_metadata = jsonencode({
+		"type" = "logstash_pipeline",
+    "version" = "1"
+	})
+	pipeline_settings = jsonencode({
+		"pipeline.batch.size" = "150"
+	})
+}
+	`, pipelineID)
+}
 
 func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
 
