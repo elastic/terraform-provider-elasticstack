@@ -521,7 +521,7 @@ If specified, this mapping can include: field names, [field data types](https://
 				// first populate what we can with Read
 				diags := resourceIndexRead(ctx, d, m)
 				if diags.HasError() {
-					return nil, fmt.Errorf("Unable to import requested index")
+					return nil, fmt.Errorf("unable to import requested index")
 				}
 
 				client, err := clients.NewApiClient(d, m)
@@ -530,12 +530,12 @@ If specified, this mapping can include: field names, [field data types](https://
 				}
 				compId, diags := clients.CompositeIdFromStr(d.Id())
 				if diags.HasError() {
-					return nil, fmt.Errorf("Failed to parse provided ID")
+					return nil, fmt.Errorf("failed to parse provided ID")
 				}
 				indexName := compId.ResourceId
 				index, diags := client.GetElasticsearchIndex(ctx, indexName)
 				if diags.HasError() {
-					return nil, fmt.Errorf("Failed to get an ES Index")
+					return nil, fmt.Errorf("failed to get an ES Index")
 				}
 
 				// check the settings and import those as well

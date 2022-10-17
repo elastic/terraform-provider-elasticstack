@@ -501,7 +501,7 @@ func expandAction(a []interface{}, settings ...string) (map[string]interface{}, 
 	def := make(map[string]interface{})
 
 	// can be zero, so we must skip the empty check
-	settingsToSkip := map[string]struct{}{"number_of_replicas": struct{}{}, "priority": struct{}{}}
+	settingsToSkip := map[string]struct{}{"number_of_replicas": {}, "priority": {}}
 
 	if action := a[0]; action != nil {
 		for _, setting := range settings {
