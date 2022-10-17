@@ -192,6 +192,6 @@ func StringToHash(s string) (*string, error) {
 }
 
 func FormatStrictDateTime(t time.Time) string {
-	strictDateTime := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d.%03dZ", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond())
+	strictDateTime := t.Format("2006-01-02T15:04:05.000Z")
 	return strictDateTime
 }
