@@ -59,7 +59,7 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   description = "Description of Logstash Pipeline"
   pipeline = "input{} filter{} output{}"
 }
-	`, pipelineID)
+  `, pipelineID)
 }
 
 func testAccResourceLogstashPipelineUpdate(pipelineID string) string {
@@ -88,7 +88,7 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
     "queue.checkpoint.writes" = 2048
   }
 }
-	`, pipelineID)
+  `, pipelineID)
 }
 
 func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
