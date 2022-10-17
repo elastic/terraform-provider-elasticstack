@@ -56,8 +56,8 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   pipeline_id = "%s"
-	description = "Description of Logstash Pipeline"
-	pipeline = "input{} filter{} output{}"
+  description = "Description of Logstash Pipeline"
+  pipeline = "input{} filter{} output{}"
 }
 	`, pipelineID)
 }
@@ -70,23 +70,23 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   pipeline_id = "%s"
-	description = "Updated description of Logstash Pipeline"
-	pipeline = "input{} \nfilter{} \noutput{}"
+  description = "Updated description of Logstash Pipeline"
+  pipeline = "input{} \nfilter{} \noutput{}"
 
-	pipeline_metadata = {
-		"type" = "logstash_pipeline"
+  pipeline_metadata = {
+    "type" = "logstash_pipeline"
     "version" = 1
-	}
+  }
 
-	pipeline_settings = {
-		"pipeline.workers" = 2
+  pipeline_settings = {
+    "pipeline.workers" = 2
     "pipeline.batch.size" = 250
     "pipeline.batch.delay" = 100
     "queue.type" = "persisted"
     "queue.max_bytes.number" = 2
     "queue.max_bytes.units" = "mb"
     "queue.checkpoint.writes" = 2048
-	}
+  }
 }
 	`, pipelineID)
 }
