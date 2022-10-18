@@ -61,7 +61,7 @@ output "pipeline" {
 - **description** (String) Description of the pipeline.
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **pipeline_metadata** (Map of String) Optional metadata about the pipeline.
-- **pipeline_settings** (Map of String) Settings for the pipeline. Supports only flat keys in dot notation.
+- **pipeline_settings** (Block List, Max: 1) Settings for the pipeline. (see [below for nested schema](#nestedblock--pipeline_settings))
 - **username** (String) User who last updated the pipeline.
 
 ### Read-Only
@@ -81,6 +81,20 @@ Optional:
 - **insecure** (Boolean) Disable TLS certificate validation
 - **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
 - **username** (String) A username to use for API authentication to Elasticsearch.
+
+
+<a id="nestedblock--pipeline_settings"></a>
+### Nested Schema for `pipeline_settings`
+
+Optional:
+
+- **pipeline_batch_delay** (Number) Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.
+- **pipeline_batch_size** (Number) The maximum number of events an individual worker thread collects before executing filters and outputs.
+- **pipeline_workers** (Number) The number of parallel workers used to run the filter and output stages of the pipeline.
+- **queue_checkpoint_writes** (Number) The maximum number of events written before a checkpoint is forced when persistent queues are enabled.
+- **queue_max_bytes_number** (Number) The total capacity of the queue when persistent queues are enabled.
+- **queue_max_bytes_units** (String) Units for the total capacity of the queue when persistent queues are enabled.
+- **queue_type** (String) The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.
 
 ## Import
 

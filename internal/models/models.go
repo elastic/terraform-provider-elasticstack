@@ -189,11 +189,21 @@ type TimestampField struct {
 }
 
 type LogstashPipeline struct {
-	PipelineID       string                 `json:"-"`
-	Description      string                 `json:"description,omitempty"`
-	LastModified     string                 `json:"last_modified"`
-	Pipeline         string                 `json:"pipeline"`
-	PipelineMetadata map[string]interface{} `json:"pipeline_metadata"`
-	PipelineSettings map[string]interface{} `json:"pipeline_settings"`
-	Username         string                 `json:"username"`
+	PipelineID       string                    `json:"-"`
+	Description      string                    `json:"description,omitempty"`
+	LastModified     string                    `json:"last_modified"`
+	Pipeline         string                    `json:"pipeline"`
+	PipelineMetadata map[string]interface{}    `json:"pipeline_metadata"`
+	PipelineSettings *LogstashPipelineSettings `json:"pipeline_settings"`
+	Username         string                    `json:"username"`
+}
+
+type LogstashPipelineSettings struct {
+	PipelineWorkers       int    `json:"pipeline.workers"`
+	PipelineBatchSize     int    `json:"pipeline.batch.size"`
+	PipelineBatchDelay    int    `json:"pipeline.batch.delay"`
+	QueueType             string `json:"queue.type"`
+	QueueMaxBytesNumber   int    `json:"queue.max_bytes.number"`
+	QueueMaxBytesUnits    string `json:"queue.max_bytes.units"`
+	QueueCheckpointWrites int    `json:"queue.checkpoint.writes"`
 }

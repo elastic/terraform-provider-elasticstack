@@ -35,13 +35,13 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline", "input{} \nfilter{} \noutput{}"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata.type", "logstash_pipeline"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata.version", "1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.pipeline.workers", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.pipeline.batch.size", "250"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.pipeline.batch.delay", "100"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.queue.type", "persisted"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.queue.max_bytes.number", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.queue.max_bytes.units", "mb"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.queue.checkpoint.writes", "2048"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.0.pipeline_workers", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.0.pipeline_batch_size", "250"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.0.pipeline_batch_delay", "100"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.0.queue_type", "persisted"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.0.queue_max_bytes_number", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.0.queue_max_bytes_units", "mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_settings.0.queue_checkpoint_writes", "2048"),
 				),
 			},
 		},
@@ -78,14 +78,14 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
     "version" = 1
   }
 
-  pipeline_settings = {
-    "pipeline.workers" = 2
-    "pipeline.batch.size" = 250
-    "pipeline.batch.delay" = 100
-    "queue.type" = "persisted"
-    "queue.max_bytes.number" = 2
-    "queue.max_bytes.units" = "mb"
-    "queue.checkpoint.writes" = 2048
+  pipeline_settings {
+    pipeline_workers = 2
+    pipeline_batch_size = 250
+    pipeline_batch_delay = 100
+    queue_type = "persisted"
+    queue_max_bytes_number = 2
+    queue_max_bytes_units = "mb"
+    queue_checkpoint_writes = 2048
   }
 }
   `, pipelineID)
