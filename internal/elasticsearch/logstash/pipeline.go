@@ -230,7 +230,7 @@ func flattenPipelineSettings(pipelineSettings *models.LogstashPipelineSettings) 
 	settings["queue_max_bytes_units"] = pipelineSettings.QueueMaxBytesUnits
 	settings["queue_checkpoint_writes"] = pipelineSettings.QueueCheckpointWrites
 
-	return append(make([]interface{}, 0), settings)
+	return []interface{}{settings}
 }
 
 func expandPipelineSettings(pipelineSettings []interface{}) *models.LogstashPipelineSettings {
