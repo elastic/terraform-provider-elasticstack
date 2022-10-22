@@ -25,7 +25,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
   }
 
   alias {
-    name = "my_alias_2"
+    name   = "my_alias_2"
     filter = jsonencode({
       term = { "user.id" = "developer" }
     })
@@ -35,27 +35,18 @@ resource "elasticstack_elasticsearch_index" "my_index" {
     properties = {
       field1 = { type = "keyword" }
       field2 = { type = "text" }
-      field3 = { properties = {
-        inner_field1 = { type = "text", index = false }
-        inner_field2 = { type = "integer", index = false }
-      } }
+      field3 = {
+        properties = {
+          inner_field1 = { type = "text", index = false }
+          inner_field2 = { type = "integer", index = false }
+        }
+      }
     }
   })
 
-  settings {
-    setting {
-      name  = "index.number_of_shards"
-      value = "1"
-    }
-    setting {
-      name  = "index.number_of_replicas"
-      value = "2"
-    }
-    setting {
-      name  = "index.search.idle.after"
-      value = "20s"
-    }
-  }
+  number_of_shards   = 1
+  number_of_replicas = 2
+  search_idle_after  = "20s"
 }
 ```
 
@@ -70,6 +61,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 
 - `alias` (Block Set) Aliases for the index. (see [below for nested schema](#nestedblock--alias))
 - `analysis_analyzer` (String) A JSON string describing the analyzers applied to the index.
+- `analysis_char_filter` (String) A JSON string describing the char_filters applied to the index.
 - `analysis_filter` (String) A JSON string describing the filters applied to the index.
 - `analysis_normalizer` (String) A JSON string describing the normalizers applied to the index.
 - `analysis_tokenizer` (String) A JSON string describing the tokenizers applied to the index.
