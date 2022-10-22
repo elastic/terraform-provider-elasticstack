@@ -390,6 +390,13 @@ func ResourceIndex() *schema.Resource {
 			ForceNew:     true, // To add a tokenizer, the index must be closed, updated, and then reopened; we can't handle that here.
 			ValidateFunc: validation.StringIsJSON,
 		},
+		"analysis_char_filter": {
+			Type:         schema.TypeString,
+			Description:  "A JSON string describing the char_filters applied to the index.",
+			Optional:     true,
+			ForceNew:     true, // To add a char_filters, the index must be closed, updated, and then reopened; we can't handle that here.
+			ValidateFunc: validation.StringIsJSON,
+		},
 		"analysis_filter": {
 			Type:         schema.TypeString,
 			Description:  "A JSON string describing the filters applied to the index.",
@@ -694,6 +701,14 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 			return diag.FromErr(err)
 		}
 		analysis["tokenizer"] = tokenizer
+	}
+	if charFilterJSON, ok := d.GetOk("analysis_char_filter"); ok {
+		var filter map[string]interface{}
+		bytes := []byte(charFilterJSON.(string))
+		if err = json.Unmarshal(bytes, &filter); err != nil {
+			return diag.FromErr(err)
+		}
+		analysis["char_filter"] = filter
 	}
 	if filterJSON, ok := d.GetOk("analysis_filter"); ok {
 		var filter map[string]interface{}
