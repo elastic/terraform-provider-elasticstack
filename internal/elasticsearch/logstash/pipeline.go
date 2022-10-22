@@ -2,14 +2,30 @@ package logstash
 
 import (
 	"context"
+	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+var (
+	allSettingsKeys = map[string]schema.ValueType{
+		"pipeline.batch.delay":    schema.TypeInt,
+		"pipeline.batch.size":     schema.TypeInt,
+		"pipeline.workers":        schema.TypeInt,
+		"queue.checkpoint.writes": schema.TypeInt,
+		"queue.max_bytes.number":  schema.TypeInt,
+		"queue.max_bytes.units":   schema.TypeString,
+		"queue.type":              schema.TypeString,
+	}
 )
 
 func ResourceLogstashPipeline() *schema.Resource {
@@ -49,61 +65,52 @@ func ResourceLogstashPipeline() *schema.Resource {
 				Default: nil,
 			},
 		},
-		"pipeline_settings": {
-			Description: "Settings for the pipeline.",
-			Type:        schema.TypeList,
+		// Pipeline Settings
+		"pipeline_batch_delay": {
+			Description: "Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.",
+			Type:        schema.TypeInt,
 			Optional:    true,
-			Computed:    true,
-			MaxItems:    1,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"pipeline_workers": {
-						Description: "The number of parallel workers used to run the filter and output stages of the pipeline.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     1,
-					},
-					"pipeline_batch_size": {
-						Description: "The maximum number of events an individual worker thread collects before executing filters and outputs.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     125,
-					},
-					"pipeline_batch_delay": {
-						Description: "Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     50,
-					},
-					"queue_type": {
-						Description:  "The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.",
-						Type:         schema.TypeString,
-						ValidateFunc: validation.StringInSlice([]string{"memory", "persisted"}, false),
-						Optional:     true,
-						Default:      "memory",
-					},
-					"queue_max_bytes_number": {
-						Description: "The total capacity of the queue when persistent queues are enabled.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     1,
-					},
-					"queue_max_bytes_units": {
-						Description:  "Units for the total capacity of the queue when persistent queues are enabled.",
-						Type:         schema.TypeString,
-						ValidateFunc: validation.StringInSlice([]string{"b", "kb", "mb", "gb", "tb", "pb"}, false),
-						Optional:     true,
-						Default:      "gb",
-					},
-					"queue_checkpoint_writes": {
-						Description: "The maximum number of events written before a checkpoint is forced when persistent queues are enabled.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-						Default:     1024,
-					},
-				},
-			},
+			Default:     50,
 		},
+		"pipeline_batch_size": {
+			Description: "The maximum number of events an individual worker thread collects before executing filters and outputs.",
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     125,
+		},
+		"pipeline_workers": {
+			Description: "The number of parallel workers used to run the filter and output stages of the pipeline.",
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     1,
+		},
+		"queue_checkpoint_writes": {
+			Description: "The maximum number of events written before a checkpoint is forced when persistent queues are enabled.",
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     1024,
+		},
+		"queue_max_bytes_number": {
+			Description: "The total capacity of the queue when persistent queues are enabled.",
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     1,
+		},
+		"queue_max_bytes_units": {
+			Description:  "Units for the total capacity of the queue when persistent queues are enabled.",
+			Type:         schema.TypeString,
+			ValidateFunc: validation.StringInSlice([]string{"b", "kb", "mb", "gb", "tb", "pb"}, false),
+			Optional:     true,
+			Default:      "gb",
+		},
+		"queue_type": {
+			Description:  "The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.",
+			Type:         schema.TypeString,
+			ValidateFunc: validation.StringInSlice([]string{"memory", "persisted"}, false),
+			Optional:     true,
+			Default:      "memory",
+		},
+		// Pipeline Settings - End
 		"username": {
 			Description: "User who last updated the pipeline.",
 			Type:        schema.TypeString,
@@ -142,15 +149,20 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 		return diags
 	}
 
-	logstashPipeline := models.LogstashPipeline{
-		PipelineID:       pipelineID,
-		Description:      d.Get("description").(string),
-		LastModified:     utils.FormatStrictDateTime(time.Now()),
-		Pipeline:         d.Get("pipeline").(string),
-		PipelineMetadata: d.Get("pipeline_metadata").(map[string]interface{}),
-		PipelineSettings: expandPipelineSettings(d.Get("pipeline_settings").([]interface{})),
-		Username:         d.Get("username").(string),
+	var logstashPipeline models.LogstashPipeline
+
+	logstashPipeline.PipelineID = pipelineID
+	logstashPipeline.Description = d.Get("description").(string)
+	logstashPipeline.LastModified = utils.FormatStrictDateTime(time.Now())
+	logstashPipeline.Pipeline = d.Get("pipeline").(string)
+	logstashPipeline.PipelineMetadata = d.Get("pipeline_metadata").(map[string]interface{})
+
+	logstashPipeline.PipelineSettings = map[string]interface{}{}
+	if settings := expandIndividuallyDefinedPipelineSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
+		logstashPipeline.PipelineSettings = settings
 	}
+
+	logstashPipeline.Username = d.Get("username").(string)
 
 	if diags := client.PutLogstashPipeline(ctx, &logstashPipeline); diags.HasError() {
 		return diags
@@ -194,8 +206,21 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	if err := d.Set("pipeline_metadata", logstashPipeline.PipelineMetadata); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("pipeline_settings", flattenPipelineSettings(logstashPipeline.PipelineSettings)); err != nil {
-		diag.FromErr(err)
+	for key, typ := range allSettingsKeys {
+		var value interface{}
+		if v, ok := logstashPipeline.PipelineSettings[key]; ok {
+			value = v
+		} else {
+			tflog.Warn(ctx, fmt.Sprintf("setting '%s' is not currently managed by terraform provider and has been ignored", key))
+			continue
+		}
+		switch typ {
+		case schema.TypeInt:
+			value = int(math.Round(value.(float64)))
+		}
+		if err := d.Set(convertSettingsKeyToTFFieldKey(key), value); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if err := d.Set("username", logstashPipeline.Username); err != nil {
 		return diag.FromErr(err)
@@ -220,30 +245,15 @@ func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData,
 	return nil
 }
 
-func flattenPipelineSettings(pipelineSettings *models.LogstashPipelineSettings) []interface{} {
+func expandIndividuallyDefinedPipelineSettings(ctx context.Context, d *schema.ResourceData, settingsKeys map[string]schema.ValueType) map[string]interface{} {
 	settings := make(map[string]interface{})
-	settings["pipeline_workers"] = pipelineSettings.PipelineWorkers
-	settings["pipeline_batch_size"] = pipelineSettings.PipelineBatchSize
-	settings["pipeline_batch_delay"] = pipelineSettings.PipelineBatchDelay
-	settings["queue_type"] = pipelineSettings.QueueType
-	settings["queue_max_bytes_number"] = pipelineSettings.QueueMaxBytesNumber
-	settings["queue_max_bytes_units"] = pipelineSettings.QueueMaxBytesUnits
-	settings["queue_checkpoint_writes"] = pipelineSettings.QueueCheckpointWrites
-
-	return []interface{}{settings}
+	for key := range settingsKeys {
+		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
+		settings[key] = d.Get(tfFieldKey)
+	}
+	return settings
 }
 
-func expandPipelineSettings(pipelineSettings []interface{}) *models.LogstashPipelineSettings {
-	var settings models.LogstashPipelineSettings
-	for _, ps := range pipelineSettings {
-		setting := ps.(map[string]interface{})
-		settings.PipelineWorkers = setting["pipeline_workers"].(int)
-		settings.PipelineBatchSize = setting["pipeline_batch_size"].(int)
-		settings.PipelineBatchDelay = setting["pipeline_batch_delay"].(int)
-		settings.QueueType = setting["queue_type"].(string)
-		settings.QueueMaxBytesNumber = setting["queue_max_bytes_number"].(int)
-		settings.QueueMaxBytesUnits = setting["queue_max_bytes_units"].(string)
-		settings.QueueCheckpointWrites = setting["queue_checkpoint_writes"].(int)
-	}
-	return &settings
+func convertSettingsKeyToTFFieldKey(settingKey string) string {
+	return strings.Replace(settingKey, ".", "_", -1)
 }

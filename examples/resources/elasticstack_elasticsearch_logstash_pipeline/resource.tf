@@ -17,15 +17,13 @@ EOF
     "version" = 1
   }
 
-  pipeline_settings = {
-    "pipeline.workers"        = 2
-    "pipeline.batch.size"     = 250
-    "pipeline.batch.delay"    = 100
-    "queue.type"              = "persisted"
-    "queue.max_bytes.number"  = 2
-    "queue.max_bytes.units"   = "mb"
-    "queue.checkpoint.writes" = 2048
-  }
+  pipeline_batch_delay    = 100
+  pipeline_batch_size     = 250
+  pipeline_workers        = 2
+  queue_checkpoint_writes = 2048
+  queue_max_bytes_number  = 2
+  queue_max_bytes_units   = "mb"
+  queue_type              = "persisted"
 }
 
 output "pipeline" {

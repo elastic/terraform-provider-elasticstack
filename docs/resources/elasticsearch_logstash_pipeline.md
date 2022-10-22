@@ -32,15 +32,13 @@ EOF
     "version" = 1
   }
 
-  pipeline_settings = {
-    "pipeline.workers"        = 2
-    "pipeline.batch.size"     = 250
-    "pipeline.batch.delay"    = 100
-    "queue.type"              = "persisted"
-    "queue.max_bytes.number"  = 2
-    "queue.max_bytes.units"   = "mb"
-    "queue.checkpoint.writes" = 2048
-  }
+  pipeline_batch_delay    = 100
+  pipeline_batch_size     = 250
+  pipeline_workers        = 2
+  queue_checkpoint_writes = 2048
+  queue_max_bytes_number  = 2
+  queue_max_bytes_units   = "mb"
+  queue_type              = "persisted"
 }
 
 output "pipeline" {
@@ -60,8 +58,14 @@ output "pipeline" {
 
 - **description** (String) Description of the pipeline.
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- **pipeline_batch_delay** (Number) Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.
+- **pipeline_batch_size** (Number) The maximum number of events an individual worker thread collects before executing filters and outputs.
 - **pipeline_metadata** (Map of String) Optional metadata about the pipeline.
-- **pipeline_settings** (Block List, Max: 1) Settings for the pipeline. (see [below for nested schema](#nestedblock--pipeline_settings))
+- **pipeline_workers** (Number) The number of parallel workers used to run the filter and output stages of the pipeline.
+- **queue_checkpoint_writes** (Number) The maximum number of events written before a checkpoint is forced when persistent queues are enabled.
+- **queue_max_bytes_number** (Number) The total capacity of the queue when persistent queues are enabled.
+- **queue_max_bytes_units** (String) Units for the total capacity of the queue when persistent queues are enabled.
+- **queue_type** (String) The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.
 - **username** (String) User who last updated the pipeline.
 
 ### Read-Only
@@ -81,20 +85,6 @@ Optional:
 - **insecure** (Boolean) Disable TLS certificate validation
 - **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
 - **username** (String) A username to use for API authentication to Elasticsearch.
-
-
-<a id="nestedblock--pipeline_settings"></a>
-### Nested Schema for `pipeline_settings`
-
-Optional:
-
-- **pipeline_batch_delay** (Number) Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.
-- **pipeline_batch_size** (Number) The maximum number of events an individual worker thread collects before executing filters and outputs.
-- **pipeline_workers** (Number) The number of parallel workers used to run the filter and output stages of the pipeline.
-- **queue_checkpoint_writes** (Number) The maximum number of events written before a checkpoint is forced when persistent queues are enabled.
-- **queue_max_bytes_number** (Number) The total capacity of the queue when persistent queues are enabled.
-- **queue_max_bytes_units** (String) Units for the total capacity of the queue when persistent queues are enabled.
-- **queue_type** (String) The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.
 
 ## Import
 
