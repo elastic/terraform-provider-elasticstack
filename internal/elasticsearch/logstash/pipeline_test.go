@@ -87,22 +87,22 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
     "version" = 1
   }
 
-	pipeline_batch_delay = 100
+  pipeline_batch_delay = 100
   pipeline_batch_size = 250
-	pipeline_ecs_compatibility = "disabled"
-	pipeline_ordered = "auto"
-	pipeline_plugin_classloaders = false
-	pipeline_unsafe_shutdown = false
-	pipeline_workers = 2
-	queue_checkpoint_acks = 1024
-	queue_checkpoint_retry = true
-	queue_checkpoint_writes = 2048
-	queue_drain = false
+  pipeline_ecs_compatibility = "disabled"
+  pipeline_ordered = "auto"
+  pipeline_plugin_classloaders = false
+  pipeline_unsafe_shutdown = false
+  pipeline_workers = 2
+  queue_checkpoint_acks = 1024
+  queue_checkpoint_retry = true
+  queue_checkpoint_writes = 2048
+  queue_drain = false
   queue_max_bytes_number = 2
-	queue_max_bytes_units = "mb"
-	queue_max_events = 0
-	queue_page_capacity = "64mb"
-	queue_type = "memory"
+  queue_max_bytes_units = "mb"
+  queue_max_events = 0
+  queue_page_capacity = "64mb"
+  queue_type = "memory"
 }
   `, pipelineID)
 }
