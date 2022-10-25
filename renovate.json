@@ -1,0 +1,13 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "major": {
+    "automerge": false
+  }
+}
