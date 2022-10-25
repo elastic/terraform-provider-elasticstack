@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -18,13 +17,22 @@ import (
 
 var (
 	allSettingsKeys = map[string]schema.ValueType{
-		"pipeline.batch.delay":    schema.TypeInt,
-		"pipeline.batch.size":     schema.TypeInt,
-		"pipeline.workers":        schema.TypeInt,
-		"queue.checkpoint.writes": schema.TypeInt,
-		"queue.max_bytes.number":  schema.TypeInt,
-		"queue.max_bytes.units":   schema.TypeString,
-		"queue.type":              schema.TypeString,
+		"pipeline.batch.delay":         schema.TypeInt,
+		"pipeline.batch.size":          schema.TypeInt,
+		"pipeline.ecs_compatibility":   schema.TypeString,
+		"pipeline.ordered":             schema.TypeString,
+		"pipeline.plugin_classloaders": schema.TypeBool,
+		"pipeline.unsafe_shutdown":     schema.TypeBool,
+		"pipeline.workers":             schema.TypeInt,
+		"queue.checkpoint.acks":        schema.TypeInt,
+		"queue.checkpoint.retry":       schema.TypeBool,
+		"queue.checkpoint.writes":      schema.TypeInt,
+		"queue.drain":                  schema.TypeBool,
+		"queue.max_bytes.number":       schema.TypeInt,
+		"queue.max_bytes.units":        schema.TypeString,
+		"queue.max_events":             schema.TypeInt,
+		"queue.page_capacity":          schema.TypeString,
+		"queue.type":                   schema.TypeString,
 	}
 )
 
@@ -70,45 +78,86 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Description: "Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.",
 			Type:        schema.TypeInt,
 			Optional:    true,
-			Default:     50,
 		},
 		"pipeline_batch_size": {
 			Description: "The maximum number of events an individual worker thread collects before executing filters and outputs.",
 			Type:        schema.TypeInt,
 			Optional:    true,
-			Default:     125,
+		},
+		"pipeline_ecs_compatibility": {
+			Description:  "Sets the pipeline default value for ecs_compatibility, a setting that is available to plugins that implement an ECS compatibility mode for use with the Elastic Common Schema.",
+			Type:         schema.TypeString,
+			ValidateFunc: validation.StringInSlice([]string{"disabled", "v1", "v8"}, false),
+			Optional:     true,
+		},
+		"pipeline_ordered": {
+			Description:  "Set the pipeline event ordering.",
+			Type:         schema.TypeString,
+			ValidateFunc: validation.StringInSlice([]string{"auto", "true", "false"}, false),
+			Optional:     true,
+		},
+		"pipeline_plugin_classloaders": {
+			Description: "(Beta) Load Java plugins in independent classloaders to isolate their dependencies.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+		},
+		"pipeline_unsafe_shutdown": {
+			Description: "Forces Logstash to exit during shutdown even if there are still inflight events in memory.",
+			Type:        schema.TypeBool,
+			Optional:    true,
 		},
 		"pipeline_workers": {
-			Description: "The number of parallel workers used to run the filter and output stages of the pipeline.",
+			Description:  "The number of parallel workers used to run the filter and output stages of the pipeline.",
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntAtLeast(1),
+		},
+		"queue_checkpoint_acks": {
+			Description: "The maximum number of ACKed events before forcing a checkpoint when persistent queues are enabled.",
 			Type:        schema.TypeInt,
 			Optional:    true,
-			Default:     1,
+		},
+		"queue_checkpoint_retry": {
+			Description: "When enabled, Logstash will retry four times per attempted checkpoint write for any checkpoint writes that fail. Any subsequent errors are not retried.",
+			Type:        schema.TypeBool,
+			Optional:    true,
 		},
 		"queue_checkpoint_writes": {
-			Description: "The maximum number of events written before a checkpoint is forced when persistent queues are enabled.",
+			Description: "The maximum number of written events before forcing a checkpoint when persistent queues are enabled.",
 			Type:        schema.TypeInt,
 			Optional:    true,
-			Default:     1024,
+		},
+		"queue_drain": {
+			Description: "When enabled, Logstash waits until the persistent queue is drained before shutting down.",
+			Type:        schema.TypeBool,
+			Optional:    true,
 		},
 		"queue_max_bytes_number": {
 			Description: "The total capacity of the queue when persistent queues are enabled.",
 			Type:        schema.TypeInt,
 			Optional:    true,
-			Default:     1,
 		},
 		"queue_max_bytes_units": {
 			Description:  "Units for the total capacity of the queue when persistent queues are enabled.",
 			Type:         schema.TypeString,
 			ValidateFunc: validation.StringInSlice([]string{"b", "kb", "mb", "gb", "tb", "pb"}, false),
 			Optional:     true,
-			Default:      "gb",
+		},
+		"queue_max_events": {
+			Description: "The maximum number of unread events in the queue when persistent queues are enabled.",
+			Type:        schema.TypeInt,
+			Optional:    true,
+		},
+		"queue_page_capacity": {
+			Description: "The size of the page data files used when persistent queues are enabled. The queue data consists of append-only data files separated into pages.",
+			Type:        schema.TypeString,
+			Optional:    true,
 		},
 		"queue_type": {
 			Description:  "The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.",
 			Type:         schema.TypeString,
 			ValidateFunc: validation.StringInSlice([]string{"memory", "persisted"}, false),
 			Optional:     true,
-			Default:      "memory",
 		},
 		// Pipeline Settings - End
 		"username": {
@@ -158,7 +207,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	logstashPipeline.PipelineMetadata = d.Get("pipeline_metadata").(map[string]interface{})
 
 	logstashPipeline.PipelineSettings = map[string]interface{}{}
-	if settings := expandIndividuallyDefinedPipelineSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
+	if settings := utils.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
 		logstashPipeline.PipelineSettings = settings
 	}
 
@@ -218,7 +267,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 		case schema.TypeInt:
 			value = int(math.Round(value.(float64)))
 		}
-		if err := d.Set(convertSettingsKeyToTFFieldKey(key), value); err != nil {
+		if err := d.Set(utils.ConvertSettingsKeyToTFFieldKey(key), value); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -243,17 +292,4 @@ func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData,
 		return diags
 	}
 	return nil
-}
-
-func expandIndividuallyDefinedPipelineSettings(ctx context.Context, d *schema.ResourceData, settingsKeys map[string]schema.ValueType) map[string]interface{} {
-	settings := make(map[string]interface{})
-	for key := range settingsKeys {
-		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
-		settings[key] = d.Get(tfFieldKey)
-	}
-	return settings
-}
-
-func convertSettingsKeyToTFFieldKey(settingKey string) string {
-	return strings.Replace(settingKey, ".", "_", -1)
 }

@@ -32,13 +32,22 @@ EOF
     "version" = 1
   }
 
-  pipeline_batch_delay    = 100
-  pipeline_batch_size     = 250
-  pipeline_workers        = 2
-  queue_checkpoint_writes = 2048
-  queue_max_bytes_number  = 2
-  queue_max_bytes_units   = "mb"
-  queue_type              = "persisted"
+  pipeline_batch_delay = 50
+  pipeline_batch_size = 125
+	pipeline_ecs_compatibility = "disabled"
+	pipeline_ordered = "auto"
+	pipeline_plugin_classloaders = false
+	pipeline_unsafe_shutdown = false
+	pipeline_workers = 1
+	queue_checkpoint_acks = 1024
+	queue_checkpoint_retry = true
+	queue_checkpoint_writes = 1024
+	queue_drain = false
+  queue_max_bytes_number = 1
+	queue_max_bytes_units = "gb"
+	queue_max_events = 0
+	queue_page_capacity = "64mb"
+	queue_type = "persisted"
 }
 
 output "pipeline" {
@@ -60,11 +69,20 @@ output "pipeline" {
 - **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - **pipeline_batch_delay** (Number) Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.
 - **pipeline_batch_size** (Number) The maximum number of events an individual worker thread collects before executing filters and outputs.
+- **pipeline_ecs_compatibility** (String) Sets the pipeline default value for ecs_compatibility, a setting that is available to plugins that implement an ECS compatibility mode for use with the Elastic Common Schema.
 - **pipeline_metadata** (Map of String) Optional metadata about the pipeline.
+- **pipeline_ordered** (String) Set the pipeline event ordering.
+- **pipeline_plugin_classloaders** (Boolean) (Beta) Load Java plugins in independent classloaders to isolate their dependencies.
+- **pipeline_unsafe_shutdown** (Boolean) Forces Logstash to exit during shutdown even if there are still inflight events in memory.
 - **pipeline_workers** (Number) The number of parallel workers used to run the filter and output stages of the pipeline.
-- **queue_checkpoint_writes** (Number) The maximum number of events written before a checkpoint is forced when persistent queues are enabled.
+- **queue_checkpoint_acks** (Number) The maximum number of ACKed events before forcing a checkpoint when persistent queues are enabled.
+- **queue_checkpoint_retry** (Boolean) When enabled, Logstash will retry four times per attempted checkpoint write for any checkpoint writes that fail. Any subsequent errors are not retried.
+- **queue_checkpoint_writes** (Number) The maximum number of written events before forcing a checkpoint when persistent queues are enabled.
+- **queue_drain** (Boolean) When enabled, Logstash waits until the persistent queue is drained before shutting down.
 - **queue_max_bytes_number** (Number) The total capacity of the queue when persistent queues are enabled.
 - **queue_max_bytes_units** (String) Units for the total capacity of the queue when persistent queues are enabled.
+- **queue_max_events** (Number) The maximum number of unread events in the queue when persistent queues are enabled.
+- **queue_page_capacity** (String) The size of the page data files used when persistent queues are enabled. The queue data consists of append-only data files separated into pages.
 - **queue_type** (String) The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.
 - **username** (String) User who last updated the pipeline.
 
