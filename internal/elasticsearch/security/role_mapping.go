@@ -13,6 +13,11 @@ import (
 
 func ResourceRoleMapping() *schema.Resource {
 	roleMappingSchema := map[string]*schema.Schema{
+		"id": {
+			Description: "Internal identifier of the resource",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"name": {
 			Type:        schema.TypeString,
 			Required:    true,

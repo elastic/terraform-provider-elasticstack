@@ -521,7 +521,7 @@ If specified, this mapping can include: field names, [field data types](https://
 				// first populate what we can with Read
 				diags := resourceIndexRead(ctx, d, m)
 				if diags.HasError() {
-					return nil, fmt.Errorf("Unable to import requested index")
+					return nil, fmt.Errorf("unable to import requested index")
 				}
 
 				client, err := clients.NewApiClient(d, m)
@@ -530,12 +530,12 @@ If specified, this mapping can include: field names, [field data types](https://
 				}
 				compId, diags := clients.CompositeIdFromStr(d.Id())
 				if diags.HasError() {
-					return nil, fmt.Errorf("Failed to parse provided ID")
+					return nil, fmt.Errorf("failed to parse provided ID")
 				}
 				indexName := compId.ResourceId
 				index, diags := client.GetElasticsearchIndex(ctx, indexName)
 				if diags.HasError() {
-					return nil, fmt.Errorf("Failed to get an ES Index")
+					return nil, fmt.Errorf("failed to get an ES Index")
 				}
 
 				// check the settings and import those as well
@@ -564,7 +564,7 @@ If specified, this mapping can include: field names, [field data types](https://
 							}
 							value = v
 						}
-						if err := d.Set(convertSettingsKeyToTFFieldKey(key), value); err != nil {
+						if err := d.Set(utils.ConvertSettingsKeyToTFFieldKey(key), value); err != nil {
 							return nil, err
 						}
 					}
@@ -672,7 +672,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 
 	index.Settings = map[string]interface{}{}
-	if settings := expandIndividuallyDefinedIndexSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
+	if settings := utils.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
 		index.Settings = settings
 	}
 
@@ -783,7 +783,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 	// settings
 	updatedSettings := make(map[string]interface{})
 	for key := range dynamicsSettingsKeys {
-		fieldKey := convertSettingsKeyToTFFieldKey(key)
+		fieldKey := utils.ConvertSettingsKeyToTFFieldKey(key)
 		if d.HasChange(fieldKey) {
 			updatedSettings[key] = d.Get(fieldKey)
 		}
@@ -917,25 +917,4 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 	d.SetId("")
 	return diags
-}
-
-func expandIndividuallyDefinedIndexSettings(ctx context.Context, d *schema.ResourceData, settingsKeys map[string]schema.ValueType) map[string]interface{} {
-	settings := make(map[string]interface{})
-	for key := range settingsKeys {
-		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
-		if raw, ok := d.GetOk(tfFieldKey); ok {
-			switch field := raw.(type) {
-			case *schema.Set:
-				settings[key] = field.List()
-			default:
-				settings[key] = raw
-			}
-			tflog.Trace(ctx, fmt.Sprintf("expandIndividuallyDefinedIndexSettings: settingsKey:%+v tfFieldKey:%+v value:%+v, %+v", key, tfFieldKey, raw, settings))
-		}
-	}
-	return settings
-}
-
-func convertSettingsKeyToTFFieldKey(settingKey string) string {
-	return strings.Replace(settingKey, ".", "_", -1)
 }

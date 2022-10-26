@@ -1,0 +1,23 @@
+---
+subcategory: "Logstash"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_logstash_pipeline Resource"
+description: |-
+  Creates or updates centrally managed logstash pipelines.
+---
+
+# Resource: elasticstack_elasticsearch_logstash_pipeline
+
+Creates or updates centrally managed logstash pipelines. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/logstash-apis.html
+
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_elasticsearch_logstash_pipeline/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+Import is supported using the following syntax:
+
+{{ codefile "shell" "examples/resources/elasticstack_elasticsearch_logstash_pipeline/import.sh" }}

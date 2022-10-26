@@ -1,14 +1,17 @@
 package utils
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -188,4 +191,30 @@ func StringToHash(s string) (*string, error) {
 	bs := h.Sum(nil)
 	hash := fmt.Sprintf("%x", bs)
 	return &hash, nil
+}
+
+func FormatStrictDateTime(t time.Time) string {
+	strictDateTime := t.Format("2006-01-02T15:04:05.000Z")
+	return strictDateTime
+}
+
+func ExpandIndividuallyDefinedSettings(ctx context.Context, d *schema.ResourceData, settingsKeys map[string]schema.ValueType) map[string]interface{} {
+	settings := make(map[string]interface{})
+	for key := range settingsKeys {
+		tfFieldKey := ConvertSettingsKeyToTFFieldKey(key)
+		if raw, ok := d.GetOk(tfFieldKey); ok {
+			switch field := raw.(type) {
+			case *schema.Set:
+				settings[key] = field.List()
+			default:
+				settings[key] = raw
+			}
+			tflog.Trace(ctx, fmt.Sprintf("expandIndividuallyDefinedSettings: settingsKey:%+v tfFieldKey:%+v value:%+v, %+v", key, tfFieldKey, raw, settings))
+		}
+	}
+	return settings
+}
+
+func ConvertSettingsKeyToTFFieldKey(settingKey string) string {
+	return strings.Replace(settingKey, ".", "_", -1)
 }
