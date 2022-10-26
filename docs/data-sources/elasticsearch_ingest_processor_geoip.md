@@ -45,17 +45,17 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to get the ip address from for the geographical lookup.
+- `field` (String) The field to get the ip address from for the geographical lookup.
 
 ### Optional
 
-- **database_file** (String) The database filename referring to a database the module ships with (GeoLite2-City.mmdb, GeoLite2-Country.mmdb, or GeoLite2-ASN.mmdb) or a custom database in the `ingest-geoip` config directory.
-- **first_only** (Boolean) If `true` only first found geoip data will be returned, even if field contains array.
-- **ignore_missing** (Boolean) If `true` and `field` does not exist, the processor quietly exits without modifying the document.
-- **properties** (Set of String) Controls what properties are added to the `target_field` based on the geoip lookup.
-- **target_field** (String) The field that will hold the geographical information looked up from the MaxMind database.
+- `database_file` (String) The database filename referring to a database the module ships with (GeoLite2-City.mmdb, GeoLite2-Country.mmdb, or GeoLite2-ASN.mmdb) or a custom database in the `ingest-geoip` config directory.
+- `first_only` (Boolean) If `true` only first found geoip data will be returned, even if field contains array.
+- `ignore_missing` (Boolean) If `true` and `field` does not exist, the processor quietly exits without modifying the document.
+- `properties` (Set of String) Controls what properties are added to the `target_field` based on the geoip lookup.
+- `target_field` (String) The field that will hold the geographical information looked up from the MaxMind database.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.

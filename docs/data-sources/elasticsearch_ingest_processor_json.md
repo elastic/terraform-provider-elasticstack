@@ -38,21 +38,21 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to be parsed.
+- `field` (String) The field to be parsed.
 
 ### Optional
 
-- **add_to_root** (Boolean) Flag that forces the parsed JSON to be added at the top level of the document. `target_field` must not be set when this option is chosen.
-- **add_to_root_conflict_strategy** (String) When set to `replace`, root fields that conflict with fields from the parsed JSON will be overridden. When set to `merge`, conflicting fields will be merged. Only applicable if `add_to_root` is set to `true`.
-- **allow_duplicate_keys** (Boolean) When set to `true`, the JSON parser will not fail if the JSON contains duplicate keys. Instead, the last encountered value for any duplicate key wins.
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **on_failure** (List of String) Handle failures for the processor.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) The field that the converted structured object will be written into. Any existing content in this field will be overwritten.
+- `add_to_root` (Boolean) Flag that forces the parsed JSON to be added at the top level of the document. `target_field` must not be set when this option is chosen.
+- `add_to_root_conflict_strategy` (String) When set to `replace`, root fields that conflict with fields from the parsed JSON will be overridden. When set to `merge`, conflicting fields will be merged. Only applicable if `add_to_root` is set to `true`.
+- `allow_duplicate_keys` (Boolean) When set to `true`, the JSON parser will not fail if the JSON contains duplicate keys. Instead, the last encountered value for any duplicate key wins.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `on_failure` (List of String) Handle failures for the processor.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) The field that the converted structured object will be written into. Any existing content in this field will be overwritten.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.

@@ -41,20 +41,20 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) Field containing the URI string.
+- `field` (String) Field containing the URI string.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **keep_original** (Boolean) If true, the processor copies the unparsed URI to `<target_field>.original.`
-- **on_failure** (List of String) Handle failures for the processor.
-- **remove_if_successful** (Boolean) If `true`, the processor removes the `field` after parsing the URI string. If parsing fails, the processor does not remove the `field`.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) Output field for the URI object.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `keep_original` (Boolean) If true, the processor copies the unparsed URI to `<target_field>.original.`
+- `on_failure` (List of String) Handle failures for the processor.
+- `remove_if_successful` (Boolean) If `true`, the processor removes the `field` after parsing the URI string. If parsing fails, the processor does not remove the `field`.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) Output field for the URI object.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.

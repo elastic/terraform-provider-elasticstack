@@ -51,41 +51,41 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
 
 ### Required
 
-- **name** (String) ID for the snapshot lifecycle policy you want to create or update.
-- **repository** (String) Repository used to store snapshots created by this policy.
-- **schedule** (String) Periodic or absolute schedule at which the policy creates snapshots.
+- `name` (String) ID for the snapshot lifecycle policy you want to create or update.
+- `repository` (String) Repository used to store snapshots created by this policy.
+- `schedule` (String) Periodic or absolute schedule at which the policy creates snapshots.
 
 ### Optional
 
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **expand_wildcards** (String) Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.
-- **expire_after** (String) Time period after which a snapshot is considered expired and eligible for deletion.
-- **feature_states** (Set of String) Feature states to include in the snapshot.
-- **ignore_unavailable** (Boolean) If `false`, the snapshot fails if any data stream or index in indices is missing or closed. If `true`, the snapshot ignores missing or closed data streams and indices.
-- **include_global_state** (Boolean) If `true`, include the cluster state in the snapshot.
-- **indices** (Set of String) Comma-separated list of data streams and indices to include in the snapshot.
-- **max_count** (Number) Maximum number of snapshots to retain, even if the snapshots have not yet expired.
-- **metadata** (String) Attaches arbitrary metadata to the snapshot.
-- **min_count** (Number) Minimum number of snapshots to retain, even if the snapshots have expired.
-- **partial** (Boolean) If `false`, the entire snapshot will fail if one or more indices included in the snapshot do not have all primary shards available.
-- **snapshot_name** (String) Name automatically assigned to each snapshot created by the policy.
+- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `expand_wildcards` (String) Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.
+- `expire_after` (String) Time period after which a snapshot is considered expired and eligible for deletion.
+- `feature_states` (Set of String) Feature states to include in the snapshot.
+- `ignore_unavailable` (Boolean) If `false`, the snapshot fails if any data stream or index in indices is missing or closed. If `true`, the snapshot ignores missing or closed data streams and indices.
+- `include_global_state` (Boolean) If `true`, include the cluster state in the snapshot.
+- `indices` (Set of String) Comma-separated list of data streams and indices to include in the snapshot.
+- `max_count` (Number) Maximum number of snapshots to retain, even if the snapshots have not yet expired.
+- `metadata` (String) Attaches arbitrary metadata to the snapshot.
+- `min_count` (Number) Minimum number of snapshots to retain, even if the snapshots have expired.
+- `partial` (Boolean) If `false`, the entire snapshot will fail if one or more indices included in the snapshot do not have all primary shards available.
+- `snapshot_name` (String) Name automatically assigned to each snapshot created by the policy.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
 
 Optional:
 
-- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
-- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
-- **ca_file** (String) Path to a custom Certificate Authority certificate
-- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
-- **insecure** (Boolean) Disable TLS certificate validation
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- **username** (String) A username to use for API authentication to Elasticsearch.
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- `username` (String) A username to use for API authentication to Elasticsearch.
 
 ## Import
 

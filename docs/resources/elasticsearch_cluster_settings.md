@@ -51,26 +51,26 @@ resource "elasticstack_elasticsearch_cluster_settings" "my_cluster_settings" {
 
 ### Optional
 
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **persistent** (Block List, Max: 1) Settings will apply across restarts. (see [below for nested schema](#nestedblock--persistent))
-- **transient** (Block List, Max: 1) Settings do not survive a full cluster restart. (see [below for nested schema](#nestedblock--transient))
+- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `persistent` (Block List, Max: 1) Settings will apply across restarts. (see [below for nested schema](#nestedblock--persistent))
+- `transient` (Block List, Max: 1) Settings do not survive a full cluster restart. (see [below for nested schema](#nestedblock--transient))
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
 
 Optional:
 
-- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
-- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
-- **ca_file** (String) Path to a custom Certificate Authority certificate
-- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
-- **insecure** (Boolean) Disable TLS certificate validation
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- **username** (String) A username to use for API authentication to Elasticsearch.
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- `username` (String) A username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--persistent"></a>
@@ -78,19 +78,19 @@ Optional:
 
 Required:
 
-- **setting** (Block Set, Min: 1) Defines the setting in the cluster. (see [below for nested schema](#nestedblock--persistent--setting))
+- `setting` (Block Set, Min: 1) Defines the setting in the cluster. (see [below for nested schema](#nestedblock--persistent--setting))
 
 <a id="nestedblock--persistent--setting"></a>
 ### Nested Schema for `persistent.setting`
 
 Required:
 
-- **name** (String) The name of the setting to set and track.
+- `name` (String) The name of the setting to set and track.
 
 Optional:
 
-- **value** (String) The value of the setting to set and track.
-- **value_list** (List of String) The list of values to be set for the key, where the list is required.
+- `value` (String) The value of the setting to set and track.
+- `value_list` (List of String) The list of values to be set for the key, where the list is required.
 
 
 
@@ -99,16 +99,16 @@ Optional:
 
 Required:
 
-- **setting** (Block Set, Min: 1) Defines the setting in the cluster. (see [below for nested schema](#nestedblock--transient--setting))
+- `setting` (Block Set, Min: 1) Defines the setting in the cluster. (see [below for nested schema](#nestedblock--transient--setting))
 
 <a id="nestedblock--transient--setting"></a>
 ### Nested Schema for `transient.setting`
 
 Required:
 
-- **name** (String) The name of the setting to set and track.
+- `name` (String) The name of the setting to set and track.
 
 Optional:
 
-- **value** (String) The value of the setting to set and track.
-- **value_list** (List of String) The list of values to be set for the key, where the list is required.
+- `value` (String) The value of the setting to set and track.
+- `value_list` (List of String) The list of values to be set for the key, where the list is required.

@@ -38,25 +38,25 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **destination_ip** (String) Field containing the destination IP address.
-- **destination_port** (Number) Field containing the destination port.
-- **iana_number** (Number) Field containing the IANA number.
-- **icmp_code** (Number) Field containing the ICMP code.
-- **icmp_type** (Number) Field containing the ICMP type.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **ignore_missing** (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- **on_failure** (List of String) Handle failures for the processor.
-- **seed** (Number) Seed for the community ID hash. Must be between 0 and 65535 (inclusive). The seed can prevent hash collisions between network domains, such as a staging and production network that use the same addressing scheme.
-- **source_ip** (String) Field containing the source IP address.
-- **source_port** (Number) Field containing the source port.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) Output field for the community ID.
-- **transport** (String) Field containing the transport protocol. Used only when the `iana_number` field is not present.
+- `description` (String) Description of the processor.
+- `destination_ip` (String) Field containing the destination IP address.
+- `destination_port` (Number) Field containing the destination port.
+- `iana_number` (Number) Field containing the IANA number.
+- `icmp_code` (Number) Field containing the ICMP code.
+- `icmp_type` (Number) Field containing the ICMP type.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
+- `on_failure` (List of String) Handle failures for the processor.
+- `seed` (Number) Seed for the community ID hash. Must be between 0 and 65535 (inclusive). The seed can prevent hash collisions between network domains, such as a staging and production network that use the same addressing scheme.
+- `source_ip` (String) Field containing the source IP address.
+- `source_port` (Number) Field containing the source port.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) Output field for the community ID.
+- `transport` (String) Field containing the transport protocol. Used only when the `iana_number` field is not present.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.
 

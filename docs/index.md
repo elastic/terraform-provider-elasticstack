@@ -85,17 +85,17 @@ provider "elasticstack" {
 
 ### Optional
 
-- **elasticsearch** (Block List, Max: 1) Default Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
+- `elasticsearch` (Block List, Max: 1) Default Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
 
 <a id="nestedblock--elasticsearch"></a>
 ### Nested Schema for `elasticsearch`
 
 Optional:
 
-- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
-- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
-- **ca_file** (String) Path to a custom Certificate Authority certificate
-- **endpoints** (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
-- **insecure** (Boolean) Disable TLS certificate validation
-- **password** (String, Sensitive) Password to use for API authentication to Elasticsearch.
-- **username** (String) Username to use for API authentication to Elasticsearch.
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.

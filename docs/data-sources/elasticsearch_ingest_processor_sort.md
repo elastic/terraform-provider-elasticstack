@@ -39,19 +39,19 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to be sorted
+- `field` (String) The field to be sorted
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **on_failure** (List of String) Handle failures for the processor.
-- **order** (String) The sort order to use. Accepts `asc` or `desc`.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) The field to assign the sorted value to, by default `field` is updated in-place
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `on_failure` (List of String) Handle failures for the processor.
+- `order` (String) The sort order to use. Accepts `asc` or `desc`.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) The field to assign the sorted value to, by default `field` is updated in-place
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.

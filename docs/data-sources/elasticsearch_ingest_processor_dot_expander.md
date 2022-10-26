@@ -38,19 +38,19 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to expand into an object field. If set to *, all top-level fields will be expanded.
+- `field` (String) The field to expand into an object field. If set to *, all top-level fields will be expanded.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **on_failure** (List of String) Handle failures for the processor.
-- **override** (Boolean) Controls the behavior when there is already an existing nested object that conflicts with the expanded field.
-- **path** (String) The field that contains the field to expand.
-- **tag** (String) Identifier for the processor.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `on_failure` (List of String) Handle failures for the processor.
+- `override` (Boolean) Controls the behavior when there is already an existing nested object that conflicts with the expanded field.
+- `path` (String) The field that contains the field to expand.
+- `tag` (String) Identifier for the processor.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.

@@ -50,30 +50,30 @@ resource "elasticstack_elasticsearch_index_template" "my_data_stream" {
 
 ### Required
 
-- **index_patterns** (Set of String) Array of wildcard (*) expressions used to match the names of data streams and indices during creation.
-- **name** (String) Name of the index template to create.
+- `index_patterns` (Set of String) Array of wildcard (*) expressions used to match the names of data streams and indices during creation.
+- `name` (String) Name of the index template to create.
 
 ### Optional
 
-- **composed_of** (List of String) An ordered list of component template names.
-- **data_stream** (Block List, Max: 1) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedblock--data_stream))
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **metadata** (String) Optional user metadata about the index template.
-- **priority** (Number) Priority to determine index template precedence when a new data stream or index is created.
-- **template** (Block List, Max: 1) Template to be applied. It may optionally include an aliases, mappings, or settings configuration. (see [below for nested schema](#nestedblock--template))
-- **version** (Number) Version number used to manage index templates externally.
+- `composed_of` (List of String) An ordered list of component template names.
+- `data_stream` (Block List, Max: 1) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedblock--data_stream))
+- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `metadata` (String) Optional user metadata about the index template.
+- `priority` (Number) Priority to determine index template precedence when a new data stream or index is created.
+- `template` (Block List, Max: 1) Template to be applied. It may optionally include an aliases, mappings, or settings configuration. (see [below for nested schema](#nestedblock--template))
+- `version` (Number) Version number used to manage index templates externally.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--data_stream"></a>
 ### Nested Schema for `data_stream`
 
 Optional:
 
-- **allow_custom_routing** (Boolean) If `true`, the data stream supports custom routing. Defaults to `false`. Available only in **8.x**
-- **hidden** (Boolean) If true, the data stream is hidden.
+- `allow_custom_routing` (Boolean) If `true`, the data stream supports custom routing. Defaults to `false`. Available only in **8.x**
+- `hidden` (Boolean) If true, the data stream is hidden.
 
 
 <a id="nestedblock--elasticsearch_connection"></a>
@@ -81,13 +81,13 @@ Optional:
 
 Optional:
 
-- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
-- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
-- **ca_file** (String) Path to a custom Certificate Authority certificate
-- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
-- **insecure** (Boolean) Disable TLS certificate validation
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- **username** (String) A username to use for API authentication to Elasticsearch.
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- `username` (String) A username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--template"></a>
@@ -95,25 +95,25 @@ Optional:
 
 Optional:
 
-- **alias** (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
-- **mappings** (String) Mapping for fields in the index.
-- **settings** (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
+- `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
+- `mappings` (String) Mapping for fields in the index.
+- `settings` (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
 
 <a id="nestedblock--template--alias"></a>
 ### Nested Schema for `template.alias`
 
 Required:
 
-- **name** (String) The alias name.
+- `name` (String) The alias name.
 
 Optional:
 
-- **filter** (String) Query used to limit documents the alias can access.
-- **index_routing** (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.
-- **is_hidden** (Boolean) If true, the alias is hidden.
-- **is_write_index** (Boolean) If true, the index is the write index for the alias.
-- **routing** (String) Value used to route indexing and search operations to a specific shard.
-- **search_routing** (String) Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.
+- `filter` (String) Query used to limit documents the alias can access.
+- `index_routing` (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.
+- `is_hidden` (Boolean) If true, the alias is hidden.
+- `is_write_index` (Boolean) If true, the index is the write index for the alias.
+- `routing` (String) Value used to route indexing and search operations to a specific shard.
+- `search_routing` (String) Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.
 
 ## Import
 
