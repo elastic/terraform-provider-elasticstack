@@ -82,7 +82,8 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_allocation_enable", "primaries"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_rebalance_enable", "primaries"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "gc_deletes", "30s"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_analyzer", `{"text_en":{"filter":["lowercase","minimal_english_stemmer"],"tokenizer":"standard","type":"custom"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_analyzer", `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],"tokenizer":"standard","type":"custom"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_char_filter", `{"zero_width_spaces":{"mappings":["\\u200C=\u003e\\u0020"],"type":"mapping"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.value", "2"),
@@ -240,17 +241,25 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
   routing_allocation_enable = "primaries"
   routing_rebalance_enable = "primaries"
   gc_deletes = "30s"
-  analysis_analyzer = jsonencode({
-    text_en = { 
-      type = "custom" 
-      tokenizer = "standard"
-      filter = ["lowercase", "minimal_english_stemmer"]
+
+  analysis_char_filter = jsonencode({
+    zero_width_spaces = {
+      type     = "mapping"
+      mappings = ["\\u200C=>\\u0020"] 
     }
   })
   analysis_filter = jsonencode({
     minimal_english_stemmer = {
       type     = "stemmer"
       language = "minimal_english"
+    }
+  })
+  analysis_analyzer = jsonencode({
+    text_en = { 
+      type = "custom" 
+      tokenizer = "standard"
+      char_filter = "zero_width_spaces"
+      filter = ["lowercase", "minimal_english_stemmer"]
     }
   })
 

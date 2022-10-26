@@ -376,32 +376,36 @@ func ResourceIndex() *schema.Resource {
 			Description: "Set the number of characters of the `_source` to include in the slowlog lines, `false` or `0` will skip logging the source entirely and setting it to `true` will log the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.",
 			Optional:    true,
 		},
+		// To change analyzer setting, the index must be closed, updated, and then reopened but it can't be handled in terraform.
+		// We raise error when they are tried to be updated instead of setting ForceNew not to have unexpected deletion.
 		"analysis_analyzer": {
 			Type:         schema.TypeString,
 			Description:  "A JSON string describing the analyzers applied to the index.",
 			Optional:     true,
-			ForceNew:     true, // To add an analyzer, the index must be closed, updated, and then reopened; we can't handle that here.
 			ValidateFunc: validation.StringIsJSON,
 		},
 		"analysis_tokenizer": {
 			Type:         schema.TypeString,
 			Description:  "A JSON string describing the tokenizers applied to the index.",
 			Optional:     true,
-			ForceNew:     true, // To add a tokenizer, the index must be closed, updated, and then reopened; we can't handle that here.
+			ValidateFunc: validation.StringIsJSON,
+		},
+		"analysis_char_filter": {
+			Type:         schema.TypeString,
+			Description:  "A JSON string describing the char_filters applied to the index.",
+			Optional:     true,
 			ValidateFunc: validation.StringIsJSON,
 		},
 		"analysis_filter": {
 			Type:         schema.TypeString,
 			Description:  "A JSON string describing the filters applied to the index.",
 			Optional:     true,
-			ForceNew:     true, // To add a filter, the index must be closed, updated, and then reopened; we can't handle that here.
 			ValidateFunc: validation.StringIsJSON,
 		},
 		"analysis_normalizer": {
 			Type:         schema.TypeString,
 			Description:  "A JSON string describing the normalizers applied to the index.",
 			Optional:     true,
-			ForceNew:     true, // To add a normalizer, the index must be closed, updated, and then reopened; we can't handle that here.
 			ValidateFunc: validation.StringIsJSON,
 		},
 		"alias": {
@@ -694,6 +698,14 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 			return diag.FromErr(err)
 		}
 		analysis["tokenizer"] = tokenizer
+	}
+	if charFilterJSON, ok := d.GetOk("analysis_char_filter"); ok {
+		var filter map[string]interface{}
+		bytes := []byte(charFilterJSON.(string))
+		if err = json.Unmarshal(bytes, &filter); err != nil {
+			return diag.FromErr(err)
+		}
+		analysis["char_filter"] = filter
 	}
 	if filterJSON, ok := d.GetOk("analysis_filter"); ok {
 		var filter map[string]interface{}
