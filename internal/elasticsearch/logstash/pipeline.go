@@ -202,7 +202,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 
 	logstashPipeline.PipelineID = pipelineID
 	logstashPipeline.Description = d.Get("description").(string)
-	logstashPipeline.LastModified = utils.FormatStrictDateTime(time.Now())
+	logstashPipeline.LastModified = utils.FormatStrictDateTime(time.Now().UTC())
 	logstashPipeline.Pipeline = d.Get("pipeline").(string)
 	logstashPipeline.PipelineMetadata = d.Get("pipeline_metadata").(map[string]interface{})
 
