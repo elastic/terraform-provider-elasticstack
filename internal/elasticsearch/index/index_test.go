@@ -31,6 +31,12 @@ func TestAccResourceIndex(t *testing.T) {
 				),
 			},
 			{
+				Config:       testAccResourceIndexCreate(indexName),
+				ResourceName: "elasticstack_elasticsearch_index.test",
+				Destroy:      true,
+				ExpectError:  regexp.MustCompile("cannot destroy index without setting deletion_protection=false and running `terraform apply`"),
+			},
+			{
 				Config: testAccResourceIndexUpdate(indexName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
@@ -195,6 +201,8 @@ resource "elasticstack_elasticsearch_index" "test" {
       field1 = { type = "text" }
     }
   })
+
+  deletion_protection = false
 }
 	`, name)
 }
@@ -269,6 +277,8 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
       value = "2"
     }
   }
+
+  deletion_protection = false
 }
 	`, name)
 }
@@ -288,6 +298,8 @@ resource "elasticstack_elasticsearch_index" "test_settings_migration" {
       value = "2"
     }
   }
+
+  deletion_protection = false
 }
 	`, name)
 }
@@ -302,6 +314,8 @@ resource "elasticstack_elasticsearch_index" "test_settings_migration" {
   name = "%s"
 
   number_of_replicas = 1
+
+  deletion_protection = false
 }
 	`, name)
 }
@@ -329,6 +343,8 @@ resource "elasticstack_elasticsearch_index" "test_settings_conflict" {
       value = "3"
     }
   }
+
+  deletion_protection = false
 }
 	`, name)
 }
