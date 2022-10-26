@@ -57,35 +57,35 @@ output "repo_url" {
 
 ### Required
 
-- **name** (String) Name of the snapshot repository.
+- `name` (String) Name of the snapshot repository.
 
 ### Optional
 
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
-- **azure** (List of Object) Azure Blob storage as a repository. Set only if the type of the fetched repo is `azure`. (see [below for nested schema](#nestedatt--azure))
-- **fs** (List of Object) Shared filesystem repository. Set only if the type of the fetched repo is `fs`. (see [below for nested schema](#nestedatt--fs))
-- **gcs** (List of Object) Google Cloud Storage service as a repository. Set only if the type of the fetched repo is `gcs`. (see [below for nested schema](#nestedatt--gcs))
-- **hdfs** (List of Object) HDFS File System as a repository. Set only if the type of the fetched repo is `hdfs`. (see [below for nested schema](#nestedatt--hdfs))
-- **id** (String) Internal identifier of the resource
-- **s3** (List of Object) AWS S3 as a repository. Set only if the type of the fetched repo is `s3`. (see [below for nested schema](#nestedatt--s3))
-- **type** (String) Repository type.
-- **url** (List of Object) URL repository. Set only if the type of the fetched repo is `url`. (see [below for nested schema](#nestedatt--url))
+- `azure` (List of Object) Azure Blob storage as a repository. Set only if the type of the fetched repo is `azure`. (see [below for nested schema](#nestedatt--azure))
+- `fs` (List of Object) Shared filesystem repository. Set only if the type of the fetched repo is `fs`. (see [below for nested schema](#nestedatt--fs))
+- `gcs` (List of Object) Google Cloud Storage service as a repository. Set only if the type of the fetched repo is `gcs`. (see [below for nested schema](#nestedatt--gcs))
+- `hdfs` (List of Object) HDFS File System as a repository. Set only if the type of the fetched repo is `hdfs`. (see [below for nested schema](#nestedatt--hdfs))
+- `id` (String) Internal identifier of the resource
+- `s3` (List of Object) AWS S3 as a repository. Set only if the type of the fetched repo is `s3`. (see [below for nested schema](#nestedatt--s3))
+- `type` (String) Repository type.
+- `url` (List of Object) URL repository. Set only if the type of the fetched repo is `url`. (see [below for nested schema](#nestedatt--url))
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
 
 Optional:
 
-- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
-- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
-- **ca_file** (String) Path to a custom Certificate Authority certificate
-- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
-- **insecure** (Boolean) Disable TLS certificate validation
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- **username** (String) A username to use for API authentication to Elasticsearch.
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- `username` (String) A username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedatt--azure"></a>
@@ -93,15 +93,15 @@ Optional:
 
 Read-Only:
 
-- **base_path** (String)
-- **chunk_size** (String)
-- **client** (String)
-- **compress** (Boolean)
-- **container** (String)
-- **location_mode** (String)
-- **max_restore_bytes_per_sec** (String)
-- **max_snapshot_bytes_per_sec** (String)
-- **readonly** (Boolean)
+- `base_path` (String)
+- `chunk_size` (String)
+- `client` (String)
+- `compress` (Boolean)
+- `container` (String)
+- `location_mode` (String)
+- `max_restore_bytes_per_sec` (String)
+- `max_snapshot_bytes_per_sec` (String)
+- `readonly` (Boolean)
 
 
 <a id="nestedatt--fs"></a>
@@ -109,13 +109,13 @@ Read-Only:
 
 Read-Only:
 
-- **chunk_size** (String)
-- **compress** (Boolean)
-- **location** (String)
-- **max_number_of_snapshots** (Number)
-- **max_restore_bytes_per_sec** (String)
-- **max_snapshot_bytes_per_sec** (String)
-- **readonly** (Boolean)
+- `chunk_size` (String)
+- `compress` (Boolean)
+- `location` (String)
+- `max_number_of_snapshots` (Number)
+- `max_restore_bytes_per_sec` (String)
+- `max_snapshot_bytes_per_sec` (String)
+- `readonly` (Boolean)
 
 
 <a id="nestedatt--gcs"></a>
@@ -123,14 +123,14 @@ Read-Only:
 
 Read-Only:
 
-- **base_path** (String)
-- **bucket** (String)
-- **chunk_size** (String)
-- **client** (String)
-- **compress** (Boolean)
-- **max_restore_bytes_per_sec** (String)
-- **max_snapshot_bytes_per_sec** (String)
-- **readonly** (Boolean)
+- `base_path` (String)
+- `bucket` (String)
+- `chunk_size` (String)
+- `client` (String)
+- `compress` (Boolean)
+- `max_restore_bytes_per_sec` (String)
+- `max_snapshot_bytes_per_sec` (String)
+- `readonly` (Boolean)
 
 
 <a id="nestedatt--hdfs"></a>
@@ -138,14 +138,14 @@ Read-Only:
 
 Read-Only:
 
-- **chunk_size** (String)
-- **compress** (Boolean)
-- **load_defaults** (Boolean)
-- **max_restore_bytes_per_sec** (String)
-- **max_snapshot_bytes_per_sec** (String)
-- **path** (String)
-- **readonly** (Boolean)
-- **uri** (String)
+- `chunk_size` (String)
+- `compress` (Boolean)
+- `load_defaults` (Boolean)
+- `max_restore_bytes_per_sec` (String)
+- `max_snapshot_bytes_per_sec` (String)
+- `path` (String)
+- `readonly` (Boolean)
+- `uri` (String)
 
 
 <a id="nestedatt--s3"></a>
@@ -153,18 +153,18 @@ Read-Only:
 
 Read-Only:
 
-- **base_path** (String)
-- **bucket** (String)
-- **buffer_size** (String)
-- **canned_acl** (String)
-- **chunk_size** (String)
-- **client** (String)
-- **compress** (Boolean)
-- **max_restore_bytes_per_sec** (String)
-- **max_snapshot_bytes_per_sec** (String)
-- **readonly** (Boolean)
-- **server_side_encryption** (Boolean)
-- **storage_class** (String)
+- `base_path` (String)
+- `bucket` (String)
+- `buffer_size` (String)
+- `canned_acl` (String)
+- `chunk_size` (String)
+- `client` (String)
+- `compress` (Boolean)
+- `max_restore_bytes_per_sec` (String)
+- `max_snapshot_bytes_per_sec` (String)
+- `readonly` (Boolean)
+- `server_side_encryption` (Boolean)
+- `storage_class` (String)
 
 
 <a id="nestedatt--url"></a>
@@ -172,12 +172,12 @@ Read-Only:
 
 Read-Only:
 
-- **chunk_size** (String)
-- **compress** (Boolean)
-- **http_max_retries** (Number)
-- **http_socket_timeout** (String)
-- **max_number_of_snapshots** (Number)
-- **max_restore_bytes_per_sec** (String)
-- **max_snapshot_bytes_per_sec** (String)
-- **readonly** (Boolean)
-- **url** (String)
+- `chunk_size` (String)
+- `compress` (Boolean)
+- `http_max_retries` (Number)
+- `http_socket_timeout` (String)
+- `max_number_of_snapshots` (Number)
+- `max_restore_bytes_per_sec` (String)
+- `max_snapshot_bytes_per_sec` (String)
+- `readonly` (Boolean)
+- `url` (String)

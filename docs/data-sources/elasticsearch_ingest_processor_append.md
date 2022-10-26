@@ -39,21 +39,21 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to be appended to.
-- **value** (List of String) The value to be appended.
+- `field` (String) The field to be appended to.
+- `value` (List of String) The value to be appended.
 
 ### Optional
 
-- **allow_duplicates** (Boolean) If `false`, the processor does not append values already present in the field.
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **media_type** (String) The media type for encoding value. Applies only when value is a template snippet. Must be one of `application/json`, `text/plain`, or `application/x-www-form-urlencoded`. Supported only from Elasticsearch version **7.15**.
-- **on_failure** (List of String) Handle failures for the processor.
-- **tag** (String) Identifier for the processor.
+- `allow_duplicates` (Boolean) If `false`, the processor does not append values already present in the field.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `media_type` (String) The media type for encoding value. Applies only when value is a template snippet. Must be one of `application/json`, `text/plain`, or `application/x-www-form-urlencoded`. Supported only from Elasticsearch version **7.15**.
+- `on_failure` (List of String) Handle failures for the processor.
+- `tag` (String) Identifier for the processor.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.
 

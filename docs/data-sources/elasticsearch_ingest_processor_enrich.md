@@ -42,23 +42,23 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field in the input document that matches the policies match_field used to retrieve the enrichment data.
-- **policy_name** (String) The name of the enrich policy to use.
-- **target_field** (String) Field added to incoming documents to contain enrich data.
+- `field` (String) The field in the input document that matches the policies match_field used to retrieve the enrichment data.
+- `policy_name` (String) The name of the enrich policy to use.
+- `target_field` (String) Field added to incoming documents to contain enrich data.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **ignore_missing** (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- **max_matches** (Number) The maximum number of matched documents to include under the configured target field.
-- **on_failure** (List of String) Handle failures for the processor.
-- **override** (Boolean) If processor will update fields with pre-existing non-null-valued field.
-- **shape_relation** (String) A spatial relation operator used to match the geoshape of incoming documents to documents in the enrich index.
-- **tag** (String) Identifier for the processor.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
+- `max_matches` (Number) The maximum number of matched documents to include under the configured target field.
+- `on_failure` (List of String) Handle failures for the processor.
+- `override` (Boolean) If processor will update fields with pre-existing non-null-valued field.
+- `shape_relation` (String) A spatial relation operator used to match the geoshape of incoming documents to documents in the enrich index.
+- `tag` (String) Identifier for the processor.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.

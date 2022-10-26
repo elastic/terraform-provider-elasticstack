@@ -58,19 +58,19 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **destination_ip** (String) Field containing the destination IP address.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **ignore_missing** (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- **internal_networks** (Set of String) List of internal networks.
-- **internal_networks_field** (String) A field on the given document to read the internal_networks configuration from.
-- **on_failure** (List of String) Handle failures for the processor.
-- **source_ip** (String) Field containing the source IP address.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) Output field for the network direction.
+- `description` (String) Description of the processor.
+- `destination_ip` (String) Field containing the destination IP address.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
+- `internal_networks` (Set of String) List of internal networks.
+- `internal_networks_field` (String) A field on the given document to read the internal_networks configuration from.
+- `on_failure` (List of String) Handle failures for the processor.
+- `source_ip` (String) Field containing the source IP address.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) Output field for the network direction.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.

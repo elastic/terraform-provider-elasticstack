@@ -49,30 +49,30 @@ output "role" {
 
 ### Required
 
-- **name** (String) The name of the role.
+- `name` (String) The name of the role.
 
 ### Optional
 
-- **applications** (Block Set) A list of application privilege entries. (see [below for nested schema](#nestedblock--applications))
-- **cluster** (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- **global** (String) An object defining global privileges.
-- **indices** (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
-- **metadata** (String) Optional meta-data.
-- **run_as** (Set of String) A list of users that the owners of this role can impersonate.
+- `applications` (Block Set) A list of application privilege entries. (see [below for nested schema](#nestedblock--applications))
+- `cluster` (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
+- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `global` (String) An object defining global privileges.
+- `indices` (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
+- `metadata` (String) Optional meta-data.
+- `run_as` (Set of String) A list of users that the owners of this role can impersonate.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--applications"></a>
 ### Nested Schema for `applications`
 
 Required:
 
-- **application** (String) The name of the application to which this entry applies.
-- **privileges** (Set of String) A list of strings, where each element is the name of an application privilege or action.
-- **resources** (Set of String) A list resources to which the privileges are applied.
+- `application` (String) The name of the application to which this entry applies.
+- `privileges` (Set of String) A list of strings, where each element is the name of an application privilege or action.
+- `resources` (Set of String) A list resources to which the privileges are applied.
 
 
 <a id="nestedblock--elasticsearch_connection"></a>
@@ -80,13 +80,13 @@ Required:
 
 Optional:
 
-- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
-- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
-- **ca_file** (String) Path to a custom Certificate Authority certificate
-- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
-- **insecure** (Boolean) Disable TLS certificate validation
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- **username** (String) A username to use for API authentication to Elasticsearch.
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- `username` (String) A username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--indices"></a>
@@ -94,22 +94,22 @@ Optional:
 
 Required:
 
-- **names** (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
-- **privileges** (Set of String) The index level privileges that the owners of the role have on the specified indices.
+- `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
+- `privileges` (Set of String) The index level privileges that the owners of the role have on the specified indices.
 
 Optional:
 
-- **allow_restricted_indices** (Boolean) Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.
-- **field_security** (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--indices--field_security))
-- **query** (String) A search query that defines the documents the owners of the role have read access to.
+- `allow_restricted_indices` (Boolean) Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.
+- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--indices--field_security))
+- `query` (String) A search query that defines the documents the owners of the role have read access to.
 
 <a id="nestedblock--indices--field_security"></a>
 ### Nested Schema for `indices.field_security`
 
 Optional:
 
-- **except** (Set of String) List of the fields to which the grants will not be applied.
-- **grant** (Set of String) List of the fields to grant the access to.
+- `except` (Set of String) List of the fields to which the grants will not be applied.
+- `grant` (Set of String) List of the fields to grant the access to.
 
 ## Import
 

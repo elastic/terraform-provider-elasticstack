@@ -39,22 +39,22 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to insert, upsert, or update.
+- `field` (String) The field to insert, upsert, or update.
 
 ### Optional
 
-- **copy_from** (String) The origin field which will be copied to `field`, cannot set `value` simultaneously.
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_empty_value** (Boolean) If `true` and `value` is a template snippet that evaluates to `null` or the empty string, the processor quietly exits without modifying the document
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **media_type** (String) The media type for encoding value.
-- **on_failure** (List of String) Handle failures for the processor.
-- **override** (Boolean) If processor will update fields with pre-existing non-null-valued field.
-- **tag** (String) Identifier for the processor.
-- **value** (String) The value to be set for the field. Supports template snippets. May specify only one of `value` or `copy_from`.
+- `copy_from` (String) The origin field which will be copied to `field`, cannot set `value` simultaneously.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_empty_value` (Boolean) If `true` and `value` is a template snippet that evaluates to `null` or the empty string, the processor quietly exits without modifying the document
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `media_type` (String) The media type for encoding value.
+- `on_failure` (List of String) Handle failures for the processor.
+- `override` (Boolean) If processor will update fields with pre-existing non-null-valued field.
+- `tag` (String) Identifier for the processor.
+- `value` (String) The value to be set for the field. Supports template snippets. May specify only one of `value` or `copy_from`.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.

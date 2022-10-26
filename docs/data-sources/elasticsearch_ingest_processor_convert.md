@@ -47,21 +47,21 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field whose value is to be converted.
-- **type** (String) The type to convert the existing value to
+- `field` (String) The field whose value is to be converted.
+- `type` (String) The type to convert the existing value to
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **ignore_missing** (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- **on_failure** (List of String) Handle failures for the processor.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) The field to assign the converted value to.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
+- `on_failure` (List of String) Handle failures for the processor.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) The field to assign the converted value to.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.
 

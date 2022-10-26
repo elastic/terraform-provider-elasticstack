@@ -59,17 +59,17 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "pipeline_b" {
 
 ### Required
 
-- **name** (String) The name of the pipeline to execute.
+- `name` (String) The name of the pipeline to execute.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **on_failure** (List of String) Handle failures for the processor.
-- **tag** (String) Identifier for the processor.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `on_failure` (List of String) Handle failures for the processor.
+- `tag` (String) Identifier for the processor.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.

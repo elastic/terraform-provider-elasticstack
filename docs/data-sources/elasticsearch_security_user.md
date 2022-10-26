@@ -31,30 +31,30 @@ output "user" {
 
 ### Required
 
-- **username** (String) An identifier for the user
+- `username` (String) An identifier for the user
 
 ### Optional
 
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
-- **email** (String) The email of the user.
-- **enabled** (Boolean) Specifies whether the user is enabled. The default value is true.
-- **full_name** (String) The full name of the user.
-- **id** (String) Internal identifier of the resource
-- **metadata** (String) Arbitrary metadata that you want to associate with the user.
-- **roles** (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
+- `email` (String) The email of the user.
+- `enabled` (Boolean) Specifies whether the user is enabled. The default value is true.
+- `full_name` (String) The full name of the user.
+- `id` (String) Internal identifier of the resource
+- `metadata` (String) Arbitrary metadata that you want to associate with the user.
+- `roles` (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
 
 Optional:
 
-- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
-- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
-- **ca_file** (String) Path to a custom Certificate Authority certificate
-- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
-- **insecure** (Boolean) Disable TLS certificate validation
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- **username** (String) A username to use for API authentication to Elasticsearch.
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- `username` (String) A username to use for API authentication to Elasticsearch.

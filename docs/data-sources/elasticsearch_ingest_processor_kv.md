@@ -43,27 +43,27 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to be parsed. Supports template snippets.
-- **field_split** (String) Regex pattern to use for splitting key-value pairs.
-- **value_split** (String) Regex pattern to use for splitting the key from the value within a key-value pair.
+- `field` (String) The field to be parsed. Supports template snippets.
+- `field_split` (String) Regex pattern to use for splitting key-value pairs.
+- `value_split` (String) Regex pattern to use for splitting the key from the value within a key-value pair.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **exclude_keys** (Set of String) List of keys to exclude from document
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **ignore_missing** (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- **include_keys** (Set of String) List of keys to filter and insert into document. Defaults to including all keys
-- **on_failure** (List of String) Handle failures for the processor.
-- **prefix** (String) Prefix to be added to extracted keys.
-- **strip_brackets** (Boolean) If `true` strip brackets `()`, `<>`, `[]` as well as quotes `'` and `"` from extracted values.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) The field to insert the extracted keys into. Defaults to the root of the document.
-- **trim_key** (String) String of characters to trim from extracted keys.
-- **trim_value** (String) String of characters to trim from extracted values.
+- `description` (String) Description of the processor.
+- `exclude_keys` (Set of String) List of keys to exclude from document
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
+- `include_keys` (Set of String) List of keys to filter and insert into document. Defaults to including all keys
+- `on_failure` (List of String) Handle failures for the processor.
+- `prefix` (String) Prefix to be added to extracted keys.
+- `strip_brackets` (Boolean) If `true` strip brackets `()`, `<>`, `[]` as well as quotes `'` and `"` from extracted values.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) The field to insert the extracted keys into. Defaults to the root of the document.
+- `trim_key` (String) String of characters to trim from extracted keys.
+- `trim_value` (String) String of characters to trim from extracted values.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.

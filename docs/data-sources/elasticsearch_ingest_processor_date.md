@@ -43,22 +43,22 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to get the date from.
-- **formats** (List of String) An array of the expected date formats.
+- `field` (String) The field to get the date from.
+- `formats` (List of String) An array of the expected date formats.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **locale** (String) The locale to use when parsing the date, relevant when parsing month names or week days.
-- **on_failure** (List of String) Handle failures for the processor.
-- **output_format** (String) The format to use when writing the date to `target_field`.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) The field that will hold the parsed date.
-- **timezone** (String) The timezone to use when parsing the date.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `locale` (String) The locale to use when parsing the date, relevant when parsing month names or week days.
+- `on_failure` (List of String) Handle failures for the processor.
+- `output_format` (String) The format to use when writing the date to `target_field`.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) The field that will hold the parsed date.
+- `timezone` (String) The timezone to use when parsing the date.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.

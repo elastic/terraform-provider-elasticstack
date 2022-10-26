@@ -70,38 +70,38 @@ resource "elasticstack_elasticsearch_data_stream" "my_data_stream" {
 
 ### Required
 
-- **name** (String) Name of the data stream to create.
+- `name` (String) Name of the data stream to create.
 
 ### Optional
 
-- **elasticsearch_connection** (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
-- **generation** (Number) Current generation for the data stream.
-- **hidden** (Boolean) If `true`, the data stream is hidden.
-- **id** (String) Internal identifier of the resource
-- **ilm_policy** (String) Name of the current ILM lifecycle policy in the stream’s matching index template.
-- **indices** (List of Object) Array of objects containing information about the data stream’s backing indices. The last item in this array contains information about the stream’s current write index. (see [below for nested schema](#nestedatt--indices))
-- **metadata** (String) Custom metadata for the stream, copied from the _meta object of the stream’s matching index template.
-- **replicated** (Boolean) If `true`, the data stream is created and managed by cross-cluster replication and the local cluster can not write into this data stream or change its mappings.
-- **status** (String) Health status of the data stream.
-- **system** (Boolean) If `true`, the data stream is created and managed by an Elastic stack component and cannot be modified through normal user interaction.
-- **template** (String) Name of the index template used to create the data stream’s backing indices.
-- **timestamp_field** (String) Contains information about the data stream’s @timestamp field.
+- `generation` (Number) Current generation for the data stream.
+- `hidden` (Boolean) If `true`, the data stream is hidden.
+- `id` (String) Internal identifier of the resource
+- `ilm_policy` (String) Name of the current ILM lifecycle policy in the stream’s matching index template.
+- `indices` (List of Object) Array of objects containing information about the data stream’s backing indices. The last item in this array contains information about the stream’s current write index. (see [below for nested schema](#nestedatt--indices))
+- `metadata` (String) Custom metadata for the stream, copied from the _meta object of the stream’s matching index template.
+- `replicated` (Boolean) If `true`, the data stream is created and managed by cross-cluster replication and the local cluster can not write into this data stream or change its mappings.
+- `status` (String) Health status of the data stream.
+- `system` (Boolean) If `true`, the data stream is created and managed by an Elastic stack component and cannot be modified through normal user interaction.
+- `template` (String) Name of the index template used to create the data stream’s backing indices.
+- `timestamp_field` (String) Contains information about the data stream’s @timestamp field.
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
 
 Optional:
 
-- **api_key** (String, Sensitive) API Key to use for authentication to Elasticsearch
-- **ca_data** (String) PEM-encoded custom Certificate Authority certificate
-- **ca_file** (String) Path to a custom Certificate Authority certificate
-- **endpoints** (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
-- **insecure** (Boolean) Disable TLS certificate validation
-- **password** (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- **username** (String) A username to use for API authentication to Elasticsearch.
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
+- `username` (String) A username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedatt--indices"></a>
@@ -109,8 +109,8 @@ Optional:
 
 Read-Only:
 
-- **index_name** (String)
-- **index_uuid** (String)
+- `index_name` (String)
+- `index_uuid` (String)
 
 ## Import
 

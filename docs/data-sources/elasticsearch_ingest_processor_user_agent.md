@@ -41,17 +41,17 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field containing the user agent string.
+- `field` (String) The field containing the user agent string.
 
 ### Optional
 
-- **extract_device_type** (Boolean) Extracts device type from the user agent string on a best-effort basis. Supported only starting from Elasticsearch version **8.0**
-- **ignore_missing** (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- **properties** (Set of String) Controls what properties are added to `target_field`.
-- **regex_file** (String) The name of the file in the `config/ingest-user-agent` directory containing the regular expressions for parsing the user agent string.
-- **target_field** (String) The field that will be filled with the user agent details.
+- `extract_device_type` (Boolean) Extracts device type from the user agent string on a best-effort basis. Supported only starting from Elasticsearch version **8.0**
+- `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
+- `properties` (Set of String) Controls what properties are added to `target_field`.
+- `regex_file` (String) The name of the file in the `config/ingest-user-agent` directory containing the regular expressions for parsing the user agent string.
+- `target_field` (String) The field that will be filled with the user agent details.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.

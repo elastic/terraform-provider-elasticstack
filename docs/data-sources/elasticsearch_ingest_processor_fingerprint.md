@@ -37,21 +37,21 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **fields** (List of String) Array of fields to include in the fingerprint.
+- `fields` (List of String) Array of fields to include in the fingerprint.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **ignore_missing** (Boolean) If `true`, the processor ignores any missing `fields`. If all fields are missing, the processor silently exits without modifying the document.
-- **method** (String) The hash method used to compute the fingerprint.
-- **on_failure** (List of String) Handle failures for the processor.
-- **salt** (String) Salt value for the hash function.
-- **tag** (String) Identifier for the processor.
-- **target_field** (String) Output field for the fingerprint.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `ignore_missing` (Boolean) If `true`, the processor ignores any missing `fields`. If all fields are missing, the processor silently exits without modifying the document.
+- `method` (String) The hash method used to compute the fingerprint.
+- `on_failure` (List of String) Handle failures for the processor.
+- `salt` (String) Salt value for the hash function.
+- `tag` (String) Identifier for the processor.
+- `target_field` (String) Output field for the fingerprint.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.

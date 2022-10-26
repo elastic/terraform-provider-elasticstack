@@ -39,18 +39,18 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **field** (String) The field to store the user information into.
+- `field` (String) The field to store the user information into.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **on_failure** (List of String) Handle failures for the processor.
-- **properties** (Set of String) Controls what user related properties are added to the `field`.
-- **tag** (String) Identifier for the processor.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `on_failure` (List of String) Handle failures for the processor.
+- `properties` (Set of String) Controls what user related properties are added to the `field`.
+- `tag` (String) Identifier for the processor.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.

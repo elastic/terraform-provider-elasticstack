@@ -44,23 +44,23 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- **date_rounding** (String) How to round the date when formatting the date into the index name.
-- **field** (String) The field to get the date or timestamp from.
+- `date_rounding` (String) How to round the date when formatting the date into the index name.
+- `field` (String) The field to get the date or timestamp from.
 
 ### Optional
 
-- **date_formats** (List of String) An array of the expected date formats for parsing dates / timestamps in the document being preprocessed.
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **index_name_format** (String) The format to be used when printing the parsed date into the index name.
-- **index_name_prefix** (String) A prefix of the index name to be prepended before the printed date.
-- **locale** (String) The locale to use when parsing the date from the document being preprocessed, relevant when parsing month names or week days.
-- **on_failure** (List of String) Handle failures for the processor.
-- **tag** (String) Identifier for the processor.
-- **timezone** (String) The timezone to use when parsing the date and when date math index supports resolves expressions into concrete index names.
+- `date_formats` (List of String) An array of the expected date formats for parsing dates / timestamps in the document being preprocessed.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `index_name_format` (String) The format to be used when printing the parsed date into the index name.
+- `index_name_prefix` (String) A prefix of the index name to be prepended before the printed date.
+- `locale` (String) The locale to use when parsing the date from the document being preprocessed, relevant when parsing month names or week days.
+- `on_failure` (List of String) Handle failures for the processor.
+- `tag` (String) Identifier for the processor.
+- `timezone` (String) The timezone to use when parsing the date and when date math index supports resolves expressions into concrete index names.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.

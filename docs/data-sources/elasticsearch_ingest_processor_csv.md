@@ -40,24 +40,24 @@ If the `trim` option is enabled then any whitespace in the beginning and in the 
 
 ### Required
 
-- **field** (String) The field to extract data from.
-- **target_fields** (List of String) The array of fields to assign extracted values to.
+- `field` (String) The field to extract data from.
+- `target_fields` (List of String) The array of fields to assign extracted values to.
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **empty_value** (String) Value used to fill empty fields, empty fields will be skipped if this is not provided.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **ignore_missing** (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- **on_failure** (List of String) Handle failures for the processor.
-- **quote** (String) Quote used in CSV, has to be single character string
-- **separator** (String) Separator used in CSV, has to be single character string.
-- **tag** (String) Identifier for the processor.
-- **trim** (Boolean) Trim whitespaces in unquoted fields.
+- `description` (String) Description of the processor.
+- `empty_value` (String) Value used to fill empty fields, empty fields will be skipped if this is not provided.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
+- `on_failure` (List of String) Handle failures for the processor.
+- `quote` (String) Quote used in CSV, has to be single character string
+- `separator` (String) Separator used in CSV, has to be single character string.
+- `tag` (String) Identifier for the processor.
+- `trim` (Boolean) Trim whitespaces in unquoted fields.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource
+- `json` (String) JSON representation of this data source.
 

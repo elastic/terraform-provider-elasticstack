@@ -62,17 +62,17 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Optional
 
-- **description** (String) Description of the processor.
-- **if** (String) Conditionally execute the processor
-- **ignore_failure** (Boolean) Ignore failures for the processor.
-- **lang** (String) Script language.
-- **on_failure** (List of String) Handle failures for the processor.
-- **params** (String) Object containing parameters for the script.
-- **script_id** (String) ID of a stored script. If no `source` is specified, this parameter is required.
-- **source** (String) Inline script. If no id is specified, this parameter is required.
-- **tag** (String) Identifier for the processor.
+- `description` (String) Description of the processor.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
+- `lang` (String) Script language.
+- `on_failure` (List of String) Handle failures for the processor.
+- `params` (String) Object containing parameters for the script.
+- `script_id` (String) ID of a stored script. If no `source` is specified, this parameter is required.
+- `source` (String) Inline script. If no id is specified, this parameter is required.
+- `tag` (String) Identifier for the processor.
 
 ### Read-Only
 
-- **id** (String) Internal identifier of the resource.
-- **json** (String) JSON representation of this data source.
+- `id` (String) Internal identifier of the resource.
+- `json` (String) JSON representation of this data source.
