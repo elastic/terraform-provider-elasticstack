@@ -10,7 +10,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
   }
 
   alias {
-    name   = "my_alias_2"
+    name = "my_alias_2"
     filter = jsonencode({
       term = { "user.id" = "developer" }
     })
