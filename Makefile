@@ -25,7 +25,7 @@ build: lint ## build the terraform provider
 
 
 .PHONY: testacc
-testacc: lint ## Run acceptance tests
+testacc: ## Run acceptance tests
 	TF_ACC=1 go test -v ./... -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 
@@ -75,7 +75,24 @@ golangci-lint:
 
 
 .PHONY: lint
-lint: setup misspell golangci-lint ## Run lints to check the spelling and common go patterns
+lint: setup misspell golangci-lint check-fmt check-docs ## Run lints to check the spelling and common go patterns
+
+.PHONY: fmt
+fmt: ## Format code
+	go fmt ./...
+	terraform fmt --recursive
+
+.PHONY:check-fmt
+check-fmt: fmt ## Check if code is formatted
+	@if [ "`git status --porcelain `" ]; then \
+	  echo "Unformatted files were detected. Please run 'make fmt' to format code, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
+	fi
+
+.PHONY: check-docs
+check-docs: docs-generate  ## Check uncommitted changes on docs
+	@if [ "`git status --porcelain docs/`" ]; then \
+	  echo "Uncommitted changes were detected in the docs folder. Please run 'make docs-generate' to autogenerate the docs, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
+	fi
 
 
 .PHONY: setup

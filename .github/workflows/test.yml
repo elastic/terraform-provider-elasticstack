@@ -1,0 +1,104 @@
+name: Build/Lint/Test
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: Build
+        run: make build
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: 'tools/go.mod'
+          cache: true
+          cache-dependency-path: tools/go.sum
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Lint
+        run: make lint
+
+  test:
+    name: Matrix Acceptance Test
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      ELASTIC_PASSWORD: password
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.elasticsearch }}
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: true
+          repositories.url.allowed_urls: https://example.com/*
+          path.repo: /tmp
+          ELASTIC_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+        ports:
+          - 9200:9200
+        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        elasticsearch:
+          - '7.11.2'
+          - '7.12.1'
+          - '7.13.4'
+          - '7.14.2'
+          - '7.15.2'
+          - '7.16.3'
+          - '7.17.4'
+          - '8.0.1'
+          - '8.1.3'
+          - '8.2.2'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: TF acceptance tests
+        timeout-minutes: 10
+        run: make testacc
+        env:
+          TF_ACC: "1"
+          ELASTICSEARCH_VERSION: ${{ matrix.elasticsearch }}
+          ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
+          ELASTICSEARCH_USERNAME: "elastic"
+          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
