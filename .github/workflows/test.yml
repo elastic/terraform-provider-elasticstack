@@ -41,6 +41,8 @@ jobs:
           cache: true
           cache-dependency-path: tools/go.sum
       - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
 
       - name: Lint
         run: make lint
@@ -83,6 +85,8 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
       - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
 
       - name: Get dependencies
         run: go mod download
