@@ -20,7 +20,7 @@ $(GOBIN): ## create bin/ in the current directory
 
 
 .PHONY: build
-build: lint ## build the terraform provider
+build: ## build the terraform provider
 	go build -o ${BINARY}
 
 
@@ -30,7 +30,7 @@ testacc: ## Run acceptance tests
 
 
 .PHONY: test
-test: lint ## Run unit tests
+test: ## Run unit tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
 
 
