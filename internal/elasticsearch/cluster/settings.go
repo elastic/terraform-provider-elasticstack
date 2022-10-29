@@ -287,6 +287,5 @@ func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }

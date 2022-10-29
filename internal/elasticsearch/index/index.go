@@ -927,6 +927,5 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	if diags := client.DeleteElasticsearchIndex(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
 }
