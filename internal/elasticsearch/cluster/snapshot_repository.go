@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -374,6 +375,7 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 
 	currentRepo, diags := client.GetElasticsearchSnapshotRepository(ctx, compId.ResourceId)
 	if currentRepo == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Snapshot repository "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}
