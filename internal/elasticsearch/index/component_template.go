@@ -293,6 +293,5 @@ func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData
 	if diags := client.DeleteElasticsearchComponentTemplate(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
 }

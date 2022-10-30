@@ -339,6 +339,5 @@ func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags := client.DeleteElasticsearchSlm(ctx, id.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
 }
