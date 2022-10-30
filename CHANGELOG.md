@@ -5,6 +5,7 @@
 
 ### Fixed
 - Remove unnecessary unsetting id on delete ([#174](https://github.com/elastic/terraform-provider-elasticstack/pull/174))
+- Fix not found handling for snapshot repository ([#175](https://github.com/elastic/terraform-provider-elasticstack/pull/175))
 
 ## [0.4.0] - 2022-10-07
 ### Added
