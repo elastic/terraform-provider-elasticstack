@@ -222,6 +222,5 @@ func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta 
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }

@@ -456,6 +456,5 @@ func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta in
 	if diags := client.DeleteElasticsearchSnapshotRepository(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
 }

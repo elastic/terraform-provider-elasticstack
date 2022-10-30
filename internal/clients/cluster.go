@@ -108,10 +108,10 @@ func (a *ApiClient) GetElasticsearchSlm(ctx context.Context, slmName string) (*m
 	if diags := utils.CheckError(res, "Unable to get SLM policy from ES API"); diags.HasError() {
 		return nil, diags
 	}
-	type SlmReponse = map[string]struct {
+	type SlmResponse = map[string]struct {
 		Policy models.SnapshotPolicy `json:"policy"`
 	}
-	var slmResponse SlmReponse
+	var slmResponse SlmResponse
 	if err := json.NewDecoder(res.Body).Decode(&slmResponse); err != nil {
 		return nil, diag.FromErr(err)
 	}

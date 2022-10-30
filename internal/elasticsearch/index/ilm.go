@@ -651,6 +651,5 @@ func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }
