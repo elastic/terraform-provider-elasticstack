@@ -118,6 +118,7 @@ func New(version string) func() *schema.Provider {
 				"elasticstack_elasticsearch_ingest_processor_urldecode":         ingest.DataSourceProcessorUrldecode(),
 				"elasticstack_elasticsearch_ingest_processor_uri_parts":         ingest.DataSourceProcessorUriParts(),
 				"elasticstack_elasticsearch_ingest_processor_user_agent":        ingest.DataSourceProcessorUserAgent(),
+				"elasticstack_elasticsearch_security_role":                      security.DataSourceRole(),
 				"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
 				"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
 			},
