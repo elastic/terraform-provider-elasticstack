@@ -1,0 +1,17 @@
+---
+subcategory: "Security"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_security_role Data Source"
+description: |-
+  Retrieves roles in the native realm.
+---
+
+# Data Source: elasticstack_elasticsearch_security_role
+
+Use this data source to get information about an existing Elasticsearch role. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_security_role/data-source.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
