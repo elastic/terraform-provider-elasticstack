@@ -14,7 +14,7 @@ func TestAccDataSourceSecurityRoleMapping(t *testing.T) {
 		ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSecurityRole,
+				Config: testAccDataSourceSecurityRoleMapping,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "name", "data_source_test"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
@@ -27,7 +27,7 @@ func TestAccDataSourceSecurityRoleMapping(t *testing.T) {
 	})
 }
 
-const testAccDataSourceSecurityRole = `
+const testAccDataSourceSecurityRoleMapping = `
 provider "elasticstack" {
   elasticsearch {}
 }
