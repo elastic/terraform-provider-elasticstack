@@ -1,5 +1,5 @@
 ---
-subcategory: "Snapshot"
+subcategory: "Cluster"
 layout: ""
 page_title: "Elasticstack: elasticstack_elasticsearch_script Resource"
 description: |-
