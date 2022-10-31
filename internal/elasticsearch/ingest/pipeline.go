@@ -218,6 +218,5 @@ func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.Resourc
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }

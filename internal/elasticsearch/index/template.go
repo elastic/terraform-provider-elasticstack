@@ -420,6 +420,5 @@ func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, me
 	if diags := client.DeleteElasticsearchIndexTemplate(ctx, compId.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
 }
