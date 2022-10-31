@@ -20,8 +20,7 @@ $(GOBIN): ## create bin/ in the current directory
 
 
 .PHONY: build
-build: ## build the terraform provider
-	go build -o ${BINARY}
+build: lint build-ci ## build the terraform provider
 
 
 .PHONY: testacc
