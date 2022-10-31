@@ -190,13 +190,12 @@ func (a *ApiClient) GetElasticsearchScript(ctx context.Context, id string) (*mod
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get the script: %s", id)); diags.HasError() {
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
 		return nil, diags
 	}
-	type getScriptResponse = struct {
+	var scriptResponse struct {
 		Script *models.Script `json:"script"`
 	}
-	var scriptResponse getScriptResponse
 	if err := json.NewDecoder(res.Body).Decode(&scriptResponse); err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -208,7 +207,7 @@ func (a *ApiClient) PutElasticsearchScript(ctx context.Context, script *models.S
 	req := struct {
 		Script *models.Script `json:"script"`
 	}{
-		Script: script,
+		script,
 	}
 	scriptBytes, err := json.Marshal(req)
 	if err != nil {
@@ -219,7 +218,7 @@ func (a *ApiClient) PutElasticsearchScript(ctx context.Context, script *models.S
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to put the script"); diags.HasError() {
+	if diags := utils.CheckError(res, "Unable to put stored script"); diags.HasError() {
 		return diags
 	}
 	return nil

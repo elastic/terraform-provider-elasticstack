@@ -23,10 +23,9 @@ func ResourceScript() *schema.Resource {
 			ForceNew:    true,
 		},
 		"lang": {
-			Description:  "Script language. For search templates, use `mustache`. Defaults to `painless`.",
+			Description:  "Script language. For search templates, use `mustache`.",
 			Type:         schema.TypeString,
-			Optional:     true,
-			Default:      "painless",
+			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"painless", "expression", "mustache", "java"}, false),
 		},
 		"source": {
