@@ -39,12 +39,7 @@ func (a *ApiClient) GetElasticsearchSnapshotRepository(ctx context.Context, name
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to find requested repository",
-			Detail:   fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name),
-		})
-		return nil, diags
+		return nil, nil
 	}
 	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get the information about snapshot repository: %s", name)); diags.HasError() {
 		return nil, diags
@@ -113,10 +108,10 @@ func (a *ApiClient) GetElasticsearchSlm(ctx context.Context, slmName string) (*m
 	if diags := utils.CheckError(res, "Unable to get SLM policy from ES API"); diags.HasError() {
 		return nil, diags
 	}
-	type SlmReponse = map[string]struct {
+	type SlmResponse = map[string]struct {
 		Policy models.SnapshotPolicy `json:"policy"`
 	}
-	var slmResponse SlmReponse
+	var slmResponse SlmResponse
 	if err := json.NewDecoder(res.Body).Decode(&slmResponse); err != nil {
 		return nil, diag.FromErr(err)
 	}

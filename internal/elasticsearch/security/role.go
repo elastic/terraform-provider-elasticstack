@@ -431,6 +431,5 @@ func resourceSecurityRoleDelete(ctx context.Context, d *schema.ResourceData, met
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }

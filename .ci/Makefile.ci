@@ -12,6 +12,10 @@ ELASTICSEARCH_MEM ?= 1024m
 
 SOURCE_LOCATION ?= $(shell pwd)
 
+.PHONY: build-ci
+build-ci: ## build the terraform provider
+	go build -o ${BINARY}
+
 # Retry command - first argumment is how many attempts are required, second argument is the command to run
 # Backoff starts with 1 second and double with next itteration
 retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$attempt"; fi) -ge $(1) ]; do \
