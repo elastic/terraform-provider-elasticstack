@@ -54,7 +54,7 @@ func TestAccResourceScriptSearchTemplate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "lang", "mustache"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "source", `{"query":{"match":{"message":"{{query_string}}"}},"from":"{{from}}","size":"{{size}}"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "source", `{"from":"{{from}}","query":{"match":{"message":"{{query_string}}"}},"size":"{{size}}"}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "params", `{"query_string":"My query string"}`),
 				),
 			},
