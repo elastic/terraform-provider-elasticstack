@@ -8,7 +8,7 @@ description: |-
 
 # Data Source: elasticstack_elasticsearch_security_role
 
-Use this data source to  information about existing Elasticsearch role. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html
+Use this data source to get information about an existing Elasticsearch role. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html
 
 ## Example Usage
 
