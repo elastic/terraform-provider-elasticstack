@@ -27,7 +27,7 @@ resource "elasticstack_elasticsearch_script" "my_script" {
 resource "elasticstack_elasticsearch_script" "my_search_template" {
   script_id = "my_search_template"
   lang      = "mustache"
-  source    = jsonencode({
+  source = jsonencode({
     query = {
       match = {
         message = "{{query_string}}"
