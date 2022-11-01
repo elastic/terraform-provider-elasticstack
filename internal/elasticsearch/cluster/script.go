@@ -78,7 +78,7 @@ func resourceScriptRead(ctx context.Context, d *schema.ResourceData, meta interf
 	}
 
 	script, diags := client.GetElasticsearchScript(ctx, compId.ResourceId)
-	if !d.IsNewResource() && script == nil && diags == nil {
+	if script == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Script "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 	}
