@@ -197,3 +197,11 @@ type LogstashPipeline struct {
 	PipelineSettings map[string]interface{} `json:"pipeline_settings"`
 	Username         string                 `json:"username"`
 }
+
+type Script struct {
+	ID       string                 `json:"-"`
+	Language string                 `json:"lang"`
+	Source   string                 `json:"source"`
+	Params   map[string]interface{} `json:"params"`
+	Context  string                 `json:"-"`
+}
