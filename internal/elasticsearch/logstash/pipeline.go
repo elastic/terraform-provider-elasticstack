@@ -233,6 +233,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 
 	logstashPipeline, diags := client.GetLogstashPipeline(ctx, resourceID)
 	if logstashPipeline == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Logstash pipeline "%s" not found, removing from state`, resourceID))
 		d.SetId("")
 		return diags
 	}

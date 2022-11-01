@@ -874,6 +874,7 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	index, diags := client.GetElasticsearchIndex(ctx, indexName)
 	if index == nil && diags == nil {
 		// no index found on ES side
+		tflog.Warn(ctx, fmt.Sprintf(`Index "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}

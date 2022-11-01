@@ -3,11 +3,13 @@ package index
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -238,6 +240,7 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 
 	tpl, diags := client.GetElasticsearchComponentTemplate(ctx, templateId)
 	if tpl == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}

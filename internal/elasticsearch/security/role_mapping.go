@@ -3,10 +3,12 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -130,6 +132,7 @@ func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData
 	}
 	roleMapping, diags := client.GetElasticsearchRoleMapping(ctx, resourceID)
 	if roleMapping == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Role mapping "%s" not found, removing from state`, resourceID))
 		d.SetId("")
 		return diags
 	}
