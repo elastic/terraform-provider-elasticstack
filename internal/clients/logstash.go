@@ -66,7 +66,7 @@ func (a *ApiClient) DeleteLogstashPipeline(ctx context.Context, pipeline_id stri
 	var diags diag.Diagnostics
 	res, err := a.es.LogstashDeletePipeline(pipeline_id, a.es.LogstashDeletePipeline.WithContext(ctx))
 
-	if err != nil && res.IsError() {
+	if err != nil {
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
