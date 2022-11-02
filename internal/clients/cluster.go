@@ -175,3 +175,58 @@ func (a *ApiClient) GetElasticsearchSettings(ctx context.Context) (map[string]in
 	}
 	return clusterSettings, diags
 }
+
+func (a *ApiClient) GetElasticsearchScript(ctx context.Context, id string) (*models.Script, diag.Diagnostics) {
+	res, err := a.es.GetScript(id, a.es.GetScript.WithContext(ctx))
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
+		return nil, diags
+	}
+	var scriptResponse struct {
+		Script *models.Script `json:"script"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&scriptResponse); err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	return scriptResponse.Script, nil
+}
+
+func (a *ApiClient) PutElasticsearchScript(ctx context.Context, script *models.Script) diag.Diagnostics {
+	req := struct {
+		Script *models.Script `json:"script"`
+	}{
+		script,
+	}
+	scriptBytes, err := json.Marshal(req)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := a.es.PutScript(script.ID, bytes.NewReader(scriptBytes), a.es.PutScript.WithContext(ctx), a.es.PutScript.WithScriptContext(script.Context))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to put stored script"); diags.HasError() {
+		return diags
+	}
+	return nil
+}
+
+func (a *ApiClient) DeleteElasticsearchScript(ctx context.Context, id string) diag.Diagnostics {
+	res, err := a.es.DeleteScript(id, a.es.DeleteScript.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete script: %s", id)); diags.HasError() {
+		return diags
+	}
+	return nil
+}

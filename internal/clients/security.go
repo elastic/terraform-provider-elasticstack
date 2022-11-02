@@ -65,7 +65,7 @@ func (a *ApiClient) GetElasticsearchUser(ctx context.Context, username string) (
 func (a *ApiClient) DeleteElasticsearchUser(ctx context.Context, username string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	res, err := a.es.Security.DeleteUser(username, a.es.Security.DeleteUser.WithContext(ctx))
-	if err != nil && res.IsError() {
+	if err != nil {
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
