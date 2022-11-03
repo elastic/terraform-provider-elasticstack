@@ -18,6 +18,9 @@ export GOBIN = $(shell pwd)/bin
 $(GOBIN): ## create bin/ in the current directory
 	mkdir -p $(GOBIN)
 
+## Downloads all the Golang dependencies.
+vendor:
+	@ go mod download
 
 .PHONY: build
 build: lint build-ci ## build the terraform provider

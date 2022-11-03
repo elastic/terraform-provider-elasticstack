@@ -25,7 +25,7 @@ jobs:
           cache: true
 
       - name: Get dependencies
-        run: go mod download
+        run: make vendor
 
       - name: Build
         run: make build-ci
@@ -91,7 +91,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Get dependencies
-        run: go mod download
+        run: make vendor
 
       - name: TF acceptance tests
         timeout-minutes: 10
