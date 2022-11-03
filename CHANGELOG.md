@@ -10,6 +10,7 @@
 - Remove unnecessary unsetting id on delete ([#174](https://github.com/elastic/terraform-provider-elasticstack/pull/174))
 - Fix not found handling for snapshot repository ([#175](https://github.com/elastic/terraform-provider-elasticstack/pull/175))
 - Add warn log when to remove resource from state ([#185](https://github.com/elastic/terraform-provider-elasticstack/pull/185))
+- Import snapshot repository name when importing ([#187](https://github.com/elastic/terraform-provider-elasticstack/pull/187))
 
 ## [0.4.0] - 2022-10-07
 ### Added
