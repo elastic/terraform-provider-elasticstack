@@ -29,6 +29,18 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.max_restore_bytes_per_sec", "10mb"),
 				),
 			},
+			{
+				ResourceName: "elasticstack_elasticsearch_snapshot_repository.test_fs_repo",
+				ImportState:  true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					importedName := is[0].Attributes["name"]
+					if importedName != name {
+						return fmt.Errorf("expected imported snapshot name [%s] to equal [%s]", importedName, name)
+					}
+
+					return nil
+				},
+			},
 		},
 	})
 }
