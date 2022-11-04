@@ -50,6 +50,9 @@ func (a *ApiClient) GetElasticsearchSnapshotRepository(ctx context.Context, name
 	}
 
 	if currentRepo, ok := snapRepoResponse[name]; ok {
+		if len(currentRepo.Name) <= 0 {
+			currentRepo.Name = name
+		}
 		return &currentRepo, diags
 	}
 
