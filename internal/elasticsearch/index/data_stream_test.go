@@ -15,7 +15,7 @@ func TestAccResourceDataStream(t *testing.T) {
 	// generate renadom name
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceDataStreamDestroy,
 		ProviderFactories: acctest.Providers,
