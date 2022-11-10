@@ -1,24 +1,10 @@
 SHELL := /bin/bash
 
-GOVERSION ?= 1.19
-
-ELASTICSEARCH_NAME ?= terraform-elasticstack-es
-ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
-ELASTICSEARCH_VERSION ?= 8.0.0
-ELASTICSEARCH_USERNAME ?= elastic
-ELASTICSEARCH_PASSWORD ?= changeme
-ELASTICSEARCH_NETWORK ?= elasticstack-network
-ELASTICSEARCH_MEM ?= 1024m
-
 SOURCE_LOCATION ?= $(shell pwd)
 
 -include $(SOURCE_LOCATION)/.env
 
 vault :=$(SOURCE_LOCATION)/scripts/retry.sh 5 vault
-
-.PHONY: build-ci
-build-ci: ## build the terraform provider
-	go build -o ${BINARY}
 
 # BUILD_ID is present during run on Jenkins machine, but not on dev box, hence using it here to distinguish between those cases
 ifndef VAULT_TOKEN

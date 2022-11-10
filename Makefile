@@ -22,6 +22,10 @@ $(GOBIN): ## create bin/ in the current directory
 vendor:
 	@ go mod download
 
+.PHONY: build-ci
+build-ci: ## build the terraform provider
+	go build -o ${BINARY}
+
 .PHONY: build
 build: lint build-ci ## build the terraform provider
 
@@ -138,6 +142,3 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 .PHONY: help
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
-
-
-include .ci/Makefile.ci
