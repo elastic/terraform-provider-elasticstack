@@ -15,7 +15,7 @@ func TestAccResourceSLM(t *testing.T) {
 	// generate a random policy name
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkSlmDestroy(name),
 		ProviderFactories: acctest.Providers,

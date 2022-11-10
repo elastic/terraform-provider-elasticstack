@@ -14,7 +14,7 @@ import (
 func TestAccResourceIngestPipeline(t *testing.T) {
 	pipelineName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceIngestPipelineDestroy,
 		ProviderFactories: acctest.Providers,

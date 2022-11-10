@@ -15,7 +15,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 	// generate a random username
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceSecurityRoleDestroy,
 		ProviderFactories: acctest.Providers,
