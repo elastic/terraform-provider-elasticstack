@@ -41,7 +41,8 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
       exclude = jsonencode({
         box_type = "hot"
       })
-      number_of_replicas = 1
+      number_of_replicas    = 1
+      total_shards_per_node = 200
     }
   }
 
@@ -97,6 +98,7 @@ Optional:
 - `include` (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
 - `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
 - `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
+- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
 
 
 <a id="nestedblock--cold--freeze"></a>
@@ -319,6 +321,7 @@ Optional:
 - `include` (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
 - `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
 - `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
+- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
 
 
 <a id="nestedblock--warm--forcemerge"></a>

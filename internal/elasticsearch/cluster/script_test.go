@@ -14,7 +14,7 @@ import (
 func TestAccResourceScript(t *testing.T) {
 	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkScriptDestroy,
 		ProviderFactories: acctest.Providers,
@@ -44,7 +44,7 @@ func TestAccResourceScript(t *testing.T) {
 func TestAccResourceScriptSearchTemplate(t *testing.T) {
 	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkScriptDestroy,
 		ProviderFactories: acctest.Providers,

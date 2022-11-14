@@ -26,7 +26,8 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
       exclude = jsonencode({
         box_type = "hot"
       })
-      number_of_replicas = 1
+      number_of_replicas    = 1
+      total_shards_per_node = 200
     }
   }
 

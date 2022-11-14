@@ -19,7 +19,7 @@ func TestAccResourceSecurityUser(t *testing.T) {
 	// generate a random username
 	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceSecurityUserDestroy,
 		ProviderFactories: acctest.Providers,
@@ -46,7 +46,6 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 	userUpdatedPassword := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		IsUnitTest:        true,
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceSecurityUserDestroy,
 		ProviderFactories: acctest.Providers,
@@ -59,8 +58,10 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 
 					resp, err := client.GetESClient().Security.PutUser(username, strings.NewReader(body))
 					if err != nil {
-						return false, nil
+						return false, err
 					}
+
+					defer resp.Body.Close()
 
 					if resp.IsError() {
 						body, err := io.ReadAll(resp.Body)
@@ -122,6 +123,8 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 						return false, nil
 					}
 
+					defer resp.Body.Close()
+
 					if resp.IsError() {
 						body, err := io.ReadAll(resp.Body)
 						return false, fmt.Errorf("failed to manually change import test user password [%s] %s %s", username, body, err)
@@ -151,6 +154,8 @@ func checkUserCanAuthenticate(username string, password string) func(*terraform.
 		if err != nil {
 			return err
 		}
+
+		defer resp.Body.Close()
 
 		if resp.IsError() {
 			body, err := io.ReadAll(resp.Body)
@@ -220,6 +225,8 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
+
+		defer res.Body.Close()
 
 		if res.StatusCode != 404 {
 			return fmt.Errorf("User (%s) still exists", compId.ResourceId)

@@ -1,21 +1,25 @@
 package index_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+var totalShardsPerNodeVersionLimit = version.Must(version.NewVersion("7.16.0"))
+
 func TestAccResourceILM(t *testing.T) {
 	// generate a random policy name
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceILMDestroy,
 		ProviderFactories: acctest.Providers,
@@ -56,8 +60,31 @@ func TestAccResourceILM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "frozen.#", "0"),
 				),
 			},
+			{
+				SkipFunc: serverVersionLessThanTotalShardsPerNodeLimit,
+				Config:   testAccResourceILMTotalShardsPerNode(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.min_age", "0ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.set_priority.0.priority", "60"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.readonly.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.0.number_of_replicas", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.0.total_shards_per_node", "200"),
+				),
+			},
 		},
 	})
+}
+func serverVersionLessThanTotalShardsPerNodeLimit() (bool, error) {
+	client := acctest.ApiClient()
+	serverVersion, diags := client.ServerVersion(context.Background())
+	if diags.HasError() {
+		return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
+	}
+
+	return serverVersion.LessThan(totalShardsPerNodeVersionLimit), nil
 }
 
 func testAccResourceILMCreate(name string) string {
@@ -122,6 +149,46 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test" {
         box_type = "hot"
       })
       number_of_replicas = 1
+    }
+  }
+
+}
+ `, name)
+}
+
+func testAccResourceILMTotalShardsPerNode(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test" {
+  name = "%s"
+
+  hot {
+    min_age = "1h"
+
+    set_priority {
+      priority = 0
+    }
+
+    rollover {
+      max_age = "2d"
+    }
+  }
+
+  warm {
+    min_age = "0ms"
+    set_priority {
+      priority = 60
+    }
+    readonly {}
+    allocate {
+      exclude = jsonencode({
+        box_type = "hot"
+      })
+      number_of_replicas = 1
+      total_shards_per_node = 200
     }
   }
 

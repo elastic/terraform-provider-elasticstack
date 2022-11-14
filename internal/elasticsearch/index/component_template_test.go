@@ -15,7 +15,7 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 	// generate a random username
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceComponentTemplateDestroy,
 		ProviderFactories: acctest.Providers,

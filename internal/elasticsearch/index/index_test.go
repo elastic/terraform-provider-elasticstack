@@ -27,7 +27,7 @@ func TestAccResourceIndex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.0.name", "test_alias_1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.1.name", "test_alias_2"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "settings.0.setting.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "settings.0.setting.#", "3"),
 				),
 			},
 			{
@@ -167,6 +167,10 @@ resource "elasticstack_elasticsearch_index" "test" {
     setting {
       name  = "index.number_of_replicas"
       value = "2"
+    }
+    setting {
+        name  = "index.routing.allocation.total_shards_per_node"
+        value = "200"
     }
     setting {
       name  = "index.search.idle.after"

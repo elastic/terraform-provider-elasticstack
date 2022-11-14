@@ -15,7 +15,7 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 	// generate random template name
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { acctest.PreCheck(t) },
 		CheckDestroy:      checkResourceIndexTemplateDestroy,
 		ProviderFactories: acctest.Providers,
