@@ -76,10 +76,6 @@ func ResourceApiKey() *schema.Resource {
 		ReadContext:   resourceSecurityApiKeyRead,
 		DeleteContext: resourceSecurityApiKeyDelete,
 
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-
 		Schema: apikeySchema,
 	}
 }
