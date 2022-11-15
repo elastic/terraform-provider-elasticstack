@@ -190,19 +190,19 @@ func resourceSecurityApiKeyRead(ctx context.Context, d *schema.ResourceData, met
 
 func resourceSecurityApiKeyDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	// client, err := clients.NewApiClient(d, meta)
-	// if err != nil {
-	// 	return diag.FromErr(err)
-	// }
-	// compId, diags := clients.CompositeIdFromStr(d.Id())
-	// if diags.HasError() {
-	// 	return diags
-	// }
+	client, err := clients.NewApiClient(d, meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	compId, diags := clients.CompositeIdFromStr(d.Id())
+	if diags.HasError() {
+		return diags
+	}
 
-	// if diags := client.DeleteElasticsearchApiKey(compId.ResourceId); diags.HasError() {
-	// 	return diags
-	// }
+	if diags := client.DeleteElasticsearchApiKey(compId.ResourceId); diags.HasError() {
+		return diags
+	}
 
-	// d.SetId("")
+	d.SetId("")
 	return diags
 }

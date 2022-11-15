@@ -262,20 +262,26 @@ func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKey, diag.Diag
 	return &apiKey, diags
 }
 
-// func (a *ApiClient) DeleteElasticsearchApiKey(apikey *models.ApiKey) diag.Diagnostics {
-// 	var diags diag.Diagnostics
+func (a *ApiClient) DeleteElasticsearchApiKey(id string) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-// 	apikeyBytes, err := json.Marshal(apikey)
-// 	if err != nil {
-// 		return diag.FromErr(err)
-// 	}
-// 	res, err := a.es.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
-// 	if err != nil && res.IsError() {
-// 		return diag.FromErr(err)
-// 	}
-// 	defer res.Body.Close()
-// 	if diags := utils.CheckError(res, "Unable to delete a apikey"); diags.HasError() {
-// 		return diags
-// 	}
-// 	return diags
-// }
+	apiKeys := struct {
+		Ids []string `json:"ids"`
+	}{
+		[]string{id},
+	}
+
+	apikeyBytes, err := json.Marshal(apiKeys)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := a.es.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
+	if err != nil && res.IsError() {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to delete a apikey"); diags.HasError() {
+		return diags
+	}
+	return diags
+}
