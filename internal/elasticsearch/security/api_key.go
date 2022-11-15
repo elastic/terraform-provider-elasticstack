@@ -17,7 +17,7 @@ import (
 func ResourceApiKey() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
 		"id": {
-			Description: "Internal identifier of the resource",
+			Description: "Internal identifier of the resource.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
@@ -53,6 +53,16 @@ func ResourceApiKey() *schema.Resource {
 			ForceNew:         true,
 			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
+		},
+		"api_key": {
+			Description: "Generated API Key.",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
+		"encoded": {
+			Description: "API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:).",
+			Type:        schema.TypeString,
+			Computed:    true,
 		},
 	}
 
@@ -117,10 +127,18 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if putResponse.ApiKey != "" {
-		apikey.ApiKey = putResponse.ApiKey
+		if err := d.Set("api_key", putResponse.ApiKey); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if putResponse.EncodedApiKey != "" {
-		apikey.EncodedApiKey = putResponse.EncodedApiKey
+		if err := d.Set("encoded", putResponse.EncodedApiKey); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if err := d.Set("expiration", apikey.Expiration); err != nil {
+		return diag.FromErr(err)
 	}
 
 	d.SetId(id.String())
