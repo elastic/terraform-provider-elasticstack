@@ -78,7 +78,10 @@ func TestAccResourceILM(t *testing.T) {
 	})
 }
 func serverVersionLessThanTotalShardsPerNodeLimit() (bool, error) {
-	client := acctest.ApiClient()
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return false, err
+	}
 	serverVersion, diags := client.ServerVersion(context.Background())
 	if diags.HasError() {
 		return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
