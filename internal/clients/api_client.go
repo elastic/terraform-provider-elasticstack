@@ -134,6 +134,33 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 	}
 }
 
+func NewAcceptanceTestingClient() (*ApiClient, error) {
+	config := elasticsearch.Config{}
+	config.Header = http.Header{"User-Agent": []string{"elasticstack-terraform-provider/tf-acceptance-testing"}}
+
+	if es := os.Getenv("ELASTICSEARCH_ENDPOINTS"); es != "" {
+		endpoints := make([]string, 0)
+		for _, e := range strings.Split(es, ",") {
+			endpoints = append(endpoints, strings.TrimSpace(e))
+		}
+		config.Addresses = endpoints
+	}
+
+	if username := os.Getenv("ELASTICSEARCH_USERNAME"); username != "" {
+		config.Username = username
+		config.Password = os.Getenv("ELASTICSEARCH_PASSWORD")
+	} else {
+		config.APIKey = os.Getenv("ELASTICSEARCH_API_KEY")
+	}
+
+	es, err := elasticsearch.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ApiClient{es, "acceptance-testing"}, nil
+}
+
 func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) {
 	defaultClient := meta.(*ApiClient)
 	// if the config provided let's use it
