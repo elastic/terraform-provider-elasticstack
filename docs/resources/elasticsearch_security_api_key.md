@@ -21,7 +21,8 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key" {
   role_descriptors = jsonencode({
     role-a = {
       cluster = ["all"],
-      index = [{
+      # The ES API expects `index`, however we use indices to be consistent with the roles API
+      indices = [{
         names = ["index-a*"],
         privileges = ["read"]
       }]
@@ -62,6 +63,7 @@ output "api_key" {
 
 - `api_key` (String) Generated API Key.
 - `encoded` (String) API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:).
+- `expiration_timestamp` (Number) Expiration time in milliseconds for the API key. By default, API keys never expire.
 - `id` (String) Internal identifier of the resource.
 
 <a id="nestedblock--elasticsearch_connection"></a>

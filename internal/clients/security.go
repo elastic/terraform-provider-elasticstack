@@ -196,7 +196,7 @@ func (a *ApiClient) DeleteElasticsearchRoleMapping(ctx context.Context, roleMapp
 	return nil
 }
 
-func (a *ApiClient) PutElasticsearchApiKey(apikey *models.ApiKey) (*models.ApiKey, diag.Diagnostics) {
+func (a *ApiClient) PutElasticsearchApiKey(apikey *models.ApiKey) (*models.ApiKeyResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
@@ -208,11 +208,11 @@ func (a *ApiClient) PutElasticsearchApiKey(apikey *models.ApiKey) (*models.ApiKe
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update a apikey"); diags.HasError() {
+	if diags := utils.CheckError(res, "Unable to create or update an apikey"); diags.HasError() {
 		return nil, diags
 	}
 
-	var apiKey models.ApiKey
+	var apiKey models.ApiKeyResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
 		return nil, diag.FromErr(err)
@@ -221,7 +221,7 @@ func (a *ApiClient) PutElasticsearchApiKey(apikey *models.ApiKey) (*models.ApiKe
 	return &apiKey, diags
 }
 
-func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKey, diag.Diagnostics) {
+func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKeyResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	req := a.es.Security.GetAPIKey.WithID(id)
 	res, err := a.es.Security.GetAPIKey(req)
@@ -243,7 +243,7 @@ func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKey, diag.Diag
 
 	// unmarshal our response to proper type
 	var apiKeys struct {
-		ApiKeys []models.ApiKey `json:"api_keys"`
+		ApiKeys []models.ApiKeyResponse `json:"api_keys"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&apiKeys); err != nil {
 		return nil, diag.FromErr(err)

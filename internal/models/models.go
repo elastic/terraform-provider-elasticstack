@@ -30,14 +30,26 @@ type RoleMapping struct {
 	Metadata      interface{}              `json:"metadata"`
 }
 
+type ApiKeyRole struct {
+	Role
+	Indices []IndexPerms `json:"index,omitempty"`
+}
+
 type ApiKey struct {
 	Name             string                 `json:"name"`
-	RolesDescriptors map[string]Role        `json:"role_descriptors,omitempty"`
+	RolesDescriptors map[string]ApiKeyRole  `json:"role_descriptors,omitempty"`
 	Expiration       string                 `json:"expiration,omitempty"`
 	Metadata         map[string]interface{} `json:"metadata,omitempty"`
-	Id               string                 `json:"id,omitempty"`
-	ApiKey           string                 `json:"api_key,omitempty"`
-	EncodedApiKey    string                 `json:"encoded,omitempty"`
+}
+
+type ApiKeyResponse struct {
+	ApiKey
+	RolesDescriptors map[string]Role `json:"role_descriptors,omitempty"`
+	Expiration       int64           `json:"expiration,omitempty"`
+	Id               string          `json:"id,omitempty"`
+	Key              string          `json:"api_key,omitempty"`
+	EncodedKey       string          `json:"encoded,omitempty"`
+	Invalidated      bool            `json:"invalidated,omitempty"`
 }
 
 type IndexPerms struct {

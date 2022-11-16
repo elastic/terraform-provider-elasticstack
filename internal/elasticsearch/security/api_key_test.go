@@ -24,7 +24,7 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 				Config: testAccResourceSecuritApiKeyCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", `{"role-a":{"cluster":["all"],"index":[{"names":["index-a*"],"privileges":["read"]}]}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", `{"role-a":{"cluster":["all"],"indices":[{"names":["index-a*"],"privileges":["read"],"allow_restricted_indices":false}]}}`),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
@@ -45,10 +45,11 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 
   role_descriptors = jsonencode({
     role-a = {
-      cluster = ["all"],
-      index = [{
-        names = ["index-a*"],
+      cluster = ["all"]
+      indices = [{
+        names = ["index-a*"]
         privileges = ["read"]
+        allow_restricted_indices = false
       }]
     }
   })
@@ -67,16 +68,13 @@ func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.GetESClient().Security.GetAPIKey.WithID(compId.ResourceId)
-		res, err := client.GetESClient().Security.GetAPIKey(req)
-		if err != nil {
-			return err
+		apiKey, diags := client.GetElasticsearchApiKey(compId.ResourceId)
+		if diags.HasError() {
+			return fmt.Errorf("Unabled to get API key %v", diags)
 		}
 
-		defer res.Body.Close()
-
-		if res.StatusCode != 404 {
-			return fmt.Errorf("ApiKey (%s) still exists", compId.ResourceId)
+		if !apiKey.Invalidated {
+			return fmt.Errorf("ApiKey (%s) has not been invalidated", compId.ResourceId)
 		}
 	}
 	return nil

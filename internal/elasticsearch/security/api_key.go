@@ -45,6 +45,11 @@ func ResourceApiKey() *schema.Resource {
 			Optional:    true,
 			ForceNew:    true,
 		},
+		"expiration_timestamp": {
+			Description: "Expiration time in milliseconds for the API key. By default, API keys never expire.",
+			Type:        schema.TypeInt,
+			Computed:    true,
+		},
 		"metadata": {
 			Description:      "Arbitrary metadata that you want to associate with the API key.",
 			Type:             schema.TypeString,
@@ -96,11 +101,21 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if v, ok := d.GetOk("role_descriptors"); ok {
-		role_descriptors := make(map[string]models.Role)
+		role_descriptors := map[string]models.Role{}
+		api_role_descriptors := map[string]models.ApiKeyRole{}
+
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&role_descriptors); err != nil {
 			return diag.FromErr(err)
 		}
-		apikey.RolesDescriptors = role_descriptors
+
+		for key, value := range role_descriptors {
+			api_role_descriptors[key] = models.ApiKeyRole{
+				Role:    value,
+				Indices: value.Indices,
+			}
+		}
+
+		apikey.RolesDescriptors = api_role_descriptors
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
@@ -122,15 +137,19 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 		return diags
 	}
 
-	if putResponse.ApiKey != "" {
-		if err := d.Set("api_key", putResponse.ApiKey); err != nil {
+	if putResponse.Key != "" {
+		if err := d.Set("api_key", putResponse.Key); err != nil {
 			return diag.FromErr(err)
 		}
 	}
-	if putResponse.EncodedApiKey != "" {
-		if err := d.Set("encoded", putResponse.EncodedApiKey); err != nil {
+	if putResponse.EncodedKey != "" {
+		if err := d.Set("encoded", putResponse.EncodedKey); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	if err := d.Set("expiration_timestamp", putResponse.Expiration); err != nil {
+		return diag.FromErr(err)
 	}
 
 	if err := d.Set("expiration", apikey.Expiration); err != nil {
@@ -181,7 +200,7 @@ func resourceSecurityApiKeyRead(ctx context.Context, d *schema.ResourceData, met
 	if err := d.Set("name", apikey.Name); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("expiration", apikey.Expiration); err != nil {
+	if err := d.Set("expiration_timestamp", apikey.Expiration); err != nil {
 		return diag.FromErr(err)
 	}
 
