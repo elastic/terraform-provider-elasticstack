@@ -147,7 +147,6 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 			return diag.FromErr(err)
 		}
 	}
-
 	if err := d.Set("expiration_timestamp", putResponse.Expiration); err != nil {
 		return diag.FromErr(err)
 	}

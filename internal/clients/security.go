@@ -208,7 +208,7 @@ func (a *ApiClient) PutElasticsearchApiKey(apikey *models.ApiKey) (*models.ApiKe
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update an apikey"); diags.HasError() {
+	if diags := utils.CheckError(res, "Unable to create apikey"); diags.HasError() {
 		return nil, diags
 	}
 
@@ -232,12 +232,12 @@ func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKeyResponse, d
 	if res.StatusCode == http.StatusNotFound {
 		diags := append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "Unable to find a apikey in the cluster.",
+			Summary:  "Unable to find an apikey in the cluster.",
 			Detail:   fmt.Sprintf("Unable to get apikey: '%s' from the cluster.", id),
 		})
 		return nil, diags
 	}
-	if diags := utils.CheckError(res, "Unable to get a apikey."); diags.HasError() {
+	if diags := utils.CheckError(res, "Unable to get an apikey."); diags.HasError() {
 		return nil, diags
 	}
 
@@ -252,7 +252,7 @@ func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKeyResponse, d
 	if len(apiKeys.ApiKeys) != 1 {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "Unable to find a apikey in the cluster",
+			Summary:  "Unable to find an apikey in the cluster",
 			Detail:   fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
 		})
 		return nil, diags
@@ -280,7 +280,7 @@ func (a *ApiClient) DeleteElasticsearchApiKey(id string) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete a apikey"); diags.HasError() {
+	if diags := utils.CheckError(res, "Unable to delete an apikey"); diags.HasError() {
 		return diags
 	}
 	return diags
