@@ -60,7 +60,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 }
 
 func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
-	client := acctest.ApiClient()
+	client := acctest.Provider.Meta().(*clients.ApiClient)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_security_api_key" {
