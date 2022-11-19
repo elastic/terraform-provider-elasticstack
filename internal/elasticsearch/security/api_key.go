@@ -102,20 +102,10 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 
 	if v, ok := d.GetOk("role_descriptors"); ok {
 		role_descriptors := map[string]models.Role{}
-		api_role_descriptors := map[string]models.ApiKeyRole{}
-
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&role_descriptors); err != nil {
 			return diag.FromErr(err)
 		}
-
-		for key, value := range role_descriptors {
-			api_role_descriptors[key] = models.ApiKeyRole{
-				Role:    value,
-				Indices: value.Indices,
-			}
-		}
-
-		apikey.RolesDescriptors = api_role_descriptors
+		apikey.RolesDescriptors = role_descriptors
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
