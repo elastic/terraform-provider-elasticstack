@@ -8,7 +8,7 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key" {
       cluster = ["all"],
       # The ES API expects `index`, however we use indices to be consistent with the roles API
       indices = [{
-        names = ["index-a*"],
+        names      = ["index-a*"],
         privileges = ["read"]
       }]
     }
