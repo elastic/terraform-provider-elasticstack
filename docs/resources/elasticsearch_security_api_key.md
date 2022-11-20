@@ -22,7 +22,7 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key" {
     role-a = {
       cluster = ["all"],
       indices = [{
-        names = ["index-a*"],
+        names      = ["index-a*"],
         privileges = ["read"]
       }]
     }
