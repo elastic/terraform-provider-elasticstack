@@ -33,7 +33,9 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
 						var testRoleDescriptor map[string]models.Role
-						json.Unmarshal([]byte(testValue), &testRoleDescriptor)
+						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
+							return err
+						}
 
 						allowRestrictedIndices := false
 						expectedRoleDescriptor := map[string]models.Role{
