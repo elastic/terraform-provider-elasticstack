@@ -9,6 +9,7 @@ description: |-
 # Resource: elasticstack_elasticsearch_security_system_user
 
 Updates system user's password and enablement. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html
+Since this resource is to manage undeletable built-in user, destroy will removes it only from terraform state and the user itself won't be deleted.
 
 ## Example Usage
 
@@ -20,7 +21,7 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_security_system_user" "kibana_system" {
   username = "kibana_system"
 
-  // use hashed password: see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-request-body
+  // For details on how to generate the hashed password see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-request-body
   password_hash = "$2a$10$rMZe6TdsUwBX/TA8vRDz0OLwKAZeCzXM4jT3tfCjpSTB8HoFuq8xO"
 
   elasticsearch_connection {
@@ -61,11 +62,3 @@ Optional:
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
 - `username` (String) A username to use for API authentication to Elasticsearch.
-
-## Import
-
-Import is supported using the following syntax:
-
-```shell
-terraform import elasticstack_elasticsearch_security_system_user.kibana_system <cluster_uuid>/kibana_system
-```

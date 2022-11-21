@@ -65,10 +65,6 @@ func ResourceSystemUser() *schema.Resource {
 		ReadContext:   resourceSecuritySystemUserRead,
 		DeleteContext: resourceSecuritySystemUserDelete,
 
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-
 		Schema: userSchema,
 	}
 }

@@ -1,1 +1,0 @@
-terraform import elasticstack_elasticsearch_security_system_user.kibana_system <cluster_uuid>/kibana_system

@@ -9,15 +9,10 @@ description: |-
 # Resource: elasticstack_elasticsearch_security_system_user
 
 Updates system user's password and enablement. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html
+Since this resource is to manage undeletable built-in user, destroy will removes it only from terraform state and the user itself won't be deleted.
 
 ## Example Usage
 
 {{ tffile "examples/resources/elasticstack_elasticsearch_security_system_user/resource.tf" }}
 
 {{ .SchemaMarkdown | trimspace }}
-
-## Import
-
-Import is supported using the following syntax:
-
-{{ codefile "shell" "examples/resources/elasticstack_elasticsearch_security_system_user/import.sh" }}
