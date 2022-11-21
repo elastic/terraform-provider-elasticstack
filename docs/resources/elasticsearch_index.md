@@ -122,6 +122,7 @@ If specified, this mapping can include: field names, [field data types](https://
 - `shard_check_on_startup` (String) Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.
 - `sort_field` (Set of String) The field to sort shards in this index by.
 - `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
+- `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
 
 ### Read-Only
 
