@@ -195,3 +195,93 @@ func (a *ApiClient) DeleteElasticsearchRoleMapping(ctx context.Context, roleMapp
 
 	return nil
 }
+
+func (a *ApiClient) PutElasticsearchApiKey(apikey *models.ApiKey) (*models.ApiKeyResponse, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	apikeyBytes, err := json.Marshal(apikey)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	res, err := a.es.Security.CreateAPIKey(bytes.NewReader(apikeyBytes))
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to create apikey"); diags.HasError() {
+		return nil, diags
+	}
+
+	var apiKey models.ApiKeyResponse
+
+	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	return &apiKey, diags
+}
+
+func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKeyResponse, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	req := a.es.Security.GetAPIKey.WithID(id)
+	res, err := a.es.Security.GetAPIKey(req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		diags := append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to find an apikey in the cluster.",
+			Detail:   fmt.Sprintf("Unable to get apikey: '%s' from the cluster.", id),
+		})
+		return nil, diags
+	}
+	if diags := utils.CheckError(res, "Unable to get an apikey."); diags.HasError() {
+		return nil, diags
+	}
+
+	// unmarshal our response to proper type
+	var apiKeys struct {
+		ApiKeys []models.ApiKeyResponse `json:"api_keys"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&apiKeys); err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	if len(apiKeys.ApiKeys) != 1 {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to find an apikey in the cluster",
+			Detail:   fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
+		})
+		return nil, diags
+	}
+
+	apiKey := apiKeys.ApiKeys[0]
+	return &apiKey, diags
+}
+
+func (a *ApiClient) DeleteElasticsearchApiKey(id string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	apiKeys := struct {
+		Ids []string `json:"ids"`
+	}{
+		[]string{id},
+	}
+
+	apikeyBytes, err := json.Marshal(apiKeys)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := a.es.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
+	if err != nil && res.IsError() {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to delete an apikey"); diags.HasError() {
+		return diags
+	}
+	return diags
+}
