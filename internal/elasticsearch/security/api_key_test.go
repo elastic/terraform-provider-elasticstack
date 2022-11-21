@@ -1,6 +1,7 @@
 package security_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -9,10 +10,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+var apiKeyVersionLimit = version.Must(version.NewVersion("8.0.0")) // Enabled in 8.0
 
 func TestAccResourceSecuritApiKey(t *testing.T) {
 	// generate a random name
@@ -55,6 +59,7 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
 				),
+				SkipFunc: checkIfVersionIsUnsupported,
 			},
 		},
 	})
@@ -104,4 +109,17 @@ func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func checkIfVersionIsUnsupported() (bool, error) {
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return false, err
+	}
+	serverVersion, diags := client.ServerVersion(context.Background())
+	if diags.HasError() {
+		return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
+	}
+
+	return serverVersion.LessThan(apiKeyVersionLimit), nil
 }
