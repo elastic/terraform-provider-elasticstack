@@ -58,6 +58,7 @@ var (
 		"gc_deletes":                             schema.TypeString,
 		"default_pipeline":                       schema.TypeString,
 		"final_pipeline":                         schema.TypeString,
+		"unassigned.node_left.delayed_timeout":   schema.TypeString,
 		"search.slowlog.threshold.query.warn":    schema.TypeString,
 		"search.slowlog.threshold.query.info":    schema.TypeString,
 		"search.slowlog.threshold.query.debug":   schema.TypeString,
@@ -297,6 +298,12 @@ func ResourceIndex() *schema.Resource {
 		"final_pipeline": {
 			Type:        schema.TypeString,
 			Description: "Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.",
+			Optional:    true,
+		},
+		"unassigned_node_left_delayed_timeout": {
+
+			Type:        schema.TypeString,
+			Description: "Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`",
 			Optional:    true,
 		},
 		"search_slowlog_threshold_query_warn": {
