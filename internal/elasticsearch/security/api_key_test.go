@@ -28,7 +28,8 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 		ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceSecuritApiKeyCreate(apiKeyName),
+				SkipFunc: checkIfVersionIsUnsupported,
+				Config:   testAccResourceSecuritApiKeyCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
@@ -59,7 +60,6 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
 				),
-				SkipFunc: checkIfVersionIsUnsupported,
 			},
 		},
 	})
