@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -108,7 +109,7 @@ func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, met
 			}
 		}
 	}
-	if diags := client.PutElasticsearchSettings(ctx, settings); diags.HasError() {
+	if diags := elasticsearch.PutSettings(ctx, client, settings); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -209,7 +210,7 @@ func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	clusterSettings, diags := client.GetElasticsearchSettings(ctx)
+	clusterSettings, diags := elasticsearch.GetSettings(ctx, client)
 	if diags.HasError() {
 		return diags
 	}
@@ -283,7 +284,7 @@ func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, 
 		"persistent": pSettings,
 		"transient":  tSettings,
 	}
-	if diags := client.PutElasticsearchSettings(ctx, settings); diags.HasError() {
+	if diags := elasticsearch.PutSettings(ctx, client, settings); diags.HasError() {
 		return diags
 	}
 

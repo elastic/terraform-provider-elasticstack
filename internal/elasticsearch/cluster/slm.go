@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-cty/cty"
@@ -231,7 +232,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 
 	slm.Config = &slmConfig
 
-	if diags := client.PutElasticsearchSlm(ctx, &slm); diags.HasError() {
+	if diags := elasticsearch.PutSlm(ctx, client, &slm); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -249,7 +250,7 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diags
 	}
 
-	slm, diags := client.GetElasticsearchSlm(ctx, id.ResourceId)
+	slm, diags := elasticsearch.GetSlm(ctx, client, id.ResourceId)
 	if slm == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`SLM policy "%s" not found, removing from state`, id.ResourceId))
 		d.SetId("")
@@ -338,7 +339,7 @@ func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchSlm(ctx, id.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteSlm(ctx, client, id.ResourceId); diags.HasError() {
 		return diags
 	}
 	return diags

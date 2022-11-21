@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -262,7 +263,7 @@ func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta in
 	if diags.HasError() {
 		return diags
 	}
-	currentRepo, diags := client.GetElasticsearchSnapshotRepository(ctx, repoName)
+	currentRepo, diags := elasticsearch.GetSnapshotRepository(ctx, client, repoName)
 	if diags.HasError() {
 		return diags
 	}
