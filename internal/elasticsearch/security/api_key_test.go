@@ -1,7 +1,6 @@
 package security_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -59,7 +58,6 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
 				),
-				SkipFunc: checkIfVersionIsUnsupported,
 			},
 		},
 	})
@@ -109,17 +107,4 @@ func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func checkIfVersionIsUnsupported() (bool, error) {
-	client, err := clients.NewAcceptanceTestingClient()
-	if err != nil {
-		return false, err
-	}
-	serverVersion, diags := client.ServerVersion(context.Background())
-	if diags.HasError() {
-		return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
-	}
-
-	return serverVersion.LessThan(apiKeyVersionLimit), nil
 }
