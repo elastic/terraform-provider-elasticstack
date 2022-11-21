@@ -11,6 +11,19 @@ type User struct {
 	Enabled      bool                   `json:"enabled"`
 }
 
+func (u *User) IsSystemUser() bool {
+	if reserved := u.Metadata["_reserved"]; reserved != nil {
+		isReserved, ok := reserved.(bool)
+		return ok && isReserved
+	}
+	return false
+}
+
+type UserPassword struct {
+	Password     *string `json:"password,omitempty"`
+	PasswordHash *string `json:"password_hash,omitempty"`
+}
+
 type Role struct {
 	Name         string                 `json:"-"`
 	Applications []Application          `json:"applications,omitempty"`

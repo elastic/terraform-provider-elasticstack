@@ -75,6 +75,53 @@ func (a *ApiClient) DeleteElasticsearchUser(ctx context.Context, username string
 	return diags
 }
 
+func (a *ApiClient) EnableElasticsearchUser(ctx context.Context, username string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	res, err := a.es.Security.EnableUser(username, a.es.Security.EnableUser.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to enable system user"); diags.HasError() {
+		return diags
+	}
+	return diags
+}
+
+func (a *ApiClient) DisableElasticsearchUser(ctx context.Context, username string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	res, err := a.es.Security.DisableUser(username, a.es.Security.DisableUser.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to disable system user"); diags.HasError() {
+		return diags
+	}
+	return diags
+}
+
+func (a *ApiClient) ChangeElasticsearchUserPassword(ctx context.Context, username string, userPassword *models.UserPassword) diag.Diagnostics {
+	var diags diag.Diagnostics
+	userPasswordBytes, err := json.Marshal(userPassword)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := a.es.Security.ChangePassword(
+		bytes.NewReader(userPasswordBytes),
+		a.es.Security.ChangePassword.WithUsername(username),
+		a.es.Security.ChangePassword.WithContext(ctx),
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to change user's password"); diags.HasError() {
+		return diags
+	}
+	return diags
+}
+
 func (a *ApiClient) PutElasticsearchRole(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
