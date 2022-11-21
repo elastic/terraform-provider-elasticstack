@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -345,7 +346,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 	snapRepo.Settings = snapRepoSettings
 
-	if diags := client.PutElasticsearchSnapshotRepository(ctx, &snapRepo); diags.HasError() {
+	if diags := elasticsearch.PutSnapshotRepository(ctx, client, &snapRepo); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -373,7 +374,7 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 		return diags
 	}
 
-	currentRepo, diags := client.GetElasticsearchSnapshotRepository(ctx, compId.ResourceId)
+	currentRepo, diags := elasticsearch.GetSnapshotRepository(ctx, client, compId.ResourceId)
 	if currentRepo == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Snapshot repository "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
@@ -457,7 +458,7 @@ func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchSnapshotRepository(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteSnapshotRepository(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 	return diags

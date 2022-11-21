@@ -1,4 +1,4 @@
-package clients
+package elasticsearch
 
 import (
 	"bytes"
@@ -7,18 +7,19 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func (a *ApiClient) PutElasticsearchSnapshotRepository(ctx context.Context, repository *models.SnapshotRepository) diag.Diagnostics {
+func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, repository *models.SnapshotRepository) diag.Diagnostics {
 	var diags diag.Diagnostics
 	snapRepoBytes, err := json.Marshal(repository)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := a.es.Snapshot.CreateRepository(repository.Name, bytes.NewReader(snapRepoBytes), a.es.Snapshot.CreateRepository.WithContext(ctx))
+	res, err := apiClient.GetESClient().Snapshot.CreateRepository(repository.Name, bytes.NewReader(snapRepoBytes), apiClient.GetESClient().Snapshot.CreateRepository.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -30,10 +31,10 @@ func (a *ApiClient) PutElasticsearchSnapshotRepository(ctx context.Context, repo
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchSnapshotRepository(ctx context.Context, name string) (*models.SnapshotRepository, diag.Diagnostics) {
+func GetSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.SnapshotRepository, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.Snapshot.GetRepository.WithRepository(name)
-	res, err := a.es.Snapshot.GetRepository(req, a.es.Snapshot.GetRepository.WithContext(ctx))
+	req := apiClient.GetESClient().Snapshot.GetRepository.WithRepository(name)
+	res, err := apiClient.GetESClient().Snapshot.GetRepository(req, apiClient.GetESClient().Snapshot.GetRepository.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -64,9 +65,9 @@ func (a *ApiClient) GetElasticsearchSnapshotRepository(ctx context.Context, name
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchSnapshotRepository(ctx context.Context, name string) diag.Diagnostics {
+func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, name string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Snapshot.DeleteRepository([]string{name}, a.es.Snapshot.DeleteRepository.WithContext(ctx))
+	res, err := apiClient.GetESClient().Snapshot.DeleteRepository([]string{name}, apiClient.GetESClient().Snapshot.DeleteRepository.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -77,15 +78,15 @@ func (a *ApiClient) DeleteElasticsearchSnapshotRepository(ctx context.Context, n
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchSlm(ctx context.Context, slm *models.SnapshotPolicy) diag.Diagnostics {
+func PutSlm(ctx context.Context, apiClient *clients.ApiClient, slm *models.SnapshotPolicy) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	slmBytes, err := json.Marshal(slm)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	req := a.es.SlmPutLifecycle.WithBody(bytes.NewReader(slmBytes))
-	res, err := a.es.SlmPutLifecycle(slm.Id, req, a.es.SlmPutLifecycle.WithContext(ctx))
+	req := apiClient.GetESClient().SlmPutLifecycle.WithBody(bytes.NewReader(slmBytes))
+	res, err := apiClient.GetESClient().SlmPutLifecycle(slm.Id, req, apiClient.GetESClient().SlmPutLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -97,10 +98,10 @@ func (a *ApiClient) PutElasticsearchSlm(ctx context.Context, slm *models.Snapsho
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchSlm(ctx context.Context, slmName string) (*models.SnapshotPolicy, diag.Diagnostics) {
+func GetSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) (*models.SnapshotPolicy, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.SlmGetLifecycle.WithPolicyID(slmName)
-	res, err := a.es.SlmGetLifecycle(req, a.es.SlmGetLifecycle.WithContext(ctx))
+	req := apiClient.GetESClient().SlmGetLifecycle.WithPolicyID(slmName)
+	res, err := apiClient.GetESClient().SlmGetLifecycle(req, apiClient.GetESClient().SlmGetLifecycle.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -129,9 +130,9 @@ func (a *ApiClient) GetElasticsearchSlm(ctx context.Context, slmName string) (*m
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchSlm(ctx context.Context, slmName string) diag.Diagnostics {
+func DeleteSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.SlmDeleteLifecycle(slmName, a.es.SlmDeleteLifecycle.WithContext(ctx))
+	res, err := apiClient.GetESClient().SlmDeleteLifecycle(slmName, apiClient.GetESClient().SlmDeleteLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -143,13 +144,13 @@ func (a *ApiClient) DeleteElasticsearchSlm(ctx context.Context, slmName string) 
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchSettings(ctx context.Context, settings map[string]interface{}) diag.Diagnostics {
+func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map[string]interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
 		diag.FromErr(err)
 	}
-	res, err := a.es.Cluster.PutSettings(bytes.NewReader(settingsBytes), a.es.Cluster.PutSettings.WithContext(ctx))
+	res, err := apiClient.GetESClient().Cluster.PutSettings(bytes.NewReader(settingsBytes), apiClient.GetESClient().Cluster.PutSettings.WithContext(ctx))
 	if err != nil {
 		diag.FromErr(err)
 	}
@@ -160,10 +161,10 @@ func (a *ApiClient) PutElasticsearchSettings(ctx context.Context, settings map[s
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchSettings(ctx context.Context) (map[string]interface{}, diag.Diagnostics) {
+func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.Cluster.GetSettings.WithFlatSettings(true)
-	res, err := a.es.Cluster.GetSettings(req, a.es.Cluster.GetSettings.WithContext(ctx))
+	req := apiClient.GetESClient().Cluster.GetSettings.WithFlatSettings(true)
+	res, err := apiClient.GetESClient().Cluster.GetSettings(req, apiClient.GetESClient().Cluster.GetSettings.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -179,8 +180,8 @@ func (a *ApiClient) GetElasticsearchSettings(ctx context.Context) (map[string]in
 	return clusterSettings, diags
 }
 
-func (a *ApiClient) GetElasticsearchScript(ctx context.Context, id string) (*models.Script, diag.Diagnostics) {
-	res, err := a.es.GetScript(id, a.es.GetScript.WithContext(ctx))
+func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, diag.Diagnostics) {
+	res, err := apiClient.GetESClient().GetScript(id, apiClient.GetESClient().GetScript.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -201,7 +202,7 @@ func (a *ApiClient) GetElasticsearchScript(ctx context.Context, id string) (*mod
 	return scriptResponse.Script, nil
 }
 
-func (a *ApiClient) PutElasticsearchScript(ctx context.Context, script *models.Script) diag.Diagnostics {
+func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) diag.Diagnostics {
 	req := struct {
 		Script *models.Script `json:"script"`
 	}{
@@ -211,7 +212,7 @@ func (a *ApiClient) PutElasticsearchScript(ctx context.Context, script *models.S
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := a.es.PutScript(script.ID, bytes.NewReader(scriptBytes), a.es.PutScript.WithContext(ctx), a.es.PutScript.WithScriptContext(script.Context))
+	res, err := apiClient.GetESClient().PutScript(script.ID, bytes.NewReader(scriptBytes), apiClient.GetESClient().PutScript.WithContext(ctx), apiClient.GetESClient().PutScript.WithScriptContext(script.Context))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -222,8 +223,8 @@ func (a *ApiClient) PutElasticsearchScript(ctx context.Context, script *models.S
 	return nil
 }
 
-func (a *ApiClient) DeleteElasticsearchScript(ctx context.Context, id string) diag.Diagnostics {
-	res, err := a.es.DeleteScript(id, a.es.DeleteScript.WithContext(ctx))
+func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) diag.Diagnostics {
+	res, err := apiClient.GetESClient().DeleteScript(id, apiClient.GetESClient().DeleteScript.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}

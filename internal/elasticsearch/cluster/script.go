@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -77,7 +78,7 @@ func resourceScriptRead(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
-	script, diags := client.GetElasticsearchScript(ctx, compId.ResourceId)
+	script, diags := elasticsearch.GetScript(ctx, client, compId.ResourceId)
 	if script == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Script "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
@@ -128,7 +129,7 @@ func resourceScriptPut(ctx context.Context, d *schema.ResourceData, meta interfa
 	if scriptContext, ok := d.GetOk("context"); ok {
 		script.Context = scriptContext.(string)
 	}
-	if diags := client.PutElasticsearchScript(ctx, &script); diags.HasError() {
+	if diags := elasticsearch.PutScript(ctx, client, &script); diags.HasError() {
 		return diags
 	}
 
@@ -146,5 +147,5 @@ func resourceScriptDelete(ctx context.Context, d *schema.ResourceData, meta inte
 	if diags.HasError() {
 		return diags
 	}
-	return client.DeleteElasticsearchScript(ctx, compId.ResourceId)
+	return elasticsearch.DeleteScript(ctx, client, compId.ResourceId)
 }
