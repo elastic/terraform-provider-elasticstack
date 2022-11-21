@@ -6,10 +6,12 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key" {
   role_descriptors = jsonencode({
     role-a = {
       cluster = ["all"],
-      indices = [{
-        names      = ["index-a*"],
-        privileges = ["read"]
-      }]
+      indices = [
+        {
+          names      = ["index-a*"],
+          privileges = ["read"]
+        }
+      ]
     }
   })
 
@@ -25,5 +27,6 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key" {
 }
 
 output "api_key" {
-  value = elasticstack_elasticsearch_security_api_key.api_key
+  value     = elasticstack_elasticsearch_security_api_key.api_key
+  sensitive = true
 }
