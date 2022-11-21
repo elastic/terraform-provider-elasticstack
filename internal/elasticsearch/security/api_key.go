@@ -9,10 +9,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var APIKeyMinVersion = version.Must(version.NewVersion("8.0.0")) // Enabled in 8.0
 
 func ResourceApiKey() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
