@@ -62,11 +62,13 @@ func ResourceApiKey() *schema.Resource {
 		"api_key": {
 			Description: "Generated API Key.",
 			Type:        schema.TypeString,
+			Sensitive:   true,
 			Computed:    true,
 		},
 		"encoded": {
 			Description: "API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:).",
 			Type:        schema.TypeString,
+			Sensitive:   true,
 			Computed:    true,
 		},
 	}

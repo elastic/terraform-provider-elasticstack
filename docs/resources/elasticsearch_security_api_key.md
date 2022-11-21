@@ -21,10 +21,12 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key" {
   role_descriptors = jsonencode({
     role-a = {
       cluster = ["all"],
-      indices = [{
-        names      = ["index-a*"],
-        privileges = ["read"]
-      }]
+      indices = [
+        {
+          names      = ["index-a*"],
+          privileges = ["read"]
+        }
+      ]
     }
   })
 
@@ -40,7 +42,8 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key" {
 }
 
 output "api_key" {
-  value = elasticstack_elasticsearch_security_api_key.api_key
+  value     = elasticstack_elasticsearch_security_api_key.api_key
+  sensitive = true
 }
 ```
 
@@ -60,8 +63,8 @@ output "api_key" {
 
 ### Read-Only
 
-- `api_key` (String) Generated API Key.
-- `encoded` (String) API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:).
+- `api_key` (String, Sensitive) Generated API Key.
+- `encoded` (String, Sensitive) API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:).
 - `expiration_timestamp` (Number) Expiration time in milliseconds for the API key. By default, API keys never expire.
 - `id` (String) Internal identifier of the resource.
 
