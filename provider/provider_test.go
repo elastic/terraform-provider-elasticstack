@@ -50,6 +50,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test_connection" {
       indices = [{
         names = ["*"]
         privileges = ["all"]
+        allow_restricted_indices = false
       }]
     }
   })
