@@ -4,7 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -35,8 +34,4 @@ func PreCheck(t *testing.T) {
 	if !((!usernamePasswordOk && apikeyOk) || (usernamePasswordOk && !apikeyOk)) {
 		t.Fatal("Either ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD must be set, or ELASTICSEARCH_API_KEY must be set for acceptance tests to run")
 	}
-}
-
-func ApiClient() *clients.ApiClient {
-	return Provider.Meta().(*clients.ApiClient)
 }
