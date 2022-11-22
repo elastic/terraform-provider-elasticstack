@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -151,7 +152,7 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 		user.Metadata = metadata
 	}
 
-	if diags := client.PutElasticsearchUser(ctx, &user); diags.HasError() {
+	if diags := elasticsearch.PutUser(ctx, client, &user); diags.HasError() {
 		return diags
 	}
 
@@ -171,7 +172,7 @@ func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	usernameId := compId.ResourceId
 
-	user, diags := client.GetElasticsearchUser(ctx, usernameId)
+	user, diags := elasticsearch.GetUser(ctx, client, usernameId)
 	if user == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`User "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
@@ -220,7 +221,7 @@ func resourceSecurityUserDelete(ctx context.Context, d *schema.ResourceData, met
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchUser(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteUser(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

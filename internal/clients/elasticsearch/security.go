@@ -1,4 +1,4 @@
-package clients
+package elasticsearch
 
 import (
 	"bytes"
@@ -7,18 +7,19 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func (a *ApiClient) PutElasticsearchUser(ctx context.Context, user *models.User) diag.Diagnostics {
+func PutUser(ctx context.Context, apiClient *clients.ApiClient, user *models.User) diag.Diagnostics {
 	var diags diag.Diagnostics
 	userBytes, err := json.Marshal(user)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := a.es.Security.PutUser(user.Username, bytes.NewReader(userBytes), a.es.Security.PutUser.WithContext(ctx))
+	res, err := apiClient.GetESClient().Security.PutUser(user.Username, bytes.NewReader(userBytes), apiClient.GetESClient().Security.PutUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -29,10 +30,10 @@ func (a *ApiClient) PutElasticsearchUser(ctx context.Context, user *models.User)
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchUser(ctx context.Context, username string) (*models.User, diag.Diagnostics) {
+func GetUser(ctx context.Context, apiClient *clients.ApiClient, username string) (*models.User, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.Security.GetUser.WithUsername(username)
-	res, err := a.es.Security.GetUser(req, a.es.Security.GetUser.WithContext(ctx))
+	req := apiClient.GetESClient().Security.GetUser.WithUsername(username)
+	res, err := apiClient.GetESClient().Security.GetUser(req, apiClient.GetESClient().Security.GetUser.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -62,9 +63,9 @@ func (a *ApiClient) GetElasticsearchUser(ctx context.Context, username string) (
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchUser(ctx context.Context, username string) diag.Diagnostics {
+func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Security.DeleteUser(username, a.es.Security.DeleteUser.WithContext(ctx))
+	res, err := apiClient.GetESClient().Security.DeleteUser(username, apiClient.GetESClient().Security.DeleteUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -75,9 +76,9 @@ func (a *ApiClient) DeleteElasticsearchUser(ctx context.Context, username string
 	return diags
 }
 
-func (a *ApiClient) EnableElasticsearchUser(ctx context.Context, username string) diag.Diagnostics {
+func EnableUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Security.EnableUser(username, a.es.Security.EnableUser.WithContext(ctx))
+	res, err := apiClient.GetESClient().Security.EnableUser(username, apiClient.GetESClient().Security.EnableUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -88,9 +89,9 @@ func (a *ApiClient) EnableElasticsearchUser(ctx context.Context, username string
 	return diags
 }
 
-func (a *ApiClient) DisableElasticsearchUser(ctx context.Context, username string) diag.Diagnostics {
+func DisableUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Security.DisableUser(username, a.es.Security.DisableUser.WithContext(ctx))
+	res, err := apiClient.GetESClient().Security.DisableUser(username, apiClient.GetESClient().Security.DisableUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -101,16 +102,16 @@ func (a *ApiClient) DisableElasticsearchUser(ctx context.Context, username strin
 	return diags
 }
 
-func (a *ApiClient) ChangeElasticsearchUserPassword(ctx context.Context, username string, userPassword *models.UserPassword) diag.Diagnostics {
+func ChangeUserPassword(ctx context.Context, apiClient *clients.ApiClient, username string, userPassword *models.UserPassword) diag.Diagnostics {
 	var diags diag.Diagnostics
 	userPasswordBytes, err := json.Marshal(userPassword)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := a.es.Security.ChangePassword(
+	res, err := apiClient.GetESClient().Security.ChangePassword(
 		bytes.NewReader(userPasswordBytes),
-		a.es.Security.ChangePassword.WithUsername(username),
-		a.es.Security.ChangePassword.WithContext(ctx),
+		apiClient.GetESClient().Security.ChangePassword.WithUsername(username),
+		apiClient.GetESClient().Security.ChangePassword.WithContext(ctx),
 	)
 	if err != nil {
 		return diag.FromErr(err)
@@ -122,14 +123,14 @@ func (a *ApiClient) ChangeElasticsearchUserPassword(ctx context.Context, usernam
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchRole(ctx context.Context, role *models.Role) diag.Diagnostics {
+func PutRole(ctx context.Context, apiClient *clients.ApiClient, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	roleBytes, err := json.Marshal(role)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := a.es.Security.PutRole(role.Name, bytes.NewReader(roleBytes), a.es.Security.PutRole.WithContext(ctx))
+	res, err := apiClient.GetESClient().Security.PutRole(role.Name, bytes.NewReader(roleBytes), apiClient.GetESClient().Security.PutRole.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -141,11 +142,11 @@ func (a *ApiClient) PutElasticsearchRole(ctx context.Context, role *models.Role)
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchRole(ctx context.Context, rolename string) (*models.Role, diag.Diagnostics) {
+func GetRole(ctx context.Context, apiClient *clients.ApiClient, rolename string) (*models.Role, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	req := a.es.Security.GetRole.WithName(rolename)
-	res, err := a.es.Security.GetRole(req, a.es.Security.GetRole.WithContext(ctx))
+	req := apiClient.GetESClient().Security.GetRole.WithName(rolename)
+	res, err := apiClient.GetESClient().Security.GetRole(req, apiClient.GetESClient().Security.GetRole.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -172,9 +173,9 @@ func (a *ApiClient) GetElasticsearchRole(ctx context.Context, rolename string) (
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchRole(ctx context.Context, rolename string) diag.Diagnostics {
+func DeleteRole(ctx context.Context, apiClient *clients.ApiClient, rolename string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Security.DeleteRole(rolename, a.es.Security.DeleteRole.WithContext(ctx))
+	res, err := apiClient.GetESClient().Security.DeleteRole(rolename, apiClient.GetESClient().Security.DeleteRole.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -186,12 +187,12 @@ func (a *ApiClient) DeleteElasticsearchRole(ctx context.Context, rolename string
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchRoleMapping(ctx context.Context, roleMapping *models.RoleMapping) diag.Diagnostics {
+func PutRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMapping *models.RoleMapping) diag.Diagnostics {
 	roleMappingBytes, err := json.Marshal(roleMapping)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := a.es.Security.PutRoleMapping(roleMapping.Name, bytes.NewReader(roleMappingBytes), a.es.Security.PutRoleMapping.WithContext(ctx))
+	res, err := apiClient.GetESClient().Security.PutRoleMapping(roleMapping.Name, bytes.NewReader(roleMappingBytes), apiClient.GetESClient().Security.PutRoleMapping.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -203,9 +204,9 @@ func (a *ApiClient) PutElasticsearchRoleMapping(ctx context.Context, roleMapping
 	return nil
 }
 
-func (a *ApiClient) GetElasticsearchRoleMapping(ctx context.Context, roleMappingName string) (*models.RoleMapping, diag.Diagnostics) {
-	req := a.es.Security.GetRoleMapping.WithName(roleMappingName)
-	res, err := a.es.Security.GetRoleMapping(req, a.es.Security.GetRoleMapping.WithContext(ctx))
+func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) (*models.RoleMapping, diag.Diagnostics) {
+	req := apiClient.GetESClient().Security.GetRoleMapping.WithName(roleMappingName)
+	res, err := apiClient.GetESClient().Security.GetRoleMapping(req, apiClient.GetESClient().Security.GetRoleMapping.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -230,8 +231,8 @@ func (a *ApiClient) GetElasticsearchRoleMapping(ctx context.Context, roleMapping
 	return nil, diag.Errorf("unable to find role mapping '%s' in the cluster", roleMappingName)
 }
 
-func (a *ApiClient) DeleteElasticsearchRoleMapping(ctx context.Context, roleMappingName string) diag.Diagnostics {
-	res, err := a.es.Security.DeleteRoleMapping(roleMappingName, a.es.Security.DeleteRoleMapping.WithContext(ctx))
+func DeleteRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) diag.Diagnostics {
+	res, err := apiClient.GetESClient().Security.DeleteRoleMapping(roleMappingName, apiClient.GetESClient().Security.DeleteRoleMapping.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -243,14 +244,14 @@ func (a *ApiClient) DeleteElasticsearchRoleMapping(ctx context.Context, roleMapp
 	return nil
 }
 
-func (a *ApiClient) PutElasticsearchApiKey(apikey *models.ApiKey) (*models.ApiKeyResponse, diag.Diagnostics) {
+func PutApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.ApiKeyResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	res, err := a.es.Security.CreateAPIKey(bytes.NewReader(apikeyBytes))
+	res, err := apiClient.GetESClient().Security.CreateAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -268,10 +269,10 @@ func (a *ApiClient) PutElasticsearchApiKey(apikey *models.ApiKey) (*models.ApiKe
 	return &apiKey, diags
 }
 
-func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKeyResponse, diag.Diagnostics) {
+func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.Security.GetAPIKey.WithID(id)
-	res, err := a.es.Security.GetAPIKey(req)
+	req := apiClient.GetESClient().Security.GetAPIKey.WithID(id)
+	res, err := apiClient.GetESClient().Security.GetAPIKey(req)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -309,7 +310,7 @@ func (a *ApiClient) GetElasticsearchApiKey(id string) (*models.ApiKeyResponse, d
 	return &apiKey, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchApiKey(id string) diag.Diagnostics {
+func DeleteApiKey(apiClient *clients.ApiClient, id string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	apiKeys := struct {
@@ -322,7 +323,7 @@ func (a *ApiClient) DeleteElasticsearchApiKey(id string) diag.Diagnostics {
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := a.es.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
+	res, err := apiClient.GetESClient().Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil && res.IsError() {
 		return diag.FromErr(err)
 	}
