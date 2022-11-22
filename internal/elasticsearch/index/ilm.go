@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -405,7 +406,7 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 	policy.Name = ilmId
 
-	if diags := client.PutElasticsearchIlm(ctx, policy); diags.HasError() {
+	if diags := elasticsearch.PutIlm(ctx, client, policy); diags.HasError() {
 		return diags
 	}
 
@@ -569,7 +570,7 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 	policyId := compId.ResourceId
 
-	ilmDef, diags := client.GetElasticsearchIlm(ctx, policyId)
+	ilmDef, diags := elasticsearch.GetIlm(ctx, client, policyId)
 	if ilmDef == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`ILM policy "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
@@ -685,7 +686,7 @@ func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchIlm(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIlm(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

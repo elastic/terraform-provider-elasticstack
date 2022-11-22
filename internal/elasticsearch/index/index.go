@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -544,7 +545,7 @@ If specified, this mapping can include: field names, [field data types](https://
 					return nil, fmt.Errorf("failed to parse provided ID")
 				}
 				indexName := compId.ResourceId
-				index, diags := client.GetElasticsearchIndex(ctx, indexName)
+				index, diags := elasticsearch.GetIndex(ctx, client, indexName)
 				if diags.HasError() {
 					return nil, fmt.Errorf("failed to get an ES Index")
 				}
@@ -749,7 +750,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 	}
 
-	if diags := client.PutElasticsearchIndex(ctx, &index); diags.HasError() {
+	if diags := elasticsearch.PutIndex(ctx, client, &index); diags.HasError() {
 		return diags
 	}
 
@@ -786,14 +787,14 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 			}
 		}
 		if len(aliasesToDelete) > 0 {
-			if diags := client.DeleteElasticsearchIndexAlias(ctx, indexName, aliasesToDelete); diags.HasError() {
+			if diags := elasticsearch.DeleteIndexAlias(ctx, client, indexName, aliasesToDelete); diags.HasError() {
 				return diags
 			}
 		}
 
 		// keep new aliases up-to-date
 		for _, v := range enew {
-			if diags := client.UpdateElasticsearchIndexAlias(ctx, indexName, &v); diags.HasError() {
+			if diags := elasticsearch.UpdateIndexAlias(ctx, client, indexName, &v); diags.HasError() {
 				return diags
 			}
 		}
@@ -833,7 +834,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 	if len(updatedSettings) > 0 {
 		tflog.Trace(ctx, fmt.Sprintf("settings to update: %+v", updatedSettings))
-		if diags := client.UpdateElasticsearchIndexSettings(ctx, indexName, updatedSettings); diags.HasError() {
+		if diags := elasticsearch.UpdateIndexSettings(ctx, client, indexName, updatedSettings); diags.HasError() {
 			return diags
 		}
 	}
@@ -842,7 +843,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 	if d.HasChange("mappings") {
 		// at this point we know there are mappings defined and there is a change which we can apply
 		mappings := d.Get("mappings").(string)
-		if diags := client.UpdateElasticsearchIndexMappings(ctx, indexName, mappings); diags.HasError() {
+		if diags := elasticsearch.UpdateIndexMappings(ctx, client, indexName, mappings); diags.HasError() {
 			return diags
 		}
 	}
@@ -878,7 +879,7 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.FromErr(err)
 	}
 
-	index, diags := client.GetElasticsearchIndex(ctx, indexName)
+	index, diags := elasticsearch.GetIndex(ctx, client, indexName)
 	if index == nil && diags == nil {
 		// no index found on ES side
 		tflog.Warn(ctx, fmt.Sprintf(`Index "%s" not found, removing from state`, compId.ResourceId))
@@ -932,7 +933,7 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchIndex(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIndex(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 	return diags
