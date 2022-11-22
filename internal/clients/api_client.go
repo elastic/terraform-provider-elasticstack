@@ -96,8 +96,8 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 				}
 
 				if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
-					ensureTLSClientConfig(&config)
-					config.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
+					tlsClientConfig := ensureTLSClientConfig(&config)
+					tlsClientConfig.InsecureSkipVerify = true
 				}
 
 				if caFile, ok := esConfig["ca_file"]; ok && caFile.(string) != "" {
@@ -127,8 +127,15 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 							})
 							return nil, diags
 						}
-						ensureTLSClientConfig(&config)
-						config.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{cert}
+						tlsClientConfig := ensureTLSClientConfig(&config)
+						tlsClientConfig.Certificates = []tls.Certificate{cert}
+					} else {
+						diags = append(diags, diag.Diagnostic{
+							Severity: diag.Error,
+							Summary:  "Unable to read key file",
+							Detail:   "Path to key file has not been configured or is empty",
+						})
+						return nil, diags
 					}
 				}
 				if certData, ok := esConfig["cert_data"]; ok && certData.(string) != "" {
@@ -142,8 +149,15 @@ func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, 
 							})
 							return nil, diags
 						}
-						ensureTLSClientConfig(&config)
-						config.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{cert}
+						tlsClientConfig := ensureTLSClientConfig(&config)
+						tlsClientConfig.Certificates = []tls.Certificate{cert}
+					} else {
+						diags = append(diags, diag.Diagnostic{
+							Severity: diag.Error,
+							Summary:  "Unable to parse key",
+							Detail:   "Key data has not been configured or is empty",
+						})
+						return nil, diags
 					}
 				}
 			}
@@ -218,9 +232,8 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 			config.Addresses = addrs
 		}
 		if insecure := conn["insecure"]; insecure.(bool) {
-			tr := http.DefaultTransport.(*http.Transport)
-			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-			config.Transport = tr
+			tlsClientConfig := ensureTLSClientConfig(&config)
+			tlsClientConfig.InsecureSkipVerify = true
 		}
 		if caFile, ok := conn["ca_file"]; ok && caFile.(string) != "" {
 			caCert, err := os.ReadFile(caFile.(string))
@@ -239,8 +252,10 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 				if err != nil {
 					return nil, fmt.Errorf("Unable to read certificate or key file: %w", err)
 				}
-				ensureTLSClientConfig(&config)
-				config.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{cert}
+				tlsClientConfig := ensureTLSClientConfig(&config)
+				tlsClientConfig.Certificates = []tls.Certificate{cert}
+			} else {
+				return nil, fmt.Errorf("Unable to read key file: Path to key file has not been configured or is empty")
 			}
 		}
 		if certData, ok := conn["cert_data"]; ok && certData.(string) != "" {
@@ -249,8 +264,10 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 				if err != nil {
 					return nil, fmt.Errorf("Unable to parse certificate or key: %w", err)
 				}
-				ensureTLSClientConfig(&config)
-				config.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{cert}
+				tlsClientConfig := ensureTLSClientConfig(&config)
+				tlsClientConfig.Certificates = []tls.Certificate{cert}
+			} else {
+				return nil, fmt.Errorf("Unable to parse key: Key data has not been configured or is empty")
 			}
 		}
 
@@ -267,13 +284,14 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 	}
 }
 
-func ensureTLSClientConfig(config *elasticsearch.Config) {
+func ensureTLSClientConfig(config *elasticsearch.Config) *tls.Config {
 	if config.Transport == nil {
 		config.Transport = http.DefaultTransport.(*http.Transport)
 	}
 	if config.Transport.(*http.Transport).TLSClientConfig == nil {
 		config.Transport.(*http.Transport).TLSClientConfig = &tls.Config{}
 	}
+	return config.Transport.(*http.Transport).TLSClientConfig
 }
 
 func (a *ApiClient) GetESClient() *elasticsearch.Client {
