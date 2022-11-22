@@ -1,12 +1,12 @@
 package index_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -61,7 +61,7 @@ func TestAccResourceILM(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: serverVersionLessThanTotalShardsPerNodeLimit,
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(totalShardsPerNodeVersionLimit),
 				Config:   testAccResourceILMTotalShardsPerNode(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
@@ -76,18 +76,6 @@ func TestAccResourceILM(t *testing.T) {
 			},
 		},
 	})
-}
-func serverVersionLessThanTotalShardsPerNodeLimit() (bool, error) {
-	client, err := clients.NewAcceptanceTestingClient()
-	if err != nil {
-		return false, err
-	}
-	serverVersion, diags := client.ServerVersion(context.Background())
-	if diags.HasError() {
-		return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
-	}
-
-	return serverVersion.LessThan(totalShardsPerNodeVersionLimit), nil
 }
 
 func testAccResourceILMCreate(name string) string {
