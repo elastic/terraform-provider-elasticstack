@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -128,7 +129,7 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 		pipeline.Metadata = metadata
 	}
 
-	if diags := client.PutElasticsearchIngestPipeline(ctx, &pipeline); diags.HasError() {
+	if diags := elasticsearch.PutIngestPipeline(ctx, client, &pipeline); diags.HasError() {
 		return diags
 	}
 
@@ -148,7 +149,7 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 		return diags
 	}
 
-	pipeline, diags := client.GetElasticsearchIngestPipeline(ctx, &compId.ResourceId)
+	pipeline, diags := elasticsearch.GetIngestPipeline(ctx, client, &compId.ResourceId)
 	if pipeline == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Injest pipeline "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
@@ -217,7 +218,7 @@ func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.Resourc
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchIngestPipeline(ctx, &compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIngestPipeline(ctx, client, &compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

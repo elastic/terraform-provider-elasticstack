@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -128,7 +129,7 @@ func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta int
 		return diags
 	}
 
-	if diags := client.PutElasticsearchDataStream(ctx, dsId); diags.HasError() {
+	if diags := elasticsearch.PutDataStream(ctx, client, dsId); diags.HasError() {
 		return diags
 	}
 
@@ -148,7 +149,7 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 
-	ds, diags := client.GetElasticsearchDataStream(ctx, compId.ResourceId)
+	ds, diags := elasticsearch.GetDataStream(ctx, client, compId.ResourceId)
 	if ds == nil && diags == nil {
 		// no data stream found on ES side
 		tflog.Warn(ctx, fmt.Sprintf(`Data stream "%s" not found, removing from state`, compId.ResourceId))
@@ -221,7 +222,7 @@ func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta 
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchDataStream(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteDataStream(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

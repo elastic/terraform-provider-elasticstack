@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -218,7 +219,7 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 		componentTemplate.Version = &definedVer
 	}
 
-	if diags := client.PutElasticsearchComponentTemplate(ctx, &componentTemplate); diags.HasError() {
+	if diags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); diags.HasError() {
 		return diags
 	}
 
@@ -238,7 +239,7 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 	}
 	templateId := compId.ResourceId
 
-	tpl, diags := client.GetElasticsearchComponentTemplate(ctx, templateId)
+	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateId)
 	if tpl == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
@@ -293,7 +294,7 @@ func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchComponentTemplate(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteComponentTemplate(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 	return diags
