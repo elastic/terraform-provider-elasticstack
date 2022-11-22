@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -75,7 +76,7 @@ func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, met
 		return diags
 	}
 
-	user, diags := client.GetElasticsearchUser(ctx, usernameId)
+	user, diags := elasticsearch.GetUser(ctx, client, usernameId)
 	if diags.HasError() {
 		return diags
 	}

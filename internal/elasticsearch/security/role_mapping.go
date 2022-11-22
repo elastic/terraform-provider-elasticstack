@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -113,7 +114,7 @@ func resourceSecurityRoleMappingPut(ctx context.Context, d *schema.ResourceData,
 		Rules:         rules,
 		Metadata:      json.RawMessage(d.Get("metadata").(string)),
 	}
-	if diags := client.PutElasticsearchRoleMapping(ctx, &roleMapping); diags.HasError() {
+	if diags := elasticsearch.PutRoleMapping(ctx, client, &roleMapping); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -130,7 +131,7 @@ func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData
 	if diags.HasError() {
 		return diags
 	}
-	roleMapping, diags := client.GetElasticsearchRoleMapping(ctx, resourceID)
+	roleMapping, diags := elasticsearch.GetRoleMapping(ctx, client, resourceID)
 	if roleMapping == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Role mapping "%s" not found, removing from state`, resourceID))
 		d.SetId("")
@@ -189,7 +190,7 @@ func resourceSecurityRoleMappingDelete(ctx context.Context, d *schema.ResourceDa
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchRoleMapping(ctx, resourceID); diags.HasError() {
+	if diags := elasticsearch.DeleteRoleMapping(ctx, client, resourceID); diags.HasError() {
 		return diags
 	}
 	return nil

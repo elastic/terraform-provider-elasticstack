@@ -8,6 +8,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -97,7 +98,7 @@ func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		apiKey, diags := client.GetElasticsearchApiKey(compId.ResourceId)
+		apiKey, diags := elasticsearch.GetApiKey(client, compId.ResourceId)
 		if diags.HasError() {
 			return fmt.Errorf("Unabled to get API key %v", diags)
 		}

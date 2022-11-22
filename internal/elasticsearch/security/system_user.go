@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -80,7 +81,7 @@ func resourceSecuritySystemUserPut(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
-	user, diags := client.GetElasticsearchUser(ctx, usernameId)
+	user, diags := elasticsearch.GetUser(ctx, client, usernameId)
 	if diags.HasError() {
 		return diags
 	}
@@ -98,18 +99,18 @@ func resourceSecuritySystemUserPut(ctx context.Context, d *schema.ResourceData, 
 		userPassword.PasswordHash = &pass_hash
 	}
 	if userPassword.Password != nil || userPassword.PasswordHash != nil {
-		if diags := client.ChangeElasticsearchUserPassword(ctx, usernameId, &userPassword); diags.HasError() {
+		if diags := elasticsearch.ChangeUserPassword(ctx, client, usernameId, &userPassword); diags.HasError() {
 			return diags
 		}
 	}
 
 	if d.HasChange("enabled") {
 		if d.Get("enabled").(bool) {
-			if diags := client.EnableElasticsearchUser(ctx, usernameId); diags.HasError() {
+			if diags := elasticsearch.EnableUser(ctx, client, usernameId); diags.HasError() {
 				return diags
 			}
 		} else {
-			if diags := client.DisableElasticsearchUser(ctx, usernameId); diags.HasError() {
+			if diags := elasticsearch.DisableUser(ctx, client, usernameId); diags.HasError() {
 				return diags
 			}
 		}
@@ -131,7 +132,7 @@ func resourceSecuritySystemUserRead(ctx context.Context, d *schema.ResourceData,
 	}
 	usernameId := compId.ResourceId
 
-	user, diags := client.GetElasticsearchUser(ctx, usernameId)
+	user, diags := elasticsearch.GetUser(ctx, client, usernameId)
 	if diags == nil && (user == nil || !user.IsSystemUser()) {
 		tflog.Warn(ctx, fmt.Sprintf(`System user "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")

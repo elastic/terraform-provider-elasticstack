@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -121,7 +122,7 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 		apikey.Metadata = metadata
 	}
 
-	putResponse, diags := client.PutElasticsearchApiKey(&apikey)
+	putResponse, diags := elasticsearch.PutApiKey(client, &apikey)
 
 	if diags.HasError() {
 		return diags
@@ -176,7 +177,7 @@ func resourceSecurityApiKeyRead(ctx context.Context, d *schema.ResourceData, met
 	}
 	id := compId.ResourceId
 
-	apikey, diags := client.GetElasticsearchApiKey(id)
+	apikey, diags := elasticsearch.GetApiKey(client, id)
 	if apikey == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -226,7 +227,7 @@ func resourceSecurityApiKeyDelete(ctx context.Context, d *schema.ResourceData, m
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchApiKey(compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteApiKey(client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 
