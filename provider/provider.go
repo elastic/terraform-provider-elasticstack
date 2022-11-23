@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
+	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -17,95 +18,18 @@ func init() {
 }
 
 func New(version string) func() *schema.Provider {
+	esKeyName := "elasticsearch"
+
 	return func() *schema.Provider {
 		p := &schema.Provider{
 
 			Schema: map[string]*schema.Schema{
-				"elasticsearch": {
+				esKeyName: {
 					Description: "Default Elasticsearch connection configuration block.",
 					Type:        schema.TypeList,
 					MaxItems:    1,
 					Optional:    true,
-					Elem: &schema.Resource{
-						Schema: map[string]*schema.Schema{
-							"username": {
-								Description: "Username to use for API authentication to Elasticsearch.",
-								Type:        schema.TypeString,
-								Optional:    true,
-								DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
-							},
-							"password": {
-								Description: "Password to use for API authentication to Elasticsearch.",
-								Type:        schema.TypeString,
-								Optional:    true,
-								Sensitive:   true,
-								DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
-							},
-							"api_key": {
-								Description: "API Key to use for authentication to Elasticsearch",
-								Type:        schema.TypeString,
-								Optional:    true,
-								Sensitive:   true,
-								DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_API_KEY", nil),
-							},
-							"endpoints": {
-								Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
-								Type:        schema.TypeList,
-								Optional:    true,
-								Sensitive:   true,
-								Elem: &schema.Schema{
-									Type: schema.TypeString,
-								},
-							},
-							"insecure": {
-								Description: "Disable TLS certificate validation",
-								Type:        schema.TypeBool,
-								Optional:    true,
-								DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_INSECURE", false),
-							},
-							"ca_file": {
-								Description:   "Path to a custom Certificate Authority certificate",
-								Type:          schema.TypeString,
-								Optional:      true,
-								ConflictsWith: []string{"elasticsearch.0.ca_data"},
-							},
-							"ca_data": {
-								Description:   "PEM-encoded custom Certificate Authority certificate",
-								Type:          schema.TypeString,
-								Optional:      true,
-								ConflictsWith: []string{"elasticsearch.0.ca_file"},
-							},
-							"cert_file": {
-								Description:   "Path to a file containing the PEM encoded certificate for client auth",
-								Type:          schema.TypeString,
-								Optional:      true,
-								RequiredWith:  []string{"elasticsearch.0.key_file"},
-								ConflictsWith: []string{"elasticsearch.0.cert_data", "elasticsearch.0.key_data"},
-							},
-							"key_file": {
-								Description:   "Path to a file containing the PEM encoded private key for client auth",
-								Type:          schema.TypeString,
-								Optional:      true,
-								RequiredWith:  []string{"elasticsearch.0.cert_file"},
-								ConflictsWith: []string{"elasticsearch.0.cert_data", "elasticsearch.0.key_data"},
-							},
-							"cert_data": {
-								Description:   "PEM encoded certificate for client auth",
-								Type:          schema.TypeString,
-								Optional:      true,
-								RequiredWith:  []string{"elasticsearch.0.key_data"},
-								ConflictsWith: []string{"elasticsearch.0.cert_file", "elasticsearch.0.key_file"},
-							},
-							"key_data": {
-								Description:   "PEM encoded private key for client auth",
-								Type:          schema.TypeString,
-								Optional:      true,
-								Sensitive:     true,
-								RequiredWith:  []string{"elasticsearch.0.cert_data"},
-								ConflictsWith: []string{"elasticsearch.0.cert_file", "elasticsearch.0.key_file"},
-							},
-						},
-					},
+					Elem:        providerSchema.GetConnectionResource(esKeyName),
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
