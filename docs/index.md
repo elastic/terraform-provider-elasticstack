@@ -85,7 +85,7 @@ provider "elasticstack" {
 
 ### Optional
 
-- `elasticsearch` (Block List, Max: 1) Default Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
+- `elasticsearch` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
 
 <a id="nestedblock--elasticsearch"></a>
 ### Nested Schema for `elasticsearch`

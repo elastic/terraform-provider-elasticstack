@@ -64,7 +64,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 
 - `cold` (Block List, Max: 1) The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it’s okay if those queries are slower. (see [below for nested schema](#nestedblock--cold))
 - `delete` (Block List, Max: 1) The index is no longer needed and can safely be removed. (see [below for nested schema](#nestedblock--delete))
-- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `frozen` (Block List, Max: 1) The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it’s okay if those queries are extremely slow. (see [below for nested schema](#nestedblock--frozen))
 - `hot` (Block List, Max: 1) The index is actively being updated and queried. (see [below for nested schema](#nestedblock--hot))
 - `metadata` (String) Optional user metadata about the ilm policy. Must be valid JSON document.
@@ -190,12 +190,12 @@ Optional:
 - `ca_file` (String) Path to a custom Certificate Authority certificate
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
-- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
-- `key_data` (String) PEM encoded private key for client auth
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
-- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- `username` (String) A username to use for API authentication to Elasticsearch.
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--frozen"></a>
