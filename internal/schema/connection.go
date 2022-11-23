@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetConnectionSchema(keyName string) *schema.Schema {
+func GetConnectionSchema(keyName string, useEnvAsDefault bool) *schema.Schema {
 	usernamePath := makePathRef(keyName, "username")
 	passwordPath := makePathRef(keyName, "password")
 	caFilePath := makePathRef(keyName, "ca_file")
@@ -15,6 +15,12 @@ func GetConnectionSchema(keyName string) *schema.Schema {
 	certDataPath := makePathRef(keyName, "cert_data")
 	keyFilePath := makePathRef(keyName, "key_file")
 	keyDataPath := makePathRef(keyName, "key_data")
+
+	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+
+	if useEnvAsDefault {
+		withEnvDefault = func(key string, dv interface{}) schema.SchemaDefaultFunc { return schema.EnvDefaultFunc(key, dv) }
+	}
 
 	return &schema.Schema{
 		Description: "Elasticsearch connection configuration block.",
@@ -27,21 +33,21 @@ func GetConnectionSchema(keyName string) *schema.Schema {
 					Description: "Username to use for API authentication to Elasticsearch.",
 					Type:        schema.TypeString,
 					Optional:    true,
-					DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
+					DefaultFunc: withEnvDefault("ELASTICSEARCH_USERNAME", nil),
 				},
 				"password": {
 					Description: "Password to use for API authentication to Elasticsearch.",
 					Type:        schema.TypeString,
 					Optional:    true,
 					Sensitive:   true,
-					DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
+					DefaultFunc: withEnvDefault("ELASTICSEARCH_PASSWORD", nil),
 				},
 				"api_key": {
 					Description:   "API Key to use for authentication to Elasticsearch",
 					Type:          schema.TypeString,
 					Optional:      true,
 					Sensitive:     true,
-					DefaultFunc:   schema.EnvDefaultFunc("ELASTICSEARCH_API_KEY", nil),
+					DefaultFunc:   withEnvDefault("ELASTICSEARCH_API_KEY", nil),
 					ConflictsWith: []string{usernamePath, passwordPath},
 				},
 				"endpoints": {
@@ -57,7 +63,7 @@ func GetConnectionSchema(keyName string) *schema.Schema {
 					Description: "Disable TLS certificate validation",
 					Type:        schema.TypeBool,
 					Optional:    true,
-					DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_INSECURE", false),
+					DefaultFunc: withEnvDefault("ELASTICSEARCH_INSECURE", false),
 				},
 				"ca_file": {
 					Description:   "Path to a custom Certificate Authority certificate",

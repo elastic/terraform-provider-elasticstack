@@ -24,7 +24,7 @@ func New(version string) func() *schema.Provider {
 		p := &schema.Provider{
 
 			Schema: map[string]*schema.Schema{
-				esKeyName: providerSchema.GetConnectionSchema(esKeyName),
+				esKeyName: providerSchema.GetConnectionSchema(esKeyName, true),
 			},
 			DataSourcesMap: map[string]*schema.Resource{
 				"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),
