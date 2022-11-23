@@ -121,12 +121,12 @@ func IsEmpty(v interface{}) bool {
 	return false
 }
 
+const connectionKeyName = "elasticsearch_connection"
+
 // Returns the common connection schema for all the Elasticsearch resources,
 // which defines the fields which can be used to configure the API access
 func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
-	connectionKeyName := "elasticsearch_connection"
-
-	providedSchema[connectionKeyName] = providerSchema.GetConnectionSchema(connectionKeyName)
+	providedSchema[connectionKeyName] = providerSchema.GetConnectionSchema(connectionKeyName, false)
 }
 
 func StringToHash(s string) (*string, error) {

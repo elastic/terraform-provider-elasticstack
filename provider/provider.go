@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+const esKeyName = "elasticsearch"
+
 func init() {
 	// Set descriptions to support markdown syntax, this will be used in document generation
 	// and the language server.
@@ -18,8 +20,6 @@ func init() {
 }
 
 func New(version string) func() *schema.Provider {
-	esKeyName := "elasticsearch"
-
 	return func() *schema.Provider {
 		p := &schema.Provider{
 
