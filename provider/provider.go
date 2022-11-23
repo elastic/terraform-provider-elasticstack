@@ -24,13 +24,7 @@ func New(version string) func() *schema.Provider {
 		p := &schema.Provider{
 
 			Schema: map[string]*schema.Schema{
-				esKeyName: {
-					Description: "Default Elasticsearch connection configuration block.",
-					Type:        schema.TypeList,
-					MaxItems:    1,
-					Optional:    true,
-					Elem:        providerSchema.GetConnectionResource(esKeyName),
-				},
+				esKeyName: providerSchema.GetConnectionSchema(esKeyName),
 			},
 			DataSourcesMap: map[string]*schema.Resource{
 				"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),

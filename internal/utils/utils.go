@@ -126,13 +126,7 @@ func IsEmpty(v interface{}) bool {
 func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
 	connectionKeyName := "elasticsearch_connection"
 
-	providedSchema[connectionKeyName] = &schema.Schema{
-		Description: "Used to establish connection to Elasticsearch server. Overrides environment variables if present.",
-		Type:        schema.TypeList,
-		Optional:    true,
-		MaxItems:    1,
-		Elem:        providerSchema.GetConnectionResource(connectionKeyName),
-	}
+	providedSchema[connectionKeyName] = providerSchema.GetConnectionSchema(connectionKeyName)
 }
 
 func StringToHash(s string) (*string, error) {
