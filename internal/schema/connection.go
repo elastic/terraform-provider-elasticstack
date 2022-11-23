@@ -16,10 +16,17 @@ func GetConnectionSchema(keyName string, useEnvAsDefault bool) *schema.Schema {
 	keyFilePath := makePathRef(keyName, "key_file")
 	keyDataPath := makePathRef(keyName, "key_data")
 
+	usernameRequiredWithValidation := []string{passwordPath}
+	passwordRequiredWithValidation := []string{usernamePath}
+
 	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
 
 	if useEnvAsDefault {
 		withEnvDefault = func(key string, dv interface{}) schema.SchemaDefaultFunc { return schema.EnvDefaultFunc(key, dv) }
+
+		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
+		usernameRequiredWithValidation = nil
+		passwordRequiredWithValidation = nil
 	}
 
 	return &schema.Schema{
@@ -30,17 +37,19 @@ func GetConnectionSchema(keyName string, useEnvAsDefault bool) *schema.Schema {
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"username": {
-					Description: "Username to use for API authentication to Elasticsearch.",
-					Type:        schema.TypeString,
-					Optional:    true,
-					DefaultFunc: withEnvDefault("ELASTICSEARCH_USERNAME", nil),
+					Description:  "Username to use for API authentication to Elasticsearch.",
+					Type:         schema.TypeString,
+					Optional:     true,
+					DefaultFunc:  withEnvDefault("ELASTICSEARCH_USERNAME", nil),
+					RequiredWith: usernameRequiredWithValidation,
 				},
 				"password": {
-					Description: "Password to use for API authentication to Elasticsearch.",
-					Type:        schema.TypeString,
-					Optional:    true,
-					Sensitive:   true,
-					DefaultFunc: withEnvDefault("ELASTICSEARCH_PASSWORD", nil),
+					Description:  "Password to use for API authentication to Elasticsearch.",
+					Type:         schema.TypeString,
+					Optional:     true,
+					Sensitive:    true,
+					DefaultFunc:  withEnvDefault("ELASTICSEARCH_PASSWORD", nil),
+					RequiredWith: passwordRequiredWithValidation,
 				},
 				"api_key": {
 					Description:   "API Key to use for authentication to Elasticsearch",
