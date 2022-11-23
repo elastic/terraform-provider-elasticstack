@@ -19,19 +19,19 @@ func GetConnectionResource(keyName string) *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
 			"username": {
-				Description:  "Username to use for API authentication to Elasticsearch.",
-				Type:         schema.TypeString,
-				Optional:     true,
-				DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
-				RequiredWith: []string{passwordPath},
+				Description: "Username to use for API authentication to Elasticsearch.",
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
+				// RequiredWith: []string{passwordPath},
 			},
 			"password": {
-				Description:  "Password to use for API authentication to Elasticsearch.",
-				Type:         schema.TypeString,
-				Optional:     true,
-				Sensitive:    true,
-				DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
-				RequiredWith: []string{usernamePath},
+				Description: "Password to use for API authentication to Elasticsearch.",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Sensitive:   true,
+				DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
+				// RequiredWith: []string{usernamePath},
 			},
 			"api_key": {
 				Description:   "API Key to use for authentication to Elasticsearch",
