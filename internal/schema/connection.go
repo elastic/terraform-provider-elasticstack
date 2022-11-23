@@ -28,7 +28,6 @@ func GetConnectionSchema(keyName string) *schema.Schema {
 					Type:        schema.TypeString,
 					Optional:    true,
 					DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
-					// RequiredWith: []string{passwordPath},
 				},
 				"password": {
 					Description: "Password to use for API authentication to Elasticsearch.",
@@ -36,7 +35,6 @@ func GetConnectionSchema(keyName string) *schema.Schema {
 					Optional:    true,
 					Sensitive:   true,
 					DefaultFunc: schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
-					// RequiredWith: []string{usernamePath},
 				},
 				"api_key": {
 					Description:   "API Key to use for authentication to Elasticsearch",
