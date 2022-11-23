@@ -7,39 +7,42 @@ import (
 )
 
 func GetConnectionResource(keyName string) *schema.Resource {
-	username := makePathRef(keyName, "username")
-	password := makePathRef(keyName, "password")
-	caFile := makePathRef(keyName, "ca_file")
-	caData := makePathRef(keyName, "ca_data")
-	certFile := makePathRef(keyName, "cert_file")
-	certData := makePathRef(keyName, "cert_data")
-	keyFile := makePathRef(keyName, "key_file")
-	keyData := makePathRef(keyName, "key_data")
+	usernamePath := makePathRef(keyName, "username")
+	passwordPath := makePathRef(keyName, "password")
+	caFilePath := makePathRef(keyName, "ca_file")
+	caDataPath := makePathRef(keyName, "ca_data")
+	certFilePath := makePathRef(keyName, "cert_file")
+	certDataPath := makePathRef(keyName, "cert_data")
+	keyFilePath := makePathRef(keyName, "key_file")
+	keyDataPath := makePathRef(keyName, "key_data")
 
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
 			"username": {
-				Description:  "A username to use for API authentication to Elasticsearch.",
+				Description:  "Username to use for API authentication to Elasticsearch.",
 				Type:         schema.TypeString,
 				Optional:     true,
-				RequiredWith: []string{password},
+				DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
+				RequiredWith: []string{passwordPath},
 			},
 			"password": {
-				Description:  "A password to use for API authentication to Elasticsearch.",
+				Description:  "Password to use for API authentication to Elasticsearch.",
 				Type:         schema.TypeString,
 				Optional:     true,
 				Sensitive:    true,
-				RequiredWith: []string{username},
+				DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
+				RequiredWith: []string{usernamePath},
 			},
 			"api_key": {
 				Description:   "API Key to use for authentication to Elasticsearch",
 				Type:          schema.TypeString,
 				Optional:      true,
 				Sensitive:     true,
-				ConflictsWith: []string{username, password},
+				DefaultFunc:   schema.EnvDefaultFunc("ELASTICSEARCH_API_KEY", nil),
+				ConflictsWith: []string{usernamePath, passwordPath},
 			},
 			"endpoints": {
-				Description: "A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.",
+				Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Sensitive:   true,
@@ -57,42 +60,42 @@ func GetConnectionResource(keyName string) *schema.Resource {
 				Description:   "Path to a custom Certificate Authority certificate",
 				Type:          schema.TypeString,
 				Optional:      true,
-				ConflictsWith: []string{caData},
+				ConflictsWith: []string{caDataPath},
 			},
 			"ca_data": {
 				Description:   "PEM-encoded custom Certificate Authority certificate",
 				Type:          schema.TypeString,
 				Optional:      true,
-				ConflictsWith: []string{caFile},
+				ConflictsWith: []string{caFilePath},
 			},
 			"cert_file": {
 				Description:   "Path to a file containing the PEM encoded certificate for client auth",
 				Type:          schema.TypeString,
 				Optional:      true,
-				RequiredWith:  []string{keyFile},
-				ConflictsWith: []string{certData, keyData},
+				RequiredWith:  []string{keyFilePath},
+				ConflictsWith: []string{certDataPath, keyDataPath},
 			},
 			"key_file": {
 				Description:   "Path to a file containing the PEM encoded private key for client auth",
 				Type:          schema.TypeString,
 				Optional:      true,
-				RequiredWith:  []string{certFile},
-				ConflictsWith: []string{certData, keyData},
+				RequiredWith:  []string{certFilePath},
+				ConflictsWith: []string{certDataPath, keyDataPath},
 			},
 			"cert_data": {
 				Description:   "PEM encoded certificate for client auth",
 				Type:          schema.TypeString,
 				Optional:      true,
-				RequiredWith:  []string{keyData},
-				ConflictsWith: []string{certFile, keyFile},
+				RequiredWith:  []string{keyDataPath},
+				ConflictsWith: []string{certFilePath, keyFilePath},
 			},
 			"key_data": {
 				Description:   "PEM encoded private key for client auth",
 				Type:          schema.TypeString,
 				Optional:      true,
 				Sensitive:     true,
-				RequiredWith:  []string{certData},
-				ConflictsWith: []string{certFile, keyFile},
+				RequiredWith:  []string{certDataPath},
+				ConflictsWith: []string{certFilePath, keyFilePath},
 			},
 		},
 	}
