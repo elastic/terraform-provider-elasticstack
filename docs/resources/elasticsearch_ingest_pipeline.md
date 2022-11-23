@@ -97,8 +97,12 @@ Optional:
 - `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
 - `ca_data` (String) PEM-encoded custom Certificate Authority certificate
 - `ca_file` (String) Path to a custom Certificate Authority certificate
+- `cert_data` (String) PEM encoded certificate for client auth
+- `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
 - `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
+- `key_data` (String) PEM encoded private key for client auth
+- `key_file` (String) Path to a file containing the PEM encoded private key for client auth
 - `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
 - `username` (String) A username to use for API authentication to Elasticsearch.
 
