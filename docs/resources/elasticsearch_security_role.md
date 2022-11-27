@@ -55,7 +55,7 @@ output "role" {
 
 - `applications` (Block Set) A list of application privilege entries. (see [below for nested schema](#nestedblock--applications))
 - `cluster` (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
-- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `global` (String) An object defining global privileges.
 - `indices` (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
 - `metadata` (String) Optional meta-data.
@@ -85,12 +85,12 @@ Optional:
 - `ca_file` (String) Path to a custom Certificate Authority certificate
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
-- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
-- `key_data` (String) PEM encoded private key for client auth
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
-- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- `username` (String) A username to use for API authentication to Elasticsearch.
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--indices"></a>

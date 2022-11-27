@@ -66,7 +66,7 @@ output "pipeline" {
 ### Optional
 
 - `description` (String) Description of the pipeline.
-- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `pipeline_batch_delay` (Number) Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.
 - `pipeline_batch_size` (Number) The maximum number of events an individual worker thread collects before executing filters and outputs.
 - `pipeline_ecs_compatibility` (String) Sets the pipeline default value for ecs_compatibility, a setting that is available to plugins that implement an ECS compatibility mode for use with the Elastic Common Schema.
@@ -101,12 +101,12 @@ Optional:
 - `ca_file` (String) Path to a custom Certificate Authority certificate
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
-- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
-- `key_data` (String) PEM encoded private key for client auth
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
-- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- `username` (String) A username to use for API authentication to Elasticsearch.
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
 
 ## Import
 
