@@ -155,10 +155,9 @@ func ResourceSlm() *schema.Resource {
 }
 
 func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	slmId := d.Get("name").(string)
 	id, diags := client.ID(ctx, slmId)
@@ -240,10 +239,9 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 }
 
 func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
@@ -330,10 +328,9 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 }
 
 func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {

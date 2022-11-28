@@ -86,10 +86,9 @@ func ResourceSettings() *schema.Resource {
 }
 
 func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id, diags := client.ID(ctx, "cluster-settings")
 	if diags.HasError() {
@@ -205,10 +204,9 @@ func expandSettings(s interface{}) (map[string]interface{}, diag.Diagnostics) {
 }
 
 func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	clusterSettings, diags := elasticsearch.GetSettings(ctx, client)
 	if diags.HasError() {
@@ -260,10 +258,9 @@ func flattenSettings(name string, old, new map[string]interface{}) []interface{}
 }
 
 func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	configuredSettings, _ := getConfiguredSettings(d)

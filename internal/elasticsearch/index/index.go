@@ -536,9 +536,9 @@ If specified, this mapping can include: field names, [field data types](https://
 					return nil, fmt.Errorf("unable to import requested index")
 				}
 
-				client, err := clients.NewApiClient(d, m)
-				if err != nil {
-					return nil, err
+				client, diags := clients.NewApiClient(d, m)
+				if diags.HasError() {
+					return nil, fmt.Errorf("Unabled to create API client %v", diags)
 				}
 				compId, diags := clients.CompositeIdFromStr(d.Id())
 				if diags.HasError() {
@@ -652,9 +652,9 @@ If specified, this mapping can include: field names, [field data types](https://
 }
 
 func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	indexName := d.Get("name").(string)
 	id, diags := client.ID(ctx, indexName)
@@ -692,7 +692,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if analyzerJSON, ok := d.GetOk("analysis_analyzer"); ok {
 		var analyzer map[string]interface{}
 		bytes := []byte(analyzerJSON.(string))
-		err = json.Unmarshal(bytes, &analyzer)
+		err := json.Unmarshal(bytes, &analyzer)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -701,7 +701,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if tokenizerJSON, ok := d.GetOk("analysis_tokenizer"); ok {
 		var tokenizer map[string]interface{}
 		bytes := []byte(tokenizerJSON.(string))
-		err = json.Unmarshal(bytes, &tokenizer)
+		err := json.Unmarshal(bytes, &tokenizer)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -710,7 +710,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if charFilterJSON, ok := d.GetOk("analysis_char_filter"); ok {
 		var filter map[string]interface{}
 		bytes := []byte(charFilterJSON.(string))
-		if err = json.Unmarshal(bytes, &filter); err != nil {
+		if err := json.Unmarshal(bytes, &filter); err != nil {
 			return diag.FromErr(err)
 		}
 		analysis["char_filter"] = filter
@@ -718,7 +718,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if filterJSON, ok := d.GetOk("analysis_filter"); ok {
 		var filter map[string]interface{}
 		bytes := []byte(filterJSON.(string))
-		err = json.Unmarshal(bytes, &filter)
+		err := json.Unmarshal(bytes, &filter)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -727,7 +727,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if normalizerJSON, ok := d.GetOk("analysis_normalizer"); ok {
 		var normalizer map[string]interface{}
 		bytes := []byte(normalizerJSON.(string))
-		err = json.Unmarshal(bytes, &normalizer)
+		err := json.Unmarshal(bytes, &normalizer)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -760,9 +760,9 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 
 // Because of limitation of ES API we must handle changes to aliases, mappings and settings separately
 func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	indexName := d.Get("name").(string)
 
@@ -864,10 +864,9 @@ func flattenIndexSettings(settings []interface{}) map[string]interface{} {
 }
 
 func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
@@ -923,10 +922,9 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id := d.Id()
 	compId, diags := clients.CompositeIdFromStr(id)

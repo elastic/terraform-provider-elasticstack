@@ -205,7 +205,8 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	return &ApiClient{es, "acceptance-testing"}, nil
 }
 
-func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) {
+func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	defaultClient := meta.(*ApiClient)
 	// if the config provided let's use it
 	if esConn, ok := d.GetOk("elasticsearch_connection"); ok {
@@ -238,7 +239,12 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 		if caFile, ok := conn["ca_file"]; ok && caFile.(string) != "" {
 			caCert, err := os.ReadFile(caFile.(string))
 			if err != nil {
-				return nil, fmt.Errorf("Unable to read ca_file: %w", err)
+				diags = append(diags, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "Unable to read ca_file",
+					Detail:   err.Error(),
+				})
+				return nil, diags
 			}
 			config.CACert = caCert
 		}
@@ -250,30 +256,53 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, error) 
 			if keyFile, ok := conn["key_file"]; ok && keyFile.(string) != "" {
 				cert, err := tls.LoadX509KeyPair(certFile.(string), keyFile.(string))
 				if err != nil {
-					return nil, fmt.Errorf("Unable to read certificate or key file: %w", err)
+					diags = append(diags, diag.Diagnostic{
+						Severity: diag.Error,
+						Summary:  "Unable to read certificate or key file",
+						Detail:   err.Error(),
+					})
+					return nil, diags
 				}
 				tlsClientConfig := ensureTLSClientConfig(&config)
 				tlsClientConfig.Certificates = []tls.Certificate{cert}
 			} else {
-				return nil, fmt.Errorf("Unable to read key file: Path to key file has not been configured or is empty")
+				diags = append(diags, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "Unable to read key file",
+					Detail:   "Path to key file has not been configured or is empty",
+				})
+				return nil, diags
 			}
 		}
 		if certData, ok := conn["cert_data"]; ok && certData.(string) != "" {
 			if keyData, ok := conn["key_data"]; ok && keyData.(string) != "" {
 				cert, err := tls.X509KeyPair([]byte(certData.(string)), []byte(keyData.(string)))
 				if err != nil {
-					return nil, fmt.Errorf("Unable to parse certificate or key: %w", err)
+					diags = append(diags, diag.Diagnostic{
+						Severity: diag.Error,
+						Summary:  "Unable to parse certificate or key",
+						Detail:   err.Error(),
+					})
 				}
 				tlsClientConfig := ensureTLSClientConfig(&config)
 				tlsClientConfig.Certificates = []tls.Certificate{cert}
 			} else {
-				return nil, fmt.Errorf("Unable to parse key: Key data has not been configured or is empty")
+				diags = append(diags, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "Unable to parse key",
+					Detail:   "Key data has not been configured or is empty",
+				})
 			}
 		}
 
 		es, err := elasticsearch.NewClient(config)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to create Elasticsearch client")
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Unable to create Elasticsearch client",
+				Detail:   err.Error(),
+			})
+			return nil, diags
 		}
 		if logging.IsDebugOrHigher() {
 			es.Transport = newDebugTransport("elasticsearch", es.Transport)
