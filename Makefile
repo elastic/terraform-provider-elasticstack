@@ -11,6 +11,7 @@ ACCTEST_PARALLELISM ?= 10
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
+SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= 1.19
 
@@ -227,3 +228,18 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 .PHONY: help
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
+
+.PHONY: generate-alerting-client
+generate-alerting-client:
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+		-i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/alerting/docs/openapi/bundled.json \
+		--skip-validate-spec \
+		--git-repo-id terraform-provider-elasticstack \
+		--git-user-id elastic \
+		-p isGoSubmodule=true \
+		-p packageName=alerting \
+		-p generateInterfaces=true \
+		-g go \
+		-o /local/generated/alerting
+	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
+	@ go fmt ./generated/...
