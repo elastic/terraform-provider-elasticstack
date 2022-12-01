@@ -9,7 +9,7 @@ description: |-
 
 A common scenario for using the Elastic Stack provider, is to manage & configure Elastic Cloud deployments.
 In order to do that, we'll use both the Elastic Cloud provider, as well as the Elastic Stack provider.
-Start off by configuring the two providers in a `provider.tf` file for example:
+Start off by configuring just the Elastic Cloud provider in a `provider.tf` file for example:
 
 ```terraform
 terraform {
@@ -29,11 +29,6 @@ terraform {
 provider "ec" {
   # You can fill in your API key here, or use an environment variable instead
   apikey = "<api key>"
-}
-
-provider "elasticstack" {
-  # In this example, connectivity to Elasticsearch is defined per resource
-  elasticsearch {}
 }
 ```
 
@@ -62,6 +57,16 @@ data "ec_stack" "latest" {
   region        = "gcp-us-central1"
 }
 
+provider "elasticstack" {
+  # Use our Elastic Cloud deployment outputs for connection details.
+  # This also allows the provider to create the proper relationships between the two resources.
+  elasticsearch {
+    endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
+    username  = ec_deployment.cluster.elasticsearch_username
+    password  = ec_deployment.cluster.elasticsearch_password
+  }
+}
+
 # Defining a user for ingesting
 resource "elasticstack_elasticsearch_security_user" "user" {
   username = "ingest_user"
@@ -76,14 +81,6 @@ resource "elasticstack_elasticsearch_security_user" "user" {
     "open"   = false
     "number" = 49
   })
-
-  # Use our Elastic Cloud deployemnt outputs for connection details.
-  # This also allows the provider to create the proper relationships between the two resources.
-  elasticsearch_connection {
-    endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
-    username  = ec_deployment.cluster.elasticsearch_username
-    password  = ec_deployment.cluster.elasticsearch_password
-  }
 }
 
 # Configuring my cluster with an index template as well.
@@ -108,12 +105,6 @@ resource "elasticstack_elasticsearch_index_template" "my_template" {
         "username" : { "type" : "keyword" }
       }
     })
-  }
-
-  elasticsearch_connection {
-    endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
-    username  = ec_deployment.cluster.elasticsearch_username
-    password  = ec_deployment.cluster.elasticsearch_password
   }
 }
 ```

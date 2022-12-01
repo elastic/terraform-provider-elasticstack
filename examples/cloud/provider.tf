@@ -16,8 +16,3 @@ provider "ec" {
   # You can fill in your API key here, or use an environment variable instead
   apikey = "<api key>"
 }
-
-provider "elasticstack" {
-  # In this example, connectivity to Elasticsearch is defined per resource
-  elasticsearch {}
-}
