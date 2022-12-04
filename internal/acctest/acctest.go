@@ -1,21 +1,28 @@
 package acctest
 
 import (
+	"context"
+	"log"
 	"os"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/provider"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-var Providers map[string]func() (*schema.Provider, error)
+var Providers map[string]func() (tfprotov5.ProviderServer, error)
 var Provider *schema.Provider
 
 func init() {
-	Provider = provider.New("dev")()
-	Providers = map[string]func() (*schema.Provider, error){
-		"elasticstack": func() (*schema.Provider, error) {
-			return Provider, nil
+	providerServerFactory, primaryProvider, err := provider.ProtoV5ProviderServerFactory(context.Background(), "dev")
+	if err != nil {
+		log.Fatal(err)
+	}
+	Provider = primaryProvider
+	Providers = map[string]func() (tfprotov5.ProviderServer, error){
+		"elasticstack": func() (tfprotov5.ProviderServer, error) {
+			return providerServerFactory(), nil
 		},
 	}
 }

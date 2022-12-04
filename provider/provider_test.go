@@ -21,8 +21,8 @@ func TestProvider(t *testing.T) {
 func TestElasticsearchAPIKeyConnection(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		ProtoV5Proto5ProviderFactoriesacctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),
