@@ -16,9 +16,9 @@ import (
 func TestResourceRoleMapping(t *testing.T) {
 	roleMappingName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceSecurityRoleMappingDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityRoleMappingDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceSecurityRoleMappingCreate(roleMappingName),

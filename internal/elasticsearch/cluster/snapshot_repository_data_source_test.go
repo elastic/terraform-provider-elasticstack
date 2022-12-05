@@ -13,8 +13,8 @@ func TestAccDataSourceSnapRepoFs(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceSnapRepoFs(name),
@@ -58,8 +58,8 @@ func TestAccDataSourceSnapRepoUrl(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceSnapRepoUrl(name),

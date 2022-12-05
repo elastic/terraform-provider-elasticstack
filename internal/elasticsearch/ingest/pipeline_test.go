@@ -15,9 +15,9 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 	pipelineName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIngestPipelineDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIngestPipelineDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIngestPipelineCreate(pipelineName),

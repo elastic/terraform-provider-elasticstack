@@ -16,9 +16,9 @@ func TestAccResourceIndex(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexCreate(indexName),
@@ -48,9 +48,9 @@ func TestAccResourceIndexSettings(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexSettingsCreate(indexName),
@@ -98,9 +98,9 @@ func TestAccResourceIndexSettingsMigration(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexSettingsMigrationCreate(indexName),
@@ -127,9 +127,9 @@ func TestAccResourceIndexSettingsConflict(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccResourceIndexSettingsConflict(indexName),

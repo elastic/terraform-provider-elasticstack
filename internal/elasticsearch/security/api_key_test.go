@@ -22,9 +22,9 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceSecurityApiKeyDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),

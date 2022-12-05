@@ -16,9 +16,9 @@ func TestAccResourceSecurityRole(t *testing.T) {
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceSecurityRoleDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityRoleDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceSecurityRoleCreate(roleName),
