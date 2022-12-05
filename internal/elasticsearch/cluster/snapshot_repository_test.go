@@ -101,7 +101,10 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
 
 func checkRepoDestroy(name string) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
-		client := acctest.Provider.Meta().(*clients.ApiClient)
+		client, err := clients.NewAcceptanceTestingClient()
+		if err != nil {
+			return err
+		}
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "elasticstack_elasticsearch_snapshot_repository" {

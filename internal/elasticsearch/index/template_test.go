@@ -116,7 +116,10 @@ resource "elasticstack_elasticsearch_index_template" "test2" {
 }
 
 func checkResourceIndexTemplateDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_index_template" {
