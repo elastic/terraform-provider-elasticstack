@@ -131,7 +131,10 @@ resource "elasticstack_elasticsearch_cluster_settings" "test" {
 }
 
 func checkResourceClusterSettingsDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	listOfSettings := []string{
 		"indices.lifecycle.poll_interval",

@@ -26,7 +26,7 @@ func main() {
 	flag.BoolVar(&debugMode, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	serverFactory, _, err := provider.ProtoV5ProviderServerFactory(context.Background(), version)
+	serverFactory, err := provider.ProtoV5ProviderServerFactory(context.Background(), version)
 	if err != nil {
 		log.Fatal(err)
 	}

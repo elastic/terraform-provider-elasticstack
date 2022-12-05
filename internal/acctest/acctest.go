@@ -8,18 +8,15 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 var Providers map[string]func() (tfprotov5.ProviderServer, error)
-var Provider *schema.Provider
 
 func init() {
-	providerServerFactory, sdkv2Provider, err := provider.ProtoV5ProviderServerFactory(context.Background(), "dev")
+	providerServerFactory, err := provider.ProtoV5ProviderServerFactory(context.Background(), "dev")
 	if err != nil {
 		log.Fatal(err)
 	}
-	Provider = sdkv2Provider
 	Providers = map[string]func() (tfprotov5.ProviderServer, error){
 		"elasticstack": func() (tfprotov5.ProviderServer, error) {
 			return providerServerFactory(), nil

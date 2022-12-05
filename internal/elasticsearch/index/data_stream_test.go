@@ -90,7 +90,10 @@ resource "elasticstack_elasticsearch_data_stream" "test_ds" {
 }
 
 func checkResourceDataStreamDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_data_stream" {
