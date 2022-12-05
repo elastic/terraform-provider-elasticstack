@@ -89,7 +89,7 @@ func New(version string) *schema.Provider {
 		},
 	}
 
-	p.ConfigureContextFunc = clients.NewApiClientFunc(version, p)
+	p.ConfigureContextFunc = clients.NewApiClientFunc(version)
 
 	return p
 }
