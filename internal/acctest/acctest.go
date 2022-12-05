@@ -15,11 +15,11 @@ var Providers map[string]func() (tfprotov5.ProviderServer, error)
 var Provider *schema.Provider
 
 func init() {
-	providerServerFactory, primaryProvider, err := provider.ProtoV5ProviderServerFactory(context.Background(), "dev")
+	providerServerFactory, sdkv2Provider, err := provider.ProtoV5ProviderServerFactory(context.Background(), "dev")
 	if err != nil {
 		log.Fatal(err)
 	}
-	Provider = primaryProvider
+	Provider = sdkv2Provider
 	Providers = map[string]func() (tfprotov5.ProviderServer, error){
 		"elasticstack": func() (tfprotov5.ProviderServer, error) {
 			return providerServerFactory(), nil

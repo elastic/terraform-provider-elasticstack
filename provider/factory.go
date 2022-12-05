@@ -9,12 +9,12 @@ import (
 )
 
 // ProtoV5ProviderServerFactory returns a muxed terraform-plugin-go protocol v5 provider factory function.
-// The primary (Plugin SDK) provider server is also returned (useful for testing).
+// Plugin SDK V2 provider server is also returned (useful for testing).
 func ProtoV5ProviderServerFactory(ctx context.Context, version string) (func() tfprotov5.ProviderServer, *schema.Provider, error) {
-	primary := New(version)
+	sdkv2Provider := New(version)
 
 	servers := []func() tfprotov5.ProviderServer{
-		primary.GRPCProvider,
+		sdkv2Provider.GRPCProvider,
 	}
 
 	muxServer, err := tf5muxserver.NewMuxServer(ctx, servers...)
@@ -22,5 +22,5 @@ func ProtoV5ProviderServerFactory(ctx context.Context, version string) (func() t
 		return nil, nil, err
 	}
 
-	return muxServer.ProviderServer, primary, nil
+	return muxServer.ProviderServer, sdkv2Provider, nil
 }
