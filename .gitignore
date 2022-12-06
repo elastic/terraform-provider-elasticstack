@@ -37,3 +37,7 @@ website/vendor
 *.winfile eol=crlf
 
 terraform-provider-elasticstack
+dist
+.ci/.gpg_*
+.ci/.github_*
+.terraform.lock.hcl
