@@ -1,4 +1,4 @@
-package clients
+package elasticsearch
 
 import (
 	"bytes"
@@ -7,22 +7,28 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func (a *ApiClient) PutWatch(ctx context.Context, watch *models.Watch) diag.Diagnostics {
+func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.Watch) diag.Diagnostics {
 	var diags diag.Diagnostics
 	watchBytes, err := json.Marshal(watch.Body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	body := a.es.Watcher.PutWatch.WithBody(bytes.NewReader(watchBytes))
-	active := a.es.Watcher.PutWatch.WithActive(watch.Active)
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
-	res, err := a.es.Watcher.PutWatch(watch.WatchID, body, active, a.es.Watcher.PutWatch.WithContext(ctx))
+	body := esClient.Watcher.PutWatch.WithBody(bytes.NewReader(watchBytes))
+	active := esClient.Watcher.PutWatch.WithActive(watch.Active)
+
+	res, err := esClient.Watcher.PutWatch(watch.WatchID, body, active, esClient.Watcher.PutWatch.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -34,9 +40,15 @@ func (a *ApiClient) PutWatch(ctx context.Context, watch *models.Watch) diag.Diag
 	return diags
 }
 
-func (a *ApiClient) GetWatch(ctx context.Context, watchID string) (*models.Watch, diag.Diagnostics) {
+func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string) (*models.Watch, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	res, err := a.es.Watcher.GetWatch(watchID, a.es.Watcher.GetWatch.WithContext(ctx))
+
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	res, err := esClient.Watcher.GetWatch(watchID, esClient.Watcher.GetWatch.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -66,9 +78,15 @@ func (a *ApiClient) GetWatch(ctx context.Context, watchID string) (*models.Watch
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteWatch(ctx context.Context, watchID string) diag.Diagnostics {
+func DeleteWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Watcher.DeleteWatch(watchID, a.es.Watcher.DeleteWatch.WithContext(ctx))
+
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	res, err := esClient.Watcher.DeleteWatch(watchID, esClient.Watcher.DeleteWatch.WithContext(ctx))
 
 	if err != nil && res.IsError() {
 		return diag.FromErr(err)

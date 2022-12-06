@@ -15,16 +15,16 @@ import (
 func TestResourceWatch(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceWatchDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceWatchDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceWatchCreate(watchID),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `"json":"true"`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `"trigger":{"schedule":{"0 0/1 * * * ?"}}`),
 				),
 			},
 		},
@@ -37,18 +37,64 @@ func testAccResourceWatchCreate(watchID string) string {
    elasticsearch {}
  }
  resource "elasticstack_elasticsearch_watcher_watch" "test" {
-   watch_id = "%s"
+  watch_id = "%s"
  	active = false
- 	body = jsonencode({
-		"json" = "true"
-	})
+ 	body = <<EOF
+	{
+		"trigger" : {
+			"schedule" : { "cron" : "0 0/1 * * * ?" }
+		},
+		"input" : {
+			"search" : {
+				"request" : {
+					"indices" : [
+						"logstash*"
+					],
+					"body" : {
+						"query" : {
+							"bool" : {
+								"must" : {
+									"match": {
+										 "response": 404
+									}
+								},
+								"filter" : {
+									"range": {
+										"@timestamp": {
+											"from": "{{ctx.trigger.scheduled_time}}||-5m",
+											"to": "{{ctx.trigger.triggered_time}}"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"condition" : {
+			"compare" : { "ctx.payload.hits.total" : { "gt" : 0 }}
+		},
+		"actions" : {
+			"email_admin" : {
+				"email" : {
+					"to" : "admin@domain.host.com",
+					"subject" : "404 recently encountered"
+				}
+			}
+		}
+	}	
+EOF
  }
  	`, watchID)
 }
 
 func checkResourceWatchDestroy(s *terraform.State) error {
 
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_watcher_watch" {
@@ -56,7 +102,12 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		res, err := client.GetESClient().Watcher.GetWatch(compId.ResourceId)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+
+		res, err := esClient.Watcher.GetWatch(compId.ResourceId)
 		if err != nil {
 			return err
 		}

@@ -262,3 +262,9 @@ type Script struct {
 	Params   map[string]interface{} `json:"params"`
 	Context  string                 `json:"-"`
 }
+
+type Watch struct {
+	WatchID string                 `json:"watch_id"`
+	Active  bool                   `json:"active"`
+	Body    map[string]interface{} `json:"body"`
+}
