@@ -3,7 +3,6 @@ package watcher
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -72,7 +71,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 	}
 
 	watchBody := make(map[string]interface{})
-	if err := json.NewDecoder(strings.NewReader(d.Get("body").(string))).Decode(&watchBody); err != nil {
+	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -115,9 +114,17 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	if err := d.Set("active", watch.Active); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("body", watch.Body); err != nil {
+	body, err := json.Marshal(watch.Body)
+	if err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("body", string(body)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	println(watch.WatchID)
+	println(watch.Active)
+	println(watch.Body)
 
 	return nil
 }

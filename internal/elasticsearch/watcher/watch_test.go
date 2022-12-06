@@ -23,8 +23,8 @@ func TestResourceWatch(t *testing.T) {
 				Config: testAccResourceWatchCreate(watchID),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `"trigger":{"schedule":{"0 0/1 * * * ?"}}`),
+					//resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"0 0/1 * * * ?"}}}`),
 				),
 			},
 		},
@@ -38,7 +38,6 @@ func testAccResourceWatchCreate(watchID string) string {
  }
  resource "elasticstack_elasticsearch_watcher_watch" "test" {
   watch_id = "%s"
- 	active = false
  	body = <<EOF
 	{
 		"trigger" : {
