@@ -113,5 +113,5 @@ Optional:
 Import is supported using the following syntax:
 
 ```shell
-terraform import elasticstack_elasticsearch_security_logstash_pipeline.my_pipeline <cluster_uuid>/<pipeline ID>
+terraform import elasticstack_elasticsearch_logstash_pipeline.my_pipeline <cluster_uuid>/<pipeline ID>
 ```
