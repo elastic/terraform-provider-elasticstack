@@ -91,12 +91,13 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	return &ApiClient{es, "acceptance-testing"}, nil
 }
 
+const esConnectionKey string = "elasticsearch_connection"
+
 func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Diagnostics) {
 	defaultClient := meta.(*ApiClient)
-	key := "elasticsearch_connection"
 
-	if _, ok := d.GetOk(key); ok {
-		apiClient, diags := newEsApiClient(d, key, defaultClient.version)
+	if _, ok := d.GetOk(esConnectionKey); ok {
+		apiClient, diags := newEsApiClient(d, esConnectionKey, defaultClient.version)
 
 		if diags.HasError() {
 			return nil, diags
