@@ -60,8 +60,7 @@ type ApiClient struct {
 
 func NewApiClientFunc(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		apiClient, diags := setEsConnection(d, "elasticsearch", version)
-		return apiClient, diags
+		return newEsApiClient(d, "elasticsearch", version)
 	}
 }
 
@@ -94,14 +93,19 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 
 func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Diagnostics) {
 	defaultClient := meta.(*ApiClient)
+	key := "elasticsearch_connection"
 
-	apiClient, diags := setEsConnection(d, "elasticsearch_connection", defaultClient.version)
-	if diags.HasError() {
-		// return the default client
+	if _, ok := d.GetOk(key); ok {
+		apiClient, diags := newEsApiClient(d, key, defaultClient.version)
+
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		return apiClient, nil
+	} else { // or return the default client
 		return defaultClient, nil
 	}
-
-	return apiClient, diags
 }
 
 func ensureTLSClientConfig(config *elasticsearch.Config) *tls.Config {
@@ -181,7 +185,7 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 	return nil, diags
 }
 
-func setEsConnection(d *schema.ResourceData, key string, version string) (*ApiClient, diag.Diagnostics) {
+func newEsApiClient(d *schema.ResourceData, key string, version string) (*ApiClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	config := elasticsearch.Config{}
 	config.Header = http.Header{"User-Agent": []string{fmt.Sprintf("elasticstack-terraform-provider/%s", version)}}
