@@ -16,9 +16,9 @@ func TestAccResourceIndex(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexCreate(indexName),
@@ -48,9 +48,9 @@ func TestAccResourceIndexSettings(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexSettingsCreate(indexName),
@@ -98,9 +98,9 @@ func TestAccResourceIndexSettingsMigration(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexSettingsMigrationCreate(indexName),
@@ -127,9 +127,9 @@ func TestAccResourceIndexSettingsConflict(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccResourceIndexSettingsConflict(indexName),
@@ -251,7 +251,7 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
   analysis_char_filter = jsonencode({
     zero_width_spaces = {
       type     = "mapping"
-      mappings = ["\\u200C=>\\u0020"] 
+      mappings = ["\\u200C=>\\u0020"]
     }
   })
   analysis_filter = jsonencode({
@@ -261,8 +261,8 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
     }
   })
   analysis_analyzer = jsonencode({
-    text_en = { 
-      type = "custom" 
+    text_en = {
+      type = "custom"
       tokenizer = "standard"
       char_filter = "zero_width_spaces"
       filter = ["lowercase", "minimal_english_stemmer"]
@@ -340,7 +340,10 @@ resource "elasticstack_elasticsearch_index" "test_settings_conflict" {
 }
 
 func checkResourceIndexDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_index" {

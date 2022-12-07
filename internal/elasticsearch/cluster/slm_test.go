@@ -16,9 +16,9 @@ func TestAccResourceSLM(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkSlmDestroy(name),
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkSlmDestroy(name),
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSlmCreate(name),
@@ -74,7 +74,10 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm" {
 
 func checkSlmDestroy(name string) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
-		client := acctest.Provider.Meta().(*clients.ApiClient)
+		client, err := clients.NewAcceptanceTestingClient()
+		if err != nil {
+			return err
+		}
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "elasticstack_elasticsearch_snapshot_lifecycle" {

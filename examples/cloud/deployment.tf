@@ -16,6 +16,16 @@ data "ec_stack" "latest" {
   region        = "gcp-us-central1"
 }
 
+provider "elasticstack" {
+  # Use our Elastic Cloud deployment outputs for connection details.
+  # This also allows the provider to create the proper relationships between the two resources.
+  elasticsearch {
+    endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
+    username  = ec_deployment.cluster.elasticsearch_username
+    password  = ec_deployment.cluster.elasticsearch_password
+  }
+}
+
 # Defining a user for ingesting
 resource "elasticstack_elasticsearch_security_user" "user" {
   username = "ingest_user"
@@ -30,14 +40,6 @@ resource "elasticstack_elasticsearch_security_user" "user" {
     "open"   = false
     "number" = 49
   })
-
-  # Use our Elastic Cloud deployemnt outputs for connection details.
-  # This also allows the provider to create the proper relationships between the two resources.
-  elasticsearch_connection {
-    endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
-    username  = ec_deployment.cluster.elasticsearch_username
-    password  = ec_deployment.cluster.elasticsearch_password
-  }
 }
 
 # Configuring my cluster with an index template as well.
@@ -62,11 +64,5 @@ resource "elasticstack_elasticsearch_index_template" "my_template" {
         "username" : { "type" : "keyword" }
       }
     })
-  }
-
-  elasticsearch_connection {
-    endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
-    username  = ec_deployment.cluster.elasticsearch_username
-    password  = ec_deployment.cluster.elasticsearch_password
   }
 }

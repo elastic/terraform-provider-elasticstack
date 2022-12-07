@@ -8,21 +8,22 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/elastic/terraform-provider-elasticstack/provider"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestProvider(t *testing.T) {
-	if err := acctest.Provider.InternalValidate(); err != nil {
-		t.Fatalf("err: %s", err)
+	if err := provider.New("dev").InternalValidate(); err != nil {
+		t.Fatalf("Failed to validate provider: %s", err)
 	}
 }
 
 func TestElasticsearchAPIKeyConnection(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),

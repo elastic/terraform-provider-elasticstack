@@ -20,9 +20,9 @@ func TestAccResourceILM(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceILMDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceILMDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceILMCreate(policyName),
@@ -188,7 +188,10 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test" {
 }
 
 func checkResourceILMDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_index_lifecycle" {

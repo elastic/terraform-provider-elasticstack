@@ -15,9 +15,9 @@ func TestAccResourceScript(t *testing.T) {
 	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkScriptDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkScriptDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccScriptCreate(scriptID),
@@ -45,9 +45,9 @@ func TestAccResourceScriptSearchTemplate(t *testing.T) {
 	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkScriptDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkScriptDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSearchTemplateCreate(scriptID),
@@ -120,7 +120,10 @@ resource "elasticstack_elasticsearch_script" "search_template_test" {
 }
 
 func checkScriptDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_script" {

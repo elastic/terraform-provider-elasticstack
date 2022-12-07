@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-SOURCE_LOCATION ?= $(shell pwd)
+SOURCE_LOCATION ?= $(CURDIR)/..
 
 -include $(SOURCE_LOCATION)/.env
 

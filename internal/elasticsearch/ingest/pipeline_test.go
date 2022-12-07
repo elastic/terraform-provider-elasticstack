@@ -15,9 +15,9 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 	pipelineName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIngestPipelineDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIngestPipelineDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIngestPipelineCreate(pipelineName),
@@ -93,7 +93,10 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
 }
 
 func checkResourceIngestPipelineDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_ingest_pipeline" {

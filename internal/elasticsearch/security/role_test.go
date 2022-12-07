@@ -16,9 +16,9 @@ func TestAccResourceSecurityRole(t *testing.T) {
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceSecurityRoleDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityRoleDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceSecurityRoleCreate(roleName),
@@ -103,7 +103,10 @@ resource "elasticstack_elasticsearch_security_role" "test" {
 }
 
 func checkResourceSecurityRoleDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_security_role" {
