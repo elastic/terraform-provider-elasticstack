@@ -71,9 +71,9 @@ func ResourceSystemUser() *schema.Resource {
 }
 
 func resourceSecuritySystemUserPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	usernameId := d.Get("username").(string)
 	id, diags := client.ID(ctx, usernameId)
@@ -121,10 +121,9 @@ func resourceSecuritySystemUserPut(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceSecuritySystemUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {

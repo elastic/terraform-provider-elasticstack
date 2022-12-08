@@ -149,9 +149,9 @@ func DataSourceRole() *schema.Resource {
 }
 
 func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	roleId := d.Get("name").(string)

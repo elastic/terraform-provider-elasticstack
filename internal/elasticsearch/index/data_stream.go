@@ -119,9 +119,9 @@ func ResourceDataStream() *schema.Resource {
 }
 
 func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	dsId := d.Get("name").(string)
 	id, diags := client.ID(ctx, dsId)
@@ -138,10 +138,9 @@ func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta int
 }
 
 func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id := d.Id()
 	compId, diags := clients.CompositeIdFromStr(id)
@@ -212,10 +211,9 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 }
 
 func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id := d.Id()
 	compId, diags := clients.CompositeIdFromStr(id)

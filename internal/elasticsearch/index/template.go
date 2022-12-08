@@ -182,10 +182,9 @@ func ResourceTemplate() *schema.Resource {
 }
 
 func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	templateId := d.Get("name").(string)
 	id, diags := client.ID(ctx, templateId)
@@ -305,10 +304,9 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 }
 
 func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
@@ -410,10 +408,9 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 }
 
 func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	id := d.Id()

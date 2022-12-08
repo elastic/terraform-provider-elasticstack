@@ -188,9 +188,9 @@ func ResourceLogstashPipeline() *schema.Resource {
 }
 
 func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	pipelineID := d.Get("pipeline_id").(string)
@@ -223,9 +223,9 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {
@@ -281,9 +281,9 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {

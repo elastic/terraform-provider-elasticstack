@@ -63,10 +63,9 @@ func DataSourceUser() *schema.Resource {
 }
 
 func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	usernameId := d.Get("username").(string)
 	id, diags := client.ID(ctx, usernameId)

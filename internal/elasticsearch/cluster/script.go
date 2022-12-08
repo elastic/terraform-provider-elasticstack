@@ -66,10 +66,9 @@ func ResourceScript() *schema.Resource {
 }
 
 func resourceScriptRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	id := d.Id()
@@ -101,9 +100,9 @@ func resourceScriptRead(ctx context.Context, d *schema.ResourceData, meta interf
 }
 
 func resourceScriptPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	scriptID := d.Get("script_id").(string)
@@ -120,7 +119,7 @@ func resourceScriptPut(ctx context.Context, d *schema.ResourceData, meta interfa
 	if paramsJSON, ok := d.GetOk("params"); ok {
 		var params map[string]interface{}
 		bytes := []byte(paramsJSON.(string))
-		err = json.Unmarshal(bytes, &params)
+		err := json.Unmarshal(bytes, &params)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -138,9 +137,9 @@ func resourceScriptPut(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceScriptDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	compId, diags := clients.CompositeIdFromStr(d.Id())

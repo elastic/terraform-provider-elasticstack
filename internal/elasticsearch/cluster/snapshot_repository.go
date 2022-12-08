@@ -316,10 +316,9 @@ func ResourceSnapshotRepository() *schema.Resource {
 }
 
 func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	repoId := d.Get("name").(string)
 	id, diags := client.ID(ctx, repoId)
@@ -362,10 +361,9 @@ func expandFsSettings(source, target map[string]interface{}) {
 }
 
 func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	id := d.Id()
@@ -446,10 +444,9 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 }
 
 func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	id := d.Id()
