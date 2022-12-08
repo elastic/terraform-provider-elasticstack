@@ -60,7 +60,7 @@ type ApiClient struct {
 
 func NewApiClientFunc(version string) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return newEsApiClient(d, "elasticsearch", version)
+		return newEsApiClient(d, "elasticsearch", version, true)
 	}
 }
 
@@ -97,16 +97,10 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Di
 	defaultClient := meta.(*ApiClient)
 
 	if _, ok := d.GetOk(esConnectionKey); ok {
-		apiClient, diags := newEsApiClient(d, esConnectionKey, defaultClient.version)
-
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		return apiClient, nil
-	} else { // or return the default client
-		return defaultClient, nil
+		return newEsApiClient(d, esConnectionKey, defaultClient.version, false)
 	}
+
+	return defaultClient, nil
 }
 
 func ensureTLSClientConfig(config *elasticsearch.Config) *tls.Config {
@@ -186,7 +180,7 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 	return nil, diags
 }
 
-func newEsApiClient(d *schema.ResourceData, key string, version string) (*ApiClient, diag.Diagnostics) {
+func newEsApiClient(d *schema.ResourceData, key string, version string, useEnvAsDefault bool) (*ApiClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	config := elasticsearch.Config{}
 	config.Header = http.Header{"User-Agent": []string{fmt.Sprintf("elasticstack-terraform-provider/%s", version)}}
@@ -206,15 +200,16 @@ func newEsApiClient(d *schema.ResourceData, key string, version string) (*ApiCli
 				config.APIKey = apikey.(string)
 			}
 
-			// default endpoints taken from Env if set
-			if endpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS"); endpoints != "" {
-				var addrs []string
-				for _, e := range strings.Split(endpoints, ",") {
-					addrs = append(addrs, strings.TrimSpace(e))
+			if useEnvAsDefault {
+				if endpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS"); endpoints != "" {
+					var addrs []string
+					for _, e := range strings.Split(endpoints, ",") {
+						addrs = append(addrs, strings.TrimSpace(e))
+					}
+					config.Addresses = addrs
 				}
-				config.Addresses = addrs
 			}
-			// setting endpoints from config block if provided
+
 			if endpoints, ok := esConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
 				var addrs []string
 				for _, e := range endpoints.([]interface{}) {
