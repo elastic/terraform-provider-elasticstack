@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Refactor API client functions and return diagnostics ([#220](https://github.com/elastic/terraform-provider-elasticstack/pull/220))
+
 ## [0.5.0] - 2022-12-07
 
 ### Added
