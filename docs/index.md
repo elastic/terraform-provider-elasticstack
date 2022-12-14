@@ -109,10 +109,12 @@ Optional:
 <a id="nestedblock--kibana"></a>
 ### Nested Schema for `kibana`
 
+Required:
+
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+
 Optional:
 
-- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
-- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
-- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
-- `username` (String) Username to use for API authentication to Elasticsearch.
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.

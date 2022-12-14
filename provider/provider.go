@@ -31,7 +31,7 @@ func New(version string) *schema.Provider {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"username": {
-							Description:  "Username to use for API authentication to Elasticsearch.",
+							Description:  "Username to use for API authentication to Kibana.",
 							Type:         schema.TypeString,
 							Optional:     true,
 							DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
@@ -39,7 +39,7 @@ func New(version string) *schema.Provider {
 							ExactlyOneOf: []string{"elasticsearch.0.username", "kibana.0.username"},
 						},
 						"password": {
-							Description:  "Password to use for API authentication to Elasticsearch.",
+							Description:  "Password to use for API authentication to Kibana.",
 							Type:         schema.TypeString,
 							Optional:     true,
 							Sensitive:    true,
@@ -47,19 +47,11 @@ func New(version string) *schema.Provider {
 							RequiredWith: []string{"kibana.0.username"},
 							ExactlyOneOf: []string{"elasticsearch.0.password", "kibana.0.password"},
 						},
-						"api_key": {
-							Description:   "API Key to use for authentication to Elasticsearch",
-							Type:          schema.TypeString,
-							Optional:      true,
-							Sensitive:     true,
-							DefaultFunc:   schema.EnvDefaultFunc("ELASTICSEARCH_API_KEY", nil),
-							ConflictsWith: []string{"kibana.0.username", "kibana.0.password"},
-							ExactlyOneOf:  []string{"elasticsearch.0.api_key", "kibana.0.api_key"},
-						},
 						"endpoints": {
 							Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 							Type:        schema.TypeList,
-							Optional:    true,
+							MaxItems:    1, // Current API restriction
+							Required:    true,
 							Sensitive:   true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
