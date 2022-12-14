@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetConnectionSchema(keyName string, useEnvAsDefault bool) *schema.Schema {
+func GetConnectionSchema(keyName string, isProviderConfiguration bool) *schema.Schema {
 	usernamePath := makePathRef(keyName, "username")
 	passwordPath := makePathRef(keyName, "password")
 	caFilePath := makePathRef(keyName, "ca_file")
@@ -20,9 +20,11 @@ func GetConnectionSchema(keyName string, useEnvAsDefault bool) *schema.Schema {
 	passwordRequiredWithValidation := []string{usernamePath}
 
 	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	deprecationMessage := "This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead."
 
-	if useEnvAsDefault {
+	if isProviderConfiguration {
 		withEnvDefault = func(key string, dv interface{}) schema.SchemaDefaultFunc { return schema.EnvDefaultFunc(key, dv) }
+		deprecationMessage = ""
 
 		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
 		usernameRequiredWithValidation = nil
@@ -30,7 +32,8 @@ func GetConnectionSchema(keyName string, useEnvAsDefault bool) *schema.Schema {
 	}
 
 	return &schema.Schema{
-		Description: "Elasticsearch connection configuration block.",
+		Description: fmt.Sprintf("Elasticsearch connection configuration block. %s", deprecationMessage),
+		Deprecated:  deprecationMessage,
 		Type:        schema.TypeList,
 		MaxItems:    1,
 		Optional:    true,

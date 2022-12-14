@@ -75,7 +75,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `blocks_write` (Boolean) Set to `true` to disable data write operations against the index. This setting does not affect metadata.
 - `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
 - `default_pipeline` (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.
 - `highlight_max_analyzed_offset` (Number) The maximum number of characters that will be analyzed for a highlight request.

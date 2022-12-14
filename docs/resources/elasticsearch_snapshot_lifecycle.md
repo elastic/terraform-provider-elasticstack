@@ -57,7 +57,7 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `expand_wildcards` (String) Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.
 - `expire_after` (String) Time period after which a snapshot is considered expired and eligible for deletion.
 - `feature_states` (Set of String) Feature states to include in the snapshot.
