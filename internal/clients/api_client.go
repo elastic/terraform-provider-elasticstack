@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -54,8 +55,9 @@ func (c *CompositeId) String() string {
 }
 
 type ApiClient struct {
-	es      *elasticsearch.Client
-	version string
+	elasticsearch *elasticsearch.Client
+	kibana        *kibana.Client
+	version       string
 }
 
 func NewApiClientFunc(version string) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
@@ -88,7 +90,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
-	return &ApiClient{es, "acceptance-testing"}, nil
+	return &ApiClient{es, nil, "acceptance-testing"}, nil
 }
 
 const esConnectionKey string = "elasticsearch_connection"
@@ -114,7 +116,11 @@ func ensureTLSClientConfig(config *elasticsearch.Config) *tls.Config {
 }
 
 func (a *ApiClient) GetESClient() *elasticsearch.Client {
-	return a.es
+	return a.elasticsearch
+}
+
+func (a *ApiClient) GetKibanaClient() *kibana.Client {
+	return a.kibana
 }
 
 func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
@@ -128,7 +134,7 @@ func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, di
 
 func (a *ApiClient) serverInfo(ctx context.Context) (map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	res, err := a.es.Info(a.es.Info.WithContext(ctx))
+	res, err := a.elasticsearch.Info(a.elasticsearch.Info.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -298,5 +304,5 @@ func newEsApiClient(d *schema.ResourceData, key string, version string, useEnvAs
 		es.Transport = newDebugTransport("elasticsearch", es.Transport)
 	}
 
-	return &ApiClient{es, version}, diags
+	return &ApiClient{es, nil, version}, diags
 }
