@@ -34,6 +34,13 @@ func TestAccResourceSLM(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.*", "data-*"),
 				),
 			},
+			{
+				RefreshState: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "ignore_unavailable", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "include_global_state", "false"),
+				),
+			},
 		},
 	})
 }

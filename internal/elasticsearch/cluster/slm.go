@@ -193,13 +193,11 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 		vv := v.(string)
 		slmConfig.ExpandWildcards = &vv
 	}
-	if v, ok := d.GetOk("ignore_unavailable"); ok {
-		vv := v.(bool)
-		slmConfig.IgnoreUnavailable = &vv
+	if v, ok := d.Get("ignore_unavailable").(bool); ok {
+		slmConfig.IgnoreUnavailable = &v
 	}
-	if v, ok := d.GetOk("include_global_state"); ok {
-		vv := v.(bool)
-		slmConfig.IncludeGlobalState = &vv
+	if v, ok := d.Get("include_global_state").(bool); ok {
+		slmConfig.IncludeGlobalState = &v
 	}
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
