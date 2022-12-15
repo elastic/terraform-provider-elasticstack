@@ -22,50 +22,8 @@ func init() {
 func New(version string) *schema.Provider {
 	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			esKeyName: providerSchema.GetConnectionSchema(esKeyName, true),
-			"kibana": {
-				Description: "Kibana connection configuration block.",
-				Type:        schema.TypeList,
-				MaxItems:    1,
-				Optional:    true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"username": {
-							Description:  "Username to use for API authentication to Kibana.",
-							Type:         schema.TypeString,
-							Optional:     true,
-							DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
-							RequiredWith: []string{"kibana.0.password"},
-							ExactlyOneOf: []string{"elasticsearch.0.username", "kibana.0.username"},
-						},
-						"password": {
-							Description:  "Password to use for API authentication to Kibana.",
-							Type:         schema.TypeString,
-							Optional:     true,
-							Sensitive:    true,
-							DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
-							RequiredWith: []string{"kibana.0.username"},
-							ExactlyOneOf: []string{"elasticsearch.0.password", "kibana.0.password"},
-						},
-						"endpoints": {
-							Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
-							Type:        schema.TypeList,
-							MaxItems:    1, // Current API restriction
-							Required:    true,
-							Sensitive:   true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
-						"insecure": {
-							Description: "Disable TLS certificate validation",
-							Type:        schema.TypeBool,
-							Optional:    true,
-							Default:     false,
-						},
-					},
-				},
-			},
+			esKeyName: providerSchema.GetEsConnectionSchema(esKeyName, true),
+			"kibana":  providerSchema.GetKibanaConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),
