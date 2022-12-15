@@ -186,6 +186,7 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 	return nil, diags
 }
 
+// TODO: Rename this, and tease out es and kibana clients into their own fns
 func newEsApiClient(d *schema.ResourceData, key string, version string, useEnvAsDefault bool) (*ApiClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	config := elasticsearch.Config{}
@@ -304,5 +305,45 @@ func newEsApiClient(d *schema.ResourceData, key string, version string, useEnvAs
 		es.Transport = newDebugTransport("elasticsearch", es.Transport)
 	}
 
-	return &ApiClient{es, nil, version}, diags
+	// Note: WIP, just bashing kibana in here for the time being for testing
+	kibanaConfig := kibana.Config{}
+
+	if kibConn, ok := d.GetOk("kibana"); ok {
+		// if defined, then we only have a single entry
+		if kib := kibConn.([]interface{})[0]; kib != nil {
+			kibConfig := kib.(map[string]interface{})
+
+			if username, ok := kibConfig["username"]; ok {
+				kibanaConfig.Username = username.(string)
+			}
+			if password, ok := kibConfig["password"]; ok {
+				kibanaConfig.Password = password.(string)
+			}
+
+			if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
+				// We're curently limited by the API to a single endpoint
+				if endpoint := endpoints.([]interface{})[0]; endpoint != nil {
+					kibanaConfig.Address = endpoint.(string)
+				}
+			}
+
+			// if insecure, ok := kibConfig["insecure"]; ok && insecure.(bool) {
+			// TODO: Ensure config for kibana
+			// tlsClientConfig := ensureTLSClientConfig(&kibanaConfig)
+			// tlsClientConfig.InsecureSkipVerify = true
+			// }
+		}
+	}
+
+	kib, err := kibana.NewClient(kibanaConfig)
+
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to create Kibana client",
+			Detail:   err.Error(),
+		})
+	}
+
+	return &ApiClient{es, kib, version}, diags
 }
