@@ -1,6 +1,7 @@
 package index_test
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
@@ -405,14 +406,32 @@ func Test_IsMappingForceNewRequired(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "return true when field is removed",
+			name: "return false when field is removed",
 			old: map[string]interface{}{
 				"field1": map[string]interface{}{
 					"type": "text",
 				},
 			},
 			new:  map[string]interface{}{},
-			want: true,
+			want: false,
+		},
+		{
+			name: "return false when dynamically added child property is removed",
+			old: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"child": map[string]interface{}{
+							"type": "keyword",
+						},
+					},
+				},
+			},
+			new: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"type": "object",
+				},
+			},
+			want: false,
 		},
 		{
 			name: "return true when child property's type changes",
@@ -439,7 +458,7 @@ func Test_IsMappingForceNewRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := index.IsMappingForceNewRequired(tt.old, tt.new); got != tt.want {
+			if got := index.IsMappingForceNewRequired(context.Background(), tt.old, tt.new); got != tt.want {
 				t.Errorf("IsMappingForceNewRequired() = %v, want %v", got, tt.want)
 			}
 		})
