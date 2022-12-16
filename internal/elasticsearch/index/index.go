@@ -606,7 +606,7 @@ If specified, this mapping can include: field names, [field data types](https://
 				if !ok {
 					return true
 				}
-				return IsMappingForceNewRequired(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
+				return IsMappingForceNewRequired(ctx, oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
 			}
 
 			// if all check passed, we can update the map
@@ -903,12 +903,13 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	return diags
 }
 
-func IsMappingForceNewRequired(old map[string]interface{}, new map[string]interface{}) bool {
+func IsMappingForceNewRequired(ctx context.Context, old map[string]interface{}, new map[string]interface{}) bool {
 	for k, v := range old {
 		oldFieldSettings := v.(map[string]interface{})
 		newFieldSettings, ok := new[k]
 		// When field is removed, it'll be ignored in elasticsearch
 		if !ok {
+			tflog.Warn(ctx, fmt.Sprintf("removing %s field in mappings is ignored, if you neeed to remove it completely, please recreate the index", k))
 			continue
 		}
 		newSettings := newFieldSettings.(map[string]interface{})
@@ -927,9 +928,11 @@ func IsMappingForceNewRequired(old map[string]interface{}, new map[string]interf
 		// if we have "mapping" field, let's call ourself to check again
 		if s, ok := oldFieldSettings["properties"]; ok {
 			if ns, ok := newSettings["properties"]; ok {
-				if IsMappingForceNewRequired(s.(map[string]interface{}), ns.(map[string]interface{})) {
+				if IsMappingForceNewRequired(context.Background(), s.(map[string]interface{}), ns.(map[string]interface{})) {
 					return true
 				}
+			} else {
+				tflog.Warn(ctx, fmt.Sprintf("removing %s propeties in mappings is ignored, if you neeed to remove it completely, please recreate the index", k))
 			}
 		}
 	}
