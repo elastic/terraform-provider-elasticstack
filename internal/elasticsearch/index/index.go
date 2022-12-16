@@ -60,6 +60,7 @@ var (
 		"default_pipeline":                       schema.TypeString,
 		"final_pipeline":                         schema.TypeString,
 		"unassigned.node_left.delayed_timeout":   schema.TypeString,
+		"mapping.coerce":                         schema.TypeBool,
 		"search.slowlog.threshold.query.warn":    schema.TypeString,
 		"search.slowlog.threshold.query.info":    schema.TypeString,
 		"search.slowlog.threshold.query.debug":   schema.TypeString,
@@ -306,6 +307,12 @@ func ResourceIndex() *schema.Resource {
 			Type:        schema.TypeString,
 			Description: "Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`",
 			Optional:    true,
+		},
+		"mapping_coerce": {
+			Type:        schema.TypeBool,
+			Description: "Set index level coercion setting that is applied to all mapping types. Defaults to `true`.",
+			Optional:    true,
+			Default:     true,
 		},
 		"search_slowlog_threshold_query_warn": {
 			Type:        schema.TypeString,
