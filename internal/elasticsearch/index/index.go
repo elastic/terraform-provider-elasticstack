@@ -596,43 +596,6 @@ If specified, this mapping can include: field names, [field data types](https://
 			}
 			tflog.Trace(ctx, "mappings custom diff old = %+v new = %+v", o, n)
 
-			var isForceable func(map[string]interface{}, map[string]interface{}) bool
-			isForceable = func(old, new map[string]interface{}) bool {
-				for k, v := range old {
-					oldFieldSettings := v.(map[string]interface{})
-					if newFieldSettings, ok := new[k]; ok {
-						newSettings := newFieldSettings.(map[string]interface{})
-						// check if the "type" field exists and match with new one
-						if s, ok := oldFieldSettings["type"]; ok {
-							if ns, ok := newSettings["type"]; ok {
-								if !reflect.DeepEqual(s, ns) {
-									return true
-								}
-								continue
-							} else {
-								return true
-							}
-						}
-
-						// if we have "mapping" field, let's call ourself to check again
-						if s, ok := oldFieldSettings["properties"]; ok {
-							if ns, ok := newSettings["properties"]; ok {
-								if isForceable(s.(map[string]interface{}), ns.(map[string]interface{})) {
-									return true
-								}
-								continue
-							} else {
-								return true
-							}
-						}
-					} else {
-						// if the key not found in the new props, force new resource
-						return true
-					}
-				}
-				return false
-			}
-
 			// if old defined we must check if the type of the existing fields were changed
 			if oldProps, ok := o["properties"]; ok {
 				newProps, ok := n["properties"]
@@ -640,7 +603,7 @@ If specified, this mapping can include: field names, [field data types](https://
 				if !ok {
 					return true
 				}
-				return isForceable(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
+				return IsMappingForceNewRequired(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
 			}
 
 			// if all check passed, we can update the map
@@ -935,4 +898,40 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 		return diags
 	}
 	return diags
+}
+
+func IsMappingForceNewRequired(old map[string]interface{}, new map[string]interface{}) bool {
+	for k, v := range old {
+		oldFieldSettings := v.(map[string]interface{})
+		if newFieldSettings, ok := new[k]; ok {
+			newSettings := newFieldSettings.(map[string]interface{})
+			// check if the "type" field exists and match with new one
+			if s, ok := oldFieldSettings["type"]; ok {
+				if ns, ok := newSettings["type"]; ok {
+					if !reflect.DeepEqual(s, ns) {
+						return true
+					}
+					continue
+				} else {
+					return true
+				}
+			}
+
+			// if we have "mapping" field, let's call ourself to check again
+			if s, ok := oldFieldSettings["properties"]; ok {
+				if ns, ok := newSettings["properties"]; ok {
+					if IsMappingForceNewRequired(s.(map[string]interface{}), ns.(map[string]interface{})) {
+						return true
+					}
+					continue
+				} else {
+					return true
+				}
+			}
+		} else {
+			// if the key not found in the new props, force new resource
+			return true
+		}
+	}
+	return false
 }

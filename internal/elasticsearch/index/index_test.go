@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -361,4 +362,86 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func Test_IsMappingForceNewRequired(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		old  map[string]interface{}
+		new  map[string]interface{}
+		want bool
+	}{
+		{
+			name: "return false only when new field is added",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+				"field2": map[string]interface{}{
+					"type": "keyword",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "return true when type is changed",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "integer",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "return true when field is removed",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new:  map[string]interface{}{},
+			want: true,
+		},
+		{
+			name: "return true when child property's type changes",
+			old: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"child": map[string]interface{}{
+							"type": "keyword",
+						},
+					},
+				},
+			},
+			new: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"child": map[string]interface{}{
+							"type": "integer",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := index.IsMappingForceNewRequired(tt.old, tt.new); got != tt.want {
+				t.Errorf("IsMappingForceNewRequired() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
