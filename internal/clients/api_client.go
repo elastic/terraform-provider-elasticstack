@@ -293,6 +293,7 @@ func newEsApiClient(d *schema.ResourceData, key string, version string, useEnvAs
 			Summary:  "Unable to create Elasticsearch client",
 			Detail:   err.Error(),
 		})
+		return nil, diags
 	}
 	if logging.IsDebugOrHigher() {
 		es.Transport = newDebugTransport("elasticsearch", es.Transport)
