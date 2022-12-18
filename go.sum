@@ -130,8 +130,6 @@ github.com/hashicorp/terraform-plugin-go v0.14.2 h1:rhsVEOGCnY04msNymSvbUsXfRLKh
 github.com/hashicorp/terraform-plugin-go v0.14.2/go.mod h1:Q12UjumPNGiFsZffxOsA40Tlz1WVXt2Evh865Zj0+UA=
 github.com/hashicorp/terraform-plugin-log v0.7.0 h1:SDxJUyT8TwN4l5b5/VkiTIaQgY6R+Y2BQ0sRZftGKQs=
 github.com/hashicorp/terraform-plugin-log v0.7.0/go.mod h1:p4R1jWBXRTvL4odmEkFfDdhUjHf9zcs/BCoNHAc7IK4=
-github.com/hashicorp/terraform-plugin-mux v0.7.0 h1:wRbSYzg+v2sn5Mdee0UKm4YTt4wJG0LfSwtgNuBkglY=
-github.com/hashicorp/terraform-plugin-mux v0.7.0/go.mod h1:Ae30Mc5lz4d1awtiCbHP0YyvgBeiQ00Q1nAq0U3lb+I=
 github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1 h1:zHcMbxY0+rFO9gY99elV/XC/UnQVg7FhRCbj1i5b7vM=
 github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1/go.mod h1:+tNlb0wkfdsDJ7JEiERLz4HzM19HyiuIoGzTsM7rPpw=
 github.com/hashicorp/terraform-registry-address v0.1.0 h1:W6JkV9wbum+m516rCl5/NjKxCyTVaaUBbzYcMzBDO3U=
@@ -146,6 +144,8 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOl
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
 github.com/jhump/protoreflect v1.6.0 h1:h5jfMVslIg6l29nsMs0D8Wj17RDVdNYti0vDN/PZZoE=
+github.com/k-yomo/terraform-plugin-mux v0.0.0-20221218141521-7a01a5a64e24 h1:YfZC/K5olgYi5GUUT4FzbmTahjeCftKuWxH7BUVHQjU=
+github.com/k-yomo/terraform-plugin-mux v0.0.0-20221218141521-7a01a5a64e24/go.mod h1:vdW0daEi8Kd4RFJmet5Ot+SIVB/B8SwQVJiYKQwdCy8=
 github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 h1:DowS9hvgyYSX4TO5NpyC606/Z4SxnNYbT+WX27or6Ck=
 github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
