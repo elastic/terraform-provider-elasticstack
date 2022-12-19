@@ -141,6 +141,21 @@ func TestAccResourceIndexSettingsConflict(t *testing.T) {
 	})
 }
 
+func TestAccResourceIndexRemovingField(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			// Confirm removing field doesn't produce recreate by using prevent_destroy
+			{Config: testAccResourceIndexRemovingFieldCreate(indexName)},
+			{Config: testAccResourceIndexRemovingFieldUpdate(indexName)},
+		},
+	})
+}
+
 func testAccResourceIndexCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -336,6 +351,41 @@ resource "elasticstack_elasticsearch_index" "test_settings_conflict" {
       name  = "number_of_shards"
       value = "3"
     }
+  }
+}
+	`, name)
+}
+
+func testAccResourceIndexRemovingFieldCreate(name string) string {
+	return fmt.Sprintf(`
+resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      field1    = { type = "text" }
+      field2    = { type = "text" }
+    }
+  })
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+	`, name)
+}
+
+func testAccResourceIndexRemovingFieldUpdate(name string) string {
+	return fmt.Sprintf(`
+resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      field1    = { type = "text" }
+    }
+  })
+  lifecycle {
+    prevent_destroy = true
   }
 }
 	`, name)
