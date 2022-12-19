@@ -358,6 +358,10 @@ resource "elasticstack_elasticsearch_index" "test_settings_conflict" {
 
 func testAccResourceIndexRemovingFieldCreate(name string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
   name = "%s"
 
@@ -376,6 +380,10 @@ resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
 
 func testAccResourceIndexRemovingFieldUpdate(name string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
   name = "%s"
 
