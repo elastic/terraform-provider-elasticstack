@@ -909,7 +909,7 @@ func IsMappingForceNewRequired(ctx context.Context, old map[string]interface{}, 
 		newFieldSettings, ok := new[k]
 		// When field is removed, it'll be ignored in elasticsearch
 		if !ok {
-			tflog.Warn(ctx, fmt.Sprintf("removing %s field in mappings is ignored, if you neeed to remove it completely, please recreate the index", k))
+			tflog.Warn(ctx, fmt.Sprintf("removing %s field in mappings is ignored. Re-index to remove the field completely.", k))
 			continue
 		}
 		newSettings := newFieldSettings.(map[string]interface{})
