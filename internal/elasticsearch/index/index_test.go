@@ -151,8 +151,8 @@ func TestAccResourceIndexRemovingField(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Confirm removing field doesn't produce recreate by using prevent_destroy
 			{Config: testAccResourceIndexRemovingFieldCreate(indexName)},
-			{Config: testAccResourceIndexRemovingFieldUpdate(indexName)},
-			{Config: testAccResourceIndexRemovingFieldPostUpdate(indexName)},
+			{Config: testAccResourceIndexRemovingFieldUpdate(indexName), ExpectNonEmptyPlan: true},
+			{Config: testAccResourceIndexRemovingFieldPostUpdate(indexName), ExpectNonEmptyPlan: true},
 		},
 	})
 }
