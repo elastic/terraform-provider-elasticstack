@@ -86,7 +86,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `indexing_slowlog_threshold_index_trace` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `500ms`
 - `indexing_slowlog_threshold_index_warn` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `10s`
 - `load_fixed_bitset_filters_eagerly` (Boolean) Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.
-- `mapping_coerce` (Boolean) Set index level coercion setting that is applied to all mapping types. Defaults to `true`.
+- `mapping_coerce` (Boolean) Set index level coercion setting that is applied to all mapping types.
 - `mappings` (String) Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
 **NOTE:** 
