@@ -152,6 +152,7 @@ func TestAccResourceIndexRemovingField(t *testing.T) {
 			// Confirm removing field doesn't produce recreate by using prevent_destroy
 			{Config: testAccResourceIndexRemovingFieldCreate(indexName)},
 			{Config: testAccResourceIndexRemovingFieldUpdate(indexName)},
+			{Config: testAccResourceIndexRemovingFieldPostUpdate(indexName)},
 		},
 	})
 }
@@ -395,6 +396,24 @@ resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
   lifecycle {
     prevent_destroy = true
   }
+}
+	`, name)
+}
+
+func testAccResourceIndexRemovingFieldPostUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      field1    = { type = "text" }
+    }
+  })
 }
 	`, name)
 }
