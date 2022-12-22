@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -81,7 +82,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		Body:    watchBody,
 	}
 
-	if diags := client.PutWatch(ctx, &watch); diags.HasError() {
+	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
 		return diags
 	}
 
@@ -99,7 +100,7 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 
-	watch, diags := client.GetWatch(ctx, resourceID)
+	watch, diags := elasticsearch.GetWatch(ctx, client, resourceID)
 	if watch == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -139,7 +140,7 @@ func resourceWatchDelete(ctx context.Context, d *schema.ResourceData, meta inter
 		return diags
 	}
 
-	if diags := client.DeleteWatch(ctx, resourceID); diags.HasError() {
+	if diags := elasticsearch.DeleteWatch(ctx, client, resourceID); diags.HasError() {
 		return diags
 	}
 	return nil
