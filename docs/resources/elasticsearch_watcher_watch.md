@@ -48,7 +48,7 @@ output "watch" {
 ### Optional
 
 - `active` (Boolean) Defines whether the watch is active or inactive by default. The default value is true, which means the watch is active by default.
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
