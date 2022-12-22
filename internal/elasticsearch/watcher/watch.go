@@ -59,9 +59,9 @@ func ResourceWatch() *schema.Resource {
 }
 
 func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	watchID := d.Get("watch_id").(string)
@@ -90,9 +90,9 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 }
 
 func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {
@@ -130,9 +130,9 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceWatchDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {
