@@ -65,6 +65,7 @@ jobs:
           repositories.url.allowed_urls: https://example.com/*
           path.repo: /tmp
           ELASTIC_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+          LICENSE: trial
         ports:
           - 9200:9200
         options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
