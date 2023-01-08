@@ -36,7 +36,6 @@ The following methods are supported:
 
 * Static credentials
 * Environment variables
-* Each `elasticsearch` resource supports `elasticsearch_connection` block - allowing using the same provider to configure many different clusters at the same time
 
 
 #### Static credentials
@@ -76,11 +75,6 @@ provider "elasticstack" {
   elasticsearch {}
 }
 ```
-
-
-#### Per resource credentials
-
-See docs related to the specific resources.
 
 
 ## Developing the Provider
