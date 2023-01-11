@@ -19,10 +19,10 @@ func TestAccResourceSecurityUser(t *testing.T) {
 	// generate a random username
 	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceSecurityUserDestroy,
-		ProviderFactories: acctest.Providers,
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityUserDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceSecurityUserCreate(username),
@@ -46,21 +46,25 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 	userUpdatedPassword := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		IsUnitTest:        true,
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceSecurityUserDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityUserDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceSecurityUserUpdateNoPassword(username),
 				SkipFunc: func() (bool, error) {
-					client := acctest.ApiClient()
+					client, err := clients.NewAcceptanceTestingClient()
+					if err != nil {
+						return false, err
+					}
 					body := fmt.Sprintf("{\"roles\": [\"kibana_admin\"], \"password\": \"%s\"}", initialPassword)
 
 					resp, err := client.GetESClient().Security.PutUser(username, strings.NewReader(body))
 					if err != nil {
-						return false, nil
+						return false, err
 					}
+
+					defer resp.Body.Close()
 
 					if resp.IsError() {
 						body, err := io.ReadAll(resp.Body)
@@ -70,7 +74,10 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 				},
 				ResourceName: "elasticstack_elasticsearch_security_user.test",
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					client := acctest.ApiClient()
+					client, err := clients.NewAcceptanceTestingClient()
+					if err != nil {
+						return "", err
+					}
 					clusterId, diag := client.ClusterID(context.Background())
 					if diag.HasError() {
 						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary)
@@ -113,14 +120,20 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 			},
 			{
 				SkipFunc: func() (bool, error) {
-					client := acctest.ApiClient().GetESClient()
+					client, err := clients.NewAcceptanceTestingClient()
+					if err != nil {
+						return false, err
+					}
+					esClient := client.GetESClient()
 					body := fmt.Sprintf("{\"password\": \"%s\"}", userUpdatedPassword)
 
-					req := client.API.Security.ChangePassword.WithUsername(username)
-					resp, err := client.Security.ChangePassword(strings.NewReader(body), req)
+					req := esClient.API.Security.ChangePassword.WithUsername(username)
+					resp, err := esClient.Security.ChangePassword(strings.NewReader(body), req)
 					if err != nil {
 						return false, nil
 					}
+
+					defer resp.Body.Close()
 
 					if resp.IsError() {
 						body, err := io.ReadAll(resp.Body)
@@ -142,15 +155,21 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 
 func checkUserCanAuthenticate(username string, password string) func(*terraform.State) error {
 	return func(s *terraform.State) error {
-		client := acctest.ApiClient().GetESClient()
-		credentials := fmt.Sprintf("%s:%s", username, password)
-		authHeader := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(credentials)))
-
-		req := client.API.Security.Authenticate.WithHeader(map[string]string{"Authorization": authHeader})
-		resp, err := client.Security.Authenticate(req)
+		client, err := clients.NewAcceptanceTestingClient()
 		if err != nil {
 			return err
 		}
+		esClient := client.GetESClient()
+		credentials := fmt.Sprintf("%s:%s", username, password)
+		authHeader := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(credentials)))
+
+		req := esClient.API.Security.Authenticate.WithHeader(map[string]string{"Authorization": authHeader})
+		resp, err := esClient.Security.Authenticate(req)
+		if err != nil {
+			return err
+		}
+
+		defer resp.Body.Close()
 
 		if resp.IsError() {
 			body, err := io.ReadAll(resp.Body)
@@ -207,7 +226,10 @@ resource "elasticstack_elasticsearch_security_user" "test" {
 }
 
 func checkResourceSecurityUserDestroy(s *terraform.State) error {
-	client := acctest.ApiClient()
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_security_user" {
@@ -220,6 +242,8 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
+
+		defer res.Body.Close()
 
 		if res.StatusCode != 404 {
 			return fmt.Errorf("User (%s) still exists", compId.ResourceId)

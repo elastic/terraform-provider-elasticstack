@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.4.0
+VERSION ?= 0.5.0
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -18,10 +18,16 @@ export GOBIN = $(shell pwd)/bin
 $(GOBIN): ## create bin/ in the current directory
 	mkdir -p $(GOBIN)
 
+## Downloads all the Golang dependencies.
+vendor:
+	@ go mod download
+
+.PHONY: build-ci
+build-ci: ## build the terraform provider
+	go build -o ${BINARY}
 
 .PHONY: build
-build: lint ## build the terraform provider
-	go build -o ${BINARY}
+build: lint build-ci ## build the terraform provider
 
 
 .PHONY: testacc
@@ -30,7 +36,7 @@ testacc: ## Run acceptance tests
 
 
 .PHONY: test
-test: lint ## Run unit tests
+test: ## Run unit tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
 
 
@@ -136,6 +142,3 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 .PHONY: help
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
-
-
-include .ci/Makefile.ci

@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -16,9 +17,9 @@ func TestAccResourceIndex(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexCreate(indexName),
@@ -27,7 +28,7 @@ func TestAccResourceIndex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.0.name", "test_alias_1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.1.name", "test_alias_2"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "settings.0.setting.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "settings.0.setting.#", "3"),
 				),
 			},
 			{
@@ -54,9 +55,9 @@ func TestAccResourceIndexSettings(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexSettingsCreate(indexName),
@@ -88,6 +89,7 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_allocation_enable", "primaries"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_rebalance_enable", "primaries"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "gc_deletes", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "unassigned_node_left_delayed_timeout", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_analyzer", `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],"tokenizer":"standard","type":"custom"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_char_filter", `{"zero_width_spaces":{"mappings":["\\u200C=\u003e\\u0020"],"type":"mapping"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
@@ -103,9 +105,9 @@ func TestAccResourceIndexSettingsMigration(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexSettingsMigrationCreate(indexName),
@@ -132,9 +134,9 @@ func TestAccResourceIndexSettingsConflict(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccResourceIndexSettingsConflict(indexName),
@@ -173,6 +175,10 @@ resource "elasticstack_elasticsearch_index" "test" {
     setting {
       name  = "index.number_of_replicas"
       value = "2"
+    }
+    setting {
+        name  = "index.routing.allocation.total_shards_per_node"
+        value = "200"
     }
     setting {
       name  = "index.search.idle.after"
@@ -249,11 +255,12 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
   routing_allocation_enable = "primaries"
   routing_rebalance_enable = "primaries"
   gc_deletes = "30s"
+  unassigned_node_left_delayed_timeout = "5m"
 
   analysis_char_filter = jsonencode({
     zero_width_spaces = {
       type     = "mapping"
-      mappings = ["\\u200C=>\\u0020"] 
+      mappings = ["\\u200C=>\\u0020"]
     }
   })
   analysis_filter = jsonencode({
@@ -263,8 +270,8 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
     }
   })
   analysis_analyzer = jsonencode({
-    text_en = { 
-      type = "custom" 
+    text_en = {
+      type = "custom"
       tokenizer = "standard"
       char_filter = "zero_width_spaces"
       filter = ["lowercase", "minimal_english_stemmer"]
@@ -350,7 +357,10 @@ resource "elasticstack_elasticsearch_index" "test_settings_conflict" {
 }
 
 func checkResourceIndexDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_index" {
@@ -368,4 +378,86 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func Test_IsMappingForceNewRequired(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		old  map[string]interface{}
+		new  map[string]interface{}
+		want bool
+	}{
+		{
+			name: "return false only when new field is added",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+				"field2": map[string]interface{}{
+					"type": "keyword",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "return true when type is changed",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "integer",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "return true when field is removed",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new:  map[string]interface{}{},
+			want: true,
+		},
+		{
+			name: "return true when child property's type changes",
+			old: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"child": map[string]interface{}{
+							"type": "keyword",
+						},
+					},
+				},
+			},
+			new: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"child": map[string]interface{}{
+							"type": "integer",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := index.IsMappingForceNewRequired(tt.old, tt.new); got != tt.want {
+				t.Errorf("IsMappingForceNewRequired() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

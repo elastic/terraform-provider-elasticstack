@@ -15,10 +15,10 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 	// generate a random username
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceComponentTemplateDestroy,
-		ProviderFactories: acctest.Providers,
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceComponentTemplateDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceComponentTemplateCreate(templateName),
@@ -54,7 +54,10 @@ resource "elasticstack_elasticsearch_component_template" "test" {
 }
 
 func checkResourceComponentTemplateDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_component_template" {

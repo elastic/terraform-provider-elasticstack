@@ -3,10 +3,13 @@ package index
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -116,9 +119,9 @@ func ResourceDataStream() *schema.Resource {
 }
 
 func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	dsId := d.Get("name").(string)
 	id, diags := client.ID(ctx, dsId)
@@ -126,7 +129,7 @@ func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta int
 		return diags
 	}
 
-	if diags := client.PutElasticsearchDataStream(ctx, dsId); diags.HasError() {
+	if diags := elasticsearch.PutDataStream(ctx, client, dsId); diags.HasError() {
 		return diags
 	}
 
@@ -135,10 +138,9 @@ func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta int
 }
 
 func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id := d.Id()
 	compId, diags := clients.CompositeIdFromStr(id)
@@ -146,9 +148,10 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 
-	ds, diags := client.GetElasticsearchDataStream(ctx, compId.ResourceId)
+	ds, diags := elasticsearch.GetDataStream(ctx, client, compId.ResourceId)
 	if ds == nil && diags == nil {
 		// no data stream found on ES side
+		tflog.Warn(ctx, fmt.Sprintf(`Data stream "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}
@@ -208,20 +211,18 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 }
 
 func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id := d.Id()
 	compId, diags := clients.CompositeIdFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchDataStream(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteDataStream(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }

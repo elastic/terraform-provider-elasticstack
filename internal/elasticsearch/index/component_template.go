@@ -3,11 +3,14 @@ package index
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -132,9 +135,9 @@ func ResourceComponentTemplate() *schema.Resource {
 }
 
 func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	componentId := d.Get("name").(string)
 	id, diags := client.ID(ctx, componentId)
@@ -216,7 +219,7 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 		componentTemplate.Version = &definedVer
 	}
 
-	if diags := client.PutElasticsearchComponentTemplate(ctx, &componentTemplate); diags.HasError() {
+	if diags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); diags.HasError() {
 		return diags
 	}
 
@@ -225,10 +228,9 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
@@ -236,8 +238,9 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 	}
 	templateId := compId.ResourceId
 
-	tpl, diags := client.GetElasticsearchComponentTemplate(ctx, templateId)
+	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateId)
 	if tpl == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}
@@ -279,10 +282,9 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	id := d.Id()
@@ -290,9 +292,8 @@ func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchComponentTemplate(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteComponentTemplate(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
 }

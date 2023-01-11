@@ -12,10 +12,10 @@ import (
 )
 
 func TestAccResourceClusterSettings(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceClusterSettingsDestroy,
-		ProviderFactories: acctest.Providers,
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceClusterSettingsDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceClusterSettingsCreate(),
@@ -131,7 +131,10 @@ resource "elasticstack_elasticsearch_cluster_settings" "test" {
 }
 
 func checkResourceClusterSettingsDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	listOfSettings := []string{
 		"indices.lifecycle.poll_interval",

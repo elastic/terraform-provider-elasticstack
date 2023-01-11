@@ -15,10 +15,10 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 	// generate random template name
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceIndexTemplateDestroy,
-		ProviderFactories: acctest.Providers,
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexTemplateDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexTemplateCreate(templateName),
@@ -116,7 +116,10 @@ resource "elasticstack_elasticsearch_index_template" "test2" {
 }
 
 func checkResourceIndexTemplateDestroy(s *terraform.State) error {
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_index_template" {

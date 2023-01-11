@@ -1,7 +1,28 @@
 ## [Unreleased]
 
+### Fixed
+- Respect `ignore_unavailable` and `include_global_state` values when configuring SLM policies ([#224](https://github.com/elastic/terraform-provider-elasticstack/pull/224))
+- Refactor API client functions and return diagnostics ([#220](https://github.com/elastic/terraform-provider-elasticstack/pull/220))
+
+## [0.5.0] - 2022-12-07
+
 ### Added
 - New resource `elasticstack_elasticsearch_logstash_pipeline` to manage Logstash pipelines ([Centralized Pipeline Management](https://www.elastic.co/guide/en/logstash/current/logstash-centralized-pipeline-management.html)) ([#151](https://github.com/elastic/terraform-provider-elasticstack/pull/151))
+- Add `elasticstack_elasticsearch_script` resource ([#173](https://github.com/elastic/terraform-provider-elasticstack/pull/173))
+- Add `elasticstack_elasticsearch_security_role` data source ([#177](https://github.com/elastic/terraform-provider-elasticstack/pull/177))
+- Add `elasticstack_elasticsearch_security_role_mapping` data source ([#178](https://github.com/elastic/terraform-provider-elasticstack/pull/178))
+- Apply `total_shards_per_node` setting in `allocate` action in ILM. Supported from Elasticsearch version **7.16** ([#112](https://github.com/elastic/terraform-provider-elasticstack/issues/112))
+- Add `elasticstack_elasticsearch_security_api_key` resource ([#193](https://github.com/elastic/terraform-provider-elasticstack/pull/193))
+- Add `elasticstack_elasticsearch_security_system_user` resource to manage built-in user ([#188](https://github.com/elastic/terraform-provider-elasticstack/pull/188))
+- Add `unassigned_node_left_delayed_timeout` to index resource ([#196](https://github.com/elastic/terraform-provider-elasticstack/pull/196))
+- Add support for Client certificate based authentication ([#191](https://github.com/elastic/terraform-provider-elasticstack/pull/191))
+- Deprecate `elasticsearch_connection` blocks on individual resources/data sources. Connection configuration should be configured directly on the provider with multiple provider instances used to connect to different clusters. ([#218](https://github.com/elastic/terraform-provider-elasticstack/pull/218))
+
+### Fixed
+- Remove unnecessary unsetting id on delete ([#174](https://github.com/elastic/terraform-provider-elasticstack/pull/174))
+- Fix not found handling for snapshot repository ([#175](https://github.com/elastic/terraform-provider-elasticstack/pull/175))
+- Add warn log when to remove resource from state ([#185](https://github.com/elastic/terraform-provider-elasticstack/pull/185))
+- Import snapshot repository name when importing ([#187](https://github.com/elastic/terraform-provider-elasticstack/pull/187))
 
 ## [0.4.0] - 2022-10-07
 ### Added
@@ -72,7 +93,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.1...v0.3.2

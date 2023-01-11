@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -153,10 +155,9 @@ func ResourceSlm() *schema.Resource {
 }
 
 func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	slmId := d.Get("name").(string)
 	id, diags := client.ID(ctx, slmId)
@@ -192,13 +193,11 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 		vv := v.(string)
 		slmConfig.ExpandWildcards = &vv
 	}
-	if v, ok := d.GetOk("ignore_unavailable"); ok {
-		vv := v.(bool)
-		slmConfig.IgnoreUnavailable = &vv
+	if v, ok := d.Get("ignore_unavailable").(bool); ok {
+		slmConfig.IgnoreUnavailable = &v
 	}
-	if v, ok := d.GetOk("include_global_state"); ok {
-		vv := v.(bool)
-		slmConfig.IncludeGlobalState = &vv
+	if v, ok := d.Get("include_global_state").(bool); ok {
+		slmConfig.IncludeGlobalState = &v
 	}
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
@@ -230,7 +229,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 
 	slm.Config = &slmConfig
 
-	if diags := client.PutElasticsearchSlm(ctx, &slm); diags.HasError() {
+	if diags := elasticsearch.PutSlm(ctx, client, &slm); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -238,18 +237,18 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 }
 
 func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	slm, diags := client.GetElasticsearchSlm(ctx, id.ResourceId)
+	slm, diags := elasticsearch.GetSlm(ctx, client, id.ResourceId)
 	if slm == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`SLM policy "%s" not found, removing from state`, id.ResourceId))
 		d.SetId("")
 		return diags
 	}
@@ -327,18 +326,16 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 }
 
 func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchSlm(ctx, id.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteSlm(ctx, client, id.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
 }

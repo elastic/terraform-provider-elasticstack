@@ -1,4 +1,4 @@
-package clients
+package elasticsearch
 
 import (
 	"bytes"
@@ -7,18 +7,19 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func (a *ApiClient) PutLogstashPipeline(ctx context.Context, logstashPipeline *models.LogstashPipeline) diag.Diagnostics {
+func PutLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, logstashPipeline *models.LogstashPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 	logstashPipelineBytes, err := json.Marshal(logstashPipeline)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := a.es.LogstashPutPipeline(logstashPipeline.PipelineID, bytes.NewReader(logstashPipelineBytes), a.es.LogstashPutPipeline.WithContext(ctx))
+	res, err := apiClient.GetESClient().LogstashPutPipeline(logstashPipeline.PipelineID, bytes.NewReader(logstashPipelineBytes), apiClient.GetESClient().LogstashPutPipeline.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -30,9 +31,9 @@ func (a *ApiClient) PutLogstashPipeline(ctx context.Context, logstashPipeline *m
 	return diags
 }
 
-func (a *ApiClient) GetLogstashPipeline(ctx context.Context, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
+func GetLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	res, err := a.es.LogstashGetPipeline(pipelineID, a.es.LogstashGetPipeline.WithContext(ctx))
+	res, err := apiClient.GetESClient().LogstashGetPipeline(pipelineID, apiClient.GetESClient().LogstashGetPipeline.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -62,11 +63,11 @@ func (a *ApiClient) GetLogstashPipeline(ctx context.Context, pipelineID string) 
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteLogstashPipeline(ctx context.Context, pipeline_id string) diag.Diagnostics {
+func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline_id string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.LogstashDeletePipeline(pipeline_id, a.es.LogstashDeletePipeline.WithContext(ctx))
+	res, err := apiClient.GetESClient().LogstashDeletePipeline(pipeline_id, apiClient.GetESClient().LogstashDeletePipeline.WithContext(ctx))
 
-	if err != nil && res.IsError() {
+	if err != nil {
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()

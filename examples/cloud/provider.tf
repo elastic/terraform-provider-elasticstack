@@ -8,16 +8,11 @@ terraform {
     }
     elasticstack = {
       source  = "elastic/elasticstack"
-      version = "~>0.4.0"
+      version = "~>0.5.0"
     }
   }
 }
 provider "ec" {
   # You can fill in your API key here, or use an environment variable instead
   apikey = "<api key>"
-}
-
-provider "elasticstack" {
-  # In this example, connectivity to Elasticsearch is defined per resource
-  elasticsearch {}
 }

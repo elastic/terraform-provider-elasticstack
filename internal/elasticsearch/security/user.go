@@ -3,12 +3,15 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -103,9 +106,9 @@ func ResourceUser() *schema.Resource {
 }
 
 func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	usernameId := d.Get("username").(string)
 	id, diags := client.ID(ctx, usernameId)
@@ -149,7 +152,7 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 		user.Metadata = metadata
 	}
 
-	if diags := client.PutElasticsearchUser(ctx, &user); diags.HasError() {
+	if diags := elasticsearch.PutUser(ctx, client, &user); diags.HasError() {
 		return diags
 	}
 
@@ -158,10 +161,9 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
@@ -169,8 +171,9 @@ func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	usernameId := compId.ResourceId
 
-	user, diags := client.GetElasticsearchUser(ctx, usernameId)
+	user, diags := elasticsearch.GetUser(ctx, client, usernameId)
 	if user == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`User "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}
@@ -207,20 +210,18 @@ func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta 
 }
 
 func resourceSecurityUserDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchUser(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteUser(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }

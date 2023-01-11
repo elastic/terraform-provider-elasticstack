@@ -3,10 +3,13 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -81,9 +84,9 @@ func ResourceRoleMapping() *schema.Resource {
 }
 
 func resourceSecurityRoleMappingPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	roleMappingName := d.Get("name").(string)
 	id, diags := client.ID(ctx, roleMappingName)
@@ -111,7 +114,7 @@ func resourceSecurityRoleMappingPut(ctx context.Context, d *schema.ResourceData,
 		Rules:         rules,
 		Metadata:      json.RawMessage(d.Get("metadata").(string)),
 	}
-	if diags := client.PutElasticsearchRoleMapping(ctx, &roleMapping); diags.HasError() {
+	if diags := elasticsearch.PutRoleMapping(ctx, client, &roleMapping); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -120,16 +123,17 @@ func resourceSecurityRoleMappingPut(ctx context.Context, d *schema.ResourceData,
 }
 
 func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	roleMapping, diags := client.GetElasticsearchRoleMapping(ctx, resourceID)
+	roleMapping, diags := elasticsearch.GetRoleMapping(ctx, client, resourceID)
 	if roleMapping == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Role mapping "%s" not found, removing from state`, resourceID))
 		d.SetId("")
 		return diags
 	}
@@ -178,15 +182,15 @@ func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData
 }
 
 func resourceSecurityRoleMappingDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchRoleMapping(ctx, resourceID); diags.HasError() {
+	if diags := elasticsearch.DeleteRoleMapping(ctx, client, resourceID); diags.HasError() {
 		return diags
 	}
 	return nil

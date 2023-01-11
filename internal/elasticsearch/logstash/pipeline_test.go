@@ -15,9 +15,9 @@ import (
 func TestResourceLogstashPipeline(t *testing.T) {
 	pipelineID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkResourceLogstashPipelineDestroy,
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceLogstashPipelineDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceLogstashPipelineCreate(pipelineID),
@@ -108,8 +108,10 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
 }
 
 func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
-
-	client := acctest.Provider.Meta().(*clients.ApiClient)
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_logstash_pipeline" {

@@ -1,4 +1,4 @@
-package clients
+package elasticsearch
 
 import (
 	"bytes"
@@ -8,19 +8,20 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func (a *ApiClient) PutElasticsearchIlm(ctx context.Context, policy *models.Policy) diag.Diagnostics {
+func PutIlm(ctx context.Context, apiClient *clients.ApiClient, policy *models.Policy) diag.Diagnostics {
 	var diags diag.Diagnostics
 	policyBytes, err := json.Marshal(map[string]interface{}{"policy": policy})
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	req := a.es.ILM.PutLifecycle.WithBody(bytes.NewReader(policyBytes))
-	res, err := a.es.ILM.PutLifecycle(policy.Name, req, a.es.ILM.PutLifecycle.WithContext(ctx))
+	req := apiClient.GetESClient().ILM.PutLifecycle.WithBody(bytes.NewReader(policyBytes))
+	res, err := apiClient.GetESClient().ILM.PutLifecycle(policy.Name, req, apiClient.GetESClient().ILM.PutLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -31,10 +32,10 @@ func (a *ApiClient) PutElasticsearchIlm(ctx context.Context, policy *models.Poli
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchIlm(ctx context.Context, policyName string) (*models.PolicyDefinition, diag.Diagnostics) {
+func GetIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string) (*models.PolicyDefinition, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.ILM.GetLifecycle.WithPolicy(policyName)
-	res, err := a.es.ILM.GetLifecycle(req, a.es.ILM.GetLifecycle.WithContext(ctx))
+	req := apiClient.GetESClient().ILM.GetLifecycle.WithPolicy(policyName)
+	res, err := apiClient.GetESClient().ILM.GetLifecycle(req, apiClient.GetESClient().ILM.GetLifecycle.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -63,10 +64,10 @@ func (a *ApiClient) GetElasticsearchIlm(ctx context.Context, policyName string) 
 	return nil, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchIlm(ctx context.Context, policyName string) diag.Diagnostics {
+func DeleteIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := a.es.ILM.DeleteLifecycle(policyName, a.es.ILM.DeleteLifecycle.WithContext(ctx))
+	res, err := apiClient.GetESClient().ILM.DeleteLifecycle(policyName, apiClient.GetESClient().ILM.DeleteLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -77,14 +78,14 @@ func (a *ApiClient) DeleteElasticsearchIlm(ctx context.Context, policyName strin
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchComponentTemplate(ctx context.Context, template *models.ComponentTemplate) diag.Diagnostics {
+func PutComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, template *models.ComponentTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	templateBytes, err := json.Marshal(template)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	res, err := a.es.Cluster.PutComponentTemplate(template.Name, bytes.NewReader(templateBytes), a.es.Cluster.PutComponentTemplate.WithContext(ctx))
+	res, err := apiClient.GetESClient().Cluster.PutComponentTemplate(template.Name, bytes.NewReader(templateBytes), apiClient.GetESClient().Cluster.PutComponentTemplate.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -96,10 +97,10 @@ func (a *ApiClient) PutElasticsearchComponentTemplate(ctx context.Context, templ
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchComponentTemplate(ctx context.Context, templateName string) (*models.ComponentTemplateResponse, diag.Diagnostics) {
+func GetComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) (*models.ComponentTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.Cluster.GetComponentTemplate.WithName(templateName)
-	res, err := a.es.Cluster.GetComponentTemplate(req, a.es.Cluster.GetComponentTemplate.WithContext(ctx))
+	req := apiClient.GetESClient().Cluster.GetComponentTemplate.WithName(templateName)
+	res, err := apiClient.GetESClient().Cluster.GetComponentTemplate(req, apiClient.GetESClient().Cluster.GetComponentTemplate.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -129,9 +130,9 @@ func (a *ApiClient) GetElasticsearchComponentTemplate(ctx context.Context, templ
 	return &tpl, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchComponentTemplate(ctx context.Context, templateName string) diag.Diagnostics {
+func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Cluster.DeleteComponentTemplate(templateName, a.es.Cluster.DeleteComponentTemplate.WithContext(ctx))
+	res, err := apiClient.GetESClient().Cluster.DeleteComponentTemplate(templateName, apiClient.GetESClient().Cluster.DeleteComponentTemplate.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -142,14 +143,14 @@ func (a *ApiClient) DeleteElasticsearchComponentTemplate(ctx context.Context, te
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchIndexTemplate(ctx context.Context, template *models.IndexTemplate) diag.Diagnostics {
+func PutIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, template *models.IndexTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	templateBytes, err := json.Marshal(template)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	res, err := a.es.Indices.PutIndexTemplate(template.Name, bytes.NewReader(templateBytes), a.es.Indices.PutIndexTemplate.WithContext(ctx))
+	res, err := apiClient.GetESClient().Indices.PutIndexTemplate(template.Name, bytes.NewReader(templateBytes), apiClient.GetESClient().Indices.PutIndexTemplate.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -161,10 +162,10 @@ func (a *ApiClient) PutElasticsearchIndexTemplate(ctx context.Context, template 
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchIndexTemplate(ctx context.Context, templateName string) (*models.IndexTemplateResponse, diag.Diagnostics) {
+func GetIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) (*models.IndexTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.Indices.GetIndexTemplate.WithName(templateName)
-	res, err := a.es.Indices.GetIndexTemplate(req, a.es.Indices.GetIndexTemplate.WithContext(ctx))
+	req := apiClient.GetESClient().Indices.GetIndexTemplate.WithName(templateName)
+	res, err := apiClient.GetESClient().Indices.GetIndexTemplate(req, apiClient.GetESClient().Indices.GetIndexTemplate.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -194,9 +195,9 @@ func (a *ApiClient) GetElasticsearchIndexTemplate(ctx context.Context, templateN
 	return &tpl, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchIndexTemplate(ctx context.Context, templateName string) diag.Diagnostics {
+func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Indices.DeleteIndexTemplate(templateName, a.es.Indices.DeleteIndexTemplate.WithContext(ctx))
+	res, err := apiClient.GetESClient().Indices.DeleteIndexTemplate(templateName, apiClient.GetESClient().Indices.DeleteIndexTemplate.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -207,15 +208,15 @@ func (a *ApiClient) DeleteElasticsearchIndexTemplate(ctx context.Context, templa
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchIndex(ctx context.Context, index *models.Index) diag.Diagnostics {
+func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.Index) diag.Diagnostics {
 	var diags diag.Diagnostics
 	indexBytes, err := json.Marshal(index)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	req := a.es.Indices.Create.WithBody(bytes.NewReader(indexBytes))
-	res, err := a.es.Indices.Create(index.Name, req, a.es.Indices.Create.WithContext(ctx))
+	req := apiClient.GetESClient().Indices.Create.WithBody(bytes.NewReader(indexBytes))
+	res, err := apiClient.GetESClient().Indices.Create(index.Name, req, apiClient.GetESClient().Indices.Create.WithContext(ctx))
 	if err != nil {
 		diag.FromErr(err)
 	}
@@ -226,10 +227,10 @@ func (a *ApiClient) PutElasticsearchIndex(ctx context.Context, index *models.Ind
 	return diags
 }
 
-func (a *ApiClient) DeleteElasticsearchIndex(ctx context.Context, name string) diag.Diagnostics {
+func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := a.es.Indices.Delete([]string{name}, a.es.Indices.Delete.WithContext(ctx))
+	res, err := apiClient.GetESClient().Indices.Delete([]string{name}, apiClient.GetESClient().Indices.Delete.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -241,11 +242,11 @@ func (a *ApiClient) DeleteElasticsearchIndex(ctx context.Context, name string) d
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchIndex(ctx context.Context, name string) (*models.Index, diag.Diagnostics) {
+func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.Index, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	req := a.es.Indices.Get.WithFlatSettings(true)
-	res, err := a.es.Indices.Get([]string{name}, req, a.es.Indices.Get.WithContext(ctx))
+	req := apiClient.GetESClient().Indices.Get.WithFlatSettings(true)
+	res, err := apiClient.GetESClient().Indices.Get([]string{name}, req, apiClient.GetESClient().Indices.Get.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -267,9 +268,9 @@ func (a *ApiClient) GetElasticsearchIndex(ctx context.Context, name string) (*mo
 	return &index, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchIndexAlias(ctx context.Context, index string, aliases []string) diag.Diagnostics {
+func DeleteIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index string, aliases []string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := a.es.Indices.DeleteAlias([]string{index}, aliases, a.es.Indices.DeleteAlias.WithContext(ctx))
+	res, err := apiClient.GetESClient().Indices.DeleteAlias([]string{index}, aliases, apiClient.GetESClient().Indices.DeleteAlias.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -280,14 +281,14 @@ func (a *ApiClient) DeleteElasticsearchIndexAlias(ctx context.Context, index str
 	return diags
 }
 
-func (a *ApiClient) UpdateElasticsearchIndexAlias(ctx context.Context, index string, alias *models.IndexAlias) diag.Diagnostics {
+func UpdateIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index string, alias *models.IndexAlias) diag.Diagnostics {
 	var diags diag.Diagnostics
 	aliasBytes, err := json.Marshal(alias)
 	if err != nil {
 		diag.FromErr(err)
 	}
-	req := a.es.Indices.PutAlias.WithBody(bytes.NewReader(aliasBytes))
-	res, err := a.es.Indices.PutAlias([]string{index}, alias.Name, req, a.es.Indices.PutAlias.WithContext(ctx))
+	req := apiClient.GetESClient().Indices.PutAlias.WithBody(bytes.NewReader(aliasBytes))
+	res, err := apiClient.GetESClient().Indices.PutAlias([]string{index}, alias.Name, req, apiClient.GetESClient().Indices.PutAlias.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -298,14 +299,14 @@ func (a *ApiClient) UpdateElasticsearchIndexAlias(ctx context.Context, index str
 	return diags
 }
 
-func (a *ApiClient) UpdateElasticsearchIndexSettings(ctx context.Context, index string, settings map[string]interface{}) diag.Diagnostics {
+func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, index string, settings map[string]interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
 		diag.FromErr(err)
 	}
-	req := a.es.Indices.PutSettings.WithIndex(index)
-	res, err := a.es.Indices.PutSettings(bytes.NewReader(settingsBytes), req, a.es.Indices.PutSettings.WithContext(ctx))
+	req := apiClient.GetESClient().Indices.PutSettings.WithIndex(index)
+	res, err := apiClient.GetESClient().Indices.PutSettings(bytes.NewReader(settingsBytes), req, apiClient.GetESClient().Indices.PutSettings.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -316,10 +317,10 @@ func (a *ApiClient) UpdateElasticsearchIndexSettings(ctx context.Context, index 
 	return diags
 }
 
-func (a *ApiClient) UpdateElasticsearchIndexMappings(ctx context.Context, index, mappings string) diag.Diagnostics {
+func UpdateIndexMappings(ctx context.Context, apiClient *clients.ApiClient, index, mappings string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	req := a.es.Indices.PutMapping.WithIndex(index)
-	res, err := a.es.Indices.PutMapping(strings.NewReader(mappings), req, a.es.Indices.PutMapping.WithContext(ctx))
+	req := apiClient.GetESClient().Indices.PutMapping.WithIndex(index)
+	res, err := apiClient.GetESClient().Indices.PutMapping(strings.NewReader(mappings), req, apiClient.GetESClient().Indices.PutMapping.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -330,10 +331,10 @@ func (a *ApiClient) UpdateElasticsearchIndexMappings(ctx context.Context, index,
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchDataStream(ctx context.Context, dataStreamName string) diag.Diagnostics {
+func PutDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := a.es.Indices.CreateDataStream(dataStreamName, a.es.Indices.CreateDataStream.WithContext(ctx))
+	res, err := apiClient.GetESClient().Indices.CreateDataStream(dataStreamName, apiClient.GetESClient().Indices.CreateDataStream.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -345,10 +346,10 @@ func (a *ApiClient) PutElasticsearchDataStream(ctx context.Context, dataStreamNa
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchDataStream(ctx context.Context, dataStreamName string) (*models.DataStream, diag.Diagnostics) {
+func GetDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) (*models.DataStream, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.Indices.GetDataStream.WithName(dataStreamName)
-	res, err := a.es.Indices.GetDataStream(req, a.es.Indices.GetDataStream.WithContext(ctx))
+	req := apiClient.GetESClient().Indices.GetDataStream.WithName(dataStreamName)
+	res, err := apiClient.GetESClient().Indices.GetDataStream(req, apiClient.GetESClient().Indices.GetDataStream.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -369,10 +370,10 @@ func (a *ApiClient) GetElasticsearchDataStream(ctx context.Context, dataStreamNa
 	return &ds, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchDataStream(ctx context.Context, dataStreamName string) diag.Diagnostics {
+func DeleteDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := a.es.Indices.DeleteDataStream([]string{dataStreamName}, a.es.Indices.DeleteDataStream.WithContext(ctx))
+	res, err := apiClient.GetESClient().Indices.DeleteDataStream([]string{dataStreamName}, apiClient.GetESClient().Indices.DeleteDataStream.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -384,14 +385,14 @@ func (a *ApiClient) DeleteElasticsearchDataStream(ctx context.Context, dataStrea
 	return diags
 }
 
-func (a *ApiClient) PutElasticsearchIngestPipeline(ctx context.Context, pipeline *models.IngestPipeline) diag.Diagnostics {
+func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline *models.IngestPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 	pipelineBytes, err := json.Marshal(pipeline)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	res, err := a.es.Ingest.PutPipeline(pipeline.Name, bytes.NewReader(pipelineBytes), a.es.Ingest.PutPipeline.WithContext(ctx))
+	res, err := apiClient.GetESClient().Ingest.PutPipeline(pipeline.Name, bytes.NewReader(pipelineBytes), apiClient.GetESClient().Ingest.PutPipeline.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -403,10 +404,10 @@ func (a *ApiClient) PutElasticsearchIngestPipeline(ctx context.Context, pipeline
 	return diags
 }
 
-func (a *ApiClient) GetElasticsearchIngestPipeline(ctx context.Context, name *string) (*models.IngestPipeline, diag.Diagnostics) {
+func GetIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *string) (*models.IngestPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := a.es.Ingest.GetPipeline.WithPipelineID(*name)
-	res, err := a.es.Ingest.GetPipeline(req, a.es.Ingest.GetPipeline.WithContext(ctx))
+	req := apiClient.GetESClient().Ingest.GetPipeline.WithPipelineID(*name)
+	res, err := apiClient.GetESClient().Ingest.GetPipeline(req, apiClient.GetESClient().Ingest.GetPipeline.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -428,10 +429,10 @@ func (a *ApiClient) GetElasticsearchIngestPipeline(ctx context.Context, name *st
 	return &pipeline, diags
 }
 
-func (a *ApiClient) DeleteElasticsearchIngestPipeline(ctx context.Context, name *string) diag.Diagnostics {
+func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := a.es.Ingest.DeletePipeline(*name, a.es.Ingest.DeletePipeline.WithContext(ctx))
+	res, err := apiClient.GetESClient().Ingest.DeletePipeline(*name, apiClient.GetESClient().Ingest.DeletePipeline.WithContext(ctx))
 	if err != nil {
 		return diags
 	}

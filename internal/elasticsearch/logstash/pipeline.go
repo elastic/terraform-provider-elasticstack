@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -187,9 +188,9 @@ func ResourceLogstashPipeline() *schema.Resource {
 }
 
 func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	pipelineID := d.Get("pipeline_id").(string)
@@ -213,7 +214,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 
 	logstashPipeline.Username = d.Get("username").(string)
 
-	if diags := client.PutLogstashPipeline(ctx, &logstashPipeline); diags.HasError() {
+	if diags := elasticsearch.PutLogstashPipeline(ctx, client, &logstashPipeline); diags.HasError() {
 		return diags
 	}
 
@@ -222,17 +223,18 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	logstashPipeline, diags := client.GetLogstashPipeline(ctx, resourceID)
+	logstashPipeline, diags := elasticsearch.GetLogstashPipeline(ctx, client, resourceID)
 	if logstashPipeline == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Logstash pipeline "%s" not found, removing from state`, resourceID))
 		d.SetId("")
 		return diags
 	}
@@ -279,16 +281,16 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	resourceID, diags := clients.ResourceIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := client.DeleteLogstashPipeline(ctx, resourceID); diags.HasError() {
+	if diags := elasticsearch.DeleteLogstashPipeline(ctx, client, resourceID); diags.HasError() {
 		return diags
 	}
 	return nil

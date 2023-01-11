@@ -3,11 +3,14 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -171,9 +174,9 @@ func ResourceRole() *schema.Resource {
 }
 
 func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	roleId := d.Get("name").(string)
 	id, diags := client.ID(ctx, roleId)
@@ -300,7 +303,7 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 		role.RusAs = runs
 	}
 
-	if diags := client.PutElasticsearchRole(ctx, &role); diags.HasError() {
+	if diags := elasticsearch.PutRole(ctx, client, &role); diags.HasError() {
 		return diags
 	}
 
@@ -309,10 +312,9 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
@@ -320,8 +322,9 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	roleId := compId.ResourceId
 
-	role, diags := client.GetElasticsearchRole(ctx, roleId)
+	role, diags := elasticsearch.GetRole(ctx, client, roleId)
 	if role == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found, removing from state`, roleId))
 		d.SetId("")
 		return diags
 	}
@@ -417,20 +420,18 @@ func flattenIndicesData(indices *[]models.IndexPerms) []interface{} {
 }
 
 func resourceSecurityRoleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchRole(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteRole(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }

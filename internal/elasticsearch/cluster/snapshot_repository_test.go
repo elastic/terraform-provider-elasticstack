@@ -15,10 +15,10 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 	// generate a random policy name
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkRepoDestroy(name),
-		ProviderFactories: acctest.Providers,
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkRepoDestroy(name),
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRepoFsCreate(name),
@@ -29,6 +29,18 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.max_restore_bytes_per_sec", "10mb"),
 				),
 			},
+			{
+				ResourceName: "elasticstack_elasticsearch_snapshot_repository.test_fs_repo",
+				ImportState:  true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					importedName := is[0].Attributes["name"]
+					if importedName != name {
+						return fmt.Errorf("expected imported snapshot name [%s] to equal [%s]", importedName, name)
+					}
+
+					return nil
+				},
+			},
 		},
 	})
 }
@@ -36,10 +48,10 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 func TestAccResourceSnapRepoUrl(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.UnitTest(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		CheckDestroy:      checkRepoDestroy(name),
-		ProviderFactories: acctest.Providers,
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkRepoDestroy(name),
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRepoUrlCreate(name),
@@ -89,7 +101,10 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
 
 func checkRepoDestroy(name string) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
-		client := acctest.Provider.Meta().(*clients.ApiClient)
+		client, err := clients.NewAcceptanceTestingClient()
+		if err != nil {
+			return err
+		}
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "elasticstack_elasticsearch_snapshot_repository" {

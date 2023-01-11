@@ -46,7 +46,7 @@ output "role" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `enabled` (Boolean) Mappings that have `enabled` set to `false` are ignored when role mapping is performed.
 - `metadata` (String) Additional metadata that helps define which roles are assigned to each user. Keys beginning with `_` are reserved for system usage.
 - `role_templates` (String) A list of mustache templates that will be evaluated to determine the roles names that should granted to the users that match the role mapping rules.
@@ -64,10 +64,14 @@ Optional:
 - `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
 - `ca_data` (String) PEM-encoded custom Certificate Authority certificate
 - `ca_file` (String) Path to a custom Certificate Authority certificate
-- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `cert_data` (String) PEM encoded certificate for client auth
+- `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
-- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- `username` (String) A username to use for API authentication to Elasticsearch.
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
+- `key_file` (String) Path to a file containing the PEM encoded private key for client auth
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
 
 ## Import
 

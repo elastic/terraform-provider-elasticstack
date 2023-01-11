@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -120,66 +121,12 @@ func IsEmpty(v interface{}) bool {
 	return false
 }
 
+const connectionKeyName = "elasticsearch_connection"
+
 // Returns the common connection schema for all the Elasticsearch resources,
 // which defines the fields which can be used to configure the API access
 func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
-	providedSchema["elasticsearch_connection"] = &schema.Schema{
-		Description: "Used to establish connection to Elasticsearch server. Overrides environment variables if present.",
-		Type:        schema.TypeList,
-		Optional:    true,
-		MaxItems:    1,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"username": {
-					Description:  "A username to use for API authentication to Elasticsearch.",
-					Type:         schema.TypeString,
-					Optional:     true,
-					RequiredWith: []string{"elasticsearch_connection.0.password"},
-				},
-				"password": {
-					Description:  "A password to use for API authentication to Elasticsearch.",
-					Type:         schema.TypeString,
-					Optional:     true,
-					Sensitive:    true,
-					RequiredWith: []string{"elasticsearch_connection.0.username"},
-				},
-				"api_key": {
-					Description:   "API Key to use for authentication to Elasticsearch",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					ConflictsWith: []string{"elasticsearch_connection.0.username", "elasticsearch_connection.0.password"},
-				},
-				"endpoints": {
-					Description: "A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.",
-					Type:        schema.TypeList,
-					Optional:    true,
-					Sensitive:   true,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
-				"insecure": {
-					Description: "Disable TLS certificate validation",
-					Type:        schema.TypeBool,
-					Optional:    true,
-					Default:     false,
-				},
-				"ca_file": {
-					Description:   "Path to a custom Certificate Authority certificate",
-					Type:          schema.TypeString,
-					Optional:      true,
-					ConflictsWith: []string{"elasticsearch_connection.ca_data"},
-				},
-				"ca_data": {
-					Description:   "PEM-encoded custom Certificate Authority certificate",
-					Type:          schema.TypeString,
-					Optional:      true,
-					ConflictsWith: []string{"elasticsearch_connection.ca_file"},
-				},
-			},
-		},
-	}
+	providedSchema[connectionKeyName] = providerSchema.GetConnectionSchema(connectionKeyName, false)
 }
 
 func StringToHash(s string) (*string, error) {

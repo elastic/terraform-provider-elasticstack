@@ -11,6 +11,19 @@ type User struct {
 	Enabled      bool                   `json:"enabled"`
 }
 
+func (u *User) IsSystemUser() bool {
+	if reserved := u.Metadata["_reserved"]; reserved != nil {
+		isReserved, ok := reserved.(bool)
+		return ok && isReserved
+	}
+	return false
+}
+
+type UserPassword struct {
+	Password     *string `json:"password,omitempty"`
+	PasswordHash *string `json:"password_hash,omitempty"`
+}
+
 type Role struct {
 	Name         string                 `json:"-"`
 	Applications []Application          `json:"applications,omitempty"`
@@ -28,6 +41,23 @@ type RoleMapping struct {
 	RoleTemplates []map[string]interface{} `json:"role_templates,omitempty"`
 	Rules         map[string]interface{}   `json:"rules"`
 	Metadata      interface{}              `json:"metadata"`
+}
+
+type ApiKey struct {
+	Name             string                 `json:"name"`
+	RolesDescriptors map[string]Role        `json:"role_descriptors,omitempty"`
+	Expiration       string                 `json:"expiration,omitempty"`
+	Metadata         map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type ApiKeyResponse struct {
+	ApiKey
+	RolesDescriptors map[string]Role `json:"role_descriptors,omitempty"`
+	Expiration       int64           `json:"expiration,omitempty"`
+	Id               string          `json:"id,omitempty"`
+	Key              string          `json:"api_key,omitempty"`
+	EncodedKey       string          `json:"encoded,omitempty"`
+	Invalidated      bool            `json:"invalidated,omitempty"`
 }
 
 type IndexPerms struct {
@@ -196,4 +226,12 @@ type LogstashPipeline struct {
 	PipelineMetadata map[string]interface{} `json:"pipeline_metadata"`
 	PipelineSettings map[string]interface{} `json:"pipeline_settings"`
 	Username         string                 `json:"username"`
+}
+
+type Script struct {
+	ID       string                 `json:"-"`
+	Language string                 `json:"lang"`
+	Source   string                 `json:"source"`
+	Params   map[string]interface{} `json:"params"`
+	Context  string                 `json:"-"`
 }

@@ -9,8 +9,8 @@ import (
 
 func TestAccDataSourceIngestProcessorJoin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { acctest.PreCheck(t) },
-		ProviderFactories: acctest.Providers,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceIngestProcessorJoin,

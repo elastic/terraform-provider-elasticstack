@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -58,6 +59,7 @@ var (
 		"gc_deletes":                             schema.TypeString,
 		"default_pipeline":                       schema.TypeString,
 		"final_pipeline":                         schema.TypeString,
+		"unassigned.node_left.delayed_timeout":   schema.TypeString,
 		"search.slowlog.threshold.query.warn":    schema.TypeString,
 		"search.slowlog.threshold.query.info":    schema.TypeString,
 		"search.slowlog.threshold.query.debug":   schema.TypeString,
@@ -299,6 +301,12 @@ func ResourceIndex() *schema.Resource {
 			Description: "Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.",
 			Optional:    true,
 		},
+		"unassigned_node_left_delayed_timeout": {
+
+			Type:        schema.TypeString,
+			Description: "Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`",
+			Optional:    true,
+		},
 		"search_slowlog_threshold_query_warn": {
 			Type:        schema.TypeString,
 			Description: "Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `10s`",
@@ -534,16 +542,16 @@ If specified, this mapping can include: field names, [field data types](https://
 					return nil, fmt.Errorf("unable to import requested index")
 				}
 
-				client, err := clients.NewApiClient(d, m)
-				if err != nil {
-					return nil, err
+				client, diags := clients.NewApiClient(d, m)
+				if diags.HasError() {
+					return nil, fmt.Errorf("Unabled to create API client %v", diags)
 				}
 				compId, diags := clients.CompositeIdFromStr(d.Id())
 				if diags.HasError() {
 					return nil, fmt.Errorf("failed to parse provided ID")
 				}
 				indexName := compId.ResourceId
-				index, diags := client.GetElasticsearchIndex(ctx, indexName)
+				index, diags := elasticsearch.GetIndex(ctx, client, indexName)
 				if diags.HasError() {
 					return nil, fmt.Errorf("failed to get an ES Index")
 				}
@@ -594,43 +602,6 @@ If specified, this mapping can include: field names, [field data types](https://
 			}
 			tflog.Trace(ctx, "mappings custom diff old = %+v new = %+v", o, n)
 
-			var isForceable func(map[string]interface{}, map[string]interface{}) bool
-			isForceable = func(old, new map[string]interface{}) bool {
-				for k, v := range old {
-					oldFieldSettings := v.(map[string]interface{})
-					if newFieldSettings, ok := new[k]; ok {
-						newSettings := newFieldSettings.(map[string]interface{})
-						// check if the "type" field exists and match with new one
-						if s, ok := oldFieldSettings["type"]; ok {
-							if ns, ok := newSettings["type"]; ok {
-								if !reflect.DeepEqual(s, ns) {
-									return true
-								}
-								continue
-							} else {
-								return true
-							}
-						}
-
-						// if we have "mapping" field, let's call ourself to check again
-						if s, ok := oldFieldSettings["properties"]; ok {
-							if ns, ok := newSettings["properties"]; ok {
-								if isForceable(s.(map[string]interface{}), ns.(map[string]interface{})) {
-									return true
-								}
-								continue
-							} else {
-								return true
-							}
-						}
-					} else {
-						// if the key not found in the new props, force new resource
-						return true
-					}
-				}
-				return false
-			}
-
 			// if old defined we must check if the type of the existing fields were changed
 			if oldProps, ok := o["properties"]; ok {
 				newProps, ok := n["properties"]
@@ -638,7 +609,7 @@ If specified, this mapping can include: field names, [field data types](https://
 				if !ok {
 					return true
 				}
-				return isForceable(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
+				return IsMappingForceNewRequired(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
 			}
 
 			// if all check passed, we can update the map
@@ -650,9 +621,9 @@ If specified, this mapping can include: field names, [field data types](https://
 }
 
 func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	indexName := d.Get("name").(string)
 	id, diags := client.ID(ctx, indexName)
@@ -690,7 +661,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if analyzerJSON, ok := d.GetOk("analysis_analyzer"); ok {
 		var analyzer map[string]interface{}
 		bytes := []byte(analyzerJSON.(string))
-		err = json.Unmarshal(bytes, &analyzer)
+		err := json.Unmarshal(bytes, &analyzer)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -699,7 +670,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if tokenizerJSON, ok := d.GetOk("analysis_tokenizer"); ok {
 		var tokenizer map[string]interface{}
 		bytes := []byte(tokenizerJSON.(string))
-		err = json.Unmarshal(bytes, &tokenizer)
+		err := json.Unmarshal(bytes, &tokenizer)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -708,7 +679,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if charFilterJSON, ok := d.GetOk("analysis_char_filter"); ok {
 		var filter map[string]interface{}
 		bytes := []byte(charFilterJSON.(string))
-		if err = json.Unmarshal(bytes, &filter); err != nil {
+		if err := json.Unmarshal(bytes, &filter); err != nil {
 			return diag.FromErr(err)
 		}
 		analysis["char_filter"] = filter
@@ -716,7 +687,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if filterJSON, ok := d.GetOk("analysis_filter"); ok {
 		var filter map[string]interface{}
 		bytes := []byte(filterJSON.(string))
-		err = json.Unmarshal(bytes, &filter)
+		err := json.Unmarshal(bytes, &filter)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -725,7 +696,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	if normalizerJSON, ok := d.GetOk("analysis_normalizer"); ok {
 		var normalizer map[string]interface{}
 		bytes := []byte(normalizerJSON.(string))
-		err = json.Unmarshal(bytes, &normalizer)
+		err := json.Unmarshal(bytes, &normalizer)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -748,7 +719,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 	}
 
-	if diags := client.PutElasticsearchIndex(ctx, &index); diags.HasError() {
+	if diags := elasticsearch.PutIndex(ctx, client, &index); diags.HasError() {
 		return diags
 	}
 
@@ -758,9 +729,9 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 
 // Because of limitation of ES API we must handle changes to aliases, mappings and settings separately
 func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	indexName := d.Get("name").(string)
 
@@ -785,14 +756,14 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 			}
 		}
 		if len(aliasesToDelete) > 0 {
-			if diags := client.DeleteElasticsearchIndexAlias(ctx, indexName, aliasesToDelete); diags.HasError() {
+			if diags := elasticsearch.DeleteIndexAlias(ctx, client, indexName, aliasesToDelete); diags.HasError() {
 				return diags
 			}
 		}
 
 		// keep new aliases up-to-date
 		for _, v := range enew {
-			if diags := client.UpdateElasticsearchIndexAlias(ctx, indexName, &v); diags.HasError() {
+			if diags := elasticsearch.UpdateIndexAlias(ctx, client, indexName, &v); diags.HasError() {
 				return diags
 			}
 		}
@@ -832,7 +803,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 	if len(updatedSettings) > 0 {
 		tflog.Trace(ctx, fmt.Sprintf("settings to update: %+v", updatedSettings))
-		if diags := client.UpdateElasticsearchIndexSettings(ctx, indexName, updatedSettings); diags.HasError() {
+		if diags := elasticsearch.UpdateIndexSettings(ctx, client, indexName, updatedSettings); diags.HasError() {
 			return diags
 		}
 	}
@@ -841,7 +812,7 @@ func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta inter
 	if d.HasChange("mappings") {
 		// at this point we know there are mappings defined and there is a change which we can apply
 		mappings := d.Get("mappings").(string)
-		if diags := client.UpdateElasticsearchIndexMappings(ctx, indexName, mappings); diags.HasError() {
+		if diags := elasticsearch.UpdateIndexMappings(ctx, client, indexName, mappings); diags.HasError() {
 			return diags
 		}
 	}
@@ -862,10 +833,9 @@ func flattenIndexSettings(settings []interface{}) map[string]interface{} {
 }
 
 func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
@@ -877,9 +847,10 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.FromErr(err)
 	}
 
-	index, diags := client.GetElasticsearchIndex(ctx, indexName)
+	index, diags := elasticsearch.GetIndex(ctx, client, indexName)
 	if index == nil && diags == nil {
 		// no index found on ES side
+		tflog.Warn(ctx, fmt.Sprintf(`Index "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}
@@ -923,20 +894,53 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	if d.Get("deletion_protection").(bool) {
 		return diag.Errorf("cannot destroy index without setting deletion_protection=false and running `terraform apply`")
 	}
-
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id := d.Id()
 	compId, diags := clients.CompositeIdFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchIndex(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIndex(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
+}
+
+func IsMappingForceNewRequired(old map[string]interface{}, new map[string]interface{}) bool {
+	for k, v := range old {
+		oldFieldSettings := v.(map[string]interface{})
+		if newFieldSettings, ok := new[k]; ok {
+			newSettings := newFieldSettings.(map[string]interface{})
+			// check if the "type" field exists and match with new one
+			if s, ok := oldFieldSettings["type"]; ok {
+				if ns, ok := newSettings["type"]; ok {
+					if !reflect.DeepEqual(s, ns) {
+						return true
+					}
+					continue
+				} else {
+					return true
+				}
+			}
+
+			// if we have "mapping" field, let's call ourself to check again
+			if s, ok := oldFieldSettings["properties"]; ok {
+				if ns, ok := newSettings["properties"]; ok {
+					if IsMappingForceNewRequired(s.(map[string]interface{}), ns.(map[string]interface{})) {
+						return true
+					}
+					continue
+				} else {
+					return true
+				}
+			}
+		} else {
+			// if the key not found in the new props, force new resource
+			return true
+		}
+	}
+	return false
 }

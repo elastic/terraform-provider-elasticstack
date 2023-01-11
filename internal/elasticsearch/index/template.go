@@ -3,11 +3,14 @@ package index
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -179,10 +182,9 @@ func ResourceTemplate() *schema.Resource {
 }
 
 func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	templateId := d.Get("name").(string)
 	id, diags := client.ID(ctx, templateId)
@@ -293,7 +295,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		indexTemplate.Version = &definedVer
 	}
 
-	if diags := client.PutElasticsearchIndexTemplate(ctx, &indexTemplate); diags.HasError() {
+	if diags := elasticsearch.PutIndexTemplate(ctx, client, &indexTemplate); diags.HasError() {
 		return diags
 	}
 
@@ -302,10 +304,9 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 }
 
 func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
@@ -313,8 +314,9 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 	templateId := compId.ResourceId
 
-	tpl, diags := client.GetElasticsearchIndexTemplate(ctx, templateId)
+	tpl, diags := elasticsearch.GetIndexTemplate(ctx, client, templateId)
 	if tpl == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Index template "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}
@@ -406,10 +408,9 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 }
 
 func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
 	id := d.Id()
@@ -417,9 +418,8 @@ func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, me
 	if diags.HasError() {
 		return diags
 	}
-	if diags := client.DeleteElasticsearchIndexTemplate(ctx, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIndexTemplate(ctx, client, compId.ResourceId); diags.HasError() {
 		return diags
 	}
-	d.SetId("")
 	return diags
 }

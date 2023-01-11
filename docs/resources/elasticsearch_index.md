@@ -44,9 +44,10 @@ resource "elasticstack_elasticsearch_index" "my_index" {
     }
   })
 
-  number_of_shards   = 1
-  number_of_replicas = 2
-  search_idle_after  = "20s"
+  number_of_shards      = 1
+  number_of_replicas    = 2
+  search_idle_after     = "20s"
+  total_shards_per_node = 200
 }
 ```
 
@@ -75,7 +76,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
 - `default_pipeline` (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
 - `deletion_protection` (Boolean) Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.
-- `elasticsearch_connection` (Block List, Max: 1) Used to establish connection to Elasticsearch server. Overrides environment variables if present. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.
 - `highlight_max_analyzed_offset` (Number) The maximum number of characters that will be analyzed for a highlight request.
@@ -122,6 +123,7 @@ If specified, this mapping can include: field names, [field data types](https://
 - `shard_check_on_startup` (String) Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.
 - `sort_field` (Set of String) The field to sort shards in this index by.
 - `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
+- `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
 
 ### Read-Only
 
@@ -153,10 +155,14 @@ Optional:
 - `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
 - `ca_data` (String) PEM-encoded custom Certificate Authority certificate
 - `ca_file` (String) Path to a custom Certificate Authority certificate
-- `endpoints` (List of String, Sensitive) A list of endpoints the Terraform provider will point to. They must include the http(s) schema and port number.
+- `cert_data` (String) PEM encoded certificate for client auth
+- `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
-- `password` (String, Sensitive) A password to use for API authentication to Elasticsearch.
-- `username` (String) A username to use for API authentication to Elasticsearch.
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
+- `key_file` (String) Path to a file containing the PEM encoded private key for client auth
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--settings"></a>

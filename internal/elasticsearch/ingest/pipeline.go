@@ -3,11 +3,14 @@ package ingest
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -81,9 +84,9 @@ func ResourceIngestPipeline() *schema.Resource {
 }
 
 func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	pipelineId := d.Get("name").(string)
 	id, diags := client.ID(ctx, pipelineId)
@@ -126,7 +129,7 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 		pipeline.Metadata = metadata
 	}
 
-	if diags := client.PutElasticsearchIngestPipeline(ctx, &pipeline); diags.HasError() {
+	if diags := elasticsearch.PutIngestPipeline(ctx, client, &pipeline); diags.HasError() {
 		return diags
 	}
 
@@ -135,10 +138,9 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 }
 
 func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id := d.Id()
 	compId, diags := clients.CompositeIdFromStr(id)
@@ -146,8 +148,9 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 		return diags
 	}
 
-	pipeline, diags := client.GetElasticsearchIngestPipeline(ctx, &compId.ResourceId)
+	pipeline, diags := elasticsearch.GetIngestPipeline(ctx, client, &compId.ResourceId)
 	if pipeline == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Injest pipeline "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
 		return diags
 	}
@@ -203,10 +206,9 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 }
 
 func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client, err := clients.NewApiClient(d, meta)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 	id := d.Id()
 	compId, diags := clients.CompositeIdFromStr(id)
@@ -214,10 +216,9 @@ func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.Resourc
 		return diags
 	}
 
-	if diags := client.DeleteElasticsearchIngestPipeline(ctx, &compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIngestPipeline(ctx, client, &compId.ResourceId); diags.HasError() {
 		return diags
 	}
 
-	d.SetId("")
 	return diags
 }
