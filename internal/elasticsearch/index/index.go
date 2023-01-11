@@ -471,7 +471,10 @@ func ResourceIndex() *schema.Resource {
 		"mappings": {
 			Description: `Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.`,
+**NOTE:** 
+- Changing datatypes in the existing _mappings_ will force index to be re-created.
+- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
+`,
 			Type:             schema.TypeString,
 			Optional:         true,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
@@ -603,7 +606,7 @@ If specified, this mapping can include: field names, [field data types](https://
 				if !ok {
 					return true
 				}
-				return IsMappingForceNewRequired(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
+				return IsMappingForceNewRequired(ctx, oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
 			}
 
 			// if all check passed, we can update the map
@@ -900,37 +903,37 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	return diags
 }
 
-func IsMappingForceNewRequired(old map[string]interface{}, new map[string]interface{}) bool {
+func IsMappingForceNewRequired(ctx context.Context, old map[string]interface{}, new map[string]interface{}) bool {
 	for k, v := range old {
 		oldFieldSettings := v.(map[string]interface{})
-		if newFieldSettings, ok := new[k]; ok {
-			newSettings := newFieldSettings.(map[string]interface{})
-			// check if the "type" field exists and match with new one
-			if s, ok := oldFieldSettings["type"]; ok {
-				if ns, ok := newSettings["type"]; ok {
-					if !reflect.DeepEqual(s, ns) {
-						return true
-					}
-					continue
-				} else {
+		newFieldSettings, ok := new[k]
+		// When field is removed, it'll be ignored in elasticsearch
+		if !ok {
+			tflog.Warn(ctx, fmt.Sprintf("removing %s field in mappings is ignored. Re-index to remove the field completely.", k))
+			continue
+		}
+		newSettings := newFieldSettings.(map[string]interface{})
+		// check if the "type" field exists and match with new one
+		if s, ok := oldFieldSettings["type"]; ok {
+			if ns, ok := newSettings["type"]; ok {
+				if !reflect.DeepEqual(s, ns) {
 					return true
 				}
+				continue
+			} else {
+				return true
 			}
+		}
 
-			// if we have "mapping" field, let's call ourself to check again
-			if s, ok := oldFieldSettings["properties"]; ok {
-				if ns, ok := newSettings["properties"]; ok {
-					if IsMappingForceNewRequired(s.(map[string]interface{}), ns.(map[string]interface{})) {
-						return true
-					}
-					continue
-				} else {
+		// if we have "mapping" field, let's call ourself to check again
+		if s, ok := oldFieldSettings["properties"]; ok {
+			if ns, ok := newSettings["properties"]; ok {
+				if IsMappingForceNewRequired(context.Background(), s.(map[string]interface{}), ns.(map[string]interface{})) {
 					return true
 				}
+			} else {
+				tflog.Warn(ctx, fmt.Sprintf("removing %s propeties in mappings is ignored, if you neeed to remove it completely, please recreate the index", k))
 			}
-		} else {
-			// if the key not found in the new props, force new resource
-			return true
 		}
 	}
 	return false

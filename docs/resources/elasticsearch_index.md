@@ -88,7 +88,9 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `load_fixed_bitset_filters_eagerly` (Boolean) Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.
 - `mappings` (String) Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.
+**NOTE:** 
+- Changing datatypes in the existing _mappings_ will force index to be re-created.
+- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
 - `max_docvalue_fields_search` (Number) The maximum number of `docvalue_fields` that are allowed in a query.
 - `max_inner_result_window` (Number) The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.
 - `max_ngram_diff` (Number) The maximum allowed difference between min_gram and max_gram for NGramTokenizer and NGramTokenFilter.
