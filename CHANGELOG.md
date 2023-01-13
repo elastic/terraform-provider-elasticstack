@@ -4,6 +4,7 @@
 - Respect `ignore_unavailable` and `include_global_state` values when configuring SLM policies ([#224](https://github.com/elastic/terraform-provider-elasticstack/pull/224))
 - Refactor API client functions and return diagnostics ([#220](https://github.com/elastic/terraform-provider-elasticstack/pull/220))
 - Fix not to recreate index when field is removed from mapping ([#232](https://github.com/elastic/terraform-provider-elasticstack/pull/232))
+- Add query params fields to index resource  ([#244](https://github.com/elastic/terraform-provider-elasticstack/pull/244))
 
 ## [0.5.0] - 2022-12-07
 
