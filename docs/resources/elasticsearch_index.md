@@ -79,6 +79,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.
 - `highlight_max_analyzed_offset` (Number) The maximum number of characters that will be analyzed for a highlight request.
+- `include_type_name` (Boolean) If true, a mapping type is expected in the body of mappings. Defaults to false.
 - `indexing_slowlog_level` (String) Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`
 - `indexing_slowlog_source` (String) Set the number of characters of the `_source` to include in the slowlog lines, `false` or `0` will skip logging the source entirely and setting it to `true` will log the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.
 - `indexing_slowlog_threshold_index_debug` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `2s`
@@ -91,6 +92,7 @@ If specified, this mapping can include: field names, [field data types](https://
 **NOTE:** 
 - Changing datatypes in the existing _mappings_ will force index to be re-created.
 - Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
+- `master_timeout` (String) Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `max_docvalue_fields_search` (Number) The maximum number of `docvalue_fields` that are allowed in a query.
 - `max_inner_result_window` (Number) The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.
 - `max_ngram_diff` (Number) The maximum allowed difference between min_gram and max_gram for NGramTokenizer and NGramTokenFilter.
@@ -124,7 +126,9 @@ If specified, this mapping can include: field names, [field data types](https://
 - `shard_check_on_startup` (String) Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.
 - `sort_field` (Set of String) The field to sort shards in this index by.
 - `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
+- `timeout` (String) Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
+- `wait_for_active_shards` (String) The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard.
 
 ### Read-Only
 
