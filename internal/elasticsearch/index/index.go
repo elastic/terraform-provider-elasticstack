@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -519,6 +520,32 @@ If specified, this mapping can include: field names, [field data types](https://
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
+		"include_type_name": {
+			Type:        schema.TypeBool,
+			Description: "If true, a mapping type is expected in the body of mappings. Defaults to false.",
+			Optional:    true,
+			Default:     false,
+		},
+		"wait_for_active_shards": {
+			Type:        schema.TypeString,
+			Description: "The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard.",
+			Optional:    true,
+			Default:     "1",
+		},
+		"master_timeout": {
+			Type:         schema.TypeString,
+			Description:  "Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Optional:     true,
+			Default:      "30s",
+			ValidateFunc: utils.StringIsDuration,
+		},
+		"timeout": {
+			Type:         schema.TypeString,
+			Description:  "Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Optional:     true,
+			Default:      "30s",
+			ValidateFunc: utils.StringIsDuration,
+		},
 	}
 
 	utils.AddConnectionSchema(indexSchema)
@@ -716,7 +743,23 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 	}
 
-	if diags := elasticsearch.PutIndex(ctx, client, &index); diags.HasError() {
+	params := models.PutIndexParams{
+		WaitForActiveShards: d.Get("wait_for_active_shards").(string),
+		IncludeTypeName:     d.Get("include_type_name").(bool),
+	}
+	masterTimeout, err := time.ParseDuration(d.Get("master_timeout").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	params.MasterTimeout = masterTimeout
+
+	timeout, err := time.ParseDuration(d.Get("timeout").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	params.Timeout = timeout
+
+	if diags := elasticsearch.PutIndex(ctx, client, &index, &params); diags.HasError() {
 		return diags
 	}
 

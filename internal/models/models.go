@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type User struct {
 	Username     string                 `json:"-"`
 	FullName     string                 `json:"full_name,omitempty"`
@@ -183,6 +185,13 @@ type Index struct {
 	Aliases  map[string]IndexAlias  `json:"aliases,omitempty"`
 	Mappings map[string]interface{} `json:"mappings,omitempty"`
 	Settings map[string]interface{} `json:"settings,omitempty"`
+}
+
+type PutIndexParams struct {
+	WaitForActiveShards string
+	MasterTimeout       time.Duration
+	Timeout             time.Duration
+	IncludeTypeName     bool
 }
 
 type IndexAlias struct {

@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -208,15 +210,33 @@ func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, temp
 	return diags
 }
 
-func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.Index) diag.Diagnostics {
+var includeTypeNameUnsupportedVersion = version.Must(version.NewVersion("8.0.0"))
+
+func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.Index, params *models.PutIndexParams) diag.Diagnostics {
 	var diags diag.Diagnostics
 	indexBytes, err := json.Marshal(index)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	req := apiClient.GetESClient().Indices.Create.WithBody(bytes.NewReader(indexBytes))
-	res, err := apiClient.GetESClient().Indices.Create(index.Name, req, apiClient.GetESClient().Indices.Create.WithContext(ctx))
+	opts := []func(*esapi.IndicesCreateRequest){
+		apiClient.GetESClient().Indices.Create.WithBody(bytes.NewReader(indexBytes)),
+		apiClient.GetESClient().Indices.Create.WithContext(ctx),
+		apiClient.GetESClient().Indices.Create.WithWaitForActiveShards(params.WaitForActiveShards),
+		apiClient.GetESClient().Indices.Create.WithMasterTimeout(params.MasterTimeout),
+		apiClient.GetESClient().Indices.Create.WithTimeout(params.Timeout),
+	}
+	serverVersion, diags := apiClient.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+	if serverVersion.LessThan(includeTypeNameUnsupportedVersion) {
+		opts = append(opts, apiClient.GetESClient().Indices.Create.WithIncludeTypeName(params.IncludeTypeName))
+	}
+	res, err := apiClient.GetESClient().Indices.Create(
+		index.Name,
+		opts...,
+	)
 	if err != nil {
 		diag.FromErr(err)
 	}
