@@ -430,7 +430,7 @@ func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*m
 
 	for _, ph := range supportedIlmPhases {
 		if v, ok := d.GetOk(ph); ok {
-			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}), d, serverVersion)
+			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}), serverVersion)
 			if diags.HasError() {
 				return nil, diags
 			}
@@ -442,7 +442,7 @@ func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*m
 	return &policy, diags
 }
 
-func expandPhase(p map[string]interface{}, d *schema.ResourceData, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
+func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var phase models.Phase
 
