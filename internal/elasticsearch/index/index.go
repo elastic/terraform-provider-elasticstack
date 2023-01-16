@@ -8,11 +8,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -78,6 +80,8 @@ var (
 	}
 	allSettingsKeys = map[string]schema.ValueType{}
 )
+
+var includeTypeNameMinUnsupportedVersion = version.Must(version.NewVersion("8.0.0"))
 
 func init() {
 	for k, v := range staticSettingsKeys {
@@ -519,6 +523,32 @@ If specified, this mapping can include: field names, [field data types](https://
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
+		"include_type_name": {
+			Type:        schema.TypeBool,
+			Description: "If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.",
+			Optional:    true,
+			Default:     false,
+		},
+		"wait_for_active_shards": {
+			Type:        schema.TypeString,
+			Description: "The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard.",
+			Optional:    true,
+			Default:     "1",
+		},
+		"master_timeout": {
+			Type:         schema.TypeString,
+			Description:  "Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Optional:     true,
+			Default:      "30s",
+			ValidateFunc: utils.StringIsDuration,
+		},
+		"timeout": {
+			Type:         schema.TypeString,
+			Description:  "Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Optional:     true,
+			Default:      "30s",
+			ValidateFunc: utils.StringIsDuration,
+		},
 	}
 
 	utils.AddConnectionSchema(indexSchema)
@@ -716,7 +746,33 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 	}
 
-	if diags := elasticsearch.PutIndex(ctx, client, &index); diags.HasError() {
+	params := models.PutIndexParams{
+		WaitForActiveShards: d.Get("wait_for_active_shards").(string),
+		IncludeTypeName:     d.Get("include_type_name").(bool),
+	}
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+	if includeTypeName := d.Get("include_type_name").(bool); includeTypeName {
+		if serverVersion.GreaterThanOrEqual(includeTypeNameMinUnsupportedVersion) {
+			return diag.FromErr(fmt.Errorf("'include_type_name' field is supported only for elasticsearch v7.x"))
+		}
+		params.IncludeTypeName = includeTypeName
+	}
+	masterTimeout, err := time.ParseDuration(d.Get("master_timeout").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	params.MasterTimeout = masterTimeout
+
+	timeout, err := time.ParseDuration(d.Get("timeout").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	params.Timeout = timeout
+
+	if diags := elasticsearch.PutIndex(ctx, client, &index, &params); diags.HasError() {
 		return diags
 	}
 

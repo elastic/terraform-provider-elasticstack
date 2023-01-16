@@ -205,6 +205,13 @@ type Index struct {
 	Settings map[string]interface{} `json:"settings,omitempty"`
 }
 
+type PutIndexParams struct {
+	WaitForActiveShards string
+	MasterTimeout       time.Duration
+	Timeout             time.Duration
+	IncludeTypeName     bool // IncludeTypeName is supported only in v7.x
+}
+
 type IndexAlias struct {
 	Name          string                 `json:"-"`
 	Filter        map[string]interface{} `json:"filter,omitempty"`

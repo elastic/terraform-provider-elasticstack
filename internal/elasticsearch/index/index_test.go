@@ -196,6 +196,10 @@ resource "elasticstack_elasticsearch_index" "test" {
       value = "20s"
     }
   }
+
+	wait_for_active_shards = "all"
+	master_timeout = "1m"
+	timeout = "1m"
 }
 	`, name)
 }
