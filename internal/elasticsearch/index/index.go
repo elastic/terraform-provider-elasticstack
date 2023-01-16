@@ -14,6 +14,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -79,6 +80,8 @@ var (
 	}
 	allSettingsKeys = map[string]schema.ValueType{}
 )
+
+var includeTypeNameMinUnsupportedVersion = version.Must(version.NewVersion("8.0.0"))
 
 func init() {
 	for k, v := range staticSettingsKeys {
@@ -522,7 +525,7 @@ If specified, this mapping can include: field names, [field data types](https://
 		},
 		"include_type_name": {
 			Type:        schema.TypeBool,
-			Description: "If true, a mapping type is expected in the body of mappings. Defaults to false.",
+			Description: "If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.",
 			Optional:    true,
 			Default:     false,
 		},
@@ -746,6 +749,16 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 	params := models.PutIndexParams{
 		WaitForActiveShards: d.Get("wait_for_active_shards").(string),
 		IncludeTypeName:     d.Get("include_type_name").(bool),
+	}
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+	if includeTypeName := d.Get("include_type_name").(bool); includeTypeName {
+		if serverVersion.GreaterThanOrEqual(includeTypeNameMinUnsupportedVersion) {
+			return diag.FromErr(fmt.Errorf("'include_type_name' field is supported only for elasticsearch v7.x"))
+		}
+		params.IncludeTypeName = includeTypeName
 	}
 	masterTimeout, err := time.ParseDuration(d.Get("master_timeout").(string))
 	if err != nil {
