@@ -536,7 +536,7 @@ If specified, this mapping can include: field names, [field data types](https://
 			Default:     true,
 			Description: "Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.",
 		},
-    "include_type_name": {
+		"include_type_name": {
 			Type:        schema.TypeBool,
 			Description: "If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.",
 			Optional:    true,
