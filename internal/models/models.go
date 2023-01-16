@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-
 type ClusterInfo struct {
 	Name        string `json:"name"`
 	ClusterName string `json:"cluster_name"`
