@@ -32,6 +32,7 @@ var (
 		"shard.check_on_startup":            schema.TypeString,
 		"sort.field":                        schema.TypeSet,
 		"sort.order":                        schema.TypeSet,
+		"mapping.coerce":                    schema.TypeBool,
 	}
 	dynamicsSettingsKeys = map[string]schema.ValueType{
 		"number_of_replicas":                     schema.TypeInt,
@@ -162,6 +163,12 @@ func ResourceIndex() *schema.Resource {
 			Type:        schema.TypeList,
 			Elem:        &schema.Schema{Type: schema.TypeString},
 			Description: "The direction to sort shards in. Accepts `asc`, `desc`.",
+			ForceNew:    true,
+			Optional:    true,
+		},
+		"mapping_coerce": {
+			Type:        schema.TypeBool,
+			Description: "Set index level coercion setting that is applied to all mapping types.",
 			ForceNew:    true,
 			Optional:    true,
 		},
