@@ -1,6 +1,7 @@
 ## [Unreleased]
 ### Added
 - Add 'mapping_coerce' field to index resource ([#229](https://github.com/elastic/terraform-provider-elasticstack/pull/229))
+- Add 'deletion_protection' field to index resource ([#167](https://github.com/elastic/terraform-provider-elasticstack/pull/167))
 
 ### Fixed
 - Respect `ignore_unavailable` and `include_global_state` values when configuring SLM policies ([#224](https://github.com/elastic/terraform-provider-elasticstack/pull/224))
