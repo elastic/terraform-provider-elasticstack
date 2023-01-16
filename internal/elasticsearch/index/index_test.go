@@ -436,6 +436,7 @@ resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
       field1    = { type = "text" }
     }
   })
+  deletion_protection = false
 }
 	`, name)
 }
