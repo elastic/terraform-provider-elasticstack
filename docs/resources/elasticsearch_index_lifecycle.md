@@ -262,6 +262,11 @@ Optional:
 - `max_docs` (Number) Triggers rollover after the specified maximum number of documents is reached.
 - `max_primary_shard_size` (String) Triggers rollover when the largest primary shard in the index reaches a certain size.
 - `max_size` (String) Triggers rollover when the index reaches a certain size.
+- `min_age` (String) Prevents rollover until after the minimum elapsed time from index creation is reached.
+- `min_docs` (Number) Prevents rollover until after the specified minimum number of documents is reached.
+- `min_primary_shard_docs` (Number) Prevents rollover until the largest primary shard in the index reaches a certain number of documents.
+- `min_primary_shard_size` (String) Prevents rollover until the largest primary shard in the index reaches a certain size.
+- `min_size` (String) Prevents rollover until the index reaches a certain size.
 
 
 <a id="nestedblock--hot--searchable_snapshot"></a>

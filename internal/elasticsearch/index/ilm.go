@@ -273,6 +273,31 @@ var supportedActions = map[string]*schema.Schema{
 					Type:        schema.TypeString,
 					Optional:    true,
 				},
+				"min_age": {
+					Description: "Prevents rollover until after the minimum elapsed time from index creation is reached.",
+					Type:        schema.TypeString,
+					Optional:    true,
+				},
+				"min_docs": {
+					Description: "Prevents rollover until after the specified minimum number of documents is reached.",
+					Type:        schema.TypeInt,
+					Optional:    true,
+				},
+				"min_size": {
+					Description: "Prevents rollover until the index reaches a certain size.",
+					Type:        schema.TypeString,
+					Optional:    true,
+				},
+				"min_primary_shard_size": {
+					Description: "Prevents rollover until the largest primary shard in the index reaches a certain size.",
+					Type:        schema.TypeString,
+					Optional:    true,
+				},
+				"min_primary_shard_docs": {
+					Description: "Prevents rollover until the largest primary shard in the index reaches a certain number of documents.",
+					Type:        schema.TypeInt,
+					Optional:    true,
+				},
 			},
 		},
 	},
@@ -478,7 +503,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 					}
 				}
 			case "rollover":
-				actions[actionName], diags = expandAction(a, serverVersion, "max_age", "max_docs", "max_size", "max_primary_shard_size")
+				actions[actionName], diags = expandAction(a, serverVersion, "max_age", "max_docs", "max_size", "max_primary_shard_size", "min_age", "min_docs", "min_size", "min_primary_shard_size", "min_primary_shard_docs")
 			case "searchable_snapshot":
 				actions[actionName], diags = expandAction(a, serverVersion, "snapshot_repository", "force_merge_index")
 			case "set_priority":
@@ -514,9 +539,14 @@ var ilmActionSettingOptions = map[string]struct {
 	def            interface{}
 	minVersion     *version.Version
 }{
-	"number_of_replicas":    {skipEmptyCheck: true},
-	"total_shards_per_node": {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
-	"priority":              {skipEmptyCheck: true},
+	"number_of_replicas":     {skipEmptyCheck: true},
+	"total_shards_per_node":  {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
+	"priority":               {skipEmptyCheck: true},
+	"min_age":                {def: "", minVersion: version.Must(version.NewVersion("8.4.0"))},
+	"min_docs":               {def: 0, minVersion: version.Must(version.NewVersion("8.4.0"))},
+	"min_size":               {def: "", minVersion: version.Must(version.NewVersion("8.4.0"))},
+	"min_primary_shard_size": {def: "", minVersion: version.Must(version.NewVersion("8.4.0"))},
+	"min_primary_shard_docs": {def: 0, minVersion: version.Must(version.NewVersion("8.4.0"))},
 }
 
 func expandAction(a []interface{}, serverVersion *version.Version, settings ...string) (map[string]interface{}, diag.Diagnostics) {
