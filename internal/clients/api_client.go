@@ -11,6 +11,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -55,9 +56,10 @@ func (c *CompositeId) String() string {
 }
 
 type ApiClient struct {
-	elasticsearch *elasticsearch.Client
-	kibana        *kibana.Client
-	version       string
+	elasticsearch            *elasticsearch.Client
+	elasticsearchClusterInfo *models.ClusterInfo
+	kibana                   *kibana.Client
+	version                  string
 }
 
 func NewApiClientFunc(version string) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
@@ -90,7 +92,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
-	return &ApiClient{es, nil, "acceptance-testing"}, nil
+	return &ApiClient{es, nil, nil, "acceptance-testing"}, nil
 }
 
 const esConnectionKey string = "elasticsearch_connection"
@@ -132,7 +134,11 @@ func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, di
 	return &CompositeId{*clusterId, resourceId}, diags
 }
 
-func (a *ApiClient) serverInfo(ctx context.Context) (map[string]interface{}, diag.Diagnostics) {
+func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.Diagnostics) {
+	if a.elasticsearchClusterInfo != nil {
+		return a.elasticsearchClusterInfo, nil
+	}
+
 	var diags diag.Diagnostics
 	res, err := a.GetESClient().Info(a.GetESClient().Info.WithContext(ctx))
 	if err != nil {
@@ -143,12 +149,14 @@ func (a *ApiClient) serverInfo(ctx context.Context) (map[string]interface{}, dia
 		return nil, diags
 	}
 
-	info := make(map[string]interface{})
+	info := models.ClusterInfo{}
 	if err := json.NewDecoder(res.Body).Decode(&info); err != nil {
 		return nil, diag.FromErr(err)
 	}
+	// cache info
+	a.elasticsearchClusterInfo = &info
 
-	return info, diags
+	return &info, diags
 }
 
 func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
@@ -157,7 +165,7 @@ func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.D
 		return nil, diags
 	}
 
-	rawVersion := info["version"].(map[string]interface{})["number"].(string)
+	rawVersion := info.Version.Number
 	serverVersion, err := version.NewVersion(rawVersion)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -172,7 +180,7 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if uuid := info["cluster_uuid"].(string); uuid != "" && uuid != "_na_" {
+	if uuid := info.ClusterUUID; uuid != "" && uuid != "_na_" {
 		tflog.Trace(ctx, fmt.Sprintf("cluster UUID: %s", uuid))
 		return &uuid, diags
 	}
@@ -328,6 +336,7 @@ func buildEsClient(d *schema.ResourceData, sharedConfig SharedConfig, useEnvAsDe
 			Summary:  "Unable to create Elasticsearch client",
 			Detail:   err.Error(),
 		})
+		return nil, diags
 	}
 	if logging.IsDebugOrHigher() {
 		es.Transport = newDebugTransport("elasticsearch", es.Transport)
@@ -399,8 +408,9 @@ func newApiClient(d *schema.ResourceData, version string, useEnvAsDefault bool, 
 	}
 
 	return &ApiClient{
-		elasticsearch: esClient,
-		kibana:        kibanaClient,
-		version:       version,
+		elasticsearch:            esClient,
+		elasticsearchClusterInfo: nil,
+		kibana:                   kibanaClient,
+		version:                  version,
 	}, diags
 }

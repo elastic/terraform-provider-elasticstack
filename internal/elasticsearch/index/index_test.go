@@ -1,12 +1,14 @@
 package index_test
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -63,6 +65,7 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "shard_check_on_startup", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "sort_field.0", "sort_key"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "sort_order.0", "asc"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "mapping_coerce", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "auto_expand_replicas", "0-5"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "search_idle_after", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "refresh_interval", "10s"),
@@ -139,6 +142,22 @@ func TestAccResourceIndexSettingsConflict(t *testing.T) {
 	})
 }
 
+func TestAccResourceIndexRemovingField(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			// Confirm removing field doesn't produce recreate by using prevent_destroy
+			{Config: testAccResourceIndexRemovingFieldCreate(indexName)},
+			{Config: testAccResourceIndexRemovingFieldUpdate(indexName), ExpectNonEmptyPlan: true},
+			{Config: testAccResourceIndexRemovingFieldPostUpdate(indexName), ExpectNonEmptyPlan: true},
+		},
+	})
+}
+
 func testAccResourceIndexCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -178,6 +197,10 @@ resource "elasticstack_elasticsearch_index" "test" {
       value = "20s"
     }
   }
+
+	wait_for_active_shards = "all"
+	master_timeout = "1m"
+	timeout = "1m"
 }
 	`, name)
 }
@@ -227,6 +250,7 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
   shard_check_on_startup = "false"
   sort_field = ["sort_key"]
   sort_order = ["asc"]
+  mapping_coerce = true
   auto_expand_replicas =  "0-5"
   search_idle_after = "30s"
   refresh_interval = "10s"
@@ -339,6 +363,67 @@ resource "elasticstack_elasticsearch_index" "test_settings_conflict" {
 	`, name)
 }
 
+func testAccResourceIndexRemovingFieldCreate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      field1    = { type = "text" }
+      field2    = { type = "text" }
+    }
+  })
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+	`, name)
+}
+
+func testAccResourceIndexRemovingFieldUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      field1    = { type = "text" }
+    }
+  })
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+	`, name)
+}
+
+func testAccResourceIndexRemovingFieldPostUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      field1    = { type = "text" }
+    }
+  })
+}
+	`, name)
+}
+
 func checkResourceIndexDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
@@ -361,4 +446,104 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func Test_IsMappingForceNewRequired(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		old  map[string]interface{}
+		new  map[string]interface{}
+		want bool
+	}{
+		{
+			name: "return false only when new field is added",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+				"field2": map[string]interface{}{
+					"type": "keyword",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "return true when type is changed",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "integer",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "return false when field is removed",
+			old: map[string]interface{}{
+				"field1": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			new:  map[string]interface{}{},
+			want: false,
+		},
+		{
+			name: "return false when dynamically added child property is removed",
+			old: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"child": map[string]interface{}{
+							"type": "keyword",
+						},
+					},
+				},
+			},
+			new: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"type": "object",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "return true when child property's type changes",
+			old: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"child": map[string]interface{}{
+							"type": "keyword",
+						},
+					},
+				},
+			},
+			new: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"child": map[string]interface{}{
+							"type": "integer",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := index.IsMappingForceNewRequired(context.Background(), tt.old, tt.new); got != tt.want {
+				t.Errorf("IsMappingForceNewRequired() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

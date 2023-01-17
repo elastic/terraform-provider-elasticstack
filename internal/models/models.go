@@ -1,5 +1,25 @@
 package models
 
+import "time"
+
+type ClusterInfo struct {
+	Name        string `json:"name"`
+	ClusterName string `json:"cluster_name"`
+	ClusterUUID string `json:"cluster_uuid"`
+	Version     struct {
+		Number                           string    `json:"number"`
+		BuildType                        string    `json:"build_type"`
+		BuildHash                        string    `json:"build_hash"`
+		BuildFlavor                      string    `json:"build_flavor"`
+		BuildDate                        time.Time `json:"build_date"`
+		BuildSnapshot                    bool      `json:"build_snapshot"`
+		LuceneVersion                    string    `json:"lucene_version"`
+		MinimumWireCompatibilityVersion  string    `json:"minimum_wire_compatibility_version"`
+		MinimumIndexCompatibilityVersion string    `json:"minimum_index_compatibility_version"`
+	} `json:"version"`
+	Tagline string `json:"tagline"`
+}
+
 type User struct {
 	Username     string                 `json:"-"`
 	FullName     string                 `json:"full_name,omitempty"`
@@ -183,6 +203,13 @@ type Index struct {
 	Aliases  map[string]IndexAlias  `json:"aliases,omitempty"`
 	Mappings map[string]interface{} `json:"mappings,omitempty"`
 	Settings map[string]interface{} `json:"settings,omitempty"`
+}
+
+type PutIndexParams struct {
+	WaitForActiveShards string
+	MasterTimeout       time.Duration
+	Timeout             time.Duration
+	IncludeTypeName     bool // IncludeTypeName is supported only in v7.x
 }
 
 type IndexAlias struct {
