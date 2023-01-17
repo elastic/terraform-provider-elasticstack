@@ -137,7 +137,6 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					Optional:     true,
 					DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
 					RequiredWith: []string{"kibana.0.password"},
-					ExactlyOneOf: []string{"elasticsearch.0.username", "kibana.0.username"},
 				},
 				"password": {
 					Description:  "Password to use for API authentication to Kibana.",
@@ -146,7 +145,6 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					Sensitive:    true,
 					DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
 					RequiredWith: []string{"kibana.0.username"},
-					ExactlyOneOf: []string{"elasticsearch.0.password", "kibana.0.password"},
 				},
 				"endpoints": {
 					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
