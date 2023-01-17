@@ -134,7 +134,7 @@ func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, di
 
 func (a *ApiClient) serverInfo(ctx context.Context) (map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	res, err := a.elasticsearch.Info(a.elasticsearch.Info.WithContext(ctx))
+	res, err := a.GetESClient().Info(a.GetESClient().Info.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
