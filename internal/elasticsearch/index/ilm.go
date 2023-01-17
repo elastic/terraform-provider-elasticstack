@@ -534,6 +534,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 	return &phase, diags
 }
 
+var RolloverMinConditionsMinSupportedVersion = version.Must(version.NewVersion("8.4.0"))
 var ilmActionSettingOptions = map[string]struct {
 	skipEmptyCheck bool
 	def            interface{}
@@ -542,11 +543,11 @@ var ilmActionSettingOptions = map[string]struct {
 	"number_of_replicas":     {skipEmptyCheck: true},
 	"total_shards_per_node":  {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
 	"priority":               {skipEmptyCheck: true},
-	"min_age":                {def: "", minVersion: version.Must(version.NewVersion("8.4.0"))},
-	"min_docs":               {def: 0, minVersion: version.Must(version.NewVersion("8.4.0"))},
-	"min_size":               {def: "", minVersion: version.Must(version.NewVersion("8.4.0"))},
-	"min_primary_shard_size": {def: "", minVersion: version.Must(version.NewVersion("8.4.0"))},
-	"min_primary_shard_docs": {def: 0, minVersion: version.Must(version.NewVersion("8.4.0"))},
+	"min_age":                {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	"min_docs":               {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
+	"min_size":               {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	"min_primary_shard_size": {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	"min_primary_shard_docs": {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
 }
 
 func expandAction(a []interface{}, serverVersion *version.Version, settings ...string) (map[string]interface{}, diag.Diagnostics) {
