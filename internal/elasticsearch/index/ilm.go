@@ -274,12 +274,12 @@ var supportedActions = map[string]*schema.Schema{
 					Optional:    true,
 				},
 				"min_age": {
-					Description: "Prevents rollover until after the minimum elapsed time from index creation is reached.",
+					Description: "Prevents rollover until after the minimum elapsed time from index creation is reached. Supported from Elasticsearch version **8.4**",
 					Type:        schema.TypeString,
 					Optional:    true,
 				},
 				"min_docs": {
-					Description: "Prevents rollover until after the specified minimum number of documents is reached.",
+					Description: "Prevents rollover until after the specified minimum number of documents is reached. Supported from Elasticsearch version **8.4**",
 					Type:        schema.TypeInt,
 					Optional:    true,
 				},
@@ -289,12 +289,12 @@ var supportedActions = map[string]*schema.Schema{
 					Optional:    true,
 				},
 				"min_primary_shard_size": {
-					Description: "Prevents rollover until the largest primary shard in the index reaches a certain size.",
+					Description: "Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**",
 					Type:        schema.TypeString,
 					Optional:    true,
 				},
 				"min_primary_shard_docs": {
-					Description: "Prevents rollover until the largest primary shard in the index reaches a certain number of documents.",
+					Description: "Prevents rollover until the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.4**",
 					Type:        schema.TypeInt,
 					Optional:    true,
 				},

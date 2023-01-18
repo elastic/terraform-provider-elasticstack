@@ -262,10 +262,10 @@ Optional:
 - `max_docs` (Number) Triggers rollover after the specified maximum number of documents is reached.
 - `max_primary_shard_size` (String) Triggers rollover when the largest primary shard in the index reaches a certain size.
 - `max_size` (String) Triggers rollover when the index reaches a certain size.
-- `min_age` (String) Prevents rollover until after the minimum elapsed time from index creation is reached.
-- `min_docs` (Number) Prevents rollover until after the specified minimum number of documents is reached.
-- `min_primary_shard_docs` (Number) Prevents rollover until the largest primary shard in the index reaches a certain number of documents.
-- `min_primary_shard_size` (String) Prevents rollover until the largest primary shard in the index reaches a certain size.
+- `min_age` (String) Prevents rollover until after the minimum elapsed time from index creation is reached. Supported from Elasticsearch version **8.4**
+- `min_docs` (Number) Prevents rollover until after the specified minimum number of documents is reached. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_docs` (Number) Prevents rollover until the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_size` (String) Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**
 - `min_size` (String) Prevents rollover until the index reaches a certain size.
 
 
