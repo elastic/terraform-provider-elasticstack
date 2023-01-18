@@ -1,7 +1,19 @@
 ## [Unreleased]
 ### Added
 - Add 'mapping_coerce' field to index resource ([#229](https://github.com/elastic/terraform-provider-elasticstack/pull/229))
-- Add 'deletion_protection' field to index resource ([#167](https://github.com/elastic/terraform-provider-elasticstack/pull/167))
+- **[Breaking Change] Add 'deletion_protection' field to index resource** to avoid unintentional deletion. ([#167](https://github.com/elastic/terraform-provider-elasticstack/pull/167))
+  - To delete index resource, you'll need to explicitly set `deletion_protection = false` as follows.
+  ```terraform
+  resource "elasticstack_elasticsearch_index" "example" {
+    name = "example"
+    mappings = jsonencode({
+      properties = {
+        field1    = { type = "text" }
+      }
+    })
+    deletion_protection = false
+}
+  ```
 
 ### Fixed
 - Respect `ignore_unavailable` and `include_global_state` values when configuring SLM policies ([#224](https://github.com/elastic/terraform-provider-elasticstack/pull/224))
