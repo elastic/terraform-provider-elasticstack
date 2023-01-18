@@ -349,7 +349,7 @@ func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefaul
 	return es, diags
 }
 
-func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig) (*kibana.Client, diag.Diagnostics) {
+func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefault bool) (*kibana.Client, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	kibConn, ok := d.GetOk("kibana")
@@ -367,6 +367,15 @@ func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig) (*kibana.C
 	// if defined, then we only have a single entry
 	if kib := kibConn.([]interface{})[0]; kib != nil {
 		kibConfig := kib.(map[string]interface{})
+
+		if useEnvAsDefault {
+			if username := os.Getenv("KIBANA_USERNAME"); username != "" {
+				config.Username = strings.TrimSpace(username)
+			}
+			if password := os.Getenv("KIBANA_PASSWORD"); password != "" {
+				config.Password = strings.TrimSpace(password)
+			}
+		}
 
 		if username, ok := kibConfig["username"]; ok {
 			config.Username = username.(string)
@@ -409,7 +418,7 @@ func newApiClient(d *schema.ResourceData, version string, useEnvAsDefault bool, 
 		return nil, diags
 	}
 
-	kibanaClient, diags := buildKibanaClient(d, baseConfig)
+	kibanaClient, diags := buildKibanaClient(d, baseConfig, useEnvAsDefault)
 	if diags.HasError() {
 		return nil, diags
 	}

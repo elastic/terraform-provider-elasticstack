@@ -135,7 +135,6 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					Description:  "Username to use for API authentication to Kibana.",
 					Type:         schema.TypeString,
 					Optional:     true,
-					DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_USERNAME", nil),
 					RequiredWith: []string{"kibana.0.password"},
 				},
 				"password": {
@@ -143,7 +142,6 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					Type:         schema.TypeString,
 					Optional:     true,
 					Sensitive:    true,
-					DefaultFunc:  schema.EnvDefaultFunc("ELASTICSEARCH_PASSWORD", nil),
 					RequiredWith: []string{"kibana.0.username"},
 				},
 				"endpoints": {
