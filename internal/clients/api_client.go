@@ -194,60 +194,57 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 	return nil, diags
 }
 
-type SharedConfig struct {
-	Username           string      // Shared config
-	Password           string      // Shared config
-	Addresses          []string    // Kibanas client is (Address string)
-	InsecureSkipVerify bool        // Kibanas client is (DisableVerifySSL bool)
-	CACert             []byte      // Kibanas client is (CAs []string)
-	Header             http.Header // Not required for the Kibana client
+type BaseConfig struct {
+	Username  string
+	Password  string
+	Addresses []string
+	Header    http.Header
 }
 
-func buildSharedConfig(d *schema.ResourceData, version string, keys []string) SharedConfig {
-	sharedConfig := SharedConfig{}
+// Build base config from ES which can be shared for other resources
+func buildBaseConfig(d *schema.ResourceData, version string, useEnvAsDefault bool) BaseConfig {
+	baseConfig := BaseConfig{}
+	baseConfig.Header = buildHeader(version)
 
-	for _, key := range keys {
-		resource, ok := d.GetOk(key)
-		if !ok {
-			continue
-		}
-
-		if resource := resource.([]interface{})[0]; resource != nil {
+	if esConn, ok := d.GetOk("elasticsearch"); ok {
+		if resource := esConn.([]interface{})[0]; resource != nil {
 			config := resource.(map[string]interface{})
 
 			if username, ok := config["username"]; ok {
-				sharedConfig.Username = username.(string)
+				baseConfig.Username = username.(string)
 			}
 			if password, ok := config["password"]; ok {
-				sharedConfig.Password = password.(string)
+				baseConfig.Password = password.(string)
 			}
+
+			if useEnvAsDefault {
+				if endpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS"); endpoints != "" {
+					var addrs []string
+					for _, e := range strings.Split(endpoints, ",") {
+						addrs = append(addrs, strings.TrimSpace(e))
+					}
+					baseConfig.Addresses = addrs
+				}
+			}
+
 			if endpoints, ok := config["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
 				var addrs []string
 				for _, e := range endpoints.([]interface{}) {
 					addrs = append(addrs, e.(string))
 				}
-				sharedConfig.Addresses = addrs
+				baseConfig.Addresses = addrs
 			}
 		}
 	}
 
-	return sharedConfig
-	// TODO: Populate below, should we only share config fields with the same name
-	// return SharedConfig{
-	// 	Addresses:          make([]string, 0),
-	// 	Username:           "",
-	// 	Password:           "",
-	// 	InsecureSkipVerify: false,
-	// 	CACert:             make([]byte, 0),
-	// 	Header:             buildHeader(version),
-	// }
+	return baseConfig
 }
 
 func buildHeader(version string) http.Header {
 	return http.Header{"User-Agent": []string{fmt.Sprintf("elasticstack-terraform-provider/%s", version)}}
 }
 
-func buildEsClient(d *schema.ResourceData, sharedConfig SharedConfig, useEnvAsDefault bool, key string) (*elasticsearch.Client, diag.Diagnostics) {
+func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefault bool, key string) (*elasticsearch.Client, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esConn, ok := d.GetOk(key)
@@ -256,9 +253,10 @@ func buildEsClient(d *schema.ResourceData, sharedConfig SharedConfig, useEnvAsDe
 	}
 
 	config := elasticsearch.Config{}
-	config.Header = sharedConfig.Header
-	config.Username = sharedConfig.Username
-	config.Password = sharedConfig.Password
+	config.Header = baseConfig.Header
+	config.Username = baseConfig.Username
+	config.Password = baseConfig.Password
+	config.Addresses = baseConfig.Addresses
 
 	// if defined, then we only have a single entry
 	if es := esConn.([]interface{})[0]; es != nil {
@@ -266,20 +264,6 @@ func buildEsClient(d *schema.ResourceData, sharedConfig SharedConfig, useEnvAsDe
 
 		if apikey, ok := esConfig["api_key"]; ok {
 			config.APIKey = apikey.(string)
-		}
-
-		if useEnvAsDefault {
-			if endpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS"); endpoints != "" {
-				var addrs []string
-				for _, e := range strings.Split(endpoints, ",") {
-					addrs = append(addrs, strings.TrimSpace(e))
-				}
-				config.Addresses = addrs
-			}
-		}
-
-		if len(sharedConfig.Addresses) > 0 {
-			config.Addresses = sharedConfig.Addresses
 		}
 
 		if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
@@ -365,31 +349,43 @@ func buildEsClient(d *schema.ResourceData, sharedConfig SharedConfig, useEnvAsDe
 	return es, diags
 }
 
-func buildKibanaClient(d *schema.ResourceData, sharedConfig SharedConfig) (*kibana.Client, diag.Diagnostics) {
+func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig) (*kibana.Client, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// kibConn, ok := d.GetOk("kibana")
-	_, ok := d.GetOk("kibana")
+	kibConn, ok := d.GetOk("kibana")
 	if !ok {
 		return nil, diags
 	}
 
 	config := kibana.Config{}
-	config.Username = sharedConfig.Username
-	config.Password = sharedConfig.Password
-	// We're curently limited by the API to a single endpoint
-	config.Address = sharedConfig.Addresses[0]
+
+	// Use ES details by default
+	config.Username = baseConfig.Username
+	config.Password = baseConfig.Password
+	config.Address = baseConfig.Addresses[0]
 
 	// if defined, then we only have a single entry
-	// if kib := kibConn.([]interface{})[0]; kib != nil {
-	// TODO: Ensure config for kibana
-	// kibConfig := kib.(map[string]interface{})
+	if kib := kibConn.([]interface{})[0]; kib != nil {
+		kibConfig := kib.(map[string]interface{})
 
-	// if insecure, ok := kibConfig["insecure"]; ok && insecure.(bool) {
-	// tlsClientConfig := ensureTLSClientConfig(&config)
-	// tlsClientConfig.InsecureSkipVerify = true
-	// }
-	// }
+		if username, ok := kibConfig["username"]; ok {
+			config.Username = username.(string)
+		}
+		if password, ok := kibConfig["password"]; ok {
+			config.Password = password.(string)
+		}
+
+		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
+			// We're curently limited by the API to a single endpoint
+			if endpoint := endpoints.([]interface{})[0]; endpoint != nil {
+				config.Address = endpoint.(string)
+			}
+		}
+
+		if insecure, ok := kibConfig["insecure"]; ok && insecure.(bool) {
+			config.DisableVerifySSL = true
+		}
+	}
 
 	kib, err := kibana.NewClient(config)
 
@@ -406,14 +402,14 @@ func buildKibanaClient(d *schema.ResourceData, sharedConfig SharedConfig) (*kiba
 
 func newApiClient(d *schema.ResourceData, version string, useEnvAsDefault bool, esKey string) (*ApiClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	sharedConfig := buildSharedConfig(d, version, []string{esKey, "kibana"})
+	baseConfig := buildBaseConfig(d, version, useEnvAsDefault)
 
-	esClient, diags := buildEsClient(d, sharedConfig, useEnvAsDefault, esKey)
+	esClient, diags := buildEsClient(d, baseConfig, useEnvAsDefault, esKey)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	kibanaClient, diags := buildKibanaClient(d, sharedConfig)
+	kibanaClient, diags := buildKibanaClient(d, baseConfig)
 	if diags.HasError() {
 		return nil, diags
 	}
