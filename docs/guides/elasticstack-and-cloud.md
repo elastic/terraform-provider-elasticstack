@@ -26,9 +26,11 @@ terraform {
     }
   }
 }
+
 provider "ec" {
-  # You can fill in your API key here, or use an environment variable instead
-  apikey = "<api key>"
+  # You can fill in your API key here, or use an environment variable TF_VAR_ec_apikey instead
+  # For details on how to generate an API key, see: https://www.elastic.co/guide/en/cloud/current/ec-api-authentication.html.
+  apikey = var.ec_apikey
 }
 ```
 
@@ -39,22 +41,36 @@ Next, we'll set up an Elastic Cloud `ec_deployment` resource, which represents a
 We shall configure the deployment using the credentials that it outputs once created
 
 ```terraform
-# Creating a deployment on Elastic Cloud GCP region,
-# with elasticsearch and kibana components.
-resource "ec_deployment" "cluster" {
-  region                 = "gcp-us-central1"
-  name                   = "mydeployment"
+# Creating deployments on Elastic Cloud GCP region with elasticsearch and kibana components. One deployment is a dedicated monitor for the other. 
+
+resource "ec_deployment" "monitoring" {
+  region                 = var.region
+  name                   = "my-monitoring-deployment"
   version                = data.ec_stack.latest.version
-  deployment_template_id = "gcp-storage-optimized"
+  deployment_template_id = var.deployment_template_id
 
   elasticsearch {}
+  kibana {}
+}
 
+resource "ec_deployment" "cluster" {
+  region                 = var.region
+  name                   = "my-deployment"
+  version                = data.ec_stack.latest.version
+  deployment_template_id = var.deployment_template_id
+
+  observability {
+    deployment_id = ec_deployment.monitoring.id
+    ref_id        = ec_deployment.monitoring.elasticsearch[0].ref_id
+  }
+
+  elasticsearch {}
   kibana {}
 }
 
 data "ec_stack" "latest" {
   version_regex = "latest"
-  region        = "gcp-us-central1"
+  region        = var.region
 }
 
 provider "elasticstack" {
@@ -67,44 +83,14 @@ provider "elasticstack" {
   }
 }
 
-# Defining a user for ingesting
-resource "elasticstack_elasticsearch_security_user" "user" {
-  username = "ingest_user"
-
-  # Password is cleartext here for comfort, but there's also a hashed password option
-  password = "mysecretpassword"
-  roles    = ["editor"]
-
-  # Set the custom metadata for this user
-  metadata = jsonencode({
-    "env"    = "testing"
-    "open"   = false
-    "number" = 49
-  })
-}
-
-# Configuring my cluster with an index template as well.
-resource "elasticstack_elasticsearch_index_template" "my_template" {
-  name = "my_ingest_1"
-
-  priority       = 42
-  index_patterns = ["server-logs*"]
-
-  template {
-    alias {
-      name = "my_template_test"
-    }
-
-    settings = jsonencode({
-      number_of_shards = "3"
-    })
-
-    mappings = jsonencode({
-      properties : {
-        "@timestamp" : { "type" : "date" },
-        "username" : { "type" : "keyword" }
-      }
-    })
+provider "elasticstack" {
+  # Use our Elastic Cloud deployment outputs for connection details.
+  # This also allows the provider to create the proper relationships between the two resources.
+  elasticsearch {
+    endpoints = ["${ec_deployment.monitoring.elasticsearch[0].https_endpoint}"]
+    username  = ec_deployment.monitoring.elasticsearch_username
+    password  = ec_deployment.monitoring.elasticsearch_password
   }
+  alias = "monitoring"
 }
 ```
