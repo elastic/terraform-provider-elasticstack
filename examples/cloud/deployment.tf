@@ -1,5 +1,10 @@
 # Creating deployments on Elastic Cloud GCP region with elasticsearch and kibana components. One deployment is a dedicated monitor for the other. 
 
+data "ec_stack" "latest" {
+  version_regex = "latest"
+  region        = var.region
+}
+
 resource "ec_deployment" "monitoring" {
   region                 = var.region
   name                   = "my-monitoring-deployment"
@@ -23,11 +28,6 @@ resource "ec_deployment" "cluster" {
 
   elasticsearch {}
   kibana {}
-}
-
-data "ec_stack" "latest" {
-  version_regex = "latest"
-  region        = var.region
 }
 
 provider "elasticstack" {
