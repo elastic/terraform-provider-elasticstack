@@ -7,6 +7,10 @@ description: |-
 
 # Using the Elastic Stack provider with Elastic Cloud
 
+
+
+## Creating deployments
+
 A common scenario for using the Elastic Stack provider, is to manage & configure Elastic Cloud deployments.
 In order to do that, we'll use both the Elastic Cloud provider, as well as the Elastic Stack provider.
 
@@ -20,6 +24,10 @@ Note that the provider needs to be configured with an API key which has to be cr
 
 Notice that the Elastic Stack  provider setup with empty `elasticsearch {}` block, since we'll be using an `elasticsearch_connection` block
 for each of our resources, to point to the Elastic Cloud deployment.
+
+
+
+## Managing stack resources and configuration
 
 Now we can add resources to these deployments as follows:
 
