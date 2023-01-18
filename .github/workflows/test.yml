@@ -81,6 +81,7 @@ jobs:
           - '8.3.3'
           - '8.4.3'
           - '8.5.3'
+          - '8.6.0'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
