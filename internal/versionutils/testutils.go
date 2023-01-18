@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-func CheckIfVersionIsUnsupported(v *version.Version) func() (bool, error) {
+func CheckIfVersionIsUnsupported(minSupportedVersion *version.Version) func() (bool, error) {
 	return func() (b bool, err error) {
 		client, err := clients.NewAcceptanceTestingClient()
 		if err != nil {
@@ -19,6 +19,6 @@ func CheckIfVersionIsUnsupported(v *version.Version) func() (bool, error) {
 			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
-		return serverVersion.LessThan(v), nil
+		return serverVersion.LessThan(minSupportedVersion), nil
 	}
 }

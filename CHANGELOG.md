@@ -1,6 +1,7 @@
 ## [Unreleased]
 ### Added
 - Add 'mapping_coerce' field to index resource ([#229](https://github.com/elastic/terraform-provider-elasticstack/pull/229))
+- Add 'min_*' conditions to ILM rollover ([#250](https://github.com/elastic/terraform-provider-elasticstack/pull/250))
 - **[Breaking Change] Add 'deletion_protection' field to index resource** to avoid unintentional deletion. ([#167](https://github.com/elastic/terraform-provider-elasticstack/pull/167))
   - To delete index resource, you'll need to explicitly set `deletion_protection = false` as follows.
   ```terraform
