@@ -12,7 +12,7 @@
       }
     })
     deletion_protection = false
-}
+  }
   ```
 
 ### Fixed
