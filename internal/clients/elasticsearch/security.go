@@ -19,7 +19,11 @@ func PutUser(ctx context.Context, apiClient *clients.ApiClient, user *models.Use
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().Security.PutUser(user.Username, bytes.NewReader(userBytes), apiClient.GetESClient().Security.PutUser.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.PutUser(user.Username, bytes.NewReader(userBytes), esClient.Security.PutUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -32,8 +36,12 @@ func PutUser(ctx context.Context, apiClient *clients.ApiClient, user *models.Use
 
 func GetUser(ctx context.Context, apiClient *clients.ApiClient, username string) (*models.User, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Security.GetUser.WithUsername(username)
-	res, err := apiClient.GetESClient().Security.GetUser(req, apiClient.GetESClient().Security.GetUser.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Security.GetUser.WithUsername(username)
+	res, err := esClient.Security.GetUser(req, esClient.Security.GetUser.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -65,7 +73,11 @@ func GetUser(ctx context.Context, apiClient *clients.ApiClient, username string)
 
 func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().Security.DeleteUser(username, apiClient.GetESClient().Security.DeleteUser.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.DeleteUser(username, esClient.Security.DeleteUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -78,7 +90,11 @@ func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username stri
 
 func EnableUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().Security.EnableUser(username, apiClient.GetESClient().Security.EnableUser.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.EnableUser(username, esClient.Security.EnableUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -91,7 +107,11 @@ func EnableUser(ctx context.Context, apiClient *clients.ApiClient, username stri
 
 func DisableUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().Security.DisableUser(username, apiClient.GetESClient().Security.DisableUser.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.DisableUser(username, esClient.Security.DisableUser.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -108,10 +128,14 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ApiClient, usern
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().Security.ChangePassword(
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.ChangePassword(
 		bytes.NewReader(userPasswordBytes),
-		apiClient.GetESClient().Security.ChangePassword.WithUsername(username),
-		apiClient.GetESClient().Security.ChangePassword.WithContext(ctx),
+		esClient.Security.ChangePassword.WithUsername(username),
+		esClient.Security.ChangePassword.WithContext(ctx),
 	)
 	if err != nil {
 		return diag.FromErr(err)
@@ -130,7 +154,11 @@ func PutRole(ctx context.Context, apiClient *clients.ApiClient, role *models.Rol
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().Security.PutRole(role.Name, bytes.NewReader(roleBytes), apiClient.GetESClient().Security.PutRole.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.PutRole(role.Name, bytes.NewReader(roleBytes), esClient.Security.PutRole.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -145,8 +173,12 @@ func PutRole(ctx context.Context, apiClient *clients.ApiClient, role *models.Rol
 func GetRole(ctx context.Context, apiClient *clients.ApiClient, rolename string) (*models.Role, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	req := apiClient.GetESClient().Security.GetRole.WithName(rolename)
-	res, err := apiClient.GetESClient().Security.GetRole(req, apiClient.GetESClient().Security.GetRole.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Security.GetRole.WithName(rolename)
+	res, err := esClient.Security.GetRole(req, esClient.Security.GetRole.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -175,7 +207,11 @@ func GetRole(ctx context.Context, apiClient *clients.ApiClient, rolename string)
 
 func DeleteRole(ctx context.Context, apiClient *clients.ApiClient, rolename string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().Security.DeleteRole(rolename, apiClient.GetESClient().Security.DeleteRole.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.DeleteRole(rolename, esClient.Security.DeleteRole.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -192,7 +228,11 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappi
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().Security.PutRoleMapping(roleMapping.Name, bytes.NewReader(roleMappingBytes), apiClient.GetESClient().Security.PutRoleMapping.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.PutRoleMapping(roleMapping.Name, bytes.NewReader(roleMappingBytes), esClient.Security.PutRoleMapping.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -205,8 +245,12 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappi
 }
 
 func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) (*models.RoleMapping, diag.Diagnostics) {
-	req := apiClient.GetESClient().Security.GetRoleMapping.WithName(roleMappingName)
-	res, err := apiClient.GetESClient().Security.GetRoleMapping(req, apiClient.GetESClient().Security.GetRoleMapping.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Security.GetRoleMapping.WithName(roleMappingName)
+	res, err := esClient.Security.GetRoleMapping(req, esClient.Security.GetRoleMapping.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -232,7 +276,11 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappi
 }
 
 func DeleteRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) diag.Diagnostics {
-	res, err := apiClient.GetESClient().Security.DeleteRoleMapping(roleMappingName, apiClient.GetESClient().Security.DeleteRoleMapping.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.DeleteRoleMapping(roleMappingName, esClient.Security.DeleteRoleMapping.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -251,7 +299,11 @@ func PutApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.Api
 		return nil, diag.FromErr(err)
 	}
 
-	res, err := apiClient.GetESClient().Security.CreateAPIKey(bytes.NewReader(apikeyBytes))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	res, err := esClient.Security.CreateAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -271,8 +323,12 @@ func PutApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.Api
 
 func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Security.GetAPIKey.WithID(id)
-	res, err := apiClient.GetESClient().Security.GetAPIKey(req)
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Security.GetAPIKey.WithID(id)
+	res, err := esClient.Security.GetAPIKey(req)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -323,7 +379,11 @@ func DeleteApiKey(apiClient *clients.ApiClient, id string) diag.Diagnostics {
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil && res.IsError() {
 		return diag.FromErr(err)
 	}

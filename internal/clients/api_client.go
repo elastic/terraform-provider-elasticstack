@@ -150,7 +150,11 @@ func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.D
 	}
 
 	var diags diag.Diagnostics
-	res, err := a.GetESClient().Info(a.GetESClient().Info.WithContext(ctx))
+	esClient, err := a.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	res, err := esClient.Info(esClient.Info.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}

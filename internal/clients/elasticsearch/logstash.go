@@ -19,7 +19,11 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, logs
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().LogstashPutPipeline(logstashPipeline.PipelineID, bytes.NewReader(logstashPipelineBytes), apiClient.GetESClient().LogstashPutPipeline.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.LogstashPutPipeline(logstashPipeline.PipelineID, bytes.NewReader(logstashPipelineBytes), esClient.LogstashPutPipeline.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -33,7 +37,11 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, logs
 
 func GetLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().LogstashGetPipeline(pipelineID, apiClient.GetESClient().LogstashGetPipeline.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	res, err := esClient.LogstashGetPipeline(pipelineID, esClient.LogstashGetPipeline.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -65,7 +73,11 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipe
 
 func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline_id string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().LogstashDeletePipeline(pipeline_id, apiClient.GetESClient().LogstashDeletePipeline.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.LogstashDeletePipeline(pipeline_id, esClient.LogstashDeletePipeline.WithContext(ctx))
 
 	if err != nil {
 		return diag.FromErr(err)
