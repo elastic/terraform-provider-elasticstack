@@ -205,14 +205,13 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 }
 
 type BaseConfig struct {
-	Username  string
-	Password  string
-	Addresses []string
-	Header    http.Header
+	Username string
+	Password string
+	Header   http.Header
 }
 
 // Build base config from ES which can be shared for other resources
-func buildBaseConfig(d *schema.ResourceData, version string, useEnvAsDefault bool) BaseConfig {
+func buildBaseConfig(d *schema.ResourceData, version string) BaseConfig {
 	baseConfig := BaseConfig{}
 	baseConfig.Header = buildHeader(version)
 
@@ -225,24 +224,6 @@ func buildBaseConfig(d *schema.ResourceData, version string, useEnvAsDefault boo
 			}
 			if password, ok := config["password"]; ok {
 				baseConfig.Password = password.(string)
-			}
-
-			if useEnvAsDefault {
-				if endpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS"); endpoints != "" {
-					var addrs []string
-					for _, e := range strings.Split(endpoints, ",") {
-						addrs = append(addrs, strings.TrimSpace(e))
-					}
-					baseConfig.Addresses = addrs
-				}
-			}
-
-			if endpoints, ok := config["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
-				var addrs []string
-				for _, e := range endpoints.([]interface{}) {
-					addrs = append(addrs, e.(string))
-				}
-				baseConfig.Addresses = addrs
 			}
 		}
 	}
@@ -263,10 +244,9 @@ func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefaul
 	}
 
 	config := elasticsearch.Config{
-		Header:    baseConfig.Header,
-		Username:  baseConfig.Username,
-		Password:  baseConfig.Password,
-		Addresses: baseConfig.Addresses,
+		Header:   baseConfig.Header,
+		Username: baseConfig.Username,
+		Password: baseConfig.Password,
 	}
 
 	// if defined, then we only have a single entry
@@ -275,6 +255,24 @@ func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefaul
 
 		if apikey, ok := esConfig["api_key"]; ok {
 			config.APIKey = apikey.(string)
+		}
+
+		if useEnvAsDefault {
+			if endpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS"); endpoints != "" {
+				var addrs []string
+				for _, e := range strings.Split(endpoints, ",") {
+					addrs = append(addrs, strings.TrimSpace(e))
+				}
+				config.Addresses = addrs
+			}
+		}
+
+		if endpoints, ok := esConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
+			var addrs []string
+			for _, e := range endpoints.([]interface{}) {
+				addrs = append(addrs, e.(string))
+			}
+			config.Addresses = addrs
 		}
 
 		if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
@@ -421,7 +419,7 @@ func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDe
 
 func newApiClient(d *schema.ResourceData, version string, useEnvAsDefault bool, esKey string) (*ApiClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	baseConfig := buildBaseConfig(d, version, useEnvAsDefault)
+	baseConfig := buildBaseConfig(d, version)
 
 	esClient, diags := buildEsClient(d, baseConfig, useEnvAsDefault, esKey)
 	if diags.HasError() {
