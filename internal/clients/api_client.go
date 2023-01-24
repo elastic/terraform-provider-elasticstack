@@ -70,8 +70,9 @@ func NewApiClientFunc(version string) func(context.Context, *schema.ResourceData
 }
 
 func NewAcceptanceTestingClient() (*ApiClient, error) {
-	config := elasticsearch.Config{}
-	config.Header = buildHeader("tf-acceptance-testing")
+	config := elasticsearch.Config{
+		Header: buildHeader("tf-acceptance-testing"),
+	}
 
 	if es := os.Getenv("ELASTICSEARCH_ENDPOINTS"); es != "" {
 		endpoints := make([]string, 0)
@@ -120,7 +121,7 @@ func ensureTLSClientConfig(config *elasticsearch.Config) *tls.Config {
 
 func (a *ApiClient) GetESClient() (*elasticsearch.Client, error) {
 	if a.elasticsearch == nil {
-		return nil, errors.New("Elasticsearch client not found")
+		return nil, errors.New("elasticsearch client not found")
 	}
 
 	return a.elasticsearch, nil
@@ -128,7 +129,7 @@ func (a *ApiClient) GetESClient() (*elasticsearch.Client, error) {
 
 func (a *ApiClient) GetKibanaClient() (*kibana.Client, error) {
 	if a.kibana == nil {
-		return nil, errors.New("Kibana client not found")
+		return nil, errors.New("kibana client not found")
 	}
 
 	return a.kibana, nil
