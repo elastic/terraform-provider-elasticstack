@@ -38,7 +38,7 @@ func newDebugTransport(name string, transport esapi.Transport) *debugTransport {
 
 func (d *debugTransport) Perform(r *http.Request) (*http.Response, error) {
 	ctx := r.Context()
-	reqData, err := httputil.DumpRequestOut(r, true)
+	reqData, err := httputil.DumpRequest(r, true)
 	if err == nil {
 		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, d.name, prettyPrintJsonLines(reqData)))
 	} else {
