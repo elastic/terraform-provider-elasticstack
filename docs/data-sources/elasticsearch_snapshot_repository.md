@@ -84,7 +84,7 @@ Optional:
 - `ca_file` (String) Path to a custom Certificate Authority certificate
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
-- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
