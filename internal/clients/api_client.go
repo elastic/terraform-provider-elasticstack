@@ -252,11 +252,12 @@ func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefaul
 		return nil, diags
 	}
 
-	config := elasticsearch.Config{}
-	config.Header = baseConfig.Header
-	config.Username = baseConfig.Username
-	config.Password = baseConfig.Password
-	config.Addresses = baseConfig.Addresses
+	config := elasticsearch.Config{
+		Header:    baseConfig.Header,
+		Username:  baseConfig.Username,
+		Password:  baseConfig.Password,
+		Addresses: baseConfig.Addresses,
+	}
 
 	// if defined, then we only have a single entry
 	if es := esConn.([]interface{})[0]; es != nil {
@@ -357,12 +358,11 @@ func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDe
 		return nil, diags
 	}
 
-	config := kibana.Config{}
-
 	// Use ES details by default
-	config.Username = baseConfig.Username
-	config.Password = baseConfig.Password
-	config.Address = baseConfig.Addresses[0]
+	config := kibana.Config{
+		Username: baseConfig.Username,
+		Password: baseConfig.Password,
+	}
 
 	// if defined, then we only have a single entry
 	if kib := kibConn.([]interface{})[0]; kib != nil {
