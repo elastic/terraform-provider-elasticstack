@@ -63,7 +63,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 					ConflictsWith: []string{usernamePath, passwordPath},
 				},
 				"endpoints": {
-					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Type:        schema.TypeList,
 					Optional:    true,
 					Sensitive:   true,
@@ -145,7 +145,7 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					RequiredWith: []string{"kibana.0.username"},
 				},
 				"endpoints": {
-					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Type:        schema.TypeList,
 					MaxItems:    1, // Current API restriction
 					Required:    true,
