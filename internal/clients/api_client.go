@@ -108,6 +108,7 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Di
 
 	version := defaultClient.version
 	baseConfig := buildBaseConfig(d, version, esConnectionKey)
+
 	esClient, diags := buildEsClient(d, baseConfig, false, esConnectionKey)
 	if diags.HasError() {
 		return nil, diags
