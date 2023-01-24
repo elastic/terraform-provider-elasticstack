@@ -70,8 +70,9 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Type:        schema.TypeMap,
 			Optional:    true,
 			Elem: &schema.Schema{
-				Type:    schema.TypeString,
-				Default: "{}",
+				Type:             schema.TypeString,
+				ValidateFunc:     validation.StringIsJSON,
+				DiffSuppressFunc: utils.DiffJsonSuppress,
 			},
 		},
 		// Pipeline Settings
