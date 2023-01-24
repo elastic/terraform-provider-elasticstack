@@ -65,7 +65,7 @@ type ApiClient struct {
 
 func NewApiClientFunc(version string) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return newApiClient(d, version, true, "elasticsearch")
+		return newApiClient(d, version, true)
 	}
 }
 
@@ -102,11 +102,23 @@ const esConnectionKey string = "elasticsearch_connection"
 func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Diagnostics) {
 	defaultClient := meta.(*ApiClient)
 
-	if _, ok := d.GetOk(esConnectionKey); ok {
-		return newApiClient(d, defaultClient.version, false, esConnectionKey)
+	if _, ok := d.GetOk(esConnectionKey); !ok {
+		return defaultClient, nil
 	}
 
-	return defaultClient, nil
+	version := defaultClient.version
+	baseConfig := buildBaseConfig(d, version, esConnectionKey)
+	esClient, diags := buildEsClient(d, baseConfig, false, esConnectionKey)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return &ApiClient{
+		elasticsearch:            esClient,
+		elasticsearchClusterInfo: defaultClient.elasticsearchClusterInfo,
+		kibana:                   defaultClient.kibana,
+		version:                  version,
+	}, diags
 }
 
 func ensureTLSClientConfig(config *elasticsearch.Config) *tls.Config {
@@ -215,11 +227,11 @@ type BaseConfig struct {
 }
 
 // Build base config from ES which can be shared for other resources
-func buildBaseConfig(d *schema.ResourceData, version string) BaseConfig {
+func buildBaseConfig(d *schema.ResourceData, version string, esKey string) BaseConfig {
 	baseConfig := BaseConfig{}
 	baseConfig.Header = buildHeader(version)
 
-	if esConn, ok := d.GetOk("elasticsearch"); ok {
+	if esConn, ok := d.GetOk(esKey); ok {
 		if resource := esConn.([]interface{})[0]; resource != nil {
 			config := resource.(map[string]interface{})
 
@@ -421,9 +433,11 @@ func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDe
 	return kib, diags
 }
 
-func newApiClient(d *schema.ResourceData, version string, useEnvAsDefault bool, esKey string) (*ApiClient, diag.Diagnostics) {
+const esKey string = "elasticsearch"
+
+func newApiClient(d *schema.ResourceData, version string, useEnvAsDefault bool) (*ApiClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	baseConfig := buildBaseConfig(d, version)
+	baseConfig := buildBaseConfig(d, version, esKey)
 
 	esClient, diags := buildEsClient(d, baseConfig, useEnvAsDefault, esKey)
 	if diags.HasError() {
