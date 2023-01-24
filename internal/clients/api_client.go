@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -117,12 +118,20 @@ func ensureTLSClientConfig(config *elasticsearch.Config) *tls.Config {
 	return config.Transport.(*http.Transport).TLSClientConfig
 }
 
-func (a *ApiClient) GetESClient() *elasticsearch.Client {
-	return a.elasticsearch
+func (a *ApiClient) GetESClient() (*elasticsearch.Client, error) {
+	if a.elasticsearch == nil {
+		return nil, errors.New("Elasticsearch client not found")
+	}
+
+	return a.elasticsearch, nil
 }
 
-func (a *ApiClient) GetKibanaClient() *kibana.Client {
-	return a.kibana
+func (a *ApiClient) GetKibanaClient() (*kibana.Client, error) {
+	if a.kibana == nil {
+		return nil, errors.New("Kibana client not found")
+	}
+
+	return a.kibana, nil
 }
 
 func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
