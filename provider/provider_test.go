@@ -36,6 +36,21 @@ func TestElasticsearchAPIKeyConnection(t *testing.T) {
 	})
 }
 
+func TestKibanaConnection(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testKibanaConnection(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("", "", ""), // Create data source?
+				),
+			},
+		},
+	})
+}
+
 func testElasticsearchConnection(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -69,4 +84,16 @@ data "elasticstack_elasticsearch_security_user" "test" {
   }
 }
 `, apiKeyName, os.Getenv("ELASTICSEARCH_ENDPOINTS"))
+}
+
+func testKibanaConnection() string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {
+    username = "elastic"
+    password = "%s"
+    endpoints = ["%s"]
+  }
+}
+`, os.Getenv("ELASTICSEARCH_PASSWORD"), os.Getenv("KIBANA_ENDPOINTS"))
 }

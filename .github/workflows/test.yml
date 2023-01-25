@@ -104,3 +104,4 @@ jobs:
           ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
           ELASTICSEARCH_USERNAME: "elastic"
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+          KIBANA_ENDPOINTS: "http://localhost:5601"
