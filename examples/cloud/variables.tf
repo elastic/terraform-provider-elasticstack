@@ -1,7 +1,8 @@
 #This needs to be set in order to run the example. Best to use the TF_VAR_ec_apikey environment variable.
 variable "ec_apikey" {
-  type    = string
-  default = ""
+  type      = string
+  sensitive = true
+  default   = ""
 }
 
 variable "region" {
