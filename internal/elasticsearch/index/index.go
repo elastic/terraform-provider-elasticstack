@@ -530,6 +530,12 @@ If specified, this mapping can include: field names, [field data types](https://
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
+		"deletion_protection": {
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     true,
+			Description: "Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.",
+		},
 		"include_type_name": {
 			Type:        schema.TypeBool,
 			Description: "If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.",
@@ -951,6 +957,9 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	if d.Get("deletion_protection").(bool) {
+		return diag.Errorf("cannot destroy index without setting deletion_protection=false and running `terraform apply`")
+	}
 	client, diags := clients.NewApiClient(d, meta)
 	if diags.HasError() {
 		return diags
