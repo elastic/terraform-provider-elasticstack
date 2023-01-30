@@ -21,9 +21,9 @@ func init() {
 
 func New(version string) *schema.Provider {
 	p := &schema.Provider{
-
 		Schema: map[string]*schema.Schema{
-			esKeyName: providerSchema.GetConnectionSchema(esKeyName, true),
+			esKeyName: providerSchema.GetEsConnectionSchema(esKeyName, true),
+			"kibana":  providerSchema.GetKibanaConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),

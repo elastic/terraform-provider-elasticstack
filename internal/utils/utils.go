@@ -126,7 +126,7 @@ const connectionKeyName = "elasticsearch_connection"
 // Returns the common connection schema for all the Elasticsearch resources,
 // which defines the fields which can be used to configure the API access
 func AddConnectionSchema(providedSchema map[string]*schema.Schema) {
-	providedSchema[connectionKeyName] = providerSchema.GetConnectionSchema(connectionKeyName, false)
+	providedSchema[connectionKeyName] = providerSchema.GetEsConnectionSchema(connectionKeyName, false)
 }
 
 func StringToHash(s string) (*string, error) {

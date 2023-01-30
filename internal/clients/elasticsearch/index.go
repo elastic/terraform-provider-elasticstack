@@ -21,8 +21,12 @@ func PutIlm(ctx context.Context, apiClient *clients.ApiClient, policy *models.Po
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	req := apiClient.GetESClient().ILM.PutLifecycle.WithBody(bytes.NewReader(policyBytes))
-	res, err := apiClient.GetESClient().ILM.PutLifecycle(policy.Name, req, apiClient.GetESClient().ILM.PutLifecycle.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	req := esClient.ILM.PutLifecycle.WithBody(bytes.NewReader(policyBytes))
+	res, err := esClient.ILM.PutLifecycle(policy.Name, req, esClient.ILM.PutLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -35,8 +39,12 @@ func PutIlm(ctx context.Context, apiClient *clients.ApiClient, policy *models.Po
 
 func GetIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string) (*models.PolicyDefinition, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().ILM.GetLifecycle.WithPolicy(policyName)
-	res, err := apiClient.GetESClient().ILM.GetLifecycle(req, apiClient.GetESClient().ILM.GetLifecycle.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.ILM.GetLifecycle.WithPolicy(policyName)
+	res, err := esClient.ILM.GetLifecycle(req, esClient.ILM.GetLifecycle.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -68,7 +76,11 @@ func GetIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string
 func DeleteIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := apiClient.GetESClient().ILM.DeleteLifecycle(policyName, apiClient.GetESClient().ILM.DeleteLifecycle.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.ILM.DeleteLifecycle(policyName, esClient.ILM.DeleteLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -86,7 +98,11 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, tem
 		return diag.FromErr(err)
 	}
 
-	res, err := apiClient.GetESClient().Cluster.PutComponentTemplate(template.Name, bytes.NewReader(templateBytes), apiClient.GetESClient().Cluster.PutComponentTemplate.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Cluster.PutComponentTemplate(template.Name, bytes.NewReader(templateBytes), esClient.Cluster.PutComponentTemplate.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -100,8 +116,12 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, tem
 
 func GetComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) (*models.ComponentTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Cluster.GetComponentTemplate.WithName(templateName)
-	res, err := apiClient.GetESClient().Cluster.GetComponentTemplate(req, apiClient.GetESClient().Cluster.GetComponentTemplate.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Cluster.GetComponentTemplate.WithName(templateName)
+	res, err := esClient.Cluster.GetComponentTemplate(req, esClient.Cluster.GetComponentTemplate.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -133,7 +153,11 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, tem
 
 func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().Cluster.DeleteComponentTemplate(templateName, apiClient.GetESClient().Cluster.DeleteComponentTemplate.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Cluster.DeleteComponentTemplate(templateName, esClient.Cluster.DeleteComponentTemplate.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -151,7 +175,11 @@ func PutIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templat
 		return diag.FromErr(err)
 	}
 
-	res, err := apiClient.GetESClient().Indices.PutIndexTemplate(template.Name, bytes.NewReader(templateBytes), apiClient.GetESClient().Indices.PutIndexTemplate.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Indices.PutIndexTemplate(template.Name, bytes.NewReader(templateBytes), esClient.Indices.PutIndexTemplate.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -165,8 +193,12 @@ func PutIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templat
 
 func GetIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) (*models.IndexTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Indices.GetIndexTemplate.WithName(templateName)
-	res, err := apiClient.GetESClient().Indices.GetIndexTemplate(req, apiClient.GetESClient().Indices.GetIndexTemplate.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Indices.GetIndexTemplate.WithName(templateName)
+	res, err := esClient.Indices.GetIndexTemplate(req, esClient.Indices.GetIndexTemplate.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -198,7 +230,11 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templat
 
 func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().Indices.DeleteIndexTemplate(templateName, apiClient.GetESClient().Indices.DeleteIndexTemplate.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Indices.DeleteIndexTemplate(templateName, esClient.Indices.DeleteIndexTemplate.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -216,17 +252,22 @@ func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.I
 		return diag.FromErr(err)
 	}
 
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	opts := []func(*esapi.IndicesCreateRequest){
-		apiClient.GetESClient().Indices.Create.WithBody(bytes.NewReader(indexBytes)),
-		apiClient.GetESClient().Indices.Create.WithContext(ctx),
-		apiClient.GetESClient().Indices.Create.WithWaitForActiveShards(params.WaitForActiveShards),
-		apiClient.GetESClient().Indices.Create.WithMasterTimeout(params.MasterTimeout),
-		apiClient.GetESClient().Indices.Create.WithTimeout(params.Timeout),
+		esClient.Indices.Create.WithBody(bytes.NewReader(indexBytes)),
+		esClient.Indices.Create.WithContext(ctx),
+		esClient.Indices.Create.WithWaitForActiveShards(params.WaitForActiveShards),
+		esClient.Indices.Create.WithMasterTimeout(params.MasterTimeout),
+		esClient.Indices.Create.WithTimeout(params.Timeout),
 	}
 	if params.IncludeTypeName {
-		opts = append(opts, apiClient.GetESClient().Indices.Create.WithIncludeTypeName(params.IncludeTypeName))
+		opts = append(opts, esClient.Indices.Create.WithIncludeTypeName(params.IncludeTypeName))
 	}
-	res, err := apiClient.GetESClient().Indices.Create(
+	res, err := esClient.Indices.Create(
 		index.Name,
 		opts...,
 	)
@@ -243,7 +284,11 @@ func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.I
 func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := apiClient.GetESClient().Indices.Delete([]string{name}, apiClient.GetESClient().Indices.Delete.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Indices.Delete([]string{name}, esClient.Indices.Delete.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -258,8 +303,12 @@ func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string)
 func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.Index, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	req := apiClient.GetESClient().Indices.Get.WithFlatSettings(true)
-	res, err := apiClient.GetESClient().Indices.Get([]string{name}, req, apiClient.GetESClient().Indices.Get.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Indices.Get.WithFlatSettings(true)
+	res, err := esClient.Indices.Get([]string{name}, req, esClient.Indices.Get.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -283,7 +332,11 @@ func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*
 
 func DeleteIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index string, aliases []string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().Indices.DeleteAlias([]string{index}, aliases, apiClient.GetESClient().Indices.DeleteAlias.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Indices.DeleteAlias([]string{index}, aliases, esClient.Indices.DeleteAlias.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -300,8 +353,12 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index s
 	if err != nil {
 		diag.FromErr(err)
 	}
-	req := apiClient.GetESClient().Indices.PutAlias.WithBody(bytes.NewReader(aliasBytes))
-	res, err := apiClient.GetESClient().Indices.PutAlias([]string{index}, alias.Name, req, apiClient.GetESClient().Indices.PutAlias.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	req := esClient.Indices.PutAlias.WithBody(bytes.NewReader(aliasBytes))
+	res, err := esClient.Indices.PutAlias([]string{index}, alias.Name, req, esClient.Indices.PutAlias.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -318,8 +375,12 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, inde
 	if err != nil {
 		diag.FromErr(err)
 	}
-	req := apiClient.GetESClient().Indices.PutSettings.WithIndex(index)
-	res, err := apiClient.GetESClient().Indices.PutSettings(bytes.NewReader(settingsBytes), req, apiClient.GetESClient().Indices.PutSettings.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	req := esClient.Indices.PutSettings.WithIndex(index)
+	res, err := esClient.Indices.PutSettings(bytes.NewReader(settingsBytes), req, esClient.Indices.PutSettings.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -332,8 +393,12 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, inde
 
 func UpdateIndexMappings(ctx context.Context, apiClient *clients.ApiClient, index, mappings string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Indices.PutMapping.WithIndex(index)
-	res, err := apiClient.GetESClient().Indices.PutMapping(strings.NewReader(mappings), req, apiClient.GetESClient().Indices.PutMapping.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	req := esClient.Indices.PutMapping.WithIndex(index)
+	res, err := esClient.Indices.PutMapping(strings.NewReader(mappings), req, esClient.Indices.PutMapping.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -347,7 +412,11 @@ func UpdateIndexMappings(ctx context.Context, apiClient *clients.ApiClient, inde
 func PutDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := apiClient.GetESClient().Indices.CreateDataStream(dataStreamName, apiClient.GetESClient().Indices.CreateDataStream.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Indices.CreateDataStream(dataStreamName, esClient.Indices.CreateDataStream.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -361,8 +430,12 @@ func PutDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStream
 
 func GetDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) (*models.DataStream, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Indices.GetDataStream.WithName(dataStreamName)
-	res, err := apiClient.GetESClient().Indices.GetDataStream(req, apiClient.GetESClient().Indices.GetDataStream.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Indices.GetDataStream.WithName(dataStreamName)
+	res, err := esClient.Indices.GetDataStream(req, esClient.Indices.GetDataStream.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -386,7 +459,11 @@ func GetDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStream
 func DeleteDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := apiClient.GetESClient().Indices.DeleteDataStream([]string{dataStreamName}, apiClient.GetESClient().Indices.DeleteDataStream.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Indices.DeleteDataStream([]string{dataStreamName}, esClient.Indices.DeleteDataStream.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -405,7 +482,11 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeli
 		return diag.FromErr(err)
 	}
 
-	res, err := apiClient.GetESClient().Ingest.PutPipeline(pipeline.Name, bytes.NewReader(pipelineBytes), apiClient.GetESClient().Ingest.PutPipeline.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Ingest.PutPipeline(pipeline.Name, bytes.NewReader(pipelineBytes), esClient.Ingest.PutPipeline.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -419,8 +500,12 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeli
 
 func GetIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *string) (*models.IngestPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Ingest.GetPipeline.WithPipelineID(*name)
-	res, err := apiClient.GetESClient().Ingest.GetPipeline(req, apiClient.GetESClient().Ingest.GetPipeline.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Ingest.GetPipeline.WithPipelineID(*name)
+	res, err := esClient.Ingest.GetPipeline(req, esClient.Ingest.GetPipeline.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -445,7 +530,11 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *
 func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	res, err := apiClient.GetESClient().Ingest.DeletePipeline(*name, apiClient.GetESClient().Ingest.DeletePipeline.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Ingest.DeletePipeline(*name, esClient.Ingest.DeletePipeline.WithContext(ctx))
 	if err != nil {
 		return diags
 	}

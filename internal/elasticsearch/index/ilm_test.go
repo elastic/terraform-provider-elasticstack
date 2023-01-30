@@ -261,8 +261,12 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.GetESClient().ILM.GetLifecycle.WithPolicy(compId.ResourceId)
-		res, err := client.GetESClient().ILM.GetLifecycle(req)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		req := esClient.ILM.GetLifecycle.WithPolicy(compId.ResourceId)
+		res, err := esClient.ILM.GetLifecycle(req)
 		if err != nil {
 			return err
 		}

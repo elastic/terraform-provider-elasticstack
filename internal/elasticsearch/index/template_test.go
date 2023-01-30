@@ -127,8 +127,12 @@ func checkResourceIndexTemplateDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.GetESClient().Indices.GetIndexTemplate.WithName(compId.ResourceId)
-		res, err := client.GetESClient().Indices.GetIndexTemplate(req)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		req := esClient.Indices.GetIndexTemplate.WithName(compId.ResourceId)
+		res, err := esClient.Indices.GetIndexTemplate(req)
 		if err != nil {
 			return err
 		}

@@ -453,7 +453,11 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		res, err := client.GetESClient().Indices.Get([]string{compId.ResourceId})
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		res, err := esClient.Indices.Get([]string{compId.ResourceId})
 		if err != nil {
 			return err
 		}

@@ -65,8 +65,12 @@ func checkResourceComponentTemplateDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.GetESClient().Cluster.GetComponentTemplate.WithName(compId.ResourceId)
-		res, err := client.GetESClient().Cluster.GetComponentTemplate(req)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		req := esClient.Cluster.GetComponentTemplate.WithName(compId.ResourceId)
+		res, err := esClient.Cluster.GetComponentTemplate(req)
 		if err != nil {
 			return err
 		}
