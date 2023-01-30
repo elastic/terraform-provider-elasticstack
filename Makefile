@@ -12,6 +12,18 @@ ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
 
+GOVERSION ?= 1.19
+
+ELASTICSEARCH_NAME ?= terraform-elasticstack-es
+ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
+ELASTICSEARCH_VERSION ?= 8.0.0
+ELASTICSEARCH_USERNAME ?= elastic
+ELASTICSEARCH_PASSWORD ?= password
+ELASTICSEARCH_NETWORK ?= elasticstack-network
+ELASTICSEARCH_MEM ?= 1024m
+
+SOURCE_LOCATION ?= $(shell pwd)
+
 export GOBIN = $(shell pwd)/bin
 
 
@@ -38,6 +50,56 @@ testacc: ## Run acceptance tests
 .PHONY: test
 test: ## Run unit tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
+
+# Retry command - first argumment is how many attempts are required, second argument is the command to run
+# Backoff starts with 1 second and double with next itteration
+retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$attempt"; fi) -ge $(1) ]; do \
+		backoff=$$(if [ -z "$$backoff" ]; then echo "1"; else echo "$$backoff"; fi); \
+		sleep $$backoff; \
+		$(2) && break; \
+		attempt=$$((attempt + 1)); \
+		backoff=$$((backoff * 2)); \
+	done
+
+.PHONY: docker-testacc
+docker-testacc: docker-elasticsearch ## Run acceptance tests in the docker container
+	@ docker run --rm \
+		-e ELASTICSEARCH_ENDPOINTS="$(ELASTICSEARCH_ENDPOINTS)" \
+		-e ELASTICSEARCH_USERNAME="$(ELASTICSEARCH_USERNAME)" \
+		-e ELASTICSEARCH_PASSWORD="$(ELASTICSEARCH_PASSWORD)" \
+		--network $(ELASTICSEARCH_NETWORK) \
+		-w "/provider" \
+		-v "$(SOURCE_LOCATION):/provider" \
+		golang:$(GOVERSION) make testacc
+
+
+.PHONY: docker-elasticsearch
+docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
+	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(ELASTICSEARCH_NAME) > /dev/null 2>&1 ; then \
+		docker run -d \
+		--memory $(ELASTICSEARCH_MEM) \
+		-p 9200:9200 -p 9300:9300 \
+		-e "discovery.type=single-node" \
+		-e "xpack.security.enabled=true" \
+		-e "repositories.url.allowed_urls=https://example.com/*" \
+		-e "path.repo=/tmp" \
+		-e ELASTIC_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
+		--name $(ELASTICSEARCH_NAME) \
+		--network $(ELASTICSEARCH_NETWORK) \
+		docker.elastic.co/elasticsearch/elasticsearch:$(ELASTICSEARCH_VERSION); \
+		fi)
+
+
+.PHONY: docker-network
+docker-network: ## Create a dedicated network for ES and test runs
+	@ if ! docker network ls --format '{{.Name}}' | grep -w $(ELASTICSEARCH_NETWORK) > /dev/null 2>&1 ; then \
+		docker network create $(ELASTICSEARCH_NETWORK); \
+		fi
+
+.PHONY: docker-clean
+docker-clean: ## Try to remove provisioned ES node and assigned network
+	@ docker rm -f $(ELASTICSEARCH_NAME) || true
+	@ docker network rm $(ELASTICSEARCH_NETWORK) || true
 
 
 .PHONY: docs-generate
