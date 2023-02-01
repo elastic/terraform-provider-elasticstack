@@ -482,7 +482,7 @@ func ResourceIndex() *schema.Resource {
 		"mappings": {
 			Description: `Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** 
+**NOTE:**
 - Changing datatypes in the existing _mappings_ will force index to be re-created.
 - Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
 `,
@@ -930,7 +930,7 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 			return diags
 		}
 		if err := d.Set("alias", aliases); err != nil {
-			diag.FromErr(err)
+			return diag.FromErr(err)
 		}
 	}
 	if index.Mappings != nil {

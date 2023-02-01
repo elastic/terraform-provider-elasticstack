@@ -189,10 +189,10 @@ func dataSourceProcessorCommunityIdRead(ctx context.Context, d *schema.ResourceD
 
 	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorCommunityId{"community_id": processor}, "", " ")
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	if err := d.Set("json", string(processorJson)); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 
 	hash, err := utils.StringToHash(string(processorJson))

@@ -272,7 +272,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.I
 		opts...,
 	)
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
 	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create index: %s", index.Name)); diags.HasError() {
@@ -351,7 +351,7 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index s
 	var diags diag.Diagnostics
 	aliasBytes, err := json.Marshal(alias)
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -373,7 +373,7 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, inde
 	var diags diag.Diagnostics
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
