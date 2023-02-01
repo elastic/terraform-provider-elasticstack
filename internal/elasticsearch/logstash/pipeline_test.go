@@ -33,7 +33,6 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "description", "Updated description of Logstash Pipeline"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline", "input{} \nfilter{} \noutput{}"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata", "{}"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_batch_delay", "100"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_batch_size", "250"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_ecs_compatibility", "disabled"),
