@@ -195,10 +195,10 @@ func dataSourceProcessorKVRead(ctx context.Context, d *schema.ResourceData, meta
 
 	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorKV{"kv": processor}, "", " ")
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	if err := d.Set("json", string(processorJson)); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 
 	hash, err := utils.StringToHash(string(processorJson))

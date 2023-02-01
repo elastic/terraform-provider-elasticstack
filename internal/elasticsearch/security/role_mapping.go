@@ -143,12 +143,12 @@ func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData
 
 	rules, err := json.Marshal(roleMapping.Rules)
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 
 	metadata, err := json.Marshal(roleMapping.Metadata)
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 
 	if err := d.Set("name", roleMapping.Name); err != nil {
@@ -162,7 +162,7 @@ func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData
 	if len(roleMapping.RoleTemplates) > 0 {
 		roleTemplates, err := json.Marshal(roleMapping.RoleTemplates)
 		if err != nil {
-			diag.FromErr(err)
+			return diag.FromErr(err)
 		}
 
 		if err := d.Set("role_templates", string(roleTemplates)); err != nil {

@@ -103,10 +103,10 @@ func dataSourceProcessorPipelineRead(ctx context.Context, d *schema.ResourceData
 
 	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorPipeline{"pipeline": processor}, "", " ")
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	if err := d.Set("json", string(processorJson)); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 
 	hash, err := utils.StringToHash(string(processorJson))

@@ -91,7 +91,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `mapping_coerce` (Boolean) Set index level coercion setting that is applied to all mapping types.
 - `mappings` (String) Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** 
+**NOTE:**
 - Changing datatypes in the existing _mappings_ will force index to be re-created.
 - Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
 - `master_timeout` (String) Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.

@@ -172,7 +172,7 @@ func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map
 	var diags diag.Diagnostics
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -180,7 +180,7 @@ func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map
 	}
 	res, err := esClient.Cluster.PutSettings(bytes.NewReader(settingsBytes), esClient.Cluster.PutSettings.WithContext(ctx))
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
 	if diags := utils.CheckError(res, "Unable to update cluster settings."); diags.HasError() {
