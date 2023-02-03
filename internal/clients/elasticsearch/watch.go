@@ -82,12 +82,10 @@ func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string)
 
 func DeleteWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
 	res, err := esClient.Watcher.DeleteWatch(watchID, esClient.Watcher.DeleteWatch.WithContext(ctx))
 
 	if err != nil && res.IsError() {
