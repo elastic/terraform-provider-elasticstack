@@ -66,9 +66,10 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Required:    true,
 		},
 		"pipeline_metadata": {
-			Description: "Optional metadata about the pipeline.",
-			Type:        schema.TypeMap,
-			Optional:    true,
+			Description:      "Optional metadata about the pipeline.",
+			Type:             schema.TypeMap,
+			Optional:         true,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Elem: &schema.Schema{
 				Type:    schema.TypeString,
 				Default: nil,

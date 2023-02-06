@@ -23,6 +23,7 @@
 - Fix not to recreate index when field is removed from mapping ([#232](https://github.com/elastic/terraform-provider-elasticstack/pull/232))
 - Add query params fields to index resource  ([#244](https://github.com/elastic/terraform-provider-elasticstack/pull/244))
 - Properly handle errors which occur during provider execution ([#262](https://github.com/elastic/terraform-provider-elasticstack/pull/262))
+- Correctly handle empty logstash pipeline metadata in plan diffs ([#256](https://github.com/elastic/terraform-provider-elasticstack/pull/256))
 
 ## [0.5.0] - 2022-12-07
 
