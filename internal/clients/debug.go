@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"time"
 
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/elastic/go-elasticsearch/v7/estransport"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -22,43 +23,35 @@ const logRespMsg = `%s API Response Details:
 %s
 -----------------------------------------------------`
 
-var _ esapi.Transport = &debugTransport{}
+var _ estransport.Logger = &debugLogger{}
 
-type debugTransport struct {
-	name      string
-	transport esapi.Transport
+type debugLogger struct {
+	Name string
 }
 
-func newDebugTransport(name string, transport esapi.Transport) *debugTransport {
-	return &debugTransport{
-		name:      name,
-		transport: transport,
-	}
-}
+func (l *debugLogger) LogRoundTrip(req *http.Request, resp *http.Response, err error, start time.Time, duration time.Duration) error {
+	ctx := req.Context()
+	tflog.Debug(ctx, fmt.Sprintf("%s request [%s %s] executed. Took %s. %#v", l.Name, req.Method, req.URL, duration, err))
 
-func (d *debugTransport) Perform(r *http.Request) (*http.Response, error) {
-	ctx := r.Context()
-	reqData, err := httputil.DumpRequest(r, true)
+	reqData, err := httputil.DumpRequestOut(req, true)
 	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, d.name, prettyPrintJsonLines(reqData)))
+		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, l.Name, prettyPrintJsonLines(reqData)))
 	} else {
-		tflog.Debug(ctx, fmt.Sprintf("%s API request dump error: %#v", d.name, err))
-	}
-
-	resp, err := d.transport.Perform(r)
-	if err != nil {
-		return resp, err
+		tflog.Debug(ctx, fmt.Sprintf("%s API request dump error: %#v", l.Name, err))
 	}
 
 	respData, err := httputil.DumpResponse(resp, true)
 	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, d.name, prettyPrintJsonLines(respData)))
+		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, l.Name, prettyPrintJsonLines(respData)))
 	} else {
-		tflog.Debug(ctx, fmt.Sprintf("%s API response dump error: %#v", d.name, err))
+		tflog.Debug(ctx, fmt.Sprintf("%s API response dump error: %#v", l.Name, err))
 	}
 
-	return resp, nil
+	return nil
 }
+
+func (l *debugLogger) RequestBodyEnabled() bool  { return true }
+func (l *debugLogger) ResponseBodyEnabled() bool { return true }
 
 // prettyPrintJsonLines iterates through a []byte line-by-line,
 // transforming any lines that are complete json into pretty-printed json.
