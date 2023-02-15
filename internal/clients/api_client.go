@@ -359,6 +359,11 @@ func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefaul
 		}
 	}
 
+	if logging.IsDebugOrHigher() {
+		config.EnableDebugLogger = true
+		config.Logger = &debugLogger{Name: "elasticsearch"}
+	}
+
 	es, err := elasticsearch.NewClient(config)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
@@ -367,9 +372,6 @@ func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefaul
 			Detail:   err.Error(),
 		})
 		return nil, diags
-	}
-	if logging.IsDebugOrHigher() {
-		es.Transport = newDebugTransport("elasticsearch", es.Transport)
 	}
 
 	return es, diags
