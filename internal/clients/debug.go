@@ -2,6 +2,7 @@ package clients
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -18,7 +19,7 @@ const logReqMsg = `%s API Request Details:
 %s
 -----------------------------------------------------`
 
-const logRespMsg = `%s API Response Details:
+const logRespMsg = `%s API Response for [%s] Details:
 ---[ RESPONSE ]--------------------------------------
 %s
 -----------------------------------------------------`
@@ -31,7 +32,29 @@ type debugLogger struct {
 
 func (l *debugLogger) LogRoundTrip(req *http.Request, resp *http.Response, err error, start time.Time, duration time.Duration) error {
 	ctx := req.Context()
-	tflog.Debug(ctx, fmt.Sprintf("%s request [%s %s] executed. Took %s. %#v", l.Name, req.Method, req.URL, duration, err))
+	requestId := "<nil>"
+	if req != nil {
+		requestId = fmt.Sprintf("%s %s", req.Method, req.URL)
+	}
+	tflog.Debug(ctx, fmt.Sprintf("%s request [%s] executed. Took %s. %#v", l.Name, requestId, duration, err))
+
+	if req != nil {
+		l.logRequest(ctx, req, requestId)
+	}
+
+	if resp != nil {
+		l.logResponse(ctx, resp, requestId)
+	}
+
+	if resp == nil {
+		tflog.Debug(ctx, fmt.Sprintf("%s response for [%s] is nil", l.Name, requestId))
+	}
+
+	return nil
+}
+
+func (l *debugLogger) logRequest(ctx context.Context, req *http.Request, requestId string) {
+	defer req.Body.Close()
 
 	reqData, err := httputil.DumpRequestOut(req, true)
 	if err == nil {
@@ -39,15 +62,17 @@ func (l *debugLogger) LogRoundTrip(req *http.Request, resp *http.Response, err e
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("%s API request dump error: %#v", l.Name, err))
 	}
+}
+
+func (l *debugLogger) logResponse(ctx context.Context, resp *http.Response, requestId string) {
+	defer resp.Body.Close()
 
 	respData, err := httputil.DumpResponse(resp, true)
 	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, l.Name, prettyPrintJsonLines(respData)))
+		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, l.Name, requestId, prettyPrintJsonLines(respData)))
 	} else {
-		tflog.Debug(ctx, fmt.Sprintf("%s API response dump error: %#v", l.Name, err))
+		tflog.Debug(ctx, fmt.Sprintf("%s API response for [%s] dump error: %#v", l.Name, requestId, err))
 	}
-
-	return nil
 }
 
 func (l *debugLogger) RequestBodyEnabled() bool  { return true }
