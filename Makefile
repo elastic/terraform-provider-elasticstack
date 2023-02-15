@@ -14,13 +14,19 @@ TEST ?= ./...
 
 GOVERSION ?= 1.19
 
+STACK_VERSION ?= 8.0.0
+
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
-ELASTICSEARCH_VERSION ?= 8.0.0
 ELASTICSEARCH_USERNAME ?= elastic
 ELASTICSEARCH_PASSWORD ?= password
 ELASTICSEARCH_NETWORK ?= elasticstack-network
 ELASTICSEARCH_MEM ?= 1024m
+
+KIBANA_NAME ?= terraform-elasticstack-kb
+KIBANA_ENDPOINTS ?= http://$(KIBANA_NAME):5601
+KIBANA_USERNAME ?= kibana_system
+KIBANA_PASSWORD ?= password
 
 SOURCE_LOCATION ?= $(shell pwd)
 
@@ -62,16 +68,16 @@ retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$atte
 	done
 
 .PHONY: docker-testacc
-docker-testacc: docker-elasticsearch ## Run acceptance tests in the docker container
+docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in the docker container
 	@ docker run --rm \
 		-e ELASTICSEARCH_ENDPOINTS="$(ELASTICSEARCH_ENDPOINTS)" \
+		-e KIBANA_ENDPOINTS="$(KIBANA_ENDPOINTS)"
 		-e ELASTICSEARCH_USERNAME="$(ELASTICSEARCH_USERNAME)" \
 		-e ELASTICSEARCH_PASSWORD="$(ELASTICSEARCH_PASSWORD)" \
 		--network $(ELASTICSEARCH_NETWORK) \
 		-w "/provider" \
 		-v "$(SOURCE_LOCATION):/provider" \
 		golang:$(GOVERSION) make testacc
-
 
 .PHONY: docker-elasticsearch
 docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
@@ -86,9 +92,22 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 		-e ELASTIC_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
 		--name $(ELASTICSEARCH_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		docker.elastic.co/elasticsearch/elasticsearch:$(ELASTICSEARCH_VERSION); \
+		docker.elastic.co/elasticsearch/elasticsearch:$(STACK_VERSION); \
 		fi)
 
+.PHONY: docker-kibana
+docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start Kibana node in docker container
+	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(KIBANA_NAME) > /dev/null 2>&1 ; then \
+		docker run -d \
+		-p 5601:5601 \
+		-e SERVER_NAME=kibana \
+		-e ELASTICSEARCH_HOSTS=$(ELASTICSEARCH_ENDPOINTS) \
+		-e ELASTICSEARCH_USERNAME=$(KIBANA_USERNAME) \
+		-e ELASTICSEARCH_PASSWORD=$(KIBANA_PASSWORD) \
+		--name $(KIBANA_NAME) \
+		--network $(ELASTICSEARCH_NETWORK) \
+		docker.elastic.co/kibana/kibana:$(STACK_VERSION); \
+		fi)
 
 .PHONY: docker-network
 docker-network: ## Create a dedicated network for ES and test runs
@@ -96,9 +115,13 @@ docker-network: ## Create a dedicated network for ES and test runs
 		docker network create $(ELASTICSEARCH_NETWORK); \
 		fi
 
+.PHONY: set-kibana-password
+set-kibana-password: ## Sets the ES KIBANA_USERNAME's password to KIBANA_PASSWORD. This expects Elasticsearch to be available at localhost:9200
+	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/user/$(KIBANA_USERNAME)/_password -d "{\"password\":\"$(KIBANA_PASSWORD)\"}" | grep -q "^{}")
+
 .PHONY: docker-clean
-docker-clean: ## Try to remove provisioned ES node and assigned network
-	@ docker rm -f $(ELASTICSEARCH_NAME) || true
+docker-clean: ## Try to remove provisioned nodes and assigned network
+	@ docker rm -f $(ELASTICSEARCH_NAME) $(KIBANA_NAME) || true
 	@ docker network rm $(ELASTICSEARCH_NETWORK) || true
 
 

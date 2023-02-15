@@ -53,9 +53,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ELASTIC_PASSWORD: password
+      KIBANA_USERNAME: kibana_system
+      KIBANA_PASSWORD: password
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.elasticsearch }}
+        image: docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.version }}
         env:
           discovery.type: single-node
           xpack.security.enabled: true
@@ -65,11 +67,21 @@ jobs:
         ports:
           - 9200:9200
         options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
+      kibana:
+        image: docker.elastic.co/kibana/kibana:${{ matrix.version }}
+        env:
+          SERVER_NAME: kibana
+          ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+          ELASTICSEARCH_USERNAME: ${{ env.KIBANA_USERNAME }}
+          ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_PASSWORD }}
+        ports:
+          - 5601:5601
+
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        elasticsearch:
+        version:
           - '7.13.4'
           - '7.14.2'
           - '7.15.2'
@@ -95,12 +107,22 @@ jobs:
       - name: Get dependencies
         run: make vendor
 
+      - name: Setup Kibana user
+        run: make set-kibana-password
+        env:
+          ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
+          ELASTICSEARCH_USERNAME: "elastic"
+          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+          KIBANA_USERNAME: ${{ env.KIBANA_USERNAME }}
+          KIBANA_PASSWORD: ${{ env.KIBANA_PASSWORD }}
+
       - name: TF acceptance tests
         timeout-minutes: 10
         run: make testacc
         env:
           TF_ACC: "1"
-          ELASTICSEARCH_VERSION: ${{ matrix.elasticsearch }}
+          STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
           ELASTICSEARCH_USERNAME: "elastic"
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+          KIBANA_ENDPOINTS: "http://localhost:5601"

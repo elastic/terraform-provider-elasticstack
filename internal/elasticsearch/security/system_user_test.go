@@ -16,15 +16,15 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 			{
 				Config: testAccResourceSecuritySystemUserCreate,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.kibana_system", "username", "kibana_system"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.kibana_system", "enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
 				),
 			},
 			{
 				Config: testAccResourceSecuritySystemUserUpdate,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.kibana_system", "username", "kibana_system"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.kibana_system", "enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "false"),
 				),
 			},
 		},
@@ -49,8 +49,8 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_security_system_user" "kibana_system" {
-  username  = "kibana_system"
+resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_user" {
+  username  = "remote_monitoring_user"
   password  = "new_password"
 }
 	`
@@ -59,8 +59,8 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_security_system_user" "kibana_system" {
-  username  = "kibana_system"
+resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_user" {
+  username  = "remote_monitoring_user"
   password  = "new_password"
   enabled   = false
 }
