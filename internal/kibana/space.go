@@ -62,6 +62,10 @@ func ResourceSpace() *schema.Resource {
 		ReadContext:   resourceSpaceRead,
 		DeleteContext: resourceSpaceDelete,
 
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
 		Schema: apikeySchema,
 	}
 }
