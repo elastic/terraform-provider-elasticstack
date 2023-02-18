@@ -71,7 +71,7 @@ retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$atte
 docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in the docker container
 	@ docker run --rm \
 		-e ELASTICSEARCH_ENDPOINTS="$(ELASTICSEARCH_ENDPOINTS)" \
-		-e KIBANA_ENDPOINTS="$(KIBANA_ENDPOINTS)"
+		-e KIBANA_ENDPOINTS="$(KIBANA_ENDPOINTS)" \
 		-e ELASTICSEARCH_USERNAME="$(ELASTICSEARCH_USERNAME)" \
 		-e ELASTICSEARCH_PASSWORD="$(ELASTICSEARCH_PASSWORD)" \
 		--network $(ELASTICSEARCH_NETWORK) \
