@@ -16,6 +16,7 @@
     deletion_protection = false
   }
   ```
+- Add support for managing Kibana spaces ([#272](https://github.com/elastic/terraform-provider-elasticstack/pull/272))
 
 ### Fixed
 - Respect `ignore_unavailable` and `include_global_state` values when configuring SLM policies ([#224](https://github.com/elastic/terraform-provider-elasticstack/pull/224))

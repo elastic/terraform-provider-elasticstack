@@ -65,36 +65,61 @@ type ApiClient struct {
 
 func NewApiClientFunc(version string) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return newApiClient(d, version, true)
+		return newApiClient(d, version)
 	}
 }
 
 func NewAcceptanceTestingClient() (*ApiClient, error) {
-	config := elasticsearch.Config{
-		Header: buildHeader("tf-acceptance-testing"),
+	baseConfig := BaseConfig{
+		Header:   buildHeader("tf-acceptance-testing"),
+		Username: os.Getenv("ELASTICSEARCH_USERNAME"),
+		Password: os.Getenv("ELASTICSEARCH_PASSWORD"),
 	}
 
-	if es := os.Getenv("ELASTICSEARCH_ENDPOINTS"); es != "" {
-		endpoints := make([]string, 0)
-		for _, e := range strings.Split(es, ",") {
-			endpoints = append(endpoints, strings.TrimSpace(e))
+	buildEsAccClient := func() (*elasticsearch.Client, error) {
+		config := elasticsearch.Config{
+			Header: baseConfig.Header,
 		}
-		config.Addresses = endpoints
+
+		if apiKey := os.Getenv("ELASTICSEARCH_API_KEY"); apiKey != "" {
+			config.APIKey = apiKey
+		} else {
+			config.Username = baseConfig.Username
+			config.Password = baseConfig.Password
+		}
+
+		if es := os.Getenv("ELASTICSEARCH_ENDPOINTS"); es != "" {
+			endpoints := make([]string, 0)
+			for _, e := range strings.Split(es, ",") {
+				endpoints = append(endpoints, strings.TrimSpace(e))
+			}
+			config.Addresses = endpoints
+		}
+
+		return elasticsearch.NewClient(config)
 	}
 
-	if username := os.Getenv("ELASTICSEARCH_USERNAME"); username != "" {
-		config.Username = username
-		config.Password = os.Getenv("ELASTICSEARCH_PASSWORD")
-	} else {
-		config.APIKey = os.Getenv("ELASTICSEARCH_API_KEY")
+	buildKibanaAccClient := func() (*kibana.Client, error) {
+		config := kibana.Config{
+			Username: baseConfig.Username,
+			Password: baseConfig.Password,
+			Address:  os.Getenv("KIBANA_ENDPOINT"),
+		}
+
+		return kibana.NewClient(config)
 	}
 
-	es, err := elasticsearch.NewClient(config)
+	es, err := buildEsAccClient()
 	if err != nil {
 		return nil, err
 	}
 
-	return &ApiClient{es, nil, nil, "acceptance-testing"}, nil
+	kib, err := buildKibanaAccClient()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ApiClient{es, nil, kib, "acceptance-testing"}, nil
 }
 
 const esConnectionKey string = "elasticsearch_connection"
@@ -377,7 +402,7 @@ func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefaul
 	return es, diags
 }
 
-func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefault bool) (*kibana.Client, diag.Diagnostics) {
+func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig) (*kibana.Client, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	kibConn, ok := d.GetOk("kibana")
@@ -395,19 +420,20 @@ func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDe
 	if kib := kibConn.([]interface{})[0]; kib != nil {
 		kibConfig := kib.(map[string]interface{})
 
-		if useEnvAsDefault {
-			if username := os.Getenv("KIBANA_USERNAME"); username != "" {
-				config.Username = strings.TrimSpace(username)
-			}
-			if password := os.Getenv("KIBANA_PASSWORD"); password != "" {
-				config.Password = strings.TrimSpace(password)
-			}
+		if username := os.Getenv("KIBANA_USERNAME"); username != "" {
+			config.Username = strings.TrimSpace(username)
+		}
+		if password := os.Getenv("KIBANA_PASSWORD"); password != "" {
+			config.Password = strings.TrimSpace(password)
+		}
+		if endpoint := os.Getenv("KIBANA_ENDPOINT"); endpoint != "" {
+			config.Address = endpoint
 		}
 
-		if username, ok := kibConfig["username"]; ok {
+		if username, ok := kibConfig["username"]; ok && username != "" {
 			config.Username = username.(string)
 		}
-		if password, ok := kibConfig["password"]; ok {
+		if password, ok := kibConfig["password"]; ok && password != "" {
 			config.Password = password.(string)
 		}
 
@@ -425,6 +451,10 @@ func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDe
 
 	kib, err := kibana.NewClient(config)
 
+	if logging.IsDebugOrHigher() {
+		kib.Client.SetDebug(true)
+	}
+
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -438,16 +468,16 @@ func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDe
 
 const esKey string = "elasticsearch"
 
-func newApiClient(d *schema.ResourceData, version string, useEnvAsDefault bool) (*ApiClient, diag.Diagnostics) {
+func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	baseConfig := buildBaseConfig(d, version, esKey)
 
-	esClient, diags := buildEsClient(d, baseConfig, useEnvAsDefault, esKey)
+	esClient, diags := buildEsClient(d, baseConfig, true, esKey)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	kibanaClient, diags := buildKibanaClient(d, baseConfig, useEnvAsDefault)
+	kibanaClient, diags := buildKibanaClient(d, baseConfig)
 	if diags.HasError() {
 		return nil, diags
 	}

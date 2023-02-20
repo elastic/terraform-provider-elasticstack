@@ -38,11 +38,11 @@ func (l *debugLogger) LogRoundTrip(req *http.Request, resp *http.Response, err e
 	}
 	tflog.Debug(ctx, fmt.Sprintf("%s request [%s] executed. Took %s. %#v", l.Name, requestId, duration, err))
 
-	if req != nil {
+	if req != nil && req.Body != nil {
 		l.logRequest(ctx, req, requestId)
 	}
 
-	if resp != nil {
+	if resp != nil && resp.Body != nil {
 		l.logResponse(ctx, resp, requestId)
 	}
 
