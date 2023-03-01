@@ -15,26 +15,38 @@ import (
 
 func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.Watch) diag.Diagnostics {
 	var diags diag.Diagnostics
-	watchBytes, err := json.Marshal(watch.Body)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	body := esClient.Watcher.PutWatch.WithBody(bytes.NewReader(watchBytes))
-	active := esClient.Watcher.PutWatch.WithActive(watch.Active)
+	watchBytes, err := json.Marshal(watch.Body)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
-	res, err := esClient.Watcher.PutWatch(watch.WatchID, body, active, esClient.Watcher.PutWatch.WithContext(ctx))
+	body := esClient.Watcher.PutWatch.WithBody(bytes.NewReader(watchBytes))
+
+	res, err := esClient.Watcher.PutWatch(watch.WatchID, body, esClient.Watcher.PutWatch.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
 	if diags := utils.CheckError(res, "Unable to create or update watch"); diags.HasError() {
 		return diags
+	}
+
+	if watch.Active {
+		_, err := esClient.Watcher.ActivateWatch(watch.WatchID)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		_, err := esClient.Watcher.DeactivateWatch(watch.WatchID)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
