@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type ClusterInfo struct {
 	Name        string `json:"name"`
@@ -265,6 +267,12 @@ type Script struct {
 
 type Watch struct {
 	WatchID string                 `json:"-"`
-	Active  string                 `json:"status.state.active"`
+	Status  WatchStatus            `json:"status"`
 	Body    map[string]interface{} `json:"watch"`
+}
+
+type WatchStatus struct {
+	State struct {
+		Active bool `json:"active"`
+	} `json:"state"`
 }
