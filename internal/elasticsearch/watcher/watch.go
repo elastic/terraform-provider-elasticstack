@@ -80,7 +80,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	var watch models.Watch
 	watch.WatchID = watchID
-	watch.Active = d.Get("active").(bool)
+	watch.Status.State.Active = d.Get("active").(bool)
 	watch.Body = watchBody
 
 	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
@@ -114,7 +114,7 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	if err := d.Set("watch_id", watch.WatchID); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("active", watch.Active); err != nil {
+	if err := d.Set("active", watch.Status.State.Active); err != nil {
 		return diag.FromErr(err)
 	}
 	body, err := json.Marshal(watch.Body)
