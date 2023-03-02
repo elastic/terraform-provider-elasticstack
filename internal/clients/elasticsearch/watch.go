@@ -15,19 +15,15 @@ import (
 
 func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.Watch) diag.Diagnostics {
 	var diags diag.Diagnostics
-
+	watchBytes, err := json.Marshal(watch)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	watchBytes, err := json.Marshal(watch.Body)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	body := esClient.Watcher.PutWatch.WithBody(bytes.NewReader(watchBytes))
-
 	res, err := esClient.Watcher.PutWatch(watch.WatchID, body, esClient.Watcher.PutWatch.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
