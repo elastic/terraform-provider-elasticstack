@@ -18,7 +18,7 @@ import (
 func ResourceWatch() *schema.Resource {
 	watchSchema := map[string]*schema.Schema{
 		"id": {
-			Description: "Internal identifier of the resource",
+			Description: "Internal identifier of the resource.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
