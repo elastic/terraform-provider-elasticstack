@@ -15,7 +15,7 @@ import (
 
 func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.Watch) diag.Diagnostics {
 	var diags diag.Diagnostics
-	watchBodyBytes, err := json.Marshal(watch)
+	watchBodyBytes, err := json.Marshal(watch.Body)
 	if err != nil {
 		return diag.FromErr(err)
 	}

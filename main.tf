@@ -12,7 +12,7 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_watcher_watch" "example" {
-  watch_id = "test_watch"
+  watch_id = "test"
   active   = true
 
   body = jsonencode({
