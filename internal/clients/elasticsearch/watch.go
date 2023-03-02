@@ -77,7 +77,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string)
 
 	if watch, ok := watch[watchID]; ok {
 		watch.WatchID = watchID
-		watch.Body = watchBody
+		//watch.Body = watchBody
 		return &watch, diags
 	}
 
