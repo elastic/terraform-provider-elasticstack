@@ -21,7 +21,7 @@ ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
 ELASTICSEARCH_USERNAME ?= elastic
 ELASTICSEARCH_PASSWORD ?= password
 ELASTICSEARCH_NETWORK ?= elasticstack-network
-ELASTICSEARCH_MEM ?= 2048m
+ELASTICSEARCH_MEM ?= 1024m
 
 KIBANA_NAME ?= terraform-elasticstack-kb
 KIBANA_ENDPOINT ?= http://$(KIBANA_NAME):5601
@@ -91,7 +91,6 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 		-e "repositories.url.allowed_urls=https://example.com/*" \
 		-e "path.repo=/tmp" \
 		-e ELASTIC_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
-		-e ES_JAVA_OPTS:"-Xmx2g -Xms2g" \
 		--name $(ELASTICSEARCH_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
 		docker.elastic.co/elasticsearch/elasticsearch:$(STACK_VERSION); \
