@@ -81,9 +81,6 @@ func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string)
 		return &watch, diags
 	}
 
-	println(watchID)
-	println(watchBody)
-
 	diags = append(diags, diag.Diagnostic{
 		Severity: diag.Error,
 		Summary:  "Unable to find watch in the cluster",

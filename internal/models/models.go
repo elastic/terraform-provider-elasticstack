@@ -264,7 +264,7 @@ type Script struct {
 }
 
 type Watch struct {
-	WatchID string                 `json:"watch_id"`
-	Active  bool                   `json:"active"`
-	Body    map[string]interface{} `json:"body"`
+	WatchID string
+	Active  bool
+	Body    map[string]interface{} `json:"watch"`
 }
