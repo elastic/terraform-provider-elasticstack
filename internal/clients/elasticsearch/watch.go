@@ -24,7 +24,7 @@ func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.W
 		return diag.FromErr(err)
 	}
 	body := esClient.Watcher.PutWatch.WithBody(bytes.NewReader(watchBodyBytes))
-	active := esClient.Watcher.PutWatch.WithActive(watch.Status.State.Active)
+	active := esClient.Watcher.PutWatch.WithActive(watch.Active)
 	res, err := esClient.Watcher.PutWatch(watch.WatchID, active, body, esClient.Watcher.PutWatch.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
