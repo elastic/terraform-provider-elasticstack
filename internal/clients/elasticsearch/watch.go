@@ -70,9 +70,9 @@ func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string)
 	}
 
 	watch := make(map[string]models.Watch)
-	// if err := json.NewDecoder(res.Body).Decode(&watch); err != nil {
-	// 	return nil, diag.FromErr(err)
-	// }
+	if err := json.NewDecoder(res.Body).Decode(&watch); err != nil {
+		return nil, diag.FromErr(err)
+	}
 
 	if watch, ok := watch[watchID]; ok {
 		watch.WatchID = watchID
