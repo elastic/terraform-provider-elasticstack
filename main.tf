@@ -17,19 +17,15 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
 
   body = jsonencode({
     "trigger" = {
-      "schedule" = {
-        "daily" = {
-          "at" = "noon"
-        }
-      }
+      "schedule" = { "cron" = "0 0/1 * * * ?" }
     },
-    "input" : {
-      "none" : {}
+    "input" = {
+      "none" = {}
     },
-    "condition" : {
-      "always" : {}
+    "condition" = {
+      "always" = {}
     },
-    "actions" : {}
+    "actions" = {}
   })
 }
 
