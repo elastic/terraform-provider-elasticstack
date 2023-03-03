@@ -26,6 +26,6 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
   })
 }
 
-output "watch" {
-  value = elasticstack_elasticsearch_watcher_watch.example.watch_id
-}
+# output "watch" {
+#   value = elasticstack_elasticsearch_watcher_watch.example.watch_id
+# }
