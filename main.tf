@@ -23,6 +23,13 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
         }
       }
     },
+    "input": {
+      "none": {}
+    },
+    "condition": {
+      "always": {}
+    },
+    "actions": {}
   })
 }
 
