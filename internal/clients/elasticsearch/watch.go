@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -69,22 +68,13 @@ func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string)
 		return nil, diags
 	}
 
-	watch := make(map[string]models.Watch)
+	var watch models.Watch
 	if err := json.NewDecoder(res.Body).Decode(&watch); err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	if watch, ok := watch[watchID]; ok {
-		watch.WatchID = watchID
-		return &watch, diags
-	}
-
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Unable to find watch in the cluster",
-		Detail:   fmt.Sprintf(`Unable to find "%s" watch in the cluster`, watchID),
-	})
-	return nil, diags
+	watch.WatchID = watchID
+	return &watch, diags
 }
 
 func DeleteWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string) diag.Diagnostics {
