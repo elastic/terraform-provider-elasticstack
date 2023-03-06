@@ -33,6 +33,11 @@ type PutTransformParams struct {
 	Timeout         time.Duration
 }
 
+type UpdateTransformParams struct {
+	DeferValidation bool
+	Timeout         time.Duration
+}
+
 type GetTransformResponse struct {
 	Count      json.Number `json:"count,omitempty"`
 	Transforms []Transform `json:"transforms"`
