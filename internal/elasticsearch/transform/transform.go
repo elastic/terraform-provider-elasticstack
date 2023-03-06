@@ -128,6 +128,118 @@ func ResourceTransform() *schema.Resource {
 			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 		},
+		"retention_policy": {
+			Description: "Defines a retention policy for the transform.",
+			Type:        schema.TypeList,
+			Optional:    true,
+			MaxItems:    1,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"time": {
+						Description: "Specifies that the transform uses a time field to set the retention policy.",
+						Type:        schema.TypeList,
+						Required:    true,
+						MaxItems:    1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"field": {
+									Description: "The date field that is used to calculate the age of the document.",
+									Type:        schema.TypeString,
+									Required:    true,
+								},
+								"max_age": {
+									Description:  "Specifies the maximum age of a document in the destination index.",
+									Type:         schema.TypeString,
+									Required:     true,
+									ValidateFunc: utils.StringIsDuration,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"sync": {
+			Description: "Defines the properties transforms require to run continuously.",
+			Type:        schema.TypeList,
+			Optional:    true,
+			MaxItems:    1,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"time": {
+						Description: "Specifies that the transform uses a time field to synchronize the source and destination indices.",
+						Type:        schema.TypeList,
+						Required:    true,
+						MaxItems:    1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"field": {
+									Description: "The date field that is used to identify new documents in the source.",
+									Type:        schema.TypeString,
+									Required:    true,
+								},
+								"delay": {
+									Description:  "The time delay between the current time and the latest input data time. The default value is 60s.",
+									Type:         schema.TypeString,
+									Optional:     true,
+									Default:      "60s",
+									ValidateFunc: utils.StringIsDuration,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"settings": {
+			Description: "Defines optional transform settings.",
+			Type:        schema.TypeList,
+			Optional:    true,
+			MaxItems:    1,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"align_checkpoints": {
+						Description: "Specifies whether the transform checkpoint ranges should be optimized for performance. Default value is true.",
+						Type:        schema.TypeBool,
+						Optional:    true,
+						Default:     true,
+					},
+					"dates_as_epoch_millis": {
+						Description: "Defines if dates in the output should be written as ISO formatted string (default) or as millis since epoch.",
+						Type:        schema.TypeBool,
+						Optional:    true,
+						Default:     false,
+					},
+					"deduce_mappings": {
+						Description: "Specifies whether the transform should deduce the destination index mappings from the transform config. The default value is true",
+						Type:        schema.TypeBool,
+						Optional:    true,
+						Default:     true,
+					},
+					"docs_per_second": {
+						Description: "Specifies a limit on the number of input documents per second. Default value is null, which disables throttling.",
+						Type:        schema.TypeFloat,
+						Optional:    true,
+					},
+					"max_page_search_size": {
+						Description: "Defines the initial page size to use for the composite aggregation for each checkpoint. The default value is 500.",
+						Type:        schema.TypeInt,
+						Optional:    true,
+					},
+					"num_failure_retries": {
+						Description: "Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.",
+						Type:        schema.TypeInt,
+						Optional:    true,
+					},
+					"unattended": {
+						Description: "In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails. Defaults to false.",
+						Type:        schema.TypeBool,
+						Optional:    true,
+						Default:     false,
+					},
+				},
+			},
+		},
 		"defer_validation": {
 			Type:        schema.TypeBool,
 			Description: "When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created.",
