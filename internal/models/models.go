@@ -272,12 +272,12 @@ type Watch struct {
 			Active bool `json:"active"`
 		} `json:"state"`
 	} `json:"status"`
-	Body WatchBody `json:"watch"`
+	Body map[string]interface{} `json:"watch"` // WatchBody `json:"watch"`
 }
 
-type WatchBody struct {
-	Actions   *map[string]interface{} `json:"actions,omitempty"`
-	Condition *map[string]interface{} `json:"condition,omitempty"`
-	Input     *map[string]interface{} `json:"input,omitempty"`
-	Trigger   *map[string]interface{} `json:"trigger,omitempty"`
-}
+// type WatchBody struct {
+// 	Actions   *map[string]interface{} `json:"actions,omitempty"`
+// 	Condition *map[string]interface{} `json:"condition,omitempty"`
+// 	Input     *map[string]interface{} `json:"input,omitempty"`
+// 	Trigger   *map[string]interface{} `json:"trigger,omitempty"`
+// }
