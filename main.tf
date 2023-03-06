@@ -17,7 +17,9 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
 
   body = jsonencode({
     "trigger" = {
-      "schedule" = { "cron" = "0 0/1 * * * ?" }
+      "schedule" = { 
+        "cron" = "0 0/1 * * * ?" 
+      }
     },
     "input" = {
       "none" = {}
