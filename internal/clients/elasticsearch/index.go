@@ -612,6 +612,38 @@ func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *strin
 	return nil, diags
 }
 
+func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
+	fmt.Println("entering UpdateTransform")
+	var diags diag.Diagnostics
+	pipelineBytes, err := json.Marshal(transform)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	opts := []func(*esapi.TransformUpdateTransformRequest){
+		esClient.TransformUpdateTransform.WithContext(ctx),
+		esClient.TransformUpdateTransform.WithDeferValidation(params.DeferValidation),
+		esClient.TransformUpdateTransform.WithTimeout(params.Timeout),
+	}
+
+	res, err := esClient.TransformUpdateTransform(bytes.NewReader(pipelineBytes), transform.Name, opts...)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to update transform: %s", transform.Name)); diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
+
 func DeleteTransform(ctx context.Context, apiClient *clients.ApiClient, name string) diag.Diagnostics {
 	fmt.Println("entering DeleteTransform for ", name)
 	var diags diag.Diagnostics

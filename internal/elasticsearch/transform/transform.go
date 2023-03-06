@@ -222,6 +222,45 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 	return diags
 }
 
+func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	fmt.Println("entering resourceTransformUpdate")
+
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	transformName := d.Get("name").(string)
+	_, diags = client.ID(ctx, transformName)
+	if diags.HasError() {
+		return diags
+	}
+
+	updatedTransform, err := getTransformFromResourceData(ctx, d, transformName)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	updatedTransform.Pivot = nil
+	updatedTransform.Latest = nil
+
+	params := models.UpdateTransformParams{
+		DeferValidation: d.Get("defer_validation").(bool),
+	}
+
+	timeout, err := time.ParseDuration(d.Get("timeout").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	params.Timeout = timeout
+
+	if diags := elasticsearch.UpdateTransform(ctx, client, updatedTransform, &params); diags.HasError() {
+		return diags
+	}
+
+	return resourceTransformRead(ctx, d, meta)
+}
+
 func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fmt.Println("entering resourceTransformDelete")
 	client, diags := clients.NewApiClient(d, meta)
@@ -240,23 +279,6 @@ func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	return diags
-}
-
-func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fmt.Println("entering resourceTransformUpdate")
-	// TODO
-	client, diags := clients.NewApiClient(d, meta)
-	if diags.HasError() {
-		return diags
-	}
-
-	transformName := d.Get("name").(string)
-	_, diags = client.ID(ctx, transformName)
-	if diags.HasError() {
-		return diags
-	}
-
-	return resourceTransformRead(ctx, d, meta)
 }
 
 func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, name string) (*models.Transform, error) {
