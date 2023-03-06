@@ -77,7 +77,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 	var watchBody models.WatchBody
 
 	if watchBody.Actions == nil {
-		v := map[string]interface{}{}
+		v := make(map[string]interface{})
 		watchBody.Actions = &v
 	}
 	if watchBody.Condition == nil {
