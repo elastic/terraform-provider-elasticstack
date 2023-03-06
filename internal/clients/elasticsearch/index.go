@@ -548,10 +548,12 @@ func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, nam
 func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
 	fmt.Println("entering PutTransform")
 	var diags diag.Diagnostics
-	pipelineBytes, err := json.Marshal(transform)
+	transformBytes, err := json.Marshal(transform)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	fmt.Printf("%s\n", transformBytes)
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -564,7 +566,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 		esClient.TransformPutTransform.WithTimeout(params.Timeout),
 	}
 
-	res, err := esClient.TransformPutTransform(bytes.NewReader(pipelineBytes), transform.Name, opts...)
+	res, err := esClient.TransformPutTransform(bytes.NewReader(transformBytes), transform.Name, opts...)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -615,10 +617,12 @@ func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *strin
 func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
 	fmt.Println("entering UpdateTransform")
 	var diags diag.Diagnostics
-	pipelineBytes, err := json.Marshal(transform)
+	transformBytes, err := json.Marshal(transform)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	fmt.Printf("%s\n", transformBytes)
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -631,7 +635,7 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 		esClient.TransformUpdateTransform.WithTimeout(params.Timeout),
 	}
 
-	res, err := esClient.TransformUpdateTransform(bytes.NewReader(pipelineBytes), transform.Name, opts...)
+	res, err := esClient.TransformUpdateTransform(bytes.NewReader(transformBytes), transform.Name, opts...)
 	if err != nil {
 		return diag.FromErr(err)
 	}

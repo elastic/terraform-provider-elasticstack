@@ -100,7 +100,7 @@ func ResourceTransform() *schema.Resource {
 			Description:      "The pivot method transforms the data by aggregating and grouping it.",
 			Type:             schema.TypeString,
 			Optional:         true,
-			AtLeastOneOf:     []string{"pivot", "latest"},
+			ExactlyOneOf:     []string{"pivot", "latest"},
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			ValidateFunc:     validation.StringIsJSON,
 			ForceNew:         true,
@@ -109,7 +109,7 @@ func ResourceTransform() *schema.Resource {
 			Description:      "The latest method transforms the data by finding the latest document for each unique key.",
 			Type:             schema.TypeString,
 			Optional:         true,
-			AtLeastOneOf:     []string{"pivot", "latest"},
+			ExactlyOneOf:     []string{"pivot", "latest"},
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			ValidateFunc:     validation.StringIsJSON,
 			ForceNew:         true,
@@ -119,7 +119,7 @@ func ResourceTransform() *schema.Resource {
 			Description:  "The interval between checks for changes in the source indices when the transform is running continuously. Defaults to `1m`.",
 			Optional:     true,
 			Default:      "1m",
-			ValidateFunc: utils.StringIsDuration,
+			ValidateFunc: utils.StringIsElasticDuration,
 		},
 		"metadata": {
 			Description:      "Defines optional transform metadata.",
@@ -151,7 +151,7 @@ func ResourceTransform() *schema.Resource {
 									Description:  "Specifies the maximum age of a document in the destination index.",
 									Type:         schema.TypeString,
 									Required:     true,
-									ValidateFunc: utils.StringIsDuration,
+									ValidateFunc: utils.StringIsElasticDuration,
 								},
 							},
 						},
@@ -183,7 +183,7 @@ func ResourceTransform() *schema.Resource {
 									Type:         schema.TypeString,
 									Optional:     true,
 									Default:      "60s",
-									ValidateFunc: utils.StringIsDuration,
+									ValidateFunc: utils.StringIsElasticDuration,
 								},
 							},
 						},
@@ -405,13 +405,12 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	if v, ok := d.GetOk("source"); ok {
 		definedSource := v.([]interface{})[0].(map[string]interface{})
 
+		transform.Source = new(models.TransformSource)
 		indices := make([]string, 0)
 		for _, i := range definedSource["indices"].([]interface{}) {
 			indices = append(indices, i.(string))
 		}
-		transform.Source = models.TransformSource{
-			Indices: indices,
-		}
+		transform.Source.Indices = indices
 
 		if v, ok := definedSource["query"]; ok && len(v.(string)) > 0 {
 			var query interface{}
@@ -431,12 +430,13 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("destination"); ok {
-		definedDestination := v.([]interface{})[0].(map[string]interface{})
-		transform.Destination = models.TransformDestination{
-			Index: definedDestination["index"].(string),
-		}
 
-		if pipeline, ok := definedDestination["pipeline"]; ok {
+		definedDestination := v.([]interface{})[0].(map[string]interface{})
+		transform.Destination = new(models.TransformDestination)
+
+		transform.Destination.Index = definedDestination["index"].(string)
+
+		if pipeline, ok := definedDestination["pipeline"]; ok && len(pipeline.(string)) > 0 {
 			transform.Destination.Pipeline = pipeline.(string)
 		}
 	}
@@ -457,12 +457,83 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		transform.Latest = latest
 	}
 
+	if v, ok := d.GetOk("frequency"); ok {
+		transform.Frequency = v.(string)
+	}
+
 	if v, ok := d.GetOk("metadata"); ok {
 		metadata := make(map[string]interface{})
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return nil, err
 		}
 		transform.Meta = metadata
+	}
+
+	if v, ok := d.GetOk("retention_policy"); ok && v != nil {
+		definedRetentionPolicy := v.([]interface{})[0].(map[string]interface{})
+		retentionTime := models.TransformRetentionPolicyTime{}
+		if v, ok := definedRetentionPolicy["time"]; ok {
+			var definedRetentionTime = v.([]interface{})[0].(map[string]interface{})
+			if f, ok := definedRetentionTime["field"]; ok {
+				retentionTime.Field = f.(string)
+			}
+			if ma, ok := definedRetentionTime["max_age"]; ok {
+				retentionTime.MaxAge = ma.(string)
+			}
+			transform.RetentionPolicy = new(models.TransformRetentionPolicy)
+			transform.RetentionPolicy.Time = retentionTime
+		}
+	}
+
+	if v, ok := d.GetOk("sync"); ok {
+		definedRetentionPolicy := v.([]interface{})[0].(map[string]interface{})
+		syncTime := models.TransformSyncTime{}
+		if v, ok := definedRetentionPolicy["time"]; ok {
+			var definedRetentionTime = v.([]interface{})[0].(map[string]interface{})
+			if f, ok := definedRetentionTime["field"]; ok {
+				syncTime.Field = f.(string)
+			}
+			if d, ok := definedRetentionTime["delay"]; ok {
+				syncTime.Delay = d.(string)
+			}
+			transform.Sync = new(models.TransformSync)
+			transform.Sync.Time = syncTime
+		}
+	}
+
+	if v, ok := d.GetOk("settings"); ok {
+		definedSettings := v.([]interface{})[0].(map[string]interface{})
+		settings := models.TransformSettings{}
+		if v, ok := definedSettings["align_checkpoints"]; ok {
+			settings.AlignCheckpoints = new(bool)
+			*settings.AlignCheckpoints = v.(bool)
+		}
+		if v, ok := definedSettings["dates_as_epoch_millis"]; ok {
+			settings.DatesAsEpochMillis = new(bool)
+			*settings.DatesAsEpochMillis = v.(bool)
+		}
+		if v, ok := definedSettings["deduce_mappings"]; ok {
+			settings.DeduceMappings = new(bool)
+			*settings.DeduceMappings = v.(bool)
+		}
+		if v, ok := definedSettings["docs_per_second"]; ok {
+			settings.DocsPerSecond = new(float64)
+			*settings.DocsPerSecond = v.(float64)
+		}
+		if v, ok := definedSettings["max_page_search_size"]; ok {
+			settings.MaxPageSearchSize = new(int)
+			*settings.MaxPageSearchSize = v.(int)
+		}
+		if v, ok := definedSettings["num_failure_retries"]; ok {
+			settings.NumFailureRetries = new(int)
+			*settings.NumFailureRetries = v.(int)
+		}
+		if v, ok := definedSettings["unattended"]; ok {
+			settings.Unattended = new(bool)
+			*settings.Unattended = v.(bool)
+		}
+
+		transform.Settings = &settings
 	}
 
 	return &transform, nil

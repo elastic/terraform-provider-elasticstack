@@ -6,17 +6,18 @@ import (
 )
 
 type Transform struct {
-	Id              string                   `json:"id,omitempty"`
-	Name            string                   `json:"-"`
-	Description     string                   `json:"description,omitempty"`
-	Source          TransformSource          `json:"source"`
-	Destination     TransformDestination     `json:"dest"`
-	Pivot           interface{}              `json:"pivot,omitempty"`
-	Latest          interface{}              `json:"latest,omitempty"`
-	Frequency       string                   `json:"frequency,omitempty"`
-	RetentionPolicy TransformRetentionPolicy `json:"retention_policy,omitempty"`
-	Sync            TransformSync            `json:"sync,omitempty"`
-	Meta            map[string]interface{}   `json:"_meta,omitempty"`
+	Id              string                    `json:"id,omitempty"`
+	Name            string                    `json:"-"`
+	Description     string                    `json:"description,omitempty"`
+	Source          *TransformSource          `json:"source"`
+	Destination     *TransformDestination     `json:"dest"`
+	Pivot           interface{}               `json:"pivot,omitempty"`
+	Latest          interface{}               `json:"latest,omitempty"`
+	Frequency       string                    `json:"frequency,omitempty"`
+	RetentionPolicy *TransformRetentionPolicy `json:"retention_policy,omitempty"`
+	Sync            *TransformSync            `json:"sync,omitempty"`
+	Meta            map[string]interface{}    `json:"_meta,omitempty"`
+	Settings        *TransformSettings        `json:"settings,omitempty"`
 }
 
 type TransformSource struct {
