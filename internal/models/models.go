@@ -272,5 +272,12 @@ type Watch struct {
 			Active bool `json:"active"`
 		} `json:"state"`
 	} `json:"status"`
-	Body map[string]interface{} `json:"watch"`
+	Body WatchBody `json:"watch"`
+}
+
+type WatchBody struct {
+	Actions   *map[string]interface{} `json:"actions"`
+	Condition *map[string]interface{} `json:"condition"`
+	Input     *map[string]interface{} `json:"input"`
+	Trigger   *map[string]interface{} `json:"trigger"`
 }
