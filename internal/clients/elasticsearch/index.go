@@ -560,13 +560,13 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 		return diag.FromErr(err)
 	}
 
-	opts := []func(*esapi.TransformPutTransformRequest){
+	putOptions := []func(*esapi.TransformPutTransformRequest){
 		esClient.TransformPutTransform.WithContext(ctx),
 		esClient.TransformPutTransform.WithDeferValidation(params.DeferValidation),
 		esClient.TransformPutTransform.WithTimeout(params.Timeout),
 	}
 
-	res, err := esClient.TransformPutTransform(bytes.NewReader(transformBytes), transform.Name, opts...)
+	res, err := esClient.TransformPutTransform(bytes.NewReader(transformBytes), transform.Name, putOptions...)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -577,7 +577,11 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 	}
 
 	if params.Enabled {
-		_, err := esClient.TransformStartTransform(transform.Name)
+		startOptions := []func(*esapi.TransformStartTransformRequest){
+			esClient.TransformStartTransform.WithContext(ctx),
+			esClient.TransformStartTransform.WithTimeout(params.Timeout),
+		}
+		_, err := esClient.TransformStartTransform(transform.Name, startOptions...)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -636,13 +640,13 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 		return diag.FromErr(err)
 	}
 
-	opts := []func(*esapi.TransformUpdateTransformRequest){
+	updateOptions := []func(*esapi.TransformUpdateTransformRequest){
 		esClient.TransformUpdateTransform.WithContext(ctx),
 		esClient.TransformUpdateTransform.WithDeferValidation(params.DeferValidation),
 		esClient.TransformUpdateTransform.WithTimeout(params.Timeout),
 	}
 
-	res, err := esClient.TransformUpdateTransform(bytes.NewReader(transformBytes), transform.Name, opts...)
+	res, err := esClient.TransformUpdateTransform(bytes.NewReader(transformBytes), transform.Name, updateOptions...)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -653,12 +657,20 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 	}
 
 	if params.Enabled {
-		_, err := esClient.TransformStartTransform(transform.Name)
+		startOptions := []func(*esapi.TransformStartTransformRequest){
+			esClient.TransformStartTransform.WithContext(ctx),
+			esClient.TransformStartTransform.WithTimeout(params.Timeout),
+		}
+		_, err := esClient.TransformStartTransform(transform.Name, startOptions...)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	} else {
-		_, err := esClient.TransformStopTransform(transform.Name)
+		stopOptions := []func(*esapi.TransformStopTransformRequest){
+			esClient.TransformStopTransform.WithContext(ctx),
+			esClient.TransformStopTransform.WithTimeout(params.Timeout),
+		}
+		_, err := esClient.TransformStopTransform(transform.Name, stopOptions...)
 		if err != nil {
 			return diag.FromErr(err)
 		}
