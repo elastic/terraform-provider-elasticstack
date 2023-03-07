@@ -44,5 +44,7 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
     }
   }
 
+  enabled = false
+
   defer_validation = false
 }
