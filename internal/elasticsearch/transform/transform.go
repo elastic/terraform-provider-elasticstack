@@ -97,7 +97,7 @@ func ResourceTransform() *schema.Resource {
 			},
 		},
 		"pivot": {
-			Description:      "The pivot method transforms the data by aggregating and grouping it.",
+			Description:      "The pivot method transforms the data by aggregating and grouping it. JSON definition expected. Either 'pivot' or 'latest' must be present.",
 			Type:             schema.TypeString,
 			Optional:         true,
 			ExactlyOneOf:     []string{"pivot", "latest"},
@@ -106,7 +106,7 @@ func ResourceTransform() *schema.Resource {
 			ForceNew:         true,
 		},
 		"latest": {
-			Description:      "The latest method transforms the data by finding the latest document for each unique key.",
+			Description:      "The latest method transforms the data by finding the latest document for each unique key. JSON definition expected. Either 'pivot' or 'latest' must be present.",
 			Type:             schema.TypeString,
 			Optional:         true,
 			ExactlyOneOf:     []string{"pivot", "latest"},
