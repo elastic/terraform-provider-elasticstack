@@ -546,7 +546,7 @@ func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, nam
 }
 
 func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
-	fmt.Println("entering PutTransform")
+	fmt.Println("entering PutTransform for", transform.Name)
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
 	if err != nil {
@@ -576,11 +576,18 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 		return diags
 	}
 
+	if params.Enabled {
+		_, err := esClient.TransformStartTransform(transform.Name)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return diags
 }
 
 func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *string) (*models.Transform, diag.Diagnostics) {
-	fmt.Println("entering GetTransform for ", *name)
+	fmt.Println("entering GetTransform for", *name)
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -615,7 +622,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *strin
 }
 
 func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
-	fmt.Println("entering UpdateTransform")
+	fmt.Println("entering UpdateTransform with Enabled", params.Enabled)
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
 	if err != nil {
@@ -645,11 +652,23 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 		return diags
 	}
 
+	if params.Enabled {
+		_, err := esClient.TransformStartTransform(transform.Name)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		_, err := esClient.TransformStopTransform(transform.Name)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return diags
 }
 
-func DeleteTransform(ctx context.Context, apiClient *clients.ApiClient, name string) diag.Diagnostics {
-	fmt.Println("entering DeleteTransform for ", name)
+func DeleteTransform(ctx context.Context, apiClient *clients.ApiClient, name *string) diag.Diagnostics {
+	fmt.Println("entering DeleteTransform for", *name)
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -657,12 +676,12 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ApiClient, name str
 		return diag.FromErr(err)
 	}
 
-	res, err := esClient.TransformDeleteTransform(name, esClient.TransformDeleteTransform.WithForce(true), esClient.TransformDeleteTransform.WithContext(ctx))
+	res, err := esClient.TransformDeleteTransform(*name, esClient.TransformDeleteTransform.WithForce(true), esClient.TransformDeleteTransform.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete the transform: %s", name)); diags.HasError() {
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete the transform: %s", *name)); diags.HasError() {
 		return diags
 	}
 

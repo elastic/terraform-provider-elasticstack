@@ -248,10 +248,16 @@ func ResourceTransform() *schema.Resource {
 		},
 		"timeout": {
 			Type:         schema.TypeString,
-			Description:  "Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Description:  "Period to wait for a response from Elastisearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.",
 			Optional:     true,
 			Default:      "30s",
 			ValidateFunc: utils.StringIsDuration,
+		},
+		"enabled": {
+			Type:        schema.TypeBool,
+			Description: "Controls wether the transform is started or stopped. Default is `false` (stopped).",
+			Optional:    true,
+			Default:     false,
 		},
 	}
 
@@ -269,7 +275,6 @@ func ResourceTransform() *schema.Resource {
 }
 
 func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fmt.Println("entering resourceTransformCreate")
 
 	client, diags := clients.NewApiClient(d, meta)
 	if diags.HasError() {
@@ -297,6 +302,8 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta i
 	}
 	params.Timeout = timeout
 
+	params.Enabled = d.Get("enabled").(bool)
+
 	if diags := elasticsearch.PutTransform(ctx, client, transform, &params); diags.HasError() {
 		return diags
 	}
@@ -306,7 +313,7 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fmt.Println("entering resourceTransformRead")
+
 	client, diags := clients.NewApiClient(d, meta)
 	if diags.HasError() {
 		return diags
@@ -335,7 +342,6 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 }
 
 func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fmt.Println("entering resourceTransformUpdate")
 
 	client, diags := clients.NewApiClient(d, meta)
 	if diags.HasError() {
@@ -366,6 +372,8 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta i
 	}
 	params.Timeout = timeout
 
+	params.Enabled = d.Get("enabled").(bool)
+
 	if diags := elasticsearch.UpdateTransform(ctx, client, updatedTransform, &params); diags.HasError() {
 		return diags
 	}
@@ -374,7 +382,7 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fmt.Println("entering resourceTransformDelete")
+
 	client, diags := clients.NewApiClient(d, meta)
 	if diags.HasError() {
 		return diags
@@ -386,7 +394,7 @@ func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteTransform(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteTransform(ctx, client, &compId.ResourceId); diags.HasError() {
 		return diags
 	}
 

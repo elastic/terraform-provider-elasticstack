@@ -1,14 +1,11 @@
 package transform_test
 
 import (
-	//"context"
 	"fmt"
-	//"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	//"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -128,6 +125,7 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
     }
   })
   frequency = "5m"
+	enabled = false
 
 	defer_validation = true
 	timeout = "1m"
@@ -171,6 +169,7 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
     }
   })
   frequency = "10m"
+	enabled = true
 
 	defer_validation = true
 	timeout = "1m"
@@ -201,6 +200,7 @@ resource "elasticstack_elasticsearch_transform" "test_latest" {
     "sort": "order_date"
   })
   frequency = "2m"
+	enabled = false
 
 	defer_validation = true
 	timeout = "1m"
@@ -270,6 +270,7 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
     }
   })
   frequency = "5m"
+	enabled = false
 
 	defer_validation = false
 	timeout = "1m"

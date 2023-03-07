@@ -62,11 +62,13 @@ type TransformSettings struct {
 type PutTransformParams struct {
 	DeferValidation bool
 	Timeout         time.Duration
+	Enabled         bool
 }
 
 type UpdateTransformParams struct {
 	DeferValidation bool
 	Timeout         time.Duration
+	Enabled         bool
 }
 
 type GetTransformResponse struct {
