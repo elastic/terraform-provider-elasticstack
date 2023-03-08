@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceWatch() *schema.Resource {
@@ -35,12 +34,11 @@ func ResourceWatch() *schema.Resource {
 			Default:     true,
 		},
 		"body": {
-			Description:           "Configuration for the pipeline.",
-			Type:                  schema.TypeString,
-			ValidateFunc:          validation.StringIsJSON,
-			DiffSuppressFunc:      utils.DiffJsonSuppress,
-			DiffSuppressOnRefresh: true,
-			Required:              true,
+			Description: "Configuration for the pipeline.",
+			Type:        schema.TypeString,
+			// ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Required:         true,
 		},
 	}
 
