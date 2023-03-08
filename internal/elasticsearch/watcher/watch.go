@@ -77,8 +77,18 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 	// var watchBody models.WatchBody
 
 	watchBody := models.WatchBody{
-		Trigger: nil,
-		Actions: nil,
+		Trigger: map[string]interface{}{},
+		Input: struct {
+			None map[string]interface{} "json:\"none\""
+		}{
+			None: map[string]interface{}{},
+		},
+		Condition: struct {
+			Always map[string]interface{} "json:\"always\""
+		}{
+			Always: map[string]interface{}{},
+		},
+		Actions: map[string]interface{}{},
 	}
 	// if watchBody.Trigger == nil {
 	// 	v := make(map[string]interface{})
