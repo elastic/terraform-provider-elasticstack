@@ -272,7 +272,7 @@ type Watch struct {
 			Active bool `json:"active"`
 		} `json:"state"`
 	} `json:"status"`
-	Body *WatchBody `json:"watch"` // map[string]interface{} `json:"watch"`
+	Body WatchBody `json:"watch"`
 }
 
 type WatchBody struct {
