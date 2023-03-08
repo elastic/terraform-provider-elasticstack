@@ -80,13 +80,13 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		v := make(map[string]interface{})
 		watchBody.Actions = &v
 	}
-	if watchBody.Condition == nil {
+	if watchBody.Condition.Always == nil {
 		v := make(map[string]interface{})
-		watchBody.Condition = &v
+		watchBody.Condition.Always = &v
 	}
-	if watchBody.Input == nil {
+	if watchBody.Input.None == nil {
 		v := make(map[string]interface{})
-		watchBody.Input = &v
+		watchBody.Input.None = &v
 	}
 	if watchBody.Trigger == nil {
 		v := make(map[string]interface{})
