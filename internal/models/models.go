@@ -276,12 +276,12 @@ type Watch struct {
 }
 
 type WatchBody struct {
-	Actions   *map[string]interface{} `json:"actions"`
+	Actions   *map[string]interface{} `json:"actions,omitempty"`
 	Condition struct {
-		Always *map[string]interface{} `json:"always"`
+		Always *map[string]interface{} `json:"always,omitempty"`
 	} `json:"condition"`
 	Input struct {
-		None *map[string]interface{} `json:"none"`
+		None *map[string]interface{} `json:"none,omitempty"`
 	} `json:"input"`
-	Trigger *map[string]interface{} `json:"trigger"`
+	Trigger *map[string]interface{} `json:"trigger,omitempty"`
 }
