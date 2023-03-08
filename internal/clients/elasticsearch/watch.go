@@ -33,18 +33,6 @@ func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.W
 		return diags
 	}
 
-	// if watch.Active {
-	// 	_, err := esClient.Watcher.ActivateWatch(watch.WatchID)
-	// 	if err != nil {
-	// 		return diag.FromErr(err)
-	// 	}
-	// } else {
-	// 	_, err := esClient.Watcher.DeactivateWatch(watch.WatchID)
-	// 	if err != nil {
-	// 		return diag.FromErr(err)
-	// 	}
-	// }
-
 	return diags
 }
 
