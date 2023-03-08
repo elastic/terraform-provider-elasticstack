@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceWatch() *schema.Resource {
@@ -34,9 +35,9 @@ func ResourceWatch() *schema.Resource {
 			Default:     true,
 		},
 		"body": {
-			Description: "Configuration for the pipeline.",
-			Type:        schema.TypeString,
-			// ValidateFunc:     validation.StringIsJSON,
+			Description:      "Configuration for the pipeline.",
+			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Required:         true,
 		},
@@ -72,39 +73,24 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diags
 	}
 
-	// var watchBody map[string]interface{}
-	// var watchBody models.WatchBody
+	var watchBody models.WatchBody
 
-	watchBody := models.WatchBody{
-		Trigger: map[string]interface{}{},
-		Input: struct {
-			None map[string]interface{} "json:\"none\""
-		}{
-			None: map[string]interface{}{},
-		},
-		Condition: struct {
-			Always map[string]interface{} "json:\"always\""
-		}{
-			Always: map[string]interface{}{},
-		},
-		Actions: map[string]interface{}{},
+	if watchBody.Trigger == nil {
+		v := make(map[string]interface{})
+		watchBody.Trigger = &v
 	}
-	// if watchBody.Trigger == nil {
-	// 	v := make(map[string]interface{})
-	// 	watchBody.Trigger = &v
-	// }
-	// if watchBody.Input.None == nil {
-	// 	v := make(map[string]interface{})
-	// 	watchBody.Input.None = &v
-	// }
-	// if watchBody.Condition.Always == nil {
-	// 	v := make(map[string]interface{})
-	// 	watchBody.Condition.Always = &v
-	// }
-	// if watchBody.Actions == nil {
-	// 	v := make(map[string]interface{})
-	// 	watchBody.Actions = &v
-	// }
+	if watchBody.Input == nil {
+		v := make(map[string]interface{})
+		watchBody.Input = &v
+	}
+	if watchBody.Condition == nil {
+		v := make(map[string]interface{})
+		watchBody.Condition = &v
+	}
+	if watchBody.Actions == nil {
+		v := make(map[string]interface{})
+		watchBody.Actions = &v
+	}
 
 	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
 		return diag.FromErr(err)
@@ -113,7 +99,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 	var watch models.Watch
 	watch.WatchID = watchID
 	watch.Status.State.Active = d.Get("active").(bool)
-	watch.Body = watchBody
+	watch.Body = &watchBody
 
 	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
 		return diags
