@@ -89,6 +89,8 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 	})
 }
 
+// create a transform referencing a non-existing source index;
+// because validations are deferred, this should pass
 func testAccResourceTransformWithPivotCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -133,10 +135,65 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
 	`, name)
 }
 
+// update the existing transform, add another source index and start it (enabled = true)
+// validations are now unavoidable (at start), so make sure to create the indices _before_ updating the transform
+// the tf script below uses implicit dependency, but `depends_on` is also an option
 func testAccResourceTransformWithPivotUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "test_source_index_1" {
+  name = "source_index_for_transform"
+
+  alias {
+    name = "test_alias_1"
+  }
+
+  mappings = jsonencode({
+    properties = {
+      field1 = { type = "text" }
+    }
+  })
+
+  settings {
+    setting {
+      name  = "index.number_of_replicas"
+      value = "2"
+    }
+  }
+
+	deletion_protection = false
+	wait_for_active_shards = "all"
+	master_timeout = "1m"
+	timeout = "1m"
+}
+
+resource "elasticstack_elasticsearch_index" "test_source_index_2" {
+  name = "additional_index"
+
+  alias {
+    name = "test_alias_2"
+  }
+
+  mappings = jsonencode({
+    properties = {
+      field1 = { type = "text" }
+    }
+  })
+
+  settings {
+    setting {
+      name  = "index.number_of_replicas"
+      value = "2"
+    }
+  }
+
+	deletion_protection = false
+	wait_for_active_shards = "all"
+	master_timeout = "1m"
+	timeout = "1m"
 }
 
 resource "elasticstack_elasticsearch_transform" "test_pivot" {
@@ -144,7 +201,10 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
 	description = "yet another test description"
 
 	source {
-		indices = ["source_index_for_transform", "additional_index"]
+		indices = [
+			elasticstack_elasticsearch_index.test_source_index_1.name,
+			elasticstack_elasticsearch_index.test_source_index_2.name
+		 ]
 	}
 
 	destination {

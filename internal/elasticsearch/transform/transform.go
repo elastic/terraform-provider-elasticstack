@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	//"reflect"
 	"regexp"
-	//"strconv"
 	"strings"
 	"time"
 
@@ -14,10 +12,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	//"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	//"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -261,8 +257,6 @@ func ResourceTransform() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(transformSchema)
-
 	return &schema.Resource{
 		Schema:      transformSchema,
 		Description: "Manages Elasticsearch transforms. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/transforms.html",
@@ -292,17 +286,16 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta i
 		return diag.FromErr(err)
 	}
 
-	params := models.PutTransformParams{
-		DeferValidation: d.Get("defer_validation").(bool),
-	}
-
 	timeout, err := time.ParseDuration(d.Get("timeout").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	params.Timeout = timeout
 
-	params.Enabled = d.Get("enabled").(bool)
+	params := models.PutTransformParams{
+		DeferValidation: d.Get("defer_validation").(bool),
+		Enabled:         d.Get("enabled").(bool),
+		Timeout:         timeout,
+	}
 
 	if diags := elasticsearch.PutTransform(ctx, client, transform, &params); diags.HasError() {
 		return diags
@@ -440,9 +433,10 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	if v, ok := d.GetOk("destination"); ok {
 
 		definedDestination := v.([]interface{})[0].(map[string]interface{})
-		transform.Destination = new(models.TransformDestination)
 
-		transform.Destination.Index = definedDestination["index"].(string)
+		transform.Destination = &models.TransformDestination{
+			Index: definedDestination["index"].(string),
+		}
 
 		if pipeline, ok := definedDestination["pipeline"]; ok && len(pipeline.(string)) > 0 {
 			transform.Destination.Pipeline = pipeline.(string)
@@ -470,7 +464,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		var metadata map[string]interface{}
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return nil, err
 		}
@@ -479,8 +473,9 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 
 	if v, ok := d.GetOk("retention_policy"); ok && v != nil {
 		definedRetentionPolicy := v.([]interface{})[0].(map[string]interface{})
-		retentionTime := models.TransformRetentionPolicyTime{}
+
 		if v, ok := definedRetentionPolicy["time"]; ok {
+			retentionTime := models.TransformRetentionPolicyTime{}
 			var definedRetentionTime = v.([]interface{})[0].(map[string]interface{})
 			if f, ok := definedRetentionTime["field"]; ok {
 				retentionTime.Field = f.(string)
@@ -488,57 +483,61 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 			if ma, ok := definedRetentionTime["max_age"]; ok {
 				retentionTime.MaxAge = ma.(string)
 			}
-			transform.RetentionPolicy = new(models.TransformRetentionPolicy)
-			transform.RetentionPolicy.Time = retentionTime
+			transform.RetentionPolicy = &models.TransformRetentionPolicy{
+				Time: retentionTime,
+			}
 		}
 	}
 
 	if v, ok := d.GetOk("sync"); ok {
-		definedRetentionPolicy := v.([]interface{})[0].(map[string]interface{})
-		syncTime := models.TransformSyncTime{}
-		if v, ok := definedRetentionPolicy["time"]; ok {
-			var definedRetentionTime = v.([]interface{})[0].(map[string]interface{})
-			if f, ok := definedRetentionTime["field"]; ok {
+		definedSync := v.([]interface{})[0].(map[string]interface{})
+
+		if v, ok := definedSync["time"]; ok {
+			syncTime := models.TransformSyncTime{}
+			var definedSyncTime = v.([]interface{})[0].(map[string]interface{})
+			if f, ok := definedSyncTime["field"]; ok {
 				syncTime.Field = f.(string)
 			}
-			if d, ok := definedRetentionTime["delay"]; ok {
+			if d, ok := definedSyncTime["delay"]; ok {
 				syncTime.Delay = d.(string)
 			}
-			transform.Sync = new(models.TransformSync)
-			transform.Sync.Time = syncTime
+			transform.Sync = &models.TransformSync{
+				Time: syncTime,
+			}
 		}
 	}
 
 	if v, ok := d.GetOk("settings"); ok {
 		definedSettings := v.([]interface{})[0].(map[string]interface{})
+
 		settings := models.TransformSettings{}
 		if v, ok := definedSettings["align_checkpoints"]; ok {
-			settings.AlignCheckpoints = new(bool)
-			*settings.AlignCheckpoints = v.(bool)
+			ac := v.(bool)
+			settings.AlignCheckpoints = &ac
 		}
 		if v, ok := definedSettings["dates_as_epoch_millis"]; ok {
-			settings.DatesAsEpochMillis = new(bool)
-			*settings.DatesAsEpochMillis = v.(bool)
+			dem := v.(bool)
+			settings.DatesAsEpochMillis = &dem
 		}
 		if v, ok := definedSettings["deduce_mappings"]; ok {
-			settings.DeduceMappings = new(bool)
-			*settings.DeduceMappings = v.(bool)
+			dm := v.(bool)
+			settings.DeduceMappings = &dm
 		}
 		if v, ok := definedSettings["docs_per_second"]; ok {
-			settings.DocsPerSecond = new(float64)
-			*settings.DocsPerSecond = v.(float64)
+			dps := v.(float64)
+			settings.DocsPerSecond = &dps
 		}
 		if v, ok := definedSettings["max_page_search_size"]; ok {
-			settings.MaxPageSearchSize = new(int)
-			*settings.MaxPageSearchSize = v.(int)
+			mpss := v.(int)
+			settings.MaxPageSearchSize = &mpss
 		}
 		if v, ok := definedSettings["num_failure_retries"]; ok {
-			settings.NumFailureRetries = new(int)
-			*settings.NumFailureRetries = v.(int)
+			nfr := v.(int)
+			settings.NumFailureRetries = &nfr
 		}
 		if v, ok := definedSettings["unattended"]; ok {
-			settings.Unattended = new(bool)
-			*settings.Unattended = v.(bool)
+			u := v.(bool)
+			settings.Unattended = &u
 		}
 
 		transform.Settings = &settings

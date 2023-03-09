@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 )
 
@@ -31,40 +32,11 @@ func StringIsElasticDuration(i interface{}, k string) (warnings []string, errors
 		return nil, []error{fmt.Errorf("%q contains an invalid duration: [empty]", k)}
 	}
 
-	firstPartCount := 0
-	for v != "" {
-		// first part must contain only characters in range [0-9] and .
-		if ('0' <= v[0] && v[0] <= '9') || v[0] == '.' {
-			v = v[1:]
-			firstPartCount++
-			continue
-		}
+	r := regexp.MustCompile(`^[0-9]+(?:\.[0-9]+)?(?:d|h|m|s|ms|micros|nanos)$`)
 
-		if firstPartCount == 0 {
-			return nil, []error{fmt.Errorf("%q contains an invalid duration: should start with a numeric value", k)}
-		}
-
-		if !isValidElasticTimeUnit(v) {
-			return nil, []error{fmt.Errorf("%q contains an invalid duration: unrecognized time unit [%s]", k, v)}
-		}
-
-		break
+	if !r.MatchString(v) {
+		return nil, []error{fmt.Errorf("%q contains an invalid duration: not conforming to Elastic time-units format", k)}
 	}
 
 	return nil, nil
-}
-
-func isValidElasticTimeUnit(timeUnit string) bool {
-	switch timeUnit {
-	case
-		"d",
-		"h",
-		"m",
-		"s",
-		"ms",
-		"micros",
-		"nanos":
-		return true
-	}
-	return false
 }

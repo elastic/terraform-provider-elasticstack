@@ -546,14 +546,12 @@ func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, nam
 }
 
 func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
-	fmt.Println("entering PutTransform for", transform.Name)
+
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	fmt.Printf("%s\n", transformBytes)
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -581,9 +579,14 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 			esClient.TransformStartTransform.WithContext(ctx),
 			esClient.TransformStartTransform.WithTimeout(params.Timeout),
 		}
-		_, err := esClient.TransformStartTransform(transform.Name, startOptions...)
+		startRes, err := esClient.TransformStartTransform(transform.Name, startOptions...)
 		if err != nil {
 			return diag.FromErr(err)
+		}
+
+		defer startRes.Body.Close()
+		if diags := utils.CheckError(startRes, fmt.Sprintf("Unable to start transform: %s", transform.Name)); diags.HasError() {
+			return diags
 		}
 	}
 
@@ -591,17 +594,19 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 }
 
 func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *string) (*models.Transform, diag.Diagnostics) {
-	fmt.Println("entering GetTransform for", *name)
+
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
+
 	req := esClient.TransformGetTransform.WithTransformID(*name)
 	res, err := esClient.TransformGetTransform(req, esClient.TransformGetTransform.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
+
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
@@ -626,14 +631,12 @@ func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *strin
 }
 
 func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
-	fmt.Println("entering UpdateTransform with Enabled", params.Enabled)
+
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	fmt.Printf("%s\n", transformBytes)
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -661,18 +664,27 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 			esClient.TransformStartTransform.WithContext(ctx),
 			esClient.TransformStartTransform.WithTimeout(params.Timeout),
 		}
-		_, err := esClient.TransformStartTransform(transform.Name, startOptions...)
+		startRes, err := esClient.TransformStartTransform(transform.Name, startOptions...)
 		if err != nil {
 			return diag.FromErr(err)
+		}
+
+		defer startRes.Body.Close()
+		if diags := utils.CheckError(startRes, fmt.Sprintf("Unable to start transform: %s", transform.Name)); diags.HasError() {
+			return diags
 		}
 	} else {
 		stopOptions := []func(*esapi.TransformStopTransformRequest){
 			esClient.TransformStopTransform.WithContext(ctx),
 			esClient.TransformStopTransform.WithTimeout(params.Timeout),
 		}
-		_, err := esClient.TransformStopTransform(transform.Name, stopOptions...)
+		stopRes, err := esClient.TransformStopTransform(transform.Name, stopOptions...)
 		if err != nil {
 			return diag.FromErr(err)
+		}
+		defer stopRes.Body.Close()
+		if diags := utils.CheckError(stopRes, fmt.Sprintf("Unable to stop transform: %s", transform.Name)); diags.HasError() {
+			return diags
 		}
 	}
 
@@ -680,9 +692,8 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 }
 
 func DeleteTransform(ctx context.Context, apiClient *clients.ApiClient, name *string) diag.Diagnostics {
-	fmt.Println("entering DeleteTransform for", *name)
-	var diags diag.Diagnostics
 
+	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
@@ -693,7 +704,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ApiClient, name *st
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete the transform: %s", *name)); diags.HasError() {
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete transform: %s", *name)); diags.HasError() {
 		return diags
 	}
 
