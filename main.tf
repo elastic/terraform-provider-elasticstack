@@ -26,6 +26,9 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
       "always" = {}
     },
     # "actions" = {}
+    "metadata"                  = {},
+    "throttle_period"           = "15m",
+    "throttle_period_in_millis" = {}
   })
 }
 
