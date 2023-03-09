@@ -276,8 +276,11 @@ type Watch struct {
 }
 
 type WatchBody struct {
-	Actions   *map[string]interface{} `json:"actions"`
-	Condition *map[string]interface{} `json:"condition"`
-	Input     *map[string]interface{} `json:"input"`
-	Trigger   *map[string]interface{} `json:"trigger"`
+	Actions                   *map[string]interface{} `json:"actions"`
+	Condition                 *map[string]interface{} `json:"condition"`
+	Input                     *map[string]interface{} `json:"input"`
+	Trigger                   *map[string]interface{} `json:"trigger"`
+	Metadata                  *map[string]interface{} `json:"metadata"`
+	Throttle_period           *map[string]interface{} `json:"throttle_period"`
+	Throttle_period_in_millis *map[string]interface{} `json:"throttle_period_in_millis"`
 }
