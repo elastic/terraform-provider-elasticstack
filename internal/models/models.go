@@ -282,5 +282,5 @@ type WatchBody struct {
 	Trigger                   *map[string]interface{} `json:"trigger"`
 	Metadata                  *map[string]interface{} `json:"metadata"`
 	Throttle_period           *string                 `json:"throttle_period"`
-	Throttle_period_in_millis *map[string]interface{} `json:"throttle_period_in_millis"`
+	Throttle_period_in_millis *int                    `json:"throttle_period_in_millis"`
 }
