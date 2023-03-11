@@ -16,7 +16,7 @@ type Transform struct {
 	Frequency       string                    `json:"frequency,omitempty"`
 	RetentionPolicy *TransformRetentionPolicy `json:"retention_policy,omitempty"`
 	Sync            *TransformSync            `json:"sync,omitempty"`
-	Meta            map[string]interface{}    `json:"_meta,omitempty"`
+	Meta            interface{}               `json:"_meta,omitempty"`
 	Settings        *TransformSettings        `json:"settings,omitempty"`
 }
 
@@ -69,9 +69,24 @@ type UpdateTransformParams struct {
 	DeferValidation bool
 	Timeout         time.Duration
 	Enabled         bool
+	WasEnabled      bool
 }
 
 type GetTransformResponse struct {
-	Count      json.Number `json:"count,omitempty"`
+	Count      json.Number `json:"count"`
 	Transforms []Transform `json:"transforms"`
+}
+
+type TransformStats struct {
+	Id    string `json:"id"`
+	State string `json:"state"`
+}
+
+type GetTransformStatsResponse struct {
+	Count          json.Number      `json:"count"`
+	TransformStats []TransformStats `json:"transforms"`
+}
+
+func (ts *TransformStats) IsStarted() bool {
+	return ts.State == "started" || ts.State == "indexing"
 }

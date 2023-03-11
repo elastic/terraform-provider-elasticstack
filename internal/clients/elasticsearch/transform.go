@@ -97,19 +97,77 @@ func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *strin
 		return nil, diags
 	}
 
-	transformsResponse := models.GetTransformResponse{}
+	var transformsResponse models.GetTransformResponse
 	if err := json.NewDecoder(res.Body).Decode(&transformsResponse); err != nil {
 		return nil, diag.FromErr(err)
 	}
 
+	var foundTransform *models.Transform = nil
 	for _, t := range transformsResponse.Transforms {
 		if t.Id == *name {
-			t.Name = *name
-			return &t, diags
+			foundTransform = &t
+			break
 		}
 	}
 
-	return nil, diags
+	if foundTransform == nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to find the transform in the cluster",
+			Detail:   fmt.Sprintf(`Unable to find "%s" transform in the cluster`, *name),
+		})
+
+		return nil, diags
+	}
+
+	foundTransform.Name = *name
+	return foundTransform, diags
+}
+
+func GetTransformStats(ctx context.Context, apiClient *clients.ApiClient, name *string) (*models.TransformStats, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	getStatsOptions := []func(*esapi.TransformGetTransformStatsRequest){
+		esClient.TransformGetTransformStats.WithContext(ctx),
+	}
+
+	statsRes, err := esClient.TransformGetTransformStats(*name, getStatsOptions...)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	defer statsRes.Body.Close()
+	if diags := utils.CheckError(statsRes, fmt.Sprintf("Unable to get transform stats: %s", *name)); diags.HasError() {
+		return nil, diags
+	}
+
+	var transformsStatsResponse models.GetTransformStatsResponse
+	if err := json.NewDecoder(statsRes.Body).Decode(&transformsStatsResponse); err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	var foundTransformStats *models.TransformStats = nil
+	for _, ts := range transformsStatsResponse.TransformStats {
+		if ts.Id == *name {
+			foundTransformStats = &ts
+			break
+		}
+	}
+
+	if foundTransformStats == nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to find the transform stats in the cluster",
+			Detail:   fmt.Sprintf(`Unable to find "%s" transform stats in the cluster`, *name),
+		})
+		return nil, diags
+	}
+
+	return foundTransformStats, diags
 }
 
 func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
@@ -158,11 +216,13 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 		timeout = 0
 	}
 
-	if params.Enabled {
+	if params.Enabled && !params.WasEnabled {
 		if diags := startTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
 			return diags
 		}
-	} else {
+	}
+
+	if !params.Enabled && params.WasEnabled {
 		if diags := stopTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
 			return diags
 		}

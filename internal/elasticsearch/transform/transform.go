@@ -60,14 +60,16 @@ func ResourceTransform() *schema.Resource {
 						Description:      "A query clause that retrieves a subset of data from the source index.",
 						Type:             schema.TypeString,
 						Optional:         true,
-						Default:          `{"match_all":{}}}`,
+						Default:          `{"match_all":{}}`,
 						DiffSuppressFunc: utils.DiffJsonSuppress,
 						ValidateFunc:     validation.StringIsJSON,
 					},
 					"runtime_mappings": {
-						Description: "Definitions of search-time runtime fields that can be used by the transform.",
-						Type:        schema.TypeString,
-						Optional:    true,
+						Description:      "Definitions of search-time runtime fields that can be used by the transform.",
+						Type:             schema.TypeString,
+						Optional:         true,
+						DiffSuppressFunc: utils.DiffJsonSuppress,
+						ValidateFunc:     validation.StringIsJSON,
 					},
 				},
 			},
@@ -132,7 +134,7 @@ func ResourceTransform() *schema.Resource {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"time": {
-						Description: "Specifies that the transform uses a time field to set the retention policy.",
+						Description: "Specifies that the transform uses a time field to set the retention policy. This is currently the only supported option.",
 						Type:        schema.TypeList,
 						Required:    true,
 						MaxItems:    1,
@@ -163,7 +165,7 @@ func ResourceTransform() *schema.Resource {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"time": {
-						Description: "Specifies that the transform uses a time field to synchronize the source and destination indices.",
+						Description: "Specifies that the transform uses a time field to synchronize the source and destination indices. This is currently the only supported option.",
 						Type:        schema.TypeList,
 						Required:    true,
 						MaxItems:    1,
@@ -187,54 +189,50 @@ func ResourceTransform() *schema.Resource {
 				},
 			},
 		},
-		"settings": {
-			Description: "Defines optional transform settings.",
-			Type:        schema.TypeList,
+		"align_checkpoints": {
+			Description: "Specifies whether the transform checkpoint ranges should be optimized for performance.",
+			Type:        schema.TypeBool,
 			Optional:    true,
-			MaxItems:    1,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"align_checkpoints": {
-						Description: "Specifies whether the transform checkpoint ranges should be optimized for performance. Default value is true.",
-						Type:        schema.TypeBool,
-						Optional:    true,
-						Default:     true,
-					},
-					"dates_as_epoch_millis": {
-						Description: "Defines if dates in the output should be written as ISO formatted string (default) or as millis since epoch.",
-						Type:        schema.TypeBool,
-						Optional:    true,
-						Default:     false,
-					},
-					"deduce_mappings": {
-						Description: "Specifies whether the transform should deduce the destination index mappings from the transform config. The default value is true",
-						Type:        schema.TypeBool,
-						Optional:    true,
-						Default:     true,
-					},
-					"docs_per_second": {
-						Description: "Specifies a limit on the number of input documents per second. Default value is null, which disables throttling.",
-						Type:        schema.TypeFloat,
-						Optional:    true,
-					},
-					"max_page_search_size": {
-						Description: "Defines the initial page size to use for the composite aggregation for each checkpoint. The default value is 500.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-					},
-					"num_failure_retries": {
-						Description: "Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.",
-						Type:        schema.TypeInt,
-						Optional:    true,
-					},
-					"unattended": {
-						Description: "In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails. Defaults to false.",
-						Type:        schema.TypeBool,
-						Optional:    true,
-						Default:     false,
-					},
-				},
-			},
+			Default:     true,
+		},
+		"dates_as_epoch_millis": {
+			Description: "Defines if dates in the output should be written as ISO formatted string (default) or as millis since epoch.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
+		},
+		"deduce_mappings": {
+			Description: "Specifies whether the transform should deduce the destination index mappings from the transform config.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     true,
+		},
+		"docs_per_second": {
+			Description:  "Specifies a limit on the number of input documents per second. Default (unset) value disables throttling.",
+			Type:         schema.TypeFloat,
+			Optional:     true,
+			Default:      -1,
+			ValidateFunc: validation.FloatAtLeast(0),
+		},
+		"max_page_search_size": {
+			Description:  "Defines the initial page size to use for the composite aggregation for each checkpoint. Default is 500.",
+			Type:         schema.TypeInt,
+			Optional:     true,
+			Default:      -1,
+			ValidateFunc: validation.IntBetween(10, 65536),
+		},
+		"num_failure_retries": {
+			Description:  "Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.",
+			Type:         schema.TypeInt,
+			Optional:     true,
+			Default:      -2,
+			ValidateFunc: validation.IntBetween(-1, 100),
+		},
+		"unattended": {
+			Description: "In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
 		},
 		"defer_validation": {
 			Type:        schema.TypeBool,
@@ -321,6 +319,8 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
+	// actual resource state is established from two sources: the transform definition (model) and the transform stats
+	// 1. read transform definition
 	transform, diags := elasticsearch.GetTransform(ctx, client, &transformName)
 	if transform == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Transform "%s" not found, removing from state`, compId.ResourceId))
@@ -329,6 +329,20 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 	}
 	if diags.HasError() {
 		return diags
+	}
+
+	if err := updateResourceDataFromModel(ctx, d, transform); err != nil {
+		return diag.FromErr(err)
+	}
+
+	// 2. read transform stats
+	transformStats, diags := elasticsearch.GetTransformStats(ctx, client, &transformName)
+	if diags.HasError() {
+		return diags
+	}
+
+	if err := updateResourceDataFromStats(ctx, d, transformStats); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return diags
@@ -366,6 +380,12 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta i
 	params.Timeout = timeout
 
 	params.Enabled = d.Get("enabled").(bool)
+
+	transformStats, diags := elasticsearch.GetTransformStats(ctx, client, &transformName)
+	if diags.HasError() {
+		return diags
+	}
+	params.WasEnabled = transformStats.IsStarted()
 
 	if diags := elasticsearch.UpdateTransform(ctx, client, updatedTransform, &params); diags.HasError() {
 		return diags
@@ -507,41 +527,245 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		}
 	}
 
-	if v, ok := d.GetOk("settings"); ok {
-		definedSettings := v.([]interface{})[0].(map[string]interface{})
+	// settings
+	settings := models.TransformSettings{}
+	setSettings := false
 
-		settings := models.TransformSettings{}
-		if v, ok := definedSettings["align_checkpoints"]; ok {
-			ac := v.(bool)
-			settings.AlignCheckpoints = &ac
-		}
-		if v, ok := definedSettings["dates_as_epoch_millis"]; ok {
-			dem := v.(bool)
-			settings.DatesAsEpochMillis = &dem
-		}
-		if v, ok := definedSettings["deduce_mappings"]; ok {
-			dm := v.(bool)
-			settings.DeduceMappings = &dm
-		}
-		if v, ok := definedSettings["docs_per_second"]; ok {
-			dps := v.(float64)
-			settings.DocsPerSecond = &dps
-		}
-		if v, ok := definedSettings["max_page_search_size"]; ok {
-			mpss := v.(int)
-			settings.MaxPageSearchSize = &mpss
-		}
-		if v, ok := definedSettings["num_failure_retries"]; ok {
-			nfr := v.(int)
-			settings.NumFailureRetries = &nfr
-		}
-		if v, ok := definedSettings["unattended"]; ok {
-			u := v.(bool)
-			settings.Unattended = &u
-		}
+	if v, ok := d.GetOk("align_checkpoints"); ok {
+		setSettings = true
+		ac := v.(bool)
+		settings.AlignCheckpoints = &ac
+	}
+	if v, ok := d.GetOk("dates_as_epoch_millis"); ok {
+		setSettings = true
+		dem := v.(bool)
+		settings.DatesAsEpochMillis = &dem
+	}
+	if v, ok := d.GetOk("deduce_mappings"); ok {
+		setSettings = true
+		dm := v.(bool)
+		settings.DeduceMappings = &dm
+	}
+	if v, ok := d.GetOk("docs_per_second"); ok && v.(float64) >= 0 {
+		setSettings = true
+		dps := v.(float64)
+		settings.DocsPerSecond = &dps
+	}
+	if v, ok := d.GetOk("max_page_search_size"); ok && v.(int) > 10 {
+		setSettings = true
+		mpss := v.(int)
+		settings.MaxPageSearchSize = &mpss
+	}
+	if v, ok := d.GetOk("num_failure_retries"); ok && v.(int) >= -1 {
+		setSettings = true
+		nfr := v.(int)
+		settings.NumFailureRetries = &nfr
+	}
+	if v, ok := d.GetOk("unattended"); ok {
+		setSettings = true
+		u := v.(bool)
+		settings.Unattended = &u
+	}
 
+	if setSettings {
 		transform.Settings = &settings
 	}
 
 	return &transform, nil
+}
+
+func updateResourceDataFromModel(ctx context.Context, d *schema.ResourceData, transform *models.Transform) error {
+
+	// transform.Description
+	if err := d.Set("description", transform.Description); err != nil {
+		return err
+	}
+
+	// transform.Source
+	if err := d.Set("source", flattenSource(transform.Source)); err != nil {
+		return err
+	}
+
+	// transform.Destination
+	if err := d.Set("destination", flattenDestination(transform.Destination)); err != nil {
+		return err
+	}
+
+	// transform.Frequency
+	if err := d.Set("frequency", transform.Frequency); err != nil {
+		return err
+	}
+
+	// transform.Sync
+	if err := d.Set("sync", flattenSync(transform.Sync)); err != nil {
+		return err
+	}
+
+	// transform.RetentionPolicy
+	if err := d.Set("retention_policy", flattenRetentionPolicy(transform.RetentionPolicy)); err != nil {
+		return err
+	}
+
+	// transform.Settings
+	if transform.Settings != nil && transform.Settings.AlignCheckpoints != nil {
+		if err := d.Set("align_checkpoints", *(transform.Settings.AlignCheckpoints)); err != nil {
+			return err
+		}
+	}
+
+	if transform.Settings != nil && transform.Settings.DatesAsEpochMillis != nil {
+		if err := d.Set("dates_as_epoch_millis", *(transform.Settings.DatesAsEpochMillis)); err != nil {
+			return err
+		}
+	}
+
+	if transform.Settings != nil && transform.Settings.DeduceMappings != nil {
+		if err := d.Set("deduce_mappings", *(transform.Settings.DeduceMappings)); err != nil {
+			return err
+		}
+	}
+
+	if transform.Settings != nil && transform.Settings.DocsPerSecond != nil {
+		if err := d.Set("docs_per_second", *(transform.Settings.DocsPerSecond)); err != nil {
+			return err
+		}
+	}
+
+	if transform.Settings != nil && transform.Settings.MaxPageSearchSize != nil {
+		if err := d.Set("max_page_search_size", *(transform.Settings.MaxPageSearchSize)); err != nil {
+			return err
+		}
+	}
+
+	if transform.Settings != nil && transform.Settings.NumFailureRetries != nil {
+		if err := d.Set("num_failure_retries", *(transform.Settings.NumFailureRetries)); err != nil {
+			return err
+		}
+	}
+
+	if transform.Settings != nil && transform.Settings.Unattended != nil {
+		if err := d.Set("unattended", *(transform.Settings.Unattended)); err != nil {
+			return err
+		}
+	}
+
+	// transform.Meta
+	if transform.Meta == nil {
+		if err := d.Set("metadata", nil); err != nil {
+			return err
+		}
+	} else {
+		meta, err := json.Marshal(transform.Meta)
+		if err != nil {
+			return err
+		}
+
+		if err := d.Set("metadata", string(meta)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func updateResourceDataFromStats(ctx context.Context, d *schema.ResourceData, transformStats *models.TransformStats) error {
+
+	// transform.Enabled
+	if err := d.Set("enabled", transformStats.IsStarted()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func flattenSource(source *models.TransformSource) []interface{} {
+	if source == nil {
+		return []interface{}{}
+	}
+
+	s := make(map[string]interface{})
+
+	if source.Indices != nil {
+		s["indices"] = source.Indices
+	}
+
+	if source.Query != nil {
+		query, err := json.Marshal(source.Query)
+		if err != nil {
+			return []interface{}{}
+		}
+		if len(query) > 0 {
+			s["query"] = string(query)
+		}
+	}
+
+	if source.RuntimeMappings != nil {
+		rm, err := json.Marshal(source.RuntimeMappings)
+		if err != nil {
+			return []interface{}{}
+		}
+		if len(rm) > 0 {
+			s["runtime_mappings"] = string(rm)
+		}
+	}
+
+	return []interface{}{s}
+}
+
+func flattenDestination(dest *models.TransformDestination) []interface{} {
+	if dest == nil {
+		return []interface{}{}
+	}
+
+	d := make(map[string]interface{})
+
+	d["index"] = dest.Index
+
+	if dest.Pipeline != "" {
+		d["pipeline"] = dest.Pipeline
+	}
+
+	return []interface{}{d}
+}
+
+func flattenSync(sync *models.TransformSync) []interface{} {
+	if sync == nil {
+		return nil
+	}
+
+	time := make(map[string]interface{})
+
+	if sync.Time.Delay != "" {
+		time["delay"] = sync.Time.Delay
+	}
+
+	if sync.Time.Field != "" {
+		time["field"] = sync.Time.Field
+	}
+
+	s := make(map[string]interface{})
+	s["time"] = []interface{}{time}
+
+	return []interface{}{s}
+}
+
+func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []interface{} {
+	if retention == nil {
+		return []interface{}{}
+	}
+
+	time := make(map[string]interface{})
+
+	if retention.Time.MaxAge != "" {
+		time["max_age"] = retention.Time.MaxAge
+	}
+
+	if retention.Time.Field != "" {
+		time["field"] = retention.Time.Field
+	}
+
+	r := make(map[string]interface{})
+	r["time"] = []interface{}{time}
+
+	return []interface{}{r}
 }
