@@ -76,17 +76,23 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 
 ### Optional
 
+- `align_checkpoints` (Boolean) Specifies whether the transform checkpoint ranges should be optimized for performance.
+- `dates_as_epoch_millis` (Boolean) Defines if dates in the output should be written as ISO formatted string (default) or as millis since epoch.
+- `deduce_mappings` (Boolean) Specifies whether the transform should deduce the destination index mappings from the transform config.
 - `defer_validation` (Boolean) When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created.
 - `description` (String) Free text description of the transform.
+- `docs_per_second` (Number) Specifies a limit on the number of input documents per second. Default (unset) value disables throttling.
 - `enabled` (Boolean) Controls wether the transform is started or stopped. Default is `false` (stopped).
 - `frequency` (String) The interval between checks for changes in the source indices when the transform is running continuously. Defaults to `1m`.
 - `latest` (String) The latest method transforms the data by finding the latest document for each unique key. JSON definition expected. Either 'pivot' or 'latest' must be present.
+- `max_page_search_size` (Number) Defines the initial page size to use for the composite aggregation for each checkpoint. Default is 500.
 - `metadata` (String) Defines optional transform metadata.
+- `num_failure_retries` (Number) Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.
 - `pivot` (String) The pivot method transforms the data by aggregating and grouping it. JSON definition expected. Either 'pivot' or 'latest' must be present.
 - `retention_policy` (Block List, Max: 1) Defines a retention policy for the transform. (see [below for nested schema](#nestedblock--retention_policy))
-- `settings` (Block List, Max: 1) Defines optional transform settings. (see [below for nested schema](#nestedblock--settings))
 - `sync` (Block List, Max: 1) Defines the properties transforms require to run continuously. (see [below for nested schema](#nestedblock--sync))
 - `timeout` (String) Period to wait for a response from Elastisearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.
+- `unattended` (Boolean) In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails.
 
 ### Read-Only
 
@@ -122,7 +128,7 @@ Optional:
 
 Required:
 
-- `time` (Block List, Min: 1, Max: 1) Specifies that the transform uses a time field to set the retention policy. (see [below for nested schema](#nestedblock--retention_policy--time))
+- `time` (Block List, Min: 1, Max: 1) Specifies that the transform uses a time field to set the retention policy. This is currently the only supported option. (see [below for nested schema](#nestedblock--retention_policy--time))
 
 <a id="nestedblock--retention_policy--time"></a>
 ### Nested Schema for `retention_policy.time`
@@ -134,26 +140,12 @@ Required:
 
 
 
-<a id="nestedblock--settings"></a>
-### Nested Schema for `settings`
-
-Optional:
-
-- `align_checkpoints` (Boolean) Specifies whether the transform checkpoint ranges should be optimized for performance. Default value is true.
-- `dates_as_epoch_millis` (Boolean) Defines if dates in the output should be written as ISO formatted string (default) or as millis since epoch.
-- `deduce_mappings` (Boolean) Specifies whether the transform should deduce the destination index mappings from the transform config. The default value is true
-- `docs_per_second` (Number) Specifies a limit on the number of input documents per second. Default value is null, which disables throttling.
-- `max_page_search_size` (Number) Defines the initial page size to use for the composite aggregation for each checkpoint. The default value is 500.
-- `num_failure_retries` (Number) Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.
-- `unattended` (Boolean) In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails. Defaults to false.
-
-
 <a id="nestedblock--sync"></a>
 ### Nested Schema for `sync`
 
 Required:
 
-- `time` (Block List, Min: 1, Max: 1) Specifies that the transform uses a time field to synchronize the source and destination indices. (see [below for nested schema](#nestedblock--sync--time))
+- `time` (Block List, Min: 1, Max: 1) Specifies that the transform uses a time field to synchronize the source and destination indices. This is currently the only supported option. (see [below for nested schema](#nestedblock--sync--time))
 
 <a id="nestedblock--sync--time"></a>
 ### Nested Schema for `sync.time`

@@ -17,6 +17,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
+var transformFeatureMinSupportedVersion = version.Must(version.NewVersion("7.2.0"))
+
 var apiOperationTimeoutParamMinSupportedVersion = version.Must(version.NewVersion("7.17.0"))
 
 func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
@@ -34,6 +36,15 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 
 	serverVersion, diags := apiClient.ServerVersion(ctx)
 	if diags.HasError() {
+		return diags
+	}
+
+	if serverVersion.LessThan(transformFeatureMinSupportedVersion) {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Transforms not supported",
+			Detail:   fmt.Sprintf(`Transform feature requires a minimum Elasticsearch version of "%s"`, transformFeatureMinSupportedVersion),
+		})
 		return diags
 	}
 
@@ -188,6 +199,15 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 		return diags
 	}
 
+	if serverVersion.LessThan(transformFeatureMinSupportedVersion) {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Transforms not supported",
+			Detail:   fmt.Sprintf(`Transform feature requires a minimum Elasticsearch version of "%s"`, transformFeatureMinSupportedVersion),
+		})
+		return diags
+	}
+
 	withTimeout := serverVersion.GreaterThanOrEqual(apiOperationTimeoutParamMinSupportedVersion)
 
 	updateOptions := []func(*esapi.TransformUpdateTransformRequest){
@@ -216,15 +236,15 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 		timeout = 0
 	}
 
-	if params.Enabled && !params.WasEnabled {
-		if diags := startTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
-			return diags
-		}
-	}
-
-	if !params.Enabled && params.WasEnabled {
-		if diags := stopTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
-			return diags
+	if params.ApplyEnabled {
+		if params.Enabled {
+			if diags := startTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
+				return diags
+			}
+		} else {
+			if diags := stopTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
+				return diags
+			}
 		}
 	}
 

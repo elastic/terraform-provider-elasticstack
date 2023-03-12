@@ -12,11 +12,34 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var settingsRequiredVersions map[string]*version.Version
+
+func init() {
+	settingsRequiredVersions = make(map[string]*version.Version)
+
+	// capabilities
+	settingsRequiredVersions["frequency"], _ = version.NewVersion("7.3.0")
+	settingsRequiredVersions["latest"], _ = version.NewVersion("7.11.0")
+	settingsRequiredVersions["retention_policy"], _ = version.NewVersion("7.12.0")
+	settingsRequiredVersions["source.runtime_mappings"], _ = version.NewVersion("7.12.0")
+	settingsRequiredVersions["metadata"], _ = version.NewVersion("7.16.0")
+
+	// settings
+	settingsRequiredVersions["docs_per_second"], _ = version.NewVersion("7.8.0")
+	settingsRequiredVersions["max_page_search_size"], _ = version.NewVersion("7.8.0")
+	settingsRequiredVersions["dates_as_epoch_millis"], _ = version.NewVersion("7.11.0")
+	settingsRequiredVersions["align_checkpoints"], _ = version.NewVersion("7.11.0")
+	settingsRequiredVersions["deduce_mappings"], _ = version.NewVersion("8.1.0")
+	settingsRequiredVersions["num_failure_retries"], _ = version.NewVersion("8.4.0")
+	settingsRequiredVersions["unattended"], _ = version.NewVersion("8.5.0")
+}
 
 func ResourceTransform() *schema.Resource {
 	transformSchema := map[string]*schema.Schema{
@@ -279,7 +302,12 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
-	transform, err := getTransformFromResourceData(ctx, d, transformName)
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	transform, err := getTransformFromResourceData(ctx, d, transformName, serverVersion)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -361,7 +389,12 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
-	updatedTransform, err := getTransformFromResourceData(ctx, d, transformName)
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	updatedTransform, err := getTransformFromResourceData(ctx, d, transformName, serverVersion)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -369,23 +402,17 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta i
 	updatedTransform.Pivot = nil
 	updatedTransform.Latest = nil
 
-	params := models.UpdateTransformParams{
-		DeferValidation: d.Get("defer_validation").(bool),
-	}
-
 	timeout, err := time.ParseDuration(d.Get("timeout").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	params.Timeout = timeout
 
-	params.Enabled = d.Get("enabled").(bool)
-
-	transformStats, diags := elasticsearch.GetTransformStats(ctx, client, &transformName)
-	if diags.HasError() {
-		return diags
+	params := models.UpdateTransformParams{
+		DeferValidation: d.Get("defer_validation").(bool),
+		Timeout:         timeout,
+		Enabled:         d.Get("enabled").(bool),
+		ApplyEnabled:    d.HasChange("enabled"),
 	}
-	params.WasEnabled = transformStats.IsStarted()
 
 	if diags := elasticsearch.UpdateTransform(ctx, client, updatedTransform, &params); diags.HasError() {
 		return diags
@@ -414,7 +441,7 @@ func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta i
 	return diags
 }
 
-func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, name string) (*models.Transform, error) {
+func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, name string, serverVersion *version.Version) (*models.Transform, error) {
 
 	var transform models.Transform
 	transform.Name = name
@@ -441,7 +468,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 			transform.Source.Query = query
 		}
 
-		if v, ok := definedSource["runtime_mappings"]; ok && len(v.(string)) > 0 {
+		if v, ok := definedSource["runtime_mappings"]; ok && len(v.(string)) > 0 && isSettingAllowed(ctx, "source.runtime_mappings", serverVersion) {
 			var runtimeMappings interface{}
 			if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&runtimeMappings); err != nil {
 				return nil, err
@@ -471,7 +498,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		transform.Pivot = pivot
 	}
 
-	if v, ok := d.GetOk("latest"); ok {
+	if v, ok := d.GetOk("latest"); ok && isSettingAllowed(ctx, "latest", serverVersion) {
 		var latest interface{}
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&latest); err != nil {
 			return nil, err
@@ -479,11 +506,11 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		transform.Latest = latest
 	}
 
-	if v, ok := d.GetOk("frequency"); ok {
+	if v, ok := d.GetOk("frequency"); ok && isSettingAllowed(ctx, "frequency", serverVersion) {
 		transform.Frequency = v.(string)
 	}
 
-	if v, ok := d.GetOk("metadata"); ok {
+	if v, ok := d.GetOk("metadata"); ok && isSettingAllowed(ctx, "metadata", serverVersion) {
 		var metadata map[string]interface{}
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return nil, err
@@ -491,7 +518,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		transform.Meta = metadata
 	}
 
-	if v, ok := d.GetOk("retention_policy"); ok && v != nil {
+	if v, ok := d.GetOk("retention_policy"); ok && v != nil && isSettingAllowed(ctx, "retention_policy", serverVersion) {
 		definedRetentionPolicy := v.([]interface{})[0].(map[string]interface{})
 
 		if v, ok := definedRetentionPolicy["time"]; ok {
@@ -531,37 +558,37 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	settings := models.TransformSettings{}
 	setSettings := false
 
-	if v, ok := d.GetOk("align_checkpoints"); ok {
+	if v, ok := d.GetOk("align_checkpoints"); ok && isSettingAllowed(ctx, "align_checkpoints", serverVersion) {
 		setSettings = true
 		ac := v.(bool)
 		settings.AlignCheckpoints = &ac
 	}
-	if v, ok := d.GetOk("dates_as_epoch_millis"); ok {
+	if v, ok := d.GetOk("dates_as_epoch_millis"); ok && isSettingAllowed(ctx, "dates_as_epoch_millis", serverVersion) {
 		setSettings = true
 		dem := v.(bool)
 		settings.DatesAsEpochMillis = &dem
 	}
-	if v, ok := d.GetOk("deduce_mappings"); ok {
+	if v, ok := d.GetOk("deduce_mappings"); ok && isSettingAllowed(ctx, "deduce_mappings", serverVersion) {
 		setSettings = true
 		dm := v.(bool)
 		settings.DeduceMappings = &dm
 	}
-	if v, ok := d.GetOk("docs_per_second"); ok && v.(float64) >= 0 {
+	if v, ok := d.GetOk("docs_per_second"); ok && v.(float64) >= 0 && isSettingAllowed(ctx, "docs_per_second", serverVersion) {
 		setSettings = true
 		dps := v.(float64)
 		settings.DocsPerSecond = &dps
 	}
-	if v, ok := d.GetOk("max_page_search_size"); ok && v.(int) > 10 {
+	if v, ok := d.GetOk("max_page_search_size"); ok && v.(int) > 10 && isSettingAllowed(ctx, "max_page_search_size", serverVersion) {
 		setSettings = true
 		mpss := v.(int)
 		settings.MaxPageSearchSize = &mpss
 	}
-	if v, ok := d.GetOk("num_failure_retries"); ok && v.(int) >= -1 {
+	if v, ok := d.GetOk("num_failure_retries"); ok && v.(int) >= -1 && isSettingAllowed(ctx, "num_failure_retries", serverVersion) {
 		setSettings = true
 		nfr := v.(int)
 		settings.NumFailureRetries = &nfr
 	}
-	if v, ok := d.GetOk("unattended"); ok {
+	if v, ok := d.GetOk("unattended"); ok && isSettingAllowed(ctx, "unattended", serverVersion) {
 		setSettings = true
 		u := v.(bool)
 		settings.Unattended = &u
@@ -768,4 +795,15 @@ func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []interf
 	r["time"] = []interface{}{time}
 
 	return []interface{}{r}
+}
+
+func isSettingAllowed(ctx context.Context, settingName string, serverVersion *version.Version) bool {
+	if minVersion, ok := settingsRequiredVersions[settingName]; ok {
+		if serverVersion.LessThan(minVersion) {
+			tflog.Warn(ctx, fmt.Sprintf("Setting [%s] not allowed for Elasticsearch server version %v; min required is %v", settingName, *serverVersion, *minVersion))
+			return false
+		}
+	}
+
+	return true
 }

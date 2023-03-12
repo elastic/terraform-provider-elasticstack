@@ -27,6 +27,8 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.0", "source_index_for_transform"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.0.index", "dest_index_for_transform"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "frequency", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "max_page_search_size", "2000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "enabled", "false"),
 				),
 			},
 			{
@@ -38,6 +40,8 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.1", "additional_index"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.0.index", "dest_index_for_transform_v2"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "frequency", "10m"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "max_page_search_size", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "enabled", "true"),
 				),
 			},
 		},
@@ -126,6 +130,15 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
       }
     }
   })
+
+	sync {
+    time {
+      field = "order_date"
+      delay = "20s"
+    }
+  }
+
+	max_page_search_size = 2000
   frequency = "5m"
 	enabled = false
 
@@ -157,13 +170,6 @@ resource "elasticstack_elasticsearch_index" "test_source_index_1" {
     }
   })
 
-  settings {
-    setting {
-      name  = "index.number_of_replicas"
-      value = "2"
-    }
-  }
-
 	deletion_protection = false
 	wait_for_active_shards = "all"
 	master_timeout = "1m"
@@ -182,13 +188,6 @@ resource "elasticstack_elasticsearch_index" "test_source_index_2" {
       field1 = { type = "text" }
     }
   })
-
-  settings {
-    setting {
-      name  = "index.number_of_replicas"
-      value = "2"
-    }
-  }
 
 	deletion_protection = false
 	wait_for_active_shards = "all"
@@ -228,6 +227,22 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
       }
     }
   })
+
+	sync {
+    time {
+      field = "order_date"
+      delay = "20s"
+    }
+  }
+
+	retention_policy {
+    time {
+      field   = "order_date"
+      max_age = "7d"
+    }
+  }
+
+	max_page_search_size = 1000
   frequency = "10m"
 	enabled = true
 
@@ -286,13 +301,6 @@ resource "elasticstack_elasticsearch_index" "test_index" {
       field1 = { type = "text" }
     }
   })
-
-  settings {
-    setting {
-      name  = "index.number_of_replicas"
-      value = "2"
-    }
-  }
 
 	deletion_protection = false
 	wait_for_active_shards = "all"

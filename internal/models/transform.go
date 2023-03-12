@@ -69,7 +69,7 @@ type UpdateTransformParams struct {
 	DeferValidation bool
 	Timeout         time.Duration
 	Enabled         bool
-	WasEnabled      bool
+	ApplyEnabled    bool
 }
 
 type GetTransformResponse struct {
