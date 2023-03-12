@@ -286,6 +286,10 @@ func ResourceTransform() *schema.Resource {
 		ReadContext:   resourceTransformRead,
 		UpdateContext: resourceTransformUpdate,
 		DeleteContext: resourceTransformDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 	}
 }
 
@@ -616,6 +620,28 @@ func updateResourceDataFromModel(ctx context.Context, d *schema.ResourceData, tr
 	// transform.Destination
 	if err := d.Set("destination", flattenDestination(transform.Destination)); err != nil {
 		return err
+	}
+
+	// transform.Pivot
+	if transform.Pivot != nil {
+		pivot, err := json.Marshal(transform.Pivot)
+		if err != nil {
+			return err
+		}
+		if err := d.Set("pivot", string(pivot)); err != nil {
+			return err
+		}
+	}
+
+	// transform.Latest
+	if transform.Latest != nil {
+		latest, err := json.Marshal(transform.Latest)
+		if err != nil {
+			return err
+		}
+		if err := d.Set("latest", string(latest)); err != nil {
+			return err
+		}
 	}
 
 	// transform.Frequency

@@ -161,4 +161,8 @@ Optional:
 
 ## Import
 
-Not implemented yet.
+Import is supported using the following syntax:
+
+```shell
+terraform import elasticstack_elasticsearch_tranform.my_new_transform <cluster_uuid>/<transform_name>
+```
