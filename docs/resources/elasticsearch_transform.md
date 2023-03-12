@@ -18,7 +18,7 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
   description = "A meaningful description"
 
   source {
-    indices = ["name_or_pattern_for_input_index"]
+    indices = ["names_or_patterns_for_input_index"]
   }
 
   destination {
@@ -59,8 +59,9 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
     }
   }
 
-  enabled = false
+  max_page_search_size = 2000
 
+  enabled          = false
   defer_validation = false
 }
 ```
