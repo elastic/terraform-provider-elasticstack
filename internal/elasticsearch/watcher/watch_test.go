@@ -32,7 +32,7 @@ func TestResourceWatch(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}},"input":{"search":{"request":{"indices":["logstash*"],"body":{"query":{"bool":{"must":{"match":{"response":404}},"filter":{"range":{"@timestamp":{"from":"{{ctx.trigger.scheduled_time}}||-5m","to":"{{ctx.trigger.triggered_time}}"}}}}}}}}},"condition":{"compare":{"ctx.payload.hits.total":{"gt":0}}},"actions":{"email_admin":{"email":{"to":"admin@domain.host.com","subject":"404 recently encountered"}}},"metadata":{"example_key":"example_value"},"throttle_period_in_millis":10000}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", "{\"trigger\":{\"schedule\":{\"cron\":\"0 0/1 * * * ?\"}},\"input\":{\"search\":{\"request\":{\"body\":{\"query\":{\"bool\":{\"filter\":{\"range\":{\"@timestamp\":{\"from\":\"{{ctx.trigger.scheduled_time}}||-5m\",\"to\":\"{{ctx.trigger.triggered_time}}\"}}},\"must\":{\"match\":{\"response\":404}}}}},\"indices\":[\"logstash*\"],\"rest_total_hits_as_int\":true,\"search_type\":\"query_then_fetch\"}}},\"condition\":{\"compare\":{\"ctx.payload.hits.total\":{\"gt\":0}}},\"actions\":{\"email_admin\":{\"email\":{\"profile\":\"standard\",\"subject\":\"404 recently encountered\",\"to\":[\"admin@domain.host.com\"]}}},\"metadata\":{\"example_key\":\"example_value\"},\"throttle_period_in_millis\":10000}"),
 				),
 			},
 		},
