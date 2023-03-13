@@ -75,19 +75,6 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	var watchBody models.WatchBody
 
-	// if watchBody.Input == nil {
-	// 	v := map[string]interface{}{"none": make(map[string]interface{})}
-	// 	watchBody.Input = v
-	// }
-	// if watchBody.Condition == nil {
-	// 	v := map[string]interface{}{"always": make(map[string]interface{})}
-	// 	watchBody.Condition = v
-	// }
-	// if watchBody.Actions == nil {
-	// 	v := make(map[string]interface{})
-	// 	watchBody.Condition = v
-	// }
-
 	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
 		return diag.FromErr(err)
 	}
@@ -131,16 +118,6 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	if err := d.Set("active", watch.Status.State.Active); err != nil {
 		return diag.FromErr(err)
 	}
-
-	// if reflect.DeepEqual(watch.Body.Input, map[string]interface{}{"none": make(map[string]interface{})}) {
-	// 	watch.Body.Input = nil
-	// }
-	// if reflect.DeepEqual(watch.Body.Condition, map[string]interface{}{"always": make(map[string]interface{})}) {
-	// 	watch.Body.Condition = nil
-	// }
-	// if len(watch.Body.Actions) == 0 {
-	// 	watch.Body.Actions = nil
-	// }
 
 	body, err := json.Marshal(watch.Body)
 	if err != nil {
