@@ -94,7 +94,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		watch.Body.Actions = &v
 	}
 
-	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watch); err != nil {
+	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watch.Body); err != nil {
 		return diag.FromErr(err)
 	}
 
