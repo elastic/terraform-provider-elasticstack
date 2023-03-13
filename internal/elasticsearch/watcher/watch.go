@@ -93,6 +93,10 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		v := make(map[string]interface{})
 		watch.Body.Actions = &v
 	}
+	if watch.Body.Throttle_period == nil {
+		v := "5m"
+		watch.Body.Throttle_period = &v
+	}
 
 	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watch.Body); err != nil {
 		return diag.FromErr(err)
