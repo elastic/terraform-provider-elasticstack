@@ -77,23 +77,23 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 	watch.WatchID = watchID
 	watch.Status.State.Active = d.Get("active").(bool)
 
-	var watchBody *models.WatchBody
+	var watchBody models.WatchBody
 
 	if watchBody.Trigger == nil {
 		v := make(map[string]interface{})
-		watchBody.Trigger = v
+		watchBody.Trigger = &v
 	}
 	if watchBody.Input == nil {
 		v := make(map[string]interface{})
-		watchBody.Input = v
+		watchBody.Input = &v
 	}
 	if watchBody.Condition == nil {
 		v := make(map[string]interface{})
-		watchBody.Condition = v
+		watchBody.Condition = &v
 	}
 	if watchBody.Actions == nil {
 		v := make(map[string]interface{})
-		watchBody.Actions = v
+		watchBody.Actions = &v
 	}
 
 	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
