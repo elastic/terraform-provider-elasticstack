@@ -19,9 +19,9 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
     "trigger" = {
       "schedule" = { "cron" = "0 0/1 * * * ?" }
     },
-    "input" = {
-      "none" = {}
-    },
+    # "input" = {
+    #   "none" = {}
+    # },
     "condition" = {
       "always" = {}
     },

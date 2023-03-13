@@ -137,16 +137,13 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	}
 
 	if watch.Body.Trigger == nil {
-		v := make(map[string]interface{})
-		watch.Body.Trigger = &v
+		watch.Body.Trigger = nil
 	}
 	if watch.Body.Input == nil {
-		v := make(map[string]interface{})
-		watch.Body.Input = &v
+		watch.Body.Input = nil
 	}
 	if watch.Body.Condition == nil {
-		v := make(map[string]interface{})
-		watch.Body.Condition = &v
+		watch.Body.Condition = nil
 	}
 	if len(watch.Body.Actions) == 0 {
 		watch.Body.Actions = nil
