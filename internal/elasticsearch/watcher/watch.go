@@ -148,7 +148,9 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		v := make(map[string]interface{})
 		watch.Body.Condition = &v
 	}
-	watch.Body.Actions = nil
+	if len(watch.Body.Actions) == 0 {
+		watch.Body.Actions = nil
+	}
 
 	body, err := json.Marshal(watch.Body)
 	if err != nil {
