@@ -277,7 +277,7 @@ type Watch struct {
 
 type WatchBody struct {
 	Actions                   map[string]interface{} `json:"actions,omitempty"`
-	Condition                 map[string]interface{} `json:"condition"`
+	Condition                 map[string]interface{} `json:"condition,omitempty"`
 	Input                     map[string]interface{} `json:"input"`
 	Trigger                   map[string]interface{} `json:"trigger"`
 	Metadata                  map[string]interface{} `json:"metadata"`
