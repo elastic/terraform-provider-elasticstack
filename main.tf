@@ -22,13 +22,12 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
     "input" = {
       "none" = {}
     },
-    "condition" = {
-      "always" = {}
-    },
+    # "condition" = {
+    #   "always" = {}
+    # },
     # "actions" = {}
     "metadata" = {},
-    // "throttle_period_in_millis" = 5000,
-    "throttle_period" = "10s"
+    "throttle_period_in_millis" = 5000
   })
 }
 

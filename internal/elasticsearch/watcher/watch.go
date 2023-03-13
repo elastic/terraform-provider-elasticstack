@@ -73,10 +73,6 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diags
 	}
 
-	var watch models.Watch
-	watch.WatchID = watchID
-	watch.Status.State.Active = d.Get("active").(bool)
-
 	var watchBody models.WatchBody
 
 	if watchBody.Trigger == nil {
@@ -91,15 +87,18 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		v := make(map[string]interface{})
 		watchBody.Condition = &v
 	}
-	// if watchBody.Actions == nil {
-	// 	v := make(map[string]interface{})
-	// 	watchBody.Actions = &v
-	// }
+	if watchBody.Actions == nil {
+		v := make(map[string]interface{})
+		watchBody.Actions = &v
+	}
 
 	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
 		return diag.FromErr(err)
 	}
 
+	var watch models.Watch
+	watch.WatchID = watchID
+	watch.Status.State.Active = d.Get("active").(bool)
 	watch.Body = watchBody
 
 	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
@@ -136,6 +135,24 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	if err := d.Set("active", watch.Status.State.Active); err != nil {
 		return diag.FromErr(err)
 	}
+
+	if watch.Body.Trigger == nil {
+		v := make(map[string]interface{})
+		watch.Body.Trigger = &v
+	}
+	if watch.Body.Input == nil {
+		v := make(map[string]interface{})
+		watch.Body.Input = &v
+	}
+	if watch.Body.Condition == nil {
+		v := make(map[string]interface{})
+		watch.Body.Condition = &v
+	}
+	if watch.Body.Actions == nil {
+		v := make(map[string]interface{})
+		watch.Body.Actions = &v
+	}
+
 	body, err := json.Marshal(watch.Body)
 	if err != nil {
 		return diag.FromErr(err)
