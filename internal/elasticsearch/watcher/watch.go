@@ -61,34 +61,6 @@ func ResourceWatch() *schema.Resource {
 	}
 }
 
-func validateWatchBody(i interface{}, k string) (warnings []string, errors []error) {
-	warnings, errors = validation.StringIsJSON(i, k)
-
-	var watchBody models.WatchBody
-	if err := json.Unmarshal([]byte(i.(string)), &watchBody); err != nil {
-		panic(err)
-	}
-
-	if watchBody.Actions == nil {
-		errors = append(errors, fmt.Errorf("watch field must be declared: actions"))
-		return warnings, errors
-	}
-	if watchBody.Condition == nil {
-		errors = append(errors, fmt.Errorf("watch field must be declared: condition"))
-		return warnings, errors
-	}
-	if watchBody.Input == nil {
-		errors = append(errors, fmt.Errorf("watch field must be declared: input"))
-		return warnings, errors
-	}
-	if watchBody.Trigger == nil {
-		errors = append(errors, fmt.Errorf("watch field must be declared: trigger"))
-		return warnings, errors
-	}
-
-	return warnings, errors
-}
-
 func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client, diags := clients.NewApiClient(d, meta)
 	if diags.HasError() {
@@ -195,4 +167,36 @@ func resourceWatchDelete(ctx context.Context, d *schema.ResourceData, meta inter
 		return diags
 	}
 	return nil
+}
+
+func validateWatchBody(i interface{}, k string) (warnings []string, errors []error) {
+	warnings, errors = validation.StringIsJSON(i, k)
+
+	var watchBody models.WatchBody
+	if err := json.Unmarshal([]byte(i.(string)), &watchBody); err != nil {
+		panic(err)
+	}
+
+	if watchBody.Actions == nil {
+		errors = append(errors, fmt.Errorf("watch field must be declared: actions"))
+		return warnings, errors
+	}
+	if watchBody.Condition == nil {
+		errors = append(errors, fmt.Errorf("watch field must be declared: condition"))
+		return warnings, errors
+	}
+	if watchBody.Input == nil {
+		errors = append(errors, fmt.Errorf("watch field must be declared: input"))
+		return warnings, errors
+	}
+	if watchBody.Trigger == nil {
+		errors = append(errors, fmt.Errorf("watch field must be declared: trigger"))
+		return warnings, errors
+	}
+	if len(watchBody.Metadata) == 0 && watchBody.Metadata != nil {
+		errors = append(errors, fmt.Errorf("metadata field should not be an empty map"))
+		return warnings, errors
+	}
+
+	return warnings, errors
 }
