@@ -73,6 +73,18 @@ func validateWatchBody(i interface{}, k string) (warnings []string, errors []err
 		errors = append(errors, fmt.Errorf("watch field must be declared: actions"))
 		return warnings, errors
 	}
+	if watchBody.Condition == nil {
+		errors = append(errors, fmt.Errorf("watch field must be declared: condition"))
+		return warnings, errors
+	}
+	if watchBody.Input == nil {
+		errors = append(errors, fmt.Errorf("watch field must be declared: input"))
+		return warnings, errors
+	}
+	if watchBody.Trigger == nil {
+		errors = append(errors, fmt.Errorf("watch field must be declared: trigger"))
+		return warnings, errors
+	}
 
 	return warnings, errors
 }
