@@ -91,10 +91,10 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		v := make(map[string]interface{})
 		watchBody.Condition = &v
 	}
-	if watchBody.Actions == nil {
-		v := make(map[string]interface{})
-		watchBody.Actions = &v
-	}
+	// if watchBody.Actions == nil {
+	// 	v := make(map[string]interface{})
+	// 	watchBody.Actions = &v
+	// }
 
 	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
 		return diag.FromErr(err)
