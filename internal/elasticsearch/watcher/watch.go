@@ -129,10 +129,7 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.FromErr(err)
 	}
 
-	if watch.Body.Trigger == nil {
-		watch.Body.Trigger = nil
-	}
-	if watch.Body.Input == nil {
+	if reflect.DeepEqual(watch.Body.Input, map[string]interface{}{"none": make(map[string]interface{})}) {
 		watch.Body.Input = nil
 	}
 	if reflect.DeepEqual(watch.Body.Condition, map[string]interface{}{"always": make(map[string]interface{})}) {
