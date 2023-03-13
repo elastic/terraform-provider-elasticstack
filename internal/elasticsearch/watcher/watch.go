@@ -170,10 +170,10 @@ func validateWatchBody(i interface{}, k string) (warnings []string, errors []err
 		errors = append(errors, fmt.Errorf("watch field must be declared: trigger"))
 		return warnings, errors
 	}
-	if len(watchBody.Metadata) == 0 && watchBody.Metadata != nil {
-		errors = append(errors, fmt.Errorf("metadata field should not be an empty map"))
-		return warnings, errors
-	}
+	// if len(watchBody.Metadata) == 0 && watchBody.Metadata != nil {
+	// 	errors = append(errors, fmt.Errorf("metadata field should not be an empty map"))
+	// 	return warnings, errors
+	// }
 
 	return warnings, errors
 }
