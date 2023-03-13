@@ -280,6 +280,6 @@ type WatchBody struct {
 	Condition                 map[string]interface{} `json:"condition,omitempty"`
 	Input                     map[string]interface{} `json:"input,omitempty"`
 	Trigger                   map[string]interface{} `json:"trigger,omitempty"`
-	Metadata                  map[string]interface{} `json:"metadata"`
+	Metadata                  map[string]interface{} `json:"metadata,omitempty"`
 	Throttle_period_in_millis int                    `json:"throttle_period_in_millis,omitempty"`
 }
