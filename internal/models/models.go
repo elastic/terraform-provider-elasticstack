@@ -272,15 +272,15 @@ type Watch struct {
 			Active bool `json:"active"`
 		} `json:"state"`
 	} `json:"status"`
-	Body WatchBody `json:"watch"`
+	Body *WatchBody `json:"watch"`
 }
 
 type WatchBody struct {
-	Actions                   *map[string]interface{} `json:"actions,omitempty"`
-	Condition                 *map[string]interface{} `json:"condition,omitempty"`
-	Input                     *map[string]interface{} `json:"input,omitempty"`
-	Trigger                   *map[string]interface{} `json:"trigger,omitempty"`
-	Metadata                  *map[string]interface{} `json:"metadata,omitempty"`
-	Throttle_period           *string                 `json:"throttle_period,omitempty"`
-	Throttle_period_in_millis *int                    `json:"throttle_period_in_millis,omitempty"`
+	Actions                   *map[string]interface{} `json:"actions"`
+	Condition                 *map[string]interface{} `json:"condition"`
+	Input                     *map[string]interface{} `json:"input"`
+	Trigger                   *map[string]interface{} `json:"trigger"`
+	Metadata                  *map[string]interface{} `json:"metadata"`
+	Throttle_period           *string                 `json:"throttle_period"`
+	Throttle_period_in_millis *int                    `json:"throttle_period_in_millis"`
 }

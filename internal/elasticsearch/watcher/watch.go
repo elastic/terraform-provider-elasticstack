@@ -77,32 +77,30 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 	watch.WatchID = watchID
 	watch.Status.State.Active = d.Get("active").(bool)
 
-	if watch.Body.Trigger == nil {
+	var watchBody *models.WatchBody
+
+	if watchBody.Trigger == nil {
 		v := make(map[string]interface{})
-		watch.Body.Trigger = &v
+		watchBody.Trigger = &v
 	}
-	if watch.Body.Input == nil {
+	if watchBody.Input == nil {
 		v := make(map[string]interface{})
-		watch.Body.Input = &v
+		watchBody.Input = &v
 	}
-	if watch.Body.Condition == nil {
+	if watchBody.Condition == nil {
 		v := make(map[string]interface{})
-		watch.Body.Condition = &v
+		watchBody.Condition = &v
 	}
-	if watch.Body.Actions == nil {
+	if watchBody.Actions == nil {
 		v := make(map[string]interface{})
-		watch.Body.Actions = &v
-	}
-	if watch.Body.Throttle_period == nil {
-		v := "5m"
-		watch.Body.Throttle_period = &v
+		watchBody.Actions = &v
 	}
 
-	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watch.Body); err != nil {
+	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
 		return diag.FromErr(err)
 	}
 
-	// watch.Body = watch.Body
+	watch.Body = watchBody
 
 	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
 		return diags
