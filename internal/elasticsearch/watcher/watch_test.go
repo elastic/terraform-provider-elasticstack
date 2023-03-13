@@ -24,7 +24,7 @@ func TestResourceWatch(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}},"input":{"none":{}},"condition":{"always":{}},"actions":{}}`),
 				),
 			},
 			{
@@ -32,7 +32,7 @@ func TestResourceWatch(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "true"),
-					// resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}},"input":{"search":{"request":{"indices":["logstash*"],"body":{"query":{"bool":{"must":{"match":{"response":404}},"filter":{"range":{"@timestamp":{"from":"{{ctx.trigger.scheduled_time}}||-5m","to": "{{ctx.trigger.triggered_time}}"}}}}}}}}},"condition":{"always":{}},"actions":{},"metadata":{"example_key":"example_value"},"throttle_period_in_millis":10000}`),
 				),
 			},
 		},
@@ -52,7 +52,14 @@ func testAccResourceWatchCreate(watchID string) string {
 	{
 		"trigger" : {
 			"schedule" : { "cron" : "0 0/1 * * * ?" }
-		}
+		},
+		"input" : {
+			"none" : {}
+		},
+		"condition" : {
+			"always" : {}
+		},
+		"actions" : {}
 	}	
 EOF
  }
@@ -111,8 +118,12 @@ func testAccResourceWatchUpdate(watchID string) string {
 					"subject" : "404 recently encountered"
 				}
 			}
-		}
-	}	
+		},
+		"metadata" : {
+			"example_key" : "example_value"
+		},
+		"throttle_period_in_millis" : 10000
+	}
 EOF
  }
  	`, watchID)
