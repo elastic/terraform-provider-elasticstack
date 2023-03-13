@@ -85,6 +85,10 @@ func validateWatchBody(i interface{}, k string) (warnings []string, errors []err
 		errors = append(errors, fmt.Errorf("watch field must be declared: trigger"))
 		return warnings, errors
 	}
+	if len(watchBody.Metadata) == 0 {
+		errors = append(errors, fmt.Errorf("metadata field should contain a minimum of 1 key-value pair"))
+		return warnings, errors
+	}
 
 	return warnings, errors
 }
