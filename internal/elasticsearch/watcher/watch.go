@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -134,7 +135,7 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	if watch.Body.Input == nil {
 		watch.Body.Input = nil
 	}
-	if watch.Body.Condition == nil {
+	if reflect.DeepEqual(watch.Body.Condition, map[string]interface{}{"always": make(map[string]interface{})}) {
 		watch.Body.Condition = nil
 	}
 	if len(watch.Body.Actions) == 0 {
