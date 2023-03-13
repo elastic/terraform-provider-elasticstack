@@ -22,23 +22,23 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
   active   = true
 
   body = jsonencode({
-		"trigger" = {
-			"schedule" = { 
-        "cron" = "0 0/1 * * * ?" 
+    "trigger" = {
+      "schedule" = {
+        "cron" = "0 0/1 * * * ?"
       }
-		},
-		"input" = {
-			"none" = {}
-		},
-		"condition" = {
-			"always" = {}
-		},
-		"actions" = {},
-		"metadata" = {
-			"example_key" = "example_value"
-		},
-		"throttle_period_in_millis" = 10000
-	})
+    },
+    "input" = {
+      "none" = {}
+    },
+    "condition" = {
+      "always" = {}
+    },
+    "actions" = {},
+    "metadata" = {
+      "example_key" = "example_value"
+    },
+    "throttle_period_in_millis" = 10000
+  })
 }
 
 output "watch" {
