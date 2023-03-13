@@ -37,7 +37,7 @@ func ResourceWatch() *schema.Resource {
 		"body": {
 			Description:      "Configuration for the pipeline.",
 			Type:             schema.TypeString,
-			ValidateFunc:     validation.StringIsJSON,
+			ValidateFunc:     validateWatchBody,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Required:         true,
 		},
@@ -59,6 +59,22 @@ func ResourceWatch() *schema.Resource {
 
 		Schema: watchSchema,
 	}
+}
+
+func validateWatchBody(i interface{}, k string) (warnings []string, errors []error) {
+	warnings, errors = validation.StringIsJSON(i, k)
+
+	var watchBody models.WatchBody
+	if err := json.Unmarshal([]byte(i.(string)), &watchBody); err != nil {
+		panic(err)
+	}
+
+	if watchBody.Actions == nil {
+		errors = append(errors, fmt.Errorf("watch field must be declared: actions"))
+		return warnings, errors
+	}
+
+	return warnings, errors
 }
 
 func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
