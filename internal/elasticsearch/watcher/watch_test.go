@@ -60,10 +60,6 @@ func testAccResourceWatchCreate(watchID string) string {
 			"always" : {}
 		},
 		"actions" : {}
-		"metadata" : {
-			"example_key" : "example_value"
-		},
-		"throttle_period_in_millis" : 10000
 	}	
 EOF
  }
@@ -91,7 +87,10 @@ func testAccResourceWatchUpdate(watchID string) string {
 			"always" : {}
 		},
 		"actions" : {},
-		
+		"metadata" : {
+			"example_key" : "example_value"
+		},
+		"throttle_period_in_millis" : 10000
 	}	
 EOF
  }
