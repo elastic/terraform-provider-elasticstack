@@ -84,6 +84,10 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		v := map[string]interface{}{"always": make(map[string]interface{})}
 		watchBody.Condition = v
 	}
+	if watchBody.Actions == nil {
+		v := make(map[string]interface{})
+		watchBody.Condition = v
+	}
 
 	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
 		return diag.FromErr(err)
