@@ -100,7 +100,6 @@ func tryJSONUnmarshalString(s string) (any, bool) {
 }
 
 func PutEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, policy *models.EnrichPolicy) diag.Diagnostics {
-	GetEnrichPolicy(ctx, apiClient, policy.Name)
 	var diags diag.Diagnostics
 	payload := map[string]any{}
 	payload[policy.Type] = map[string]any{
@@ -151,5 +150,35 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, polic
 		return diags
 	}
 
+	return diags
+}
+
+func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, policyName string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.EnrichExecutePolicy(
+		policyName, esClient.EnrichExecutePolicy.WithContext(ctx), esClient.EnrichExecutePolicy.WithWaitForCompletion(true),
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusCreated {
+
+	}
+	var response struct {
+		Status struct {
+			Phase string `json:"phase"`
+		} `json:"status"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return diag.FromErr(err)
+	}
+	if response.Status.Phase != "COMPLETE" {
+		return diag.Errorf(`Unexpected response to executing enrich policy: %s`, response.Status.Phase)
+	}
 	return diags
 }

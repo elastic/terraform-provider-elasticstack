@@ -63,6 +63,13 @@ func ResourceEnrichPolicy() *schema.Resource {
 			ForceNew:     true,
 			ValidateFunc: validation.StringIsJSON,
 		},
+		"execute": {
+			Description: "Whether to call the execute API function in order to create the enrich index.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			ForceNew:    true,
+			Default:     true,
+		},
 	}
 
 	utils.AddConnectionSchema(policySchema)
@@ -154,6 +161,12 @@ func resourceEnrichPolicyPut(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 	d.SetId(id.String())
+	if d.Get("execute").(bool) {
+		diags := elasticsearch.ExecuteEnrichPolicy(ctx, client, name)
+		if diags.HasError() {
+			return diags
+		}
+	}
 	return resourceEnrichPolicyRead(ctx, d, meta)
 }
 
