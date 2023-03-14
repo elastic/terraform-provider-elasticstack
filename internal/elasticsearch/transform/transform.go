@@ -36,7 +36,7 @@ func init() {
 	settingsRequiredVersions["docs_per_second"] = version.Must(version.NewVersion("7.8.0"))
 	settingsRequiredVersions["max_page_search_size"] = version.Must(version.NewVersion("7.8.0"))
 	settingsRequiredVersions["dates_as_epoch_millis"] = version.Must(version.NewVersion("7.11.0"))
-	settingsRequiredVersions["align_checkpoints"] = version.Must(version.NewVersion("7.11.0"))
+	settingsRequiredVersions["align_checkpoints"] = version.Must(version.NewVersion("7.15.0"))
 	settingsRequiredVersions["deduce_mappings"] = version.Must(version.NewVersion("8.1.0"))
 	settingsRequiredVersions["num_failure_retries"] = version.Must(version.NewVersion("8.4.0"))
 	settingsRequiredVersions["unattended"] = version.Must(version.NewVersion("8.5.0"))
