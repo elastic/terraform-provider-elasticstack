@@ -83,7 +83,7 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 - `defer_validation` (Boolean) When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created.
 - `description` (String) Free text description of the transform.
 - `docs_per_second` (Number) Specifies a limit on the number of input documents per second. Default (unset) value disables throttling.
-- `enabled` (Boolean) Controls wether the transform is started or stopped. Default is `false` (stopped).
+- `enabled` (Boolean) Controls wether the transform should be started or stopped. Default is `false` (stopped).
 - `frequency` (String) The interval between checks for changes in the source indices when the transform is running continuously. Defaults to `1m`.
 - `latest` (String) The latest method transforms the data by finding the latest document for each unique key. JSON definition expected. Either 'pivot' or 'latest' must be present.
 - `max_page_search_size` (Number) Defines the initial page size to use for the composite aggregation for each checkpoint. Default is 500.

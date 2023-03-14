@@ -25,20 +25,21 @@ func init() {
 	settingsRequiredVersions = make(map[string]*version.Version)
 
 	// capabilities
-	settingsRequiredVersions["frequency"], _ = version.NewVersion("7.3.0")
-	settingsRequiredVersions["latest"], _ = version.NewVersion("7.11.0")
-	settingsRequiredVersions["retention_policy"], _ = version.NewVersion("7.12.0")
-	settingsRequiredVersions["source.runtime_mappings"], _ = version.NewVersion("7.12.0")
-	settingsRequiredVersions["metadata"], _ = version.NewVersion("7.16.0")
+	settingsRequiredVersions["destination.pipeline"] = version.Must(version.NewVersion("7.3.0"))
+	settingsRequiredVersions["frequency"] = version.Must(version.NewVersion("7.3.0"))
+	settingsRequiredVersions["latest"] = version.Must(version.NewVersion("7.11.0"))
+	settingsRequiredVersions["retention_policy"] = version.Must(version.NewVersion("7.12.0"))
+	settingsRequiredVersions["source.runtime_mappings"] = version.Must(version.NewVersion("7.12.0"))
+	settingsRequiredVersions["metadata"] = version.Must(version.NewVersion("7.16.0"))
 
 	// settings
-	settingsRequiredVersions["docs_per_second"], _ = version.NewVersion("7.8.0")
-	settingsRequiredVersions["max_page_search_size"], _ = version.NewVersion("7.8.0")
-	settingsRequiredVersions["dates_as_epoch_millis"], _ = version.NewVersion("7.11.0")
-	settingsRequiredVersions["align_checkpoints"], _ = version.NewVersion("7.11.0")
-	settingsRequiredVersions["deduce_mappings"], _ = version.NewVersion("8.1.0")
-	settingsRequiredVersions["num_failure_retries"], _ = version.NewVersion("8.4.0")
-	settingsRequiredVersions["unattended"], _ = version.NewVersion("8.5.0")
+	settingsRequiredVersions["docs_per_second"] = version.Must(version.NewVersion("7.8.0"))
+	settingsRequiredVersions["max_page_search_size"] = version.Must(version.NewVersion("7.8.0"))
+	settingsRequiredVersions["dates_as_epoch_millis"] = version.Must(version.NewVersion("7.11.0"))
+	settingsRequiredVersions["align_checkpoints"] = version.Must(version.NewVersion("7.11.0"))
+	settingsRequiredVersions["deduce_mappings"] = version.Must(version.NewVersion("8.1.0"))
+	settingsRequiredVersions["num_failure_retries"] = version.Must(version.NewVersion("8.4.0"))
+	settingsRequiredVersions["unattended"] = version.Must(version.NewVersion("8.5.0"))
 }
 
 func ResourceTransform() *schema.Resource {
@@ -108,6 +109,12 @@ func ResourceTransform() *schema.Resource {
 						Description: "The destination index for the transform.",
 						Type:        schema.TypeString,
 						Required:    true,
+						ValidateFunc: validation.All(
+							validation.StringLenBetween(1, 255),
+							validation.StringNotInSlice([]string{".", ".."}, true),
+							validation.StringMatch(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
+							validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"),
+						),
 					},
 					"pipeline": {
 						Description: "The unique identifier for an ingest pipeline.",
@@ -272,7 +279,7 @@ func ResourceTransform() *schema.Resource {
 		},
 		"enabled": {
 			Type:        schema.TypeBool,
-			Description: "Controls wether the transform is started or stopped. Default is `false` (stopped).",
+			Description: "Controls wether the transform should be started or stopped. Default is `false` (stopped).",
 			Optional:    true,
 			Default:     false,
 		},
@@ -403,6 +410,7 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta i
 		return diag.FromErr(err)
 	}
 
+	// pivot and latest cannot be updated; sending them to the API for an update operation would result in an error
 	updatedTransform.Pivot = nil
 	updatedTransform.Latest = nil
 
@@ -489,7 +497,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 			Index: definedDestination["index"].(string),
 		}
 
-		if pipeline, ok := definedDestination["pipeline"]; ok && len(pipeline.(string)) > 0 {
+		if pipeline, ok := definedDestination["pipeline"]; ok && isSettingAllowed(ctx, "destination.pipeline", serverVersion) {
 			transform.Destination.Pipeline = pipeline.(string)
 		}
 	}
