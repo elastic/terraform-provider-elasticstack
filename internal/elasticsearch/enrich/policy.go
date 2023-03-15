@@ -57,11 +57,12 @@ func ResourceEnrichPolicy() *schema.Resource {
 			},
 		},
 		"query": {
-			Description:  "Query used to filter documents in the enrich index. The policy only uses documents matching this query to enrich incoming documents. Defaults to a match_all query.",
-			Type:         schema.TypeString,
-			Optional:     true,
-			ForceNew:     true,
-			ValidateFunc: validation.StringIsJSON,
+			Description:      "Query used to filter documents in the enrich index. The policy only uses documents matching this query to enrich incoming documents. Defaults to a match_all query.",
+			Type:             schema.TypeString,
+			Optional:         true,
+			ForceNew:         true,
+			ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
 		},
 		"execute": {
 			Description: "Whether to call the execute API function in order to create the enrich index.",

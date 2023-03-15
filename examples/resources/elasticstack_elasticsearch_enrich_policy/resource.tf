@@ -21,4 +21,10 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy1" {
   indices       = [elasticstack_elasticsearch_index.my_index.name]
   match_field   = "email"
   enrich_fields = ["first_name", "last_name"]
+  query = jsonencode({
+    bool = {
+      must     = [{ term = { b = "A" } }]
+      must_not = [{ term = { a = "B" } }]
+    }
+  })
 }
