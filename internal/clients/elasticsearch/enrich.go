@@ -166,8 +166,8 @@ func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, poli
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusCreated {
-
+	if res.StatusCode != http.StatusOK {
+		return diag.Errorf(`Executing policy "%s" failed with http status %d`, policyName, res.StatusCode)
 	}
 	var response struct {
 		Status struct {
