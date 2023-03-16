@@ -35,7 +35,7 @@ func ResourceWatch() *schema.Resource {
 			Default:     true,
 		},
 		"body": {
-			Description:      "Configuration for the pipeline.",
+			Description:      "JSON configuration for watch.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validateWatchBody,
 			DiffSuppressFunc: utils.DiffJsonSuppress,

@@ -88,7 +88,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_snapshot_lifecycle":    cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository":   cluster.ResourceSnapshotRepository(),
 			"elasticstack_elasticsearch_script":                cluster.ResourceScript(),
-			"elasticstack_elasticsearch_watcher_watch":         watcher.ResourceWatch(),
+			"elasticstack_elasticsearch_watch":                 watcher.ResourceWatch(),
 			"elasticstack_kibana_space":                        kibana.ResourceSpace(),
 		},
 	}

@@ -2,7 +2,7 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_watcher_watch" "example" {
+resource "elasticstack_elasticsearch_watch" "example" {
   watch_id = "test_watch"
   active   = true
 
@@ -27,5 +27,5 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
 }
 
 output "watch" {
-  value = elasticstack_elasticsearch_watcher_watch.example.watch_id
+  value = elasticstack_elasticsearch_watch.example.watch_id
 }

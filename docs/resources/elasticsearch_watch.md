@@ -1,12 +1,12 @@
 ---
 subcategory: "Watcher"
 layout: ""
-page_title: "Elasticstack: elasticstack_elasticsearch_watcher_watch Resource"
+page_title: "Elasticstack: elasticstack_elasticsearch_watch Resource"
 description: |-
   Adds and manages a Watch.
 ---
 
-# Resource: elasticstack_elasticsearch_watcher_watch
+# Resource: elasticstack_elasticsearch_watch
 
 Adds and manages a Watch. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html
 
@@ -17,7 +17,7 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_watcher_watch" "example" {
+resource "elasticstack_elasticsearch_watch" "example" {
   watch_id = "test_watch"
   active   = true
 
@@ -42,7 +42,7 @@ resource "elasticstack_elasticsearch_watcher_watch" "example" {
 }
 
 output "watch" {
-  value = elasticstack_elasticsearch_watcher_watch.example.watch_id
+  value = elasticstack_elasticsearch_watch.example.watch_id
 }
 ```
 
@@ -51,7 +51,7 @@ output "watch" {
 
 ### Required
 
-- `body` (String) Configuration for the pipeline.
+- `body` (String) JSON configuration for watch.
 - `watch_id` (String) Identifier for the watch.
 
 ### Optional
