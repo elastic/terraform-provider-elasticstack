@@ -102,18 +102,15 @@ func resourceEnrichPolicyRead(ctx context.Context, d *schema.ResourceData, meta 
 		return diags
 	}
 	policy, diags := elasticsearch.GetEnrichPolicy(ctx, client, compName.ResourceId)
-	if policy == nil {
+	if policy == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Enrich policy "%s" not found, removing from state`, compName.ResourceId))
 		d.SetId("")
-		return diags
-	}
-	if diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Diags nil for resource ID "%s"`, compName.ResourceId))
 		return diags
 	}
 	if diags.HasError() {
 		return diags
 	}
+
 	if err := d.Set("name", policy.Name); err != nil {
 		return diag.FromErr(err)
 	}
