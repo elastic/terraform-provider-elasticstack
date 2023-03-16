@@ -93,7 +93,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, policyNa
 
 func tryJSONUnmarshalString(s string) (any, bool) {
 	var data any
-	if err := json.Unmarshal([]byte(s), data); err != nil {
+	if err := json.Unmarshal([]byte(s), &data); err != nil {
 		return s, false
 	}
 	return data, true
@@ -101,17 +101,20 @@ func tryJSONUnmarshalString(s string) (any, bool) {
 
 func PutEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, policy *models.EnrichPolicy) diag.Diagnostics {
 	var diags diag.Diagnostics
-	payload := map[string]any{}
-	payload[policy.Type] = map[string]any{
+	payloadPolicy := map[string]any{
 		"indices":       policy.Indices,
 		"enrich_fields": policy.EnrichFields,
 		"match_field":   policy.MatchField,
 	}
 
 	if query, ok := tryJSONUnmarshalString(policy.Query); ok {
-		payload["query"] = query
+		payloadPolicy["query"] = query
+	} else if policy.Query != "" {
+		tflog.Error(ctx, fmt.Sprintf("JAW: query did not unmarshall %s", policy.Query))
 	}
 
+	payload := map[string]any{}
+	payload[policy.Type] = payloadPolicy
 	policyBytes, err := json.Marshal(payload)
 	if err != nil {
 		return diag.FromErr(err)
