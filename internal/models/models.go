@@ -275,6 +275,12 @@ type Watch struct {
 	Body WatchBody `json:"watch"`
 }
 
+type PutWatch struct {
+	WatchID string
+	Active  bool
+	Body    WatchBody
+}
+
 type WatchBody struct {
 	Trigger                   map[string]interface{} `json:"trigger"`
 	Input                     map[string]interface{} `json:"input"`

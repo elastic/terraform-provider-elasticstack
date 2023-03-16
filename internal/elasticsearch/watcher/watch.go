@@ -77,9 +77,9 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.FromErr(err)
 	}
 
-	var watch models.Watch
+	var watch models.PutWatch
 	watch.WatchID = watchID
-	watch.Status.State.Active = d.Get("active").(bool)
+	watch.Active = d.Get("active").(bool)
 	watch.Body = watchBody
 
 	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
