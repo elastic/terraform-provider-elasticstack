@@ -43,8 +43,6 @@ func ResourceWatch() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(watchSchema)
-
 	return &schema.Resource{
 		Description: "Manage Watches. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html",
 
