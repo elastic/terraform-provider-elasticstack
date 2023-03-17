@@ -178,11 +178,47 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.FromErr(err)
 	}
 
-	body, err := json.Marshal(watch.Body)
+	trigger, err := json.Marshal(watch.Body.Trigger)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("body", string(body)); err != nil {
+	if err := d.Set("trigger", string(trigger)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	input, err := json.Marshal(watch.Body.Input)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("input", string(input)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	condition, err := json.Marshal(watch.Body.Condition)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("condition", string(condition)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	actions, err := json.Marshal(watch.Body.Actions)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("actions", string(actions)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	metadata, err := json.Marshal(watch.Body.Metadata)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("metadata", string(metadata)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("throttle_period_in_millis", watch.Body.Throttle_period_in_millis); err != nil {
 		return diag.FromErr(err)
 	}
 
