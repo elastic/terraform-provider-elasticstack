@@ -34,12 +34,48 @@ func ResourceWatch() *schema.Resource {
 			Optional:    true,
 			Default:     true,
 		},
-		"body": {
-			Description:      "JSON configuration for watch.",
+		"trigger": {
+			Description:      "The trigger that defines when the watch should run.",
 			Type:             schema.TypeString,
-			ValidateFunc:     validateWatchBody,
+			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Required:         true,
+		},
+		"input": {
+			Description:      "The input that defines the input that loads the data for the watch.",
+			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Optional:         true,
+			Default:          "{\"none\":{}}",
+		},
+		"condition": {
+			Description:      "The condition that defines if the actions should be run.",
+			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Optional:         true,
+			Default:          "{\"always\":{}}",
+		},
+		"actions": {
+			Description:      "The list of actions that will be run if the condition matches.",
+			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Optional:         true,
+			Default:          "{}",
+		},
+		"metadata": {
+			Description:      "Metadata json that will be copied into the history entries.",
+			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Optional:         true,
+		},
+		"throttle_period_in_millis": {
+			Description: "Minimum time in milliseconds between actions being run. Defaults to 5000.",
+			Type:        schema.TypeInt,
+			Optional:    true,
 		},
 	}
 
@@ -71,16 +107,41 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diags
 	}
 
-	var watchBody models.WatchBody
-
-	if err := json.Unmarshal([]byte(d.Get("body").(string)), &watchBody); err != nil {
-		return diag.FromErr(err)
-	}
-
 	var watch models.PutWatch
 	watch.WatchID = watchID
 	watch.Active = d.Get("active").(bool)
-	watch.Body = watchBody
+
+	var trigger map[string]interface{}
+	if err := json.Unmarshal([]byte(d.Get("trigger").(string)), &trigger); err != nil {
+		return diag.FromErr(err)
+	}
+	watch.Body.Trigger = trigger
+
+	var input map[string]interface{}
+	if err := json.Unmarshal([]byte(d.Get("input").(string)), &input); err != nil {
+		return diag.FromErr(err)
+	}
+	watch.Body.Input = input
+
+	var condition map[string]interface{}
+	if err := json.Unmarshal([]byte(d.Get("condition").(string)), &condition); err != nil {
+		return diag.FromErr(err)
+	}
+	watch.Body.Condition = condition
+
+	var actions map[string]interface{}
+	if err := json.Unmarshal([]byte(d.Get("actions").(string)), &actions); err != nil {
+		return diag.FromErr(err)
+	}
+	watch.Body.Actions = actions
+
+	var metadata map[string]interface{}
+	if err := json.Unmarshal([]byte(d.Get("metadata").(string)), &metadata); err != nil {
+		return diag.FromErr(err)
+	}
+	watch.Body.Metadata = metadata
+
+	watch.Body.Throttle_period_in_millis = d.Get("throttle_period_in_millis").(int)
 
 	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
 		return diags
@@ -142,36 +203,4 @@ func resourceWatchDelete(ctx context.Context, d *schema.ResourceData, meta inter
 		return diags
 	}
 	return nil
-}
-
-func validateWatchBody(i interface{}, k string) (warnings []string, errors []error) {
-	warnings, errors = validation.StringIsJSON(i, k)
-
-	var watchBody models.WatchBody
-	if err := json.Unmarshal([]byte(i.(string)), &watchBody); err != nil {
-		panic(err)
-	}
-
-	if watchBody.Actions == nil {
-		errors = append(errors, fmt.Errorf("watch field must be declared: actions"))
-		return warnings, errors
-	}
-	if watchBody.Condition == nil {
-		errors = append(errors, fmt.Errorf("watch field must be declared: condition"))
-		return warnings, errors
-	}
-	if watchBody.Input == nil {
-		errors = append(errors, fmt.Errorf("watch field must be declared: input"))
-		return warnings, errors
-	}
-	if watchBody.Trigger == nil {
-		errors = append(errors, fmt.Errorf("watch field must be declared: trigger"))
-		return warnings, errors
-	}
-	if len(watchBody.Metadata) == 0 && watchBody.Metadata != nil {
-		errors = append(errors, fmt.Errorf("metadata field should not be an empty map"))
-		return warnings, errors
-	}
-
-	return warnings, errors
 }
