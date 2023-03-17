@@ -22,20 +22,20 @@ resource "elasticstack_elasticsearch_watch" "example" {
   active   = true
 
   trigger = jsonencode({
-        "schedule" = {
-        "cron" = "0 0/1 * * * ?"
-        }
-      })
+    "schedule" = {
+      "cron" = "0 0/1 * * * ?"
+    }
+  })
   input = jsonencode({
-      "none" = {}
-    })
+    "none" = {}
+  })
   condition = jsonencode({
-      "always" = {}
-    })
+    "always" = {}
+  })
   actions = jsonencode({})
   metadata = jsonencode({
-      "example_key" = "example_value"
-    })
+    "example_key" = "example_value"
+  })
   throttle_period_in_millis = 10000
 }
 
