@@ -21,24 +21,22 @@ resource "elasticstack_elasticsearch_watch" "example" {
   watch_id = "test_watch"
   active   = true
 
-  body = jsonencode({
-    "trigger" = {
-      "schedule" = {
+  trigger = jsonencode({
+        "schedule" = {
         "cron" = "0 0/1 * * * ?"
-      }
-    },
-    "input" = {
+        }
+      })
+  input = jsonencode({
       "none" = {}
-    },
-    "condition" = {
+    })
+  condition = jsonencode({
       "always" = {}
-    },
-    "actions" = {},
-    "metadata" = {
+    })
+  actions = jsonencode({})
+  metadata = jsonencode({
       "example_key" = "example_value"
-    },
-    "throttle_period_in_millis" = 10000
-  })
+    })
+  throttle_period_in_millis = 10000
 }
 
 output "watch" {
@@ -51,12 +49,17 @@ output "watch" {
 
 ### Required
 
-- `body` (String) JSON configuration for watch.
+- `trigger` (String) The trigger that defines when the watch should run.
 - `watch_id` (String) Identifier for the watch.
 
 ### Optional
 
+- `actions` (String) The list of actions that will be run if the condition matches.
 - `active` (Boolean) Defines whether the watch is active or inactive by default. The default value is true, which means the watch is active by default.
+- `condition` (String) The condition that defines if the actions should be run.
+- `input` (String) The input that defines the input that loads the data for the watch.
+- `metadata` (String) Metadata json that will be copied into the history entries.
+- `throttle_period_in_millis` (Number) Minimum time in milliseconds between actions being run. Defaults to 5000.
 
 ### Read-Only
 

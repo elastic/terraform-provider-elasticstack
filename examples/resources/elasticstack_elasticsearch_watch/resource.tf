@@ -6,24 +6,22 @@ resource "elasticstack_elasticsearch_watch" "example" {
   watch_id = "test_watch"
   active   = true
 
-  body = jsonencode({
-    "trigger" = {
-      "schedule" = {
-        "cron" = "0 0/1 * * * ?"
-      }
-    },
-    "input" = {
-      "none" = {}
-    },
-    "condition" = {
-      "always" = {}
-    },
-    "actions" = {},
-    "metadata" = {
-      "example_key" = "example_value"
-    },
-    "throttle_period_in_millis" = 10000
+  trigger = jsonencode({
+    "schedule" = {
+      "cron" = "0 0/1 * * * ?"
+    }
   })
+  input = jsonencode({
+    "none" = {}
+  })
+  condition = jsonencode({
+    "always" = {}
+  })
+  actions = jsonencode({})
+  metadata = jsonencode({
+    "example_key" = "example_value"
+  })
+  throttle_period_in_millis = 10000
 }
 
 output "watch" {
