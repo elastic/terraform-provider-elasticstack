@@ -44,7 +44,7 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.1", "additional_index"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.0.index", "dest_index_for_transform_v2"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "frequency", "10m"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "max_page_search_size", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "max_page_search_size", "2000"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "retention_policy.0.time.0.field", "order_date"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "retention_policy.0.time.0.max_age", "7d"),
@@ -114,17 +114,17 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_transform" "test_pivot" {
   name = "%s"
-	description = "test description"
+  description = "test description"
 
-	source {
-		indices = ["source_index_for_transform"]
-	}
+  source {
+    indices = ["source_index_for_transform"]
+  }
 
-	destination {
-		index = "dest_index_for_transform"
-	}
+  destination {
+    index = "dest_index_for_transform"
+  }
 
-	pivot = jsonencode({
+  pivot = jsonencode({
     "group_by": {
       "customer_id": {
         "terms": {
@@ -142,21 +142,21 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
     }
   })
 
-	sync {
+  sync {
     time {
       field = "order_date"
       delay = "20s"
     }
   }
 
-	max_page_search_size = 2000
+  max_page_search_size = 2000
   frequency = "5m"
-	enabled = false
+  enabled = false
 
-	defer_validation = true
-	timeout = "1m"
+  defer_validation = true
+  timeout = "1m"
 }
-	`, name)
+  `, name)
 }
 
 // update the existing transform, add another source index and start it (enabled = true)
@@ -181,10 +181,10 @@ resource "elasticstack_elasticsearch_index" "test_source_index_1" {
     }
   })
 
-	deletion_protection = false
-	wait_for_active_shards = "all"
-	master_timeout = "1m"
-	timeout = "1m"
+  deletion_protection = false
+  wait_for_active_shards = "all"
+  master_timeout = "1m"
+  timeout = "1m"
 }
 
 resource "elasticstack_elasticsearch_index" "test_source_index_2" {
@@ -200,28 +200,28 @@ resource "elasticstack_elasticsearch_index" "test_source_index_2" {
     }
   })
 
-	deletion_protection = false
-	wait_for_active_shards = "all"
-	master_timeout = "1m"
-	timeout = "1m"
+  deletion_protection = false
+  wait_for_active_shards = "all"
+  master_timeout = "1m"
+  timeout = "1m"
 }
 
 resource "elasticstack_elasticsearch_transform" "test_pivot" {
   name = "%s"
-	description = "yet another test description"
+  description = "yet another test description"
 
-	source {
-		indices = [
-			elasticstack_elasticsearch_index.test_source_index_1.name,
-			elasticstack_elasticsearch_index.test_source_index_2.name
-		 ]
-	}
+  source {
+    indices = [
+      elasticstack_elasticsearch_index.test_source_index_1.name,
+      elasticstack_elasticsearch_index.test_source_index_2.name
+      ]
+  }
 
-	destination {
-		index = "dest_index_for_transform_v2"
-	}
+  destination {
+    index = "dest_index_for_transform_v2"
+  }
 
-	pivot = jsonencode({
+  pivot = jsonencode({
     "group_by": {
       "customer_id": {
         "terms": {
@@ -239,28 +239,28 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
     }
   })
 
-	sync {
+  sync {
     time {
       field = "order_date"
       delay = "20s"
     }
   }
 
-	retention_policy {
+  retention_policy {
     time {
       field   = "order_date"
       max_age = "7d"
     }
   }
 
-	max_page_search_size = 1000
+  max_page_search_size = 2000
   frequency = "10m"
-	enabled = true
+  enabled = true
 
-	defer_validation = true
-	timeout = "1m"
+  defer_validation = true
+  timeout = "1m"
 }
-	`, name)
+  `, name)
 }
 
 func testAccResourceTransformWithLatestCreate(name string) string {
@@ -271,27 +271,27 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_transform" "test_latest" {
   name = "%s"
-	description = "test description (latest)"
+  description = "test description (latest)"
 
-	source {
-		indices = ["source_index_for_transform"]
-	}
+  source {
+    indices = ["source_index_for_transform"]
+  }
 
-	destination {
-		index = "dest_index_for_transform"
-	}
+  destination {
+    index = "dest_index_for_transform"
+  }
 
-	latest = jsonencode({
+  latest = jsonencode({
     "unique_key": ["customer_id"],
     "sort": "order_date"
   })
   frequency = "2m"
-	enabled = false
+  enabled = false
 
-	defer_validation = true
-	timeout = "1m"
+  defer_validation = true
+  timeout = "1m"
 }
-	`, name)
+  `, name)
 }
 
 func testAccResourceTransformNoDeferCreate(transformName, indexName string) string {
@@ -313,25 +313,25 @@ resource "elasticstack_elasticsearch_index" "test_index" {
     }
   })
 
-	deletion_protection = false
-	wait_for_active_shards = "all"
-	master_timeout = "1m"
-	timeout = "1m"
+  deletion_protection = false
+  wait_for_active_shards = "all"
+  master_timeout = "1m"
+  timeout = "1m"
 }
 
 resource "elasticstack_elasticsearch_transform" "test_pivot" {
   name = "%s"
-	description = "test description"
+  description = "test description"
 
-	source {
-		indices = [elasticstack_elasticsearch_index.test_index.name]
-	}
+  source {
+    indices = [elasticstack_elasticsearch_index.test_index.name]
+  }
 
-	destination {
-		index = "dest_index_for_transform"
-	}
+  destination {
+    index = "dest_index_for_transform"
+  }
 
-	pivot = jsonencode({
+  pivot = jsonencode({
     "group_by": {
       "customer_id": {
         "terms": {
@@ -349,12 +349,12 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
     }
   })
   frequency = "5m"
-	enabled = false
+  enabled = false
 
-	defer_validation = false
-	timeout = "1m"
+  defer_validation = false
+  timeout = "1m"
 }
-	`, indexName, transformName)
+  `, indexName, transformName)
 }
 
 func checkResourceTransformDestroy(s *terraform.State) error {

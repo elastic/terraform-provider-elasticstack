@@ -10,6 +10,8 @@ description: |-
 
 Creates, updates, starts and stops a transform. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/transforms.html
 
+**NOTE:** Some transform settings require a minimum Elasticsearch version. Such settings will be ignored when applied to versions below the required one (a warning will be issued in the logs).
+
 ## Example Usage
 
 ```terraform
@@ -80,7 +82,7 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 - `align_checkpoints` (Boolean) Specifies whether the transform checkpoint ranges should be optimized for performance.
 - `dates_as_epoch_millis` (Boolean) Defines if dates in the output should be written as ISO formatted string (default) or as millis since epoch.
 - `deduce_mappings` (Boolean) Specifies whether the transform should deduce the destination index mappings from the transform config.
-- `defer_validation` (Boolean) When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created.
+- `defer_validation` (Boolean) When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created. Default is `false`
 - `description` (String) Free text description of the transform.
 - `docs_per_second` (Number) Specifies a limit on the number of input documents per second. Default (unset) value disables throttling.
 - `enabled` (Boolean) Controls wether the transform should be started or stopped. Default is `false` (stopped).

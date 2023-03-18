@@ -171,9 +171,10 @@ func ResourceTransform() *schema.Resource {
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"field": {
-									Description: "The date field that is used to calculate the age of the document.",
-									Type:        schema.TypeString,
-									Required:    true,
+									Description:  "The date field that is used to calculate the age of the document.",
+									Type:         schema.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringIsNotWhiteSpace,
 								},
 								"max_age": {
 									Description:  "Specifies the maximum age of a document in the destination index.",
@@ -202,9 +203,10 @@ func ResourceTransform() *schema.Resource {
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"field": {
-									Description: "The date field that is used to identify new documents in the source.",
-									Type:        schema.TypeString,
-									Required:    true,
+									Description:  "The date field that is used to identify new documents in the source.",
+									Type:         schema.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringIsNotWhiteSpace,
 								},
 								"delay": {
 									Description:  "The time delay between the current time and the latest input data time. The default value is 60s.",
@@ -223,50 +225,43 @@ func ResourceTransform() *schema.Resource {
 			Description: "Specifies whether the transform checkpoint ranges should be optimized for performance.",
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Default:     true,
 		},
 		"dates_as_epoch_millis": {
 			Description: "Defines if dates in the output should be written as ISO formatted string (default) or as millis since epoch.",
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Default:     false,
 		},
 		"deduce_mappings": {
 			Description: "Specifies whether the transform should deduce the destination index mappings from the transform config.",
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Default:     true,
 		},
 		"docs_per_second": {
 			Description:  "Specifies a limit on the number of input documents per second. Default (unset) value disables throttling.",
 			Type:         schema.TypeFloat,
 			Optional:     true,
-			Default:      -1,
 			ValidateFunc: validation.FloatAtLeast(0),
 		},
 		"max_page_search_size": {
 			Description:  "Defines the initial page size to use for the composite aggregation for each checkpoint. Default is 500.",
 			Type:         schema.TypeInt,
 			Optional:     true,
-			Default:      -1,
 			ValidateFunc: validation.IntBetween(10, 65536),
 		},
 		"num_failure_retries": {
 			Description:  "Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.",
 			Type:         schema.TypeInt,
 			Optional:     true,
-			Default:      -2,
 			ValidateFunc: validation.IntBetween(-1, 100),
 		},
 		"unattended": {
 			Description: "In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails.",
 			Type:        schema.TypeBool,
 			Optional:    true,
-			Default:     false,
 		},
 		"defer_validation": {
 			Type:        schema.TypeBool,
-			Description: "When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created.",
+			Description: "When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created. Default is `false`",
 			Optional:    true,
 			Default:     false,
 		},
@@ -530,7 +525,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		transform.Meta = metadata
 	}
 
-	if v, ok := d.GetOk("retention_policy"); ok && v != nil && isSettingAllowed(ctx, "retention_policy", serverVersion) {
+	if v, ok := d.GetOk("retention_policy"); ok && isSettingAllowed(ctx, "retention_policy", serverVersion) {
 		definedRetentionPolicy := v.([]interface{})[0].(map[string]interface{})
 
 		if v, ok := definedRetentionPolicy["time"]; ok {
@@ -585,17 +580,17 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		dm := v.(bool)
 		settings.DeduceMappings = &dm
 	}
-	if v, ok := d.GetOk("docs_per_second"); ok && v.(float64) >= 0 && isSettingAllowed(ctx, "docs_per_second", serverVersion) {
+	if v, ok := d.GetOk("docs_per_second"); ok && isSettingAllowed(ctx, "docs_per_second", serverVersion) {
 		setSettings = true
 		dps := v.(float64)
 		settings.DocsPerSecond = &dps
 	}
-	if v, ok := d.GetOk("max_page_search_size"); ok && v.(int) > 10 && isSettingAllowed(ctx, "max_page_search_size", serverVersion) {
+	if v, ok := d.GetOk("max_page_search_size"); ok && isSettingAllowed(ctx, "max_page_search_size", serverVersion) {
 		setSettings = true
 		mpss := v.(int)
 		settings.MaxPageSearchSize = &mpss
 	}
-	if v, ok := d.GetOk("num_failure_retries"); ok && v.(int) >= -1 && isSettingAllowed(ctx, "num_failure_retries", serverVersion) {
+	if v, ok := d.GetOk("num_failure_retries"); ok && isSettingAllowed(ctx, "num_failure_retries", serverVersion) {
 		setSettings = true
 		nfr := v.(int)
 		settings.NumFailureRetries = &nfr
