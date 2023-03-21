@@ -22,27 +22,27 @@ func TestResourceWatch(t *testing.T) {
 			{
 				Config: testAccResourceWatchCreate(watchID),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "trigger", `{"schedule":{"cron":"0 0/1 * * * ?"}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "input", `{"none":{}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "condition", `{"always":{}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "actions", `{}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "metadata", `{}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", `{"schedule":{"cron":"0 0/1 * * * ?"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", `{"none":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", `{"always":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", `{}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", `{}`),
 				),
 			},
 			{
 				Config: testAccResourceWatchUpdate(watchID),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "trigger", `{"schedule":{"cron":"0 0/2 * * * ?"}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "input", `{"simple":{"name":"example"}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "condition", `{"never":{}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "actions", `{"log":{"logging":{"text":"example logging text"}}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "metadata", `{"example_key":"example_value"}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "throttle_period_in_millis", "10000"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}},"input":{"none":{}},"condition":{"always":{}},"actions":{},"metadata":{"example_key":"example_value"},"throttle_period_in_millis":10000}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", `{"schedule":{"cron":"0 0/2 * * * ?"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", `{"simple":{"name":"example"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", `{"never":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", `{"log":{"logging":{"text":"example logging text"}}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", `{"example_key":"example_value"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "throttle_period_in_millis", "10000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}},"input":{"none":{}},"condition":{"always":{}},"actions":{},"metadata":{"example_key":"example_value"},"throttle_period_in_millis":10000}`),
 				),
 			},
 		},
@@ -55,7 +55,7 @@ func testAccResourceWatchCreate(watchID string) string {
    elasticsearch {}
  }
 
- resource "elasticstack_elasticsearch_watcher_watch" "test" {
+ resource "elasticstack_elasticsearch_watch" "test" {
   watch_id = "%s"
 	active = false
  	
@@ -74,7 +74,7 @@ func testAccResourceWatchUpdate(watchID string) string {
    elasticsearch {}
  }
 
- resource "elasticstack_elasticsearch_watcher_watch" "test" {
+ resource "elasticstack_elasticsearch_watch" "test" {
   watch_id = "%s"
 	active = true
 	
@@ -125,7 +125,7 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 	}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_elasticsearch_watcher_watch" {
+		if rs.Type != "elasticstack_elasticsearch_watch" {
 			continue
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
