@@ -85,8 +85,10 @@ func testAccResourceWatchUpdate(watchID string) string {
 EOF
 
 	input = <<EOF
-	"simple" : {
-		"name" : "example"
+	{
+		"simple" : {
+			"name" : "example"
+		}
 	}
 EOF
 
