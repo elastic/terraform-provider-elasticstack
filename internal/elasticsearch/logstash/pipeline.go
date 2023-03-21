@@ -29,7 +29,7 @@ var (
 		"queue.checkpoint.retry":       schema.TypeBool,
 		"queue.checkpoint.writes":      schema.TypeInt,
 		"queue.drain":                  schema.TypeBool,
-		"queue.max_bytes":        schema.TypeString,
+		"queue.max_bytes":              schema.TypeString,
 		"queue.max_events":             schema.TypeInt,
 		"queue.page_capacity":          schema.TypeString,
 		"queue.type":                   schema.TypeString,
