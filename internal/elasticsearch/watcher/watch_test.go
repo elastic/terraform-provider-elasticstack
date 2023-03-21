@@ -24,7 +24,11 @@ func TestResourceWatch(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}},"input":{"none":{}},"condition":{"always":{}},"actions":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "trigger", `{"schedule":{"cron":"0 0/1 * * * ?"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "input", `{"none":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "condition", `{"always":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "actions", `{}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "metadata", `{}`),
 				),
 			},
 			{
@@ -32,6 +36,12 @@ func TestResourceWatch(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "active", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "trigger", `{"schedule":{"cron":"0 0/2 * * * ?"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "input", `{"simple":{"name":"example"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "condition", `{"never":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "actions", `{"log":{"logging":{"text":"example logging text"}}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "metadata", `{"example_key":"example_value"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "throttle_period_in_millis", "10000"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watcher_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}},"input":{"none":{}},"condition":{"always":{}},"actions":{},"metadata":{"example_key":"example_value"},"throttle_period_in_millis":10000}`),
 				),
 			},
@@ -48,19 +58,11 @@ func testAccResourceWatchCreate(watchID string) string {
  resource "elasticstack_elasticsearch_watcher_watch" "test" {
   watch_id = "%s"
 	active = false
- 	body = <<EOF
+ 	
+	trigger = <<EOF
 	{
-		"trigger" : {
-			"schedule" : { "cron" : "0 0/1 * * * ?" }
-		},
-		"input" : {
-			"none" : {}
-		},
-		"condition" : {
-			"always" : {}
-		},
-		"actions" : {}
-	}	
+		"schedule" : { "cron" : "0 0/1 * * * ?" }
+	}
 EOF
  }
  	`, watchID)
@@ -75,24 +77,42 @@ func testAccResourceWatchUpdate(watchID string) string {
  resource "elasticstack_elasticsearch_watcher_watch" "test" {
   watch_id = "%s"
 	active = true
- 	body = <<EOF
+	
+	trigger = <<EOF
 	{
-		"trigger" : {
-			"schedule" : { "cron" : "0 0/1 * * * ?" }
-		},
-		"input" : {
-			"none" : {}
-		},
-		"condition" : {
-			"always" : {}
-		},
-		"actions" : {},
-		"metadata" : {
-			"example_key" : "example_value"
-		},
-		"throttle_period_in_millis" : 10000
-	}	
+		"schedule" : { "cron" : "0 0/2 * * * ?" }
+	}
 EOF
+
+	input = <<EOF
+	"simple" : {
+		"name" : "example"
+	}
+EOF
+
+	condition = <<EOF
+	{
+		"never" : {}
+	}
+EOF
+
+	actions = <<EOF
+	{
+		"log" : {
+			"logging" : {
+				"text" : "example logging text"
+			}
+		}
+	}
+EOF
+
+	metadata = <<EOF
+	{
+		"example_key" : "example_value"
+	}
+EOF
+
+	throttle_period_in_millis = 10000
  }
  	`, watchID)
 }

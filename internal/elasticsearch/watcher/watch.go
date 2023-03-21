@@ -71,11 +71,13 @@ func ResourceWatch() *schema.Resource {
 			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Optional:         true,
+			Default:          "{}",
 		},
 		"throttle_period_in_millis": {
 			Description: "Minimum time in milliseconds between actions being run. Defaults to 5000.",
 			Type:        schema.TypeInt,
 			Optional:    true,
+			Default:     5000,
 		},
 	}
 

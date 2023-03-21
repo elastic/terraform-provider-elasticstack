@@ -1,1 +1,1 @@
-terraform import elasticstack_elasticsearch_watcher_watch.watch_id <cluster_uuid>/<watch ID>
+terraform import elasticstack_elasticsearch_watch.watch_id <cluster_uuid>/<watch ID>
