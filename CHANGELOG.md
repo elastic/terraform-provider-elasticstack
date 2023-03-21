@@ -18,6 +18,7 @@
   }
   ```
 - Add support for managing Kibana spaces ([#272](https://github.com/elastic/terraform-provider-elasticstack/pull/272))
+- Add support for managing Elasticsearch transforms ([#284](https://github.com/elastic/terraform-provider-elasticstack/pull/284))
 
 ### Fixed
 - Respect `ignore_unavailable` and `include_global_state` values when configuring SLM policies ([#224](https://github.com/elastic/terraform-provider-elasticstack/pull/224))
