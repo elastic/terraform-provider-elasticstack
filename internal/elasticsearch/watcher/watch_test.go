@@ -39,10 +39,9 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", `{"schedule":{"cron":"0 0/2 * * * ?"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", `{"simple":{"name":"example"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", `{"never":{}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", `{"log":{"logging":{"text":"example logging text"}}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", `{"log":{"logging":{"level":"info","text":"example logging text"}}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", `{"example_key":"example_value"}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "throttle_period_in_millis", "10000"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "body", `{"trigger":{"schedule":{"cron":"0 0/1 * * * ?"}},"input":{"none":{}},"condition":{"always":{}},"actions":{},"metadata":{"example_key":"example_value"},"throttle_period_in_millis":10000}`),
 				),
 			},
 		},
@@ -102,6 +101,7 @@ EOF
 	{
 		"log" : {
 			"logging" : {
+				"level" : "info",
 				"text" : "example logging text"
 			}
 		}
