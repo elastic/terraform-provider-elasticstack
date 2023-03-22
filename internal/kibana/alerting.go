@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kClient "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -133,8 +133,8 @@ func ResourceAlertingRule() *schema.Resource {
 	return &schema.Resource{
 		Description: "Creates a Kibana rule. See https://www.elastic.co/guide/en/kibana/master/create-rule-api.html",
 
-		CreateContext: resourceRuleUpsert,
-		UpdateContext: resourceRuleUpsert,
+		CreateContext: resourceRuleCreate,
+		UpdateContext: resourceRuleUpdate,
 		ReadContext:   resourceRuleRead,
 		DeleteContext: resourceRuleDelete,
 
@@ -146,12 +146,8 @@ func ResourceAlertingRule() *schema.Resource {
 	}
 }
 
-func resourceRuleUpsert(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
-	if diags.HasError() {
-		return diags
-	}
-
+func getAlertingRuleFromResourceData(d *schema.ResourceData) (models.AlertingRule, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	rule := models.AlertingRule{
 		SpaceID:    d.Get("space_id").(string),
 		Name:       d.Get("name").(string),
@@ -163,6 +159,13 @@ func resourceRuleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 		},
 	}
 
+	paramsStr := d.Get("params")
+	params := map[string]interface{}{}
+	if err := json.NewDecoder(strings.NewReader(paramsStr.(string))).Decode(&params); err != nil {
+		return models.AlertingRule{}, diag.FromErr(err)
+	}
+	rule.Params = params
+
 	if v, ok := d.GetOk("enabled"); ok {
 		e := v.(bool)
 		rule.Enabled = &e
@@ -173,18 +176,10 @@ func resourceRuleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 		rule.Throttle = &t
 	}
 
-	if v, ok := d.GetOk("params"); ok {
-		params := map[string]interface{}{}
-		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&params); err != nil {
-			return diag.FromErr(err)
-		}
-		rule.Params = params
-	}
-
 	if v, ok := d.GetOk("actions"); ok {
 		actions := []models.AlertingRuleAction{}
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&actions); err != nil {
-			return diag.FromErr(err)
+			return models.AlertingRule{}, diag.FromErr(err)
 		}
 		rule.Actions = actions
 	}
@@ -193,16 +188,51 @@ func resourceRuleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 		rule.Tags = tags.([]string)
 	}
 
-	isCreate := d.IsNewResource()
-	if !isCreate {
-		compId, diags := clients.CompositeIdFromStr(d.Id())
-		if diags.HasError() {
-			return diags
-		}
-		rule.ID = compId.ResourceId
+	return rule, diags
+}
+
+func resourceRuleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
 	}
 
-	res, diags := kClient.PutAlertingRule(ctx, client, isCreate, rule)
+	rule, diags := getAlertingRuleFromResourceData(d)
+	if diags.HasError() {
+		return diags
+	}
+
+	res, diags := kibana.CreateAlertingRule(ctx, client, rule)
+
+	if diags.HasError() {
+		return diags
+	}
+
+	id := &clients.CompositeId{ClusterId: rule.SpaceID, ResourceId: res.ID}
+	d.SetId(id.String())
+
+	return resourceRuleRead(ctx, d, meta)
+}
+
+func resourceRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client, diags := clients.NewApiClient(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	rule, diags := getAlertingRuleFromResourceData(d)
+	if diags.HasError() {
+		return diags
+	}
+
+	compId, diags := clients.CompositeIdFromStr(d.Id())
+	if diags.HasError() {
+		return diags
+	}
+	rule.ID = compId.ResourceId
+
+	res, diags := kibana.UpdateAlertingRule(ctx, client, rule)
+
 	if diags.HasError() {
 		return diags
 	}
@@ -225,7 +255,7 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	id := compId.ResourceId
 	spaceId := compId.ClusterId
 
-	rule, diags := kClient.GetAlertingRule(ctx, client, id, spaceId)
+	rule, diags := kibana.GetAlertingRule(ctx, client, id, spaceId)
 	if rule == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -310,7 +340,7 @@ func resourceRuleDelete(ctx context.Context, d *schema.ResourceData, meta interf
 
 	spaceId := d.Get("space_id").(string)
 
-	if diags = kClient.DeleteAlertingRule(ctx, client, compId.ResourceId, spaceId); diags.HasError() {
+	if diags = kibana.DeleteAlertingRule(ctx, client, compId.ResourceId, spaceId); diags.HasError() {
 		return diags
 	}
 

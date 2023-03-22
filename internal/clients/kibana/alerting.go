@@ -11,6 +11,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
+func unwrapOptionalField[T any](field *T) T {
+	var value T
+	if field != nil {
+		value = *field
+	}
+
+	return value
+}
+
 func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *models.AlertingRule {
 	if res == nil {
 		return nil
@@ -25,35 +34,30 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 		})
 	}
 
-	scheduledTaskId := ""
-	if res.ScheduledTaskId != nil {
-		scheduledTaskId = *res.ScheduledTaskId
-	}
-
 	return &models.AlertingRule{
 		ID:         res.Id,
 		SpaceID:    spaceID,
 		Name:       res.Name,
 		Consumer:   res.Consumer,
-		NotifyWhen: string(*res.NotifyWhen),
+		NotifyWhen: string(unwrapOptionalField(res.NotifyWhen)),
 		Params:     res.Params,
 		RuleTypeID: res.RuleTypeId,
 		Schedule: models.AlertingRuleSchedule{
-			Interval: *res.Schedule.Interval,
+			Interval: unwrapOptionalField(res.Schedule.Interval),
 		},
 		Enabled:         &res.Enabled,
 		Tags:            res.Tags,
 		Throttle:        res.Throttle.Get(),
-		ScheduledTaskID: scheduledTaskId,
+		ScheduledTaskID: res.ScheduledTaskId,
 		ExecutionStatus: models.AlertingRuleExecutionStatus{
-			LastExecutionDate: res.ExecutionStatus.LastExecutionDate.String(),
-			Status:            *res.ExecutionStatus.Status,
+			LastExecutionDate: res.ExecutionStatus.LastExecutionDate,
+			Status:            res.ExecutionStatus.Status,
 		},
 		Actions: actions,
 	}
 }
 
-func PutAlertingRule(ctx context.Context, apiClient *clients.ApiClient, isCreate bool, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
+func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -70,29 +74,45 @@ func PutAlertingRule(ctx context.Context, apiClient *clients.ApiClient, isCreate
 		})
 	}
 
-	if isCreate {
-		reqModel := alerting.CreateRuleRequest{
-			Consumer:   rule.Consumer,
-			Actions:    actions,
-			Enabled:    rule.Enabled,
-			Name:       rule.Name,
-			NotifyWhen: (*alerting.NotifyWhen)(&rule.NotifyWhen),
-			Params:     rule.Params,
-			RuleTypeId: rule.RuleTypeID,
-			Schedule: alerting.Schedule{
-				Interval: &rule.Schedule.Interval,
-			},
-			Tags:     rule.Tags,
-			Throttle: *alerting.NewNullableString(rule.Throttle),
-		}
-		req := client.CreateRule(ctxWithAuth, rule.SpaceID, "").KbnXsrf("true").CreateRuleRequest(reqModel)
-		ruleRes, res, err := req.Execute()
-		if err != nil && res == nil {
-			return nil, diag.FromErr(err)
-		}
+	reqModel := alerting.CreateRuleRequest{
+		Consumer:   rule.Consumer,
+		Actions:    actions,
+		Enabled:    rule.Enabled,
+		Name:       rule.Name,
+		NotifyWhen: (*alerting.NotifyWhen)(&rule.NotifyWhen),
+		Params:     rule.Params,
+		RuleTypeId: rule.RuleTypeID,
+		Schedule: alerting.Schedule{
+			Interval: &rule.Schedule.Interval,
+		},
+		Tags:     rule.Tags,
+		Throttle: *alerting.NewNullableString(rule.Throttle),
+	}
+	req := client.CreateRule(ctxWithAuth, rule.SpaceID, "").KbnXsrf("true").CreateRuleRequest(reqModel)
+	ruleRes, res, err := req.Execute()
+	if err != nil && res == nil {
+		return nil, diag.FromErr(err)
+	}
 
-		defer res.Body.Close()
-		return ruleResponseToModel(rule.SpaceID, ruleRes), utils.CheckHttpError(res, "Unabled to create alerting rule")
+	defer res.Body.Close()
+	return ruleResponseToModel(rule.SpaceID, ruleRes), utils.CheckHttpError(res, "Unabled to create alerting rule")
+}
+
+func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
+	client, err := apiClient.GetAlertingClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
+
+	actions := []alerting.ActionsInner{}
+	for _, action := range rule.Actions {
+		actions = append(actions, alerting.ActionsInner{
+			Group:  &action.Group,
+			Id:     &action.ID,
+			Params: action.Params,
+		})
 	}
 
 	reqModel := alerting.UpdateRuleRequest{
