@@ -3,6 +3,7 @@ package provider
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
@@ -88,6 +89,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_snapshot_lifecycle":    cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository":   cluster.ResourceSnapshotRepository(),
 			"elasticstack_elasticsearch_script":                cluster.ResourceScript(),
+			"elasticstack_elasticsearch_enrich_policy":         enrich.ResourceEnrichPolicy(),
 			"elasticstack_elasticsearch_transform":             transform.ResourceTransform(),
 
 			"elasticstack_kibana_space": kibana.ResourceSpace(),
