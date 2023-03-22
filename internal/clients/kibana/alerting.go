@@ -24,6 +24,12 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 			Params: action.Params,
 		})
 	}
+
+	scheduledTaskId := ""
+	if res.ScheduledTaskId != nil {
+		scheduledTaskId = *res.ScheduledTaskId
+	}
+
 	return &models.AlertingRule{
 		ID:         res.Id,
 		SpaceID:    spaceID,
@@ -38,7 +44,7 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 		Enabled:         &res.Enabled,
 		Tags:            res.Tags,
 		Throttle:        res.Throttle.Get(),
-		ScheduledTaskID: *res.ScheduledTaskId,
+		ScheduledTaskID: scheduledTaskId,
 		ExecutionStatus: models.AlertingRuleExecutionStatus{
 			LastExecutionDate: res.ExecutionStatus.LastExecutionDate.String(),
 			Status:            *res.ExecutionStatus.Status,

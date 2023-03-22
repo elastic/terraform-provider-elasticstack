@@ -87,6 +87,7 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 		-p 9200:9200 -p 9300:9300 \
 		-e "discovery.type=single-node" \
 		-e "xpack.security.enabled=true" \
+		-e "xpack.security.authc.api_key.enabled=true" \
 		-e "repositories.url.allowed_urls=https://example.com/*" \
 		-e "path.repo=/tmp" \
 		-e ELASTIC_PASSWORD=$(ELASTICSEARCH_PASSWORD) \

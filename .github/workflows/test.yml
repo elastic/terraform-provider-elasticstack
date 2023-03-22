@@ -61,6 +61,7 @@ jobs:
         env:
           discovery.type: single-node
           xpack.security.enabled: true
+          xpack.security.authc.api_key.enabled: true
           repositories.url.allowed_urls: https://example.com/*
           path.repo: /tmp
           ELASTIC_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
