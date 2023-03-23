@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -92,6 +93,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_script":                cluster.ResourceScript(),
 			"elasticstack_elasticsearch_enrich_policy":         enrich.ResourceEnrichPolicy(),
 			"elasticstack_elasticsearch_transform":             transform.ResourceTransform(),
+			"elasticstack_elasticsearch_watch":                 watcher.ResourceWatch(),
 
 			"elasticstack_kibana_space": kibana.ResourceSpace(),
 		},
