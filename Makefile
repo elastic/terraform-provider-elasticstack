@@ -11,6 +11,7 @@ ACCTEST_PARALLELISM ?= 10
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
+SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= 1.19
 
@@ -86,6 +87,7 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 		-p 9200:9200 -p 9300:9300 \
 		-e "discovery.type=single-node" \
 		-e "xpack.security.enabled=true" \
+		-e "xpack.security.authc.api_key.enabled=true" \
 		-e "xpack.watcher.enabled=true" \
 		-e "xpack.license.self_generated.type=trial" \
 		-e "repositories.url.allowed_urls=https://example.com/*" \
@@ -105,6 +107,7 @@ docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start 
 		-e ELASTICSEARCH_HOSTS=$(ELASTICSEARCH_ENDPOINTS) \
 		-e ELASTICSEARCH_USERNAME=$(KIBANA_SYSTEM_USERNAME) \
 		-e ELASTICSEARCH_PASSWORD=$(KIBANA_SYSTEM_PASSWORD) \
+		-e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d \
 		-e "logging.root.level=debug" \
 		--name $(KIBANA_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
@@ -229,3 +232,18 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 .PHONY: help
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
+
+.PHONY: generate-alerting-client
+generate-alerting-client: ## generate Kibana alerting client
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+		-i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/alerting/docs/openapi/bundled.json \
+		--skip-validate-spec \
+		--git-repo-id terraform-provider-elasticstack \
+		--git-user-id elastic \
+		-p isGoSubmodule=true \
+		-p packageName=alerting \
+		-p generateInterfaces=true \
+		-g go \
+		-o /local/generated/alerting
+	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
+	@ go fmt ./generated/...

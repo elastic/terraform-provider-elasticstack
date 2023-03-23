@@ -12,6 +12,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -60,6 +61,8 @@ type ApiClient struct {
 	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
+	alerting                 alerting.AlertingApi
+	kibanaConfig             kibana.Config
 	version                  string
 }
 
@@ -70,10 +73,12 @@ func NewApiClientFunc(version string) func(context.Context, *schema.ResourceData
 }
 
 func NewAcceptanceTestingClient() (*ApiClient, error) {
+	ua := buildUserAgent("tf-acceptance-testing")
 	baseConfig := BaseConfig{
-		Header:   buildHeader("tf-acceptance-testing"),
-		Username: os.Getenv("ELASTICSEARCH_USERNAME"),
-		Password: os.Getenv("ELASTICSEARCH_PASSWORD"),
+		UserAgent: ua,
+		Header:    http.Header{"User-Agent": []string{ua}},
+		Username:  os.Getenv("ELASTICSEARCH_USERNAME"),
+		Password:  os.Getenv("ELASTICSEARCH_PASSWORD"),
 	}
 
 	buildEsAccClient := func() (*elasticsearch.Client, error) {
@@ -99,14 +104,10 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return elasticsearch.NewClient(config)
 	}
 
-	buildKibanaAccClient := func() (*kibana.Client, error) {
-		config := kibana.Config{
-			Username: baseConfig.Username,
-			Password: baseConfig.Password,
-			Address:  os.Getenv("KIBANA_ENDPOINT"),
-		}
-
-		return kibana.NewClient(config)
+	kibanaConfig := kibana.Config{
+		Username: baseConfig.Username,
+		Password: baseConfig.Password,
+		Address:  os.Getenv("KIBANA_ENDPOINT"),
 	}
 
 	es, err := buildEsAccClient()
@@ -114,12 +115,19 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
-	kib, err := buildKibanaAccClient()
+	kib, err := kibana.NewClient(kibanaConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ApiClient{es, nil, kib, "acceptance-testing"}, nil
+	return &ApiClient{
+			elasticsearch: es,
+			kibana:        kib,
+			alerting:      buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
+			kibanaConfig:  kibanaConfig,
+			version:       "acceptance-testing",
+		},
+		nil
 }
 
 const esConnectionKey string = "elasticsearch_connection"
@@ -171,6 +179,21 @@ func (a *ApiClient) GetKibanaClient() (*kibana.Client, error) {
 	}
 
 	return a.kibana, nil
+}
+
+func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
+	if a.alerting == nil {
+		return nil, errors.New("alerting client not found")
+	}
+
+	return a.alerting, nil
+}
+
+func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
+		UserName: a.kibanaConfig.Username,
+		Password: a.kibanaConfig.Password,
+	})
 }
 
 func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
@@ -247,15 +270,17 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 }
 
 type BaseConfig struct {
-	Username string
-	Password string
-	Header   http.Header
+	Username  string
+	Password  string
+	UserAgent string
+	Header    http.Header
 }
 
 // Build base config from ES which can be shared for other resources
 func buildBaseConfig(d *schema.ResourceData, version string, esKey string) BaseConfig {
 	baseConfig := BaseConfig{}
-	baseConfig.Header = buildHeader(version)
+	baseConfig.UserAgent = buildUserAgent(version)
+	baseConfig.Header = http.Header{"User-Agent": []string{baseConfig.UserAgent}}
 
 	if esConn, ok := d.GetOk(esKey); ok {
 		if resource := esConn.([]interface{})[0]; resource != nil {
@@ -273,8 +298,8 @@ func buildBaseConfig(d *schema.ResourceData, version string, esKey string) BaseC
 	return baseConfig
 }
 
-func buildHeader(version string) http.Header {
-	return http.Header{"User-Agent": []string{fmt.Sprintf("elasticstack-terraform-provider/%s", version)}}
+func buildUserAgent(version string) string {
+	return fmt.Sprintf("elasticstack-terraform-provider/%s", version)
 }
 
 func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefault bool, key string) (*elasticsearch.Client, diag.Diagnostics) {
@@ -402,12 +427,12 @@ func buildEsClient(d *schema.ResourceData, baseConfig BaseConfig, useEnvAsDefaul
 	return es, diags
 }
 
-func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig) (*kibana.Client, diag.Diagnostics) {
+func buildKibanaConfig(d *schema.ResourceData, baseConfig BaseConfig) (kibana.Config, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	kibConn, ok := d.GetOk("kibana")
 	if !ok {
-		return nil, diags
+		return kibana.Config{}, diags
 	}
 
 	// Use ES details by default
@@ -449,21 +474,33 @@ func buildKibanaClient(d *schema.ResourceData, baseConfig BaseConfig) (*kibana.C
 		}
 	}
 
+	return config, nil
+}
+
+func buildKibanaClient(config kibana.Config) (*kibana.Client, diag.Diagnostics) {
 	kib, err := kibana.NewClient(config)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 
 	if logging.IsDebugOrHigher() {
 		kib.Client.SetDebug(true)
 	}
 
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to create Kibana client",
-			Detail:   err.Error(),
-		})
-	}
+	return kib, nil
+}
 
-	return kib, diags
+func buildAlertingClient(baseConfig BaseConfig, config kibana.Config) *alerting.APIClient {
+	alertingConfig := alerting.Configuration{
+		UserAgent: baseConfig.UserAgent,
+		Servers: alerting.ServerConfigurations{
+			{
+				URL: config.Address,
+			},
+		},
+		Debug: logging.IsDebugOrHigher(),
+	}
+	return alerting.NewAPIClient(&alertingConfig)
 }
 
 const esKey string = "elasticsearch"
@@ -471,21 +508,29 @@ const esKey string = "elasticsearch"
 func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	baseConfig := buildBaseConfig(d, version, esKey)
+	kibanaConfig, diags := buildKibanaConfig(d, baseConfig)
+	if diags.HasError() {
+		return nil, diags
+	}
 
 	esClient, diags := buildEsClient(d, baseConfig, true, esKey)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	kibanaClient, diags := buildKibanaClient(d, baseConfig)
+	kibanaClient, diags := buildKibanaClient(kibanaConfig)
 	if diags.HasError() {
 		return nil, diags
 	}
+
+	alertingClient := buildAlertingClient(baseConfig, kibanaConfig)
 
 	return &ApiClient{
 		elasticsearch:            esClient,
 		elasticsearchClusterInfo: nil,
 		kibana:                   kibanaClient,
+		kibanaConfig:             kibanaConfig,
+		alerting:                 alertingClient.AlertingApi,
 		version:                  version,
 	}, diags
 }

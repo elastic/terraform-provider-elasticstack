@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"reflect"
 	"strings"
 	"time"
@@ -21,6 +22,24 @@ func CheckError(res *esapi.Response, errMsg string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if res.IsError() {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  errMsg,
+			Detail:   fmt.Sprintf("Failed with: %s", body),
+		})
+		return diags
+	}
+	return diags
+}
+
+func CheckHttpError(res *http.Response, errMsg string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if res.StatusCode >= 400 {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return diag.FromErr(err)
