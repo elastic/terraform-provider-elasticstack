@@ -30,57 +30,57 @@ type debugLogger struct {
 	Name string
 }
 
-func (l *debugLogger) LogRoundTrip(req *http.Request, resp *http.Response, err error, start time.Time, duration time.Duration) error {
+func (l *debugLogger) LogRoundTrip(req *http.Request, resp *http.Response, err error, _ time.Time, duration time.Duration) error {
 	ctx := req.Context()
-	requestId := "<nil>"
+	requestID := "<nil>"
 	if req != nil {
-		requestId = fmt.Sprintf("%s %s", req.Method, req.URL)
+		requestID = fmt.Sprintf("%s %s", req.Method, req.URL)
 	}
-	tflog.Debug(ctx, fmt.Sprintf("%s request [%s] executed. Took %s. %#v", l.Name, requestId, duration, err))
+	tflog.Debug(ctx, fmt.Sprintf("%s request [%s] executed. Took %s. %#v", l.Name, requestID, duration, err))
 
 	if req != nil && req.Body != nil {
-		l.logRequest(ctx, req, requestId)
+		l.logRequest(ctx, req, requestID)
 	}
 
 	if resp != nil && resp.Body != nil {
-		l.logResponse(ctx, resp, requestId)
+		l.logResponse(ctx, resp, requestID)
 	}
 
 	if resp == nil {
-		tflog.Debug(ctx, fmt.Sprintf("%s response for [%s] is nil", l.Name, requestId))
+		tflog.Debug(ctx, fmt.Sprintf("%s response for [%s] is nil", l.Name, requestID))
 	}
 
 	return nil
 }
 
-func (l *debugLogger) logRequest(ctx context.Context, req *http.Request, requestId string) {
+func (l *debugLogger) logRequest(ctx context.Context, req *http.Request, _ string) {
 	defer req.Body.Close()
 
 	reqData, err := httputil.DumpRequestOut(req, true)
 	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, l.Name, prettyPrintJsonLines(reqData)))
+		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, l.Name, prettyPrintJSONLines(reqData)))
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("%s API request dump error: %#v", l.Name, err))
 	}
 }
 
-func (l *debugLogger) logResponse(ctx context.Context, resp *http.Response, requestId string) {
+func (l *debugLogger) logResponse(ctx context.Context, resp *http.Response, requestID string) {
 	defer resp.Body.Close()
 
 	respData, err := httputil.DumpResponse(resp, true)
 	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, l.Name, requestId, prettyPrintJsonLines(respData)))
+		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, l.Name, requestID, prettyPrintJSONLines(respData)))
 	} else {
-		tflog.Debug(ctx, fmt.Sprintf("%s API response for [%s] dump error: %#v", l.Name, requestId, err))
+		tflog.Debug(ctx, fmt.Sprintf("%s API response for [%s] dump error: %#v", l.Name, requestID, err))
 	}
 }
 
-func (l *debugLogger) RequestBodyEnabled() bool  { return true }
-func (l *debugLogger) ResponseBodyEnabled() bool { return true }
+func (*debugLogger) RequestBodyEnabled() bool  { return true }
+func (*debugLogger) ResponseBodyEnabled() bool { return true }
 
-// prettyPrintJsonLines iterates through a []byte line-by-line,
+// prettyPrintJSONLines iterates through a []byte line-by-line,
 // transforming any lines that are complete json into pretty-printed json.
-func prettyPrintJsonLines(b []byte) string {
+func prettyPrintJSONLines(b []byte) string {
 	parts := strings.Split(string(b), "\n")
 	for i, p := range parts {
 		if b := []byte(p); json.Valid(b) {

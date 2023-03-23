@@ -165,6 +165,57 @@ func GetKibanaConnectionSchema() *schema.Schema {
 	}
 }
 
+func GetFleetConnectionSchema() *schema.Schema {
+	return &schema.Schema{
+		Description: "Fleet connection configuration block.",
+		Type:        schema.TypeList,
+		MaxItems:    1,
+		Optional:    true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"username": {
+					Description:  "Username to use for API authentication to Fleet.",
+					Type:         schema.TypeString,
+					Optional:     true,
+					RequiredWith: []string{"fleet.0.password"},
+				},
+				"password": {
+					Description:  "Password to use for API authentication to Fleet.",
+					Type:         schema.TypeString,
+					Optional:     true,
+					Sensitive:    true,
+					RequiredWith: []string{"fleet.0.username"},
+				},
+				"api_key": {
+					Description: "API key to use for API authentication to Fleet.",
+					Type:        schema.TypeString,
+					Optional:    true,
+					Sensitive:   true,
+				},
+				"endpoint": {
+					Description: "The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Type:        schema.TypeString,
+					Required:    true,
+				},
+				"ca_certs": {
+					Description: "A list of paths to CA certificates to validate the certificate presented by the Fleet server.",
+					Type:        schema.TypeList,
+					Optional:    true,
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
+				},
+				"insecure": {
+					Description: "Disable TLS certificate validation",
+					Type:        schema.TypeBool,
+					Optional:    true,
+					Default:     false,
+				},
+			},
+		},
+	}
+}
+
 func makePathRef(keyName string, keyValue string) string {
 	return fmt.Sprintf("%s.0.%s", keyName, keyValue)
 }
