@@ -54,7 +54,6 @@ func DataSourceEnrichPolicy() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(policySchema)
 
 	return &schema.Resource{
 		Description: "Returns information about an enrich policy. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/get-enrich-policy-api.html",
