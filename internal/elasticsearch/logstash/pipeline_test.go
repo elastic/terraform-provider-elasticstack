@@ -37,7 +37,8 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_batch_delay", "100"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_batch_size", "250"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_ecs_compatibility", "disabled"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata", "{\"type\":\"logstash_pipeline\",\"version\":2}"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata.type", "logstash_pipeline"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata.version", "2"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_ordered", "auto"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_plugin_classloaders", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_unsafe_shutdown", "false"),
@@ -110,9 +111,9 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   pipeline_batch_delay = 100
   pipeline_batch_size = 250
   pipeline_ecs_compatibility = "disabled"
-	pipeline_metadata = {
-		type = "logstash_pipeline"
-		version = 2
+  pipeline_metadata = {
+    type = "logstash_pipeline"
+    version = 2
   }
   pipeline_ordered = "auto"
   pipeline_plugin_classloaders = false
@@ -142,10 +143,10 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   description = "Updated description of Logstash Pipeline"
   pipeline = "input{} \nfilter{} \noutput{}"
 
-	metadata = jsonencode({
-		type = "logstash_pipeline"
-		version = 3
-	})
+  metadata = jsonencode({
+    type = "logstash_pipeline"
+    version = 3
+  })
   pipeline_batch_delay = 100
   pipeline_batch_size = 250
   pipeline_ecs_compatibility = "disabled"
