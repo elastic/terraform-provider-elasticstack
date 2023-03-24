@@ -12,11 +12,10 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "example" {
   output{}
 EOF
 
-  pipeline_metadata = {
+  metadata = jsonencode({
     "type"    = "logstash_pipeline"
     "version" = 1
-  }
-
+  })
   pipeline_batch_delay         = 50
   pipeline_batch_size          = 125
   pipeline_ecs_compatibility   = "disabled"
