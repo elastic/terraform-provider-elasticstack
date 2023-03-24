@@ -96,7 +96,7 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   `, pipelineID)
 }
 
-func testAccResourceLogstashPipelineUpdateWithMetadata(pipelineID string) string {
+func testAccResourceLogstashPipelineUpdate(pipelineID string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -110,6 +110,10 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   pipeline_batch_delay = 100
   pipeline_batch_size = 250
   pipeline_ecs_compatibility = "disabled"
+	pipeline_metadata = {
+		type = "logstash_pipeline"
+		version = 2
+  }
   pipeline_ordered = "auto"
   pipeline_plugin_classloaders = false
   pipeline_unsafe_shutdown = false
@@ -123,15 +127,11 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   queue_max_events = 0
   queue_page_capacity = "64mb"
   queue_type = "memory"
-  pipeline_metadata = {
-		type = "logstash_pipeline"
-		version = 2
-  }
 }
   `, pipelineID)
 }
 
-func testAccResourceLogstashPipelineUpdate(pipelineID string) string {
+func testAccResourceLogstashPipelineUpdateWithMetadata(pipelineID string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}

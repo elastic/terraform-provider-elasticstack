@@ -67,10 +67,9 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Required:    true,
 		},
 		"pipeline_metadata": {
-			Description: "Optional metadata about the pipeline. This property will be removed in a future provider version. Use `metadata` field instead. (Deprecated)",
-			Type:        schema.TypeMap,
-			Optional:    true,
-			// Default:          nil,
+			Description:      "Optional metadata about the pipeline. This property will be removed in a future provider version. Use `metadata` field instead. (Deprecated)",
+			Type:             schema.TypeMap,
+			Optional:         true,
 			Deprecated:       "Manual changes to pipelines managed via Terraform will throw an error. Use `metadata` field instead.",
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Elem: &schema.Schema{
