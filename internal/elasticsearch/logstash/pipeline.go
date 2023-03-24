@@ -2,6 +2,7 @@ package logstash
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -66,14 +67,24 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Required:    true,
 		},
 		"pipeline_metadata": {
-			Description:      "Optional metadata about the pipeline.",
-			Type:             schema.TypeMap,
-			Optional:         true,
+			Description: "Optional metadata about the pipeline. This property will be removed in a future provider version. Use `metadata` field instead. (Deprecated)",
+			Type:        schema.TypeMap,
+			Optional:    true,
+			// Default:          nil,
+			Deprecated:       "Manual changes to pipelines managed via Terraform will throw an error. Use `metadata` field instead.",
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			Elem: &schema.Schema{
 				Type:    schema.TypeString,
 				Default: nil,
 			},
+		},
+		"metadata": {
+			Description:      "Optional JSON metadata about the pipeline.",
+			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Optional:         true,
+			Default:          "{\"type\":\"logstash_pipeline\",\"version\":1}",
 		},
 		// Pipeline Settings
 		"pipeline_batch_delay": {
@@ -206,7 +217,16 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	logstashPipeline.Description = d.Get("description").(string)
 	logstashPipeline.LastModified = utils.FormatStrictDateTime(time.Now().UTC())
 	logstashPipeline.Pipeline = d.Get("pipeline").(string)
-	logstashPipeline.PipelineMetadata = d.Get("pipeline_metadata").(map[string]interface{})
+
+	if len(d.Get("pipeline_metadata").(map[string]interface{})) != 0 {
+		logstashPipeline.Metadata = d.Get("pipeline_metadata").(map[string]interface{})
+	} else {
+		var metadata map[string]interface{}
+		if err := json.Unmarshal([]byte(d.Get("metadata").(string)), &metadata); err != nil {
+			return diag.FromErr(err)
+		}
+		logstashPipeline.Metadata = metadata
+	}
 
 	logstashPipeline.PipelineSettings = map[string]interface{}{}
 	if settings := utils.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
@@ -255,9 +275,21 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	if err := d.Set("pipeline", logstashPipeline.Pipeline); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("pipeline_metadata", logstashPipeline.PipelineMetadata); err != nil {
-		return diag.FromErr(err)
+
+	if len(d.Get("pipeline_metadata").(map[string]interface{})) != 0 {
+		if err := d.Set("pipeline_metadata", logstashPipeline.Metadata); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		metadata, err := json.Marshal(logstashPipeline.Metadata)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("metadata", string(metadata)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
+
 	for key, typ := range allSettingsKeys {
 		var value interface{}
 		if v, ok := logstashPipeline.PipelineSettings[key]; ok {

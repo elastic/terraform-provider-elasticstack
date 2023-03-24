@@ -24,6 +24,7 @@ func TestResourceLogstashPipeline(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "description", "Description of Logstash Pipeline"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "metadata", "{\"type\":\"logstash_pipeline\",\"version\":1}"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline", "input{} filter{} output{}"),
 				),
 			},
@@ -36,6 +37,7 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_batch_delay", "100"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_batch_size", "250"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_ecs_compatibility", "disabled"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata", "{\"type\":\"logstash_pipeline\",\"version\":2}"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_ordered", "auto"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_plugin_classloaders", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_unsafe_shutdown", "false"),
@@ -56,6 +58,7 @@ func TestResourceLogstashPipeline(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "description", "Updated description of Logstash Pipeline"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "metadata", "{\"type\":\"logstash_pipeline\",\"version\":3}"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline", "input{} \nfilter{} \noutput{}"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_batch_delay", "100"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_batch_size", "250"),
@@ -73,8 +76,6 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_events", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_page_capacity", "64mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_type", "memory"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata.type", "logstash_pipeline"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "pipeline_metadata.version", "1"),
 				),
 			},
 		},
@@ -123,8 +124,8 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   queue_page_capacity = "64mb"
   queue_type = "memory"
   pipeline_metadata = {
-	"type" = "logstash_pipeline"
-	"version" = 1
+		type = "logstash_pipeline"
+		version = 2
   }
 }
   `, pipelineID)
@@ -141,6 +142,10 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   description = "Updated description of Logstash Pipeline"
   pipeline = "input{} \nfilter{} \noutput{}"
 
+	metadata = jsonencode({
+		type = "logstash_pipeline"
+		version = 3
+	})
   pipeline_batch_delay = 100
   pipeline_batch_size = 250
   pipeline_ecs_compatibility = "disabled"

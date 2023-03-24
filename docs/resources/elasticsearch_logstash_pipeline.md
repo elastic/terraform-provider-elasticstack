@@ -67,10 +67,11 @@ output "pipeline" {
 
 - `description` (String) Description of the pipeline.
 - `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `metadata` (String) Optional JSON metadata about the pipeline.
 - `pipeline_batch_delay` (Number) Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.
 - `pipeline_batch_size` (Number) The maximum number of events an individual worker thread collects before executing filters and outputs.
 - `pipeline_ecs_compatibility` (String) Sets the pipeline default value for ecs_compatibility, a setting that is available to plugins that implement an ECS compatibility mode for use with the Elastic Common Schema.
-- `pipeline_metadata` (Map of String) Optional metadata about the pipeline.
+- `pipeline_metadata` (Map of String, Deprecated) Optional metadata about the pipeline. This property will be removed in a future provider version. Use `metadata` field instead. (Deprecated)
 - `pipeline_ordered` (String) Set the pipeline event ordering.
 - `pipeline_plugin_classloaders` (Boolean) (Beta) Load Java plugins in independent classloaders to isolate their dependencies.
 - `pipeline_unsafe_shutdown` (Boolean) Forces Logstash to exit during shutdown even if there are still inflight events in memory.
