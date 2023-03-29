@@ -482,7 +482,7 @@ func ResourceIndex() *schema.Resource {
 		"mappings": {
 			Description: `Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** 
+**NOTE:**
 - Changing datatypes in the existing _mappings_ will force index to be re-created.
 - Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
 `,
@@ -529,6 +529,12 @@ If specified, this mapping can include: field names, [field data types](https://
 			Description: "All raw settings fetched from the cluster.",
 			Type:        schema.TypeString,
 			Computed:    true,
+		},
+		"deletion_protection": {
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     true,
+			Description: "Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.",
 		},
 		"include_type_name": {
 			Type:        schema.TypeBool,
@@ -924,7 +930,7 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 			return diags
 		}
 		if err := d.Set("alias", aliases); err != nil {
-			diag.FromErr(err)
+			return diag.FromErr(err)
 		}
 	}
 	if index.Mappings != nil {
@@ -951,6 +957,9 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	if d.Get("deletion_protection").(bool) {
+		return diag.Errorf("cannot destroy index without setting deletion_protection=false and running `terraform apply`")
+	}
 	client, diags := clients.NewApiClient(d, meta)
 	if diags.HasError() {
 		return diags

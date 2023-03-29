@@ -131,7 +131,11 @@ func checkScriptDestroy(s *terraform.State) error {
 		}
 
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
-		res, err := client.GetESClient().GetScript(compId.ResourceId)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		res, err := esClient.GetScript(compId.ResourceId)
 		if err != nil {
 			return err
 		}

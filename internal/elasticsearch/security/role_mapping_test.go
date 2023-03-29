@@ -138,8 +138,12 @@ func checkResourceSecurityRoleMappingDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.GetESClient().Security.GetRoleMapping.WithName(compId.ResourceId)
-		res, err := client.GetESClient().Security.GetRoleMapping(req)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		req := esClient.Security.GetRoleMapping.WithName(compId.ResourceId)
+		res, err := esClient.Security.GetRoleMapping(req)
 		if err != nil {
 			return err
 		}

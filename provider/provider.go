@@ -3,10 +3,14 @@ package provider
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -21,9 +25,9 @@ func init() {
 
 func New(version string) *schema.Provider {
 	p := &schema.Provider{
-
 		Schema: map[string]*schema.Schema{
-			esKeyName: providerSchema.GetConnectionSchema(esKeyName, true),
+			esKeyName: providerSchema.GetEsConnectionSchema(esKeyName, true),
+			"kibana":  providerSchema.GetKibanaConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),
@@ -68,6 +72,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_security_role_mapping":              security.DataSourceRoleMapping(),
 			"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
 			"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
+			"elasticstack_elasticsearch_enrich_policy":                      enrich.DataSourceEnrichPolicy(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_cluster_settings":      cluster.ResourceSettings(),
@@ -86,6 +91,12 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_snapshot_lifecycle":    cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository":   cluster.ResourceSnapshotRepository(),
 			"elasticstack_elasticsearch_script":                cluster.ResourceScript(),
+			"elasticstack_elasticsearch_enrich_policy":         enrich.ResourceEnrichPolicy(),
+			"elasticstack_elasticsearch_transform":             transform.ResourceTransform(),
+			"elasticstack_elasticsearch_watch":                 watcher.ResourceWatch(),
+
+			"elasticstack_kibana_alerting_rule": kibana.ResourceAlertingRule(),
+			"elasticstack_kibana_space":         kibana.ResourceSpace(),
 		},
 	}
 

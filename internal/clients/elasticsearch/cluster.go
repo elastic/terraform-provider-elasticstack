@@ -19,7 +19,11 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, re
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().Snapshot.CreateRepository(repository.Name, bytes.NewReader(snapRepoBytes), apiClient.GetESClient().Snapshot.CreateRepository.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Snapshot.CreateRepository(repository.Name, bytes.NewReader(snapRepoBytes), esClient.Snapshot.CreateRepository.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -33,8 +37,12 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, re
 
 func GetSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.SnapshotRepository, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Snapshot.GetRepository.WithRepository(name)
-	res, err := apiClient.GetESClient().Snapshot.GetRepository(req, apiClient.GetESClient().Snapshot.GetRepository.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Snapshot.GetRepository.WithRepository(name)
+	res, err := esClient.Snapshot.GetRepository(req, esClient.Snapshot.GetRepository.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -67,7 +75,11 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, na
 
 func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, name string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().Snapshot.DeleteRepository([]string{name}, apiClient.GetESClient().Snapshot.DeleteRepository.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Snapshot.DeleteRepository([]string{name}, esClient.Snapshot.DeleteRepository.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -85,8 +97,12 @@ func PutSlm(ctx context.Context, apiClient *clients.ApiClient, slm *models.Snaps
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	req := apiClient.GetESClient().SlmPutLifecycle.WithBody(bytes.NewReader(slmBytes))
-	res, err := apiClient.GetESClient().SlmPutLifecycle(slm.Id, req, apiClient.GetESClient().SlmPutLifecycle.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	req := esClient.SlmPutLifecycle.WithBody(bytes.NewReader(slmBytes))
+	res, err := esClient.SlmPutLifecycle(slm.Id, req, esClient.SlmPutLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -100,8 +116,12 @@ func PutSlm(ctx context.Context, apiClient *clients.ApiClient, slm *models.Snaps
 
 func GetSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) (*models.SnapshotPolicy, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().SlmGetLifecycle.WithPolicyID(slmName)
-	res, err := apiClient.GetESClient().SlmGetLifecycle(req, apiClient.GetESClient().SlmGetLifecycle.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.SlmGetLifecycle.WithPolicyID(slmName)
+	res, err := esClient.SlmGetLifecycle(req, esClient.SlmGetLifecycle.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -132,7 +152,11 @@ func GetSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) (
 
 func DeleteSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	res, err := apiClient.GetESClient().SlmDeleteLifecycle(slmName, apiClient.GetESClient().SlmDeleteLifecycle.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.SlmDeleteLifecycle(slmName, esClient.SlmDeleteLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -148,11 +172,15 @@ func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map
 	var diags diag.Diagnostics
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().Cluster.PutSettings(bytes.NewReader(settingsBytes), apiClient.GetESClient().Cluster.PutSettings.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
+	}
+	res, err := esClient.Cluster.PutSettings(bytes.NewReader(settingsBytes), esClient.Cluster.PutSettings.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
 	if diags := utils.CheckError(res, "Unable to update cluster settings."); diags.HasError() {
@@ -163,8 +191,12 @@ func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map
 
 func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	req := apiClient.GetESClient().Cluster.GetSettings.WithFlatSettings(true)
-	res, err := apiClient.GetESClient().Cluster.GetSettings(req, apiClient.GetESClient().Cluster.GetSettings.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	req := esClient.Cluster.GetSettings.WithFlatSettings(true)
+	res, err := esClient.Cluster.GetSettings(req, esClient.Cluster.GetSettings.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -181,7 +213,11 @@ func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]
 }
 
 func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, diag.Diagnostics) {
-	res, err := apiClient.GetESClient().GetScript(id, apiClient.GetESClient().GetScript.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	res, err := esClient.GetScript(id, esClient.GetScript.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -212,7 +248,11 @@ func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := apiClient.GetESClient().PutScript(script.ID, bytes.NewReader(scriptBytes), apiClient.GetESClient().PutScript.WithContext(ctx), apiClient.GetESClient().PutScript.WithScriptContext(script.Context))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.PutScript(script.ID, bytes.NewReader(scriptBytes), esClient.PutScript.WithContext(ctx), esClient.PutScript.WithScriptContext(script.Context))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -224,7 +264,11 @@ func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models
 }
 
 func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) diag.Diagnostics {
-	res, err := apiClient.GetESClient().DeleteScript(id, apiClient.GetESClient().DeleteScript.WithContext(ctx))
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := esClient.DeleteScript(id, esClient.DeleteScript.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}

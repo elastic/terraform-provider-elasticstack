@@ -25,17 +25,22 @@ func init() {
 }
 
 func PreCheck(t *testing.T) {
-	_, endpointsOk := os.LookupEnv("ELASTICSEARCH_ENDPOINTS")
+	_, elasticsearchEndpointsOk := os.LookupEnv("ELASTICSEARCH_ENDPOINTS")
+	_, kibanaEndpointOk := os.LookupEnv("KIBANA_ENDPOINT")
 	_, userOk := os.LookupEnv("ELASTICSEARCH_USERNAME")
 	_, passOk := os.LookupEnv("ELASTICSEARCH_PASSWORD")
-	_, apikeyOk := os.LookupEnv("ELASTICSEARCH_API_KEY")
 
-	if !endpointsOk {
+	if !elasticsearchEndpointsOk {
 		t.Fatal("ELASTICSEARCH_ENDPOINTS must be set for acceptance tests to run")
 	}
 
+	if !kibanaEndpointOk {
+		t.Fatal("KIBANA_ENDPOINT must be set for acceptance tests to run")
+	}
+
+	// Technically ES tests can use the API Key, however username/password is required for Kibana tests.
 	usernamePasswordOk := userOk && passOk
-	if !((!usernamePasswordOk && apikeyOk) || (usernamePasswordOk && !apikeyOk)) {
-		t.Fatal("Either ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD must be set, or ELASTICSEARCH_API_KEY must be set for acceptance tests to run")
+	if !usernamePasswordOk {
+		t.Fatal("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD must be set for acceptance tests to run")
 	}
 }

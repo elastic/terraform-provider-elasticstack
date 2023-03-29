@@ -118,10 +118,10 @@ func dataSourceProcessorHtmlStripRead(ctx context.Context, d *schema.ResourceDat
 
 	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorHtmlStrip{"html_strip": processor}, "", " ")
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	if err := d.Set("json", string(processorJson)); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 
 	hash, err := utils.StringToHash(string(processorJson))
