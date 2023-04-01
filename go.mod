@@ -64,5 +64,3 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/hashicorp/terraform-plugin-mux v0.7.0 => github.com/k-yomo/terraform-plugin-mux v0.0.0-20221218141521-7a01a5a64e24
