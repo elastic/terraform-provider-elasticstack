@@ -86,9 +86,6 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '7.13.4'
-          - '7.14.2'
-          - '7.15.2'
           - '7.16.3'
           - '7.17.4'
           - '8.0.1'
@@ -97,7 +94,8 @@ jobs:
           - '8.3.3'
           - '8.4.3'
           - '8.5.3'
-          - '8.6.0'
+          - '8.6.2'
+          - '8.7.0'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
