@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
 	usernamePath := makePathRef(keyName, "username")
 	passwordPath := makePathRef(keyName, "password")
 	caFilePath := makePathRef(keyName, "ca_file")
@@ -125,7 +125,7 @@ func GetFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema
 	}
 }
 
-func GetConnectionSchema(keyName string, isProviderConfiguration bool) *schema.Schema {
+func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema.Schema {
 	usernamePath := makePathRef(keyName, "username")
 	passwordPath := makePathRef(keyName, "password")
 	caFilePath := makePathRef(keyName, "ca_file")
@@ -180,7 +180,7 @@ func GetConnectionSchema(keyName string, isProviderConfiguration bool) *schema.S
 					ConflictsWith: []string{usernamePath, passwordPath},
 				},
 				"endpoints": {
-					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Type:        schema.TypeList,
 					Optional:    true,
 					Sensitive:   true,
@@ -234,6 +234,48 @@ func GetConnectionSchema(keyName string, isProviderConfiguration bool) *schema.S
 					Sensitive:     true,
 					RequiredWith:  []string{certDataPath},
 					ConflictsWith: []string{certFilePath, keyFilePath},
+				},
+			},
+		},
+	}
+}
+
+func GetKibanaConnectionSchema() *schema.Schema {
+	return &schema.Schema{
+		Description: "Kibana connection configuration block.",
+		Type:        schema.TypeList,
+		MaxItems:    1,
+		Optional:    true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"username": {
+					Description:  "Username to use for API authentication to Kibana.",
+					Type:         schema.TypeString,
+					Optional:     true,
+					RequiredWith: []string{"kibana.0.password"},
+				},
+				"password": {
+					Description:  "Password to use for API authentication to Kibana.",
+					Type:         schema.TypeString,
+					Optional:     true,
+					Sensitive:    true,
+					RequiredWith: []string{"kibana.0.username"},
+				},
+				"endpoints": {
+					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Type:        schema.TypeList,
+					Optional:    true,
+					Sensitive:   true,
+					MaxItems:    1, // Current API restriction
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
+				},
+				"insecure": {
+					Description: "Disable TLS certificate validation",
+					Type:        schema.TypeBool,
+					Optional:    true,
+					Default:     false,
 				},
 			},
 		},

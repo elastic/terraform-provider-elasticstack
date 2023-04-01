@@ -1,8 +1,36 @@
 ## [Unreleased]
+### Added
+- New resource `elasticstack_elasticsearch_enrich_policy` to manage enrich policies ([#286](https://github.com/elastic/terraform-provider-elasticstack/pull/286)) ([Enrich API](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html))
+- New data source `elasticstack_elasticsearch_enrich_policy` to read enrich policies ([#293](https://github.com/elastic/terraform-provider-elasticstack/pull/293)) ([Enrich API](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html))
+- Add 'mapping_coerce' field to index resource ([#229](https://github.com/elastic/terraform-provider-elasticstack/pull/229))
+- Add 'min_*' conditions to ILM rollover ([#250](https://github.com/elastic/terraform-provider-elasticstack/pull/250))
+- Add support for Kibana connections ([#226](https://github.com/elastic/terraform-provider-elasticstack/pull/226))
+- **[Breaking Change] Add 'deletion_protection' field to index resource** to avoid unintentional deletion. ([#167](https://github.com/elastic/terraform-provider-elasticstack/pull/167))
+  - To delete index resource, you'll need to explicitly set `deletion_protection = false` as follows.
+  ```terraform
+  resource "elasticstack_elasticsearch_index" "example" {
+    name = "example"
+    mappings = jsonencode({
+      properties = {
+        field1    = { type = "text" }
+      }
+    })
+    deletion_protection = false
+  }
+  ```
+- Add `elasticstack_kibana_space` for managing Kibana spaces ([#272](https://github.com/elastic/terraform-provider-elasticstack/pull/272))
+- Add `elasticstack_elasticsearch_transform` for managing Elasticsearch transforms ([#284](https://github.com/elastic/terraform-provider-elasticstack/pull/284))
+- Add `elasticstack_elasticsearch_watch` for managing Elasticsearch Watches ([#155](https://github.com/elastic/terraform-provider-elasticstack/pull/155))
+- Add `elasticstack_kibana_alerting_rule` for managing Kibana alerting rules ([#292](https://github.com/elastic/terraform-provider-elasticstack/pull/292))
 
 ### Fixed
 - Respect `ignore_unavailable` and `include_global_state` values when configuring SLM policies ([#224](https://github.com/elastic/terraform-provider-elasticstack/pull/224))
 - Refactor API client functions and return diagnostics ([#220](https://github.com/elastic/terraform-provider-elasticstack/pull/220))
+- Fix not to recreate index when field is removed from mapping ([#232](https://github.com/elastic/terraform-provider-elasticstack/pull/232))
+- Add query params fields to index resource  ([#244](https://github.com/elastic/terraform-provider-elasticstack/pull/244))
+- Properly handle errors which occur during provider execution ([#262](https://github.com/elastic/terraform-provider-elasticstack/pull/262))
+- Correctly handle empty logstash pipeline metadata in plan diffs ([#256](https://github.com/elastic/terraform-provider-elasticstack/pull/256))
+- Fix error when logging API requests in debug mode ([#259](https://github.com/elastic/terraform-provider-elasticstack/pull/259))
 
 ## [0.5.0] - 2022-12-07
 

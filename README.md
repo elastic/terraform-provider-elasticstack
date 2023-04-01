@@ -36,7 +36,6 @@ The following methods are supported:
 
 * Static credentials
 * Environment variables
-* Each `elasticsearch` resource supports `elasticsearch_connection` block - allowing using the same provider to configure many different clusters at the same time
 
 
 #### Static credentials
@@ -78,11 +77,6 @@ provider "elasticstack" {
 ```
 
 
-#### Per resource credentials
-
-See docs related to the specific resources.
-
-
 ## Developing the Provider
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements)).
@@ -102,6 +96,8 @@ $ make docker-testacc
 ```
 
 To clean up the used containers and to free up the assigned container names, run `make docker-clean`.
+
+Note: there have been some issues encountered when using `tfenv` for local development. It's recommended you move your version management for terraform to `asdf` instead. 
 
 
 ### Requirements

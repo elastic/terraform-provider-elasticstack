@@ -59,7 +59,11 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					}
 					body := fmt.Sprintf("{\"roles\": [\"kibana_admin\"], \"password\": \"%s\"}", initialPassword)
 
-					resp, err := client.GetESClient().Security.PutUser(username, strings.NewReader(body))
+					esClient, err := client.GetESClient()
+					if err != nil {
+						return false, err
+					}
+					resp, err := esClient.Security.PutUser(username, strings.NewReader(body))
 					if err != nil {
 						return false, err
 					}
@@ -124,7 +128,10 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					esClient := client.GetESClient()
+					esClient, err := client.GetESClient()
+					if err != nil {
+						return false, err
+					}
 					body := fmt.Sprintf("{\"password\": \"%s\"}", userUpdatedPassword)
 
 					req := esClient.API.Security.ChangePassword.WithUsername(username)
@@ -159,7 +166,12 @@ func checkUserCanAuthenticate(username string, password string) func(*terraform.
 		if err != nil {
 			return err
 		}
-		esClient := client.GetESClient()
+
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+
 		credentials := fmt.Sprintf("%s:%s", username, password)
 		authHeader := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(credentials)))
 
@@ -237,8 +249,12 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.GetESClient().Security.GetUser.WithUsername(compId.ResourceId)
-		res, err := client.GetESClient().Security.GetUser(req)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		req := esClient.Security.GetUser.WithUsername(compId.ResourceId)
+		res, err := esClient.Security.GetUser(req)
 		if err != nil {
 			return err
 		}

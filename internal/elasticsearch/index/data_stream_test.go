@@ -101,8 +101,12 @@ func checkResourceDataStreamDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.GetESClient().Indices.GetDataStream.WithName(compId.ResourceId)
-		res, err := client.GetESClient().Indices.GetDataStream(req)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		req := esClient.Indices.GetDataStream.WithName(compId.ResourceId)
+		res, err := esClient.Indices.GetDataStream(req)
 		if err != nil {
 			return err
 		}

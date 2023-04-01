@@ -8,11 +8,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -30,6 +32,7 @@ var (
 		"shard.check_on_startup":            schema.TypeString,
 		"sort.field":                        schema.TypeSet,
 		"sort.order":                        schema.TypeSet,
+		"mapping.coerce":                    schema.TypeBool,
 	}
 	dynamicsSettingsKeys = map[string]schema.ValueType{
 		"number_of_replicas":                     schema.TypeInt,
@@ -78,6 +81,8 @@ var (
 	}
 	allSettingsKeys = map[string]schema.ValueType{}
 )
+
+var includeTypeNameMinUnsupportedVersion = version.Must(version.NewVersion("8.0.0"))
 
 func init() {
 	for k, v := range staticSettingsKeys {
@@ -158,6 +163,12 @@ func ResourceIndex() *schema.Resource {
 			Type:        schema.TypeList,
 			Elem:        &schema.Schema{Type: schema.TypeString},
 			Description: "The direction to sort shards in. Accepts `asc`, `desc`.",
+			ForceNew:    true,
+			Optional:    true,
+		},
+		"mapping_coerce": {
+			Type:        schema.TypeBool,
+			Description: "Set index level coercion setting that is applied to all mapping types.",
 			ForceNew:    true,
 			Optional:    true,
 		},
@@ -471,7 +482,10 @@ func ResourceIndex() *schema.Resource {
 		"mappings": {
 			Description: `Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.`,
+**NOTE:**
+- Changing datatypes in the existing _mappings_ will force index to be re-created.
+- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
+`,
 			Type:             schema.TypeString,
 			Optional:         true,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
@@ -515,6 +529,38 @@ If specified, this mapping can include: field names, [field data types](https://
 			Description: "All raw settings fetched from the cluster.",
 			Type:        schema.TypeString,
 			Computed:    true,
+		},
+		"deletion_protection": {
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     true,
+			Description: "Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.",
+		},
+		"include_type_name": {
+			Type:        schema.TypeBool,
+			Description: "If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.",
+			Optional:    true,
+			Default:     false,
+		},
+		"wait_for_active_shards": {
+			Type:        schema.TypeString,
+			Description: "The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard.",
+			Optional:    true,
+			Default:     "1",
+		},
+		"master_timeout": {
+			Type:         schema.TypeString,
+			Description:  "Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Optional:     true,
+			Default:      "30s",
+			ValidateFunc: utils.StringIsDuration,
+		},
+		"timeout": {
+			Type:         schema.TypeString,
+			Description:  "Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Optional:     true,
+			Default:      "30s",
+			ValidateFunc: utils.StringIsDuration,
 		},
 	}
 
@@ -596,43 +642,6 @@ If specified, this mapping can include: field names, [field data types](https://
 			}
 			tflog.Trace(ctx, "mappings custom diff old = %+v new = %+v", o, n)
 
-			var isForceable func(map[string]interface{}, map[string]interface{}) bool
-			isForceable = func(old, new map[string]interface{}) bool {
-				for k, v := range old {
-					oldFieldSettings := v.(map[string]interface{})
-					if newFieldSettings, ok := new[k]; ok {
-						newSettings := newFieldSettings.(map[string]interface{})
-						// check if the "type" field exists and match with new one
-						if s, ok := oldFieldSettings["type"]; ok {
-							if ns, ok := newSettings["type"]; ok {
-								if !reflect.DeepEqual(s, ns) {
-									return true
-								}
-								continue
-							} else {
-								return true
-							}
-						}
-
-						// if we have "mapping" field, let's call ourself to check again
-						if s, ok := oldFieldSettings["properties"]; ok {
-							if ns, ok := newSettings["properties"]; ok {
-								if isForceable(s.(map[string]interface{}), ns.(map[string]interface{})) {
-									return true
-								}
-								continue
-							} else {
-								return true
-							}
-						}
-					} else {
-						// if the key not found in the new props, force new resource
-						return true
-					}
-				}
-				return false
-			}
-
 			// if old defined we must check if the type of the existing fields were changed
 			if oldProps, ok := o["properties"]; ok {
 				newProps, ok := n["properties"]
@@ -640,7 +649,7 @@ If specified, this mapping can include: field names, [field data types](https://
 				if !ok {
 					return true
 				}
-				return isForceable(oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
+				return IsMappingForceNewRequired(ctx, oldProps.(map[string]interface{}), newProps.(map[string]interface{}))
 			}
 
 			// if all check passed, we can update the map
@@ -750,7 +759,33 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 	}
 
-	if diags := elasticsearch.PutIndex(ctx, client, &index); diags.HasError() {
+	params := models.PutIndexParams{
+		WaitForActiveShards: d.Get("wait_for_active_shards").(string),
+		IncludeTypeName:     d.Get("include_type_name").(bool),
+	}
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+	if includeTypeName := d.Get("include_type_name").(bool); includeTypeName {
+		if serverVersion.GreaterThanOrEqual(includeTypeNameMinUnsupportedVersion) {
+			return diag.FromErr(fmt.Errorf("'include_type_name' field is supported only for elasticsearch v7.x"))
+		}
+		params.IncludeTypeName = includeTypeName
+	}
+	masterTimeout, err := time.ParseDuration(d.Get("master_timeout").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	params.MasterTimeout = masterTimeout
+
+	timeout, err := time.ParseDuration(d.Get("timeout").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	params.Timeout = timeout
+
+	if diags := elasticsearch.PutIndex(ctx, client, &index, &params); diags.HasError() {
 		return diags
 	}
 
@@ -895,7 +930,7 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 			return diags
 		}
 		if err := d.Set("alias", aliases); err != nil {
-			diag.FromErr(err)
+			return diag.FromErr(err)
 		}
 	}
 	if index.Mappings != nil {
@@ -922,6 +957,9 @@ func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	if d.Get("deletion_protection").(bool) {
+		return diag.Errorf("cannot destroy index without setting deletion_protection=false and running `terraform apply`")
+	}
 	client, diags := clients.NewApiClient(d, meta)
 	if diags.HasError() {
 		return diags
@@ -935,4 +973,40 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 		return diags
 	}
 	return diags
+}
+
+func IsMappingForceNewRequired(ctx context.Context, old map[string]interface{}, new map[string]interface{}) bool {
+	for k, v := range old {
+		oldFieldSettings := v.(map[string]interface{})
+		newFieldSettings, ok := new[k]
+		// When field is removed, it'll be ignored in elasticsearch
+		if !ok {
+			tflog.Warn(ctx, fmt.Sprintf("removing %s field in mappings is ignored. Re-index to remove the field completely.", k))
+			continue
+		}
+		newSettings := newFieldSettings.(map[string]interface{})
+		// check if the "type" field exists and match with new one
+		if s, ok := oldFieldSettings["type"]; ok {
+			if ns, ok := newSettings["type"]; ok {
+				if !reflect.DeepEqual(s, ns) {
+					return true
+				}
+				continue
+			} else {
+				return true
+			}
+		}
+
+		// if we have "mapping" field, let's call ourself to check again
+		if s, ok := oldFieldSettings["properties"]; ok {
+			if ns, ok := newSettings["properties"]; ok {
+				if IsMappingForceNewRequired(context.Background(), s.(map[string]interface{}), ns.(map[string]interface{})) {
+					return true
+				}
+			} else {
+				tflog.Warn(ctx, fmt.Sprintf("removing %s propeties in mappings is ignored, if you neeed to remove it completely, please recreate the index", k))
+			}
+		}
+	}
+	return false
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -72,6 +73,35 @@ func TestAccResourceILM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.0.number_of_replicas", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.0.total_shards_per_node", "200"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceILMRolloverConditions(t *testing.T) {
+	// generate a random policy name
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceILMDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(index.RolloverMinConditionsMinSupportedVersion),
+				Config:   testAccResourceILMCreateWithRolloverConditions(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_age", "7d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_docs", "10000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_size", "100gb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_primary_shard_size", "50gb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_age", "3d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_docs", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_size", "50gb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_primary_shard_size", "25gb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_primary_shard_docs", "500"),
 				),
 			},
 		},
@@ -187,6 +217,38 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test" {
  `, name)
 }
 
+func testAccResourceILMCreateWithRolloverConditions(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test_rollover" {
+  name = "%s"
+
+  hot {
+    rollover {
+      max_age = "7d"
+      max_docs = 10000
+      max_size = "100gb"
+      max_primary_shard_size = "50gb"
+      min_age = "3d"
+      min_docs = 1000
+      min_size = "50gb"
+      min_primary_shard_size = "25gb"
+      min_primary_shard_docs = 500
+    }
+
+    readonly {}
+  }
+
+  delete {
+    delete {}
+  }
+}
+ `, name)
+}
+
 func checkResourceILMDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
@@ -199,8 +261,12 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		req := client.GetESClient().ILM.GetLifecycle.WithPolicy(compId.ResourceId)
-		res, err := client.GetESClient().ILM.GetLifecycle(req)
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		req := esClient.ILM.GetLifecycle.WithPolicy(compId.ResourceId)
+		res, err := esClient.ILM.GetLifecycle(req)
 		if err != nil {
 			return err
 		}

@@ -75,10 +75,12 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `blocks_write` (Boolean) Set to `true` to disable data write operations against the index. This setting does not affect metadata.
 - `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
 - `default_pipeline` (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
+- `deletion_protection` (Boolean) Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.
 - `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.
 - `highlight_max_analyzed_offset` (Number) The maximum number of characters that will be analyzed for a highlight request.
+- `include_type_name` (Boolean) If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.
 - `indexing_slowlog_level` (String) Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`
 - `indexing_slowlog_source` (String) Set the number of characters of the `_source` to include in the slowlog lines, `false` or `0` will skip logging the source entirely and setting it to `true` will log the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.
 - `indexing_slowlog_threshold_index_debug` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `2s`
@@ -86,9 +88,13 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `indexing_slowlog_threshold_index_trace` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `500ms`
 - `indexing_slowlog_threshold_index_warn` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `10s`
 - `load_fixed_bitset_filters_eagerly` (Boolean) Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.
+- `mapping_coerce` (Boolean) Set index level coercion setting that is applied to all mapping types.
 - `mappings` (String) Mapping for fields in the index.
 If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:** changing datatypes in the existing _mappings_ will force index to be re-created.
+**NOTE:**
+- Changing datatypes in the existing _mappings_ will force index to be re-created.
+- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
+- `master_timeout` (String) Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `max_docvalue_fields_search` (Number) The maximum number of `docvalue_fields` that are allowed in a query.
 - `max_inner_result_window` (Number) The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.
 - `max_ngram_diff` (Number) The maximum allowed difference between min_gram and max_gram for NGramTokenizer and NGramTokenFilter.
@@ -122,7 +128,9 @@ If specified, this mapping can include: field names, [field data types](https://
 - `shard_check_on_startup` (String) Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.
 - `sort_field` (Set of String) The field to sort shards in this index by.
 - `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
+- `timeout` (String) Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
+- `wait_for_active_shards` (String) The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard.
 
 ### Read-Only
 
@@ -156,7 +164,7 @@ Optional:
 - `ca_file` (String) Path to a custom Certificate Authority certificate
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
-- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth

@@ -1,0 +1,3631 @@
+openapi: 3.0.1
+info:
+  contact:
+    name: Alerting Team
+  description: OpenAPI schema for alerting endpoints
+  license:
+    name: Elastic License 2.0
+    url: https://www.elastic.co/licensing/elastic-license
+  title: Alerting
+  version: "0.1"
+servers:
+- description: local
+  url: http://localhost:5601
+security:
+- basicAuth: []
+- apiKeyAuth: []
+tags:
+- description: Alerting APIs enable you to create and manage rules and alerts.
+  name: alerting
+paths:
+  /s/{spaceId}/api/alerting/rule/{ruleId}:
+    delete:
+      description: |
+        You must have `all` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rule you're deleting. For example, the **Management** > **Stack Rules** feature, **Analytics** > **Discover** or **Machine Learning** features, **Observability**, or **Security** features. WARNING: After you delete a rule, you cannot recover it.
+      operationId: deleteRule
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Object is not found.
+      servers:
+      - url: https://localhost:5601
+      summary: Deletes a rule.
+      tags:
+      - alerting
+    get:
+      description: |
+        You must have `read` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rules you're seeking. For example, the **Management > Stack Rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability** features, or **Security** features. To get rules associated with the **Stack Monitoring** feature, use the `monitoring_user` built-in role.
+      operationId: getRule
+      parameters:
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                getRuleResponse:
+                  $ref: '#/components/examples/get_rule_response'
+                  value: null
+              schema:
+                $ref: '#/components/schemas/rule_response_properties'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Object is not found.
+      servers:
+      - url: https://localhost:5601
+      summary: Retrieves a rule by its identifier.
+      tags:
+      - alerting
+    post:
+      description: |
+        You must have `all` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rule you're creating. For example, you must have privileges for the **Management > Stack rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability** features, or **Security** features.  If the rule has actions, you must also have `read` privileges for the **Management > Actions and Connectors** feature. NOTE: This API supports only token-based authentication. When you create a rule, it identifies which roles you have at that point in time. Thereafter, when the rule performs queries, it uses those security privileges. If a user with different privileges updates the rule, its behavior might change.
+      operationId: createRule
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: |
+          An UUID v1 or v4 identifier for the rule. If you omit this parameter, an identifier is randomly generated.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            examples:
+              createCaseRequest:
+                $ref: '#/components/examples/create_rule_request'
+                value: null
+            schema:
+              $ref: '#/components/schemas/create_rule_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                createRuleResponse:
+                  $ref: '#/components/examples/create_rule_response'
+                  value: null
+              schema:
+                $ref: '#/components/schemas/rule_response_properties'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Object is not found.
+      servers:
+      - url: https://localhost:5601
+      summary: Creates a rule.
+      tags:
+      - alerting
+    put:
+      description: |
+        You must have `all` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rule you're updating. For example, you must have privileges for the **Management > Stack rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability** features, or **Security** features.  If the rule has actions, you must also have `read` privileges for the **Management > Actions and Connectors** feature. NOTE: This API supports only token-based authentication. When you update a rule, it identifies which roles you have at that point in time. Thereafter, when the rule performs queries, it uses those security privileges. If you have different privileges than the user that created or most recently updated the rule, you might change its behavior. Though some properties are optional, when you update the rule the existing property values are overwritten with default values. Therefore, it is recommended to explicitly set all property values.
+      operationId: updateRule
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            examples:
+              updateCaseRequest:
+                $ref: '#/components/examples/update_rule_request'
+                value: null
+            schema:
+              $ref: '#/components/schemas/update_rule_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                updateRuleResponse:
+                  $ref: '#/components/examples/update_rule_response'
+                  value: null
+              schema:
+                $ref: '#/components/schemas/rule_response_properties'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Object is not found.
+      servers:
+      - url: https://localhost:5601
+      summary: Updates the attributes for a rule.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/rule/{ruleId}/_disable:
+    post:
+      description: |
+        You must have `all` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rule. For example, the **Management > Stack Rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability**, and **Security** features.
+      operationId: disableRule
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Object is not found.
+      servers:
+      - url: https://localhost:5601
+      summary: Disables a rule.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/rule/{ruleId}/_enable:
+    post:
+      description: |
+        This API supports token-based authentication only. You must have `all` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rule. For example, the **Management > Stack Rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability**, and **Security** features.
+      operationId: enableRule
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Object is not found.
+      servers:
+      - url: https://localhost:5601
+      summary: Enables a rule.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/rules/_find:
+    get:
+      description: |
+        You must have `read` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rules you're seeking. For example, you must have privileges for the **Management > Stack rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability** features, or **Security** features. To find rules associated with the **Stack Monitoring** feature, use the `monitoring_user` built-in role.
+      operationId: findRules
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The default operator to use for the simple_query_string.
+        example: OR
+        explode: true
+        in: query
+        name: default_search_operator
+        required: false
+        schema:
+          default: OR
+          type: string
+        style: form
+      - description: The fields to return in the `attributes` key of the response.
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: |
+          A KQL string that you filter with an attribute from your saved object. It should look like `savedObjectType.attributes.title: "myTitle"`. However, if you used a direct attribute of a saved object, such as `updatedAt`, you must define your filter, for example, `savedObjectType.updatedAt > 2018-12-22`.
+        explode: true
+        in: query
+        name: filter
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Filters the rules that have a relation with the reference objects
+          with a specific type and identifier.
+        explode: true
+        in: query
+        name: has_reference
+        required: false
+        schema:
+          $ref: '#/components/schemas/findRules_has_reference_parameter'
+        style: form
+      - description: The page number to return.
+        example: 1
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          type: integer
+        style: form
+      - description: The number of rules to return per page.
+        example: 20
+        explode: true
+        in: query
+        name: per_page
+        required: false
+        schema:
+          default: 20
+          type: integer
+        style: form
+      - description: An Elasticsearch simple_query_string query that filters the objects
+          in the response.
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: The fields to perform the simple_query_string parsed query against.
+        explode: true
+        in: query
+        name: search_fields
+        required: false
+        schema:
+          $ref: '#/components/schemas/findRules_search_fields_parameter'
+        style: form
+      - description: |
+          Determines which field is used to sort the results. The field must exist in the `attributes` key of the response.
+        explode: true
+        in: query
+        name: sort_field
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Determines the sort order.
+        example: asc
+        explode: true
+        in: query
+        name: sort_order
+        required: false
+        schema:
+          default: desc
+          enum:
+          - asc
+          - desc
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                findRulesResponse:
+                  $ref: '#/components/examples/find_rules_response'
+                  value: null
+              schema:
+                $ref: '#/components/schemas/findRules_200_response'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Retrieves information about rules.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/_health:
+    get:
+      description: |
+        You must have `read` privileges for the **Management > Stack Rules** feature or for at least one of the **Analytics > Discover**, **Analytics > Machine Learning**, **Observability**, or **Security** features.
+      operationId: getAlertingHealth
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                getAlertingHealthResponse:
+                  $ref: '#/components/examples/get_health_response'
+                  value: null
+              schema:
+                $ref: '#/components/schemas/getAlertingHealth_200_response'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      summary: Retrieves the health status of the alerting framework.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/rule_types:
+    get:
+      description: |
+        If you have `read` privileges for one or more Kibana features, the API response contains information about the appropriate rule types. For example, there are rule types associated with the **Management > Stack Rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability** features, and **Security** features. To get rule types associated with the **Stack Monitoring** feature, use the `monitoring_user` built-in role.
+      operationId: getRuleTypes
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                getRuleTypesResponse:
+                  $ref: '#/components/examples/get_rule_types_response'
+                  value: null
+              schema:
+                items:
+                  $ref: '#/components/schemas/getRuleTypes_200_response_inner'
+                type: array
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      summary: Retrieves a list of rule types.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/rule/{ruleId}/_mute_all:
+    post:
+      description: |
+        This API snoozes the notifications for the rule indefinitely. The rule checks continue to occur but alerts will not trigger any actions. You must have `all` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rule. For example, the **Management > Stack Rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability**, and **Security** features. If the rule has actions, you must also have `read` privileges for the **Management > Actions and Connectors** feature.
+      operationId: muteAllAlerts
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Mutes all alerts.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all:
+    post:
+      description: |
+        If the rule has its notifications snoozed indefinitely, this API cancels the snooze. You must have `all` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rule. For example, the **Management > Stack Rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability**, and **Security** features. If the rule has actions, you must also have `read` privileges for the **Management > Actions and Connectors** feature.
+      operationId: unmuteAllAlerts
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Unmutes all alerts.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_mute:
+    post:
+      description: "You must have `all` privileges for the appropriate Kibana features,\
+        \ depending on the `consumer` and `rule_type_id` of the rule. For example,\
+        \ the **Management > Stack Rules** feature, **Analytics > Discover** and **Machine\
+        \ Learning** features, **Observability**, and **Security** features. If the\
+        \ rule has actions, you must also have `read` privileges for the **Management\
+        \ > Actions and Connectors** feature. \n"
+      operationId: muteAlert
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: An identifier for the alert. The identifier is generated by the
+          rule and might be any arbitrary string.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Mutes an alert.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute:
+    post:
+      description: "You must have `all` privileges for the appropriate Kibana features,\
+        \ depending on the `consumer` and `rule_type_id` of the rule. For example,\
+        \ the **Management > Stack Rules** feature, **Analytics > Discover** and **Machine\
+        \ Learning** features, **Observability**, and **Security** features. If the\
+        \ rule has actions, you must also have `read` privileges for the **Management\
+        \ > Actions and Connectors** feature. \n"
+      operationId: unmuteAlert
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: An identifier for the alert. The identifier is generated by the
+          rule and might be any arbitrary string.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: An identifier for the rule.
+        explode: false
+        in: path
+        name: ruleId
+        required: true
+        schema:
+          example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Unmutes an alert.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alert/{alertId}:
+    delete:
+      deprecated: true
+      description: |
+        Deprecated in 7.13.0. Use the delete rule API instead. WARNING: After you delete an alert, you cannot recover it.
+      operationId: legaryDeleteAlert
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Permanently removes an alert.
+      tags:
+      - alerting
+    get:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the get rule API instead.
+      operationId: legacyGetAlert
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/alert_response_properties'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Retrieves an alert by its identifier.
+      tags:
+      - alerting
+    post:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the create rule API instead.
+      operationId: legacyCreateAlert
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An UUID v1 or v4 identifier for the alert. If this parameter\
+          \ is omitted, the identifier is randomly generated."
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Legacy_create_alert_request_properties'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/alert_response_properties'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Create an alert.
+      tags:
+      - alerting
+    put:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the update rule API instead.
+      operationId: legacyUpdateAlert
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Legacy_update_alert_request_properties'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/alert_response_properties'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Updates the attributes for an alert.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alert/{alertId}/_disable:
+    post:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the disable rule API instead.
+      operationId: legacyDisableAlert
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Disables an alert.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alert/{alertId}/_enable:
+    post:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the enable rule API instead.
+      operationId: legacyEnableAlert
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Enables an alert.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alert/{alertId}/_mute_all:
+    post:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the mute all alerts API instead.
+      operationId: legacyMuteAllAlertInstances
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Mutes all alert instances.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alert/{alertId}/_unmute_all:
+    post:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the unmute all alerts API instead.
+      operationId: legacyUnmuteAllAlertInstances
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Unmutes all alert instances.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alerts/_find:
+    get:
+      deprecated: true
+      description: |
+        Deprecated in 7.13.0. Use the find rules API instead. NOTE: Alert `params` are stored as a flattened field type and analyzed as keywords. As alerts change in Kibana, the results on each page of the response also change. Use the find API for traditional paginated results, but avoid using it to export large amounts of data.
+      operationId: legacyFindAlerts
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: The default operator to use for the `simple_query_string`.
+        example: OR
+        explode: true
+        in: query
+        name: default_search_operator
+        required: false
+        schema:
+          default: OR
+          type: string
+        style: form
+      - description: The fields to return in the `attributes` key of the response.
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: |
+          A KQL string that you filter with an attribute from your saved object. It should look like `savedObjectType.attributes.title: "myTitle"`. However, if you used a direct attribute of a saved object, such as `updatedAt`, you must define your filter, for example, `savedObjectType.updatedAt > 2018-12-22`.
+        explode: true
+        in: query
+        name: filter
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Filters the rules that have a relation with the reference objects
+          with a specific type and identifier.
+        explode: true
+        in: query
+        name: has_reference
+        required: false
+        schema:
+          $ref: '#/components/schemas/findRules_has_reference_parameter'
+        style: form
+      - description: The page number to return.
+        example: 1
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          type: integer
+        style: form
+      - description: The number of alerts to return per page.
+        example: 20
+        explode: true
+        in: query
+        name: per_page
+        required: false
+        schema:
+          default: 20
+          type: integer
+        style: form
+      - description: An Elasticsearch `simple_query_string` query that filters the
+          alerts in the response.
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: The fields to perform the `simple_query_string` parsed query
+          against.
+        explode: true
+        in: query
+        name: search_fields
+        required: false
+        schema:
+          $ref: '#/components/schemas/findRules_search_fields_parameter'
+        style: form
+      - description: |
+          Determines which field is used to sort the results. The field must exist in the `attributes` key of the response.
+        explode: true
+        in: query
+        name: sort_field
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Determines the sort order.
+        example: asc
+        explode: true
+        in: query
+        name: sort_order
+        required: false
+        schema:
+          default: desc
+          enum:
+          - asc
+          - desc
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/legacyFindAlerts_200_response'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Retrieves a paginated set of alerts.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alerts/_health:
+    get:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the get alerting framework health API
+        instead.
+      operationId: legacyGetAlertingHealth
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/legacyGetAlertingHealth_200_response'
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      summary: Retrieves the health status of the alerting framework.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alerts/list_alert_types:
+    get:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the get rule types API instead.
+      operationId: legacyGetAlertTypes
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/legacyGetAlertTypes_200_response_inner'
+                type: array
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      summary: Retrieves a list of alert types.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_mute:
+    post:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the mute alert API instead.
+      operationId: legacyMuteAlertInstance
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: An identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      - description: An identifier for the alert instance.
+        explode: false
+        in: path
+        name: alertInstanceId
+        required: true
+        schema:
+          example: dceeb5d0-6b41-11eb-802b-85b0c1bc8ba2
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Mutes an alert instance.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+  /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_unmute:
+    post:
+      deprecated: true
+      description: Deprecated in 7.13.0. Use the unmute alert API instead.
+      operationId: legacyUnmuteAlertInstance
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: An identifier for the alert.
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          example: 41893910-6bca-11eb-9e0d-85d233e3ee35
+          type: string
+        style: simple
+      - description: An identifier for the alert instance.
+        explode: false
+        in: path
+        name: alertInstanceId
+        required: true
+        schema:
+          example: dceeb5d0-6b41-11eb-802b-85b0c1bc8ba2
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Authorization information is missing or invalid.
+      servers:
+      - url: https://localhost:5601
+      summary: Unmutes an alert instance.
+      tags:
+      - alerting
+    servers:
+    - url: https://localhost:5601
+components:
+  examples:
+    get_rule_response:
+      summary: The get rule API returns a JSON object that contains details about
+        the rule.
+      value:
+        id: 31697a40-7b36-11ed-aa79-f742c05329b2
+        consumer: alerts
+        tags:
+        - cpu
+        name: my alert
+        enabled: true
+        throttle: null
+        schedule:
+          interval: 1m
+        params:
+          aggType: avg
+          termSize: 6
+          thresholdComparator: '>'
+          timeWindowSize: 5
+          timeWindowUnit: m
+          groupBy: top
+          threshold:
+          - 1000
+          index:
+          - test-index
+          timeField: '@timestamp'
+          aggField: sheet.version
+          termField: name.keyword
+        rule_type_id: .index-threshold
+        created_by: elastic
+        updated_by: elastic
+        created_at: 2022-12-13T22:33:41.163Z
+        updated_at: 2022-12-13T22:33:41.163Z
+        api_key_owner: elastic
+        notify_when: onActionGroupChange
+        muted_alert_ids: []
+        mute_all: false
+        scheduled_task_id: 31697a40-7b36-11ed-aa79-f742c05329b2
+        execution_status:
+          status: ok
+          last_execution_date: 2022-12-13T22:33:44.388Z
+          last_duration: 83
+        actions:
+        - group: threshold met
+          id: 1007a0c0-7a6e-11ed-89d5-abec321c0def
+          params:
+            level: info
+            message: |-
+              alert {{alertName}} is active for group {{context.group}}:
+
+              - Value: {{context.value}}
+              - Conditions Met: {{context.conditions}} over {{params.timeWindowSize}}{{params.timeWindowUnit}}
+              - Timestamp: {{context.date}
+            connector_type_id: .server-log
+        last_run:
+          alerts_count:
+            new: 0
+            ignored: 0
+            recovered: 0
+            active: 0
+          outcome_msg: null
+          warning: null
+          outcome: succeeded
+        next_run: 2022-12-13T22:34:44.314Z
+    update_rule_request:
+      summary: Update an index threshold rule.
+      value:
+        actions:
+        - frequency:
+            summary: false
+            notify_when: onActionGroupChange
+          group: threshold met
+          id: 96b668d0-a1b6-11ed-afdf-d39a49596974
+          params:
+            level: info
+            message: |-
+              alert {{alertName}} is active for group {{context.group}}:
+
+              - Value: {{context.value}}
+              - Conditions Met: {{context.conditions}} over {{params.timeWindowSize}}{{params.timeWindowUnit}}
+              - Timestamp: {{context.date}}
+        params:
+          aggField: sheet.version
+          aggType: avg
+          index:
+          - .test-index
+          groupBy: top
+          termField: name.keyword
+          termSize: 6
+          threshold:
+          - 1000
+          thresholdComparator: '>'
+          timeField: '@timestamp'
+          timeWindowSize: 5
+          timeWindowUnit: m
+        name: new name
+        schedule:
+          interval: 1m
+        tags: []
+        throttle: null
+    update_rule_response:
+      summary: The update rule API returns a JSON object that contains details about
+        the rule.
+      value:
+        id: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+        consumer: alerts
+        tags: []
+        name: new name
+        enabled: true
+        throttle: null
+        running: false
+        schedule:
+          interval: 10m
+        params:
+          index:
+          - .updated-index
+          timeField: '@timestamp'
+          groupBy: top
+          aggType: avg
+          timeWindowSize: 5
+          timeWindowUnit: m
+          thresholdComparator: '>'
+          threshold:
+          - 1000
+          aggField: sheet.version
+          termField: name.keyword
+          termSize: 6
+        api_key_owner: elastic
+        created_by: elastic
+        updated_by: elastic
+        rule_type_id: .index-threshold
+        scheduled_task_id: 4c5eda00-e74f-11ec-b72f-5b18752ff9ea
+        created_at: 2023-01-31T23:03:33.127Z
+        updated_at: 2023-01-31T23:55:27.314Z
+        mute_all: false
+        muted_alert_ids: []
+        execution_status:
+          status: ok
+          last_execution_date: 2023-01-31T23:48:42.499Z
+          last_duration: 52
+        actions:
+        - group: threshold met
+          params:
+            level: info
+            message: |-
+              alert {{alertName}} is active for group {{context.group}}:
+
+              - Value: {{context.value}}
+              - Conditions Met: {{context.conditions}} over {{params.timeWindowSize}}{{params.timeWindowUnit}}
+              - Timestamp: {{context.date}
+          id: 96b668d0-a1b6-11ed-afdf-d39a49596974
+          connector_type_id: .server-log
+          frequency:
+            summary: false
+            throttle: null
+            notify_when: onActionGroupChange
+        last_run:
+          alerts_count:
+            new: 0
+            ignored: 0
+            recovered: 0
+            active: 0
+          outcome_msg: null
+          warning: null
+          outcome: succeeded
+        next_run: 2023-01-31T23:49:42.432Z
+    create_rule_request:
+      summary: Create an index threshold rule.
+      value:
+        actions:
+        - id: dceeb5d0-6b41-11eb-802b-85b0c1bc8ba2
+          frequency:
+            notify_when: onActionGroupChange
+            summary: false
+          group: threshold met
+          params:
+            level: info
+            message: |-
+              alert '{{alertName}}' is active for group '{{context.group}}':
+
+              - Value: {{context.value}}
+              - Conditions Met: {{context.conditions}} over {{params.timeWindowSize}}{{params.timeWindowUnit}}
+              - Timestamp: {{context.date}}
+        consumer: alerts
+        name: my rule
+        params:
+          aggType: avg
+          termSize: 6
+          thresholdComparator: '>'
+          timeWindowSize: 5
+          timeWindowUnit: m
+          groupBy: top
+          threshold:
+          - 1000
+          index:
+          - .test-index
+          timeField: '@timestamp'
+          aggField: sheet.version
+          termField: name.keyword
+        rule_type_id: .index-threshold
+        schedule:
+          interval: 1m
+        tags:
+        - cpu
+    create_rule_response:
+      summary: The create rule API returns a JSON object that contains details about
+        the rule.
+      value:
+        actions:
+        - group: threshold met
+          id: dceeb5d0-6b41-11eb-802b-85b0c1bc8ba2
+          frequency:
+            notify_when: onActionGroupChange
+            summary: false
+            throttle: null
+          params:
+            level: info
+            message: |-
+              alert {{alertName}} is active for group {{context.group} :
+
+              - Value: {{context.value}}
+              - Conditions Met: {{context.conditions}} over {{params.timeWindowSize}}{{params.timeWindowUnit}}
+              - Timestamp: {{context.date}}
+        api_key_owner: elastic
+        consumer: alerts
+        created_at: 2022-06-08T17:20:31.632Z
+        created_by: elastic
+        enabled: true
+        execution_status:
+          last_execution_date: 2022-06-08T17:20:31.632Z
+          status: pending
+        id: 41893910-6bca-11eb-9e0d-85d233e3ee35
+        muted_alert_ids: []
+        mute_all: false
+        name: my rule
+        notify_when: onActionGroupChange
+        params:
+          aggType: avg
+          termSize: 6
+          thresholdComparator: '>'
+          timeWindowSize: 5
+          timeWindowUnit: m
+          groupBy: top
+          threshold:
+          - 1000
+          index:
+          - .test-index
+          timeField: '@timestamp'
+          aggField: sheet.version
+          termField: name.keyword
+        rule_type_id: .index-threshold
+        running: false
+        schedule:
+          interval: 1m
+        scheduled_task_id: 425b0800-6bca-11eb-9e0d-85d233e3ee35
+        tags:
+        - cpu
+        throttle: null
+        updated_at: 2022-06-08T17:20:31.632Z
+        updated_by: elastic
+    find_rules_response:
+      summary: Retrieve information about a rule.
+      value:
+        page: 1
+        total: 1
+        per_page: 10
+        data:
+        - id: 3583a470-74f6-11ed-9801-35303b735aef
+          consumer: alerts
+          tags:
+          - cpu
+          name: my alert
+          enabled: true
+          throttle: null
+          schedule:
+            interval: 1m
+          params:
+            aggType: avg
+            termSize: 6
+            thresholdComparator: '>'
+            timeWindowSize: 5
+            timeWindowUnit: m
+            groupBy: top
+            threshold:
+            - 1000
+            index:
+            - test-index
+            timeField: '@timestamp'
+            aggField: sheet.version
+            termField: name.keyword
+          rule_type_id: .index-threshold
+          created_by: elastic
+          updated_by: elastic
+          created_at: 2022-12-05T23:40:33.132Z
+          updated_at: 2022-12-05T23:40:33.132Z
+          api_key_owner: elastic
+          notify_when: onActionGroupChange
+          mute_all: false
+          muted_alert_ids: []
+          scheduled_task_id: 3583a470-74f6-11ed-9801-35303b735aef
+          execution_status:
+            status: ok
+            last_execution_date: 2022-12-06T01:44:23.983Z
+            last_duration: 48
+          actions:
+          - id: 9dca3e00-74f5-11ed-9801-35303b735aef
+            group: threshold met
+            params:
+              level: info
+              message: |-
+                alert {{alertName}} is active for group {{context.group}}:
+
+                - Value: {{context.value}}
+                - Conditions Met: {{context.conditions}} over {{params.timeWindowSize}}{{params.timeWindowUnit}}
+                - Timestamp: {{context.date}}
+              connector_type_id: .server-log
+          last_run:
+            alerts_count:
+              new: 0
+              ignored: 0
+              recovered: 0
+              active: 0
+            outcome_msg: null
+            warning: null
+            outcome: succeeded
+          next_run: 2022-12-06T01:45:23.912Z
+    get_health_response:
+      summary: Retrieve information about the health of the alerting framework.
+      value:
+        is_sufficiently_secure: true
+        has_permanent_encryption_key: true
+        alerting_framework_health:
+          decryption_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.280Z
+          execution_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.280Z
+          read_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.280Z
+        alerting_framework_heath:
+          _deprecated: "This state property has a typo, use \"alerting_framework_health\"\
+            \ instead."
+          decryption_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.280Z
+          execution_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.280Z
+          read_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.280Z
+    get_rule_types_response:
+      summary: Retrieve rule types associated with Kibana machine learning features
+      value:
+      - id: xpack.ml.anomaly_detection_alert
+        action_groups:
+        - id: anomaly_score_match
+          name: Anomaly score matched the condition
+        - id: recovered
+          name: Recovered
+        action_variables:
+          context:
+          - name: timestamp
+            description: The bucket timestamp of the anomaly
+          - name: timestampIso8601
+            description: The bucket time of the anomaly in ISO8601 format
+          - name: jobIds
+            description: List of job IDs that triggered the alert
+          - name: message
+            description: Alert info message
+          - name: isInterim
+            description: Indicate if top hits contain interim results
+          - name: score
+            description: Anomaly score at the time of the notification action
+          - name: topRecords
+            description: Top records
+          - name: topInfluencers
+            description: Top influencers
+          - name: anomalyExplorerUrl
+            description: URL to open in the Anomaly Explorer
+            useWithTripleBracesInTemplates: true
+          params: []
+          state: []
+        authorized_consumers:
+          alerts:
+            all: true
+            read: true
+          ml:
+            all: true
+            read: true
+        default_action_group_id: anomaly_score_match
+        does_set_recovery_context: true
+        enabled_in_license: true
+        is_exportable: true
+        minimum_license_required: platinum
+        name: Anomaly detection alert
+        producer: ml
+        recovery_action_group:
+          id: recovered
+          name: Recovered
+        rule_task_timeout: 5m
+      - id: xpack.ml.anomaly_detection_jobs_health
+        action_groups:
+        - id: anomaly_detection_realtime_issue
+          name: Issue detected
+        - id: recovered
+          name: Recovered
+        action_variables:
+          context:
+          - name: results
+            description: Results of the rule execution
+          - name: message
+            description: Alert info message
+          params: []
+          state: []
+        authorized_consumers:
+          alerts:
+            all: true
+            read: true
+          ml:
+            all: true
+            read: true
+        default_action_group_id: anomaly_detection_realtime_issue
+        does_set_recovery_context: true
+        enabled_in_license: true
+        is_exportable: true
+        minimum_license_required: platinum
+        name: Anomaly detection jobs health
+        producer: ml
+        recovery_action_group:
+          id: recovered
+          name: Recovered
+        rule_task_timeout: 5m
+  parameters:
+    rule_id:
+      description: An identifier for the rule.
+      explode: false
+      in: path
+      name: ruleId
+      required: true
+      schema:
+        example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+        type: string
+      style: simple
+    space_id:
+      description: "An identifier for the space. If `/s/` and the identifier are omitted\
+        \ from the path, the default space is used."
+      explode: false
+      in: path
+      name: spaceId
+      required: true
+      schema:
+        example: default
+        type: string
+      style: simple
+    kbn_xsrf:
+      description: Cross-site request forgery protection
+      explode: false
+      in: header
+      name: kbn-xsrf
+      required: true
+      schema:
+        type: string
+      style: simple
+    alert_id:
+      description: An identifier for the alert. The identifier is generated by the
+        rule and might be any arbitrary string.
+      explode: false
+      in: path
+      name: alertId
+      required: true
+      schema:
+        example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+        type: string
+      style: simple
+  schemas:
+    notify_when:
+      description: |
+        Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.
+      enum:
+      - onActionGroupChange
+      - onActiveAlert
+      - onThrottleInterval
+      example: onActiveAlert
+      type: string
+    throttle:
+      description: "The throttle interval, which defines how often an alert generates\
+        \ repeated actions. It is applicable only if `notify_when` is set to `onThrottleInterval`.\
+        \ It is specified in seconds, minutes, hours, or days."
+      example: 10m
+      nullable: true
+      type: string
+    actions:
+      default: []
+      items:
+        $ref: '#/components/schemas/actions_inner'
+      nullable: true
+      required:
+      - group
+      - id
+      - params
+      type: array
+    schedule:
+      description: "The check interval, which specifies how frequently the rule conditions\
+        \ are checked. The interval is specified in seconds, minutes, hours, or days."
+      example:
+        interval: 1m
+      properties:
+        interval:
+          example: 1m
+          type: string
+      type: object
+    tags:
+      default: []
+      description: The tags for the rule.
+      items:
+        type: string
+      type: array
+    rule_response_properties:
+      example:
+        throttle: 10m
+        created_at: 2022-12-05T23:36:58.284Z
+        last_run:
+          alerts_count:
+            ignored: 6
+            new: 1
+            recovered: 5
+            active: 0
+          outcome_msg: outcome_msg
+          warning: warning
+          outcome: succeeded
+        params:
+          key: ""
+        created_by: elastic
+        enabled: true
+        muted_alert_ids:
+        - muted_alert_ids
+        - muted_alert_ids
+        rule_type_id: monitoring_alert_cluster_health
+        tags:
+        - tags
+        - tags
+        running: true
+        api_key_owner: elastic
+        schedule:
+          interval: 1m
+        notify_when: onActiveAlert
+        next_run: 2022-12-06T00:14:43.818Z
+        updated_at: 2022-12-05T23:36:58.284Z
+        execution_status:
+          last_execution_date: 2022-12-06T00:13:43.89Z
+          last_duration: 55
+          status: ok
+        name: cluster_health_rule
+        updated_by: elastic
+        scheduled_task_id: b530fed0-74f5-11ed-9801-35303b735aef
+        id: b530fed0-74f5-11ed-9801-35303b735aef
+        mute_all: false
+        actions:
+        - id: 9dca3e00-74f5-11ed-9801-35303b735aef
+          params:
+            key: ""
+          connector_type_id: .server-log
+          frequency:
+            summary: true
+            throttle: 10m
+            notify_when: onActiveAlert
+          group: default
+        - id: 9dca3e00-74f5-11ed-9801-35303b735aef
+          params:
+            key: ""
+          connector_type_id: .server-log
+          frequency:
+            summary: true
+            throttle: 10m
+            notify_when: onActiveAlert
+          group: default
+        consumer: alerts
+      properties:
+        actions:
+          default: []
+          items:
+            $ref: '#/components/schemas/actions_inner'
+          nullable: true
+          required:
+          - group
+          - id
+          - params
+          type: array
+        api_key_owner:
+          example: elastic
+          nullable: true
+          type: string
+        consumer:
+          description: "The application or feature that owns the rule. For example,\
+            \ `alerts`, `apm`, `discover`, `infrastructure`, `logs`, `metrics`, `ml`,\
+            \ `monitoring`, `securitySolution`, `siem`, `stackAlerts`, or `uptime`."
+          example: alerts
+          type: string
+        created_at:
+          description: The date and time that the rule was created.
+          example: 2022-12-05T23:36:58.284Z
+          format: date-time
+          type: string
+        created_by:
+          description: The identifier for the user that created the rule.
+          example: elastic
+          nullable: true
+          type: string
+        enabled:
+          description: Indicates whether the rule is currently enabled.
+          example: true
+          type: boolean
+        execution_status:
+          $ref: '#/components/schemas/rule_response_properties_execution_status'
+        id:
+          description: The identifier for the rule.
+          example: b530fed0-74f5-11ed-9801-35303b735aef
+          type: string
+        last_run:
+          $ref: '#/components/schemas/rule_response_properties_last_run'
+        muted_alert_ids:
+          items:
+            type: string
+          nullable: true
+          type: array
+        mute_all:
+          example: false
+          type: boolean
+        name:
+          description: The name of the rule.
+          example: cluster_health_rule
+          type: string
+        next_run:
+          example: 2022-12-06T00:14:43.818Z
+          format: date-time
+          nullable: true
+          type: string
+        notify_when:
+          $ref: '#/components/schemas/notify_when'
+        params:
+          additionalProperties: true
+          description: The parameters for the rule.
+          type: object
+        rule_type_id:
+          description: |
+            The identifier for the type of rule. For example, `.es-query`, `.index-threshold`, `logs.alert.document.count`, `monitoring_alert_cluster_health`, `siem.thresholdRule`, or `xpack.ml.anomaly_detection_alert`.
+          example: monitoring_alert_cluster_health
+          type: string
+        running:
+          description: Indicates whether the rule is running.
+          type: boolean
+        schedule:
+          $ref: '#/components/schemas/schedule'
+        scheduled_task_id:
+          example: b530fed0-74f5-11ed-9801-35303b735aef
+          type: string
+        tags:
+          default: []
+          description: The tags for the rule.
+          items:
+            type: string
+          type: array
+        throttle:
+          description: "The throttle interval, which defines how often an alert generates\
+            \ repeated actions. It is applicable only if `notify_when` is set to `onThrottleInterval`.\
+            \ It is specified in seconds, minutes, hours, or days."
+          example: 10m
+          nullable: true
+          type: string
+        updated_at:
+          description: The date and time that the rule was updated most recently.
+          example: 2022-12-05T23:36:58.284Z
+          type: string
+        updated_by:
+          description: The identifier for the user that updated this rule most recently.
+          example: elastic
+          nullable: true
+          type: string
+      required:
+      - actions
+      - api_key_owner
+      - consumer
+      - created_at
+      - created_by
+      - enabled
+      - execution_status
+      - id
+      - mute_all
+      - muted_alert_ids
+      - name
+      - params
+      - rule_type_id
+      - schedule
+      - tags
+      - throttle
+      - updated_at
+      - updated_by
+      title: Rule response properties
+      type: object
+    "401_response":
+      properties:
+        error:
+          enum:
+          - Unauthorized
+          example: Unauthorized
+          type: string
+        message:
+          type: string
+        statusCode:
+          enum:
+          - 401
+          example: 401
+          type: integer
+      title: Unsuccessful rule API response
+      type: object
+    "404_response":
+      properties:
+        error:
+          enum:
+          - Not Found
+          example: Not Found
+          type: string
+        message:
+          example: "Saved object [alert/caaad6d0-920c-11ed-b36a-874bd1548a00] not\
+            \ found"
+          type: string
+        statusCode:
+          enum:
+          - 404
+          example: 404
+          type: integer
+      type: object
+    update_rule_request:
+      description: The update rule API request body varies depending on the type of
+        rule and actions.
+      properties:
+        actions:
+          default: []
+          items:
+            $ref: '#/components/schemas/actions_inner'
+          nullable: true
+          required:
+          - group
+          - id
+          - params
+          type: array
+        name:
+          description: The name of the rule.
+          example: cluster_health_rule
+          type: string
+        notify_when:
+          $ref: '#/components/schemas/notify_when'
+        params:
+          additionalProperties: true
+          description: The parameters for the rule.
+          type: object
+        schedule:
+          $ref: '#/components/schemas/schedule'
+        tags:
+          default: []
+          description: The tags for the rule.
+          items:
+            type: string
+          type: array
+        throttle:
+          description: "The throttle interval, which defines how often an alert generates\
+            \ repeated actions. It is applicable only if `notify_when` is set to `onThrottleInterval`.\
+            \ It is specified in seconds, minutes, hours, or days."
+          example: 10m
+          nullable: true
+          type: string
+      required:
+      - name
+      - params
+      - schedule
+      title: Update rule request
+      type: object
+    create_rule_request:
+      description: The create rule API request body varies depending on the type of
+        rule and actions.
+      properties:
+        actions:
+          default: []
+          items:
+            $ref: '#/components/schemas/actions_inner'
+          nullable: true
+          required:
+          - group
+          - id
+          - params
+          type: array
+        consumer:
+          description: |
+            The name of the application or feature that owns the rule. For example: `alerts`, `apm`, `discover`, `infrastructure`, `logs`, `metrics`, `ml`, `monitoring`, `securitySolution`, `siem`, `stackAlerts`, or `uptime`.
+          type: string
+        enabled:
+          description: Indicates whether you want to run the rule on an interval basis
+            after it is created.
+          type: boolean
+        name:
+          description: "The name of the rule. While this name does not have to be\
+            \ unique, a distinctive name can help you identify a rule."
+          example: cluster_health_rule
+          type: string
+        notify_when:
+          $ref: '#/components/schemas/notify_when'
+        params:
+          additionalProperties: true
+          description: The parameters for the rule.
+          type: object
+        rule_type_id:
+          description: |
+            The ID of the rule type that you want to call when the rule is scheduled to run. For example, `.es-query`, `.index-threshold`, `logs.alert.document.count`, `monitoring_alert_cluster_health`, `siem.thresholdRule`, or `xpack.ml.anomaly_detection_alert`.
+          type: string
+        schedule:
+          $ref: '#/components/schemas/schedule'
+        tags:
+          default: []
+          description: The tags for the rule.
+          items:
+            type: string
+          type: array
+        throttle:
+          description: "The throttle interval, which defines how often an alert generates\
+            \ repeated actions. It is applicable only if `notify_when` is set to `onThrottleInterval`.\
+            \ It is specified in seconds, minutes, hours, or days."
+          example: 10m
+          nullable: true
+          type: string
+      required:
+      - consumer
+      - name
+      - params
+      - rule_type_id
+      - schedule
+      title: Create rule request
+      type: object
+    alert_response_properties:
+      example:
+        alertTypeId: .index-threshold
+        throttle: throttle
+        updatedBy: elastic
+        executionStatus:
+          lastExecutionDate: 2022-12-06T00:13:43.89Z
+          status: ok
+        params:
+          key: ""
+        enabled: true
+        mutedInstanceIds:
+        - mutedInstanceIds
+        - mutedInstanceIds
+        tags:
+        - tags
+        - tags
+        createdAt: 2022-12-05T23:36:58.284Z
+        schedule:
+          interval: interval
+        notifyWhen: onActionGroupChange
+        createdBy: elastic
+        muteAll: false
+        name: my alert
+        scheduledTaskId: b530fed0-74f5-11ed-9801-35303b735aef
+        id: b530fed0-74f5-11ed-9801-35303b735aef
+        actions:
+        - "{}"
+        - "{}"
+        apiKeyOwner: elastic
+        updatedAt: 2022-12-05T23:36:58.284Z
+      properties:
+        actions:
+          items:
+            type: object
+          type: array
+        alertTypeId:
+          example: .index-threshold
+          type: string
+        apiKeyOwner:
+          example: elastic
+          nullable: true
+          type: string
+        createdAt:
+          description: The date and time that the alert was created.
+          example: 2022-12-05T23:36:58.284Z
+          format: date-time
+          type: string
+        createdBy:
+          description: The identifier for the user that created the alert.
+          example: elastic
+          type: string
+        enabled:
+          description: Indicates whether the alert is currently enabled.
+          example: true
+          type: boolean
+        executionStatus:
+          $ref: '#/components/schemas/alert_response_properties_executionStatus'
+        id:
+          description: The identifier for the alert.
+          example: b530fed0-74f5-11ed-9801-35303b735aef
+          type: string
+        muteAll:
+          example: false
+          type: boolean
+        mutedInstanceIds:
+          items:
+            type: string
+          nullable: true
+          type: array
+        name:
+          description: The name of the alert.
+          example: my alert
+          type: string
+        notifyWhen:
+          example: onActionGroupChange
+          type: string
+        params:
+          additionalProperties: true
+          type: object
+        schedule:
+          $ref: '#/components/schemas/alert_response_properties_schedule'
+        scheduledTaskId:
+          example: b530fed0-74f5-11ed-9801-35303b735aef
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        throttle:
+          nullable: true
+          type: string
+        updatedAt:
+          example: 2022-12-05T23:36:58.284Z
+          type: string
+        updatedBy:
+          description: The identifier for the user that updated this alert most recently.
+          example: elastic
+          nullable: true
+          type: string
+      title: Legacy alert response properties
+      type: object
+    findRules_has_reference_parameter:
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+      type: object
+    findRules_search_fields_parameter:
+      oneOf:
+      - type: string
+      - items:
+          type: string
+        type: array
+    findRules_200_response:
+      example:
+        per_page: 6
+        total: 1
+        data:
+        - throttle: 10m
+          created_at: 2022-12-05T23:36:58.284Z
+          last_run:
+            alerts_count:
+              ignored: 6
+              new: 1
+              recovered: 5
+              active: 0
+            outcome_msg: outcome_msg
+            warning: warning
+            outcome: succeeded
+          params:
+            key: ""
+          created_by: elastic
+          enabled: true
+          muted_alert_ids:
+          - muted_alert_ids
+          - muted_alert_ids
+          rule_type_id: monitoring_alert_cluster_health
+          tags:
+          - tags
+          - tags
+          running: true
+          api_key_owner: elastic
+          schedule:
+            interval: 1m
+          notify_when: onActiveAlert
+          next_run: 2022-12-06T00:14:43.818Z
+          updated_at: 2022-12-05T23:36:58.284Z
+          execution_status:
+            last_execution_date: 2022-12-06T00:13:43.89Z
+            last_duration: 55
+            status: ok
+          name: cluster_health_rule
+          updated_by: elastic
+          scheduled_task_id: b530fed0-74f5-11ed-9801-35303b735aef
+          id: b530fed0-74f5-11ed-9801-35303b735aef
+          mute_all: false
+          actions:
+          - id: 9dca3e00-74f5-11ed-9801-35303b735aef
+            params:
+              key: ""
+            connector_type_id: .server-log
+            frequency:
+              summary: true
+              throttle: 10m
+              notify_when: onActiveAlert
+            group: default
+          - id: 9dca3e00-74f5-11ed-9801-35303b735aef
+            params:
+              key: ""
+            connector_type_id: .server-log
+            frequency:
+              summary: true
+              throttle: 10m
+              notify_when: onActiveAlert
+            group: default
+          consumer: alerts
+        - throttle: 10m
+          created_at: 2022-12-05T23:36:58.284Z
+          last_run:
+            alerts_count:
+              ignored: 6
+              new: 1
+              recovered: 5
+              active: 0
+            outcome_msg: outcome_msg
+            warning: warning
+            outcome: succeeded
+          params:
+            key: ""
+          created_by: elastic
+          enabled: true
+          muted_alert_ids:
+          - muted_alert_ids
+          - muted_alert_ids
+          rule_type_id: monitoring_alert_cluster_health
+          tags:
+          - tags
+          - tags
+          running: true
+          api_key_owner: elastic
+          schedule:
+            interval: 1m
+          notify_when: onActiveAlert
+          next_run: 2022-12-06T00:14:43.818Z
+          updated_at: 2022-12-05T23:36:58.284Z
+          execution_status:
+            last_execution_date: 2022-12-06T00:13:43.89Z
+            last_duration: 55
+            status: ok
+          name: cluster_health_rule
+          updated_by: elastic
+          scheduled_task_id: b530fed0-74f5-11ed-9801-35303b735aef
+          id: b530fed0-74f5-11ed-9801-35303b735aef
+          mute_all: false
+          actions:
+          - id: 9dca3e00-74f5-11ed-9801-35303b735aef
+            params:
+              key: ""
+            connector_type_id: .server-log
+            frequency:
+              summary: true
+              throttle: 10m
+              notify_when: onActiveAlert
+            group: default
+          - id: 9dca3e00-74f5-11ed-9801-35303b735aef
+            params:
+              key: ""
+            connector_type_id: .server-log
+            frequency:
+              summary: true
+              throttle: 10m
+              notify_when: onActiveAlert
+            group: default
+          consumer: alerts
+        page: 0
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/rule_response_properties'
+          type: array
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+      type: object
+    getAlertingHealth_200_response_alerting_framework_heath_decryption_health:
+      example:
+        status: ok
+        timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        status:
+          example: ok
+          type: string
+        timestamp:
+          example: 2023-01-13T01:28:00.28Z
+          format: date-time
+          type: string
+      type: object
+    getAlertingHealth_200_response_alerting_framework_heath:
+      deprecated: true
+      description: This property has a typo. Use `alerting_framework_health` instead.
+      example:
+        _deprecated: "This state property has a typo, use \"alerting_framework_health\"\
+          \ instead."
+        execution_health:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+        read_health:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+        decryption_health:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        _deprecated:
+          example: "This state property has a typo, use \"alerting_framework_health\"\
+            \ instead."
+          type: string
+        decryption_health:
+          $ref: '#/components/schemas/getAlertingHealth_200_response_alerting_framework_heath_decryption_health'
+        execution_health:
+          $ref: '#/components/schemas/getAlertingHealth_200_response_alerting_framework_heath_decryption_health'
+        read_health:
+          $ref: '#/components/schemas/getAlertingHealth_200_response_alerting_framework_heath_decryption_health'
+      type: object
+    getAlertingHealth_200_response_alerting_framework_health_decryption_health:
+      description: The timestamp and status of the rule decryption.
+      example:
+        status: ok
+        timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        status:
+          enum:
+          - error
+          - ok
+          - warn
+          example: ok
+          type: string
+        timestamp:
+          example: 2023-01-13T01:28:00.28Z
+          format: date-time
+          type: string
+      type: object
+    getAlertingHealth_200_response_alerting_framework_health_execution_health:
+      description: The timestamp and status of the rule run.
+      example:
+        status: ok
+        timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        status:
+          enum:
+          - error
+          - ok
+          - warn
+          example: ok
+          type: string
+        timestamp:
+          example: 2023-01-13T01:28:00.28Z
+          format: date-time
+          type: string
+      type: object
+    getAlertingHealth_200_response_alerting_framework_health_read_health:
+      description: The timestamp and status of the rule reading events.
+      example:
+        status: ok
+        timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        status:
+          enum:
+          - error
+          - ok
+          - warn
+          example: ok
+          type: string
+        timestamp:
+          example: 2023-01-13T01:28:00.28Z
+          format: date-time
+          type: string
+      type: object
+    getAlertingHealth_200_response_alerting_framework_health:
+      description: |
+        Three substates identify the health of the alerting framework: `decryption_health`, `execution_health`, and `read_health`.
+      example:
+        execution_health:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+        read_health:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+        decryption_health:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        decryption_health:
+          $ref: '#/components/schemas/getAlertingHealth_200_response_alerting_framework_health_decryption_health'
+        execution_health:
+          $ref: '#/components/schemas/getAlertingHealth_200_response_alerting_framework_health_execution_health'
+        read_health:
+          $ref: '#/components/schemas/getAlertingHealth_200_response_alerting_framework_health_read_health'
+      type: object
+    getAlertingHealth_200_response:
+      example:
+        alerting_framework_health:
+          execution_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+          read_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+          decryption_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+        alerting_framework_heath:
+          _deprecated: "This state property has a typo, use \"alerting_framework_health\"\
+            \ instead."
+          execution_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+          read_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+          decryption_health:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+        has_permanent_encryption_key: true
+        is_sufficiently_secure: true
+      properties:
+        alerting_framework_heath:
+          $ref: '#/components/schemas/getAlertingHealth_200_response_alerting_framework_heath'
+        alerting_framework_health:
+          $ref: '#/components/schemas/getAlertingHealth_200_response_alerting_framework_health'
+        has_permanent_encryption_key:
+          description: "If `false`, the encrypted saved object plugin does not have\
+            \ a permanent encryption key."
+          example: true
+          type: boolean
+        is_sufficiently_secure:
+          description: "If `false`, security is enabled but TLS is not."
+          example: true
+          type: boolean
+      type: object
+    getRuleTypes_200_response_inner_action_groups_inner:
+      example:
+        name: name
+        id: id
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    getRuleTypes_200_response_inner_action_variables_context_inner:
+      example:
+        name: name
+        description: description
+        useWithTripleBracesInTemplates: true
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        useWithTripleBracesInTemplates:
+          type: boolean
+      type: object
+    getRuleTypes_200_response_inner_action_variables_params_inner:
+      example:
+        name: name
+        description: description
+      properties:
+        description:
+          type: string
+        name:
+          type: string
+      type: object
+    getRuleTypes_200_response_inner_action_variables:
+      description: |
+        A list of action variables that the rule type makes available via context and state in action parameter templates, and a short human readable description. When you create a rule in Kibana, it uses this information to prompt you for these variables in action parameter editors.
+      example:
+        context:
+        - name: name
+          description: description
+          useWithTripleBracesInTemplates: true
+        - name: name
+          description: description
+          useWithTripleBracesInTemplates: true
+        state:
+        - name: name
+          description: description
+        - name: name
+          description: description
+        params:
+        - name: name
+          description: description
+        - name: name
+          description: description
+      properties:
+        context:
+          items:
+            $ref: '#/components/schemas/getRuleTypes_200_response_inner_action_variables_context_inner'
+          type: array
+        params:
+          items:
+            $ref: '#/components/schemas/getRuleTypes_200_response_inner_action_variables_params_inner'
+          type: array
+        state:
+          items:
+            $ref: '#/components/schemas/getRuleTypes_200_response_inner_action_variables_params_inner'
+          type: array
+      type: object
+    getRuleTypes_200_response_inner_authorized_consumers_alerts:
+      example:
+        all: true
+        read: true
+      properties:
+        all:
+          type: boolean
+        read:
+          type: boolean
+      type: object
+    getRuleTypes_200_response_inner_authorized_consumers:
+      description: The list of the plugins IDs that have access to the rule type.
+      example:
+        alerts:
+          all: true
+          read: true
+        discover:
+          all: true
+          read: true
+        stackAlerts:
+          all: true
+          read: true
+        infrastructure:
+          all: true
+          read: true
+        siem:
+          all: true
+          read: true
+        monitoring:
+          all: true
+          read: true
+        logs:
+          all: true
+          read: true
+        apm:
+          all: true
+          read: true
+        ml:
+          all: true
+          read: true
+        uptime:
+          all: true
+          read: true
+      properties:
+        alerts:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        apm:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        discover:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        infrastructure:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        logs:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        ml:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        monitoring:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        siem:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        stackAlerts:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+        uptime:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers_alerts'
+      type: object
+    getRuleTypes_200_response_inner_recovery_action_group:
+      description: An action group to use when an alert goes from an active state
+        to an inactive one.
+      example:
+        name: name
+        id: id
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    getRuleTypes_200_response_inner:
+      example:
+        recovery_action_group:
+          name: name
+          id: id
+        does_set_recovery_context: true
+        is_exportable: true
+        authorized_consumers:
+          alerts:
+            all: true
+            read: true
+          discover:
+            all: true
+            read: true
+          stackAlerts:
+            all: true
+            read: true
+          infrastructure:
+            all: true
+            read: true
+          siem:
+            all: true
+            read: true
+          monitoring:
+            all: true
+            read: true
+          logs:
+            all: true
+            read: true
+          apm:
+            all: true
+            read: true
+          ml:
+            all: true
+            read: true
+          uptime:
+            all: true
+            read: true
+        action_groups:
+        - name: name
+          id: id
+        - name: name
+          id: id
+        minimum_license_required: basic
+        action_variables:
+          context:
+          - name: name
+            description: description
+            useWithTripleBracesInTemplates: true
+          - name: name
+            description: description
+            useWithTripleBracesInTemplates: true
+          state:
+          - name: name
+            description: description
+          - name: name
+            description: description
+          params:
+          - name: name
+            description: description
+          - name: name
+            description: description
+        rule_task_timeout: 5m
+        name: name
+        enabled_in_license: true
+        producer: stackAlerts
+        id: id
+        default_action_group_id: default_action_group_id
+      properties:
+        action_groups:
+          description: |
+            An explicit list of groups for which the rule type can schedule actions, each with the action group's unique ID and human readable name. Rule actions validation uses this configuration to ensure that groups are valid.
+          items:
+            $ref: '#/components/schemas/getRuleTypes_200_response_inner_action_groups_inner'
+          type: array
+        action_variables:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_action_variables'
+        authorized_consumers:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_authorized_consumers'
+        default_action_group_id:
+          description: The default identifier for the rule type group.
+          type: string
+        does_set_recovery_context:
+          description: Indicates whether the rule passes context variables to its
+            recovery action.
+          type: boolean
+        enabled_in_license:
+          description: Indicates whether the rule type is enabled or disabled based
+            on the subscription.
+          type: boolean
+        id:
+          description: The unique identifier for the rule type.
+          type: string
+        is_exportable:
+          description: Indicates whether the rule type is exportable in **Stack Management
+            > Saved Objects**.
+          type: boolean
+        minimum_license_required:
+          description: The subscriptions required to use the rule type.
+          example: basic
+          type: string
+        name:
+          description: The descriptive name of the rule type.
+          type: string
+        producer:
+          description: An identifier for the application that produces this rule type.
+          example: stackAlerts
+          type: string
+        recovery_action_group:
+          $ref: '#/components/schemas/getRuleTypes_200_response_inner_recovery_action_group'
+        rule_task_timeout:
+          example: 5m
+          type: string
+      type: object
+    Legacy_update_alert_request_properties_actions_inner:
+      properties:
+        actionTypeId:
+          description: The identifier for the action type.
+          type: string
+        group:
+          description: |
+            Grouping actions is recommended for escalations for different types of alert instances. If you don't need this functionality, set it to `default`.
+          type: string
+        id:
+          description: The ID of the action saved object to execute.
+          type: string
+        params:
+          description: |
+            The map to the `params` that the action type will receive. `params` are handled as Mustache templates and passed a default set of context.
+          type: object
+      required:
+      - actionTypeId
+      - group
+      - id
+      - params
+      type: object
+    Legacy_update_alert_request_properties_schedule:
+      description: |
+        The schedule specifying when this alert should be run. A schedule is structured such that the key specifies the format you wish to use and its value specifies the schedule.
+      properties:
+        interval:
+          description: "The interval format specifies the interval in seconds, minutes,\
+            \ hours or days at which the alert should execute."
+          example: 1d
+          type: string
+      type: object
+    Legacy_update_alert_request_properties:
+      properties:
+        actions:
+          items:
+            $ref: '#/components/schemas/Legacy_update_alert_request_properties_actions_inner'
+          type: array
+        name:
+          description: A name to reference and search.
+          type: string
+        notifyWhen:
+          description: The condition for throttling the notification.
+          enum:
+          - onActionGroupChange
+          - onActiveAlert
+          - onThrottleInterval
+          type: string
+        params:
+          description: "The parameters to pass to the alert type executor `params`\
+            \ value. This will also validate against the alert type params validator,\
+            \ if defined."
+          type: object
+        schedule:
+          $ref: '#/components/schemas/Legacy_update_alert_request_properties_schedule'
+        tags:
+          description: A list of keywords to reference and search.
+          items:
+            type: string
+          type: array
+        throttle:
+          description: |
+            How often this alert should fire the same actions. This will prevent the alert from sending out the same notification over and over. For example, if an alert with a schedule of 1 minute stays in a triggered state for 90 minutes, setting a throttle of `10m` or `1h` will prevent it from sending 90 notifications during this period.
+          type: string
+      required:
+      - name
+      - notifyWhen
+      - params
+      - schedule
+      title: Legacy update alert request properties
+      type: object
+    Legacy_create_alert_request_properties_schedule:
+      description: |
+        The schedule specifying when this alert should be run. A schedule is structured such that the key specifies the format you wish to use and its value specifies the schedule.
+      properties:
+        interval:
+          description: "The interval format specifies the interval in seconds, minutes,\
+            \ hours or days at which the alert should execute."
+          example: 10s
+          type: string
+      type: object
+    Legacy_create_alert_request_properties:
+      properties:
+        actions:
+          items:
+            $ref: '#/components/schemas/Legacy_update_alert_request_properties_actions_inner'
+          type: array
+        alertTypeId:
+          description: The ID of the alert type that you want to call when the alert
+            is scheduled to run.
+          type: string
+        consumer:
+          description: "The name of the application that owns the alert. This name\
+            \ has to match the Kibana feature name, as that dictates the required\
+            \ role-based access control privileges."
+          type: string
+        enabled:
+          description: Indicates if you want to run the alert on an interval basis
+            after it is created.
+          type: boolean
+        name:
+          description: A name to reference and search.
+          type: string
+        notifyWhen:
+          description: The condition for throttling the notification.
+          enum:
+          - onActionGroupChange
+          - onActiveAlert
+          - onThrottleInterval
+          type: string
+        params:
+          description: "The parameters to pass to the alert type executor `params`\
+            \ value. This will also validate against the alert type params validator,\
+            \ if defined."
+          type: object
+        schedule:
+          $ref: '#/components/schemas/Legacy_create_alert_request_properties_schedule'
+        tags:
+          description: A list of keywords to reference and search.
+          items:
+            type: string
+          type: array
+        throttle:
+          description: |
+            How often this alert should fire the same actions. This will prevent the alert from sending out the same notification over and over. For example, if an alert with a schedule of 1 minute stays in a triggered state for 90 minutes, setting a throttle of `10m` or `1h` will prevent it from sending 90 notifications during this period.
+          type: string
+      required:
+      - alertTypeId
+      - consumer
+      - name
+      - notifyWhen
+      - params
+      - schedule
+      title: Legacy create alert request properties
+      type: object
+    legacyFindAlerts_200_response:
+      example:
+        total: 1
+        perPage: 6
+        data:
+        - alertTypeId: .index-threshold
+          throttle: throttle
+          updatedBy: elastic
+          executionStatus:
+            lastExecutionDate: 2022-12-06T00:13:43.89Z
+            status: ok
+          params:
+            key: ""
+          enabled: true
+          mutedInstanceIds:
+          - mutedInstanceIds
+          - mutedInstanceIds
+          tags:
+          - tags
+          - tags
+          createdAt: 2022-12-05T23:36:58.284Z
+          schedule:
+            interval: interval
+          notifyWhen: onActionGroupChange
+          createdBy: elastic
+          muteAll: false
+          name: my alert
+          scheduledTaskId: b530fed0-74f5-11ed-9801-35303b735aef
+          id: b530fed0-74f5-11ed-9801-35303b735aef
+          actions:
+          - "{}"
+          - "{}"
+          apiKeyOwner: elastic
+          updatedAt: 2022-12-05T23:36:58.284Z
+        - alertTypeId: .index-threshold
+          throttle: throttle
+          updatedBy: elastic
+          executionStatus:
+            lastExecutionDate: 2022-12-06T00:13:43.89Z
+            status: ok
+          params:
+            key: ""
+          enabled: true
+          mutedInstanceIds:
+          - mutedInstanceIds
+          - mutedInstanceIds
+          tags:
+          - tags
+          - tags
+          createdAt: 2022-12-05T23:36:58.284Z
+          schedule:
+            interval: interval
+          notifyWhen: onActionGroupChange
+          createdBy: elastic
+          muteAll: false
+          name: my alert
+          scheduledTaskId: b530fed0-74f5-11ed-9801-35303b735aef
+          id: b530fed0-74f5-11ed-9801-35303b735aef
+          actions:
+          - "{}"
+          - "{}"
+          apiKeyOwner: elastic
+          updatedAt: 2022-12-05T23:36:58.284Z
+        page: 0
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/alert_response_properties'
+          type: array
+        page:
+          type: integer
+        perPage:
+          type: integer
+        total:
+          type: integer
+      type: object
+    legacyGetAlertingHealth_200_response_alertingFrameworkHealth_decryptionHealth:
+      description: The timestamp and status of the alert decryption.
+      example:
+        status: ok
+        timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        status:
+          enum:
+          - error
+          - ok
+          - warn
+          example: ok
+          type: string
+        timestamp:
+          example: 2023-01-13T01:28:00.28Z
+          format: date-time
+          type: string
+      type: object
+    legacyGetAlertingHealth_200_response_alertingFrameworkHealth_executionHealth:
+      description: The timestamp and status of the alert execution.
+      example:
+        status: ok
+        timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        status:
+          enum:
+          - error
+          - ok
+          - warn
+          example: ok
+          type: string
+        timestamp:
+          example: 2023-01-13T01:28:00.28Z
+          format: date-time
+          type: string
+      type: object
+    legacyGetAlertingHealth_200_response_alertingFrameworkHealth_readHealth:
+      description: The timestamp and status of the alert reading events.
+      example:
+        status: ok
+        timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        status:
+          enum:
+          - error
+          - ok
+          - warn
+          example: ok
+          type: string
+        timestamp:
+          example: 2023-01-13T01:28:00.28Z
+          format: date-time
+          type: string
+      type: object
+    legacyGetAlertingHealth_200_response_alertingFrameworkHealth:
+      description: |
+        Three substates identify the health of the alerting framework: `decryptionHealth`, `executionHealth`, and `readHealth`.
+      example:
+        executionHealth:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+        decryptionHealth:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+        readHealth:
+          status: ok
+          timestamp: 2023-01-13T01:28:00.28Z
+      properties:
+        decryptionHealth:
+          $ref: '#/components/schemas/legacyGetAlertingHealth_200_response_alertingFrameworkHealth_decryptionHealth'
+        executionHealth:
+          $ref: '#/components/schemas/legacyGetAlertingHealth_200_response_alertingFrameworkHealth_executionHealth'
+        readHealth:
+          $ref: '#/components/schemas/legacyGetAlertingHealth_200_response_alertingFrameworkHealth_readHealth'
+      type: object
+    legacyGetAlertingHealth_200_response:
+      example:
+        hasPermanentEncryptionKey: true
+        alertingFrameworkHealth:
+          executionHealth:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+          decryptionHealth:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+          readHealth:
+            status: ok
+            timestamp: 2023-01-13T01:28:00.28Z
+        isSufficientlySecure: true
+      properties:
+        alertingFrameworkHealth:
+          $ref: '#/components/schemas/legacyGetAlertingHealth_200_response_alertingFrameworkHealth'
+        hasPermanentEncryptionKey:
+          description: "If `false`, the encrypted saved object plugin does not have\
+            \ a permanent encryption key."
+          example: true
+          type: boolean
+        isSufficientlySecure:
+          description: "If `false`, security is enabled but TLS is not."
+          example: true
+          type: boolean
+      type: object
+    legacyGetAlertTypes_200_response_inner_actionVariables_context_inner:
+      example:
+        name: name
+        description: description
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      type: object
+    legacyGetAlertTypes_200_response_inner_actionVariables:
+      description: |
+        A list of action variables that the alert type makes available via context and state in action parameter templates, and a short human readable description. The Alert UI will use this information to prompt users for these variables in action parameter editors.
+      example:
+        context:
+        - name: name
+          description: description
+        - name: name
+          description: description
+        state:
+        - name: name
+          description: description
+        - name: name
+          description: description
+        params:
+        - name: name
+          description: description
+        - name: name
+          description: description
+      properties:
+        context:
+          items:
+            $ref: '#/components/schemas/legacyGetAlertTypes_200_response_inner_actionVariables_context_inner'
+          type: array
+        params:
+          items:
+            $ref: '#/components/schemas/getRuleTypes_200_response_inner_action_variables_params_inner'
+          type: array
+        state:
+          items:
+            $ref: '#/components/schemas/getRuleTypes_200_response_inner_action_variables_params_inner'
+          type: array
+      type: object
+    legacyGetAlertTypes_200_response_inner_recoveryActionGroup:
+      description: |
+        An action group to use when an alert instance goes from an active state to an inactive one. If it is not specified, the default recovered action group is used.
+      example:
+        name: name
+        id: id
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    legacyGetAlertTypes_200_response_inner:
+      example:
+        defaultActionGroupId: defaultActionGroupId
+        isExportable: true
+        actionVariables:
+          context:
+          - name: name
+            description: description
+          - name: name
+            description: description
+          state:
+          - name: name
+            description: description
+          - name: name
+            description: description
+          params:
+          - name: name
+            description: description
+          - name: name
+            description: description
+        actionGroups:
+        - name: name
+          id: id
+        - name: name
+          id: id
+        name: name
+        producer: producer
+        authorizedConsumers: "{}"
+        recoveryActionGroup:
+          name: name
+          id: id
+        enabledInLicense: true
+        id: id
+        minimumLicenseRequired: minimumLicenseRequired
+      properties:
+        actionGroups:
+          description: |
+            An explicit list of groups for which the alert type can schedule actions, each with the action group's unique ID and human readable name. Alert actions validation uses this configuration to ensure that groups are valid.
+          items:
+            $ref: '#/components/schemas/getRuleTypes_200_response_inner_action_groups_inner'
+          type: array
+        actionVariables:
+          $ref: '#/components/schemas/legacyGetAlertTypes_200_response_inner_actionVariables'
+        authorizedConsumers:
+          description: The list of the plugins IDs that have access to the alert type.
+          type: object
+        defaultActionGroupId:
+          description: The default identifier for the alert type group.
+          type: string
+        enabledInLicense:
+          description: Indicates whether the rule type is enabled based on the subscription.
+          type: boolean
+        id:
+          description: The unique identifier for the alert type.
+          type: string
+        isExportable:
+          description: Indicates whether the alert type is exportable in Saved Objects
+            Management UI.
+          type: boolean
+        minimumLicenseRequired:
+          description: The subscriptions required to use the alert type.
+          type: string
+        name:
+          description: The descriptive name of the alert type.
+          type: string
+        producer:
+          description: An identifier for the application that produces this alert
+            type.
+          type: string
+        recoveryActionGroup:
+          $ref: '#/components/schemas/legacyGetAlertTypes_200_response_inner_recoveryActionGroup'
+      type: object
+    actions_inner_frequency:
+      description: |
+        The parameters that affect how often actions are generated. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level.
+      example:
+        summary: true
+        throttle: 10m
+        notify_when: onActiveAlert
+      properties:
+        notify_when:
+          $ref: '#/components/schemas/notify_when'
+        summary:
+          description: Indicates whether the action is a summary.
+          type: boolean
+        throttle:
+          description: "The throttle interval, which defines how often an alert generates\
+            \ repeated actions. It is applicable only if `notify_when` is set to `onThrottleInterval`.\
+            \ It is specified in seconds, minutes, hours, or days."
+          example: 10m
+          nullable: true
+          type: string
+      required:
+      - notify_when
+      - summary
+      type: object
+    actions_inner:
+      example:
+        id: 9dca3e00-74f5-11ed-9801-35303b735aef
+        params:
+          key: ""
+        connector_type_id: .server-log
+        frequency:
+          summary: true
+          throttle: 10m
+          notify_when: onActiveAlert
+        group: default
+      properties:
+        connector_type_id:
+          description: The type of connector. This property appears in responses but
+            cannot be set in requests.
+          example: .server-log
+          readOnly: true
+          type: string
+        frequency:
+          $ref: '#/components/schemas/actions_inner_frequency'
+        group:
+          description: "The group name for the actions. If you don't need to group\
+            \ actions, set to `default`."
+          example: default
+          type: string
+        id:
+          description: The identifier for the connector saved object.
+          example: 9dca3e00-74f5-11ed-9801-35303b735aef
+          type: string
+        params:
+          additionalProperties: true
+          description: "The parameters for the action, which are sent to the connector.\
+            \ The `params` are handled as Mustache templates and passed a default\
+            \ set of context."
+          type: object
+      type: object
+    rule_response_properties_execution_status:
+      example:
+        last_execution_date: 2022-12-06T00:13:43.89Z
+        last_duration: 55
+        status: ok
+      properties:
+        last_duration:
+          example: 55
+          type: integer
+        last_execution_date:
+          example: 2022-12-06T00:13:43.89Z
+          format: date-time
+          type: string
+        status:
+          example: ok
+          type: string
+      type: object
+    rule_response_properties_last_run_alerts_count:
+      example:
+        ignored: 6
+        new: 1
+        recovered: 5
+        active: 0
+      properties:
+        active:
+          type: integer
+        ignored:
+          type: integer
+        new:
+          type: integer
+        recovered:
+          type: integer
+      type: object
+    rule_response_properties_last_run:
+      example:
+        alerts_count:
+          ignored: 6
+          new: 1
+          recovered: 5
+          active: 0
+        outcome_msg: outcome_msg
+        warning: warning
+        outcome: succeeded
+      properties:
+        alerts_count:
+          $ref: '#/components/schemas/rule_response_properties_last_run_alerts_count'
+        outcome:
+          example: succeeded
+          type: string
+        outcome_msg:
+          nullable: true
+          type: string
+          example: null
+        warning:
+          nullable: true
+          type: string
+          example: null
+      type: object
+    alert_response_properties_executionStatus:
+      example:
+        lastExecutionDate: 2022-12-06T00:13:43.89Z
+        status: ok
+      properties:
+        lastExecutionDate:
+          example: 2022-12-06T00:13:43.89Z
+          format: date-time
+          type: string
+        status:
+          example: ok
+          type: string
+      type: object
+    alert_response_properties_schedule:
+      example:
+        interval: interval
+      properties:
+        interval:
+          type: string
+      type: object
+  securitySchemes:
+    basicAuth:
+      scheme: basic
+      type: http
+    apiKeyAuth:
+      in: header
+      name: ApiKey
+      type: apiKey

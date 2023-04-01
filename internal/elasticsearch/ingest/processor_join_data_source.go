@@ -117,10 +117,10 @@ func dataSourceProcessorJoinRead(ctx context.Context, d *schema.ResourceData, me
 
 	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorJoin{"join": processor}, "", " ")
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	if err := d.Set("json", string(processorJson)); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 
 	hash, err := utils.StringToHash(string(processorJson))

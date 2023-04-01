@@ -115,8 +115,12 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 			}
 
 			compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
-			req := client.GetESClient().Snapshot.GetRepository.WithRepository(compId.ResourceId)
-			res, err := client.GetESClient().Snapshot.GetRepository(req)
+			esClient, err := client.GetESClient()
+			if err != nil {
+				return err
+			}
+			req := esClient.Snapshot.GetRepository.WithRepository(compId.ResourceId)
+			res, err := esClient.Snapshot.GetRepository(req)
 			if err != nil {
 				return err
 			}

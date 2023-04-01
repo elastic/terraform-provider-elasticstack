@@ -1,5 +1,27 @@
 package models
 
+import (
+	"time"
+)
+
+type ClusterInfo struct {
+	Name        string `json:"name"`
+	ClusterName string `json:"cluster_name"`
+	ClusterUUID string `json:"cluster_uuid"`
+	Version     struct {
+		Number                           string    `json:"number"`
+		BuildType                        string    `json:"build_type"`
+		BuildHash                        string    `json:"build_hash"`
+		BuildFlavor                      string    `json:"build_flavor"`
+		BuildDate                        time.Time `json:"build_date"`
+		BuildSnapshot                    bool      `json:"build_snapshot"`
+		LuceneVersion                    string    `json:"lucene_version"`
+		MinimumWireCompatibilityVersion  string    `json:"minimum_wire_compatibility_version"`
+		MinimumIndexCompatibilityVersion string    `json:"minimum_index_compatibility_version"`
+	} `json:"version"`
+	Tagline string `json:"tagline"`
+}
+
 type User struct {
 	Username     string                 `json:"-"`
 	FullName     string                 `json:"full_name,omitempty"`
@@ -185,6 +207,13 @@ type Index struct {
 	Settings map[string]interface{} `json:"settings,omitempty"`
 }
 
+type PutIndexParams struct {
+	WaitForActiveShards string
+	MasterTimeout       time.Duration
+	Timeout             time.Duration
+	IncludeTypeName     bool // IncludeTypeName is supported only in v7.x
+}
+
 type IndexAlias struct {
 	Name          string                 `json:"-"`
 	Filter        map[string]interface{} `json:"filter,omitempty"`
@@ -234,4 +263,29 @@ type Script struct {
 	Source   string                 `json:"source"`
 	Params   map[string]interface{} `json:"params"`
 	Context  string                 `json:"-"`
+}
+
+type Watch struct {
+	WatchID string `json:"-"`
+	Status  struct {
+		State struct {
+			Active bool `json:"active"`
+		} `json:"state"`
+	} `json:"status"`
+	Body WatchBody `json:"watch"`
+}
+
+type PutWatch struct {
+	WatchID string
+	Active  bool
+	Body    WatchBody
+}
+
+type WatchBody struct {
+	Trigger                   map[string]interface{} `json:"trigger"`
+	Input                     map[string]interface{} `json:"input"`
+	Condition                 map[string]interface{} `json:"condition"`
+	Actions                   map[string]interface{} `json:"actions"`
+	Metadata                  map[string]interface{} `json:"metadata"`
+	Throttle_period_in_millis int                    `json:"throttle_period_in_millis,omitempty"`
 }
