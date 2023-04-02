@@ -47,6 +47,8 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "10m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "tags.0", "first"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "tags.1", "second"),
 				),
 			},
 		},
@@ -111,6 +113,7 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   rule_type_id = ".index-threshold"
   interval     = "10m"
   enabled      = false
+  tags         = ["first", "second"]
 }
 	`, name)
 }
