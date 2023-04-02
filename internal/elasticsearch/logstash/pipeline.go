@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"regexp"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -136,7 +137,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 		"queue_max_bytes": {
 			Description:  "Units for the total capacity of the queue when persistent queues are enabled.",
 			Type:         schema.TypeString,
-			ValidateFunc: validation.StringInSlice([]string{"b", "kb", "mb", "gb", "tb", "pb"}, false),
+			ValidateFunc: validation.StringMatch(regexp.MustCompile("^[0-9]+[kmgtp]?b$"), "must be valid size unit"),
 			Optional:     true,
 		},
 		"queue_max_events": {
