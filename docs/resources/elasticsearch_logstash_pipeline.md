@@ -79,8 +79,7 @@ output "pipeline" {
 - `queue_checkpoint_retry` (Boolean) When enabled, Logstash will retry four times per attempted checkpoint write for any checkpoint writes that fail. Any subsequent errors are not retried.
 - `queue_checkpoint_writes` (Number) The maximum number of written events before forcing a checkpoint when persistent queues are enabled.
 - `queue_drain` (Boolean) When enabled, Logstash waits until the persistent queue is drained before shutting down.
-- `queue_max_bytes_number` (Number) The total capacity of the queue when persistent queues are enabled.
-- `queue_max_bytes_units` (String) Units for the total capacity of the queue when persistent queues are enabled.
+- `queue_max_bytes` (String) Units for the total capacity of the queue when persistent queues are enabled.
 - `queue_max_events` (Number) The maximum number of unread events in the queue when persistent queues are enabled.
 - `queue_page_capacity` (String) The size of the page data files used when persistent queues are enabled. The queue data consists of append-only data files separated into pages.
 - `queue_type` (String) The internal queueing model for event buffering. Options are memory for in-memory queueing, or persisted for disk-based acknowledged queueing.
