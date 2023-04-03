@@ -252,7 +252,7 @@ type LogstashPipeline struct {
 	Description      string                 `json:"description,omitempty"`
 	LastModified     string                 `json:"last_modified"`
 	Pipeline         string                 `json:"pipeline"`
-	Metadata         map[string]interface{} `json:"pipeline_metadata"`
+	PipelineMetadata map[string]interface{} `json:"pipeline_metadata"`
 	PipelineSettings map[string]interface{} `json:"pipeline_settings"`
 	Username         string                 `json:"username"`
 }

@@ -12,7 +12,7 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "example" {
   output{}
 EOF
 
-  metadata = jsonencode({
+  pipeline_metadata = jsonencode({
     "type"    = "logstash_pipeline"
     "version" = 1
   })
@@ -27,8 +27,7 @@ EOF
   queue_checkpoint_retry       = true
   queue_checkpoint_writes      = 1024
   queue_drain                  = false
-  queue_max_bytes_number       = 1
-  queue_max_bytes_units        = "gb"
+  queue_max_bytes              = "1gb"
   queue_max_events             = 0
   queue_page_capacity          = "64mb"
   queue_type                   = "persisted"

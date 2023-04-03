@@ -33,7 +33,22 @@
 - Properly handle errors which occur during provider execution ([#262](https://github.com/elastic/terraform-provider-elasticstack/pull/262))
 - Correctly handle empty logstash pipeline metadata in plan diffs ([#256](https://github.com/elastic/terraform-provider-elasticstack/pull/256))
 - Fix error when logging API requests in debug mode ([#259](https://github.com/elastic/terraform-provider-elasticstack/pull/259))
-- Fix error caused by updates to Logstash Pipelines outside of TF. Deprecated `pipeline_metadata` and added `metadata` ([#278](https://github.com/elastic/terraform-provider-elasticstack/issues/278))
+- **[Breaking Change] Change `pipeline_metadata` type from schema.TypeMap to schema.TypeString**. This is to fix an error caused by updates to Logstash Pipelines outside of TF ([#278](https://github.com/elastic/terraform-provider-elasticstack/issues/278))
+  - To use the updated `pipeline_metadata` field, you'll need to encapsulate any Terraform configuration with **jsonencode{}** as follows:
+    ```terraform
+    resource "elasticstack_elasticsearch_logstash_pipeline" "example" {
+      name = "example"
+      pipeline = <<-EOF
+        input{}
+        filter{}
+        output{}
+    EOF
+      pipeline_metadata = jsonencode({
+        type = "logstash_pipeline"
+        version = 1
+      })
+    }
+    ```
 
 ## [0.5.0] - 2022-12-07
 
