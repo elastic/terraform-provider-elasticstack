@@ -48,17 +48,17 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 - `consumer` (String) The name of the application or feature that owns the rule.
 - `interval` (String) The check interval, which specifies how frequently the rule conditions are checked. The interval must be specified in seconds, minutes, hours or days.
 - `name` (String) The name of the rule. While this name does not have to be unique, a distinctive name can help you identify a rule.
-- `notify_when` (String) Defines how often alerts generate actions. One of `onActionGroupChange`, `onActiveAlert`, or `onThrottleInterval`
+- `notify_when` (String) Defines how often alerts generate actions. One of `onActionGroupChange`, `onActiveAlert`, or `onThrottleInterval`.
 - `params` (String) The parameters to pass to the rule type executor params value. This will also validate against the rule type params validator, if defined.
-- `rule_type_id` (String) The ID of the rule type that you want to call when the rule is scheduled to run. For more information, refer to Rule types documentation (https://www.elastic.co/guide/en/kibana/master/rule-types.html).
+- `rule_type_id` (String) The ID of the rule type that you want to call when the rule is scheduled to run. For more information about the valid values, list the rule types using [Get rule types API](https://www.elastic.co/guide/en/kibana/master/list-rule-types-api.html) or refer to the [Rule types documentation](https://www.elastic.co/guide/en/kibana/master/rule-types.html).
 
 ### Optional
 
-- `actions` (Block List) An array of action objects (see [below for nested schema](#nestedblock--actions))
-- `enabled` (Boolean) Indicates if you want to run the rule on an interval basis
+- `actions` (Block List) An array of action objects. (see [below for nested schema](#nestedblock--actions))
+- `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
 - `rule_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
-- `tags` (List of String) A list of tag names that are applied to the rule
+- `tags` (List of String) A list of tag names that are applied to the rule.
 - `throttle` (String) Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is used only if notify_when is onThrottleInterval.
 
 ### Read-Only
