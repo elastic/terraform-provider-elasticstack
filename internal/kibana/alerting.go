@@ -42,7 +42,7 @@ func ResourceAlertingRule() *schema.Resource {
 			ForceNew:    true,
 		},
 		"notify_when": {
-			Description:  "Defines how often alerts generate actions. One of `onActionGroupChange`, `onActiveAlert`, or `onThrottleInterval`",
+			Description:  "Defines how often alerts generate actions. One of `onActionGroupChange`, `onActiveAlert`, or `onThrottleInterval`.",
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"onActionGroupChange", "onActiveAlert", "onThrottleInterval"}, false),
@@ -55,7 +55,7 @@ func ResourceAlertingRule() *schema.Resource {
 			ValidateFunc:     validation.StringIsJSON,
 		},
 		"rule_type_id": {
-			Description: "The ID of the rule type that you want to call when the rule is scheduled to run. For more information, refer to Rule types documentation (https://www.elastic.co/guide/en/kibana/master/rule-types.html).",
+			Description: "The ID of the rule type that you want to call when the rule is scheduled to run. For more information about the valid values, list the rule types using [Get rule types API](https://www.elastic.co/guide/en/kibana/master/list-rule-types-api.html) or refer to the [Rule types documentation](https://www.elastic.co/guide/en/kibana/master/rule-types.html).",
 			Type:        schema.TypeString,
 			Required:    true,
 			ForceNew:    true,
@@ -67,7 +67,7 @@ func ResourceAlertingRule() *schema.Resource {
 			ValidateFunc: utils.StringIsDuration,
 		},
 		"actions": {
-			Description: "An array of action objects",
+			Description: "An array of action objects.",
 			Type:        schema.TypeList,
 			Optional:    true,
 			Elem: &schema.Resource{
@@ -94,12 +94,12 @@ func ResourceAlertingRule() *schema.Resource {
 			},
 		},
 		"enabled": {
-			Description: "Indicates if you want to run the rule on an interval basis",
+			Description: "Indicates if you want to run the rule on an interval basis.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
 		"tags": {
-			Description: "A list of tag names that are applied to the rule",
+			Description: "A list of tag names that are applied to the rule.",
 			Type:        schema.TypeList,
 			Optional:    true,
 			Elem: &schema.Schema{
