@@ -176,19 +176,43 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData) (models.AlertingRul
 		rule.Throttle = &t
 	}
 
-	if v, ok := d.GetOk("actions"); ok {
-		actions := []models.AlertingRuleAction{}
-		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&actions); err != nil {
-			return models.AlertingRule{}, diag.FromErr(err)
-		}
-		rule.Actions = actions
+	actions, diags := getActionsFromResourceData(d)
+	if diags.HasError() {
+		return models.AlertingRule{}, diags
 	}
+	rule.Actions = actions
 
 	if tags, ok := d.GetOk("tags"); ok {
-		rule.Tags = tags.([]string)
+		for _, t := range tags.([]interface{}) {
+			rule.Tags = append(rule.Tags, t.(string))
+		}
 	}
 
 	return rule, diags
+}
+
+func getActionsFromResourceData(d *schema.ResourceData) ([]models.AlertingRuleAction, diag.Diagnostics) {
+	actions := []models.AlertingRuleAction{}
+	if v, ok := d.GetOk("actions"); ok {
+		resourceActions := v.([]interface{})
+		for _, a := range resourceActions {
+			action := a.(map[string]interface{})
+			paramsStr := action["params"].(string)
+			var params map[string]interface{}
+			err := json.Unmarshal([]byte(paramsStr), &params)
+			if err != nil {
+				return []models.AlertingRuleAction{}, diag.FromErr(err)
+			}
+
+			actions = append(actions, models.AlertingRuleAction{
+				Group:  action["group"].(string),
+				ID:     action["id"].(string),
+				Params: params,
+			})
+		}
+	}
+
+	return actions, nil
 }
 
 func resourceRuleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -315,10 +339,14 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	actions := []interface{}{}
 	for _, action := range rule.Actions {
+		params, err := json.Marshal(action.Params)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 		actions = append(actions, map[string]interface{}{
 			"group":  action.Group,
 			"id":     action.ID,
-			"params": action.Params,
+			"params": string(params),
 		})
 	}
 	if err := d.Set("actions", actions); err != nil {

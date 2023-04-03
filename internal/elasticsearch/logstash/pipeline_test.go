@@ -47,8 +47,7 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_checkpoint_retry", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_checkpoint_writes", "2048"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_drain", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_bytes_number", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_bytes_units", "mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_bytes", "2mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_events", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_page_capacity", "64mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_type", "memory"),
@@ -72,8 +71,7 @@ func TestResourceLogstashPipeline(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_checkpoint_retry", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_checkpoint_writes", "2048"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_drain", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_bytes_number", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_bytes_units", "mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_bytes", ""),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_max_events", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_page_capacity", "64mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_logstash_pipeline.test", "queue_type", "memory"),
@@ -123,8 +121,6 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   queue_checkpoint_retry = true
   queue_checkpoint_writes = 2048
   queue_drain = false
-  queue_max_bytes_number = 2
-  queue_max_bytes_units = "mb"
   queue_max_events = 0
   queue_page_capacity = "64mb"
   queue_type = "memory"
@@ -158,8 +154,7 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   queue_checkpoint_retry = true
   queue_checkpoint_writes = 2048
   queue_drain = false
-  queue_max_bytes_number = 2
-  queue_max_bytes_units = "mb"
+  queue_max_bytes = "2mb"
   queue_max_events = 0
   queue_page_capacity = "64mb"
   queue_type = "memory"

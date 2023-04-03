@@ -1,4 +1,5 @@
 ## [Unreleased]
+
 ### Added
 - New resource `elasticstack_elasticsearch_enrich_policy` to manage enrich policies ([#286](https://github.com/elastic/terraform-provider-elasticstack/pull/286)) ([Enrich API](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html))
 - New data source `elasticstack_elasticsearch_enrich_policy` to read enrich policies ([#293](https://github.com/elastic/terraform-provider-elasticstack/pull/293)) ([Enrich API](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html))
@@ -24,6 +25,7 @@
 - Add `elasticstack_kibana_alerting_rule` for managing Kibana alerting rules ([#292](https://github.com/elastic/terraform-provider-elasticstack/pull/292))
 
 ### Fixed
+- Updated unsupported queue_max_bytes_number and queue_max_bytes_units with queue.max_bytes ([#266](https://github.com/elastic/terraform-provider-elasticstack/issues/266))
 - Respect `ignore_unavailable` and `include_global_state` values when configuring SLM policies ([#224](https://github.com/elastic/terraform-provider-elasticstack/pull/224))
 - Refactor API client functions and return diagnostics ([#220](https://github.com/elastic/terraform-provider-elasticstack/pull/220))
 - Fix not to recreate index when field is removed from mapping ([#232](https://github.com/elastic/terraform-provider-elasticstack/pull/232))

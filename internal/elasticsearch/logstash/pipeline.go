@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -30,8 +31,7 @@ var (
 		"queue.checkpoint.retry":       schema.TypeBool,
 		"queue.checkpoint.writes":      schema.TypeInt,
 		"queue.drain":                  schema.TypeBool,
-		"queue.max_bytes.number":       schema.TypeInt,
-		"queue.max_bytes.units":        schema.TypeString,
+		"queue.max_bytes":              schema.TypeString,
 		"queue.max_events":             schema.TypeInt,
 		"queue.page_capacity":          schema.TypeString,
 		"queue.type":                   schema.TypeString,
@@ -144,15 +144,10 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
-		"queue_max_bytes_number": {
-			Description: "The total capacity of the queue when persistent queues are enabled.",
-			Type:        schema.TypeInt,
-			Optional:    true,
-		},
-		"queue_max_bytes_units": {
+		"queue_max_bytes": {
 			Description:  "Units for the total capacity of the queue when persistent queues are enabled.",
 			Type:         schema.TypeString,
-			ValidateFunc: validation.StringInSlice([]string{"b", "kb", "mb", "gb", "tb", "pb"}, false),
+			ValidateFunc: validation.StringMatch(regexp.MustCompile("^[0-9]+[kmgtp]?b$"), "must be valid size unit"),
 			Optional:     true,
 		},
 		"queue_max_events": {
