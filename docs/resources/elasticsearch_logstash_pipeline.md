@@ -27,11 +27,10 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "example" {
   output{}
 EOF
 
-  pipeline_metadata = {
+  pipeline_metadata = jsonencode({
     "type"    = "logstash_pipeline"
     "version" = 1
-  }
-
+  })
   pipeline_batch_delay         = 50
   pipeline_batch_size          = 125
   pipeline_ecs_compatibility   = "disabled"
@@ -43,8 +42,7 @@ EOF
   queue_checkpoint_retry       = true
   queue_checkpoint_writes      = 1024
   queue_drain                  = false
-  queue_max_bytes_number       = 1
-  queue_max_bytes_units        = "gb"
+  queue_max_bytes              = "1gb"
   queue_max_events             = 0
   queue_page_capacity          = "64mb"
   queue_type                   = "persisted"
@@ -70,7 +68,7 @@ output "pipeline" {
 - `pipeline_batch_delay` (Number) Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.
 - `pipeline_batch_size` (Number) The maximum number of events an individual worker thread collects before executing filters and outputs.
 - `pipeline_ecs_compatibility` (String) Sets the pipeline default value for ecs_compatibility, a setting that is available to plugins that implement an ECS compatibility mode for use with the Elastic Common Schema.
-- `pipeline_metadata` (Map of String) Optional metadata about the pipeline.
+- `pipeline_metadata` (String) Optional JSON metadata about the pipeline.
 - `pipeline_ordered` (String) Set the pipeline event ordering.
 - `pipeline_plugin_classloaders` (Boolean) (Beta) Load Java plugins in independent classloaders to isolate their dependencies.
 - `pipeline_unsafe_shutdown` (Boolean) Forces Logstash to exit during shutdown even if there are still inflight events in memory.
@@ -112,5 +110,5 @@ Optional:
 Import is supported using the following syntax:
 
 ```shell
-terraform import elasticstack_elasticsearch_logstash_pipeline.my_pipeline <cluster_uuid>/<pipeline ID>
+terraform import elasticstack_elasticsearch_logstash_pipeline.example <cluster_uuid>/<pipeline ID>
 ```

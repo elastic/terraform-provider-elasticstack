@@ -2,6 +2,7 @@ package logstash
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"regexp"
@@ -66,14 +67,12 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Required:    true,
 		},
 		"pipeline_metadata": {
-			Description:      "Optional metadata about the pipeline.",
-			Type:             schema.TypeMap,
-			Optional:         true,
+			Description:      "Optional JSON metadata about the pipeline.",
+			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
-			Elem: &schema.Schema{
-				Type:    schema.TypeString,
-				Default: nil,
-			},
+			Optional:         true,
+			Default:          "{\"type\":\"logstash_pipeline\",\"version\":1}",
 		},
 		// Pipeline Settings
 		"pipeline_batch_delay": {
@@ -201,7 +200,12 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	logstashPipeline.Description = d.Get("description").(string)
 	logstashPipeline.LastModified = utils.FormatStrictDateTime(time.Now().UTC())
 	logstashPipeline.Pipeline = d.Get("pipeline").(string)
-	logstashPipeline.PipelineMetadata = d.Get("pipeline_metadata").(map[string]interface{})
+
+	var pipelineMetadata map[string]interface{}
+	if err := json.Unmarshal([]byte(d.Get("pipeline_metadata").(string)), &pipelineMetadata); err != nil {
+		return diag.FromErr(err)
+	}
+	logstashPipeline.PipelineMetadata = pipelineMetadata
 
 	logstashPipeline.PipelineSettings = map[string]interface{}{}
 	if settings := utils.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
@@ -250,9 +254,15 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	if err := d.Set("pipeline", logstashPipeline.Pipeline); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("pipeline_metadata", logstashPipeline.PipelineMetadata); err != nil {
+
+	pipelineMetadata, err := json.Marshal(logstashPipeline.PipelineMetadata)
+	if err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("pipeline_metadata", string(pipelineMetadata)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	for key, typ := range allSettingsKeys {
 		var value interface{}
 		if v, ok := logstashPipeline.PipelineSettings[key]; ok {

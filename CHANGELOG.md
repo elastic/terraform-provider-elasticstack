@@ -33,6 +33,22 @@
 - Properly handle errors which occur during provider execution ([#262](https://github.com/elastic/terraform-provider-elasticstack/pull/262))
 - Correctly handle empty logstash pipeline metadata in plan diffs ([#256](https://github.com/elastic/terraform-provider-elasticstack/pull/256))
 - Fix error when logging API requests in debug mode ([#259](https://github.com/elastic/terraform-provider-elasticstack/pull/259))
+- **[Breaking Change] Change `pipeline_metadata` type from schema.TypeMap to schema.TypeString**. This is to fix an error caused by updates to Logstash Pipelines outside of TF ([#278](https://github.com/elastic/terraform-provider-elasticstack/issues/278))
+  - To use the updated `pipeline_metadata` field, you'll need to encapsulate any Terraform configuration with **jsonencode{}** as follows:
+    ```terraform
+    resource "elasticstack_elasticsearch_logstash_pipeline" "example" {
+      name = "example"
+      pipeline = <<-EOF
+        input{}
+        filter{}
+        output{}
+    EOF
+      pipeline_metadata = jsonencode({
+        type = "logstash_pipeline"
+        version = 1
+      })
+    }
+    ```
 
 ## [0.5.0] - 2022-12-07
 
@@ -72,7 +88,6 @@
 - Make API calls context aware to be able to handle timeouts ([#138](https://github.com/elastic/terraform-provider-elasticstack/pull/138))
 - Correctly identify a missing security user ([#101](https://github.com/elastic/terraform-provider-elasticstack/issues/101))
 - Support **7.x** Elasticsearch < **7.15** by removing the default `media_type` attribute in the Append processor ([#118](https://github.com/elastic/terraform-provider-elasticstack/pull/118))
-
 
 ## [0.3.3] - 2022-03-22
 ### Fixed
