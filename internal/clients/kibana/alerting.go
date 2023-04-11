@@ -57,6 +57,20 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 	}
 }
 
+// Maps the rule actions to the struct required by the request model (ActionsInner)
+func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerting.ActionsInner {
+	actions := []alerting.ActionsInner{}
+	for index := range ruleActions {
+		action := ruleActions[index]
+		actions = append(actions, alerting.ActionsInner{
+			Group:  &action.Group,
+			Id:     &action.ID,
+			Params: action.Params,
+		})
+	}
+	return actions
+}
+
 func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
@@ -65,18 +79,9 @@ func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 
 	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
-	actions := []alerting.ActionsInner{}
-	for _, action := range rule.Actions {
-		actions = append(actions, alerting.ActionsInner{
-			Group:  &action.Group,
-			Id:     &action.ID,
-			Params: action.Params,
-		})
-	}
-
 	reqModel := alerting.CreateRuleRequest{
 		Consumer:   rule.Consumer,
-		Actions:    actions,
+		Actions:    ruleActionsToActionsInner(rule.Actions),
 		Enabled:    rule.Enabled,
 		Name:       rule.Name,
 		NotifyWhen: (*alerting.NotifyWhen)(&rule.NotifyWhen),
@@ -106,17 +111,8 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 
 	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
-	actions := []alerting.ActionsInner{}
-	for _, action := range rule.Actions {
-		actions = append(actions, alerting.ActionsInner{
-			Group:  &action.Group,
-			Id:     &action.ID,
-			Params: action.Params,
-		})
-	}
-
 	reqModel := alerting.UpdateRuleRequest{
-		Actions:    actions,
+		Actions:    ruleActionsToActionsInner((rule.Actions)),
 		Name:       rule.Name,
 		NotifyWhen: (*alerting.NotifyWhen)(&rule.NotifyWhen),
 		Params:     rule.Params,
