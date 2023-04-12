@@ -136,9 +136,11 @@ Kibana clients for some APIs are generated based on Kibana OpenAPI specs.
 Please see [Makefile](./Makefile) tasks for more details.
 
 #### Known issues
-OpenApi generator produces incorrect code for `RunConnector200ResponseData` struct
+OpenAPI generator produces incorrect code for `RunConnector200ResponseData` struct
 in [model_run_connector_200_response_data.go](./generated/kibanaactions/model_run_connector_200_response_data.go).
 It doesn't strip curly braces from the struct field names.
     
 [There is a fix for the issue](https://github.com/OpenAPITools/openapi-generator/pull/13167) but it's not yet merged.
 Currently the file is fixed manually.
+
+Also the specs don't include models for some connector types, e.g. they miss models for update requests for few connector types like `Slack`, `Webhook`, etc.
