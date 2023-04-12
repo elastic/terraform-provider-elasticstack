@@ -246,4 +246,19 @@ generate-alerting-client: ## generate Kibana alerting client
 		-g go \
 		-o /local/generated/alerting
 	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
-	@ go fmt ./generated/...
+	@ go fmt ./generated/alerting/...
+
+.PHONY: generate-kibana-actions
+generate-kibana-actions-client: ## generate Kibana actions client
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+		-i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/actions/docs/openapi/bundled.json \
+		--skip-validate-spec \
+		--git-repo-id terraform-provider-elasticstack \
+		--git-user-id elastic \
+		-p isGoSubmodule=true \
+		-p packageName=kibanaactions \
+		-p generateInterfaces=true \
+		-g go \
+		-o /local/generated/kibanaactions
+	@ rm -rf generated/kibanaactions/go.mod generated/kibanaactions/go.sum generated/kibanaactions/test
+	@ go fmt ./generated/kibanaactions/...

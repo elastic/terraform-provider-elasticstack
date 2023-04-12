@@ -13,6 +13,7 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kibanaactions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -62,6 +63,7 @@ type ApiClient struct {
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
 	alerting                 alerting.AlertingApi
+	actionConnectors         kibanaactions.ConnectorsApi
 	kibanaConfig             kibana.Config
 	version                  string
 }
@@ -121,11 +123,12 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	}
 
 	return &ApiClient{
-			elasticsearch: es,
-			kibana:        kib,
-			alerting:      buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
-			kibanaConfig:  kibanaConfig,
-			version:       "acceptance-testing",
+			elasticsearch:    es,
+			kibana:           kib,
+			alerting:         buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
+			actionConnectors: buildActionConnectorClient(baseConfig, kibanaConfig).ConnectorsApi,
+			kibanaConfig:     kibanaConfig,
+			version:          "acceptance-testing",
 		},
 		nil
 }
@@ -187,6 +190,19 @@ func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
 	}
 
 	return a.alerting, nil
+}
+
+func (a *ApiClient) GetKibanaActionConnectorClient(ctx context.Context) (kibanaactions.ConnectorsApi, context.Context, error) {
+	if a.actionConnectors == nil {
+		return nil, nil, errors.New("kibana action connector client not found")
+	}
+
+	ctx = context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
+		UserName: a.kibanaConfig.Username,
+		Password: a.kibanaConfig.Password,
+	})
+
+	return a.actionConnectors, ctx, nil
 }
 
 func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
@@ -503,6 +519,19 @@ func buildAlertingClient(baseConfig BaseConfig, config kibana.Config) *alerting.
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
+func buildActionConnectorClient(baseConfig BaseConfig, config kibana.Config) *kibanaactions.APIClient {
+	connectorsConfig := kibanaactions.Configuration{
+		UserAgent: baseConfig.UserAgent,
+		Servers: kibanaactions.ServerConfigurations{
+			{
+				URL: config.Address,
+			},
+		},
+		Debug: logging.IsDebugOrHigher(),
+	}
+	return kibanaactions.NewAPIClient(&connectorsConfig)
+}
+
 const esKey string = "elasticsearch"
 
 func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diagnostics) {
@@ -525,12 +554,15 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 
 	alertingClient := buildAlertingClient(baseConfig, kibanaConfig)
 
+	actionConnectorClient := buildActionConnectorClient(baseConfig, kibanaConfig)
+
 	return &ApiClient{
 		elasticsearch:            esClient,
 		elasticsearchClusterInfo: nil,
 		kibana:                   kibanaClient,
 		kibanaConfig:             kibanaConfig,
 		alerting:                 alertingClient.AlertingApi,
+		actionConnectors:         actionConnectorClient.ConnectorsApi,
 		version:                  version,
 	}, diags
 }
