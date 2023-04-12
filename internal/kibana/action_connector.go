@@ -49,7 +49,7 @@ func ResourceActionConnector() *schema.Resource {
 		"secrets": {
 			Description:      "The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.",
 			Type:             schema.TypeString,
-			Required:         true,
+			Optional:         true,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			ValidateFunc:     validation.StringIsJSON,
 		},

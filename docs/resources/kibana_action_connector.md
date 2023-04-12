@@ -35,11 +35,11 @@ resource "elasticstack_kibana_action_connector" "example" {
 - `config` (String) The configuration for the connector. Configuration properties vary depending on the connector type.
 - `connector_type_id` (String) The ID of the connector type, e.g. `.index`.
 - `name` (String) The name of the connector. While this name does not have to be unique, a distinctive name can help you identify a connector.
-- `secrets` (String) The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.
 
 ### Optional
 
 - `connector_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
+- `secrets` (String) The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
