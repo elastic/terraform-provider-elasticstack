@@ -197,7 +197,7 @@ func (a *ApiClient) GetKibanaActionConnectorClient(ctx context.Context) (kibanaa
 		return nil, nil, errors.New("kibana action connector client not found")
 	}
 
-	ctx = context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
+	ctx = context.WithValue(ctx, kibanaactions.ContextBasicAuth, kibanaactions.BasicAuth{
 		UserName: a.kibanaConfig.Username,
 		Password: a.kibanaConfig.Password,
 	})

@@ -2,6 +2,7 @@ package kibana
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -32,6 +33,10 @@ func CreateActionConnector(ctx context.Context, apiClient *clients.ApiClient, co
 	defer httpRes.Body.Close()
 
 	if diags := utils.CheckHttpError(httpRes, "Unabled to create action connector"); diags.HasError() {
+		return "", diag.FromErr(err)
+	}
+
+	if err != nil {
 		return "", diag.FromErr(err)
 	}
 
@@ -751,39 +756,330 @@ func updateConnectorRequestSwimlane(connector models.KibanaActionConnector) (kib
 
 func actionConnectorToModel(spaceID string, properties *kibanaactions.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
 	instance := properties.GetActualInstance()
-	commonProps, ok := instance.(connectorCommon)
-	if !ok {
-		return nil, fmt.Errorf("failed parse common connector properties")
+
+	switch response := instance.(type) {
+
+	case *kibanaactions.ConnectorResponsePropertiesCasesWebhook:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesEmail:
+		config, err := json.Marshal(response.GetConfig())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesEmail - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesIndex:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesJira:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesOpsgenie:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesPagerduty:
+		config, err := json.Marshal(response.GetConfig())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesResilient:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesServerlog:
+		config, err := json.Marshal(response.GetConfig())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesServicenow:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesServicenowItom:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesServicenowSir:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesSlack:
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesSwimlane:
+		config, err := response.GetConfig().MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesTeams:
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesTines:
+		config, err := json.Marshal(response.GetConfig())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesWebhook:
+		config, err := json.Marshal(response.GetConfig())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
+
+	case *kibanaactions.ConnectorResponsePropertiesXmatters:
+		config, err := json.Marshal(response.GetConfig())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+		}
+		// return responseToConnector(response, config, spaceID), nil
+		connector := models.KibanaActionConnector{
+			ConnectorID:      response.GetId(),
+			SpaceID:          spaceID,
+			Name:             response.GetName(),
+			ConnectorTypeID:  response.GetConnectorTypeId(),
+			IsDeprecated:     response.GetIsDeprecated(),
+			IsMissingSecrets: response.GetIsMissingSecrets(),
+			IsPreconfigured:  response.GetIsPreconfigured(),
+			ConfigJSON:       string(config),
+		}
+		return &connector, nil
 	}
-	name, ok := commonProps.GetNameOk()
-	if !ok {
-		return nil, fmt.Errorf("failed parse connector name")
-	}
-	typeId, ok := commonProps.GetNameOk()
-	if !ok {
-		return nil, fmt.Errorf("failed parse connector type id")
-	}
-	id, ok := commonProps.GetIdOk()
-	if !ok {
-		return nil, fmt.Errorf("failed parse connector id")
-	}
-	connector := models.KibanaActionConnector{
-		ConnectorID:      *id,
-		SpaceID:          spaceID,
-		Name:             *name,
-		ConnectorTypeID:  *typeId,
-		IsDeprecated:     commonProps.GetIsDeprecated(),
-		IsMissingSecrets: commonProps.GetIsMissingSecrets(),
-		IsPreconfigured:  commonProps.GetIsPreconfigured(),
-	}
-	return &connector, nil
+
+	return nil, fmt.Errorf("unknown connector type [%+v]", properties)
 }
 
-type connectorCommon interface {
-	GetIdOk() (*string, bool)
-	GetConnectorTypeIdOk() (*string, bool)
-	GetNameOk() (*string, bool)
-	GetIsDeprecated() bool
-	GetIsMissingSecrets() bool
-	GetIsPreconfigured() bool
-}
+// func responseToConnector[T responseType](response T, config []byte, spaceID string) *models.KibanaActionConnector {
+// 	return &models.KibanaActionConnector{
+// 		ConnectorID:      response.GetId(),
+// 		SpaceID:          spaceID,
+// 		Name:             response.GetName(),
+// 		ConnectorTypeID:  response.GetConnectorTypeId(),
+// 		IsDeprecated:     response.GetIsDeprecated(),
+// 		IsMissingSecrets: response.GetIsMissingSecrets(),
+// 		IsPreconfigured:  response.GetIsPreconfigured(),
+// 		ConfigJSON:       string(config),
+// 	}
+// }
+
+// type responseType interface {
+// 	*kibanaactions.ConnectorResponsePropertiesCasesWebhook | *kibanaactions.ConnectorResponsePropertiesEmail |
+// 		*kibanaactions.ConnectorResponsePropertiesIndex
+// 	GetId() string
+// 	GetName() string
+// 	GetConnectorTypeId() string
+// 	GetIsDeprecated() bool
+// 	GetIsMissingSecrets() bool
+// 	GetIsPreconfigured() bool
+// }

@@ -67,6 +67,8 @@ retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$atte
 		backoff=$$((backoff * 2)); \
 	done
 
+# To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
+# To enable tracing (or debugging), execute `make docker-testacc TFLOG=TRACE`
 .PHONY: docker-testacc
 docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in the docker container
 	@ docker run --rm \
@@ -74,10 +76,11 @@ docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in th
 		-e KIBANA_ENDPOINT="$(KIBANA_ENDPOINT)" \
 		-e ELASTICSEARCH_USERNAME="$(ELASTICSEARCH_USERNAME)" \
 		-e ELASTICSEARCH_PASSWORD="$(ELASTICSEARCH_PASSWORD)" \
+		-e TF_LOG="$(TF_LOG)" \
 		--network $(ELASTICSEARCH_NETWORK) \
 		-w "/provider" \
 		-v "$(SOURCE_LOCATION):/provider" \
-		golang:$(GOVERSION) make testacc
+		golang:$(GOVERSION) make testacc TESTARGS="$(TESTARGS)"
 
 .PHONY: docker-elasticsearch
 docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
@@ -123,6 +126,12 @@ docker-network: ## Create a dedicated network for ES and test runs
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
 	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d "{\"password\":\"$(KIBANA_SYSTEM_PASSWORD)\"}" | grep -q "^{}")
+
+## TODO
+# .PHONY: create-kibana-role
+# ## {"elasticsearch":{"cluster":["all"],"indices":[],"run_as":["elastic"]},"kibana":[{"spaces":["*"],"base":[],"feature":{"actions":["all"]}}]}
+# create-kibana-role: ## create role for testing kibana action connectors
+# 	@ $(call retry, 10, curl -X PUT -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:5601/api/security/role/test-connectors -d "{\"password\":\"$(KIBANA_SYSTEM_PASSWORD)\"}" | grep -q "^{}")
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
