@@ -268,6 +268,7 @@ generate-kibana-actions-client: ## generate Kibana actions client
 		-p packageName=kibanaactions \
 		-p generateInterfaces=true \
 		-g go \
-		-o /local/generated/kibanaactions
+		-o /local/generated/kibanaactions \
+		--additional-properties=useOneOfDiscriminatorLookup=true
 	@ rm -rf generated/kibanaactions/go.mod generated/kibanaactions/go.sum generated/kibanaactions/test
 	@ go fmt ./generated/kibanaactions/...

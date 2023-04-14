@@ -18,7 +18,7 @@ import (
 // RunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp - A list of source IP addresses related to the security incident for ServiceNow SecOps connectors. The IPs are added as observables to the security incident.
 type RunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp struct {
 	ArrayOfString *[]string
-	String        *string
+	String *string
 }
 
 // []stringAsRunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp is a convenience function that returns []string wrapped in RunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp
@@ -35,15 +35,16 @@ func StringAsRunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp(v
 	}
 }
 
+
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *RunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp) UnmarshalJSON(data []byte) error {
 	var err error
 	match := 0
 	// try to unmarshal data into ArrayOfString
-	err = newStrictDecoder(data).Decode(&dst.ArrayOfString)
+	err = json.Unmarshal(data, &dst.ArrayOfString)
 	if err == nil {
-		jsonArrayOfString, _ := json.Marshal(dst.ArrayOfString)
-		if string(jsonArrayOfString) == "{}" { // empty struct
+		jsonstring, _ := json.Marshal(dst.ArrayOfString)
+		if string(jsonstring) == "{}" { // empty struct
 			dst.ArrayOfString = nil
 		} else {
 			match++
@@ -53,10 +54,10 @@ func (dst *RunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp) Un
 	}
 
 	// try to unmarshal data into String
-	err = newStrictDecoder(data).Decode(&dst.String)
+	err = json.Unmarshal(data, &dst.String)
 	if err == nil {
-		jsonString, _ := json.Marshal(dst.String)
-		if string(jsonString) == "{}" { // empty struct
+		jsonstring, _ := json.Marshal(dst.String)
+		if string(jsonstring) == "{}" { // empty struct
 			dst.String = nil
 		} else {
 			match++
@@ -92,7 +93,7 @@ func (src RunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp) Mar
 }
 
 // Get the actual instance
-func (obj *RunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp) GetActualInstance() interface{} {
+func (obj *RunConnectorSubactionPushtoserviceSubActionParamsIncidentSourceIp) GetActualInstance() (interface{}) {
 	if obj == nil {
 		return nil
 	}
@@ -143,3 +144,5 @@ func (v *NullableRunConnectorSubactionPushtoserviceSubActionParamsIncidentSource
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

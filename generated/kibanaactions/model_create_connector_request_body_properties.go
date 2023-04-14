@@ -158,254 +158,218 @@ func CreateConnectorRequestXmattersAsCreateConnectorRequestBodyProperties(v *Cre
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *CreateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) error {
 	var err error
-	match := 0
-	// try to unmarshal data into CreateConnectorRequestCasesWebhook
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestCasesWebhook)
-	if err == nil {
-		jsonCreateConnectorRequestCasesWebhook, _ := json.Marshal(dst.CreateConnectorRequestCasesWebhook)
-		if string(jsonCreateConnectorRequestCasesWebhook) == "{}" { // empty struct
+	// use discriminator value to speed up the lookup
+	var jsonDict map[string]interface{}
+	err = newStrictDecoder(data).Decode(&jsonDict)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal JSON into map for the discriminator lookup")
+	}
+
+	// check if the discriminator value is 'create_connector_request_cases_webhook'
+	if jsonDict["connector_type_id"] == "create_connector_request_cases_webhook" {
+		// try to unmarshal JSON data into CreateConnectorRequestCasesWebhook
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestCasesWebhook)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestCasesWebhook, return on the first match
+		} else {
 			dst.CreateConnectorRequestCasesWebhook = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestCasesWebhook: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestCasesWebhook = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestEmail
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestEmail)
-	if err == nil {
-		jsonCreateConnectorRequestEmail, _ := json.Marshal(dst.CreateConnectorRequestEmail)
-		if string(jsonCreateConnectorRequestEmail) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_email'
+	if jsonDict["connector_type_id"] == "create_connector_request_email" {
+		// try to unmarshal JSON data into CreateConnectorRequestEmail
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestEmail)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestEmail, return on the first match
+		} else {
 			dst.CreateConnectorRequestEmail = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestEmail: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestEmail = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestIndex
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestIndex)
-	if err == nil {
-		jsonCreateConnectorRequestIndex, _ := json.Marshal(dst.CreateConnectorRequestIndex)
-		if string(jsonCreateConnectorRequestIndex) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_index'
+	if jsonDict["connector_type_id"] == "create_connector_request_index" {
+		// try to unmarshal JSON data into CreateConnectorRequestIndex
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestIndex)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestIndex, return on the first match
+		} else {
 			dst.CreateConnectorRequestIndex = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestIndex: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestIndex = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestJira
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestJira)
-	if err == nil {
-		jsonCreateConnectorRequestJira, _ := json.Marshal(dst.CreateConnectorRequestJira)
-		if string(jsonCreateConnectorRequestJira) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_jira'
+	if jsonDict["connector_type_id"] == "create_connector_request_jira" {
+		// try to unmarshal JSON data into CreateConnectorRequestJira
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestJira)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestJira, return on the first match
+		} else {
 			dst.CreateConnectorRequestJira = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestJira: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestJira = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestOpsgenie
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestOpsgenie)
-	if err == nil {
-		jsonCreateConnectorRequestOpsgenie, _ := json.Marshal(dst.CreateConnectorRequestOpsgenie)
-		if string(jsonCreateConnectorRequestOpsgenie) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_opsgenie'
+	if jsonDict["connector_type_id"] == "create_connector_request_opsgenie" {
+		// try to unmarshal JSON data into CreateConnectorRequestOpsgenie
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestOpsgenie)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestOpsgenie, return on the first match
+		} else {
 			dst.CreateConnectorRequestOpsgenie = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestOpsgenie: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestOpsgenie = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestPagerduty
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestPagerduty)
-	if err == nil {
-		jsonCreateConnectorRequestPagerduty, _ := json.Marshal(dst.CreateConnectorRequestPagerduty)
-		if string(jsonCreateConnectorRequestPagerduty) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_pagerduty'
+	if jsonDict["connector_type_id"] == "create_connector_request_pagerduty" {
+		// try to unmarshal JSON data into CreateConnectorRequestPagerduty
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestPagerduty)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestPagerduty, return on the first match
+		} else {
 			dst.CreateConnectorRequestPagerduty = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestPagerduty: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestPagerduty = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestResilient
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestResilient)
-	if err == nil {
-		jsonCreateConnectorRequestResilient, _ := json.Marshal(dst.CreateConnectorRequestResilient)
-		if string(jsonCreateConnectorRequestResilient) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_resilient'
+	if jsonDict["connector_type_id"] == "create_connector_request_resilient" {
+		// try to unmarshal JSON data into CreateConnectorRequestResilient
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestResilient)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestResilient, return on the first match
+		} else {
 			dst.CreateConnectorRequestResilient = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestResilient: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestResilient = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestServerlog
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestServerlog)
-	if err == nil {
-		jsonCreateConnectorRequestServerlog, _ := json.Marshal(dst.CreateConnectorRequestServerlog)
-		if string(jsonCreateConnectorRequestServerlog) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_serverlog'
+	if jsonDict["connector_type_id"] == "create_connector_request_serverlog" {
+		// try to unmarshal JSON data into CreateConnectorRequestServerlog
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestServerlog)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestServerlog, return on the first match
+		} else {
 			dst.CreateConnectorRequestServerlog = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestServerlog: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestServerlog = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestServicenow
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestServicenow)
-	if err == nil {
-		jsonCreateConnectorRequestServicenow, _ := json.Marshal(dst.CreateConnectorRequestServicenow)
-		if string(jsonCreateConnectorRequestServicenow) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_servicenow'
+	if jsonDict["connector_type_id"] == "create_connector_request_servicenow" {
+		// try to unmarshal JSON data into CreateConnectorRequestServicenow
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestServicenow)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestServicenow, return on the first match
+		} else {
 			dst.CreateConnectorRequestServicenow = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestServicenow: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestServicenow = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestServicenowItom
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestServicenowItom)
-	if err == nil {
-		jsonCreateConnectorRequestServicenowItom, _ := json.Marshal(dst.CreateConnectorRequestServicenowItom)
-		if string(jsonCreateConnectorRequestServicenowItom) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_servicenow_itom'
+	if jsonDict["connector_type_id"] == "create_connector_request_servicenow_itom" {
+		// try to unmarshal JSON data into CreateConnectorRequestServicenowItom
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestServicenowItom)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestServicenowItom, return on the first match
+		} else {
 			dst.CreateConnectorRequestServicenowItom = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestServicenowItom: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestServicenowItom = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestServicenowSir
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestServicenowSir)
-	if err == nil {
-		jsonCreateConnectorRequestServicenowSir, _ := json.Marshal(dst.CreateConnectorRequestServicenowSir)
-		if string(jsonCreateConnectorRequestServicenowSir) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_servicenow_sir'
+	if jsonDict["connector_type_id"] == "create_connector_request_servicenow_sir" {
+		// try to unmarshal JSON data into CreateConnectorRequestServicenowSir
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestServicenowSir)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestServicenowSir, return on the first match
+		} else {
 			dst.CreateConnectorRequestServicenowSir = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestServicenowSir: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestServicenowSir = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestSlack
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestSlack)
-	if err == nil {
-		jsonCreateConnectorRequestSlack, _ := json.Marshal(dst.CreateConnectorRequestSlack)
-		if string(jsonCreateConnectorRequestSlack) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_slack'
+	if jsonDict["connector_type_id"] == "create_connector_request_slack" {
+		// try to unmarshal JSON data into CreateConnectorRequestSlack
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestSlack)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestSlack, return on the first match
+		} else {
 			dst.CreateConnectorRequestSlack = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestSlack: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestSlack = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestSwimlane
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestSwimlane)
-	if err == nil {
-		jsonCreateConnectorRequestSwimlane, _ := json.Marshal(dst.CreateConnectorRequestSwimlane)
-		if string(jsonCreateConnectorRequestSwimlane) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_swimlane'
+	if jsonDict["connector_type_id"] == "create_connector_request_swimlane" {
+		// try to unmarshal JSON data into CreateConnectorRequestSwimlane
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestSwimlane)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestSwimlane, return on the first match
+		} else {
 			dst.CreateConnectorRequestSwimlane = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestSwimlane: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestSwimlane = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestTeams
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestTeams)
-	if err == nil {
-		jsonCreateConnectorRequestTeams, _ := json.Marshal(dst.CreateConnectorRequestTeams)
-		if string(jsonCreateConnectorRequestTeams) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_teams'
+	if jsonDict["connector_type_id"] == "create_connector_request_teams" {
+		// try to unmarshal JSON data into CreateConnectorRequestTeams
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestTeams)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestTeams, return on the first match
+		} else {
 			dst.CreateConnectorRequestTeams = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestTeams: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestTeams = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestTines
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestTines)
-	if err == nil {
-		jsonCreateConnectorRequestTines, _ := json.Marshal(dst.CreateConnectorRequestTines)
-		if string(jsonCreateConnectorRequestTines) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_tines'
+	if jsonDict["connector_type_id"] == "create_connector_request_tines" {
+		// try to unmarshal JSON data into CreateConnectorRequestTines
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestTines)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestTines, return on the first match
+		} else {
 			dst.CreateConnectorRequestTines = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestTines: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestTines = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestWebhook
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestWebhook)
-	if err == nil {
-		jsonCreateConnectorRequestWebhook, _ := json.Marshal(dst.CreateConnectorRequestWebhook)
-		if string(jsonCreateConnectorRequestWebhook) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_webhook'
+	if jsonDict["connector_type_id"] == "create_connector_request_webhook" {
+		// try to unmarshal JSON data into CreateConnectorRequestWebhook
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestWebhook)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestWebhook, return on the first match
+		} else {
 			dst.CreateConnectorRequestWebhook = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestWebhook: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestWebhook = nil
 	}
 
-	// try to unmarshal data into CreateConnectorRequestXmatters
-	err = newStrictDecoder(data).Decode(&dst.CreateConnectorRequestXmatters)
-	if err == nil {
-		jsonCreateConnectorRequestXmatters, _ := json.Marshal(dst.CreateConnectorRequestXmatters)
-		if string(jsonCreateConnectorRequestXmatters) == "{}" { // empty struct
+	// check if the discriminator value is 'create_connector_request_xmatters'
+	if jsonDict["connector_type_id"] == "create_connector_request_xmatters" {
+		// try to unmarshal JSON data into CreateConnectorRequestXmatters
+		err = json.Unmarshal(data, &dst.CreateConnectorRequestXmatters)
+		if err == nil {
+			return nil // data stored in dst.CreateConnectorRequestXmatters, return on the first match
+		} else {
 			dst.CreateConnectorRequestXmatters = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal CreateConnectorRequestBodyProperties as CreateConnectorRequestXmatters: %s", err.Error())
 		}
-	} else {
-		dst.CreateConnectorRequestXmatters = nil
 	}
 
-	if match > 1 { // more than 1 match
-		// reset to nil
-		dst.CreateConnectorRequestCasesWebhook = nil
-		dst.CreateConnectorRequestEmail = nil
-		dst.CreateConnectorRequestIndex = nil
-		dst.CreateConnectorRequestJira = nil
-		dst.CreateConnectorRequestOpsgenie = nil
-		dst.CreateConnectorRequestPagerduty = nil
-		dst.CreateConnectorRequestResilient = nil
-		dst.CreateConnectorRequestServerlog = nil
-		dst.CreateConnectorRequestServicenow = nil
-		dst.CreateConnectorRequestServicenowItom = nil
-		dst.CreateConnectorRequestServicenowSir = nil
-		dst.CreateConnectorRequestSlack = nil
-		dst.CreateConnectorRequestSwimlane = nil
-		dst.CreateConnectorRequestTeams = nil
-		dst.CreateConnectorRequestTines = nil
-		dst.CreateConnectorRequestWebhook = nil
-		dst.CreateConnectorRequestXmatters = nil
-
-		return fmt.Errorf("data matches more than one schema in oneOf(CreateConnectorRequestBodyProperties)")
-	} else if match == 1 {
-		return nil // exactly one match
-	} else { // no match
-		return fmt.Errorf("data failed to match schemas in oneOf(CreateConnectorRequestBodyProperties)")
-	}
+	return nil
 }
 
 // Marshal data from the first non-nil pointers in the struct to JSON

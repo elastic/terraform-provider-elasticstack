@@ -67,8 +67,7 @@ docs/LegacyGetConnectorTypesResponseBodyPropertiesInner.md
 docs/LegacyRunConnector200Response.md
 docs/LegacyRunConnectorRequestBodyProperties.md
 docs/LegacyUpdateConnectorRequestBodyProperties.md
-docs/Model401Response.md
-docs/Model404Response.md
+docs/NotFoundResponse.md
 docs/RuleNameMapping.md
 docs/RunConnector200Response.md
 docs/RunConnector200ResponseData.md
@@ -112,6 +111,7 @@ docs/SecretsPropertiesServicenow.md
 docs/SecretsPropertiesSwimlane.md
 docs/SeverityMapping.md
 docs/SubactionParameters.md
+docs/UnauthorizedResponse.md
 docs/UpdateConnector400Response.md
 docs/UpdateConnectorRequestBodyProperties.md
 docs/UpdateConnectorRequestCasesWebhook.md
@@ -126,8 +126,6 @@ docs/UpdateConnectorRequestSwimlane.md
 git_push.sh
 go.mod
 go.sum
-model_401_response.go
-model_404_response.go
 model_action_response_properties.go
 model_alert_identifier_mapping.go
 model_case_comment_mapping.go
@@ -189,6 +187,7 @@ model_legacy_get_connector_types_response_body_properties_inner.go
 model_legacy_run_connector_200_response.go
 model_legacy_run_connector_request_body_properties.go
 model_legacy_update_connector_request_body_properties.go
+model_not_found_response.go
 model_rule_name_mapping.go
 model_run_connector_200_response.go
 model_run_connector_200_response_data.go
@@ -232,6 +231,7 @@ model_secrets_properties_servicenow.go
 model_secrets_properties_swimlane.go
 model_severity_mapping.go
 model_subaction_parameters.go
+model_unauthorized_response.go
 model_update_connector_400_response.go
 model_update_connector_request_body_properties.go
 model_update_connector_request_cases_webhook.go

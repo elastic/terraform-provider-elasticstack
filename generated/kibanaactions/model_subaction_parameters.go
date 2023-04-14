@@ -110,170 +110,146 @@ func RunConnectorSubactionPushtoserviceAsSubactionParameters(v *RunConnectorSuba
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *SubactionParameters) UnmarshalJSON(data []byte) error {
 	var err error
-	match := 0
-	// try to unmarshal data into RunConnectorSubactionAddevent
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionAddevent)
-	if err == nil {
-		jsonRunConnectorSubactionAddevent, _ := json.Marshal(dst.RunConnectorSubactionAddevent)
-		if string(jsonRunConnectorSubactionAddevent) == "{}" { // empty struct
+	// use discriminator value to speed up the lookup
+	var jsonDict map[string]interface{}
+	err = newStrictDecoder(data).Decode(&jsonDict)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal JSON into map for the discriminator lookup")
+	}
+
+	// check if the discriminator value is 'run_connector_subaction_addevent'
+	if jsonDict["subAction"] == "run_connector_subaction_addevent" {
+		// try to unmarshal JSON data into RunConnectorSubactionAddevent
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionAddevent)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionAddevent, return on the first match
+		} else {
 			dst.RunConnectorSubactionAddevent = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionAddevent: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionAddevent = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionClosealert
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionClosealert)
-	if err == nil {
-		jsonRunConnectorSubactionClosealert, _ := json.Marshal(dst.RunConnectorSubactionClosealert)
-		if string(jsonRunConnectorSubactionClosealert) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_closealert'
+	if jsonDict["subAction"] == "run_connector_subaction_closealert" {
+		// try to unmarshal JSON data into RunConnectorSubactionClosealert
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionClosealert)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionClosealert, return on the first match
+		} else {
 			dst.RunConnectorSubactionClosealert = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionClosealert: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionClosealert = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionCreatealert
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionCreatealert)
-	if err == nil {
-		jsonRunConnectorSubactionCreatealert, _ := json.Marshal(dst.RunConnectorSubactionCreatealert)
-		if string(jsonRunConnectorSubactionCreatealert) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_createalert'
+	if jsonDict["subAction"] == "run_connector_subaction_createalert" {
+		// try to unmarshal JSON data into RunConnectorSubactionCreatealert
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionCreatealert)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionCreatealert, return on the first match
+		} else {
 			dst.RunConnectorSubactionCreatealert = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionCreatealert: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionCreatealert = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionFieldsbyissuetype
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionFieldsbyissuetype)
-	if err == nil {
-		jsonRunConnectorSubactionFieldsbyissuetype, _ := json.Marshal(dst.RunConnectorSubactionFieldsbyissuetype)
-		if string(jsonRunConnectorSubactionFieldsbyissuetype) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_fieldsbyissuetype'
+	if jsonDict["subAction"] == "run_connector_subaction_fieldsbyissuetype" {
+		// try to unmarshal JSON data into RunConnectorSubactionFieldsbyissuetype
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionFieldsbyissuetype)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionFieldsbyissuetype, return on the first match
+		} else {
 			dst.RunConnectorSubactionFieldsbyissuetype = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionFieldsbyissuetype: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionFieldsbyissuetype = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionGetchoices
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionGetchoices)
-	if err == nil {
-		jsonRunConnectorSubactionGetchoices, _ := json.Marshal(dst.RunConnectorSubactionGetchoices)
-		if string(jsonRunConnectorSubactionGetchoices) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_getchoices'
+	if jsonDict["subAction"] == "run_connector_subaction_getchoices" {
+		// try to unmarshal JSON data into RunConnectorSubactionGetchoices
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionGetchoices)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionGetchoices, return on the first match
+		} else {
 			dst.RunConnectorSubactionGetchoices = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionGetchoices: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionGetchoices = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionGetfields
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionGetfields)
-	if err == nil {
-		jsonRunConnectorSubactionGetfields, _ := json.Marshal(dst.RunConnectorSubactionGetfields)
-		if string(jsonRunConnectorSubactionGetfields) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_getfields'
+	if jsonDict["subAction"] == "run_connector_subaction_getfields" {
+		// try to unmarshal JSON data into RunConnectorSubactionGetfields
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionGetfields)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionGetfields, return on the first match
+		} else {
 			dst.RunConnectorSubactionGetfields = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionGetfields: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionGetfields = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionGetincident
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionGetincident)
-	if err == nil {
-		jsonRunConnectorSubactionGetincident, _ := json.Marshal(dst.RunConnectorSubactionGetincident)
-		if string(jsonRunConnectorSubactionGetincident) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_getincident'
+	if jsonDict["subAction"] == "run_connector_subaction_getincident" {
+		// try to unmarshal JSON data into RunConnectorSubactionGetincident
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionGetincident)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionGetincident, return on the first match
+		} else {
 			dst.RunConnectorSubactionGetincident = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionGetincident: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionGetincident = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionIssue
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionIssue)
-	if err == nil {
-		jsonRunConnectorSubactionIssue, _ := json.Marshal(dst.RunConnectorSubactionIssue)
-		if string(jsonRunConnectorSubactionIssue) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_issue'
+	if jsonDict["subAction"] == "run_connector_subaction_issue" {
+		// try to unmarshal JSON data into RunConnectorSubactionIssue
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionIssue)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionIssue, return on the first match
+		} else {
 			dst.RunConnectorSubactionIssue = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionIssue: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionIssue = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionIssues
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionIssues)
-	if err == nil {
-		jsonRunConnectorSubactionIssues, _ := json.Marshal(dst.RunConnectorSubactionIssues)
-		if string(jsonRunConnectorSubactionIssues) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_issues'
+	if jsonDict["subAction"] == "run_connector_subaction_issues" {
+		// try to unmarshal JSON data into RunConnectorSubactionIssues
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionIssues)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionIssues, return on the first match
+		} else {
 			dst.RunConnectorSubactionIssues = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionIssues: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionIssues = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionIssuetypes
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionIssuetypes)
-	if err == nil {
-		jsonRunConnectorSubactionIssuetypes, _ := json.Marshal(dst.RunConnectorSubactionIssuetypes)
-		if string(jsonRunConnectorSubactionIssuetypes) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_issuetypes'
+	if jsonDict["subAction"] == "run_connector_subaction_issuetypes" {
+		// try to unmarshal JSON data into RunConnectorSubactionIssuetypes
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionIssuetypes)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionIssuetypes, return on the first match
+		} else {
 			dst.RunConnectorSubactionIssuetypes = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionIssuetypes: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionIssuetypes = nil
 	}
 
-	// try to unmarshal data into RunConnectorSubactionPushtoservice
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorSubactionPushtoservice)
-	if err == nil {
-		jsonRunConnectorSubactionPushtoservice, _ := json.Marshal(dst.RunConnectorSubactionPushtoservice)
-		if string(jsonRunConnectorSubactionPushtoservice) == "{}" { // empty struct
+	// check if the discriminator value is 'run_connector_subaction_pushtoservice'
+	if jsonDict["subAction"] == "run_connector_subaction_pushtoservice" {
+		// try to unmarshal JSON data into RunConnectorSubactionPushtoservice
+		err = json.Unmarshal(data, &dst.RunConnectorSubactionPushtoservice)
+		if err == nil {
+			return nil // data stored in dst.RunConnectorSubactionPushtoservice, return on the first match
+		} else {
 			dst.RunConnectorSubactionPushtoservice = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal SubactionParameters as RunConnectorSubactionPushtoservice: %s", err.Error())
 		}
-	} else {
-		dst.RunConnectorSubactionPushtoservice = nil
 	}
 
-	if match > 1 { // more than 1 match
-		// reset to nil
-		dst.RunConnectorSubactionAddevent = nil
-		dst.RunConnectorSubactionClosealert = nil
-		dst.RunConnectorSubactionCreatealert = nil
-		dst.RunConnectorSubactionFieldsbyissuetype = nil
-		dst.RunConnectorSubactionGetchoices = nil
-		dst.RunConnectorSubactionGetfields = nil
-		dst.RunConnectorSubactionGetincident = nil
-		dst.RunConnectorSubactionIssue = nil
-		dst.RunConnectorSubactionIssues = nil
-		dst.RunConnectorSubactionIssuetypes = nil
-		dst.RunConnectorSubactionPushtoservice = nil
-
-		return fmt.Errorf("data matches more than one schema in oneOf(SubactionParameters)")
-	} else if match == 1 {
-		return nil // exactly one match
-	} else { // no match
-		return fmt.Errorf("data failed to match schemas in oneOf(SubactionParameters)")
-	}
+	return nil
 }
 
 // Marshal data from the first non-nil pointers in the struct to JSON

@@ -18,7 +18,7 @@ import (
 // RunConnector200ResponseData - struct for RunConnector200ResponseData
 type RunConnector200ResponseData struct {
 	ArrayOfMapmapOfStringinterface *[]map[string]interface{}
-	MapmapOfStringinterface        *map[string]interface{}
+	MapmapOfStringinterface *map[string]interface{}
 }
 
 // []map[string]interface{}AsRunConnector200ResponseData is a convenience function that returns []map[string]interface{} wrapped in RunConnector200ResponseData
@@ -35,15 +35,16 @@ func MapmapOfStringinterfaceAsRunConnector200ResponseData(v *map[string]interfac
 	}
 }
 
+
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *RunConnector200ResponseData) UnmarshalJSON(data []byte) error {
 	var err error
 	match := 0
 	// try to unmarshal data into ArrayOfMapmapOfStringinterface{}
-	err = newStrictDecoder(data).Decode(&dst.ArrayOfMapmapOfStringinterface)
+	err = json.Unmarshal(data, &dst.ArrayOfMapmapOfStringinterface)
 	if err == nil {
-		jsonArrayOfMapmapOfStringinterface, _ := json.Marshal(dst.ArrayOfMapmapOfStringinterface)
-		if string(jsonArrayOfMapmapOfStringinterface) == "{}" { // empty struct
+		jsonmapstringinterface, _ := json.Marshal(dst.ArrayOfMapmapOfStringinterface)
+		if string(jsonmapstringinterface) == "{}" { // empty struct
 			dst.ArrayOfMapmapOfStringinterface = nil
 		} else {
 			match++
@@ -53,10 +54,10 @@ func (dst *RunConnector200ResponseData) UnmarshalJSON(data []byte) error {
 	}
 
 	// try to unmarshal data into MapmapOfStringinterface{}
-	err = newStrictDecoder(data).Decode(&dst.MapmapOfStringinterface)
+	err = json.Unmarshal(data, &dst.MapmapOfStringinterface)
 	if err == nil {
-		jsonMapmapOfStringinterface, _ := json.Marshal(dst.MapmapOfStringinterface)
-		if string(jsonMapmapOfStringinterface) == "{}" { // empty struct
+		jsonmapstringinterface, _ := json.Marshal(dst.MapmapOfStringinterface)
+		if string(jsonmapstringinterface) == "{}" { // empty struct
 			dst.MapmapOfStringinterface = nil
 		} else {
 			match++
@@ -92,7 +93,7 @@ func (src RunConnector200ResponseData) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *RunConnector200ResponseData) GetActualInstance() interface{} {
+func (obj *RunConnector200ResponseData) GetActualInstance() (interface{}) {
 	if obj == nil {
 		return nil
 	}
@@ -143,3 +144,5 @@ func (v *NullableRunConnector200ResponseData) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

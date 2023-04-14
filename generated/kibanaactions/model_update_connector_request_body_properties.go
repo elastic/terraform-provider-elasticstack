@@ -96,7 +96,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	var err error
 	match := 0
 	// try to unmarshal data into UpdateConnectorRequestCasesWebhook
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestCasesWebhook)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestCasesWebhook)
 	if err == nil {
 		jsonUpdateConnectorRequestCasesWebhook, _ := json.Marshal(dst.UpdateConnectorRequestCasesWebhook)
 		if string(jsonUpdateConnectorRequestCasesWebhook) == "{}" { // empty struct
@@ -109,7 +109,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	}
 
 	// try to unmarshal data into UpdateConnectorRequestIndex
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestIndex)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestIndex)
 	if err == nil {
 		jsonUpdateConnectorRequestIndex, _ := json.Marshal(dst.UpdateConnectorRequestIndex)
 		if string(jsonUpdateConnectorRequestIndex) == "{}" { // empty struct
@@ -122,7 +122,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	}
 
 	// try to unmarshal data into UpdateConnectorRequestJira
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestJira)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestJira)
 	if err == nil {
 		jsonUpdateConnectorRequestJira, _ := json.Marshal(dst.UpdateConnectorRequestJira)
 		if string(jsonUpdateConnectorRequestJira) == "{}" { // empty struct
@@ -135,7 +135,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	}
 
 	// try to unmarshal data into UpdateConnectorRequestOpsgenie
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestOpsgenie)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestOpsgenie)
 	if err == nil {
 		jsonUpdateConnectorRequestOpsgenie, _ := json.Marshal(dst.UpdateConnectorRequestOpsgenie)
 		if string(jsonUpdateConnectorRequestOpsgenie) == "{}" { // empty struct
@@ -148,7 +148,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	}
 
 	// try to unmarshal data into UpdateConnectorRequestResilient
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestResilient)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestResilient)
 	if err == nil {
 		jsonUpdateConnectorRequestResilient, _ := json.Marshal(dst.UpdateConnectorRequestResilient)
 		if string(jsonUpdateConnectorRequestResilient) == "{}" { // empty struct
@@ -161,7 +161,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	}
 
 	// try to unmarshal data into UpdateConnectorRequestServerlog
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestServerlog)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestServerlog)
 	if err == nil {
 		jsonUpdateConnectorRequestServerlog, _ := json.Marshal(dst.UpdateConnectorRequestServerlog)
 		if string(jsonUpdateConnectorRequestServerlog) == "{}" { // empty struct
@@ -174,7 +174,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	}
 
 	// try to unmarshal data into UpdateConnectorRequestServicenow
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestServicenow)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestServicenow)
 	if err == nil {
 		jsonUpdateConnectorRequestServicenow, _ := json.Marshal(dst.UpdateConnectorRequestServicenow)
 		if string(jsonUpdateConnectorRequestServicenow) == "{}" { // empty struct
@@ -187,7 +187,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	}
 
 	// try to unmarshal data into UpdateConnectorRequestServicenowItom
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestServicenowItom)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestServicenowItom)
 	if err == nil {
 		jsonUpdateConnectorRequestServicenowItom, _ := json.Marshal(dst.UpdateConnectorRequestServicenowItom)
 		if string(jsonUpdateConnectorRequestServicenowItom) == "{}" { // empty struct
@@ -200,7 +200,7 @@ func (dst *UpdateConnectorRequestBodyProperties) UnmarshalJSON(data []byte) erro
 	}
 
 	// try to unmarshal data into UpdateConnectorRequestSwimlane
-	err = newStrictDecoder(data).Decode(&dst.UpdateConnectorRequestSwimlane)
+	err = json.Unmarshal(data, &dst.UpdateConnectorRequestSwimlane)
 	if err == nil {
 		jsonUpdateConnectorRequestSwimlane, _ := json.Marshal(dst.UpdateConnectorRequestSwimlane)
 		if string(jsonUpdateConnectorRequestSwimlane) == "{}" { // empty struct

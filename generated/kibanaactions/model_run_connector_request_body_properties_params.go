@@ -48,7 +48,7 @@ func (dst *RunConnectorRequestBodyPropertiesParams) UnmarshalJSON(data []byte) e
 	var err error
 	match := 0
 	// try to unmarshal data into RunConnectorParamsDocuments
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorParamsDocuments)
+	err = json.Unmarshal(data, &dst.RunConnectorParamsDocuments)
 	if err == nil {
 		jsonRunConnectorParamsDocuments, _ := json.Marshal(dst.RunConnectorParamsDocuments)
 		if string(jsonRunConnectorParamsDocuments) == "{}" { // empty struct
@@ -61,7 +61,7 @@ func (dst *RunConnectorRequestBodyPropertiesParams) UnmarshalJSON(data []byte) e
 	}
 
 	// try to unmarshal data into RunConnectorParamsLevelMessage
-	err = newStrictDecoder(data).Decode(&dst.RunConnectorParamsLevelMessage)
+	err = json.Unmarshal(data, &dst.RunConnectorParamsLevelMessage)
 	if err == nil {
 		jsonRunConnectorParamsLevelMessage, _ := json.Marshal(dst.RunConnectorParamsLevelMessage)
 		if string(jsonRunConnectorParamsLevelMessage) == "{}" { // empty struct
@@ -74,7 +74,7 @@ func (dst *RunConnectorRequestBodyPropertiesParams) UnmarshalJSON(data []byte) e
 	}
 
 	// try to unmarshal data into SubactionParameters
-	err = newStrictDecoder(data).Decode(&dst.SubactionParameters)
+	err = json.Unmarshal(data, &dst.SubactionParameters)
 	if err == nil {
 		jsonSubactionParameters, _ := json.Marshal(dst.SubactionParameters)
 		if string(jsonSubactionParameters) == "{}" { // empty struct

@@ -158,254 +158,218 @@ func ConnectorResponsePropertiesXmattersAsConnectorResponseProperties(v *Connect
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *ConnectorResponseProperties) UnmarshalJSON(data []byte) error {
 	var err error
-	match := 0
-	// try to unmarshal data into ConnectorResponsePropertiesCasesWebhook
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesCasesWebhook)
-	if err == nil {
-		jsonConnectorResponsePropertiesCasesWebhook, _ := json.Marshal(dst.ConnectorResponsePropertiesCasesWebhook)
-		if string(jsonConnectorResponsePropertiesCasesWebhook) == "{}" { // empty struct
+	// use discriminator value to speed up the lookup
+	var jsonDict map[string]interface{}
+	err = newStrictDecoder(data).Decode(&jsonDict)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal JSON into map for the discriminator lookup")
+	}
+
+	// check if the discriminator value is 'connector_response_properties_cases_webhook'
+	if jsonDict["connector_type_id"] == "connector_response_properties_cases_webhook" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesCasesWebhook
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesCasesWebhook)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesCasesWebhook, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesCasesWebhook = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesCasesWebhook: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesCasesWebhook = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesEmail
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesEmail)
-	if err == nil {
-		jsonConnectorResponsePropertiesEmail, _ := json.Marshal(dst.ConnectorResponsePropertiesEmail)
-		if string(jsonConnectorResponsePropertiesEmail) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_email'
+	if jsonDict["connector_type_id"] == "connector_response_properties_email" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesEmail
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesEmail)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesEmail, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesEmail = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesEmail: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesEmail = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesIndex
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesIndex)
-	if err == nil {
-		jsonConnectorResponsePropertiesIndex, _ := json.Marshal(dst.ConnectorResponsePropertiesIndex)
-		if string(jsonConnectorResponsePropertiesIndex) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_index'
+	if jsonDict["connector_type_id"] == "connector_response_properties_index" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesIndex
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesIndex)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesIndex, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesIndex = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesIndex: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesIndex = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesJira
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesJira)
-	if err == nil {
-		jsonConnectorResponsePropertiesJira, _ := json.Marshal(dst.ConnectorResponsePropertiesJira)
-		if string(jsonConnectorResponsePropertiesJira) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_jira'
+	if jsonDict["connector_type_id"] == "connector_response_properties_jira" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesJira
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesJira)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesJira, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesJira = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesJira: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesJira = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesOpsgenie
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesOpsgenie)
-	if err == nil {
-		jsonConnectorResponsePropertiesOpsgenie, _ := json.Marshal(dst.ConnectorResponsePropertiesOpsgenie)
-		if string(jsonConnectorResponsePropertiesOpsgenie) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_opsgenie'
+	if jsonDict["connector_type_id"] == "connector_response_properties_opsgenie" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesOpsgenie
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesOpsgenie)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesOpsgenie, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesOpsgenie = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesOpsgenie: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesOpsgenie = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesPagerduty
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesPagerduty)
-	if err == nil {
-		jsonConnectorResponsePropertiesPagerduty, _ := json.Marshal(dst.ConnectorResponsePropertiesPagerduty)
-		if string(jsonConnectorResponsePropertiesPagerduty) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_pagerduty'
+	if jsonDict["connector_type_id"] == "connector_response_properties_pagerduty" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesPagerduty
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesPagerduty)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesPagerduty, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesPagerduty = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesPagerduty: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesPagerduty = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesResilient
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesResilient)
-	if err == nil {
-		jsonConnectorResponsePropertiesResilient, _ := json.Marshal(dst.ConnectorResponsePropertiesResilient)
-		if string(jsonConnectorResponsePropertiesResilient) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_resilient'
+	if jsonDict["connector_type_id"] == "connector_response_properties_resilient" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesResilient
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesResilient)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesResilient, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesResilient = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesResilient: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesResilient = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesServerlog
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesServerlog)
-	if err == nil {
-		jsonConnectorResponsePropertiesServerlog, _ := json.Marshal(dst.ConnectorResponsePropertiesServerlog)
-		if string(jsonConnectorResponsePropertiesServerlog) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_serverlog'
+	if jsonDict["connector_type_id"] == "connector_response_properties_serverlog" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesServerlog
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesServerlog)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesServerlog, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesServerlog = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesServerlog: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesServerlog = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesServicenow
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesServicenow)
-	if err == nil {
-		jsonConnectorResponsePropertiesServicenow, _ := json.Marshal(dst.ConnectorResponsePropertiesServicenow)
-		if string(jsonConnectorResponsePropertiesServicenow) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_servicenow'
+	if jsonDict["connector_type_id"] == "connector_response_properties_servicenow" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesServicenow
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesServicenow)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesServicenow, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesServicenow = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesServicenow: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesServicenow = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesServicenowItom
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesServicenowItom)
-	if err == nil {
-		jsonConnectorResponsePropertiesServicenowItom, _ := json.Marshal(dst.ConnectorResponsePropertiesServicenowItom)
-		if string(jsonConnectorResponsePropertiesServicenowItom) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_servicenow_itom'
+	if jsonDict["connector_type_id"] == "connector_response_properties_servicenow_itom" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesServicenowItom
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesServicenowItom)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesServicenowItom, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesServicenowItom = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesServicenowItom: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesServicenowItom = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesServicenowSir
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesServicenowSir)
-	if err == nil {
-		jsonConnectorResponsePropertiesServicenowSir, _ := json.Marshal(dst.ConnectorResponsePropertiesServicenowSir)
-		if string(jsonConnectorResponsePropertiesServicenowSir) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_servicenow_sir'
+	if jsonDict["connector_type_id"] == "connector_response_properties_servicenow_sir" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesServicenowSir
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesServicenowSir)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesServicenowSir, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesServicenowSir = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesServicenowSir: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesServicenowSir = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesSlack
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesSlack)
-	if err == nil {
-		jsonConnectorResponsePropertiesSlack, _ := json.Marshal(dst.ConnectorResponsePropertiesSlack)
-		if string(jsonConnectorResponsePropertiesSlack) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_slack'
+	if jsonDict["connector_type_id"] == "connector_response_properties_slack" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesSlack
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesSlack)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesSlack, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesSlack = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesSlack: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesSlack = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesSwimlane
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesSwimlane)
-	if err == nil {
-		jsonConnectorResponsePropertiesSwimlane, _ := json.Marshal(dst.ConnectorResponsePropertiesSwimlane)
-		if string(jsonConnectorResponsePropertiesSwimlane) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_swimlane'
+	if jsonDict["connector_type_id"] == "connector_response_properties_swimlane" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesSwimlane
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesSwimlane)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesSwimlane, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesSwimlane = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesSwimlane: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesSwimlane = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesTeams
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesTeams)
-	if err == nil {
-		jsonConnectorResponsePropertiesTeams, _ := json.Marshal(dst.ConnectorResponsePropertiesTeams)
-		if string(jsonConnectorResponsePropertiesTeams) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_teams'
+	if jsonDict["connector_type_id"] == "connector_response_properties_teams" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesTeams
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesTeams)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesTeams, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesTeams = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesTeams: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesTeams = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesTines
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesTines)
-	if err == nil {
-		jsonConnectorResponsePropertiesTines, _ := json.Marshal(dst.ConnectorResponsePropertiesTines)
-		if string(jsonConnectorResponsePropertiesTines) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_tines'
+	if jsonDict["connector_type_id"] == "connector_response_properties_tines" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesTines
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesTines)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesTines, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesTines = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesTines: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesTines = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesWebhook
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesWebhook)
-	if err == nil {
-		jsonConnectorResponsePropertiesWebhook, _ := json.Marshal(dst.ConnectorResponsePropertiesWebhook)
-		if string(jsonConnectorResponsePropertiesWebhook) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_webhook'
+	if jsonDict["connector_type_id"] == "connector_response_properties_webhook" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesWebhook
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesWebhook)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesWebhook, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesWebhook = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesWebhook: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesWebhook = nil
 	}
 
-	// try to unmarshal data into ConnectorResponsePropertiesXmatters
-	err = newStrictDecoder(data).Decode(&dst.ConnectorResponsePropertiesXmatters)
-	if err == nil {
-		jsonConnectorResponsePropertiesXmatters, _ := json.Marshal(dst.ConnectorResponsePropertiesXmatters)
-		if string(jsonConnectorResponsePropertiesXmatters) == "{}" { // empty struct
+	// check if the discriminator value is 'connector_response_properties_xmatters'
+	if jsonDict["connector_type_id"] == "connector_response_properties_xmatters" {
+		// try to unmarshal JSON data into ConnectorResponsePropertiesXmatters
+		err = json.Unmarshal(data, &dst.ConnectorResponsePropertiesXmatters)
+		if err == nil {
+			return nil // data stored in dst.ConnectorResponsePropertiesXmatters, return on the first match
+		} else {
 			dst.ConnectorResponsePropertiesXmatters = nil
-		} else {
-			match++
+			return fmt.Errorf("failed to unmarshal ConnectorResponseProperties as ConnectorResponsePropertiesXmatters: %s", err.Error())
 		}
-	} else {
-		dst.ConnectorResponsePropertiesXmatters = nil
 	}
 
-	if match > 1 { // more than 1 match
-		// reset to nil
-		dst.ConnectorResponsePropertiesCasesWebhook = nil
-		dst.ConnectorResponsePropertiesEmail = nil
-		dst.ConnectorResponsePropertiesIndex = nil
-		dst.ConnectorResponsePropertiesJira = nil
-		dst.ConnectorResponsePropertiesOpsgenie = nil
-		dst.ConnectorResponsePropertiesPagerduty = nil
-		dst.ConnectorResponsePropertiesResilient = nil
-		dst.ConnectorResponsePropertiesServerlog = nil
-		dst.ConnectorResponsePropertiesServicenow = nil
-		dst.ConnectorResponsePropertiesServicenowItom = nil
-		dst.ConnectorResponsePropertiesServicenowSir = nil
-		dst.ConnectorResponsePropertiesSlack = nil
-		dst.ConnectorResponsePropertiesSwimlane = nil
-		dst.ConnectorResponsePropertiesTeams = nil
-		dst.ConnectorResponsePropertiesTines = nil
-		dst.ConnectorResponsePropertiesWebhook = nil
-		dst.ConnectorResponsePropertiesXmatters = nil
-
-		return fmt.Errorf("data matches more than one schema in oneOf(ConnectorResponseProperties)")
-	} else if match == 1 {
-		return nil // exactly one match
-	} else { // no match
-		return fmt.Errorf("data failed to match schemas in oneOf(ConnectorResponseProperties)")
-	}
+	return nil
 }
 
 // Marshal data from the first non-nil pointers in the struct to JSON
