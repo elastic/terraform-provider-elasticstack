@@ -120,11 +120,11 @@ func resourceConnectorUpdate(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
-	compositeId, diags := clients.CompositeIdFromStr(d.Id())
+	compositeIDold, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	connectorOld.ConnectorID = compositeId.ResourceId
+	connectorOld.ConnectorID = compositeIDold.ResourceId
 
 	connectorID, diags := kibana.UpdateActionConnector(ctx, client, connectorOld)
 
@@ -132,8 +132,8 @@ func resourceConnectorUpdate(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
-	compositeID := &clients.CompositeId{ClusterId: connectorOld.SpaceID, ResourceId: connectorID}
-	d.SetId(compositeID.String())
+	compositeIDnew := &clients.CompositeId{ClusterId: connectorOld.SpaceID, ResourceId: connectorID}
+	d.SetId(compositeIDnew.String())
 
 	return resourceConnectorRead(ctx, d, meta)
 }
@@ -144,14 +144,17 @@ func resourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta int
 		return diags
 	}
 
+	connectorOld, diags := expandActionConnector(d)
+	if diags.HasError() {
+		return diags
+	}
+
 	compositeID, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	connectorID := compositeID.ResourceId
-	spaceId := compositeID.ClusterId
 
-	connector, diags := kibana.GetActionConnector(ctx, client, connectorID, spaceId)
+	connector, diags := kibana.GetActionConnector(ctx, client, compositeID.ResourceId, compositeID.ClusterId, connectorOld.ConnectorTypeID)
 	if connector == nil && diags == nil {
 		d.SetId("")
 		return diags

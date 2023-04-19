@@ -63,7 +63,7 @@ type ApiClient struct {
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
 	alerting                 alerting.AlertingApi
-	actionConnectors         kibanaactions.ConnectorsApi
+	actionConnectors         *kibanaactions.ConnectorsApiService
 	kibanaConfig             kibana.Config
 	version                  string
 }
@@ -122,11 +122,13 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
+	actionConnectors := buildActionConnectorClient(baseConfig, kibanaConfig)
+
 	return &ApiClient{
 			elasticsearch:    es,
 			kibana:           kib,
 			alerting:         buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
-			actionConnectors: buildActionConnectorClient(baseConfig, kibanaConfig).ConnectorsApi,
+			actionConnectors: actionConnectors,
 			kibanaConfig:     kibanaConfig,
 			version:          "acceptance-testing",
 		},
@@ -192,7 +194,7 @@ func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
 	return a.alerting, nil
 }
 
-func (a *ApiClient) GetKibanaActionConnectorClient(ctx context.Context) (kibanaactions.ConnectorsApi, context.Context, error) {
+func (a *ApiClient) GetKibanaActionConnectorClient(ctx context.Context) (*kibanaactions.ConnectorsApiService, context.Context, error) {
 	if a.actionConnectors == nil {
 		return nil, nil, errors.New("kibana action connector client not found")
 	}
@@ -519,23 +521,17 @@ func buildAlertingClient(baseConfig BaseConfig, config kibana.Config) *alerting.
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
-func buildActionConnectorClient(baseConfig BaseConfig, config kibana.Config) *kibanaactions.APIClient {
+func buildActionConnectorClient(baseConfig BaseConfig, config kibana.Config) *kibanaactions.ConnectorsApiService {
 	connectorsConfig := kibanaactions.Configuration{
 		UserAgent: baseConfig.UserAgent,
-		Servers: kibanaactions.ServerConfigurations{
-			{
-				URL: config.Address,
-			},
-		},
-		Debug: logging.IsDebugOrHigher(),
+		BasePath:  config.Address,
 	}
-	return kibanaactions.NewAPIClient(&connectorsConfig)
+	return kibanaactions.NewAPIClient(&connectorsConfig).ConnectorsApi
 }
 
 const esKey string = "elasticsearch"
 
 func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	baseConfig := buildBaseConfig(d, version, esKey)
 	kibanaConfig, diags := buildKibanaConfig(d, baseConfig)
 	if diags.HasError() {
@@ -562,7 +558,7 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 		kibana:                   kibanaClient,
 		kibanaConfig:             kibanaConfig,
 		alerting:                 alertingClient.AlertingApi,
-		actionConnectors:         actionConnectorClient.ConnectorsApi,
+		actionConnectors:         actionConnectorClient,
 		version:                  version,
-	}, diags
+	}, nil
 }

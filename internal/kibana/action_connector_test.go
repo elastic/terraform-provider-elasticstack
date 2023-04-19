@@ -73,13 +73,13 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
+resource "elasticstack_kibana_action_connector" "test_connector" {
   name         = "Updated %s"
   config       = jsonencode({
 	index             = ".kibana"
 	refresh             = false
   })
-  connector_type_id = ".index-threshold"
+  connector_type_id = ".index"
 }
 	`, name)
 }
@@ -96,7 +96,7 @@ func checkResourceActionConnectorDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		rule, diags := kibana.GetActionConnector(context.Background(), client, compId.ResourceId, compId.ClusterId)
+		rule, diags := kibana.GetActionConnector(context.Background(), client, compId.ResourceId, compId.ClusterId, ".index")
 		if diags.HasError() {
 			return fmt.Errorf("Failed to get action connector: %v", diags)
 		}
