@@ -60,7 +60,7 @@ func UpdateActionConnector(ctx context.Context, apiClient *clients.ApiClient, co
 		},
 	)
 
-	
+	if response.(*connectors.Upda)	
 
 	if err != nil {
 		return "", diag.FromErr(err)

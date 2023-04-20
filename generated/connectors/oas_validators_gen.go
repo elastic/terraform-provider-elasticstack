@@ -794,6 +794,65 @@ func (s LegacyRunConnectorOKData) Validate() error {
 	}
 }
 
+func (s *R400) Validate() error {
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.Error.Set {
+			if err := func() error {
+				if err := s.Error.Value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "error",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.StatusCode.Set {
+			if err := func() error {
+				if err := s.StatusCode.Value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "statusCode",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+func (s R400Error) Validate() error {
+	switch s {
+	case "Bad Request":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+func (s R400StatusCode) Validate() error {
+	switch s {
+	case 400:
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
 func (s *R401) Validate() error {
 	var failures []validate.FieldError
 	if err := func() error {

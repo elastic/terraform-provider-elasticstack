@@ -25,6 +25,18 @@ func encodeCreateConnectorResponse(response CreateConnectorRes, w http.ResponseW
 		}
 		return nil
 
+	case *R400:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		span.SetStatus(codes.Error, http.StatusText(400))
+
+		e := jx.GetEncoder()
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+		return nil
+
 	case *R401:
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(401)
@@ -409,7 +421,7 @@ func encodeUpdateConnectorResponse(response UpdateConnectorRes, w http.ResponseW
 		}
 		return nil
 
-	case *UpdateConnectorBadRequest:
+	case *R400:
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(400)
 		span.SetStatus(codes.Error, http.StatusText(400))

@@ -84,6 +84,8 @@ paths:
               examples:
                 createIndexConnectorResponse:
                   $ref: '#/components/examples/create_index_connector_response'
+        '400':
+          $ref: '#/components/responses/400'
         '401':
           $ref: '#/components/responses/401'
       servers:
@@ -224,21 +226,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/connector_response_properties'
         '400':
-          description: Indicates a bad request.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Bad Request
-                  message:
-                    type: string
-                    example: 'error validating action type config: [index]: expected value of type [string] but got [undefined]'
-                  statusCode:
-                    type: integer
-                    example: 400
+          $ref: '#/components/responses/400'
         '401':
           $ref: '#/components/responses/401'
         '404':
@@ -3164,6 +3152,27 @@ components:
               pushedDate: '2022-09-08T16:52:27.865Z'
         status: ok
   responses:
+    '400': 
+      description: Indicates a bad request.
+      content:
+        application/json:
+          schema:
+            type: object
+            title: Bad request
+            properties:
+              error:
+                type: string
+                example: Bad Request
+                enum:
+                  - Bad Request
+              message:
+                type: string
+                example: 'error validating action type config: [index]: expected value of type [string] but got [undefined]'
+              statusCode:
+                type: integer
+                example: 400
+                enum:
+                  - 400    
     '401':
       description: Authorization information is missing or invalid.
       content:

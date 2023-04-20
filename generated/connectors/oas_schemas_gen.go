@@ -6868,6 +6868,98 @@ func (o OptNilString) Or(d string) string {
 	return d
 }
 
+// NewOptR400Error returns new OptR400Error with value set to v.
+func NewOptR400Error(v R400Error) OptR400Error {
+	return OptR400Error{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptR400Error is optional R400Error.
+type OptR400Error struct {
+	Value R400Error
+	Set   bool
+}
+
+// IsSet returns true if OptR400Error was set.
+func (o OptR400Error) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptR400Error) Reset() {
+	var v R400Error
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptR400Error) SetTo(v R400Error) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptR400Error) Get() (v R400Error, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptR400Error) Or(d R400Error) R400Error {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptR400StatusCode returns new OptR400StatusCode with value set to v.
+func NewOptR400StatusCode(v R400StatusCode) OptR400StatusCode {
+	return OptR400StatusCode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptR400StatusCode is optional R400StatusCode.
+type OptR400StatusCode struct {
+	Value R400StatusCode
+	Set   bool
+}
+
+// IsSet returns true if OptR400StatusCode was set.
+func (o OptR400StatusCode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptR400StatusCode) Reset() {
+	var v R400StatusCode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptR400StatusCode) SetTo(v R400StatusCode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptR400StatusCode) Get() (v R400StatusCode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptR400StatusCode) Or(d R400StatusCode) R400StatusCode {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptR401Error returns new OptR401Error with value set to v.
 func NewOptR401Error(v R401Error) OptR401Error {
 	return OptR401Error{
@@ -7143,6 +7235,78 @@ func (o OptString) Or(d string) string {
 	}
 	return d
 }
+
+type R400 struct {
+	Error      OptR400Error      `json:"error"`
+	Message    OptString         `json:"message"`
+	StatusCode OptR400StatusCode `json:"statusCode"`
+}
+
+// GetError returns the value of Error.
+func (s *R400) GetError() OptR400Error {
+	return s.Error
+}
+
+// GetMessage returns the value of Message.
+func (s *R400) GetMessage() OptString {
+	return s.Message
+}
+
+// GetStatusCode returns the value of StatusCode.
+func (s *R400) GetStatusCode() OptR400StatusCode {
+	return s.StatusCode
+}
+
+// SetError sets the value of Error.
+func (s *R400) SetError(val OptR400Error) {
+	s.Error = val
+}
+
+// SetMessage sets the value of Message.
+func (s *R400) SetMessage(val OptString) {
+	s.Message = val
+}
+
+// SetStatusCode sets the value of StatusCode.
+func (s *R400) SetStatusCode(val OptR400StatusCode) {
+	s.StatusCode = val
+}
+
+func (*R400) createConnectorRes() {}
+func (*R400) updateConnectorRes() {}
+
+type R400Error string
+
+const (
+	R400ErrorBadRequest R400Error = "Bad Request"
+)
+
+// MarshalText implements encoding.TextMarshaler.
+func (s R400Error) MarshalText() ([]byte, error) {
+	switch s {
+	case R400ErrorBadRequest:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *R400Error) UnmarshalText(data []byte) error {
+	switch R400Error(data) {
+	case R400ErrorBadRequest:
+		*s = R400ErrorBadRequest
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type R400StatusCode int
+
+const (
+	R400StatusCode400 R400StatusCode = 400
+)
 
 type R401 struct {
 	Error      OptR401Error      `json:"error"`
@@ -7579,44 +7743,6 @@ func (s *SecretsPropertiesXmatters) init() SecretsPropertiesXmatters {
 	}
 	return m
 }
-
-type UpdateConnectorBadRequest struct {
-	Error      OptString `json:"error"`
-	Message    OptString `json:"message"`
-	StatusCode OptInt    `json:"statusCode"`
-}
-
-// GetError returns the value of Error.
-func (s *UpdateConnectorBadRequest) GetError() OptString {
-	return s.Error
-}
-
-// GetMessage returns the value of Message.
-func (s *UpdateConnectorBadRequest) GetMessage() OptString {
-	return s.Message
-}
-
-// GetStatusCode returns the value of StatusCode.
-func (s *UpdateConnectorBadRequest) GetStatusCode() OptInt {
-	return s.StatusCode
-}
-
-// SetError sets the value of Error.
-func (s *UpdateConnectorBadRequest) SetError(val OptString) {
-	s.Error = val
-}
-
-// SetMessage sets the value of Message.
-func (s *UpdateConnectorBadRequest) SetMessage(val OptString) {
-	s.Message = val
-}
-
-// SetStatusCode sets the value of StatusCode.
-func (s *UpdateConnectorBadRequest) SetStatusCode(val OptInt) {
-	s.StatusCode = val
-}
-
-func (*UpdateConnectorBadRequest) updateConnectorRes() {}
 
 // The properties vary depending on the connector type.
 // UpdateConnectorReq represents sum type.
