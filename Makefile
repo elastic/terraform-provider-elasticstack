@@ -259,37 +259,7 @@ generate-alerting-client: ## generate Kibana alerting client
 
 ## -i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/actions/docs/openapi/bundled.json \
 
-.PHONY: generate-kibana-actions-client
-generate-kibana-actions-client: ## generate Kibana actions client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
-		-i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/actions/docs/openapi/bundled.json \
-		--skip-validate-spec \
-		--git-repo-id terraform-provider-elasticstack \
-		--git-user-id elastic \
-		-p isGoSubmodule=true \
-		-p packageName=kibanaactions \
-		-p generateInterfaces=true \
-		-g go \
-		-o /local/generated/kibanaactions \
-		--additional-properties=useOneOfDiscriminatorLookup=true
-	@ rm -rf generated/kibanaactions/go.mod generated/kibanaactions/go.sum generated/kibanaactions/test
-	@ go fmt ./generated/kibanaactions/...
-
-.PHONY: generate-kibana-actions-client2
-generate-kibana-actions-client2: ## generate Kibana actions client
-	@ docker run --rm -v "${PWD}:/local" --platform linux/amd64 swaggerapi/swagger-codegen-cli-v3 generate \
-		-i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/actions/docs/openapi/bundled.json \
-		-l go \
-		-p packageName=kibanaactions \
-		-o /local/generated/kibanaactions
-
-.PHONY: generate-kibana-actions-client3
-generate-kibana-actions-client3: ## generate Kibana actions client
-	@ swagger-codegen generate \
-		-i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/actions/docs/openapi/bundled.json \
-		-l go \
-		-o ./generated/kibanaactions \
-		--additional-properties=useOneOfDiscriminatorLookup=true \
-		--additional-properties=generateInterfaces=true \
-		--additional-properties=GoSubmodule=true \
-		--additional-properties=packageName=kibanaactions
+.PHONY: generate-connectors-client
+generate-connectors-client: ## generate Kibana connectors client
+	@ go get github.com/ogen-go/ogen/gen@v0.63.0
+	@ go generate

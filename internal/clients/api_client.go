@@ -13,7 +13,7 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
-	"github.com/elastic/terraform-provider-elasticstack/generated/kibanaactions"
+	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/ogen-go/ogen/ogenerrors"
 )
 
 type CompositeId struct {
@@ -63,7 +64,7 @@ type ApiClient struct {
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
 	alerting                 alerting.AlertingApi
-	actionConnectors         *kibanaactions.ConnectorsApiService
+	actionConnectors         *connectors.Client
 	kibanaConfig             kibana.Config
 	version                  string
 }
@@ -122,7 +123,10 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
-	actionConnectors := buildActionConnectorClient(baseConfig, kibanaConfig)
+	actionConnectors, err := buildActionConnectorClient(baseConfig, kibanaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create Kibana actions client: [%w]", err)
+	}
 
 	return &ApiClient{
 			elasticsearch:    es,
@@ -194,15 +198,10 @@ func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
 	return a.alerting, nil
 }
 
-func (a *ApiClient) GetKibanaActionConnectorClient(ctx context.Context) (*kibanaactions.ConnectorsApiService, context.Context, error) {
+func (a *ApiClient) GetKibanaActionConnectorClient(ctx context.Context) (*connectors.Client, context.Context, error) {
 	if a.actionConnectors == nil {
 		return nil, nil, errors.New("kibana action connector client not found")
 	}
-
-	ctx = context.WithValue(ctx, kibanaactions.ContextBasicAuth, kibanaactions.BasicAuth{
-		UserName: a.kibanaConfig.Username,
-		Password: a.kibanaConfig.Password,
-	})
 
 	return a.actionConnectors, ctx, nil
 }
@@ -521,12 +520,27 @@ func buildAlertingClient(baseConfig BaseConfig, config kibana.Config) *alerting.
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
-func buildActionConnectorClient(baseConfig BaseConfig, config kibana.Config) *kibanaactions.ConnectorsApiService {
-	connectorsConfig := kibanaactions.Configuration{
-		UserAgent: baseConfig.UserAgent,
-		BasePath:  config.Address,
-	}
-	return kibanaactions.NewAPIClient(&connectorsConfig).ConnectorsApi
+type SecuritySource struct {
+	username string
+	password string
+}
+
+func (sec SecuritySource) ApiKeyAuth(ctx context.Context, operationName string) (connectors.ApiKeyAuth, error) {
+	return connectors.ApiKeyAuth{}, ogenerrors.ErrSkipClientSecurity
+}
+
+func (sec SecuritySource) BasicAuth(ctx context.Context, operationName string) (connectors.BasicAuth, error) {
+	return connectors.BasicAuth{
+		Username: sec.username,
+		Password: sec.password,
+	}, nil
+}
+
+func buildActionConnectorClient(baseConfig BaseConfig, config kibana.Config) (*connectors.Client, error) {
+	return connectors.NewClient(
+		config.Address,
+		SecuritySource{username: config.Username, password: config.Password},
+	)
 }
 
 const esKey string = "elasticsearch"
@@ -550,7 +564,10 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 
 	alertingClient := buildAlertingClient(baseConfig, kibanaConfig)
 
-	actionConnectorClient := buildActionConnectorClient(baseConfig, kibanaConfig)
+	actionConnectorClient, err := buildActionConnectorClient(baseConfig, kibanaConfig)
+	if err != nil {
+		return nil, diag.FromErr(fmt.Errorf("cannot create Kibana actions client: [%w]", err))
+	}
 
 	return &ApiClient{
 		elasticsearch:            esClient,
