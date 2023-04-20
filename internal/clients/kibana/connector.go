@@ -60,15 +60,23 @@ func UpdateActionConnector(ctx context.Context, apiClient *clients.ApiClient, co
 		},
 	)
 
-	if response.(*connectors.Upda)	
-
 	if err != nil {
 		return "", diag.FromErr(err)
 	}
 
-	properties, ok := response.(*connectors.ConnectorResponseProperties)
-	if !ok {
-		return "", diag.FromErr(fmt.Errorf("failed to parse update response [%+v]", response))
+	var properties *connectors.ConnectorResponseProperties
+
+	switch resp := response.(type) {
+	case *connectors.ConnectorResponseProperties:
+		properties, _ = response.(*connectors.ConnectorResponseProperties)
+	case *connectors.R400:
+		return "", diag.Errorf("update failed with error [%s]: %s", resp.GetError().Value, resp.GetMessage().Value)
+	case *connectors.R401:
+		return "", diag.Errorf("update failed with error [%s]: %s", resp.GetError().Value, resp.GetMessage().Value)
+	case *connectors.R404:
+		return "", diag.Errorf("update failed with error [%s]: %s", resp.GetError().Value, resp.GetMessage().Value)
+	default:
+		return "", diag.Errorf("failed to parse update response %+v", response)
 	}
 
 	connectorNew, err := actionConnectorToModel(connectorOld.SpaceID, *properties)

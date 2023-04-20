@@ -1020,6 +1020,70 @@ func (s *UpdateConnectorRequestCasesWebhook) Validate() error {
 	}
 	return nil
 }
+func (s UpdateConnectorRequestCasesWebhookConnectorTypeID) Validate() error {
+	switch s {
+	case ".cases-webhook":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+func (s UpdateConnectorRequestIndexConnectorTypeID) Validate() error {
+	switch s {
+	case ".index":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+func (s UpdateConnectorRequestJiraConnectorTypeID) Validate() error {
+	switch s {
+	case ".jira":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+func (s UpdateConnectorRequestOpsgenieConnectorTypeID) Validate() error {
+	switch s {
+	case ".opsgenie":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+func (s UpdateConnectorRequestResilientConnectorTypeID) Validate() error {
+	switch s {
+	case ".resilient":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+func (s UpdateConnectorRequestServerlogConnectorTypeID) Validate() error {
+	switch s {
+	case ".server-log":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+func (s UpdateConnectorRequestServicenowConnectorTypeID) Validate() error {
+	switch s {
+	case ".servicenow":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+func (s UpdateConnectorRequestServicenowItomConnectorTypeID) Validate() error {
+	switch s {
+	case ".servicenow-itom":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
 func (s *UpdateConnectorRequestSwimlane) Validate() error {
 	var failures []validate.FieldError
 	if err := func() error {
@@ -1037,4 +1101,12 @@ func (s *UpdateConnectorRequestSwimlane) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+func (s UpdateConnectorRequestSwimlaneConnectorTypeID) Validate() error {
+	switch s {
+	case ".swimlane":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
