@@ -128,7 +128,9 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		Username: kibanaConfig.Username,
 		Password: kibanaConfig.Password,
 		APIKey:   os.Getenv("FLEET_API_KEY"),
-		CACerts:  strings.Split(os.Getenv("FLEET_CA_CERTS"), ","),
+	}
+	if v := os.Getenv("FLEET_CA_CERTS"); v != "" {
+		fleetCfg.CACerts = strings.Split(os.Getenv("FLEET_CA_CERTS"), ",")
 	}
 	if v := os.Getenv("FLEET_USERNAME"); v != "" {
 		fleetCfg.Username = v

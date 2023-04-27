@@ -195,7 +195,8 @@ func GetFleetConnectionSchema() *schema.Schema {
 				"endpoint": {
 					Description: "The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Type:        schema.TypeString,
-					Required:    true,
+					Optional:    true,
+					Sensitive:   true,
 				},
 				"ca_certs": {
 					Description: "A list of paths to CA certificates to validate the certificate presented by the Fleet server.",
