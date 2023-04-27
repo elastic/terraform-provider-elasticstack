@@ -124,9 +124,9 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	}
 
 	fleetCfg := fleet.Config{
-		URL:      os.Getenv("FLEET_ENDPOINT"),
-		Username: baseConfig.Username,
-		Password: baseConfig.Password,
+		URL:      kibanaConfig.Address,
+		Username: kibanaConfig.Username,
+		Password: kibanaConfig.Password,
 		APIKey:   os.Getenv("FLEET_API_KEY"),
 		CACerts:  strings.Split(os.Getenv("FLEET_CA_CERTS"), ","),
 	}

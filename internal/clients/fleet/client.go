@@ -3,7 +3,6 @@ package fleet
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,13 +10,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet/fleetapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
-)
-
-var (
-	// ErrNoAddress indicates that a fleet client configuration is missing an address.
-	ErrNoAddress = errors.New("fleet client requires an address")
-	// ErrNoAuth indicates that a fleet client configuration is missing authentication details.
-	ErrNoAuth = errors.New("fleet client requires an API key or username and password")
 )
 
 // Config is the configuration for the fleet client.
@@ -39,15 +31,6 @@ type Client struct {
 
 // NewClient creates a new Elastic Fleet API client.
 func NewClient(cfg Config) (*Client, error) {
-	if cfg.URL == "" {
-		return nil, ErrNoAddress
-	}
-	if cfg.APIKey == "" {
-		if cfg.Username == "" || cfg.Password == "" {
-			return nil, ErrNoAuth
-		}
-	}
-
 	var caCertPool *x509.CertPool
 	if len(cfg.CACerts) > 0 {
 		caCertPool = x509.NewCertPool()
