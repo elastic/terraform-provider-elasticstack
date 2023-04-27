@@ -110,14 +110,11 @@ Optional:
 <a id="nestedblock--fleet"></a>
 ### Nested Schema for `fleet`
 
-Required:
-
-- `endpoint` (String) The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.
-
 Optional:
 
 - `api_key` (String, Sensitive) API key to use for API authentication to Fleet.
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Fleet server.
+- `endpoint` (String, Sensitive) The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Fleet.
 - `username` (String) Username to use for API authentication to Fleet.
