@@ -64,6 +64,7 @@ jobs:
           xpack.security.enabled: true
           xpack.security.authc.api_key.enabled: true
           xpack.watcher.enabled: true
+          xpack.fleet.enabled: true
           repositories.url.allowed_urls: https://example.com/*
           path.repo: /tmp
           ELASTIC_PASSWORD: ${{ env.ELASTIC_PASSWORD }}

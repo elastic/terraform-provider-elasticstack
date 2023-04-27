@@ -8,10 +8,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+// TODO: Determine actual min version
+var minVersionOutput = version.Must(version.NewVersion("8.7.0"))
 
 func TestAccResourceOutput(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -22,7 +27,8 @@ func TestAccResourceOutput(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceOutputCreate(policyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config:   testAccResourceOutputCreate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
@@ -33,7 +39,8 @@ func TestAccResourceOutput(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceOutputUpdate(policyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config:   testAccResourceOutputUpdate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),

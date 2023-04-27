@@ -8,10 +8,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+// TODO: Determine actual min version
+var minVersionFleetServerHost = version.Must(version.NewVersion("8.7.0"))
 
 func TestAccResourceFleetServerHost(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -22,7 +27,8 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceFleetServerHostCreate(policyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				Config:   testAccResourceFleetServerHostCreate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
@@ -30,7 +36,8 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceFleetServerHostUpdate(policyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				Config:   testAccResourceFleetServerHostUpdate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("Updated FleetServerHost %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),

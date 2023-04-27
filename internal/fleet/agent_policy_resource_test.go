@@ -8,10 +8,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+// TODO: Determine actual min version
+var minVersionAgentPolicy = version.Must(version.NewVersion("8.7.0"))
 
 func TestAccResourceAgentPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -22,7 +27,8 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAgentPolicyCreate(policyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				Config:   testAccResourceAgentPolicyCreate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -32,7 +38,8 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAgentPolicyUpdate(policyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				Config:   testAccResourceAgentPolicyUpdate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
