@@ -97,7 +97,7 @@ func resourceConnectorCreate(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
-	connectorID, diags := kibana.CreateActionConnector(ctx, client, connectorOld)
+	connectorID, diags := kibana.CreateConnector(ctx, client, connectorOld)
 
 	if diags.HasError() {
 		return diags
@@ -126,7 +126,7 @@ func resourceConnectorUpdate(ctx context.Context, d *schema.ResourceData, meta i
 	}
 	connectorOld.ConnectorID = compositeIDold.ResourceId
 
-	connectorID, diags := kibana.UpdateActionConnector(ctx, client, connectorOld)
+	connectorID, diags := kibana.UpdateConnector(ctx, client, connectorOld)
 
 	if diags.HasError() {
 		return diags
@@ -154,7 +154,7 @@ func resourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta int
 		return diags
 	}
 
-	connector, diags := kibana.GetActionConnector(ctx, client, compositeID.ResourceId, compositeID.ClusterId, connectorOld.ConnectorTypeID)
+	connector, diags := kibana.GetConnector(ctx, client, compositeID.ResourceId, compositeID.ClusterId, connectorOld.ConnectorTypeID)
 	if connector == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -179,7 +179,7 @@ func resourceConnectorDelete(ctx context.Context, d *schema.ResourceData, meta i
 
 	spaceId := d.Get("space_id").(string)
 
-	if diags := kibana.DeleteActionConnector(ctx, client, compositeID.ResourceId, spaceId); diags.HasError() {
+	if diags := kibana.DeleteConnector(ctx, client, compositeID.ResourceId, spaceId); diags.HasError() {
 		return diags
 	}
 

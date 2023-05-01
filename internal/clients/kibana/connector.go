@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func CreateActionConnector(ctx context.Context, apiClient *clients.ApiClient, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
+func CreateConnector(ctx context.Context, apiClient *clients.ApiClient, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
 	client, ctxWithAuth, err := apiClient.GetKibanaActionConnectorClient(ctx)
 	if err != nil {
 		return "", diag.FromErr(err)
@@ -39,7 +39,7 @@ func CreateActionConnector(ctx context.Context, apiClient *clients.ApiClient, co
 	return connectorNew.ConnectorID, nil
 }
 
-func UpdateActionConnector(ctx context.Context, apiClient *clients.ApiClient, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
+func UpdateConnector(ctx context.Context, apiClient *clients.ApiClient, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
 	client, ctxWithAuth, err := apiClient.GetKibanaActionConnectorClient(ctx)
 	if err != nil {
 		return "", diag.FromErr(err)
@@ -87,7 +87,7 @@ func UpdateActionConnector(ctx context.Context, apiClient *clients.ApiClient, co
 	return connectorNew.ConnectorID, nil
 }
 
-func GetActionConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID, spaceID string, connectorTypeID string) (*models.KibanaActionConnector, diag.Diagnostics) {
+func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID, spaceID string, connectorTypeID string) (*models.KibanaActionConnector, diag.Diagnostics) {
 	client, ctxWithAuth, err := apiClient.GetKibanaActionConnectorClient(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -112,7 +112,7 @@ func GetActionConnector(ctx context.Context, apiClient *clients.ApiClient, conne
 	return connector, nil
 }
 
-func DeleteActionConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID string, spaceID string) diag.Diagnostics {
+func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID string, spaceID string) diag.Diagnostics {
 	client, ctxWithAuth, err := apiClient.GetKibanaActionConnectorClient(ctx)
 	if err != nil {
 		return diag.FromErr(err)

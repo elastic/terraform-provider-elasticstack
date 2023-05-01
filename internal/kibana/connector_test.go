@@ -96,7 +96,7 @@ func checkResourceActionConnectorDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		rule, diags := kibana.GetActionConnector(context.Background(), client, compId.ResourceId, compId.ClusterId, ".index")
+		rule, diags := kibana.GetConnector(context.Background(), client, compId.ResourceId, compId.ClusterId, ".index")
 		if diags.HasError() {
 			return fmt.Errorf("Failed to get action connector: %v", diags)
 		}
