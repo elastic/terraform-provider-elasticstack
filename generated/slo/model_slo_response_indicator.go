@@ -18,8 +18,8 @@ import (
 // SloResponseIndicator - struct for SloResponseIndicator
 type SloResponseIndicator struct {
 	IndicatorPropertiesApmAvailability *IndicatorPropertiesApmAvailability
-	IndicatorPropertiesApmLatency *IndicatorPropertiesApmLatency
-	IndicatorPropertiesCustomKql *IndicatorPropertiesCustomKql
+	IndicatorPropertiesApmLatency      *IndicatorPropertiesApmLatency
+	IndicatorPropertiesCustomKql       *IndicatorPropertiesCustomKql
 }
 
 // IndicatorPropertiesApmAvailabilityAsSloResponseIndicator is a convenience function that returns IndicatorPropertiesApmAvailability wrapped in SloResponseIndicator
@@ -42,7 +42,6 @@ func IndicatorPropertiesCustomKqlAsSloResponseIndicator(v *IndicatorPropertiesCu
 		IndicatorPropertiesCustomKql: v,
 	}
 }
-
 
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *SloResponseIndicator) UnmarshalJSON(data []byte) error {
@@ -119,7 +118,7 @@ func (src SloResponseIndicator) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *SloResponseIndicator) GetActualInstance() (interface{}) {
+func (obj *SloResponseIndicator) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -174,5 +173,3 @@ func (v *NullableSloResponseIndicator) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

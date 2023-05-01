@@ -17,17 +17,17 @@ import (
 // checks if the CreateSloRequest type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &CreateSloRequest{}
 
-// CreateSloRequest The create SLO API request body varies depending on the type of indicator, time window and budgeting method. 
+// CreateSloRequest The create SLO API request body varies depending on the type of indicator, time window and budgeting method.
 type CreateSloRequest struct {
 	// A name for the SLO.
 	Name string `json:"name"`
 	// A description for the SLO.
-	Description string `json:"description"`
-	Indicator SloResponseIndicator `json:"indicator"`
-	TimeWindow SloResponseTimeWindow `json:"timeWindow"`
-	BudgetingMethod BudgetingMethod `json:"budgetingMethod"`
-	Objective Objective `json:"objective"`
-	Settings *Settings `json:"settings,omitempty"`
+	Description     string                `json:"description"`
+	Indicator       SloResponseIndicator  `json:"indicator"`
+	TimeWindow      SloResponseTimeWindow `json:"timeWindow"`
+	BudgetingMethod BudgetingMethod       `json:"budgetingMethod"`
+	Objective       Objective             `json:"objective"`
+	Settings        *Settings             `json:"settings,omitempty"`
 }
 
 // NewCreateSloRequest instantiates a new CreateSloRequest object
@@ -230,7 +230,7 @@ func (o *CreateSloRequest) SetSettings(v Settings) {
 }
 
 func (o CreateSloRequest) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -286,5 +286,3 @@ func (v *NullableCreateSloRequest) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

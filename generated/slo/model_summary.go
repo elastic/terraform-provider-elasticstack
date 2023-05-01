@@ -19,8 +19,8 @@ var _ MappedNullable = &Summary{}
 
 // Summary struct for Summary
 type Summary struct {
-	Status *string `json:"status,omitempty"`
-	SliValue *float32 `json:"sliValue,omitempty"`
+	Status      *string      `json:"status,omitempty"`
+	SliValue    *float32     `json:"sliValue,omitempty"`
 	ErrorBudget *ErrorBudget `json:"errorBudget,omitempty"`
 }
 
@@ -138,7 +138,7 @@ func (o *Summary) SetErrorBudget(v ErrorBudget) {
 }
 
 func (o Summary) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -194,5 +194,3 @@ func (v *NullableSummary) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

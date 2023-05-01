@@ -261,7 +261,7 @@ generate-slo-client: ## generate Kibana slo client
 		-p generateInterfaces=true \
 		-g go \
 		-o /local/generated/slo
-	@ rm -rf generated/slo/test
+	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
 	@ go fmt ./generated/...
 
 

@@ -21,7 +21,7 @@ type BudgetingMethod string
 // List of budgeting_method
 const (
 	OCCURRENCES BudgetingMethod = "occurrences"
-	TIMESLICES BudgetingMethod = "timeslices"
+	TIMESLICES  BudgetingMethod = "timeslices"
 )
 
 // All allowed values of BudgetingMethod enum
@@ -108,4 +108,3 @@ func (v *NullableBudgetingMethod) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-

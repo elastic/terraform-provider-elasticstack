@@ -27,7 +27,7 @@ type IndicatorPropertiesCustomKqlParams struct {
 	Good *string `json:"good,omitempty"`
 	// the KQL query used to define all events.
 	Total *string `json:"total,omitempty"`
-	// The timestamp field used in the source indice. If not specified, @timestamp will be used. 
+	// The timestamp field used in the source indice. If not specified, @timestamp will be used.
 	TimestampField string `json:"timestampField"`
 }
 
@@ -195,7 +195,7 @@ func (o *IndicatorPropertiesCustomKqlParams) SetTimestampField(v string) {
 }
 
 func (o IndicatorPropertiesCustomKqlParams) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -253,5 +253,3 @@ func (v *NullableIndicatorPropertiesCustomKqlParams) UnmarshalJSON(src []byte) e
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

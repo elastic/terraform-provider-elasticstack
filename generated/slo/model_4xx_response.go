@@ -20,8 +20,8 @@ var _ MappedNullable = &Model4xxResponse{}
 // Model4xxResponse struct for Model4xxResponse
 type Model4xxResponse struct {
 	StatusCode float32 `json:"statusCode"`
-	Error string `json:"error"`
-	Message string `json:"message"`
+	Error      string  `json:"error"`
+	Message    string  `json:"message"`
 }
 
 // NewModel4xxResponse instantiates a new Model4xxResponse object
@@ -117,7 +117,7 @@ func (o *Model4xxResponse) SetMessage(v string) {
 }
 
 func (o Model4xxResponse) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -167,5 +167,3 @@ func (v *NullableModel4xxResponse) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

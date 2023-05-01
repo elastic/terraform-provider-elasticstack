@@ -18,7 +18,7 @@ import (
 // SloResponseTimeWindow - struct for SloResponseTimeWindow
 type SloResponseTimeWindow struct {
 	TimeWindowCalendarAligned *TimeWindowCalendarAligned
-	TimeWindowRolling *TimeWindowRolling
+	TimeWindowRolling         *TimeWindowRolling
 }
 
 // TimeWindowCalendarAlignedAsSloResponseTimeWindow is a convenience function that returns TimeWindowCalendarAligned wrapped in SloResponseTimeWindow
@@ -34,7 +34,6 @@ func TimeWindowRollingAsSloResponseTimeWindow(v *TimeWindowRolling) SloResponseT
 		TimeWindowRolling: v,
 	}
 }
-
 
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *SloResponseTimeWindow) UnmarshalJSON(data []byte) error {
@@ -93,7 +92,7 @@ func (src SloResponseTimeWindow) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *SloResponseTimeWindow) GetActualInstance() (interface{}) {
+func (obj *SloResponseTimeWindow) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -144,5 +143,3 @@ func (v *NullableSloResponseTimeWindow) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -66,7 +66,7 @@ func (o *HistoricalSummaryRequest) SetSloIds(v []string) {
 }
 
 func (o HistoricalSummaryRequest) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -114,5 +114,3 @@ func (v *NullableHistoricalSummaryRequest) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

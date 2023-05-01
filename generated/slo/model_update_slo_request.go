@@ -17,17 +17,17 @@ import (
 // checks if the UpdateSloRequest type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &UpdateSloRequest{}
 
-// UpdateSloRequest The update SLO API request body varies depending on the type of indicator, time window and budgeting method.  Partial update is handled. 
+// UpdateSloRequest The update SLO API request body varies depending on the type of indicator, time window and budgeting method.  Partial update is handled.
 type UpdateSloRequest struct {
 	// A name for the SLO.
 	Name *string `json:"name,omitempty"`
 	// A description for the SLO.
-	Description *string `json:"description,omitempty"`
-	Indicator *SloResponseIndicator `json:"indicator,omitempty"`
-	TimeWindow *SloResponseTimeWindow `json:"timeWindow,omitempty"`
-	BudgetingMethod *BudgetingMethod `json:"budgetingMethod,omitempty"`
-	Objective *Objective `json:"objective,omitempty"`
-	Settings *Settings `json:"settings,omitempty"`
+	Description     *string                `json:"description,omitempty"`
+	Indicator       *SloResponseIndicator  `json:"indicator,omitempty"`
+	TimeWindow      *SloResponseTimeWindow `json:"timeWindow,omitempty"`
+	BudgetingMethod *BudgetingMethod       `json:"budgetingMethod,omitempty"`
+	Objective       *Objective             `json:"objective,omitempty"`
+	Settings        *Settings              `json:"settings,omitempty"`
 }
 
 // NewUpdateSloRequest instantiates a new UpdateSloRequest object
@@ -272,7 +272,7 @@ func (o *UpdateSloRequest) SetSettings(v Settings) {
 }
 
 func (o UpdateSloRequest) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -340,5 +340,3 @@ func (v *NullableUpdateSloRequest) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

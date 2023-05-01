@@ -24,15 +24,15 @@ type SloResponse struct {
 	// The name of the SLO.
 	Name *string `json:"name,omitempty"`
 	// The description of the SLO.
-	Description *string `json:"description,omitempty"`
-	Indicator *SloResponseIndicator `json:"indicator,omitempty"`
-	TimeWindow *SloResponseTimeWindow `json:"timeWindow,omitempty"`
-	BudgetingMethod *BudgetingMethod `json:"budgetingMethod,omitempty"`
-	Objective *Objective `json:"objective,omitempty"`
-	Settings *Settings `json:"settings,omitempty"`
+	Description     *string                `json:"description,omitempty"`
+	Indicator       *SloResponseIndicator  `json:"indicator,omitempty"`
+	TimeWindow      *SloResponseTimeWindow `json:"timeWindow,omitempty"`
+	BudgetingMethod *BudgetingMethod       `json:"budgetingMethod,omitempty"`
+	Objective       *Objective             `json:"objective,omitempty"`
+	Settings        *Settings              `json:"settings,omitempty"`
 	// The SLO revision
 	Revision *float32 `json:"revision,omitempty"`
-	Summary *Summary `json:"summary,omitempty"`
+	Summary  *Summary `json:"summary,omitempty"`
 	// Indicate if the SLO is enabled
 	Enabled *bool `json:"enabled,omitempty"`
 	// The creation date
@@ -475,7 +475,7 @@ func (o *SloResponse) SetUpdatedAt(v string) {
 }
 
 func (o SloResponse) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -561,5 +561,3 @@ func (v *NullableSloResponse) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -20,7 +20,7 @@ var _ MappedNullable = &TimeWindowCalendarAligned{}
 // TimeWindowCalendarAligned Defines properties for calendar aligned time window
 type TimeWindowCalendarAligned struct {
 	// the duration formatted as {duration}{unit}
-	Duration string `json:"duration"`
+	Duration string                            `json:"duration"`
 	Calendar TimeWindowCalendarAlignedCalendar `json:"calendar"`
 }
 
@@ -92,7 +92,7 @@ func (o *TimeWindowCalendarAligned) SetCalendar(v TimeWindowCalendarAlignedCalen
 }
 
 func (o TimeWindowCalendarAligned) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -141,5 +141,3 @@ func (v *NullableTimeWindowCalendarAligned) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

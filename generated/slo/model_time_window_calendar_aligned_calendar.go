@@ -73,7 +73,7 @@ func (o *TimeWindowCalendarAlignedCalendar) SetStartTime(v string) {
 }
 
 func (o TimeWindowCalendarAlignedCalendar) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -123,5 +123,3 @@ func (v *NullableTimeWindowCalendarAlignedCalendar) UnmarshalJSON(src []byte) er
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-
