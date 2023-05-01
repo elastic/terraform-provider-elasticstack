@@ -2257,7 +2257,6 @@ components:
       required:
         - config
         - name
-        - connector_type_id
       properties:
         config:
           $ref: '#/components/schemas/config_properties_cases_webhook'
@@ -2265,12 +2264,6 @@ components:
           type: string
           description: The display name for the connector.
           example: my-connector
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .cases-webhook
-          example: .cases-webhook
         secrets:
           $ref: '#/components/schemas/secrets_properties_cases_webhook'
     update_connector_request_index:
@@ -2279,26 +2272,18 @@ components:
       required:
         - config
         - name
-        - connector_type_id
       properties:
         config:
           $ref: '#/components/schemas/config_properties_index'
         name:
           type: string
           description: The display name for the connector.
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .index
-          example: .index
     update_connector_request_jira:
       title: Update Jira connector request
       type: object
       required:
         - config
         - name
-        - connector_type_id
         - secrets
       properties:
         config:
@@ -2306,12 +2291,6 @@ components:
         name:
           type: string
           description: The display name for the connector.
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .jira
-          example: .jira
         secrets:
           $ref: '#/components/schemas/secrets_properties_jira'
     update_connector_request_opsgenie:
@@ -2320,7 +2299,6 @@ components:
       required:
         - config
         - name
-        - connector_type_id
         - secrets
       properties:
         config:
@@ -2328,12 +2306,6 @@ components:
         name:
           type: string
           description: The display name for the connector.
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .opsgenie
-          example: .opsgenie
         secrets:
           $ref: '#/components/schemas/secrets_properties_opsgenie'
     update_connector_request_resilient:
@@ -2342,7 +2314,6 @@ components:
       required:
         - config
         - name
-        - connector_type_id
         - secrets
       properties:
         config:
@@ -2350,12 +2321,6 @@ components:
         name:
           type: string
           description: The display name for the connector.
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .resilient
-          example: .resilient
         secrets:
           $ref: '#/components/schemas/secrets_properties_resilient'
     update_connector_request_serverlog:
@@ -2363,24 +2328,16 @@ components:
       type: object
       required:
         - name
-        - connector_type_id
       properties:
         name:
           type: string
           description: The display name for the connector.
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .server-log
-          example: .server-log
     update_connector_request_servicenow:
       title: Update ServiceNow ITSM connector or ServiceNow SecOps request
       type: object
       required:
         - config
         - name
-        - connector_type_id
         - secrets
       properties:
         config:
@@ -2390,19 +2347,12 @@ components:
           description: The display name for the connector.
         secrets:
           $ref: '#/components/schemas/secrets_properties_servicenow'
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .servicenow
-          example: .servicenow
     update_connector_request_servicenow_itom:
       title: Create ServiceNow ITOM connector request
       type: object
       required:
         - config
         - name
-        - connector_type_id
         - secrets
       properties:
         config:
@@ -2410,12 +2360,6 @@ components:
         name:
           type: string
           description: The display name for the connector.
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .servicenow-itom
-          example: .servicenow-itom
         secrets:
           $ref: '#/components/schemas/secrets_properties_servicenow'
     update_connector_request_swimlane:
@@ -2424,7 +2368,6 @@ components:
       required:
         - config
         - name
-        - connector_type_id
         - secrets
       properties:
         config:
@@ -2433,12 +2376,6 @@ components:
           type: string
           description: The display name for the connector.
           example: my-connector
-        connector_type_id:
-          type: string
-          description: The type of connector.
-          enum:
-            - .swimlane
-          example: .swimlane
         secrets:
           $ref: '#/components/schemas/secrets_properties_swimlane'
     connector_types:

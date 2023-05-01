@@ -8047,34 +8047,6 @@ func (s *UpdateConnectorRequestCasesWebhook) SetSecrets(val OptSecretsProperties
 	s.Secrets = val
 }
 
-// The type of connector.
-type UpdateConnectorRequestCasesWebhookConnectorTypeID string
-
-const (
-	UpdateConnectorRequestCasesWebhookConnectorTypeIDDotCasesMinusWebhook UpdateConnectorRequestCasesWebhookConnectorTypeID = ".cases-webhook"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestCasesWebhookConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestCasesWebhookConnectorTypeIDDotCasesMinusWebhook:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestCasesWebhookConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestCasesWebhookConnectorTypeID(data) {
-	case UpdateConnectorRequestCasesWebhookConnectorTypeIDDotCasesMinusWebhook:
-		*s = UpdateConnectorRequestCasesWebhookConnectorTypeIDDotCasesMinusWebhook
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/update_connector_request_index
 type UpdateConnectorRequestIndex struct {
 	Config ConfigPropertiesIndex `json:"config"`
@@ -8100,34 +8072,6 @@ func (s *UpdateConnectorRequestIndex) SetConfig(val ConfigPropertiesIndex) {
 // SetName sets the value of Name.
 func (s *UpdateConnectorRequestIndex) SetName(val string) {
 	s.Name = val
-}
-
-// The type of connector.
-type UpdateConnectorRequestIndexConnectorTypeID string
-
-const (
-	UpdateConnectorRequestIndexConnectorTypeIDDotIndex UpdateConnectorRequestIndexConnectorTypeID = ".index"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestIndexConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestIndexConnectorTypeIDDotIndex:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestIndexConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestIndexConnectorTypeID(data) {
-	case UpdateConnectorRequestIndexConnectorTypeIDDotIndex:
-		*s = UpdateConnectorRequestIndexConnectorTypeIDDotIndex
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/update_connector_request_jira
@@ -8168,34 +8112,6 @@ func (s *UpdateConnectorRequestJira) SetSecrets(val SecretsPropertiesJira) {
 	s.Secrets = val
 }
 
-// The type of connector.
-type UpdateConnectorRequestJiraConnectorTypeID string
-
-const (
-	UpdateConnectorRequestJiraConnectorTypeIDDotJira UpdateConnectorRequestJiraConnectorTypeID = ".jira"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestJiraConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestJiraConnectorTypeIDDotJira:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestJiraConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestJiraConnectorTypeID(data) {
-	case UpdateConnectorRequestJiraConnectorTypeIDDotJira:
-		*s = UpdateConnectorRequestJiraConnectorTypeIDDotJira
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/update_connector_request_opsgenie
 type UpdateConnectorRequestOpsgenie struct {
 	Config ConfigPropertiesOpsgenie `json:"config"`
@@ -8232,34 +8148,6 @@ func (s *UpdateConnectorRequestOpsgenie) SetName(val string) {
 // SetSecrets sets the value of Secrets.
 func (s *UpdateConnectorRequestOpsgenie) SetSecrets(val SecretsPropertiesOpsgenie) {
 	s.Secrets = val
-}
-
-// The type of connector.
-type UpdateConnectorRequestOpsgenieConnectorTypeID string
-
-const (
-	UpdateConnectorRequestOpsgenieConnectorTypeIDDotOpsgenie UpdateConnectorRequestOpsgenieConnectorTypeID = ".opsgenie"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestOpsgenieConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestOpsgenieConnectorTypeIDDotOpsgenie:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestOpsgenieConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestOpsgenieConnectorTypeID(data) {
-	case UpdateConnectorRequestOpsgenieConnectorTypeIDDotOpsgenie:
-		*s = UpdateConnectorRequestOpsgenieConnectorTypeIDDotOpsgenie
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/update_connector_request_resilient
@@ -8300,34 +8188,6 @@ func (s *UpdateConnectorRequestResilient) SetSecrets(val SecretsPropertiesResili
 	s.Secrets = val
 }
 
-// The type of connector.
-type UpdateConnectorRequestResilientConnectorTypeID string
-
-const (
-	UpdateConnectorRequestResilientConnectorTypeIDDotResilient UpdateConnectorRequestResilientConnectorTypeID = ".resilient"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestResilientConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestResilientConnectorTypeIDDotResilient:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestResilientConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestResilientConnectorTypeID(data) {
-	case UpdateConnectorRequestResilientConnectorTypeIDDotResilient:
-		*s = UpdateConnectorRequestResilientConnectorTypeIDDotResilient
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/update_connector_request_serverlog
 type UpdateConnectorRequestServerlog struct {
 	// The display name for the connector.
@@ -8342,34 +8202,6 @@ func (s *UpdateConnectorRequestServerlog) GetName() string {
 // SetName sets the value of Name.
 func (s *UpdateConnectorRequestServerlog) SetName(val string) {
 	s.Name = val
-}
-
-// The type of connector.
-type UpdateConnectorRequestServerlogConnectorTypeID string
-
-const (
-	UpdateConnectorRequestServerlogConnectorTypeIDDotServerMinusLog UpdateConnectorRequestServerlogConnectorTypeID = ".server-log"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestServerlogConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestServerlogConnectorTypeIDDotServerMinusLog:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestServerlogConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestServerlogConnectorTypeID(data) {
-	case UpdateConnectorRequestServerlogConnectorTypeIDDotServerMinusLog:
-		*s = UpdateConnectorRequestServerlogConnectorTypeIDDotServerMinusLog
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/update_connector_request_servicenow
@@ -8410,34 +8242,6 @@ func (s *UpdateConnectorRequestServicenow) SetSecrets(val SecretsPropertiesServi
 	s.Secrets = val
 }
 
-// The type of connector.
-type UpdateConnectorRequestServicenowConnectorTypeID string
-
-const (
-	UpdateConnectorRequestServicenowConnectorTypeIDDotServicenow UpdateConnectorRequestServicenowConnectorTypeID = ".servicenow"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestServicenowConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestServicenowConnectorTypeIDDotServicenow:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestServicenowConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestServicenowConnectorTypeID(data) {
-	case UpdateConnectorRequestServicenowConnectorTypeIDDotServicenow:
-		*s = UpdateConnectorRequestServicenowConnectorTypeIDDotServicenow
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/update_connector_request_servicenow_itom
 type UpdateConnectorRequestServicenowItom struct {
 	Config ConfigPropertiesServicenowItom `json:"config"`
@@ -8476,34 +8280,6 @@ func (s *UpdateConnectorRequestServicenowItom) SetSecrets(val SecretsPropertiesS
 	s.Secrets = val
 }
 
-// The type of connector.
-type UpdateConnectorRequestServicenowItomConnectorTypeID string
-
-const (
-	UpdateConnectorRequestServicenowItomConnectorTypeIDDotServicenowMinusItom UpdateConnectorRequestServicenowItomConnectorTypeID = ".servicenow-itom"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestServicenowItomConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestServicenowItomConnectorTypeIDDotServicenowMinusItom:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestServicenowItomConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestServicenowItomConnectorTypeID(data) {
-	case UpdateConnectorRequestServicenowItomConnectorTypeIDDotServicenowMinusItom:
-		*s = UpdateConnectorRequestServicenowItomConnectorTypeIDDotServicenowMinusItom
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/update_connector_request_swimlane
 type UpdateConnectorRequestSwimlane struct {
 	Config ConfigPropertiesSwimlane `json:"config"`
@@ -8540,32 +8316,4 @@ func (s *UpdateConnectorRequestSwimlane) SetName(val string) {
 // SetSecrets sets the value of Secrets.
 func (s *UpdateConnectorRequestSwimlane) SetSecrets(val SecretsPropertiesSwimlane) {
 	s.Secrets = val
-}
-
-// The type of connector.
-type UpdateConnectorRequestSwimlaneConnectorTypeID string
-
-const (
-	UpdateConnectorRequestSwimlaneConnectorTypeIDDotSwimlane UpdateConnectorRequestSwimlaneConnectorTypeID = ".swimlane"
-)
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateConnectorRequestSwimlaneConnectorTypeID) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateConnectorRequestSwimlaneConnectorTypeIDDotSwimlane:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateConnectorRequestSwimlaneConnectorTypeID) UnmarshalText(data []byte) error {
-	switch UpdateConnectorRequestSwimlaneConnectorTypeID(data) {
-	case UpdateConnectorRequestSwimlaneConnectorTypeIDDotSwimlane:
-		*s = UpdateConnectorRequestSwimlaneConnectorTypeIDDotSwimlane
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }

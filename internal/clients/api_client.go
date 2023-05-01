@@ -64,7 +64,7 @@ type ApiClient struct {
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
 	alerting                 alerting.AlertingApi
-	actionConnectors         *connectors.Client
+	connectors               *connectors.Client
 	kibanaConfig             kibana.Config
 	version                  string
 }
@@ -123,18 +123,18 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
-	actionConnectors, err := buildActionConnectorClient(baseConfig, kibanaConfig)
+	actionConnectors, err := buildConnectorsClient(baseConfig, kibanaConfig)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create Kibana actions client: [%w]", err)
 	}
 
 	return &ApiClient{
-			elasticsearch:    es,
-			kibana:           kib,
-			alerting:         buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
-			actionConnectors: actionConnectors,
-			kibanaConfig:     kibanaConfig,
-			version:          "acceptance-testing",
+			elasticsearch: es,
+			kibana:        kib,
+			alerting:      buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
+			connectors:    actionConnectors,
+			kibanaConfig:  kibanaConfig,
+			version:       "acceptance-testing",
 		},
 		nil
 }
@@ -199,11 +199,11 @@ func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
 }
 
 func (a *ApiClient) GetKibanaActionConnectorClient(ctx context.Context) (*connectors.Client, context.Context, error) {
-	if a.actionConnectors == nil {
+	if a.connectors == nil {
 		return nil, nil, errors.New("kibana action connector client not found")
 	}
 
-	return a.actionConnectors, ctx, nil
+	return a.connectors, ctx, nil
 }
 
 func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
@@ -536,7 +536,7 @@ func (sec SecuritySource) BasicAuth(ctx context.Context, operationName string) (
 	}, nil
 }
 
-func buildActionConnectorClient(baseConfig BaseConfig, config kibana.Config) (*connectors.Client, error) {
+func buildConnectorsClient(baseConfig BaseConfig, config kibana.Config) (*connectors.Client, error) {
 	return connectors.NewClient(
 		config.Address,
 		SecuritySource{username: config.Username, password: config.Password},
@@ -564,7 +564,7 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 
 	alertingClient := buildAlertingClient(baseConfig, kibanaConfig)
 
-	actionConnectorClient, err := buildActionConnectorClient(baseConfig, kibanaConfig)
+	connectorsClient, err := buildConnectorsClient(baseConfig, kibanaConfig)
 	if err != nil {
 		return nil, diag.FromErr(fmt.Errorf("cannot create Kibana actions client: [%w]", err))
 	}
@@ -575,7 +575,7 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 		kibana:                   kibanaClient,
 		kibanaConfig:             kibanaConfig,
 		alerting:                 alertingClient.AlertingApi,
-		actionConnectors:         actionConnectorClient,
+		connectors:               connectorsClient,
 		version:                  version,
 	}, nil
 }
