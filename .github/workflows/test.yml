@@ -129,6 +129,3 @@ jobs:
           ELASTICSEARCH_USERNAME: "elastic"
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           KIBANA_ENDPOINT: "http://localhost:5601"
-          FLEET_ENDPOINT: "http://localhost:5601"
-          FLEET_USERNAME: "elastic"
-          FLEET_PASSWORD: ${{ env.ELASTIC_PASSWORD }}

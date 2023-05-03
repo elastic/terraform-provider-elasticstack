@@ -112,6 +112,11 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		Password: baseConfig.Password,
 		Address:  os.Getenv("KIBANA_ENDPOINT"),
 	}
+	if insecure := os.Getenv("KIBANA_INSECURE"); insecure != "" {
+		if insecureValue, _ := strconv.ParseBool(insecure); insecureValue {
+			kibanaConfig.DisableVerifySSL = true
+		}
+	}
 
 	es, err := buildEsAccClient()
 	if err != nil {
@@ -128,20 +133,10 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		Username: kibanaConfig.Username,
 		Password: kibanaConfig.Password,
 		APIKey:   os.Getenv("FLEET_API_KEY"),
+		Insecure: kibanaConfig.DisableVerifySSL,
 	}
 	if v := os.Getenv("FLEET_CA_CERTS"); v != "" {
 		fleetCfg.CACerts = strings.Split(os.Getenv("FLEET_CA_CERTS"), ",")
-	}
-	if v := os.Getenv("FLEET_USERNAME"); v != "" {
-		fleetCfg.Username = v
-	}
-	if v := os.Getenv("FLEET_PASSWORD"); v != "" {
-		fleetCfg.Password = v
-	}
-	if v := os.Getenv("FLEET_INSECURE"); v != "" {
-		if val, err := strconv.ParseBool(v); err == nil {
-			fleetCfg.Insecure = val
-		}
 	}
 
 	fleetClient, err := fleet.NewClient(fleetCfg)
@@ -493,6 +488,11 @@ func buildKibanaConfig(d *schema.ResourceData, baseConfig BaseConfig) (kibana.Co
 		if endpoint := os.Getenv("KIBANA_ENDPOINT"); endpoint != "" {
 			config.Address = endpoint
 		}
+		if insecure := os.Getenv("KIBANA_INSECURE"); insecure != "" {
+			if insecureValue, _ := strconv.ParseBool(insecure); insecureValue {
+				config.DisableVerifySSL = true
+			}
+		}
 
 		if username, ok := kibConfig["username"]; ok && username != "" {
 			config.Username = username.(string)
@@ -542,18 +542,20 @@ func buildAlertingClient(baseConfig BaseConfig, config kibana.Config) *alerting.
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
-func buildFleetClient(d *schema.ResourceData, baseConfig BaseConfig) (*fleet.Client, diag.Diagnostics) {
+func buildFleetClient(d *schema.ResourceData, kibanaCfg kibana.Config) (*fleet.Client, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Order of precedence for config options:
 	// 1 (highest): environment variables
 	// 2: resource config
-	// 3: base config
+	// 3: kibana config
 
-	// Set variables from base config.
+	// Set variables from kibana config.
 	config := fleet.Config{
-		Username: baseConfig.Username,
-		Password: baseConfig.Password,
+		URL:      kibanaCfg.Address,
+		Username: kibanaCfg.Username,
+		Password: kibanaCfg.Password,
+		Insecure: kibanaCfg.DisableVerifySSL,
 	}
 
 	// Set variables from resource config.
@@ -593,26 +595,11 @@ func buildFleetClient(d *schema.ResourceData, baseConfig BaseConfig) (*fleet.Cli
 		config.Insecure = v
 	}
 
-	// Set variables from environment variables.
-	if v := os.Getenv("FLEET_ENDPOINT"); v != "" {
-		config.URL = v
-	}
-	if v := os.Getenv("FLEET_USERNAME"); v != "" {
-		config.Username = v
-	}
-	if v := os.Getenv("FLEET_PASSWORD"); v != "" {
-		config.Password = v
-	}
 	if v := os.Getenv("FLEET_API_KEY"); v != "" {
 		config.APIKey = v
 	}
 	if v := os.Getenv("FLEET_CA_CERTS"); v != "" {
 		config.CACerts = strings.Split(v, ",")
-	}
-	if v := os.Getenv("FLEET_INSECURE"); v != "" {
-		if val, err := strconv.ParseBool(v); err == nil {
-			config.Insecure = val
-		}
 	}
 
 	client, err := fleet.NewClient(config)
@@ -650,7 +637,7 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 
 	alertingClient := buildAlertingClient(baseConfig, kibanaConfig)
 
-	fleetClient, diags := buildFleetClient(d, baseConfig)
+	fleetClient, diags := buildFleetClient(d, kibanaConfig)
 	if diags.HasError() {
 		return nil, diags
 	}
