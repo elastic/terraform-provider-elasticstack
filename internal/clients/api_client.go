@@ -104,6 +104,13 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 			config.Addresses = endpoints
 		}
 
+		if insecure := os.Getenv("ELASTICSEARCH_INSECURE"); insecure != "" {
+			if insecureValue, _ := strconv.ParseBool(insecure); insecureValue {
+				tlsClientConfig := ensureTLSClientConfig(&config)
+				tlsClientConfig.InsecureSkipVerify = true
+			}
+		}
+
 		return elasticsearch.NewClient(config)
 	}
 
@@ -559,40 +566,38 @@ func buildFleetClient(d *schema.ResourceData, kibanaCfg kibana.Config) (*fleet.C
 	}
 
 	// Set variables from resource config.
-	fleetDataRaw, ok := d.GetOk("fleet")
-	if !ok {
-		return nil, diags
-	}
-	fleetData := fleetDataRaw.([]interface{})[0].(map[string]any)
-	if !ok {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to parse Fleet configuration",
-			Detail:   "Fleet configuration data has not been configured correctly or is empty",
-		})
-		return nil, diags
-	}
-	if v, ok := fleetData["endpoint"].(string); ok && v != "" {
-		config.URL = v
-	}
-	if v, ok := fleetData["username"].(string); ok && v != "" {
-		config.Username = v
-	}
-	if v, ok := fleetData["password"].(string); ok && v != "" {
-		config.Password = v
-	}
-	if v, ok := fleetData["api_key"].(string); ok && v != "" {
-		config.APIKey = v
-	}
-	if v, ok := fleetData["ca_certs"].([]interface{}); ok && len(v) > 0 {
-		for _, elem := range v {
-			if vStr, elemOk := elem.(string); elemOk {
-				config.CACerts = append(config.CACerts, vStr)
+	if fleetDataRaw, ok := d.GetOk("fleet"); ok {
+		fleetData, ok := fleetDataRaw.([]interface{})[0].(map[string]any)
+		if !ok {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Unable to parse Fleet configuration",
+				Detail:   "Fleet configuration data has not been configured correctly or is empty",
+			})
+			return nil, diags
+		}
+		if v, ok := fleetData["endpoint"].(string); ok && v != "" {
+			config.URL = v
+		}
+		if v, ok := fleetData["username"].(string); ok && v != "" {
+			config.Username = v
+		}
+		if v, ok := fleetData["password"].(string); ok && v != "" {
+			config.Password = v
+		}
+		if v, ok := fleetData["api_key"].(string); ok && v != "" {
+			config.APIKey = v
+		}
+		if v, ok := fleetData["ca_certs"].([]interface{}); ok && len(v) > 0 {
+			for _, elem := range v {
+				if vStr, elemOk := elem.(string); elemOk {
+					config.CACerts = append(config.CACerts, vStr)
+				}
 			}
 		}
-	}
-	if v, ok := fleetData["insecure"].(bool); ok {
-		config.Insecure = v
+		if v, ok := fleetData["insecure"].(bool); ok {
+			config.Insecure = v
+		}
 	}
 
 	if v := os.Getenv("FLEET_API_KEY"); v != "" {
