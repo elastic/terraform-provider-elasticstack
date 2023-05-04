@@ -27,14 +27,14 @@ func CreateConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 	httpResp, err := client.CreateConnectorWithBody(ctx, connectorOld.SpaceID, &connectors.CreateConnectorParams{KbnXsrf: connectors.KbnXsrf("true")}, "application/json", body)
 
 	if err != nil {
-		return "", diag.Errorf("unable to create connector: [%w]", err)
+		return "", diag.Errorf("unable to create connector: [%v]", err)
 	}
 
 	defer httpResp.Body.Close()
 
 	resp, err := connectors.ParseCreateConnectorResponse(httpResp)
 	if err != nil {
-		return "", diag.Errorf("unable to parse connector create response: [%w]", err)
+		return "", diag.Errorf("unable to parse connector create response: [%v]", err)
 	}
 
 	if resp.JSON400 != nil {
@@ -71,14 +71,14 @@ func UpdateConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 	httpResp, err := client.UpdateConnectorWithBody(ctx, connectorOld.SpaceID, connectorOld.ConnectorID, &connectors.UpdateConnectorParams{KbnXsrf: connectors.KbnXsrf("true")}, "application/json", body)
 
 	if err != nil {
-		return "", diag.Errorf("unable to update connector: [%w]", err)
+		return "", diag.Errorf("unable to update connector: [%v]", err)
 	}
 
 	defer httpResp.Body.Close()
 
 	resp, err := connectors.ParseCreateConnectorResponse(httpResp)
 	if err != nil {
-		return "", diag.Errorf("unable to parse connector update response: [%w]", err)
+		return "", diag.Errorf("unable to parse connector update response: [%v]", err)
 	}
 
 	if resp.JSON400 != nil {
@@ -110,14 +110,14 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 	httpResp, err := client.GetConnector(ctx, spaceID, connectorID)
 
 	if err != nil {
-		return nil, diag.Errorf("unable to create connector: [%w]", err)
+		return nil, diag.Errorf("unable to create connector: [%v]", err)
 	}
 
 	defer httpResp.Body.Close()
 
 	resp, err := connectors.ParseGetConnectorResponse(httpResp)
 	if err != nil {
-		return nil, diag.Errorf("unable to parse connector get response: [%w]", err)
+		return nil, diag.Errorf("unable to parse connector get response: [%v]", err)
 	}
 
 	if resp.JSON404 != nil {
@@ -149,14 +149,14 @@ func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 	httpResp, err := client.DeleteConnector(ctx, spaceID, connectorID, &connectors.DeleteConnectorParams{KbnXsrf: "true"})
 
 	if err != nil {
-		return diag.Errorf("unable to delete connector: [%w]", err)
+		return diag.Errorf("unable to delete connector: [%v]", err)
 	}
 
 	defer httpResp.Body.Close()
 
 	resp, err := connectors.ParseDeleteConnectorResponse(httpResp)
 	if err != nil {
-		return diag.Errorf("unable to parse connector get response: [%w]", err)
+		return diag.Errorf("unable to parse connector get response: [%v]", err)
 	}
 
 	if resp.JSON404 != nil {
