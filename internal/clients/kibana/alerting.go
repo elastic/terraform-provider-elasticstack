@@ -130,7 +130,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 
 	defer res.Body.Close()
 	if diags := utils.CheckHttpError(res, "Unable to update alerting rule"); diags.HasError() {
-		return nil, diag.FromErr(err)
+		return nil, diags
 	}
 
 	shouldBeEnabled := rule.Enabled != nil && *rule.Enabled

@@ -1,5 +1,3 @@
-//go:generate go run github.com/ogen-go/ogen/cmd/ogen --infer-types --no-server --target generated/connectors -package connectors --clean --debug.ignoreNotImplemented "discriminator inference" ./generated/connectors/bundled.yaml
-
-// go:generate go run github.com/ogen-go/ogen/cmd/ogen --help
+//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen -package connectors -o ./generated/connectors/connectors.gen.go -generate "types,client" ./generated/connectors/bundled.yaml
 
 package main

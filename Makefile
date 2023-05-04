@@ -257,9 +257,7 @@ generate-alerting-client: ## generate Kibana alerting client
 	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
 	@ go fmt ./generated/alerting/...
 
-## -i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/actions/docs/openapi/bundled.json \
-
 .PHONY: generate-connectors-client
 generate-connectors-client: ## generate Kibana connectors client
-	@ go get github.com/ogen-go/ogen/gen@v0.63.0
+	@ go get github.com/deepmap/oapi-codegen/pkg/codegen@v1.12.4
 	@ go generate

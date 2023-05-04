@@ -85,9 +85,17 @@ paths:
                 createIndexConnectorResponse:
                   $ref: '#/components/examples/create_index_connector_response'
         '400':
-          $ref: '#/components/responses/400'
+          description: Indicates a bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_request_error'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -114,7 +122,11 @@ paths:
                 getConnectorResponse:
                   $ref: '#/components/examples/get_connector_response'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
         '404':
           description: Object is not found.
           content:
@@ -148,7 +160,11 @@ paths:
         '204':
           description: Indicates a successful call.
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
         '404':
           description: Object is not found.
           content:
@@ -195,26 +211,26 @@ paths:
                 - $ref: '#/components/schemas/update_connector_request_servicenow'
                 - $ref: '#/components/schemas/update_connector_request_servicenow_itom'
                 - $ref: '#/components/schemas/update_connector_request_swimlane'
-              discriminator:
-                propertyName: connector_type_id
-                mapping:
-                  .cases-webhook: '#/components/schemas/update_connector_request_cases_webhook'
-#                  .email: '#/components/schemas/update_connector_request_email'
-                  .index: '#/components/schemas/update_connector_request_index'
-                  .jira: '#/components/schemas/update_connector_request_jira'
-                  .opsgenie: '#/components/schemas/update_connector_request_opsgenie'
-#                  .pagerduty: '#/components/schemas/update_connector_request_pagerduty'
-                  .resilient: '#/components/schemas/update_connector_request_resilient'
-                  .server-log: '#/components/schemas/update_connector_request_serverlog'
-                  .servicenow: '#/components/schemas/update_connector_request_servicenow'
-                  .servicenow-itom: '#/components/schemas/update_connector_request_servicenow_itom'
-#                  .servicenow-sir: '#/components/schemas/create_connector_request_servicenow_sir'
-#                  .slack: '#/components/schemas/create_connector_request_slack'
-                  .swimlane: '#/components/schemas/update_connector_request_swimlane'
-                  # .teams: '#/components/schemas/create_connector_request_teams'
-                  # .tines: '#/components/schemas/create_connector_request_tines'
-                  # .webhook: '#/components/schemas/create_connector_request_webhook'
-                  # .xmatters: '#/components/schemas/create_connector_request_xmatters'
+#               discriminator:
+#                 propertyName: connector_type_id
+#                 mapping:
+#                   .cases-webhook: '#/components/schemas/update_connector_request_cases_webhook'
+# #                  .email: '#/components/schemas/update_connector_request_email'
+#                   .index: '#/components/schemas/update_connector_request_index'
+#                   .jira: '#/components/schemas/update_connector_request_jira'
+#                   .opsgenie: '#/components/schemas/update_connector_request_opsgenie'
+# #                  .pagerduty: '#/components/schemas/update_connector_request_pagerduty'
+#                   .resilient: '#/components/schemas/update_connector_request_resilient'
+#                   .server-log: '#/components/schemas/update_connector_request_serverlog'
+#                   .servicenow: '#/components/schemas/update_connector_request_servicenow'
+#                   .servicenow-itom: '#/components/schemas/update_connector_request_servicenow_itom'
+# #                  .servicenow-sir: '#/components/schemas/create_connector_request_servicenow_sir'
+# #                  .slack: '#/components/schemas/create_connector_request_slack'
+#                   .swimlane: '#/components/schemas/update_connector_request_swimlane'
+#                   # .teams: '#/components/schemas/create_connector_request_teams'
+#                   # .tines: '#/components/schemas/create_connector_request_tines'
+#                   # .webhook: '#/components/schemas/create_connector_request_webhook'
+#                   # .xmatters: '#/components/schemas/create_connector_request_xmatters'
             examples:
               updateIndexConnectorRequest:
                 $ref: '#/components/examples/update_index_connector_request'
@@ -226,11 +242,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/connector_response_properties'
         '400':
-          $ref: '#/components/responses/400'
+          description: Indicates a bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_request_error'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
         '404':
-          $ref: '#/components/responses/404'
+          description: Object is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/object_not_found_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -294,7 +322,11 @@ paths:
                 getConnectorsResponse:
                   $ref: '#/components/examples/get_connectors_response'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -361,7 +393,11 @@ paths:
                 getConnectorTypesResponse:
                   $ref: '#/components/examples/get_connector_types_response'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -426,29 +462,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - connector_id
-                  - status
-                properties:
-                  connector_id:
-                    type: string
-                    description: The identifier for the connector.
-                  data:
-                    oneOf:
-                      - type: object
-                        description: Information returned from the action.
-                        additionalProperties: true
-                      - type: array
-                        description: An array of information returned from the action.
-                        items:
-                          type: object
-                  status:
-                    type: string
-                    description: The status of the action.
-                    enum:
-                      - error
-                      - ok
+                $ref: '#/components/schemas/run_connector_general_response'
               examples:
                 runIndexConnectorResponse:
                   $ref: '#/components/examples/run_index_connector_response'
@@ -461,7 +475,11 @@ paths:
                 runSwimlaneConnectorResponse:
                   $ref: '#/components/examples/run_swimlane_connector_response'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -483,7 +501,11 @@ paths:
         '204':
           description: Indicates a successful call.
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     get:
@@ -500,7 +522,11 @@ paths:
         '200':
           $ref: '#/components/responses/200_actions'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     put:
@@ -536,7 +562,11 @@ paths:
         '200':
           $ref: '#/components/responses/200_actions'
         '404':
-          $ref: '#/components/responses/404'
+          description: Object is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/object_not_found_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -561,7 +591,11 @@ paths:
                 items:
                   $ref: '#/components/schemas/action_response_properties'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     post:
@@ -599,7 +633,11 @@ paths:
         '200':
           $ref: '#/components/responses/200_actions'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -646,7 +684,11 @@ paths:
                       type: string
                       description: The name of the connector type.
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -683,24 +725,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  actionId:
-                    type: string
-                  data:
-                    oneOf:
-                      - type: object
-                        description: Information returned from the action.
-                        additionalProperties: true
-                      - type: array
-                        description: An array of information returned from the action.
-                        items:
-                          type: object
-                  status:
-                    type: string
-                    description: The status of the action.
+                $ref: '#/components/schemas/legacy_run_connector_general_response'
         '401':
-          $ref: '#/components/responses/401'
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authorization_error'
       servers:
         - url: https://localhost:5601
     servers:
@@ -2921,6 +2952,99 @@ components:
           description: Indicates whether it is a preconfigured action.
         name:
           type: string
+    run_connector_general_response:
+      title: Response from running a connector.
+      type: object
+      required:
+        - connector_id
+        - status
+      properties:
+        connector_id:
+          type: string
+          description: The identifier for the connector.
+        data:
+          oneOf:
+            - type: object
+              description: Information returned from the action.
+              additionalProperties: true
+            - type: array
+              description: An array of information returned from the action.
+              items:
+                type: object
+        status:
+          type: string
+          description: The status of the action.
+          enum:
+            - error
+            - ok
+    legacy_run_connector_general_response:
+      title: Response from legacy endpoint for running a connector.
+      type: object
+      properties:
+        actionId:
+          type: string
+        data:
+          oneOf:
+            - type: object
+              description: Information returned from the action.
+              additionalProperties: true
+            - type: array
+              description: An array of information returned from the action.
+              items:
+                type: object
+        status:
+          type: string
+          description: The status of the action.
+    bad_request_error:
+      title: Bad request
+      type: object
+      properties:
+        error:
+          type: string
+          example: Bad Request
+          enum:
+            - Bad Request
+        message:
+          type: string
+          example: 'error validating action type config: [index]: expected value of type [string] but got [undefined]'
+        statusCode:
+          type: integer
+          example: 400
+          enum:
+            - 400
+    authorization_error:
+      type: object
+      title: Unauthorized response
+      properties:
+        error:
+          type: string
+          example: Unauthorized
+          enum:
+            - Unauthorized
+        message:
+          type: string
+        statusCode:
+          type: integer
+          example: 401
+          enum:
+            - 401
+    object_not_found_error:
+      type: object
+      title: Not found response
+      properties:
+        error:
+          type: string
+          example: Not Found
+          enum:
+            - Not Found
+        message:
+          type: string
+          example: Saved object [action/baf33fc0-920c-11ed-b36a-874bd1548a00] not found
+        statusCode:
+          type: integer
+          example: 404
+          enum:
+            - 404
   examples:
     create_index_connector_request:
       summary: Create an index connector.
@@ -3151,68 +3275,6 @@ components:
               pushedDate: '2022-09-08T16:52:27.865Z'
         status: ok
   responses:
-    '400': 
-      description: Indicates a bad request.
-      content:
-        application/json:
-          schema:
-            type: object
-            title: Bad request
-            properties:
-              error:
-                type: string
-                example: Bad Request
-                enum:
-                  - Bad Request
-              message:
-                type: string
-                example: 'error validating action type config: [index]: expected value of type [string] but got [undefined]'
-              statusCode:
-                type: integer
-                example: 400
-                enum:
-                  - 400    
-    '401':
-      description: Authorization information is missing or invalid.
-      content:
-        application/json:
-          schema:
-            type: object
-            title: Unauthorized response
-            properties:
-              error:
-                type: string
-                example: Unauthorized
-                enum:
-                  - Unauthorized
-              message:
-                type: string
-              statusCode:
-                type: integer
-                example: 401
-                enum:
-                  - 401
-    '404':
-      description: Object is not found.
-      content:
-        application/json:
-          schema:
-            type: object
-            title: Not found response
-            properties:
-              error:
-                type: string
-                example: Not Found
-                enum:
-                  - Not Found
-              message:
-                type: string
-                example: Saved object [action/baf33fc0-920c-11ed-b36a-874bd1548a00] not found
-              statusCode:
-                type: integer
-                example: 404
-                enum:
-                  - 404
     200_actions:
       description: Indicates a successful call.
       content:

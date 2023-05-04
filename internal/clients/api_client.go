@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
@@ -21,7 +22,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/ogen-go/ogen/ogenerrors"
 )
 
 type CompositeId struct {
@@ -198,12 +198,12 @@ func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
 	return a.alerting, nil
 }
 
-func (a *ApiClient) GetKibanaActionConnectorClient(ctx context.Context) (*connectors.Client, context.Context, error) {
+func (a *ApiClient) GetKibanaConnectorsClient(ctx context.Context) (*connectors.Client, error) {
 	if a.connectors == nil {
-		return nil, nil, errors.New("kibana action connector client not found")
+		return nil, errors.New("kibana action connector client not found")
 	}
 
-	return a.connectors, ctx, nil
+	return a.connectors, nil
 }
 
 func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
@@ -520,26 +520,14 @@ func buildAlertingClient(baseConfig BaseConfig, config kibana.Config) *alerting.
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
-type SecuritySource struct {
-	username string
-	password string
-}
-
-func (sec SecuritySource) ApiKeyAuth(ctx context.Context, operationName string) (connectors.ApiKeyAuth, error) {
-	return connectors.ApiKeyAuth{}, ogenerrors.ErrSkipClientSecurity
-}
-
-func (sec SecuritySource) BasicAuth(ctx context.Context, operationName string) (connectors.BasicAuth, error) {
-	return connectors.BasicAuth{
-		Username: sec.username,
-		Password: sec.password,
-	}, nil
-}
-
 func buildConnectorsClient(baseConfig BaseConfig, config kibana.Config) (*connectors.Client, error) {
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(config.Username, config.Password)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
+	}
 	return connectors.NewClient(
 		config.Address,
-		SecuritySource{username: config.Username, password: config.Password},
+		connectors.WithRequestEditorFn(basicAuthProvider.Intercept),
 	)
 }
 
@@ -566,7 +554,7 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 
 	connectorsClient, err := buildConnectorsClient(baseConfig, kibanaConfig)
 	if err != nil {
-		return nil, diag.FromErr(fmt.Errorf("cannot create Kibana actions client: [%w]", err))
+		return nil, diag.FromErr(fmt.Errorf("cannot create Kibana connectors client: [%w]", err))
 	}
 
 	return &ApiClient{

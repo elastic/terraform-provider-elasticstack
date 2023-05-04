@@ -1,8 +1,11 @@
 package kibana
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -11,27 +14,42 @@ import (
 )
 
 func CreateConnector(ctx context.Context, apiClient *clients.ApiClient, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
-	client, ctxWithAuth, err := apiClient.GetKibanaActionConnectorClient(ctx)
+	client, err := apiClient.GetKibanaConnectorsClient(ctx)
 	if err != nil {
 		return "", diag.FromErr(err)
 	}
 
-	createProperties, err := createConnectorRequestBodyProperties(connectorOld)
+	body, err := createConnectorRequestBody(connectorOld)
 	if err != nil {
 		return "", diag.FromErr(err)
 	}
 
-	response, err := client.CreateConnector(ctxWithAuth, createProperties, connectors.CreateConnectorParams{KbnXSRF: "true", SpaceId: connectorOld.SpaceID})
+	httpResp, err := client.CreateConnectorWithBody(ctx, connectorOld.SpaceID, &connectors.CreateConnectorParams{KbnXsrf: connectors.KbnXsrf("true")}, "application/json", body)
+
 	if err != nil {
-		return "", diag.FromErr(fmt.Errorf("create connector failed: [%w]", err))
+		return "", diag.Errorf("unable to create connector: [%w]", err)
 	}
 
-	properties, ok := response.(*connectors.ConnectorResponseProperties)
-	if !ok {
-		return "", diag.FromErr(fmt.Errorf("failed to parse create response [%+v]", response))
+	defer httpResp.Body.Close()
+
+	resp, err := connectors.ParseCreateConnectorResponse(httpResp)
+	if err != nil {
+		return "", diag.Errorf("unable to parse connector create response: [%w]", err)
 	}
 
-	connectorNew, err := actionConnectorToModel(connectorOld.SpaceID, *properties)
+	if resp.JSON400 != nil {
+		return "", diag.Errorf("%s: %s", *resp.JSON400.Error, *resp.JSON400.Message)
+	}
+
+	if resp.JSON401 != nil {
+		return "", diag.Errorf("%s: %s", *resp.JSON401.Error, *resp.JSON401.Message)
+	}
+
+	if resp.JSON200 == nil {
+		return "", diag.Errorf("%s: %s", resp.Status(), string(resp.Body))
+	}
+
+	connectorNew, err := connectorResponseToModel(connectorOld.SpaceID, *resp.JSON200)
 	if err != nil {
 		return "", diag.FromErr(err)
 	}
@@ -40,46 +58,42 @@ func CreateConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 }
 
 func UpdateConnector(ctx context.Context, apiClient *clients.ApiClient, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
-	client, ctxWithAuth, err := apiClient.GetKibanaActionConnectorClient(ctx)
+	client, err := apiClient.GetKibanaConnectorsClient(ctx)
 	if err != nil {
 		return "", diag.FromErr(err)
 	}
 
-	updateProperties, err := updateConnectorRequestBodyProperties(connectorOld)
+	body, err := updateConnectorRequestBody(connectorOld)
 	if err != nil {
 		return "", diag.FromErr(err)
 	}
 
-	response, err := client.UpdateConnector(
-		ctxWithAuth,
-		updateProperties,
-		connectors.UpdateConnectorParams{
-			KbnXSRF:     "true",
-			ConnectorId: connectorOld.ConnectorID,
-			SpaceId:     connectorOld.SpaceID,
-		},
-	)
+	httpResp, err := client.UpdateConnectorWithBody(ctx, connectorOld.SpaceID, connectorOld.ConnectorID, &connectors.UpdateConnectorParams{KbnXsrf: connectors.KbnXsrf("true")}, "application/json", body)
 
 	if err != nil {
-		return "", diag.FromErr(err)
+		return "", diag.Errorf("unable to update connector: [%w]", err)
 	}
 
-	var properties *connectors.ConnectorResponseProperties
+	defer httpResp.Body.Close()
 
-	switch resp := response.(type) {
-	case *connectors.ConnectorResponseProperties:
-		properties, _ = response.(*connectors.ConnectorResponseProperties)
-	case *connectors.R400:
-		return "", diag.Errorf("update failed with error [%s]: %s", resp.GetError().Value, resp.GetMessage().Value)
-	case *connectors.R401:
-		return "", diag.Errorf("update failed with error [%s]: %s", resp.GetError().Value, resp.GetMessage().Value)
-	case *connectors.R404:
-		return "", diag.Errorf("update failed with error [%s]: %s", resp.GetError().Value, resp.GetMessage().Value)
-	default:
-		return "", diag.Errorf("failed to parse update response %+v", response)
+	resp, err := connectors.ParseCreateConnectorResponse(httpResp)
+	if err != nil {
+		return "", diag.Errorf("unable to parse connector update response: [%w]", err)
 	}
 
-	connectorNew, err := actionConnectorToModel(connectorOld.SpaceID, *properties)
+	if resp.JSON400 != nil {
+		return "", diag.Errorf("%s: %s", *resp.JSON400.Error, *resp.JSON400.Message)
+	}
+
+	if resp.JSON401 != nil {
+		return "", diag.Errorf("%s: %s", *resp.JSON401.Error, *resp.JSON401.Message)
+	}
+
+	if resp.JSON200 == nil {
+		return "", diag.Errorf("%s: %s", resp.Status(), string(resp.Body))
+	}
+
+	connectorNew, err := connectorResponseToModel(connectorOld.SpaceID, *resp.JSON200)
 	if err != nil {
 		return "", diag.FromErr(err)
 	}
@@ -88,23 +102,37 @@ func UpdateConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 }
 
 func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID, spaceID string, connectorTypeID string) (*models.KibanaActionConnector, diag.Diagnostics) {
-	client, ctxWithAuth, err := apiClient.GetKibanaActionConnectorClient(ctx)
+	client, err := apiClient.GetKibanaConnectorsClient(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	response, err := client.GetConnector(ctxWithAuth, connectors.GetConnectorParams{ConnectorId: connectorID, SpaceId: spaceID})
+	httpResp, err := client.GetConnector(ctx, spaceID, connectorID)
 
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diag.Errorf("unable to create connector: [%w]", err)
 	}
 
-	properties, ok := response.(*connectors.ConnectorResponseProperties)
-	if !ok {
-		return nil, diag.FromErr(fmt.Errorf("failed to parse get response [%+v]", response))
+	defer httpResp.Body.Close()
+
+	resp, err := connectors.ParseGetConnectorResponse(httpResp)
+	if err != nil {
+		return nil, diag.Errorf("unable to parse connector get response: [%w]", err)
 	}
 
-	connector, err := actionConnectorToModel(spaceID, *properties)
+	if resp.JSON404 != nil {
+		return nil, diag.Errorf("%s: %s", *resp.JSON404.Error, *resp.JSON404.Message)
+	}
+
+	if resp.JSON401 != nil {
+		return nil, diag.Errorf("%s: %s", *resp.JSON401.Error, *resp.JSON401.Message)
+	}
+
+	if resp.JSON200 == nil {
+		return nil, diag.Errorf("%s: %s", resp.Status(), string(resp.Body))
+	}
+
+	connector, err := connectorResponseToModel(spaceID, *resp.JSON200)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -113,21 +141,40 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 }
 
 func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID string, spaceID string) diag.Diagnostics {
-	client, ctxWithAuth, err := apiClient.GetKibanaActionConnectorClient(ctx)
+	client, err := apiClient.GetKibanaConnectorsClient(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	_, err = client.DeleteConnector(ctxWithAuth, connectors.DeleteConnectorParams{KbnXSRF: "true", ConnectorId: connectorID, SpaceId: spaceID})
+	httpResp, err := client.DeleteConnector(ctx, spaceID, connectorID, &connectors.DeleteConnectorParams{KbnXsrf: "true"})
 
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.Errorf("unable to delete connector: [%w]", err)
+	}
+
+	defer httpResp.Body.Close()
+
+	resp, err := connectors.ParseDeleteConnectorResponse(httpResp)
+	if err != nil {
+		return diag.Errorf("unable to parse connector get response: [%w]", err)
+	}
+
+	if resp.JSON404 != nil {
+		return diag.Errorf("%s: %s", *resp.JSON404.Error, *resp.JSON404.Message)
+	}
+
+	if resp.JSON401 != nil {
+		return diag.Errorf("%s: %s", *resp.JSON401.Error, *resp.JSON401.Message)
+	}
+
+	if resp.StatusCode() != 200 && resp.StatusCode() != 204 {
+		return diag.Errorf("failed to delete connector: got status [%v] [%s]", resp.StatusCode(), resp.Status())
 	}
 
 	return nil
 }
 
-func createConnectorRequestBodyProperties(connector models.KibanaActionConnector) (connectors.CreateConnectorReq, error) {
+func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Reader, error) {
 	switch connectors.ConnectorTypes(connector.ConnectorTypeID) {
 	// case connectors.CASES_WEBHOOK_ConnectorTypes:
 	// 	return createConnectorRequestCasesWebhook(connector)
@@ -165,10 +212,10 @@ func createConnectorRequestBodyProperties(connector models.KibanaActionConnector
 		// 	return createConnectorRequestXmatters(connector)
 	}
 
-	return connectors.CreateConnectorReq{}, fmt.Errorf("unknown connector type [%s]", connector.ConnectorTypeID)
+	return nil, fmt.Errorf("unknown connector type [%s]", connector.ConnectorTypeID)
 }
 
-func updateConnectorRequestBodyProperties(connector models.KibanaActionConnector) (connectors.UpdateConnectorReq, error) {
+func updateConnectorRequestBody(connector models.KibanaActionConnector) (io.Reader, error) {
 	switch connectors.ConnectorTypes(connector.ConnectorTypeID) {
 	// case connectors.CASES_WEBHOOK:
 	// 	return updateConnectorRequestCasesWebhook(connector)
@@ -206,7 +253,7 @@ func updateConnectorRequestBodyProperties(connector models.KibanaActionConnector
 		// 	return updateConnectorRequestXmatters(connector)
 	}
 
-	return connectors.UpdateConnectorReq{}, fmt.Errorf("unknown connector type [%s]", connector.ConnectorTypeID)
+	return nil, fmt.Errorf("unknown connector type [%s]", connector.ConnectorTypeID)
 }
 
 // func createConnectorRequestCasesWebhook(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
@@ -255,25 +302,24 @@ func updateConnectorRequestBodyProperties(connector models.KibanaActionConnector
 // 	return connectors.CreateConnectorRequestEmailAsCreateConnectorRequestBodyProperties(&c), nil
 // }
 
-func createConnectorRequestIndex(connector models.KibanaActionConnector) (connectors.CreateConnectorReq, error) {
-	prefixError := "failed to compose create connector request for Index"
+func createConnectorRequestIndex(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Index"
 
-	config := &connectors.ConfigPropertiesIndex{}
-
-	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-		return connectors.CreateConnectorReq{}, fmt.Errorf("%s: failed to unmarshal [config]: %w", prefixError, err)
+	request := connectors.CreateConnectorRequestIndex{
+		ConnectorTypeId: connectors.CreateConnectorRequestIndexConnectorTypeIdDotIndex,
+		Name:            connector.Name,
 	}
 
-	res := connectors.CreateConnectorReq{}
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [CreateConnectorRequestIndex.Config]: %w", prefixError, err)
+	}
 
-	res.SetCreateConnectorRequestIndex(
-		connectors.CreateConnectorRequestIndex{
-			Name:   connector.Name,
-			Config: *config,
-		},
-	)
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal [CreateConnectorRequestIndex]: %w", prefixError, err)
+	}
 
-	return res, nil
+	return bytes.NewReader(bt), nil
 }
 
 // func createConnectorRequestJira(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
@@ -595,25 +641,23 @@ func createConnectorRequestIndex(connector models.KibanaActionConnector) (connec
 // 	return connectors.UpdateConnectorRequestCasesWebhookAsUpdateConnectorRequestBodyProperties(&c), nil
 // }
 
-func updateConnectorRequestIndex(connector models.KibanaActionConnector) (connectors.UpdateConnectorReq, error) {
-	prefixError := "failed to compose update connector request for Index"
+func updateConnectorRequestIndex(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Index"
 
-	config := &connectors.ConfigPropertiesIndex{}
-
-	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-		return connectors.UpdateConnectorReq{}, fmt.Errorf("%s: failed to unmarshal [config]: %w", prefixError, err)
+	request := connectors.UpdateConnectorRequestIndex{
+		Name: connector.Name,
 	}
 
-	res := connectors.UpdateConnectorReq{}
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [CreateConnectorRequestIndex.Config]: %w", prefixError, err)
+	}
 
-	res.SetUpdateConnectorRequestIndex(
-		connectors.UpdateConnectorRequestIndex{
-			Name:   connector.Name,
-			Config: *config,
-		},
-	)
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal [CreateConnectorRequestIndex]: %w", prefixError, err)
+	}
 
-	return res, nil
+	return bytes.NewReader(bt), nil
 }
 
 // func updateConnectorRequestJira(connector models.KibanaActionConnector) (connectors.UpdateConnectorRequestBodyProperties, error) {
@@ -756,8 +800,12 @@ func updateConnectorRequestIndex(connector models.KibanaActionConnector) (connec
 // 	return connectors.UpdateConnectorRequestSwimlaneAsUpdateConnectorRequestBodyProperties(&c), nil
 // }
 
-func actionConnectorToModel(spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
-	switch properties.Type {
+func connectorResponseToModel(spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	discriminator, err := properties.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
 
 	// case connectors.CASES_WEBHOOK_ConnectorTypes:
 	// 	config, err := response.GetConfig().MarshalJSON()
@@ -796,24 +844,39 @@ func actionConnectorToModel(spaceID string, properties connectors.ConnectorRespo
 	// 	}
 	// 	return &connector, nil
 
-	case connectors.ConnectorResponsePropertiesIndexConnectorResponseProperties:
-		resp, _ := properties.GetConnectorResponsePropertiesIndex()
-
-		config, err := resp.Config.MarshalJSON()
+	case string(connectors.ConnectorTypesDotIndex):
+		resp, err := properties.AsConnectorResponsePropertiesIndex()
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
+			return nil, err
+		}
+
+		config, err := json.Marshal(resp.Config)
+		if err != nil {
+			return nil, fmt.Errorf("unable to marshal config: %w", err)
+		}
+
+		isDeprecated := false
+		isMissingSecrets := false
+
+		if resp.IsDeprecated != nil {
+			isDeprecated = *resp.IsDeprecated
+		}
+
+		if resp.IsMissingSecrets != nil {
+			isMissingSecrets = *resp.IsMissingSecrets
 		}
 
 		connector := models.KibanaActionConnector{
-			ConnectorID:      resp.ID,
+			ConnectorID:      resp.Id,
 			SpaceID:          spaceID,
 			Name:             resp.Name,
 			ConnectorTypeID:  string(connectors.ConnectorTypesDotIndex),
-			IsDeprecated:     bool(resp.IsDeprecated.Or(connectors.IsDeprecated(false))),
-			IsMissingSecrets: bool(resp.IsMissingSecrets.Or(connectors.IsMissingSecrets(false))),
+			IsDeprecated:     isDeprecated,
+			IsMissingSecrets: isMissingSecrets,
 			IsPreconfigured:  bool(resp.IsPreconfigured),
 			ConfigJSON:       string(config),
 		}
+
 		return &connector, nil
 
 		// case *connectors.ConnectorResponsePropertiesJira:
