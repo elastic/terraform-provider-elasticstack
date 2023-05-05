@@ -124,12 +124,12 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 		return nil, diag.Errorf("%s: %s", *resp.JSON401.Error, *resp.JSON401.Message)
 	}
 
-	if resp.JSON200 == nil {
-		return nil, diag.Errorf("%s: %s", resp.Status(), string(resp.Body))
-	}
-
 	if resp.JSON404 != nil {
 		return nil, nil
+	}
+
+	if resp.JSON200 == nil {
+		return nil, diag.Errorf("%s: %s", resp.Status(), string(resp.Body))
 	}
 
 	connector, err := connectorResponseToModel(spaceID, *resp.JSON200)

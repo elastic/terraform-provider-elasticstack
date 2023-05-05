@@ -222,15 +222,6 @@ func resourceConnectorDelete(ctx context.Context, d *schema.ResourceData, meta i
 	return nil
 }
 
-// func jsonStrToMap(d *schema.ResourceData, fieldName string, diags *diag.Diagnostics) map[string]interface{} {
-// 	jsonStr := d.Get(fieldName)
-// 	res := map[string]interface{}{}
-// 	if err := json.NewDecoder(strings.NewReader(jsonStr.(string))).Decode(&res); err != nil {
-// 		*diags = append(*diags, diag.FromErr(err)...)
-// 	}
-// 	return res
-// }
-
 func expandActionConnector(d *schema.ResourceData) (models.KibanaActionConnector, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
