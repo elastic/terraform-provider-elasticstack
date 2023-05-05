@@ -176,40 +176,40 @@ func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 
 func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Reader, error) {
 	switch connectors.ConnectorTypes(connector.ConnectorTypeID) {
-	// case connectors.CASES_WEBHOOK_ConnectorTypes:
-	// 	return createConnectorRequestCasesWebhook(connector)
-	// case connectors.EMAIL_ConnectorTypes:
-	//  	return createConnectorRequestEmail(connector)
+	case connectors.ConnectorTypesDotCasesWebhook:
+		return createConnectorRequestCasesWebhook(connector)
+	case connectors.ConnectorTypesDotEmail:
+		return createConnectorRequestEmail(connector)
 	case connectors.ConnectorTypesDotIndex:
 		return createConnectorRequestIndex(connector)
-		// case connectors.JIRA_ConnectorTypes:
-		// 	return createConnectorRequestJira(connector)
-		// case connectors.OPSGENIE_ConnectorTypes:
-		// 	return createConnectorRequestOpsgenie(connector)
-		// case connectors.PAGERDUTY:
-		// 	return createConnectorRequestPagerduty(connector)
-		// case connectors.RESILIENT_ConnectorTypes:
-		// 	return createConnectorRequestResilient(connector)
-		// case connectors.SERVICENOW_ConnectorTypes:
-		// 	return createConnectorRequestServicenow(connector)
-		// case connectors.SERVICENOW_ITOM_ConnectorTypes:
-		// 	return createConnectorRequestServicenowItom(connector)
-		// case connectors.SERVICENOW_SIR:
-		// 	return createConnectorRequestServicenowSir(connector)
-		// case connectors.SERVER_LOG_ConnectorTypes:
-		// 	return createConnectorRequestServerLog(connector)
-		// case connectors.SLACK:
-		// 	return createConnectorRequestSlack(connector)
-		// case connectors.SWIMLANE_ConnectorTypes:
-		// 	return createConnectorRequestSwimlane(connector)
-		// case connectors.TEAMS:
-		// 	return createConnectorRequestTeams(connector)
-		// case connectors.TINES:
-		// 	return createConnectorRequestTines(connector)
-		// case connectors.WEBHOOK:
-		// 	return createConnectorRequestWebhook(connector)
-		// case connectors.XMATTERS:
-		// 	return createConnectorRequestXmatters(connector)
+	case connectors.ConnectorTypesDotJira:
+		return createConnectorRequestJira(connector)
+	case connectors.ConnectorTypesDotOpsgenie:
+		return createConnectorRequestOpsgenie(connector)
+	case connectors.ConnectorTypesDotPagerduty:
+		return createConnectorRequestPagerduty(connector)
+	case connectors.ConnectorTypesDotResilient:
+		return createConnectorRequestResilient(connector)
+	case connectors.ConnectorTypesDotServicenow:
+		return createConnectorRequestServicenow(connector)
+	case connectors.ConnectorTypesDotServicenowItom:
+		return createConnectorRequestServicenowItom(connector)
+	case connectors.ConnectorTypesDotServicenowSir:
+		return createConnectorRequestServicenowSir(connector)
+	case connectors.ConnectorTypesDotServerLog:
+		return createConnectorRequestServerLog(connector)
+	case connectors.ConnectorTypesDotSlack:
+		return createConnectorRequestSlack(connector)
+	case connectors.ConnectorTypesDotSwimlane:
+		return createConnectorRequestSwimlane(connector)
+	case connectors.ConnectorTypesDotTeams:
+		return createConnectorRequestTeams(connector)
+	case connectors.ConnectorTypesDotTines:
+		return createConnectorRequestTines(connector)
+	case connectors.ConnectorTypesDotWebhook:
+		return createConnectorRequestWebhook(connector)
+	case connectors.ConnectorTypesDotXmatters:
+		return createConnectorRequestXmatters(connector)
 	}
 
 	return nil, fmt.Errorf("unknown connector type [%s]", connector.ConnectorTypeID)
@@ -256,51 +256,53 @@ func updateConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 	return nil, fmt.Errorf("unknown connector type [%s]", connector.ConnectorTypeID)
 }
 
-// func createConnectorRequestCasesWebhook(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for CasesWebhook"
+func createConnectorRequestCasesWebhook(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for CasesWebhook"
 
-// 	config := connectors.NullableConfigPropertiesCasesWebhook{}
-// 	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
+	request := connectors.CreateConnectorRequestCasesWebhook{
+		ConnectorTypeId: connectors.DotCasesWebhook,
+		Name:            connector.Name,
+	}
 
-// 	secrets := connectors.NullableSecretsPropertiesCasesWebhook{}
-// 	if err := secrets.UnmarshalJSON([]byte(connector.SecretsJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
 
-// 	c := connectors.CreateConnectorRequestCasesWebhook{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          *config.Get(),
-// 		Secrets:         secrets.Get(),
-// 	}
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
 
-// 	return connectors.CreateConnectorRequestCasesWebhookAsCreateConnectorRequestBodyProperties(&c), nil
-// }
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
 
-// func createConnectorRequestEmail(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Email"
+	return bytes.NewReader(bt), nil
+}
 
-// 	var config map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.ConfigJSON), &config); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
+func createConnectorRequestEmail(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Email"
 
-// 	var secrets map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.SecretsJSON), &secrets); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
+	request := connectors.CreateConnectorRequestEmail{
+		ConnectorTypeId: connectors.CreateConnectorRequestEmailConnectorTypeIdDotEmail,
+		Name:            connector.Name,
+	}
 
-// 	c := connectors.CreateConnectorRequestEmail{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          config,
-// 		Secrets:         secrets,
-// 	}
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
 
-// 	return connectors.CreateConnectorRequestEmailAsCreateConnectorRequestBodyProperties(&c), nil
-// }
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
 
 func createConnectorRequestIndex(connector models.KibanaActionConnector) (io.Reader, error) {
 	prefixError := "failed to create connector request for Index"
@@ -311,312 +313,336 @@ func createConnectorRequestIndex(connector models.KibanaActionConnector) (io.Rea
 	}
 
 	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
-		return nil, fmt.Errorf("%s: failed to unmarshal [CreateConnectorRequestIndex.Config]: %w", prefixError, err)
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
 	}
 
 	bt, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("%s: failed to marshal [CreateConnectorRequestIndex]: %w", prefixError, err)
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
 	}
 
 	return bytes.NewReader(bt), nil
 }
 
-// func createConnectorRequestJira(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Jira"
-
-// 	config := connectors.NullableConfigPropertiesJira{}
-// 	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	secrets := connectors.NullableSecretsPropertiesJira{}
-// 	if err := secrets.UnmarshalJSON([]byte(connector.SecretsJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestJira{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          *config.Get(),
-// 		Secrets:         *secrets.Get(),
-// 	}
-
-// 	return connectors.CreateConnectorRequestJiraAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestOpsgenie(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Opsgenie"
-
-// 	config := connectors.NullableConfigPropertiesOpsgenie{}
-// 	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	secrets := connectors.NullableSecretsPropertiesOpsgenie{}
-// 	if err := secrets.UnmarshalJSON([]byte(connector.SecretsJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestOpsgenie{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          *config.Get(),
-// 		Secrets:         *secrets.Get(),
-// 	}
-
-// 	return connectors.CreateConnectorRequestOpsgenieAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestPagerduty(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for PagerDuty"
-
-// 	var config map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.ConfigJSON), &config); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	var secrets map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.SecretsJSON), &secrets); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestPagerduty{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          config,
-// 		Secrets:         secrets,
-// 	}
-
-// 	return connectors.CreateConnectorRequestPagerdutyAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestResilient(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Resilient"
-
-// 	config := connectors.NullableConfigPropertiesResilient{}
-// 	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	secrets := connectors.NullableSecretsPropertiesResilient{}
-// 	if err := secrets.UnmarshalJSON([]byte(connector.SecretsJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestResilient{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          *config.Get(),
-// 		Secrets:         *secrets.Get(),
-// 	}
-
-// 	return connectors.CreateConnectorRequestResilientAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestServicenow(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Servicenow"
-
-// 	config := connectors.NullableConfigPropertiesServicenow{}
-// 	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	secrets := connectors.NullableSecretsPropertiesServicenow{}
-// 	if err := secrets.UnmarshalJSON([]byte(connector.SecretsJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestServicenow{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          *config.Get(),
-// 		Secrets:         *secrets.Get(),
-// 	}
-
-// 	return connectors.CreateConnectorRequestServicenowAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestServicenowItom(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for ServicenowItom"
-
-// 	config := connectors.NullableConfigPropertiesServicenowItom{}
-// 	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	secrets := connectors.NullableSecretsPropertiesServicenow{}
-// 	if err := secrets.UnmarshalJSON([]byte(connector.SecretsJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestServicenowItom{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          *config.Get(),
-// 		Secrets:         *secrets.Get(),
-// 	}
-
-// 	return connectors.CreateConnectorRequestServicenowItomAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestServicenowSir(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for ServicenowSir"
-
-// 	config := connectors.NullableConfigPropertiesServicenow{}
-// 	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	secrets := connectors.NullableSecretsPropertiesServicenow{}
-// 	if err := secrets.UnmarshalJSON([]byte(connector.SecretsJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestServicenowSir{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          *config.Get(),
-// 		Secrets:         *secrets.Get(),
-// 	}
-
-// 	return connectors.CreateConnectorRequestServicenowSirAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestServerLog(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	c := connectors.CreateConnectorRequestServerlog{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 	}
-
-// 	return connectors.CreateConnectorRequestServerlogAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestSlack(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Slack"
-
-// 	var secrets map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.SecretsJSON), &secrets); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestSlack{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Secrets:         secrets,
-// 	}
-
-// 	return connectors.CreateConnectorRequestSlackAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestSwimlane(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Swimlane"
-
-// 	config := connectors.NullableConfigPropertiesSwimlane{}
-// 	if err := config.UnmarshalJSON([]byte(connector.ConfigJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	secrets := connectors.NullableSecretsPropertiesSwimlane{}
-// 	if err := secrets.UnmarshalJSON([]byte(connector.SecretsJSON)); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestSwimlane{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          *config.Get(),
-// 		Secrets:         *secrets.Get(),
-// 	}
-
-// 	return connectors.CreateConnectorRequestSwimlaneAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestTeams(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Teams"
-
-// 	var secrets map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.SecretsJSON), &secrets); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestTeams{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Secrets:         secrets,
-// 	}
-
-// 	return connectors.CreateConnectorRequestTeamsAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestTines(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Tines"
-
-// 	var config map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.ConfigJSON), &config); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	var secrets map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.SecretsJSON), &secrets); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestTines{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          config,
-// 		Secrets:         secrets,
-// 	}
-
-// 	return connectors.CreateConnectorRequestTinesAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestWebhook(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Webhook"
-
-// 	var config map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.ConfigJSON), &config); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	var secrets map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.SecretsJSON), &secrets); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestWebhook{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          config,
-// 		Secrets:         secrets,
-// 	}
-
-// 	return connectors.CreateConnectorRequestWebhookAsCreateConnectorRequestBodyProperties(&c), nil
-// }
-
-// func createConnectorRequestXmatters(connector models.KibanaActionConnector) (connectors.CreateConnectorRequestBodyProperties, error) {
-// 	prefixError := "failed to compose create connector request for Xmatters"
-
-// 	var config map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.ConfigJSON), &config); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [config] - %w", prefixError, err)
-// 	}
-
-// 	var secrets map[string]interface{}
-// 	if err := json.Unmarshal([]byte(connector.SecretsJSON), &secrets); err != nil {
-// 		return connectors.CreateConnectorRequestBodyProperties{}, fmt.Errorf("%s - failed to unmarshal [secrets]: %w", prefixError, err)
-// 	}
-
-// 	c := connectors.CreateConnectorRequestXmatters{
-// 		ConnectorTypeId: connector.ConnectorTypeID,
-// 		Name:            connector.Name,
-// 		Config:          config,
-// 		Secrets:         secrets,
-// 	}
-
-// 	return connectors.CreateConnectorRequestXmattersAsCreateConnectorRequestBodyProperties(&c), nil
-// }
+func createConnectorRequestJira(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Jira"
+
+	request := connectors.CreateConnectorRequestJira{
+		ConnectorTypeId: connectors.CreateConnectorRequestJiraConnectorTypeIdDotJira,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestOpsgenie(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Opsgenie"
+
+	request := connectors.CreateConnectorRequestOpsgenie{
+		ConnectorTypeId: connectors.CreateConnectorRequestOpsgenieConnectorTypeIdDotOpsgenie,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestPagerduty(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Pagerduty"
+
+	request := connectors.CreateConnectorRequestPagerduty{
+		ConnectorTypeId: connectors.CreateConnectorRequestPagerdutyConnectorTypeIdDotPagerduty,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestResilient(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Resilient"
+
+	request := connectors.CreateConnectorRequestResilient{
+		ConnectorTypeId: connectors.CreateConnectorRequestResilientConnectorTypeIdDotResilient,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestServicenow(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Servicenow"
+
+	request := connectors.CreateConnectorRequestServicenow{
+		ConnectorTypeId: connectors.CreateConnectorRequestServicenowConnectorTypeIdDotServicenow,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestServicenowItom(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for ServicenowItom"
+
+	request := connectors.CreateConnectorRequestServicenowItom{
+		ConnectorTypeId: connectors.CreateConnectorRequestServicenowItomConnectorTypeIdDotServicenowItom,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestServicenowSir(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for ServicenowSir"
+
+	request := connectors.CreateConnectorRequestServicenowSir{
+		ConnectorTypeId: connectors.CreateConnectorRequestServicenowSirConnectorTypeIdDotServicenowSir,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestServerLog(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Serverlog"
+
+	request := connectors.CreateConnectorRequestServerlog{
+		ConnectorTypeId: connectors.CreateConnectorRequestServerlogConnectorTypeIdDotServerLog,
+		Name:            connector.Name,
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestSlack(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Slack"
+
+	request := connectors.CreateConnectorRequestSlack{
+		ConnectorTypeId: connectors.CreateConnectorRequestSlackConnectorTypeIdDotSlack,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestSwimlane(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Swimlane"
+
+	request := connectors.CreateConnectorRequestSwimlane{
+		ConnectorTypeId: connectors.CreateConnectorRequestSwimlaneConnectorTypeIdDotSwimlane,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestTeams(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Teams"
+
+	request := connectors.CreateConnectorRequestTeams{
+		ConnectorTypeId: connectors.CreateConnectorRequestTeamsConnectorTypeIdDotTeams,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestTines(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Tines"
+
+	request := connectors.CreateConnectorRequestTines{
+		ConnectorTypeId: connectors.CreateConnectorRequestTinesConnectorTypeIdDotTines,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestWebhook(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Webhook"
+
+	request := connectors.CreateConnectorRequestWebhook{
+		ConnectorTypeId: connectors.CreateConnectorRequestWebhookConnectorTypeIdDotWebhook,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
+func createConnectorRequestXmatters(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create connector request for Xmatters"
+
+	request := connectors.CreateConnectorRequestXmatters{
+		ConnectorTypeId: connectors.CreateConnectorRequestXmattersConnectorTypeIdDotXmatters,
+		Name:            connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
 
 // func updateConnectorRequestCasesWebhook(connector models.KibanaActionConnector) (connectors.UpdateConnectorRequestBodyProperties, error) {
 // 	prefixError := "failed to compose update connector request for CasesWebhook"
