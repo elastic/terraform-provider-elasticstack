@@ -203,6 +203,7 @@ paths:
               description: The properties vary depending on the connector type.
               oneOf:
                 - $ref: '#/components/schemas/update_connector_request_cases_webhook'
+                - $ref: '#/components/schemas/update_connector_request_email'
                 - $ref: '#/components/schemas/update_connector_request_index'
                 - $ref: '#/components/schemas/update_connector_request_jira'
                 - $ref: '#/components/schemas/update_connector_request_opsgenie'
@@ -211,26 +212,6 @@ paths:
                 - $ref: '#/components/schemas/update_connector_request_servicenow'
                 - $ref: '#/components/schemas/update_connector_request_servicenow_itom'
                 - $ref: '#/components/schemas/update_connector_request_swimlane'
-#               discriminator:
-#                 propertyName: connector_type_id
-#                 mapping:
-#                   .cases-webhook: '#/components/schemas/update_connector_request_cases_webhook'
-# #                  .email: '#/components/schemas/update_connector_request_email'
-#                   .index: '#/components/schemas/update_connector_request_index'
-#                   .jira: '#/components/schemas/update_connector_request_jira'
-#                   .opsgenie: '#/components/schemas/update_connector_request_opsgenie'
-# #                  .pagerduty: '#/components/schemas/update_connector_request_pagerduty'
-#                   .resilient: '#/components/schemas/update_connector_request_resilient'
-#                   .server-log: '#/components/schemas/update_connector_request_serverlog'
-#                   .servicenow: '#/components/schemas/update_connector_request_servicenow'
-#                   .servicenow-itom: '#/components/schemas/update_connector_request_servicenow_itom'
-# #                  .servicenow-sir: '#/components/schemas/create_connector_request_servicenow_sir'
-# #                  .slack: '#/components/schemas/create_connector_request_slack'
-#                   .swimlane: '#/components/schemas/update_connector_request_swimlane'
-#                   # .teams: '#/components/schemas/create_connector_request_teams'
-#                   # .tines: '#/components/schemas/create_connector_request_tines'
-#                   # .webhook: '#/components/schemas/create_connector_request_webhook'
-#                   # .xmatters: '#/components/schemas/create_connector_request_xmatters'
             examples:
               updateIndexConnectorRequest:
                 $ref: '#/components/examples/update_index_connector_request'
@@ -2297,6 +2278,22 @@ components:
           example: my-connector
         secrets:
           $ref: '#/components/schemas/secrets_properties_cases_webhook'
+    update_connector_request_email:
+      title: Update email connector request
+      type: object
+      required:
+        - config
+        - name
+        - secrets
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_email'
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_email'
     update_connector_request_index:
       title: Update index connector request
       type: object

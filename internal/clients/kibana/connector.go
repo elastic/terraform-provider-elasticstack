@@ -180,11 +180,29 @@ func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 // function returns config where default values are copied from backend response,
 // if they are omitted in TF configuration
 func ConnectorConfigWithDefaults(connectorTypeID, njs, ojs string) (string, error) {
-	switch connectorTypeID {
-	case string(connectors.ConnectorTypesDotIndex):
+	switch connectors.ConnectorTypes(connectorTypeID) {
+	case connectors.ConnectorTypesDotEmail:
+		return connectorEmailConfigWithDefaults(njs, ojs)
+	case connectors.ConnectorTypesDotIndex:
 		return connectorIndexConfigWithDefaults(njs, ojs)
 	}
 	return njs, nil
+}
+
+func connectorEmailConfigWithDefaults(njs, ojs string) (string, error) {
+	var cfgNew connectors.ConfigPropertiesIndex
+	if err := json.Unmarshal([]byte(njs), &cfgNew); err != nil {
+		return "", err
+	}
+	var cfgOld connectors.ConfigPropertiesIndex
+	if err := json.Unmarshal([]byte(ojs), &cfgOld); err != nil {
+		return "", err
+	}
+	njs2, err := json.Marshal(cfgNew)
+	if err != nil {
+		return "", err
+	}
+	return string(njs2), nil
 }
 
 func connectorIndexConfigWithDefaults(njs, ojs string) (string, error) {
@@ -252,8 +270,8 @@ func updateConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 	switch connectors.ConnectorTypes(connector.ConnectorTypeID) {
 	// case connectors.CASES_WEBHOOK:
 	// 	return updateConnectorRequestCasesWebhook(connector)
-	// case connectors.EMAIL:
-	// 	return updateConnectorRequestEmail(connector)
+	case connectors.ConnectorTypesDotEmail:
+		return updateConnectorRequestEmail(connector)
 	case connectors.ConnectorTypesDotIndex:
 		return updateConnectorRequestIndex(connector)
 		// case connectors.JIRA:
@@ -290,7 +308,7 @@ func updateConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 }
 
 func createConnectorRequestCasesWebhook(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for CasesWebhook"
+	prefixError := "failed to create CasesWebhook connector request"
 
 	request := connectors.CreateConnectorRequestCasesWebhook{
 		ConnectorTypeId: connectors.DotCasesWebhook,
@@ -314,7 +332,7 @@ func createConnectorRequestCasesWebhook(connector models.KibanaActionConnector) 
 }
 
 func createConnectorRequestEmail(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Email"
+	prefixError := "failed to create Email connector request"
 
 	request := connectors.CreateConnectorRequestEmail{
 		ConnectorTypeId: connectors.CreateConnectorRequestEmailConnectorTypeIdDotEmail,
@@ -338,7 +356,7 @@ func createConnectorRequestEmail(connector models.KibanaActionConnector) (io.Rea
 }
 
 func createConnectorRequestIndex(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Index"
+	prefixError := "failed to create Index connector request"
 
 	request := connectors.CreateConnectorRequestIndex{
 		ConnectorTypeId: connectors.CreateConnectorRequestIndexConnectorTypeIdDotIndex,
@@ -358,7 +376,7 @@ func createConnectorRequestIndex(connector models.KibanaActionConnector) (io.Rea
 }
 
 func createConnectorRequestJira(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Jira"
+	prefixError := "failed to create Jira connector request"
 
 	request := connectors.CreateConnectorRequestJira{
 		ConnectorTypeId: connectors.CreateConnectorRequestJiraConnectorTypeIdDotJira,
@@ -382,7 +400,7 @@ func createConnectorRequestJira(connector models.KibanaActionConnector) (io.Read
 }
 
 func createConnectorRequestOpsgenie(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Opsgenie"
+	prefixError := "failed to create Opsgenie connector request"
 
 	request := connectors.CreateConnectorRequestOpsgenie{
 		ConnectorTypeId: connectors.CreateConnectorRequestOpsgenieConnectorTypeIdDotOpsgenie,
@@ -406,7 +424,7 @@ func createConnectorRequestOpsgenie(connector models.KibanaActionConnector) (io.
 }
 
 func createConnectorRequestPagerduty(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Pagerduty"
+	prefixError := "failed to create Pagerduty connector request"
 
 	request := connectors.CreateConnectorRequestPagerduty{
 		ConnectorTypeId: connectors.CreateConnectorRequestPagerdutyConnectorTypeIdDotPagerduty,
@@ -430,7 +448,7 @@ func createConnectorRequestPagerduty(connector models.KibanaActionConnector) (io
 }
 
 func createConnectorRequestResilient(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Resilient"
+	prefixError := "failed to create Resilient connector request"
 
 	request := connectors.CreateConnectorRequestResilient{
 		ConnectorTypeId: connectors.CreateConnectorRequestResilientConnectorTypeIdDotResilient,
@@ -454,7 +472,7 @@ func createConnectorRequestResilient(connector models.KibanaActionConnector) (io
 }
 
 func createConnectorRequestServicenow(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Servicenow"
+	prefixError := "failed to create Servicenow connector request"
 
 	request := connectors.CreateConnectorRequestServicenow{
 		ConnectorTypeId: connectors.CreateConnectorRequestServicenowConnectorTypeIdDotServicenow,
@@ -478,7 +496,7 @@ func createConnectorRequestServicenow(connector models.KibanaActionConnector) (i
 }
 
 func createConnectorRequestServicenowItom(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for ServicenowItom"
+	prefixError := "failed to create ServicenowItom connector request"
 
 	request := connectors.CreateConnectorRequestServicenowItom{
 		ConnectorTypeId: connectors.CreateConnectorRequestServicenowItomConnectorTypeIdDotServicenowItom,
@@ -502,7 +520,7 @@ func createConnectorRequestServicenowItom(connector models.KibanaActionConnector
 }
 
 func createConnectorRequestServicenowSir(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for ServicenowSir"
+	prefixError := "failed to create ServicenowSir connector request"
 
 	request := connectors.CreateConnectorRequestServicenowSir{
 		ConnectorTypeId: connectors.CreateConnectorRequestServicenowSirConnectorTypeIdDotServicenowSir,
@@ -526,7 +544,7 @@ func createConnectorRequestServicenowSir(connector models.KibanaActionConnector)
 }
 
 func createConnectorRequestServerLog(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Serverlog"
+	prefixError := "failed to create Serverlog connector request"
 
 	request := connectors.CreateConnectorRequestServerlog{
 		ConnectorTypeId: connectors.CreateConnectorRequestServerlogConnectorTypeIdDotServerLog,
@@ -542,7 +560,7 @@ func createConnectorRequestServerLog(connector models.KibanaActionConnector) (io
 }
 
 func createConnectorRequestSlack(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Slack"
+	prefixError := "failed to create Slack connector request"
 
 	request := connectors.CreateConnectorRequestSlack{
 		ConnectorTypeId: connectors.CreateConnectorRequestSlackConnectorTypeIdDotSlack,
@@ -562,7 +580,7 @@ func createConnectorRequestSlack(connector models.KibanaActionConnector) (io.Rea
 }
 
 func createConnectorRequestSwimlane(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Swimlane"
+	prefixError := "failed to create Swimlane connector request"
 
 	request := connectors.CreateConnectorRequestSwimlane{
 		ConnectorTypeId: connectors.CreateConnectorRequestSwimlaneConnectorTypeIdDotSwimlane,
@@ -586,7 +604,7 @@ func createConnectorRequestSwimlane(connector models.KibanaActionConnector) (io.
 }
 
 func createConnectorRequestTeams(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Teams"
+	prefixError := "failed to create Teams connector request"
 
 	request := connectors.CreateConnectorRequestTeams{
 		ConnectorTypeId: connectors.CreateConnectorRequestTeamsConnectorTypeIdDotTeams,
@@ -606,7 +624,7 @@ func createConnectorRequestTeams(connector models.KibanaActionConnector) (io.Rea
 }
 
 func createConnectorRequestTines(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Tines"
+	prefixError := "failed to create Tines connector request"
 
 	request := connectors.CreateConnectorRequestTines{
 		ConnectorTypeId: connectors.CreateConnectorRequestTinesConnectorTypeIdDotTines,
@@ -630,7 +648,7 @@ func createConnectorRequestTines(connector models.KibanaActionConnector) (io.Rea
 }
 
 func createConnectorRequestWebhook(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Webhook"
+	prefixError := "failed to create Webhook connector request"
 
 	request := connectors.CreateConnectorRequestWebhook{
 		ConnectorTypeId: connectors.CreateConnectorRequestWebhookConnectorTypeIdDotWebhook,
@@ -654,7 +672,7 @@ func createConnectorRequestWebhook(connector models.KibanaActionConnector) (io.R
 }
 
 func createConnectorRequestXmatters(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Xmatters"
+	prefixError := "failed to create Xmatters connector request"
 
 	request := connectors.CreateConnectorRequestXmatters{
 		ConnectorTypeId: connectors.CreateConnectorRequestXmattersConnectorTypeIdDotXmatters,
@@ -700,8 +718,31 @@ func createConnectorRequestXmatters(connector models.KibanaActionConnector) (io.
 // 	return connectors.UpdateConnectorRequestCasesWebhookAsUpdateConnectorRequestBodyProperties(&c), nil
 // }
 
+func updateConnectorRequestEmail(connector models.KibanaActionConnector) (io.Reader, error) {
+	prefixError := "failed to create Email connector request"
+
+	request := connectors.UpdateConnectorRequestEmail{
+		Name: connector.Name,
+	}
+
+	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	}
+
+	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	}
+
+	bt, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal request: %w", prefixError, err)
+	}
+
+	return bytes.NewReader(bt), nil
+}
+
 func updateConnectorRequestIndex(connector models.KibanaActionConnector) (io.Reader, error) {
-	prefixError := "failed to create connector request for Index"
+	prefixError := "failed to create Index connector request"
 
 	request := connectors.UpdateConnectorRequestIndex{
 		Name: connector.Name,
@@ -864,7 +905,7 @@ func connectorResponseToModel(spaceID string, properties connectors.ConnectorRes
 	if err != nil {
 		return nil, err
 	}
-	switch discriminator {
+	switch connectors.ConnectorTypes(discriminator) {
 
 	// case connectors.CASES_WEBHOOK_ConnectorTypes:
 	// 	config, err := response.GetConfig().MarshalJSON()
@@ -885,25 +926,42 @@ func connectorResponseToModel(spaceID string, properties connectors.ConnectorRes
 	// 	}
 	// 	return &connector, nil
 
-	// case *connectors.ConnectorResponsePropertiesEmail:
-	// 	config, err := json.Marshal(response.GetConfig())
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesEmail - [%w]", err)
-	// 	}
-	// 	// return responseToConnector(response, config, spaceID), nil
-	// 	connector := models.KibanaActionConnector{
-	// 		ConnectorID:      response.GetId(),
-	// 		SpaceID:          spaceID,
-	// 		Name:             response.GetName(),
-	// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-	// 		IsDeprecated:     response.GetIsDeprecated(),
-	// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-	// 		IsPreconfigured:  response.GetIsPreconfigured(),
-	// 		ConfigJSON:       string(config),
-	// 	}
-	// 	return &connector, nil
+	case connectors.ConnectorTypesDotEmail:
+		resp, err := properties.AsConnectorResponsePropertiesEmail()
+		if err != nil {
+			return nil, err
+		}
 
-	case string(connectors.ConnectorTypesDotIndex):
+		config, err := json.Marshal(resp.Config)
+		if err != nil {
+			return nil, fmt.Errorf("unable to marshal config: %w", err)
+		}
+
+		isDeprecated := false
+		isMissingSecrets := false
+
+		if resp.IsDeprecated != nil {
+			isDeprecated = *resp.IsDeprecated
+		}
+
+		if resp.IsMissingSecrets != nil {
+			isMissingSecrets = *resp.IsMissingSecrets
+		}
+
+		connector := models.KibanaActionConnector{
+			ConnectorID:      resp.Id,
+			SpaceID:          spaceID,
+			Name:             resp.Name,
+			ConnectorTypeID:  discriminator,
+			IsDeprecated:     isDeprecated,
+			IsMissingSecrets: isMissingSecrets,
+			IsPreconfigured:  bool(resp.IsPreconfigured),
+			ConfigJSON:       string(config),
+		}
+
+		return &connector, nil
+
+	case connectors.ConnectorTypesDotIndex:
 		resp, err := properties.AsConnectorResponsePropertiesIndex()
 		if err != nil {
 			return nil, err
@@ -929,7 +987,7 @@ func connectorResponseToModel(spaceID string, properties connectors.ConnectorRes
 			ConnectorID:      resp.Id,
 			SpaceID:          spaceID,
 			Name:             resp.Name,
-			ConnectorTypeID:  string(connectors.ConnectorTypesDotIndex),
+			ConnectorTypeID:  discriminator,
 			IsDeprecated:     isDeprecated,
 			IsMissingSecrets: isMissingSecrets,
 			IsPreconfigured:  bool(resp.IsPreconfigured),
@@ -1181,7 +1239,7 @@ func connectorResponseToModel(spaceID string, properties connectors.ConnectorRes
 		// 	return &connector, nil
 	}
 
-	return nil, fmt.Errorf("unknown connector type [%+v]", properties)
+	return nil, fmt.Errorf("unknown connector type [%s]", discriminator)
 }
 
 // func responseToConnector[T responseType](response T, config []byte, spaceID string) *models.KibanaActionConnector {

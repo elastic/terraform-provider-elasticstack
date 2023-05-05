@@ -1973,6 +1973,18 @@ type UpdateConnectorRequestCasesWebhook struct {
 	Secrets *SecretsPropertiesCasesWebhook `json:"secrets,omitempty"`
 }
 
+// UpdateConnectorRequestEmail defines model for update_connector_request_email.
+type UpdateConnectorRequestEmail struct {
+	// Config Defines properties for connectors when type is `.email`.
+	Config ConfigPropertiesEmail `json:"config"`
+
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.email`.
+	Secrets SecretsPropertiesEmail `json:"secrets"`
+}
+
 // UpdateConnectorRequestIndex defines model for update_connector_request_index.
 type UpdateConnectorRequestIndex struct {
 	// Config Defines properties for connectors when type is `.index`.
