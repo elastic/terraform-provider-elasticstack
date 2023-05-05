@@ -174,6 +174,39 @@ func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 	return nil
 }
 
+// njs - connector config's JSON from TF configuration
+// ojs - connector config's JSON that returned by backend
+// backend returns a config that explicitly specifies all default values
+// function returns config where default values are copied from backend response,
+// if they are omitted in TF configuration
+func ConnectorConfigWithDefaults(connectorTypeID, njs, ojs string) (string, error) {
+	switch connectorTypeID {
+	case string(connectors.ConnectorTypesDotIndex):
+		return connectorIndexConfigWithDefaults(njs, ojs)
+	}
+	return njs, nil
+}
+
+func connectorIndexConfigWithDefaults(njs, ojs string) (string, error) {
+	var cfgNew connectors.ConfigPropertiesIndex
+	if err := json.Unmarshal([]byte(njs), &cfgNew); err != nil {
+		return "", err
+	}
+	var cfgOld connectors.ConfigPropertiesIndex
+	if err := json.Unmarshal([]byte(ojs), &cfgOld); err != nil {
+		return "", err
+	}
+	if cfgNew.Refresh == nil && cfgOld.Refresh != nil {
+		cfgNew.Refresh = new(bool)
+		*cfgNew.Refresh = *cfgOld.Refresh
+	}
+	njs2, err := json.Marshal(cfgNew)
+	if err != nil {
+		return "", err
+	}
+	return string(njs2), nil
+}
+
 func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Reader, error) {
 	switch connectors.ConnectorTypes(connector.ConnectorTypeID) {
 	case connectors.ConnectorTypesDotCasesWebhook:

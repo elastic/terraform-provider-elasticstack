@@ -2,14 +2,11 @@ package kibana
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -43,11 +40,11 @@ func ResourceActionConnector() *schema.Resource {
 			ForceNew:    true,
 		},
 		"config": {
-			Description:      "The configuration for the connector. Configuration properties vary depending on the connector type.",
-			Type:             schema.TypeString,
-			Required:         true,
-			DiffSuppressFunc: diffDefaultFieldsSuppress,
-			ValidateFunc:     validation.StringIsJSON,
+			Description:  "The configuration for the connector. Configuration properties vary depending on the connector type.",
+			Type:         schema.TypeString,
+			Optional:     true,
+			Computed:     true,
+			ValidateFunc: validation.StringIsJSON,
 		},
 		"secrets": {
 			Description:      "The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.",
@@ -80,6 +77,7 @@ func ResourceActionConnector() *schema.Resource {
 		UpdateContext: resourceConnectorUpdate,
 		ReadContext:   resourceConnectorRead,
 		DeleteContext: resourceConnectorDelete,
+		CustomizeDiff: connectorCustomizeDiff,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -89,36 +87,27 @@ func ResourceActionConnector() *schema.Resource {
 	}
 }
 
-func diffDefaultFieldsSuppress(k, old, new string, d *schema.ResourceData) bool {
-	con, err := expandActionConnector(d)
+func connectorCustomizeDiff(ctx context.Context, rd *schema.ResourceDiff, in interface{}) error {
+	if !rd.HasChange("config") {
+		return nil
+	}
+	o, n := rd.GetChange("config")
+	ojs := o.(string)
+	njs := n.(string)
+	if ojs == njs {
+		return nil
+	}
+	o, n = rd.GetChange("connector_type_id")
+	otid := o.(string)
+	ntid := n.(string)
+	if otid != ntid {
+		return nil
+	}
+	njs2, err := kibana.ConnectorConfigWithDefaults(otid, njs, ojs)
 	if err != nil {
-		return false
+		return err
 	}
-	return isConnectorConfigsEquals(con.ConnectorTypeID, old, new)
-}
-
-// compare configs taking into account default values
-// `new` represents new desired resource state from TF configuration
-// `old` represents resource state from backend
-// the desired state (`new`) can omit default values that are always returned by backend
-func isConnectorConfigsEquals(connectorTypeID, cfgJSold, cfgJSnew string) bool {
-	switch connectorTypeID {
-	case string(connectors.ConnectorTypesDotIndex):
-		var cfgNew connectors.ConfigPropertiesIndex
-		if err := json.Unmarshal([]byte(cfgJSnew), &cfgNew); err != nil {
-			return false
-		}
-		var cfgOld connectors.ConfigPropertiesIndex
-		if err := json.Unmarshal([]byte(cfgJSold), &cfgOld); err != nil {
-			return false
-		}
-		if cfgNew.Refresh == nil {
-			cfgNew.Refresh = new(bool)
-			*cfgNew.Refresh = false
-		}
-		return cmp.Equal(cfgOld, cfgNew)
-	}
-	return false
+	return rd.SetNew("config", string(njs2))
 }
 
 func resourceConnectorCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
