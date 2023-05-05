@@ -125,7 +125,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 
 	actionConnectors, err := buildConnectorsClient(baseConfig, kibanaConfig)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create Kibana actions client: [%w]", err)
+		return nil, fmt.Errorf("cannot create Kibana action connectors client: [%w]", err)
 	}
 
 	return &ApiClient{

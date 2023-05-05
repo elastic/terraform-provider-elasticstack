@@ -110,7 +110,7 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 	httpResp, err := client.GetConnector(ctx, spaceID, connectorID)
 
 	if err != nil {
-		return nil, diag.Errorf("unable to create connector: [%v]", err)
+		return nil, diag.Errorf("unable to get connector: [%v]", err)
 	}
 
 	defer httpResp.Body.Close()
@@ -118,10 +118,6 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 	resp, err := connectors.ParseGetConnectorResponse(httpResp)
 	if err != nil {
 		return nil, diag.Errorf("unable to parse connector get response: [%v]", err)
-	}
-
-	if resp.JSON404 != nil {
-		return nil, diag.Errorf("%s: %s", *resp.JSON404.Error, *resp.JSON404.Message)
 	}
 
 	if resp.JSON401 != nil {
@@ -132,9 +128,13 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 		return nil, diag.Errorf("%s: %s", resp.Status(), string(resp.Body))
 	}
 
+	if resp.JSON404 != nil {
+		return nil, nil
+	}
+
 	connector, err := connectorResponseToModel(spaceID, *resp.JSON200)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diag.Errorf("unable to convert response to model: %v", err)
 	}
 
 	return connector, nil

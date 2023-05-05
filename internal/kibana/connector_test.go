@@ -96,12 +96,12 @@ func checkResourceActionConnectorDestroy(s *terraform.State) error {
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		rule, diags := kibana.GetConnector(context.Background(), client, compId.ResourceId, compId.ClusterId, ".index")
+		connector, diags := kibana.GetConnector(context.Background(), client, compId.ResourceId, compId.ClusterId, ".index")
 		if diags.HasError() {
-			return fmt.Errorf("Failed to get action connector: %v", diags)
+			return fmt.Errorf("Failed to get connector: %v", diags)
 		}
 
-		if rule != nil {
+		if connector != nil {
 			return fmt.Errorf("Action connector (%s) still exists", compId.ResourceId)
 		}
 	}
