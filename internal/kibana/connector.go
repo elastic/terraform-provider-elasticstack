@@ -2,11 +2,14 @@ package kibana
 
 import (
 	"context"
+	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -43,7 +46,7 @@ func ResourceActionConnector() *schema.Resource {
 			Description:      "The configuration for the connector. Configuration properties vary depending on the connector type.",
 			Type:             schema.TypeString,
 			Required:         true,
-			DiffSuppressFunc: utils.DiffNullMapEntriesSuppress,
+			DiffSuppressFunc: diffDefaultFieldsSuppress,
 			ValidateFunc:     validation.StringIsJSON,
 		},
 		"secrets": {
@@ -84,6 +87,38 @@ func ResourceActionConnector() *schema.Resource {
 
 		Schema: apikeySchema,
 	}
+}
+
+func diffDefaultFieldsSuppress(k, old, new string, d *schema.ResourceData) bool {
+	con, err := expandActionConnector(d)
+	if err != nil {
+		return false
+	}
+	return isConnectorConfigsEquals(con.ConnectorTypeID, old, new)
+}
+
+// compare configs taking into account default values
+// `new` represents new desired resource state from TF configuration
+// `old` represents resource state from backend
+// the desired state (`new`) can omit default values that are always returned by backend
+func isConnectorConfigsEquals(connectorTypeID, cfgJSold, cfgJSnew string) bool {
+	switch connectorTypeID {
+	case string(connectors.ConnectorTypesDotIndex):
+		var cfgNew connectors.ConfigPropertiesIndex
+		if err := json.Unmarshal([]byte(cfgJSnew), &cfgNew); err != nil {
+			return false
+		}
+		var cfgOld connectors.ConfigPropertiesIndex
+		if err := json.Unmarshal([]byte(cfgJSold), &cfgOld); err != nil {
+			return false
+		}
+		if cfgNew.Refresh == nil {
+			cfgNew.Refresh = new(bool)
+			*cfgNew.Refresh = false
+		}
+		return cmp.Equal(cfgOld, cfgNew)
+	}
+	return false
 }
 
 func resourceConnectorCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
