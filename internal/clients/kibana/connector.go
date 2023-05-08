@@ -176,11 +176,6 @@ func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 	return nil
 }
 
-// njs - connector config's JSON from TF configuration
-// ojs - connector config's JSON that returned by backend
-// backend returns a config that explicitly specifies all default values
-// function returns config where default values are copied from backend response,
-// if they are omitted in TF configuration
 func ConnectorConfigWithDefaults(connectorTypeID, proposed, backend, local string) (string, error) {
 	switch connectors.ConnectorTypes(connectorTypeID) {
 	case connectors.ConnectorTypesDotEmail:
