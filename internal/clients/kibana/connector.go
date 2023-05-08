@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 
+	// "github.com/google/go-cmp/cmp"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -179,50 +181,50 @@ func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 // backend returns a config that explicitly specifies all default values
 // function returns config where default values are copied from backend response,
 // if they are omitted in TF configuration
-func ConnectorConfigWithDefaults(connectorTypeID, njs, ojs string) (string, error) {
+func ConnectorConfigWithDefaults(connectorTypeID, proposed, backend, local string) (string, error) {
 	switch connectors.ConnectorTypes(connectorTypeID) {
 	case connectors.ConnectorTypesDotEmail:
-		return connectorEmailConfigWithDefaults(njs, ojs)
+		return connectorEmailConfigWithDefaults(proposed)
 	case connectors.ConnectorTypesDotIndex:
-		return connectorIndexConfigWithDefaults(njs, ojs)
+		return connectorIndexConfigWithDefaults(proposed)
 	}
-	return njs, nil
+	return proposed, nil
 }
 
-func connectorEmailConfigWithDefaults(njs, ojs string) (string, error) {
-	var cfgNew connectors.ConfigPropertiesIndex
-	if err := json.Unmarshal([]byte(njs), &cfgNew); err != nil {
+func connectorEmailConfigWithDefaults(proposed string) (string, error) {
+	var custom connectors.ConfigPropertiesEmail
+	if err := json.Unmarshal([]byte(proposed), &custom); err != nil {
 		return "", err
 	}
-	var cfgOld connectors.ConfigPropertiesIndex
-	if err := json.Unmarshal([]byte(ojs), &cfgOld); err != nil {
-		return "", err
+	if custom.HasAuth == nil {
+		custom.HasAuth = new(bool)
+		*custom.HasAuth = true
 	}
-	njs2, err := json.Marshal(cfgNew)
+	if custom.Service == nil {
+		custom.Service = new(string)
+		*custom.Service = "other"
+	}
+	customJSON, err := json.Marshal(custom)
 	if err != nil {
 		return "", err
 	}
-	return string(njs2), nil
+	return string(customJSON), nil
 }
 
-func connectorIndexConfigWithDefaults(njs, ojs string) (string, error) {
-	var cfgNew connectors.ConfigPropertiesIndex
-	if err := json.Unmarshal([]byte(njs), &cfgNew); err != nil {
+func connectorIndexConfigWithDefaults(proposed string) (string, error) {
+	var custom connectors.ConfigPropertiesIndex
+	if err := json.Unmarshal([]byte(proposed), &custom); err != nil {
 		return "", err
 	}
-	var cfgOld connectors.ConfigPropertiesIndex
-	if err := json.Unmarshal([]byte(ojs), &cfgOld); err != nil {
-		return "", err
+	if custom.Refresh == nil {
+		custom.Refresh = new(bool)
+		*custom.Refresh = false
 	}
-	if cfgNew.Refresh == nil && cfgOld.Refresh != nil {
-		cfgNew.Refresh = new(bool)
-		*cfgNew.Refresh = *cfgOld.Refresh
-	}
-	njs2, err := json.Marshal(cfgNew)
+	customJSON, err := json.Marshal(custom)
 	if err != nil {
 		return "", err
 	}
-	return string(njs2), nil
+	return string(customJSON), nil
 }
 
 func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Reader, error) {

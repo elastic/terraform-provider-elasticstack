@@ -91,23 +91,36 @@ func connectorCustomizeDiff(ctx context.Context, rd *schema.ResourceDiff, in int
 	if !rd.HasChange("config") {
 		return nil
 	}
-	o, n := rd.GetChange("config")
-	ojs := o.(string)
-	njs := n.(string)
-	if ojs == njs {
+	oldVal, newVal := rd.GetChange("config")
+	oldJSON := oldVal.(string)
+	newJSON := newVal.(string)
+	if oldJSON == newJSON {
 		return nil
 	}
-	o, n = rd.GetChange("connector_type_id")
-	otid := o.(string)
-	ntid := n.(string)
-	if otid != ntid {
+	oldVal, newVal = rd.GetChange("connector_type_id")
+	oldTypeID := oldVal.(string)
+	newTypeID := newVal.(string)
+	if oldTypeID != newTypeID {
 		return nil
 	}
-	njs2, err := kibana.ConnectorConfigWithDefaults(otid, njs, ojs)
+
+	rawState := rd.GetRawState()
+	if !rawState.IsKnown() || rawState.IsNull() {
+		return nil
+	}
+
+	state := rawState.GetAttr("config")
+	if !state.IsKnown() || state.IsNull() {
+		return nil
+	}
+
+	stateJSON := state.AsString()
+
+	customJSON, err := kibana.ConnectorConfigWithDefaults(oldTypeID, newJSON, oldJSON, stateJSON)
 	if err != nil {
 		return err
 	}
-	return rd.SetNew("config", string(njs2))
+	return rd.SetNew("config", string(customJSON))
 }
 
 func resourceConnectorCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

@@ -906,7 +906,35 @@ components:
       title: Connector request properties for an email connector
       description: Defines properties for connectors when type is `.email`.
       type: object
-      additionalProperties: true
+      properties:
+        from:
+          type: string
+        host:
+          type: string
+        port:
+          type: integer
+        clientId:
+          type: string
+          nullable: true
+          default: null
+        hasAuth:
+          type: boolean
+          default: true
+        oauthTokenUrl:
+          type: string
+          nullable: true
+          default: null
+        secure:
+          type: boolean
+          nullable: true
+          default: null
+        service:
+          type: string
+          default: other
+        tenantId:
+          type: string
+          nullable: true
+          default: null
     secrets_properties_email:
       title: Connector secrets properties for an email connector
       description: Defines secrets for connectors when type is `.email`.

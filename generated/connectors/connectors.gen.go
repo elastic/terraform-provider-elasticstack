@@ -474,7 +474,17 @@ type ConfigPropertiesCasesWebhookCreateIncidentMethod string
 type ConfigPropertiesCasesWebhookUpdateIncidentMethod string
 
 // ConfigPropertiesEmail Defines properties for connectors when type is `.email`.
-type ConfigPropertiesEmail map[string]interface{}
+type ConfigPropertiesEmail struct {
+	ClientId      *string `json:"clientId"`
+	From          *string `json:"from,omitempty"`
+	HasAuth       *bool   `json:"hasAuth,omitempty"`
+	Host          *string `json:"host,omitempty"`
+	OauthTokenUrl *string `json:"oauthTokenUrl"`
+	Port          *int    `json:"port,omitempty"`
+	Secure        *bool   `json:"secure"`
+	Service       *string `json:"service,omitempty"`
+	TenantId      *string `json:"tenantId"`
+}
 
 // ConfigPropertiesIndex Defines properties for connectors when type is `.index`.
 type ConfigPropertiesIndex struct {
