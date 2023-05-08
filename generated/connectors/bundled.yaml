@@ -268,7 +268,6 @@ paths:
                   required:
                     - connector_type_id
                     - id
-                    # - is_deprecated
                     - is_preconfigured
                     - name
                     - referenced_by_count
@@ -1724,7 +1723,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1754,7 +1752,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1784,7 +1781,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1814,7 +1810,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1844,7 +1839,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1874,7 +1868,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1904,7 +1897,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1934,7 +1926,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1965,7 +1956,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -1995,7 +1985,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -2025,7 +2014,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -2054,7 +2042,6 @@ components:
       required:
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -2082,7 +2069,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -2111,7 +2097,6 @@ components:
       required:
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -2139,7 +2124,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -2169,7 +2153,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
@@ -2199,7 +2182,6 @@ components:
         - config
         - connector_type_id
         - id
-        # - is_deprecated
         - is_preconfigured
         - name
       properties:
