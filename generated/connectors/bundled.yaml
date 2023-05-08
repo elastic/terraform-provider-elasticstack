@@ -207,11 +207,18 @@ paths:
                 - $ref: '#/components/schemas/update_connector_request_index'
                 - $ref: '#/components/schemas/update_connector_request_jira'
                 - $ref: '#/components/schemas/update_connector_request_opsgenie'
+                - $ref: '#/components/schemas/update_connector_request_pagerduty'
                 - $ref: '#/components/schemas/update_connector_request_resilient'
                 - $ref: '#/components/schemas/update_connector_request_serverlog'
                 - $ref: '#/components/schemas/update_connector_request_servicenow'
                 - $ref: '#/components/schemas/update_connector_request_servicenow_itom'
+                - $ref: '#/components/schemas/update_connector_request_servicenow_sir'
+                - $ref: '#/components/schemas/update_connector_request_slack'
                 - $ref: '#/components/schemas/update_connector_request_swimlane'
+                - $ref: '#/components/schemas/update_connector_request_teams'
+                - $ref: '#/components/schemas/update_connector_request_tines'
+                - $ref: '#/components/schemas/update_connector_request_webhook'
+                - $ref: '#/components/schemas/update_connector_request_xmatters'
             examples:
               updateIndexConnectorRequest:
                 $ref: '#/components/examples/update_index_connector_request'
@@ -2346,6 +2353,24 @@ components:
           description: The display name for the connector.
         secrets:
           $ref: '#/components/schemas/secrets_properties_opsgenie'
+    update_connector_request_pagerduty:
+      title: Update PagerDuty connector request
+      description: |
+        The PagerDuty connector uses the v2 Events API to trigger, acknowledge, and resolve PagerDuty alerts.
+      type: object
+      required:
+        - config
+        - name
+        - secrets
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_pagerduty'
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_pagerduty'
     update_connector_request_resilient:
       title: Update IBM Resilient connector request
       type: object
@@ -2386,7 +2411,7 @@ components:
         secrets:
           $ref: '#/components/schemas/secrets_properties_servicenow'
     update_connector_request_servicenow_itom:
-      title: Create ServiceNow ITOM connector request
+      title: Update ServiceNow ITOM connector request
       type: object
       required:
         - config
@@ -2400,6 +2425,38 @@ components:
           description: The display name for the connector.
         secrets:
           $ref: '#/components/schemas/secrets_properties_servicenow'
+    update_connector_request_servicenow_sir:
+      title: Update ServiceNow SecOps connector request
+      description: |
+        The ServiceNow SecOps connector uses the import set API to create ServiceNow security incidents. You can use the connector for rule actions and cases.
+      type: object
+      required:
+        - config
+        - name
+        - secrets
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_servicenow'
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_servicenow'
+    update_connector_request_slack:
+      title: Update Slack connector request
+      description: The Slack connector uses Slack Incoming Webhooks.
+      type: object
+      required:
+        - name
+        - secrets
+      properties:
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_slack'
     update_connector_request_swimlane:
       title: Update Swimlane connector request
       type: object
@@ -2416,6 +2473,74 @@ components:
           example: my-connector
         secrets:
           $ref: '#/components/schemas/secrets_properties_swimlane'
+    update_connector_request_teams:
+      title: Update Microsoft Teams connector request
+      description: The Microsoft Teams connector uses Incoming Webhooks.
+      type: object
+      required:
+        - name
+        - secrets
+      properties:
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_teams'
+    update_connector_request_tines:
+      title: Update Tines connector request
+      description: |
+        The Tines connector uses Tines Webhook actions to send events via POST request.
+      type: object
+      required:
+        - config
+        - name
+        - secrets
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_tines'
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_tines'
+    update_connector_request_webhook:
+      title: Update Webhook connector request
+      description: |
+        The Webhook connector uses axios to send a POST or PUT request to a web service.
+      type: object
+      required:
+        - config
+        - name
+        - secrets
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_webhook'
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_webhook'
+    update_connector_request_xmatters:
+      title: Update xMatters connector request
+      description: |
+        The xMatters connector uses the xMatters Workflow for Elastic to send actionable alerts to on-call xMatters resources.
+      type: object
+      required:
+        - config
+        - name
+        - secrets
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_xmatters'
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_xmatters'
     connector_types:
       title: Connector types
       type: string

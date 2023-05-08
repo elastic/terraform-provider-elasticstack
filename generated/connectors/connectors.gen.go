@@ -2028,6 +2028,18 @@ type UpdateConnectorRequestOpsgenie struct {
 	Secrets SecretsPropertiesOpsgenie `json:"secrets"`
 }
 
+// UpdateConnectorRequestPagerduty The PagerDuty connector uses the v2 Events API to trigger, acknowledge, and resolve PagerDuty alerts.
+type UpdateConnectorRequestPagerduty struct {
+	// Config Defines properties for connectors when type is `.pagerduty`.
+	Config ConfigPropertiesPagerduty `json:"config"`
+
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.pagerduty`.
+	Secrets SecretsPropertiesPagerduty `json:"secrets"`
+}
+
 // UpdateConnectorRequestResilient defines model for update_connector_request_resilient.
 type UpdateConnectorRequestResilient struct {
 	// Config Defines properties for connectors when type is `.resilient`.
@@ -2070,6 +2082,27 @@ type UpdateConnectorRequestServicenowItom struct {
 	Secrets SecretsPropertiesServicenow `json:"secrets"`
 }
 
+// UpdateConnectorRequestServicenowSir The ServiceNow SecOps connector uses the import set API to create ServiceNow security incidents. You can use the connector for rule actions and cases.
+type UpdateConnectorRequestServicenowSir struct {
+	// Config Defines properties for connectors when type is `.servicenow`.
+	Config ConfigPropertiesServicenow `json:"config"`
+
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.servicenow`, `.servicenow-sir`, or `.servicenow-itom`.
+	Secrets SecretsPropertiesServicenow `json:"secrets"`
+}
+
+// UpdateConnectorRequestSlack The Slack connector uses Slack Incoming Webhooks.
+type UpdateConnectorRequestSlack struct {
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.slack`.
+	Secrets SecretsPropertiesSlack `json:"secrets"`
+}
+
 // UpdateConnectorRequestSwimlane defines model for update_connector_request_swimlane.
 type UpdateConnectorRequestSwimlane struct {
 	// Config Defines properties for connectors when type is `.swimlane`.
@@ -2080,6 +2113,51 @@ type UpdateConnectorRequestSwimlane struct {
 
 	// Secrets Defines secrets for connectors when type is `.swimlane`.
 	Secrets SecretsPropertiesSwimlane `json:"secrets"`
+}
+
+// UpdateConnectorRequestTeams The Microsoft Teams connector uses Incoming Webhooks.
+type UpdateConnectorRequestTeams struct {
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.teams`.
+	Secrets SecretsPropertiesTeams `json:"secrets"`
+}
+
+// UpdateConnectorRequestTines The Tines connector uses Tines Webhook actions to send events via POST request.
+type UpdateConnectorRequestTines struct {
+	// Config Defines properties for connectors when type is `.tines`.
+	Config ConfigPropertiesTines `json:"config"`
+
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.tines`.
+	Secrets SecretsPropertiesTines `json:"secrets"`
+}
+
+// UpdateConnectorRequestWebhook The Webhook connector uses axios to send a POST or PUT request to a web service.
+type UpdateConnectorRequestWebhook struct {
+	// Config Defines properties for connectors when type is `.webhook`.
+	Config ConfigPropertiesWebhook `json:"config"`
+
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.webhook`.
+	Secrets SecretsPropertiesWebhook `json:"secrets"`
+}
+
+// UpdateConnectorRequestXmatters The xMatters connector uses the xMatters Workflow for Elastic to send actionable alerts to on-call xMatters resources.
+type UpdateConnectorRequestXmatters struct {
+	// Config Defines properties for connectors when type is `.xmatters`.
+	Config ConfigPropertiesXmatters `json:"config"`
+
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.xmatters`.
+	Secrets SecretsPropertiesXmatters `json:"secrets"`
 }
 
 // ActionId defines model for action_id.
