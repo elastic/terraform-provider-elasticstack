@@ -4,10 +4,16 @@
 package fleetapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
@@ -83,6 +89,310 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// CreateAgentPolicy request with any body
+	CreateAgentPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateAgentPolicy(ctx context.Context, body CreateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteAgentPolicy request with any body
+	DeleteAgentPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	DeleteAgentPolicy(ctx context.Context, body DeleteAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentPolicyInfo request
+	AgentPolicyInfo(ctx context.Context, agentPolicyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAgentPolicy request with any body
+	UpdateAgentPolicyWithBody(ctx context.Context, agentPolicyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateAgentPolicy(ctx context.Context, agentPolicyId string, body UpdateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetEnrollmentApiKeys request
+	GetEnrollmentApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) CreateAgentPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAgentPolicyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateAgentPolicy(ctx context.Context, body CreateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAgentPolicyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteAgentPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAgentPolicyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteAgentPolicy(ctx context.Context, body DeleteAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAgentPolicyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AgentPolicyInfo(ctx context.Context, agentPolicyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentPolicyInfoRequest(c.Server, agentPolicyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateAgentPolicyWithBody(ctx context.Context, agentPolicyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAgentPolicyRequestWithBody(c.Server, agentPolicyId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateAgentPolicy(ctx context.Context, agentPolicyId string, body UpdateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAgentPolicyRequest(c.Server, agentPolicyId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEnrollmentApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEnrollmentApiKeysRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// NewCreateAgentPolicyRequest calls the generic CreateAgentPolicy builder with application/json body
+func NewCreateAgentPolicyRequest(server string, body CreateAgentPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateAgentPolicyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateAgentPolicyRequestWithBody generates requests for CreateAgentPolicy with any type of body
+func NewCreateAgentPolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/agent_policies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteAgentPolicyRequest calls the generic DeleteAgentPolicy builder with application/json body
+func NewDeleteAgentPolicyRequest(server string, body DeleteAgentPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDeleteAgentPolicyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewDeleteAgentPolicyRequestWithBody generates requests for DeleteAgentPolicy with any type of body
+func NewDeleteAgentPolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/agent_policies/delete")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAgentPolicyInfoRequest generates requests for AgentPolicyInfo
+func NewAgentPolicyInfoRequest(server string, agentPolicyId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "agentPolicyId", runtime.ParamLocationPath, agentPolicyId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/agent_policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateAgentPolicyRequest calls the generic UpdateAgentPolicy builder with application/json body
+func NewUpdateAgentPolicyRequest(server string, agentPolicyId string, body UpdateAgentPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateAgentPolicyRequestWithBody(server, agentPolicyId, "application/json", bodyReader)
+}
+
+// NewUpdateAgentPolicyRequestWithBody generates requests for UpdateAgentPolicy with any type of body
+func NewUpdateAgentPolicyRequestWithBody(server string, agentPolicyId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "agentPolicyId", runtime.ParamLocationPath, agentPolicyId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/agent_policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetEnrollmentApiKeysRequest generates requests for GetEnrollmentApiKeys
+func NewGetEnrollmentApiKeysRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/enrollment_api_keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
@@ -128,4 +438,443 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// CreateAgentPolicy request with any body
+	CreateAgentPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentPolicyResponse, error)
+
+	CreateAgentPolicyWithResponse(ctx context.Context, body CreateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentPolicyResponse, error)
+
+	// DeleteAgentPolicy request with any body
+	DeleteAgentPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAgentPolicyResponse, error)
+
+	DeleteAgentPolicyWithResponse(ctx context.Context, body DeleteAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteAgentPolicyResponse, error)
+
+	// AgentPolicyInfo request
+	AgentPolicyInfoWithResponse(ctx context.Context, agentPolicyId string, reqEditors ...RequestEditorFn) (*AgentPolicyInfoResponse, error)
+
+	// UpdateAgentPolicy request with any body
+	UpdateAgentPolicyWithBodyWithResponse(ctx context.Context, agentPolicyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentPolicyResponse, error)
+
+	UpdateAgentPolicyWithResponse(ctx context.Context, agentPolicyId string, body UpdateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentPolicyResponse, error)
+
+	// GetEnrollmentApiKeys request
+	GetEnrollmentApiKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEnrollmentApiKeysResponse, error)
+}
+
+type CreateAgentPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item *AgentPolicy `json:"item,omitempty"`
+	}
+	JSON400 *struct {
+		Error      *string  `json:"error,omitempty"`
+		Message    *string  `json:"message,omitempty"`
+		StatusCode *float32 `json:"statusCode,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateAgentPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateAgentPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteAgentPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Id      string `json:"id"`
+		Success bool   `json:"success"`
+	}
+	JSON400 *struct {
+		Error      *string  `json:"error,omitempty"`
+		Message    *string  `json:"message,omitempty"`
+		StatusCode *float32 `json:"statusCode,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteAgentPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteAgentPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AgentPolicyInfoResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item AgentPolicy `json:"item"`
+	}
+	JSON400 *struct {
+		Error      *string  `json:"error,omitempty"`
+		Message    *string  `json:"message,omitempty"`
+		StatusCode *float32 `json:"statusCode,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentPolicyInfoResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentPolicyInfoResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateAgentPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item AgentPolicy `json:"item"`
+	}
+	JSON400 *struct {
+		Error      *string  `json:"error,omitempty"`
+		Message    *string  `json:"message,omitempty"`
+		StatusCode *float32 `json:"statusCode,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateAgentPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateAgentPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetEnrollmentApiKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Items   []EnrollmentApiKey  `json:"items"`
+		List    *[]EnrollmentApiKey `json:"list,omitempty"`
+		Page    float32             `json:"page"`
+		PerPage float32             `json:"perPage"`
+		Total   float32             `json:"total"`
+	}
+	JSON400 *struct {
+		Error      *string  `json:"error,omitempty"`
+		Message    *string  `json:"message,omitempty"`
+		StatusCode *float32 `json:"statusCode,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEnrollmentApiKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEnrollmentApiKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// CreateAgentPolicyWithBodyWithResponse request with arbitrary body returning *CreateAgentPolicyResponse
+func (c *ClientWithResponses) CreateAgentPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentPolicyResponse, error) {
+	rsp, err := c.CreateAgentPolicyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAgentPolicyResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateAgentPolicyWithResponse(ctx context.Context, body CreateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentPolicyResponse, error) {
+	rsp, err := c.CreateAgentPolicy(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAgentPolicyResponse(rsp)
+}
+
+// DeleteAgentPolicyWithBodyWithResponse request with arbitrary body returning *DeleteAgentPolicyResponse
+func (c *ClientWithResponses) DeleteAgentPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAgentPolicyResponse, error) {
+	rsp, err := c.DeleteAgentPolicyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAgentPolicyResponse(rsp)
+}
+
+func (c *ClientWithResponses) DeleteAgentPolicyWithResponse(ctx context.Context, body DeleteAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteAgentPolicyResponse, error) {
+	rsp, err := c.DeleteAgentPolicy(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAgentPolicyResponse(rsp)
+}
+
+// AgentPolicyInfoWithResponse request returning *AgentPolicyInfoResponse
+func (c *ClientWithResponses) AgentPolicyInfoWithResponse(ctx context.Context, agentPolicyId string, reqEditors ...RequestEditorFn) (*AgentPolicyInfoResponse, error) {
+	rsp, err := c.AgentPolicyInfo(ctx, agentPolicyId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentPolicyInfoResponse(rsp)
+}
+
+// UpdateAgentPolicyWithBodyWithResponse request with arbitrary body returning *UpdateAgentPolicyResponse
+func (c *ClientWithResponses) UpdateAgentPolicyWithBodyWithResponse(ctx context.Context, agentPolicyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentPolicyResponse, error) {
+	rsp, err := c.UpdateAgentPolicyWithBody(ctx, agentPolicyId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAgentPolicyResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateAgentPolicyWithResponse(ctx context.Context, agentPolicyId string, body UpdateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentPolicyResponse, error) {
+	rsp, err := c.UpdateAgentPolicy(ctx, agentPolicyId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAgentPolicyResponse(rsp)
+}
+
+// GetEnrollmentApiKeysWithResponse request returning *GetEnrollmentApiKeysResponse
+func (c *ClientWithResponses) GetEnrollmentApiKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEnrollmentApiKeysResponse, error) {
+	rsp, err := c.GetEnrollmentApiKeys(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEnrollmentApiKeysResponse(rsp)
+}
+
+// ParseCreateAgentPolicyResponse parses an HTTP response from a CreateAgentPolicyWithResponse call
+func ParseCreateAgentPolicyResponse(rsp *http.Response) (*CreateAgentPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateAgentPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Item *AgentPolicy `json:"item,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Error      *string  `json:"error,omitempty"`
+			Message    *string  `json:"message,omitempty"`
+			StatusCode *float32 `json:"statusCode,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteAgentPolicyResponse parses an HTTP response from a DeleteAgentPolicyWithResponse call
+func ParseDeleteAgentPolicyResponse(rsp *http.Response) (*DeleteAgentPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteAgentPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Id      string `json:"id"`
+			Success bool   `json:"success"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Error      *string  `json:"error,omitempty"`
+			Message    *string  `json:"message,omitempty"`
+			StatusCode *float32 `json:"statusCode,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAgentPolicyInfoResponse parses an HTTP response from a AgentPolicyInfoWithResponse call
+func ParseAgentPolicyInfoResponse(rsp *http.Response) (*AgentPolicyInfoResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentPolicyInfoResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Item AgentPolicy `json:"item"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Error      *string  `json:"error,omitempty"`
+			Message    *string  `json:"message,omitempty"`
+			StatusCode *float32 `json:"statusCode,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateAgentPolicyResponse parses an HTTP response from a UpdateAgentPolicyWithResponse call
+func ParseUpdateAgentPolicyResponse(rsp *http.Response) (*UpdateAgentPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateAgentPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Item AgentPolicy `json:"item"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Error      *string  `json:"error,omitempty"`
+			Message    *string  `json:"message,omitempty"`
+			StatusCode *float32 `json:"statusCode,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEnrollmentApiKeysResponse parses an HTTP response from a GetEnrollmentApiKeysWithResponse call
+func ParseGetEnrollmentApiKeysResponse(rsp *http.Response) (*GetEnrollmentApiKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEnrollmentApiKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items   []EnrollmentApiKey  `json:"items"`
+			List    *[]EnrollmentApiKey `json:"list,omitempty"`
+			Page    float32             `json:"page"`
+			PerPage float32             `json:"perPage"`
+			Total   float32             `json:"total"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Error      *string  `json:"error,omitempty"`
+			Message    *string  `json:"message,omitempty"`
+			StatusCode *float32 `json:"statusCode,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
 }

@@ -1,0 +1,23 @@
+---
+subcategory: "Fleet"
+layout: ""
+page_title: "Elasticstack: elasticstack_fleet_agent_policy Resource"
+description: |-
+  Creates or updates a Fleet Agent Policy.
+---
+
+# Resource: elasticstack_fleet_agent_policy
+
+Creates or updates a Fleet Agent Policy. See https://www.elastic.co/guide/en/fleet/current/fleet-api-docs.html#create-agent-policy-api
+
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_fleet_agent_policy/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+Import is supported using the following syntax:
+
+{{ codefile "shell" "examples/resources/elasticstack_fleet_agent_policy/import.sh" }}
