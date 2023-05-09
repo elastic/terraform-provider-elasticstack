@@ -176,19 +176,94 @@ func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 	return nil
 }
 
-func ConnectorConfigWithDefaults(connectorTypeID, proposed, backend, local string) (string, error) {
+func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (string, error) {
 	switch connectors.ConnectorTypes(connectorTypeID) {
+
+	case connectors.ConnectorTypesDotCasesWebhook:
+		return connectorConfigWithDefaultsCasesWebhook(plan)
+
 	case connectors.ConnectorTypesDotEmail:
-		return connectorEmailConfigWithDefaults(proposed)
+		return connectorConfigWithDefaultsEmail(plan)
+
 	case connectors.ConnectorTypesDotIndex:
-		return connectorIndexConfigWithDefaults(proposed)
+		return connectorConfigWithDefaultsIndex(plan)
+
+	case connectors.ConnectorTypesDotJira:
+		return connectorConfigWithDefaultsJira(plan)
+
+	case connectors.ConnectorTypesDotOpsgenie:
+		return connectorConfigWithDefaultsOpsgenie(plan)
+
+	case connectors.ConnectorTypesDotPagerduty:
+		return connectorConfigWithDefaultsPagerduty(plan)
+
+	case connectors.ConnectorTypesDotResilient:
+		return connectorConfigWithDefaultsResilient(plan)
+
+	case connectors.ConnectorTypesDotServicenow:
+		return connectorConfigWithDefaultsServicenow(plan)
+
+	case connectors.ConnectorTypesDotServicenowItom:
+		return connectorConfigWithDefaultsServicenowItom(plan)
+
+	case connectors.ConnectorTypesDotServicenowSir:
+		return connectorConfigWithDefaultsServicenowSir(plan)
+
+	case connectors.ConnectorTypesDotServerLog:
+		return connectorConfigWithDefaultsServerLog(plan)
+
+	case connectors.ConnectorTypesDotSlack:
+		return connectorConfigWithDefaultsSlack(plan)
+
+	case connectors.ConnectorTypesDotSwimlane:
+		return connectorConfigWithDefaultsSwimlane(plan)
+
+	case connectors.ConnectorTypesDotTeams:
+		return connectorConfigWithDefaultsTeams(plan)
+
+	case connectors.ConnectorTypesDotTines:
+		return connectorConfigWithDefaultsTines(plan)
+
+	case connectors.ConnectorTypesDotWebhook:
+		return connectorConfigWithDefaultsWebhook(plan)
+
+	case connectors.ConnectorTypesDotXmatters:
+		return connectorConfigWithDefaultsXmatters(plan)
 	}
-	return proposed, nil
+	return plan, nil
 }
 
-func connectorEmailConfigWithDefaults(proposed string) (string, error) {
+func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
+	var custom connectors.ConfigPropertiesCasesWebhook
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
+		return "", err
+	}
+	if custom.CreateCommentMethod == nil {
+		custom.CreateCommentMethod = new(connectors.ConfigPropertiesCasesWebhookCreateCommentMethod)
+		*custom.CreateCommentMethod = connectors.ConfigPropertiesCasesWebhookCreateCommentMethodPut
+	}
+	if custom.CreateIncidentMethod == nil {
+		custom.CreateIncidentMethod = new(connectors.ConfigPropertiesCasesWebhookCreateIncidentMethod)
+		*custom.CreateIncidentMethod = connectors.ConfigPropertiesCasesWebhookCreateIncidentMethodPost
+	}
+	if custom.HasAuth == nil {
+		custom.HasAuth = new(bool)
+		*custom.HasAuth = true
+	}
+	if custom.UpdateIncidentMethod == nil {
+		custom.UpdateIncidentMethod = new(connectors.ConfigPropertiesCasesWebhookUpdateIncidentMethod)
+		*custom.UpdateIncidentMethod = connectors.Put
+	}
+	customJSON, err := json.Marshal(custom)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
+}
+
+func connectorConfigWithDefaultsEmail(plan string) (string, error) {
 	var custom connectors.ConfigPropertiesEmail
-	if err := json.Unmarshal([]byte(proposed), &custom); err != nil {
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
 	}
 	if custom.HasAuth == nil {
@@ -206,9 +281,9 @@ func connectorEmailConfigWithDefaults(proposed string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorIndexConfigWithDefaults(proposed string) (string, error) {
+func connectorConfigWithDefaultsIndex(plan string) (string, error) {
 	var custom connectors.ConfigPropertiesIndex
-	if err := json.Unmarshal([]byte(proposed), &custom); err != nil {
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
 	}
 	if custom.Refresh == nil {
@@ -222,40 +297,151 @@ func connectorIndexConfigWithDefaults(proposed string) (string, error) {
 	return string(customJSON), nil
 }
 
+func connectorConfigWithDefaultsJira(plan string) (string, error) {
+	return plan, nil
+}
+
+func connectorConfigWithDefaultsOpsgenie(plan string) (string, error) {
+	return plan, nil
+}
+
+// TODO: implement config properties - it's `aditionalProperties: true` now
+func connectorConfigWithDefaultsPagerduty(plan string) (string, error) {
+	return plan, nil
+}
+
+func connectorConfigWithDefaultsResilient(plan string) (string, error) {
+	return plan, nil
+}
+
+func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
+	var custom connectors.ConfigPropertiesServicenow
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
+		return "", err
+	}
+	if custom.IsOAuth == nil {
+		custom.IsOAuth = new(bool)
+		*custom.IsOAuth = false
+	}
+	if custom.UsesTableApi == nil {
+		custom.UsesTableApi = new(bool)
+		*custom.UsesTableApi = true
+	}
+	customJSON, err := json.Marshal(custom)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
+}
+
+func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
+	var custom connectors.ConfigPropertiesServicenowItom
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
+		return "", err
+	}
+	if custom.IsOAuth == nil {
+		custom.IsOAuth = new(bool)
+		*custom.IsOAuth = false
+	}
+	customJSON, err := json.Marshal(custom)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
+}
+
+func connectorConfigWithDefaultsServicenowSir(plan string) (string, error) {
+	return connectorConfigWithDefaultsServicenow(plan)
+}
+
+// TODO: check
+// there is no config
+func connectorConfigWithDefaultsServerLog(plan string) (string, error) {
+	return plan, nil
+}
+
+// TODO: check
+// there is no config
+func connectorConfigWithDefaultsSlack(plan string) (string, error) {
+	return plan, nil
+}
+
+func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
+	return plan, nil
+}
+
+// TODO: check
+// there is no config
+func connectorConfigWithDefaultsTeams(plan string) (string, error) {
+	return plan, nil
+}
+
+// TODO: implement config properties - it's `aditionalProperties: true` now
+func connectorConfigWithDefaultsTines(plan string) (string, error) {
+	return plan, nil
+}
+
+// TODO: implement config properties - it's `aditionalProperties: true` now
+func connectorConfigWithDefaultsWebhook(plan string) (string, error) {
+	return plan, nil
+}
+
+// TODO: implement config properties - it's `aditionalProperties: true` now
+func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
+	return plan, nil
+}
+
 func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Reader, error) {
 	switch connectors.ConnectorTypes(connector.ConnectorTypeID) {
+
 	case connectors.ConnectorTypesDotCasesWebhook:
 		return createConnectorRequestCasesWebhook(connector)
+
 	case connectors.ConnectorTypesDotEmail:
 		return createConnectorRequestEmail(connector)
+
 	case connectors.ConnectorTypesDotIndex:
 		return createConnectorRequestIndex(connector)
+
 	case connectors.ConnectorTypesDotJira:
 		return createConnectorRequestJira(connector)
+
 	case connectors.ConnectorTypesDotOpsgenie:
 		return createConnectorRequestOpsgenie(connector)
+
 	case connectors.ConnectorTypesDotPagerduty:
 		return createConnectorRequestPagerduty(connector)
+
 	case connectors.ConnectorTypesDotResilient:
 		return createConnectorRequestResilient(connector)
+
 	case connectors.ConnectorTypesDotServicenow:
 		return createConnectorRequestServicenow(connector)
+
 	case connectors.ConnectorTypesDotServicenowItom:
 		return createConnectorRequestServicenowItom(connector)
+
 	case connectors.ConnectorTypesDotServicenowSir:
 		return createConnectorRequestServicenowSir(connector)
+
 	case connectors.ConnectorTypesDotServerLog:
 		return createConnectorRequestServerLog(connector)
+
 	case connectors.ConnectorTypesDotSlack:
 		return createConnectorRequestSlack(connector)
+
 	case connectors.ConnectorTypesDotSwimlane:
 		return createConnectorRequestSwimlane(connector)
+
 	case connectors.ConnectorTypesDotTeams:
 		return createConnectorRequestTeams(connector)
+
 	case connectors.ConnectorTypesDotTines:
 		return createConnectorRequestTines(connector)
+
 	case connectors.ConnectorTypesDotWebhook:
 		return createConnectorRequestWebhook(connector)
+
 	case connectors.ConnectorTypesDotXmatters:
 		return createConnectorRequestXmatters(connector)
 	}
@@ -265,38 +451,55 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 
 func updateConnectorRequestBody(connector models.KibanaActionConnector) (io.Reader, error) {
 	switch connectors.ConnectorTypes(connector.ConnectorTypeID) {
+
 	case connectors.ConnectorTypesDotCasesWebhook:
 		return updateConnectorRequestCasesWebhook(connector)
+
 	case connectors.ConnectorTypesDotEmail:
 		return updateConnectorRequestEmail(connector)
+
 	case connectors.ConnectorTypesDotIndex:
 		return updateConnectorRequestIndex(connector)
+
 	case connectors.ConnectorTypesDotJira:
 		return updateConnectorRequestJira(connector)
+
 	case connectors.ConnectorTypesDotOpsgenie:
 		return updateConnectorRequestOpsgenie(connector)
+
 	case connectors.ConnectorTypesDotPagerduty:
 		return updateConnectorRequestPagerduty(connector)
+
 	case connectors.ConnectorTypesDotResilient:
 		return updateConnectorRequestResilient(connector)
+
 	case connectors.ConnectorTypesDotServicenow:
 		return updateConnectorRequestServicenow(connector)
+
 	case connectors.ConnectorTypesDotServicenowItom:
 		return updateConnectorRequestServicenowItom(connector)
+
 	case connectors.ConnectorTypesDotServicenowSir:
 		return updateConnectorRequestServicenowSir(connector)
+
 	case connectors.ConnectorTypesDotServerLog:
 		return updateConnectorRequestServerlog(connector)
+
 	case connectors.ConnectorTypesDotSlack:
 		return updateConnectorRequestSlack(connector)
+
 	case connectors.ConnectorTypesDotSwimlane:
 		return updateConnectorRequestSwimlane(connector)
+
 	case connectors.ConnectorTypesDotTeams:
 		return updateConnectorRequestTeams(connector)
+
 	case connectors.ConnectorTypesDotTines:
 		return updateConnectorRequestTines(connector)
+
 	case connectors.ConnectorTypesDotWebhook:
 		return updateConnectorRequestWebhook(connector)
+
 	case connectors.ConnectorTypesDotXmatters:
 		return updateConnectorRequestXmatters(connector)
 	}
@@ -1068,363 +1271,660 @@ func connectorResponseToModel(spaceID string, properties connectors.ConnectorRes
 	if err != nil {
 		return nil, err
 	}
+
 	switch connectors.ConnectorTypes(discriminator) {
 
-	// case connectors.CASES_WEBHOOK_ConnectorTypes:
-	// 	config, err := response.GetConfig().MarshalJSON()
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-	// 	}
-	// 	// return responseToConnector(response, config, spaceID), nil
-
-	// 	connector := models.KibanaActionConnector{
-	// 		ConnectorID:      response.GetId(),
-	// 		SpaceID:          spaceID,
-	// 		Name:             response.GetName(),
-	// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-	// 		IsDeprecated:     response.GetIsDeprecated(),
-	// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-	// 		IsPreconfigured:  response.GetIsPreconfigured(),
-	// 		ConfigJSON:       string(config),
-	// 	}
-	// 	return &connector, nil
+	case connectors.ConnectorTypesDotCasesWebhook:
+		return connectorResponseToModelCasesWebhook(discriminator, spaceID, properties)
 
 	case connectors.ConnectorTypesDotEmail:
-		resp, err := properties.AsConnectorResponsePropertiesEmail()
-		if err != nil {
-			return nil, err
-		}
-
-		config, err := json.Marshal(resp.Config)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal config: %w", err)
-		}
-
-		isDeprecated := false
-		isMissingSecrets := false
-
-		if resp.IsDeprecated != nil {
-			isDeprecated = *resp.IsDeprecated
-		}
-
-		if resp.IsMissingSecrets != nil {
-			isMissingSecrets = *resp.IsMissingSecrets
-		}
-
-		connector := models.KibanaActionConnector{
-			ConnectorID:      resp.Id,
-			SpaceID:          spaceID,
-			Name:             resp.Name,
-			ConnectorTypeID:  discriminator,
-			IsDeprecated:     isDeprecated,
-			IsMissingSecrets: isMissingSecrets,
-			IsPreconfigured:  bool(resp.IsPreconfigured),
-			ConfigJSON:       string(config),
-		}
-
-		return &connector, nil
+		return connectorResponseToModelEmail(discriminator, spaceID, properties)
 
 	case connectors.ConnectorTypesDotIndex:
-		resp, err := properties.AsConnectorResponsePropertiesIndex()
-		if err != nil {
-			return nil, err
-		}
+		return connectorResponseToModelIndex(discriminator, spaceID, properties)
 
-		config, err := json.Marshal(resp.Config)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal config: %w", err)
-		}
+	case connectors.ConnectorTypesDotJira:
+		return connectorResponseToModelJira(discriminator, spaceID, properties)
 
-		isDeprecated := false
-		isMissingSecrets := false
+	case connectors.ConnectorTypesDotOpsgenie:
+		return connectorResponseToModelOpsgenie(discriminator, spaceID, properties)
 
-		if resp.IsDeprecated != nil {
-			isDeprecated = *resp.IsDeprecated
-		}
+	case connectors.ConnectorTypesDotPagerduty:
+		return connectorResponseToModelPagerduty(discriminator, spaceID, properties)
 
-		if resp.IsMissingSecrets != nil {
-			isMissingSecrets = *resp.IsMissingSecrets
-		}
+	case connectors.ConnectorTypesDotResilient:
+		return connectorResponseToModelResilient(discriminator, spaceID, properties)
 
-		connector := models.KibanaActionConnector{
-			ConnectorID:      resp.Id,
-			SpaceID:          spaceID,
-			Name:             resp.Name,
-			ConnectorTypeID:  discriminator,
-			IsDeprecated:     isDeprecated,
-			IsMissingSecrets: isMissingSecrets,
-			IsPreconfigured:  bool(resp.IsPreconfigured),
-			ConfigJSON:       string(config),
-		}
+	case connectors.ConnectorTypesDotServerLog:
+		return connectorResponseToModelServerlog(discriminator, spaceID, properties)
 
-		return &connector, nil
+	case connectors.ConnectorTypesDotServicenow:
+		return connectorResponseToModelServicenow(discriminator, spaceID, properties)
 
-		// case *connectors.ConnectorResponsePropertiesJira:
-		// 	config, err := response.GetConfig().MarshalJSON()
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
+	case connectors.ConnectorTypesDotServicenowItom:
+		return connectorResponseToModelServicenowItom(discriminator, spaceID, properties)
 
-		// case *connectors.ConnectorResponsePropertiesOpsgenie:
-		// 	config, err := response.GetConfig().MarshalJSON()
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
+	case connectors.ConnectorTypesDotServicenowSir:
+		return connectorResponseToModelServicenowSir(discriminator, spaceID, properties)
 
-		// case *connectors.ConnectorResponsePropertiesPagerduty:
-		// 	config, err := json.Marshal(response.GetConfig())
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
+	case connectors.ConnectorTypesDotSlack:
+		return connectorResponseToModelSlack(discriminator, spaceID, properties)
 
-		// case *connectors.ConnectorResponsePropertiesResilient:
-		// 	config, err := response.GetConfig().MarshalJSON()
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
+	case connectors.ConnectorTypesDotSwimlane:
+		return connectorResponseToModelSwimlane(discriminator, spaceID, properties)
 
-		// case *connectors.ConnectorResponsePropertiesServerlog:
-		// 	config, err := json.Marshal(response.GetConfig())
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
+	case connectors.ConnectorTypesDotTeams:
+		return connectorResponseToModelTeams(discriminator, spaceID, properties)
 
-		// case *connectors.ConnectorResponsePropertiesServicenow:
-		// 	config, err := response.GetConfig().MarshalJSON()
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
+	case connectors.ConnectorTypesDotTines:
+		return connectorResponseToModelTines(discriminator, spaceID, properties)
 
-		// case *connectors.ConnectorResponsePropertiesServicenowItom:
-		// 	config, err := response.GetConfig().MarshalJSON()
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
+	case connectors.ConnectorTypesDotWebhook:
+		return connectorResponseToModelWebhook(discriminator, spaceID, properties)
 
-		// case *connectors.ConnectorResponsePropertiesServicenowSir:
-		// 	config, err := response.GetConfig().MarshalJSON()
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
-
-		// case *connectors.ConnectorResponsePropertiesSlack:
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 	}
-		// 	return &connector, nil
-
-		// case *connectors.ConnectorResponsePropertiesSwimlane:
-		// 	config, err := response.GetConfig().MarshalJSON()
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
-
-		// case *connectors.ConnectorResponsePropertiesTeams:
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 	}
-		// 	return &connector, nil
-
-		// case *connectors.ConnectorResponsePropertiesTines:
-		// 	config, err := json.Marshal(response.GetConfig())
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
-
-		// case *connectors.ConnectorResponsePropertiesWebhook:
-		// 	config, err := json.Marshal(response.GetConfig())
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
-
-		// case *connectors.ConnectorResponsePropertiesXmatters:
-		// 	config, err := json.Marshal(response.GetConfig())
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to parse [config] in ConnectorResponsePropertiesCasesWebhook - [%w]", err)
-		// 	}
-		// 	// return responseToConnector(response, config, spaceID), nil
-		// 	connector := models.KibanaActionConnector{
-		// 		ConnectorID:      response.GetId(),
-		// 		SpaceID:          spaceID,
-		// 		Name:             response.GetName(),
-		// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-		// 		IsDeprecated:     response.GetIsDeprecated(),
-		// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-		// 		IsPreconfigured:  response.GetIsPreconfigured(),
-		// 		ConfigJSON:       string(config),
-		// 	}
-		// 	return &connector, nil
+	case connectors.ConnectorTypesDotXmatters:
+		return connectorResponseToModelXmatters(discriminator, spaceID, properties)
 	}
 
 	return nil, fmt.Errorf("unknown connector type [%s]", discriminator)
 }
 
-// func responseToConnector[T responseType](response T, config []byte, spaceID string) *models.KibanaActionConnector {
-// 	return &models.KibanaActionConnector{
-// 		ConnectorID:      response.GetId(),
-// 		SpaceID:          spaceID,
-// 		Name:             response.GetName(),
-// 		ConnectorTypeID:  response.GetConnectorTypeId(),
-// 		IsDeprecated:     response.GetIsDeprecated(),
-// 		IsMissingSecrets: response.GetIsMissingSecrets(),
-// 		IsPreconfigured:  response.GetIsPreconfigured(),
-// 		ConfigJSON:       string(config),
-// 	}
-// }
+func connectorResponseToModelCasesWebhook(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesCasesWebhook()
+	if err != nil {
+		return nil, err
+	}
 
-// type responseType interface {
-// 	*connectors.ConnectorResponsePropertiesCasesWebhook | *connectors.ConnectorResponsePropertiesEmail |
-// 		*connectors.ConnectorResponsePropertiesIndex
-// 	GetId() string
-// 	GetName() string
-// 	GetConnectorTypeId() string
-// 	GetIsDeprecated() bool
-// 	GetIsMissingSecrets() bool
-// 	GetIsPreconfigured() bool
-// }
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelEmail(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesEmail()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelIndex(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesIndex()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelJira(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesJira()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelOpsgenie(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesOpsgenie()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelPagerduty(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesPagerduty()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelResilient(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesResilient()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelServerlog(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesServerlog()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelServicenow(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesServicenow()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelServicenowItom(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesServicenowItom()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelServicenowSir(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesServicenowSir()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelSlack(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesSlack()
+	if err != nil {
+		return nil, err
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelSwimlane(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesSwimlane()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelTeams(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesTeams()
+	if err != nil {
+		return nil, err
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelTines(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesTines()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelWebhook(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesTines()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelXmatters(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesTines()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
