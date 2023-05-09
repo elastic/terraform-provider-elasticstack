@@ -157,6 +157,7 @@ tools: $(GOBIN) ## Install useful tools for linting, docs generation and develop
 	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@ cd tools && go install github.com/goreleaser/goreleaser
+	@ cd tools && go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
 
 
 .PHONY: misspell
@@ -263,7 +264,6 @@ generate-slo-client: ## generate Kibana slo client
 		-o /local/generated/slo
 	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
 	@ go fmt ./generated/...
-
 
 .PHONY: generate-clients
 generate-clients: generate-alerting-client generate-slo-client ## generate all clients

@@ -78,6 +78,7 @@ jobs:
           ELASTICSEARCH_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
           ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
           XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
+          xpack.fleet.enabled: true
         ports:
           - 5601:5601
 
