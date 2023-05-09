@@ -29,6 +29,7 @@ func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 
 const testAccDataSourceEnrollmentToken = `
 provider "elasticstack" {
+  elasticsearch {}
   kibana {}
 }
 

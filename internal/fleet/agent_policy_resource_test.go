@@ -54,6 +54,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 func testAccResourceAgentPolicyCreate(id string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
+  elasticsearch {}
   kibana {}
 }
 
@@ -75,7 +76,8 @@ data "elasticstack_fleet_enrollment_tokens" "test_policy" {
 func testAccResourceAgentPolicyUpdate(id string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  fleet {}
+  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
