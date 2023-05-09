@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var minVersionAgentPolicy = version.Must(version.NewVersion("7.16.0"))
+var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
 
 func TestAccResourceAgentPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)

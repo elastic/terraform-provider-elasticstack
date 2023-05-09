@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-var minVersionEnrollmentTokens = version.Must(version.NewVersion("8.0.0"))
+var minVersionEnrollmentTokens = version.Must(version.NewVersion("8.6.0"))
 
 func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 	resource.Test(t, resource.TestCase{
