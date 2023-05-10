@@ -1114,12 +1114,19 @@ components:
       title: Connector request properties for a PagerDuty connector
       description: Defines properties for connectors when type is `.pagerduty`.
       type: object
-      additionalProperties: true
+      properties:
+        apiUrl:
+          type: string
+          nullable: true
     secrets_properties_pagerduty:
       title: Connector secrets properties for a PagerDuty connector
       description: Defines secrets for connectors when type is `.pagerduty`.
       type: object
-      additionalProperties: true
+      required:
+        - routingKey
+      properties:
+        routingKey:
+          type: string
     create_connector_request_pagerduty:
       title: Create PagerDuty connector request
       description: |
@@ -1418,6 +1425,8 @@ components:
             - alerts
             - cases
         mappings:
+          $ref: '#/components/schemas/config_properties_swimlane_mappings'
+    config_properties_swimlane_mappings:
           title: Connector mappings properties for a Swimlane connector
           description: The field mapping.
           type: object
@@ -1638,12 +1647,20 @@ components:
       title: Connector request properties for a Tines connector
       description: Defines properties for connectors when type is `.tines`.
       type: object
-      additionalProperties: true
+      required:
+        - url
+      properties:
+        url:
+          type: string
     secrets_properties_tines:
       title: Connector secrets properties for a Tines connector
       description: Defines secrets for connectors when type is `.tines`.
       type: object
-      additionalProperties: true
+      properties:
+        email:
+          type: string
+        token:
+          type: string
     create_connector_request_tines:
       title: Create Tines connector request
       description: |
@@ -1673,7 +1690,24 @@ components:
       title: Connector request properties for a Webhook connector
       description: Defines properties for connectors when type is `.webhook`.
       type: object
-      additionalProperties: true
+      required:
+        - url
+      properties:
+        url:
+          type: string
+        method:
+          type: string
+          default: post
+          enum:
+            - patch
+            - post
+            - put
+        headers:
+          type: object
+          additionalProperties: true
+        hasAuth:
+          type: boolean
+          default: true
     secrets_properties_webhook:
       title: Connector secrets properties for a Webhook connector
       description: Defines secrets for connectors when type is `.webhook`.

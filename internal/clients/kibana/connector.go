@@ -209,17 +209,8 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (
 	case connectors.ConnectorTypesDotServicenowSir:
 		return connectorConfigWithDefaultsServicenowSir(plan)
 
-	case connectors.ConnectorTypesDotServerLog:
-		return connectorConfigWithDefaultsServerLog(plan)
-
-	case connectors.ConnectorTypesDotSlack:
-		return connectorConfigWithDefaultsSlack(plan)
-
 	case connectors.ConnectorTypesDotSwimlane:
 		return connectorConfigWithDefaultsSwimlane(plan)
-
-	case connectors.ConnectorTypesDotTeams:
-		return connectorConfigWithDefaultsTeams(plan)
 
 	case connectors.ConnectorTypesDotTines:
 		return connectorConfigWithDefaultsTines(plan)
@@ -233,14 +224,26 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (
 	return plan, nil
 }
 
+// User can omit optonal fields in config JSON.
+// The func adds empty optional fields to the diff.
+// Otherwise plan command shows omitted fields as the diff,
+// because backend returns all fields.
+func connectorConfigWithDefaults[T any](plan string) (string, error) {
+	var config T
+	if err := json.Unmarshal([]byte(plan), &config); err != nil {
+		return "", err
+	}
+	customJSON, err := json.Marshal(config)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
+}
+
 func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 	var custom connectors.ConfigPropertiesCasesWebhook
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
-	}
-	if custom.CreateCommentMethod == nil {
-		custom.CreateCommentMethod = new(connectors.ConfigPropertiesCasesWebhookCreateCommentMethod)
-		*custom.CreateCommentMethod = connectors.ConfigPropertiesCasesWebhookCreateCommentMethodPut
 	}
 	if custom.CreateIncidentMethod == nil {
 		custom.CreateIncidentMethod = new(connectors.ConfigPropertiesCasesWebhookCreateIncidentMethod)
@@ -252,7 +255,7 @@ func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 	}
 	if custom.UpdateIncidentMethod == nil {
 		custom.UpdateIncidentMethod = new(connectors.ConfigPropertiesCasesWebhookUpdateIncidentMethod)
-		*custom.UpdateIncidentMethod = connectors.Put
+		*custom.UpdateIncidentMethod = connectors.ConfigPropertiesCasesWebhookUpdateIncidentMethodPut
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
@@ -298,16 +301,15 @@ func connectorConfigWithDefaultsIndex(plan string) (string, error) {
 }
 
 func connectorConfigWithDefaultsJira(plan string) (string, error) {
-	return plan, nil
+	return connectorConfigWithDefaults[connectors.ConfigPropertiesJira](plan)
 }
 
 func connectorConfigWithDefaultsOpsgenie(plan string) (string, error) {
 	return plan, nil
 }
 
-// TODO: implement config properties - it's `aditionalProperties: true` now
 func connectorConfigWithDefaultsPagerduty(plan string) (string, error) {
-	return plan, nil
+	return connectorConfigWithDefaults[connectors.ConfigPropertiesPagerduty](plan)
 }
 
 func connectorConfigWithDefaultsResilient(plan string) (string, error) {
@@ -354,39 +356,29 @@ func connectorConfigWithDefaultsServicenowSir(plan string) (string, error) {
 	return connectorConfigWithDefaultsServicenow(plan)
 }
 
-// TODO: check
-// there is no config
-func connectorConfigWithDefaultsServerLog(plan string) (string, error) {
-	return plan, nil
-}
-
-// TODO: check
-// there is no config
-func connectorConfigWithDefaultsSlack(plan string) (string, error) {
-	return plan, nil
-}
-
 func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
-	return plan, nil
+	var custom connectors.ConfigPropertiesSwimlane
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
+		return "", err
+	}
+	if custom.Mappings == nil {
+		custom.Mappings = &connectors.ConfigPropertiesSwimlaneMappings{}
+	}
+	customJSON, err := json.Marshal(custom)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
 }
 
-// TODO: check
-// there is no config
-func connectorConfigWithDefaultsTeams(plan string) (string, error) {
-	return plan, nil
-}
-
-// TODO: implement config properties - it's `aditionalProperties: true` now
 func connectorConfigWithDefaultsTines(plan string) (string, error) {
 	return plan, nil
 }
 
-// TODO: implement config properties - it's `aditionalProperties: true` now
 func connectorConfigWithDefaultsWebhook(plan string) (string, error) {
 	return plan, nil
 }
 
-// TODO: implement config properties - it's `aditionalProperties: true` now
 func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
 	return plan, nil
 }
@@ -631,12 +623,16 @@ func createConnectorRequestPagerduty(connector models.KibanaActionConnector) (io
 		Name:            connector.Name,
 	}
 
-	if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
-		return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+	if len(connector.ConfigJSON) > 0 {
+		if err := json.Unmarshal([]byte(connector.ConfigJSON), &request.Config); err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal [config] attribute: %w", prefixError, err)
+		}
 	}
 
-	if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
-		return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+	if len(connector.SecretsJSON) > 0 {
+		if err := json.Unmarshal([]byte(connector.SecretsJSON), &request.Secrets); err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal [secrets] attribute: %w", prefixError, err)
+		}
 	}
 
 	bt, err := json.Marshal(request)

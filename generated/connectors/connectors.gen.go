@@ -58,9 +58,9 @@ const (
 
 // Defines values for ConfigPropertiesCasesWebhookUpdateIncidentMethod.
 const (
-	Patch ConfigPropertiesCasesWebhookUpdateIncidentMethod = "patch"
-	Post  ConfigPropertiesCasesWebhookUpdateIncidentMethod = "post"
-	Put   ConfigPropertiesCasesWebhookUpdateIncidentMethod = "put"
+	ConfigPropertiesCasesWebhookUpdateIncidentMethodPatch ConfigPropertiesCasesWebhookUpdateIncidentMethod = "patch"
+	ConfigPropertiesCasesWebhookUpdateIncidentMethodPost  ConfigPropertiesCasesWebhookUpdateIncidentMethod = "post"
+	ConfigPropertiesCasesWebhookUpdateIncidentMethodPut   ConfigPropertiesCasesWebhookUpdateIncidentMethod = "put"
 )
 
 // Defines values for ConfigPropertiesSwimlaneConnectorType.
@@ -68,6 +68,13 @@ const (
 	ConfigPropertiesSwimlaneConnectorTypeAlerts ConfigPropertiesSwimlaneConnectorType = "alerts"
 	ConfigPropertiesSwimlaneConnectorTypeAll    ConfigPropertiesSwimlaneConnectorType = "all"
 	ConfigPropertiesSwimlaneConnectorTypeCases  ConfigPropertiesSwimlaneConnectorType = "cases"
+)
+
+// Defines values for ConfigPropertiesWebhookMethod.
+const (
+	ConfigPropertiesWebhookMethodPatch ConfigPropertiesWebhookMethod = "patch"
+	ConfigPropertiesWebhookMethodPost  ConfigPropertiesWebhookMethod = "post"
+	ConfigPropertiesWebhookMethodPut   ConfigPropertiesWebhookMethod = "put"
 )
 
 // Defines values for ConnectorResponsePropertiesCasesWebhookConnectorTypeId.
@@ -514,7 +521,9 @@ type ConfigPropertiesOpsgenie struct {
 }
 
 // ConfigPropertiesPagerduty Defines properties for connectors when type is `.pagerduty`.
-type ConfigPropertiesPagerduty map[string]interface{}
+type ConfigPropertiesPagerduty struct {
+	ApiUrl *string `json:"apiUrl"`
+}
 
 // ConfigPropertiesResilient Defines properties for connectors when type is `.resilient`.
 type ConfigPropertiesResilient struct {
@@ -576,122 +585,135 @@ type ConfigPropertiesSwimlane struct {
 	ConnectorType ConfigPropertiesSwimlaneConnectorType `json:"connectorType"`
 
 	// Mappings The field mapping.
-	Mappings *struct {
-		// AlertIdConfig Mapping for the alert ID.
-		AlertIdConfig *struct {
-			// FieldType The type of field in Swimlane.
-			FieldType string `json:"fieldType"`
-
-			// Id The identifier for the field in Swimlane.
-			Id string `json:"id"`
-
-			// Key The key for the field in Swimlane.
-			Key string `json:"key"`
-
-			// Name The name of the field in Swimlane.
-			Name string `json:"name"`
-		} `json:"alertIdConfig,omitempty"`
-
-		// CaseIdConfig Mapping for the case ID.
-		CaseIdConfig *struct {
-			// FieldType The type of field in Swimlane.
-			FieldType string `json:"fieldType"`
-
-			// Id The identifier for the field in Swimlane.
-			Id string `json:"id"`
-
-			// Key The key for the field in Swimlane.
-			Key string `json:"key"`
-
-			// Name The name of the field in Swimlane.
-			Name string `json:"name"`
-		} `json:"caseIdConfig,omitempty"`
-
-		// CaseNameConfig Mapping for the case name.
-		CaseNameConfig *struct {
-			// FieldType The type of field in Swimlane.
-			FieldType string `json:"fieldType"`
-
-			// Id The identifier for the field in Swimlane.
-			Id string `json:"id"`
-
-			// Key The key for the field in Swimlane.
-			Key string `json:"key"`
-
-			// Name The name of the field in Swimlane.
-			Name string `json:"name"`
-		} `json:"caseNameConfig,omitempty"`
-
-		// CommentsConfig Mapping for the case comments.
-		CommentsConfig *struct {
-			// FieldType The type of field in Swimlane.
-			FieldType string `json:"fieldType"`
-
-			// Id The identifier for the field in Swimlane.
-			Id string `json:"id"`
-
-			// Key The key for the field in Swimlane.
-			Key string `json:"key"`
-
-			// Name The name of the field in Swimlane.
-			Name string `json:"name"`
-		} `json:"commentsConfig,omitempty"`
-
-		// DescriptionConfig Mapping for the case description.
-		DescriptionConfig *struct {
-			// FieldType The type of field in Swimlane.
-			FieldType string `json:"fieldType"`
-
-			// Id The identifier for the field in Swimlane.
-			Id string `json:"id"`
-
-			// Key The key for the field in Swimlane.
-			Key string `json:"key"`
-
-			// Name The name of the field in Swimlane.
-			Name string `json:"name"`
-		} `json:"descriptionConfig,omitempty"`
-
-		// RuleNameConfig Mapping for the name of the alert's rule.
-		RuleNameConfig *struct {
-			// FieldType The type of field in Swimlane.
-			FieldType string `json:"fieldType"`
-
-			// Id The identifier for the field in Swimlane.
-			Id string `json:"id"`
-
-			// Key The key for the field in Swimlane.
-			Key string `json:"key"`
-
-			// Name The name of the field in Swimlane.
-			Name string `json:"name"`
-		} `json:"ruleNameConfig,omitempty"`
-
-		// SeverityConfig Mapping for the severity.
-		SeverityConfig *struct {
-			// FieldType The type of field in Swimlane.
-			FieldType string `json:"fieldType"`
-
-			// Id The identifier for the field in Swimlane.
-			Id string `json:"id"`
-
-			// Key The key for the field in Swimlane.
-			Key string `json:"key"`
-
-			// Name The name of the field in Swimlane.
-			Name string `json:"name"`
-		} `json:"severityConfig,omitempty"`
-	} `json:"mappings,omitempty"`
+	Mappings *ConfigPropertiesSwimlaneMappings `json:"mappings,omitempty"`
 }
 
 // ConfigPropertiesSwimlaneConnectorType The type of connector. Valid values are `all`, `alerts`, and `cases`.
 type ConfigPropertiesSwimlaneConnectorType string
 
+// ConfigPropertiesSwimlaneMappings The field mapping.
+type ConfigPropertiesSwimlaneMappings struct {
+	// AlertIdConfig Mapping for the alert ID.
+	AlertIdConfig *struct {
+		// FieldType The type of field in Swimlane.
+		FieldType string `json:"fieldType"`
+
+		// Id The identifier for the field in Swimlane.
+		Id string `json:"id"`
+
+		// Key The key for the field in Swimlane.
+		Key string `json:"key"`
+
+		// Name The name of the field in Swimlane.
+		Name string `json:"name"`
+	} `json:"alertIdConfig,omitempty"`
+
+	// CaseIdConfig Mapping for the case ID.
+	CaseIdConfig *struct {
+		// FieldType The type of field in Swimlane.
+		FieldType string `json:"fieldType"`
+
+		// Id The identifier for the field in Swimlane.
+		Id string `json:"id"`
+
+		// Key The key for the field in Swimlane.
+		Key string `json:"key"`
+
+		// Name The name of the field in Swimlane.
+		Name string `json:"name"`
+	} `json:"caseIdConfig,omitempty"`
+
+	// CaseNameConfig Mapping for the case name.
+	CaseNameConfig *struct {
+		// FieldType The type of field in Swimlane.
+		FieldType string `json:"fieldType"`
+
+		// Id The identifier for the field in Swimlane.
+		Id string `json:"id"`
+
+		// Key The key for the field in Swimlane.
+		Key string `json:"key"`
+
+		// Name The name of the field in Swimlane.
+		Name string `json:"name"`
+	} `json:"caseNameConfig,omitempty"`
+
+	// CommentsConfig Mapping for the case comments.
+	CommentsConfig *struct {
+		// FieldType The type of field in Swimlane.
+		FieldType string `json:"fieldType"`
+
+		// Id The identifier for the field in Swimlane.
+		Id string `json:"id"`
+
+		// Key The key for the field in Swimlane.
+		Key string `json:"key"`
+
+		// Name The name of the field in Swimlane.
+		Name string `json:"name"`
+	} `json:"commentsConfig,omitempty"`
+
+	// DescriptionConfig Mapping for the case description.
+	DescriptionConfig *struct {
+		// FieldType The type of field in Swimlane.
+		FieldType string `json:"fieldType"`
+
+		// Id The identifier for the field in Swimlane.
+		Id string `json:"id"`
+
+		// Key The key for the field in Swimlane.
+		Key string `json:"key"`
+
+		// Name The name of the field in Swimlane.
+		Name string `json:"name"`
+	} `json:"descriptionConfig,omitempty"`
+
+	// RuleNameConfig Mapping for the name of the alert's rule.
+	RuleNameConfig *struct {
+		// FieldType The type of field in Swimlane.
+		FieldType string `json:"fieldType"`
+
+		// Id The identifier for the field in Swimlane.
+		Id string `json:"id"`
+
+		// Key The key for the field in Swimlane.
+		Key string `json:"key"`
+
+		// Name The name of the field in Swimlane.
+		Name string `json:"name"`
+	} `json:"ruleNameConfig,omitempty"`
+
+	// SeverityConfig Mapping for the severity.
+	SeverityConfig *struct {
+		// FieldType The type of field in Swimlane.
+		FieldType string `json:"fieldType"`
+
+		// Id The identifier for the field in Swimlane.
+		Id string `json:"id"`
+
+		// Key The key for the field in Swimlane.
+		Key string `json:"key"`
+
+		// Name The name of the field in Swimlane.
+		Name string `json:"name"`
+	} `json:"severityConfig,omitempty"`
+}
+
 // ConfigPropertiesTines Defines properties for connectors when type is `.tines`.
-type ConfigPropertiesTines map[string]interface{}
+type ConfigPropertiesTines struct {
+	Url string `json:"url"`
+}
 
 // ConfigPropertiesWebhook Defines properties for connectors when type is `.webhook`.
-type ConfigPropertiesWebhook map[string]interface{}
+type ConfigPropertiesWebhook struct {
+	HasAuth *bool                          `json:"hasAuth,omitempty"`
+	Headers *map[string]interface{}        `json:"headers,omitempty"`
+	Method  *ConfigPropertiesWebhookMethod `json:"method,omitempty"`
+	Url     string                         `json:"url"`
+}
+
+// ConfigPropertiesWebhookMethod defines model for ConfigPropertiesWebhook.Method.
+type ConfigPropertiesWebhookMethod string
 
 // ConfigPropertiesXmatters Defines properties for connectors when type is `.xmatters`.
 type ConfigPropertiesXmatters map[string]interface{}
@@ -1923,7 +1945,9 @@ type SecretsPropertiesOpsgenie struct {
 }
 
 // SecretsPropertiesPagerduty Defines secrets for connectors when type is `.pagerduty`.
-type SecretsPropertiesPagerduty map[string]interface{}
+type SecretsPropertiesPagerduty struct {
+	RoutingKey string `json:"routingKey"`
+}
 
 // SecretsPropertiesResilient Defines secrets for connectors when type is `.resilient`.
 type SecretsPropertiesResilient struct {
@@ -1965,7 +1989,10 @@ type SecretsPropertiesSwimlane struct {
 type SecretsPropertiesTeams map[string]interface{}
 
 // SecretsPropertiesTines Defines secrets for connectors when type is `.tines`.
-type SecretsPropertiesTines map[string]interface{}
+type SecretsPropertiesTines struct {
+	Email *string `json:"email,omitempty"`
+	Token *string `json:"token,omitempty"`
+}
 
 // SecretsPropertiesWebhook Defines secrets for connectors when type is `.webhook`.
 type SecretsPropertiesWebhook map[string]interface{}
