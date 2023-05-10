@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccResourceActionConnector(t *testing.T) {
+func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -26,22 +26,22 @@ func TestAccResourceActionConnector(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				Config:   testAccResourceActionConnectorCreate(connectorName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "name", connectorName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "connector_type_id", ".index"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "is_deprecated", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "is_missing_secrets", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "is_preconfigured", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "name", connectorName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "connector_type_id", ".index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "is_deprecated", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "is_preconfigured", "false"),
 				),
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				Config:   testAccResourceActionConnectorUpdate(connectorName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "name", fmt.Sprintf("Updated %s", connectorName)),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "connector_type_id", ".index"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "is_deprecated", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "is_missing_secrets", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test_connector", "is_preconfigured", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "name", fmt.Sprintf("Updated %s", connectorName)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "connector_type_id", ".index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "is_deprecated", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "is_preconfigured", "false"),
 				),
 			},
 		},
@@ -55,7 +55,7 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_kibana_action_connector" "test_connector" {
+resource "elasticstack_kibana_action_connector" "index" {
   name         = "%s"
   config       = jsonencode({
 	index             = ".kibana"
@@ -73,7 +73,7 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_kibana_action_connector" "test_connector" {
+resource "elasticstack_kibana_action_connector" "index" {
   name         = "Updated %s"
   config       = jsonencode({
 	index             = ".kibana"
