@@ -19,12 +19,12 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceActionConnectorDestroy,
+		CheckDestroy:             checkResourceKibanaConnectorDestroyIndex,
 		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   testAccResourceActionConnectorCreate(connectorName),
+				Config:   testAccResourceKibanaConnectorCreateIndex(connectorName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "name", connectorName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "connector_type_id", ".index"),
@@ -35,7 +35,7 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   testAccResourceActionConnectorUpdate(connectorName),
+				Config:   testAccResourceKibanaConnectorUpdateIndex(connectorName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "name", fmt.Sprintf("Updated %s", connectorName)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.index", "connector_type_id", ".index"),
@@ -48,7 +48,7 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 	})
 }
 
-func testAccResourceActionConnectorCreate(name string) string {
+func testAccResourceKibanaConnectorCreateIndex(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -66,7 +66,7 @@ resource "elasticstack_kibana_action_connector" "index" {
 	`, name)
 }
 
-func testAccResourceActionConnectorUpdate(name string) string {
+func testAccResourceKibanaConnectorUpdateIndex(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -84,7 +84,7 @@ resource "elasticstack_kibana_action_connector" "index" {
 	`, name)
 }
 
-func checkResourceActionConnectorDestroy(s *terraform.State) error {
+func checkResourceKibanaConnectorDestroyIndex(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
 		return err
