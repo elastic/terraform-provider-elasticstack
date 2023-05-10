@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
@@ -15,6 +16,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -66,6 +68,7 @@ type ApiClient struct {
 	alerting                 alerting.AlertingApi
 	connectors               *connectors.Client
 	kibanaConfig             kibana.Config
+	fleet                    *fleet.Client
 	version                  string
 }
 
@@ -104,6 +107,13 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 			config.Addresses = endpoints
 		}
 
+		if insecure := os.Getenv("ELASTICSEARCH_INSECURE"); insecure != "" {
+			if insecureValue, _ := strconv.ParseBool(insecure); insecureValue {
+				tlsClientConfig := ensureTLSClientConfig(&config)
+				tlsClientConfig.InsecureSkipVerify = true
+			}
+		}
+
 		return elasticsearch.NewClient(config)
 	}
 
@@ -111,6 +121,11 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		Username: baseConfig.Username,
 		Password: baseConfig.Password,
 		Address:  os.Getenv("KIBANA_ENDPOINT"),
+	}
+	if insecure := os.Getenv("KIBANA_INSECURE"); insecure != "" {
+		if insecureValue, _ := strconv.ParseBool(insecure); insecureValue {
+			kibanaConfig.DisableVerifySSL = true
+		}
 	}
 
 	es, err := buildEsAccClient()
@@ -127,6 +142,21 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot create Kibana action connectors client: [%w]", err)
 	}
+	fleetCfg := fleet.Config{
+		URL:      kibanaConfig.Address,
+		Username: kibanaConfig.Username,
+		Password: kibanaConfig.Password,
+		APIKey:   os.Getenv("FLEET_API_KEY"),
+		Insecure: kibanaConfig.DisableVerifySSL,
+	}
+	if v := os.Getenv("FLEET_CA_CERTS"); v != "" {
+		fleetCfg.CACerts = strings.Split(os.Getenv("FLEET_CA_CERTS"), ",")
+	}
+
+	fleetClient, err := fleet.NewClient(fleetCfg)
+	if err != nil {
+		return nil, err
+	}
 
 	return &ApiClient{
 			elasticsearch: es,
@@ -134,6 +164,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 			alerting:      buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
 			connectors:    actionConnectors,
 			kibanaConfig:  kibanaConfig,
+			fleet:         fleetClient,
 			version:       "acceptance-testing",
 		},
 		nil
@@ -160,6 +191,7 @@ func NewApiClient(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Di
 		elasticsearch:            esClient,
 		elasticsearchClusterInfo: defaultClient.elasticsearchClusterInfo,
 		kibana:                   defaultClient.kibana,
+		fleet:                    defaultClient.fleet,
 		version:                  version,
 	}, diags
 }
@@ -204,6 +236,14 @@ func (a *ApiClient) GetKibanaConnectorsClient(ctx context.Context) (*connectors.
 	}
 
 	return a.connectors, nil
+}
+
+func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
+	if a.fleet == nil {
+		return nil, errors.New("fleet client not found")
+	}
+
+	return a.fleet, nil
 }
 
 func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
@@ -471,6 +511,11 @@ func buildKibanaConfig(d *schema.ResourceData, baseConfig BaseConfig) (kibana.Co
 		if endpoint := os.Getenv("KIBANA_ENDPOINT"); endpoint != "" {
 			config.Address = endpoint
 		}
+		if insecure := os.Getenv("KIBANA_INSECURE"); insecure != "" {
+			if insecureValue, _ := strconv.ParseBool(insecure); insecureValue {
+				config.DisableVerifySSL = true
+			}
+		}
 
 		if username, ok := kibConfig["username"]; ok && username != "" {
 			config.Username = username.(string)
@@ -531,6 +576,77 @@ func buildConnectorsClient(baseConfig BaseConfig, config kibana.Config) (*connec
 	)
 }
 
+func buildFleetClient(d *schema.ResourceData, kibanaCfg kibana.Config) (*fleet.Client, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Order of precedence for config options:
+	// 1 (highest): environment variables
+	// 2: resource config
+	// 3: kibana config
+
+	// Set variables from kibana config.
+	config := fleet.Config{
+		URL:      kibanaCfg.Address,
+		Username: kibanaCfg.Username,
+		Password: kibanaCfg.Password,
+		Insecure: kibanaCfg.DisableVerifySSL,
+	}
+
+	// Set variables from resource config.
+	if fleetDataRaw, ok := d.GetOk("fleet"); ok {
+		fleetData, ok := fleetDataRaw.([]interface{})[0].(map[string]any)
+		if !ok {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Unable to parse Fleet configuration",
+				Detail:   "Fleet configuration data has not been configured correctly or is empty",
+			})
+			return nil, diags
+		}
+		if v, ok := fleetData["endpoint"].(string); ok && v != "" {
+			config.URL = v
+		}
+		if v, ok := fleetData["username"].(string); ok && v != "" {
+			config.Username = v
+		}
+		if v, ok := fleetData["password"].(string); ok && v != "" {
+			config.Password = v
+		}
+		if v, ok := fleetData["api_key"].(string); ok && v != "" {
+			config.APIKey = v
+		}
+		if v, ok := fleetData["ca_certs"].([]interface{}); ok && len(v) > 0 {
+			for _, elem := range v {
+				if vStr, elemOk := elem.(string); elemOk {
+					config.CACerts = append(config.CACerts, vStr)
+				}
+			}
+		}
+		if v, ok := fleetData["insecure"].(bool); ok {
+			config.Insecure = v
+		}
+	}
+
+	if v := os.Getenv("FLEET_API_KEY"); v != "" {
+		config.APIKey = v
+	}
+	if v := os.Getenv("FLEET_CA_CERTS"); v != "" {
+		config.CACerts = strings.Split(v, ",")
+	}
+
+	client, err := fleet.NewClient(config)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to create Fleet client",
+			Detail:   err.Error(),
+		})
+		return nil, diags
+	}
+
+	return client, diags
+}
+
 const esKey string = "elasticsearch"
 
 func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diagnostics) {
@@ -557,6 +673,11 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 		return nil, diag.FromErr(fmt.Errorf("cannot create Kibana connectors client: [%w]", err))
 	}
 
+	fleetClient, diags := buildFleetClient(d, kibanaConfig)
+	if diags.HasError() {
+		return nil, diags
+	}
+
 	return &ApiClient{
 		elasticsearch:            esClient,
 		elasticsearchClusterInfo: nil,
@@ -564,6 +685,7 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 		kibanaConfig:             kibanaConfig,
 		alerting:                 alertingClient.AlertingApi,
 		connectors:               connectorsClient,
+		fleet:                    fleetClient,
 		version:                  version,
 	}, nil
 }

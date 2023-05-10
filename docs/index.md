@@ -86,6 +86,7 @@ provider "elasticstack" {
 ### Optional
 
 - `elasticsearch` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
+- `fleet` (Block List, Max: 1) Fleet connection configuration block. (see [below for nested schema](#nestedblock--fleet))
 - `kibana` (Block List, Max: 1) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana))
 
 <a id="nestedblock--elasticsearch"></a>
@@ -104,6 +105,19 @@ Optional:
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
 - `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
 - `username` (String) Username to use for API authentication to Elasticsearch.
+
+
+<a id="nestedblock--fleet"></a>
+### Nested Schema for `fleet`
+
+Optional:
+
+- `api_key` (String, Sensitive) API key to use for API authentication to Fleet.
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Fleet server.
+- `endpoint` (String, Sensitive) The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Fleet.
+- `username` (String) Username to use for API authentication to Fleet.
 
 
 <a id="nestedblock--kibana"></a>
