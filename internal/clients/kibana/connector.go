@@ -207,7 +207,7 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (
 		return connectorConfigWithDefaultsServicenowItom(plan)
 
 	case connectors.ConnectorTypesDotServicenowSir:
-		return connectorConfigWithDefaultsServicenowSir(plan)
+		return connectorConfigWithDefaultsServicenowSir(plan, backend)
 
 	case connectors.ConnectorTypesDotSwimlane:
 		return connectorConfigWithDefaultsSwimlane(plan)
@@ -322,10 +322,10 @@ func connectorConfigWithDefaultsServicenow(plan, backend string) (string, error)
 		return "", err
 	}
 	var backendConfig connectors.ConfigPropertiesServicenow
-	if err := json.Unmarshal([]byte(plan), &backendConfig); err != nil {
+	if err := json.Unmarshal([]byte(backend), &backendConfig); err != nil {
 		return "", err
 	}
-	if planConfig.IsOAuth == nil && backendConfig.IsOAuth != nil && *backendConfig.IsOAuth == false {
+	if planConfig.IsOAuth == nil && backendConfig.IsOAuth != nil && !*backendConfig.IsOAuth {
 		planConfig.IsOAuth = new(bool)
 		*planConfig.IsOAuth = false
 	}
@@ -356,8 +356,8 @@ func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsServicenowSir(plan string) (string, error) {
-	return connectorConfigWithDefaultsServicenow(plan)
+func connectorConfigWithDefaultsServicenowSir(plan, backend string) (string, error) {
+	return connectorConfigWithDefaultsServicenow(plan, backend)
 }
 
 func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
