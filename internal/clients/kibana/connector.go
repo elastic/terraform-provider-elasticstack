@@ -103,7 +103,7 @@ func UpdateConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 	return connectorNew.ConnectorID, nil
 }
 
-func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID, spaceID string, connectorTypeID string) (*models.KibanaActionConnector, diag.Diagnostics) {
+func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID, spaceID string) (*models.KibanaActionConnector, diag.Diagnostics) {
 	client, err := apiClient.GetKibanaConnectorsClient(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)

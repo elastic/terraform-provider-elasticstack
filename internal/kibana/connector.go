@@ -181,17 +181,12 @@ func resourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta int
 		return diags
 	}
 
-	connectorOld, diags := expandActionConnector(d)
-	if diags.HasError() {
-		return diags
-	}
-
 	compositeID, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	connector, diags := kibana.GetConnector(ctx, client, compositeID.ResourceId, compositeID.ClusterId, connectorOld.ConnectorTypeID)
+	connector, diags := kibana.GetConnector(ctx, client, compositeID.ResourceId, compositeID.ClusterId)
 	if connector == nil && diags == nil {
 		d.SetId("")
 		return diags
