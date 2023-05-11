@@ -397,7 +397,7 @@ func TestAccResourceKibanaConnectorJira(t *testing.T) {
 }
 
 func TestAccResourceKibanaConnectorOpsgenie(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+	minSupportedVersion := version.Must(version.NewSemver("8.6.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
