@@ -753,7 +753,6 @@ func TestAccResourceKibanaConnectorServicenowItom(t *testing.T) {
 	  name         = "%s"
 	  config = jsonencode({
 		apiUrl = "https://elastic.co"
-
 	  })
 	  secrets = jsonencode({
 		username = "user1"
@@ -775,7 +774,6 @@ func TestAccResourceKibanaConnectorServicenowItom(t *testing.T) {
 	  name         = "Updated %s"
 	  config = jsonencode({
 		apiUrl = "https://elasticsearch.com"
-
 	  })
 	  secrets = jsonencode({
 		username = "user2"
@@ -808,6 +806,92 @@ func TestAccResourceKibanaConnectorServicenowItom(t *testing.T) {
 				Config:   update(connectorName),
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".servicenow-itom"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elasticsearch\.com\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"username\":\"user2\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"password\":\"password2\"`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaConnectorServicenowSir(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config = jsonencode({
+		apiUrl = "https://elastic.co"
+	  })
+	  secrets = jsonencode({
+		username = "user1"
+		password = "password1"
+	  })
+	  connector_type_id = ".servicenow-sir"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config = jsonencode({
+		apiUrl = "https://elasticsearch.com"
+	  })
+	  secrets = jsonencode({
+		username = "user2"
+		password = "password2"
+	  })
+	  connector_type_id = ".servicenow-sir"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", connectorName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "connector_type_id", ".servicenow-sir"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elastic\.co\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"username\":\"user1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"password\":\"password1\"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", fmt.Sprintf("Updated %s", connectorName)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "connector_type_id", ".servicenow-sir"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
 
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elasticsearch\.com\"`)),
 
