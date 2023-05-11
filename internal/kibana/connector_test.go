@@ -594,6 +594,63 @@ func TestAccResourceKibanaConnectorResilient(t *testing.T) {
 	})
 }
 
+func TestAccResourceKibanaConnectorServerLog(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  connector_type_id = ".server-log"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  connector_type_id = ".server-log"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".server-log"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".server-log"),
+				),
+			},
+		},
+	})
+}
+
+
 func testCommonAttributes(connectorName, connectorTypeID string) resource.TestCheckFunc {
 	return resource.ComposeTestCheckFunc(
 		resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", connectorName),
