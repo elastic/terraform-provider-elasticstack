@@ -1122,11 +1122,7 @@ components:
       title: Connector secrets properties for a PagerDuty connector
       description: Defines secrets for connectors when type is `.pagerduty`.
       type: object
-      required:
-        - routingKey
-      properties:
-        routingKey:
-          type: string
+      additionalProperties: true
     create_connector_request_pagerduty:
       title: Create PagerDuty connector request
       description: |
@@ -1656,11 +1652,7 @@ components:
       title: Connector secrets properties for a Tines connector
       description: Defines secrets for connectors when type is `.tines`.
       type: object
-      properties:
-        email:
-          type: string
-        token:
-          type: string
+      additionalProperties: true
     create_connector_request_tines:
       title: Create Tines connector request
       description: |

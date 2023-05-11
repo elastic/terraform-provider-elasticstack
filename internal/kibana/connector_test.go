@@ -396,6 +396,168 @@ func TestAccResourceKibanaConnectorJira(t *testing.T) {
 	})
 }
 
+func TestAccResourceKibanaConnectorOpsgenie(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config       = jsonencode({
+		apiUrl = "https://elastic.co"
+	  })
+	  secrets = jsonencode({
+		apiKey = "key1"
+	  })	
+	  connector_type_id = ".opsgenie"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config       = jsonencode({
+		apiUrl = "https://elasticsearch.com"
+	  })
+	  secrets = jsonencode({
+		apiKey = "key2"
+	  })	
+	  connector_type_id = ".opsgenie"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", connectorName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "connector_type_id", ".opsgenie"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_deprecated", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elastic\.co\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"apiKey\":\"key1\"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", fmt.Sprintf("Updated %s", connectorName)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "connector_type_id", ".opsgenie"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_deprecated", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elasticsearch\.com\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"apiKey\":\"key2\"`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaConnectorPagerduty(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config       = jsonencode({
+	  })
+	  secrets = jsonencode({
+		routingKey = "test1"
+	  })	
+	  connector_type_id = ".pagerduty"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config       = jsonencode({
+	})
+	secrets = jsonencode({
+	  routingKey = "test2"
+	})	
+	connector_type_id = ".pagerduty"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", connectorName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "connector_type_id", ".pagerduty"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_deprecated", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"routingKey\":\"test1\"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", fmt.Sprintf("Updated %s", connectorName)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "connector_type_id", ".pagerduty"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_deprecated", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"routingKey\":\"test2\"`)),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceKibanaConnectorDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {

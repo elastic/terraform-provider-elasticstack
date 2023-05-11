@@ -1945,9 +1945,7 @@ type SecretsPropertiesOpsgenie struct {
 }
 
 // SecretsPropertiesPagerduty Defines secrets for connectors when type is `.pagerduty`.
-type SecretsPropertiesPagerduty struct {
-	RoutingKey string `json:"routingKey"`
-}
+type SecretsPropertiesPagerduty map[string]interface{}
 
 // SecretsPropertiesResilient Defines secrets for connectors when type is `.resilient`.
 type SecretsPropertiesResilient struct {
@@ -1989,10 +1987,7 @@ type SecretsPropertiesSwimlane struct {
 type SecretsPropertiesTeams map[string]interface{}
 
 // SecretsPropertiesTines Defines secrets for connectors when type is `.tines`.
-type SecretsPropertiesTines struct {
-	Email *string `json:"email,omitempty"`
-	Token *string `json:"token,omitempty"`
-}
+type SecretsPropertiesTines map[string]interface{}
 
 // SecretsPropertiesWebhook Defines secrets for connectors when type is `.webhook`.
 type SecretsPropertiesWebhook map[string]interface{}
