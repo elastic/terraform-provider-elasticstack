@@ -201,7 +201,7 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (
 		return connectorConfigWithDefaultsResilient(plan)
 
 	case connectors.ConnectorTypesDotServicenow:
-		return connectorConfigWithDefaultsServicenow(plan)
+		return connectorConfigWithDefaultsServicenow(plan, backend)
 
 	case connectors.ConnectorTypesDotServicenowItom:
 		return connectorConfigWithDefaultsServicenowItom(plan)
@@ -316,20 +316,24 @@ func connectorConfigWithDefaultsResilient(plan string) (string, error) {
 	return plan, nil
 }
 
-func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
-	var custom connectors.ConfigPropertiesServicenow
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
+func connectorConfigWithDefaultsServicenow(plan, backend string) (string, error) {
+	var planConfig connectors.ConfigPropertiesServicenow
+	if err := json.Unmarshal([]byte(plan), &planConfig); err != nil {
 		return "", err
 	}
-	if custom.IsOAuth == nil {
-		custom.IsOAuth = new(bool)
-		*custom.IsOAuth = false
+	var backendConfig connectors.ConfigPropertiesServicenow
+	if err := json.Unmarshal([]byte(plan), &backendConfig); err != nil {
+		return "", err
 	}
-	if custom.UsesTableApi == nil {
-		custom.UsesTableApi = new(bool)
-		*custom.UsesTableApi = true
+	if planConfig.IsOAuth == nil && backendConfig.IsOAuth != nil && *backendConfig.IsOAuth == false {
+		planConfig.IsOAuth = new(bool)
+		*planConfig.IsOAuth = false
 	}
-	customJSON, err := json.Marshal(custom)
+	if planConfig.UsesTableApi == nil {
+		planConfig.UsesTableApi = new(bool)
+		*planConfig.UsesTableApi = true
+	}
+	customJSON, err := json.Marshal(planConfig)
 	if err != nil {
 		return "", err
 	}
