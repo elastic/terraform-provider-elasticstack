@@ -666,7 +666,6 @@ func TestAccResourceKibanaConnectorServicenow(t *testing.T) {
 	  name         = "%s"
 	  config = jsonencode({
 		apiUrl = "https://elastic.co"
-
 	  })
 	  secrets = jsonencode({
 		username = "user1"
@@ -710,7 +709,6 @@ func TestAccResourceKibanaConnectorServicenow(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", connectorName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "connector_type_id", ".servicenow"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_deprecated", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
 
@@ -726,7 +724,6 @@ func TestAccResourceKibanaConnectorServicenow(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", fmt.Sprintf("Updated %s", connectorName)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "connector_type_id", ".servicenow"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_deprecated", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
 
@@ -741,7 +738,7 @@ func TestAccResourceKibanaConnectorServicenow(t *testing.T) {
 }
 
 func TestAccResourceKibanaConnectorServicenowItom(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+	minSupportedVersion := version.Must(version.NewSemver("8.3.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
