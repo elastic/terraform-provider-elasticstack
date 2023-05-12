@@ -1143,6 +1143,86 @@ func TestAccResourceKibanaConnectorTeams(t *testing.T) {
 	})
 }
 
+func TestAccResourceKibanaConnectorTines(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config = jsonencode({
+		url = "https://elastic.co"
+	  })
+	  secrets = jsonencode({
+		email = "test@elastic.co"
+		token = "token1"
+	  })
+	  connector_type_id = ".tines"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config = jsonencode({
+		url = "https://elasticsearch.com"
+	  })
+	  secrets = jsonencode({
+		email = "test@elasticsearch.com"
+		token = "token2"
+	  })
+	  connector_type_id = ".tines"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".tines"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"url\":\"https://elastic\.co\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"email\":\"test@elastic\.co\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"token\":\"token1"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".tines"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"url\":\"https://elasticsearch\.com\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"email\":\"test@elasticsearch\.com\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"token\":\"token2"`)),
+				),
+			},
+		},
+	})
+}
+
 func testCommonAttributes(connectorName, connectorTypeID string) resource.TestCheckFunc {
 	return resource.ComposeTestCheckFunc(
 		resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", connectorName),
