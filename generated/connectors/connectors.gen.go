@@ -716,7 +716,10 @@ type ConfigPropertiesWebhook struct {
 type ConfigPropertiesWebhookMethod string
 
 // ConfigPropertiesXmatters Defines properties for connectors when type is `.xmatters`.
-type ConfigPropertiesXmatters map[string]interface{}
+type ConfigPropertiesXmatters struct {
+	ConfigUrl *string `json:"configUrl"`
+	UsesBasic *bool   `json:"usesBasic,omitempty"`
+}
 
 // ConnectorResponseProperties The properties vary depending on the connector type.
 type ConnectorResponseProperties struct {

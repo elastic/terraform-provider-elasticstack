@@ -1734,7 +1734,13 @@ components:
       title: Connector request properties for a xMatters connector
       description: Defines properties for connectors when type is `.xmatters`.
       type: object
-      additionalProperties: true
+      properties:
+        configUrl:
+          type: string
+          nullable: true
+        usesBasic:
+          type: boolean
+          default: true
     secrets_properties_xmatters:
       title: Connector secrets properties for an xMatters connector
       description: Defines secrets for connectors when type is `.xmatters`.

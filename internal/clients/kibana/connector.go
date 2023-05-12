@@ -384,7 +384,19 @@ func connectorConfigWithDefaultsWebhook(plan string) (string, error) {
 }
 
 func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
-	return plan, nil
+	var custom connectors.ConfigPropertiesXmatters
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
+		return "", err
+	}
+	if custom.UsesBasic == nil {
+		custom.UsesBasic = new(bool)
+		*custom.UsesBasic = true
+	}
+	customJSON, err := json.Marshal(custom)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
 }
 
 func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Reader, error) {
@@ -1441,7 +1453,7 @@ func connectorResponseToModelWebhook(discriminator, spaceID string, properties c
 }
 
 func connectorResponseToModelXmatters(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
-	resp, err := properties.AsConnectorResponsePropertiesTines()
+	resp, err := properties.AsConnectorResponsePropertiesXmatters()
 	if err != nil {
 		return nil, err
 	}

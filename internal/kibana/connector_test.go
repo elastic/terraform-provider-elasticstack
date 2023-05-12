@@ -1144,7 +1144,7 @@ func TestAccResourceKibanaConnectorTeams(t *testing.T) {
 }
 
 func TestAccResourceKibanaConnectorTines(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+	minSupportedVersion := version.Must(version.NewSemver("8.6.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -1285,6 +1285,86 @@ func TestAccResourceKibanaConnectorWebhook(t *testing.T) {
 					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".webhook"),
 
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"url\":\"https://elasticsearch\.com\"`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaConnectorXmatters(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config = jsonencode({
+		configUrl = "https://elastic.co"
+		usesBasic = true
+	  })
+	  secrets = jsonencode({
+		user = "user1"
+		password = "password1"
+	  })
+	  connector_type_id = ".xmatters"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config = jsonencode({
+		usesBasic = false
+	  })
+	  secrets = jsonencode({
+		secretsUrl = "https://elasticsearch.com"
+	  })
+	  connector_type_id = ".xmatters"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".xmatters"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"configUrl\":\"https://elastic\.co\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"usesBasic\":true`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"user\":\"user1"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"password\":\"password1"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".xmatters"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"usesBasic\":false`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"secretsUrl\":\"https://elasticsearch\.com\"`)),
 				),
 			},
 		},
