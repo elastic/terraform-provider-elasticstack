@@ -1292,7 +1292,7 @@ func TestAccResourceKibanaConnectorWebhook(t *testing.T) {
 }
 
 func TestAccResourceKibanaConnectorXmatters(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+	minSupportedVersion := version.Must(version.NewSemver("8.2.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
