@@ -969,6 +969,114 @@ func TestAccResourceKibanaConnectorSlack(t *testing.T) {
 	})
 }
 
+func TestAccResourceKibanaConnectorSwimlane(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config = jsonencode({
+		apiUrl = "https://elastic.co"
+		appId = "test1"
+		connectorType = "all"
+		mappings = {
+		  alertIdConfig = {
+			fieldType = "type1"
+			id = "id1"
+			key = "key1"
+			name = "name1"
+		  }
+		}
+	  })
+	  secrets = jsonencode({
+		apiToken = "token1"
+	  })
+	  connector_type_id = ".swimlane"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config = jsonencode({
+		apiUrl = "https://elasticsearch.com"
+		appId = "test2"
+		connectorType = "all"
+		mappings = {
+		  alertIdConfig = {
+			fieldType = "type2"
+			id = "id2"
+			key = "key2"
+			name = "name2"
+		  }
+		}
+	  })
+	  secrets = jsonencode({
+		apiToken = "token2"
+	  })
+	  connector_type_id = ".swimlane"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".swimlane"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elastic\.co\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"appId\":\"test1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"connectorType\":\"all\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"fieldType\":\"type1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"id\":\"id1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"key\":\"key1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"name\":\"name1\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"apiToken\":\"token1\"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".swimlane"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elasticsearch\.com\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"appId\":\"test2\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"connectorType\":\"all\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"fieldType\":\"type2\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"id\":\"id2\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"key\":\"key2\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"name\":\"name2\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"apiToken\":\"token2\"`)),
+				),
+			},
+		},
+	})
+}
+
 func testCommonAttributes(connectorName, connectorTypeID string) resource.TestCheckFunc {
 	return resource.ComposeTestCheckFunc(
 		resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "name", connectorName),
