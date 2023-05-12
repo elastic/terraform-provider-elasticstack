@@ -16,15 +16,12 @@ const (
 
 func ResourceAgentPolicy() *schema.Resource {
 	agentPolicySchema := map[string]*schema.Schema{
-		"id": {
-			Description: "Internal identifier of the resource.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
 		"policy_id": {
 			Description: "Unique identifier of the agent policy.",
 			Type:        schema.TypeString,
 			Computed:    true,
+			Optional:    true,
+			ForceNew:    true,
 		},
 		"name": {
 			Description: "The name of the agent policy.",

@@ -11,11 +11,6 @@ import (
 
 func DataSourceEnrollmentTokens() *schema.Resource {
 	enrollmentTokenSchema := map[string]*schema.Schema{
-		"id": {
-			Description: "Internal identifier of the data source.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
 		"policy_id": {
 			Description: "The identifier of the target agent policy. When provided, only the enrollment tokens associated with this agent policy will be selected. Omit this value to select all enrollment tokens.",
 			Type:        schema.TypeString,

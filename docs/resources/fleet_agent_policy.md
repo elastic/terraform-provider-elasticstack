@@ -48,7 +48,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the resource.
+- `id` (String) The ID of this resource.
 - `policy_id` (String) Unique identifier of the agent policy.
 
 ## Import

@@ -31,7 +31,7 @@ data "elasticstack_fleet_enrollment_tokens" "test" {
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the data source.
+- `id` (String) The ID of this resource.
 - `tokens` (List of Object) A list of enrollment tokens. (see [below for nested schema](#nestedatt--tokens))
 
 <a id="nestedatt--tokens"></a>
