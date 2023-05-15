@@ -44,12 +44,12 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `monitor_logs` (Boolean) Enable collection of agent logs.
 - `monitor_metrics` (Boolean) Enable collection of agent metrics.
 - `monitoring_output_id` (String) The identifier for monitoring output.
+- `policy_id` (String) Unique identifier of the agent policy.
 - `sys_monitoring` (Boolean) Enable collection of system logs and metrics.
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `policy_id` (String) Unique identifier of the agent policy.
 
 ## Import
 
