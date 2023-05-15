@@ -50,6 +50,7 @@
       })
     }
     ```
+- Fix order of `indices` field in SLM ([#326](https://github.com/elastic/terraform-provider-elasticstack/pull/326))
 
 ## [0.5.0] - 2022-12-07
 
