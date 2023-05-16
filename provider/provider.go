@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -74,6 +75,8 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
 			"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
 			"elasticstack_elasticsearch_enrich_policy":                      enrich.DataSourceEnrichPolicy(),
+
+			"elasticstack_fleet_enrollment_tokens": fleet.DataSourceEnrollmentTokens(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_cluster_settings":      cluster.ResourceSettings(),
@@ -99,6 +102,8 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_alerting_rule":    kibana.ResourceAlertingRule(),
 			"elasticstack_kibana_space":            kibana.ResourceSpace(),
 			"elasticstack_kibana_action_connector": kibana.ResourceActionConnector(),
+
+			"elasticstack_fleet_agent_policy": fleet.ResourceAgentPolicy(),
 		},
 	}
 
