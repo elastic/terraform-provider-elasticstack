@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 
-	// "github.com/google/go-cmp/cmp"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"

@@ -127,12 +127,6 @@ docker-network: ## Create a dedicated network for ES and test runs
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
 	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d "{\"password\":\"$(KIBANA_SYSTEM_PASSWORD)\"}" | grep -q "^{}")
 
-## TODO
-# .PHONY: create-kibana-role
-# ## {"elasticsearch":{"cluster":["all"],"indices":[],"run_as":["elastic"]},"kibana":[{"spaces":["*"],"base":[],"feature":{"actions":["all"]}}]}
-# create-kibana-role: ## create role for testing kibana action connectors
-# 	@ $(call retry, 10, curl -X PUT -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:5601/api/security/role/test-connectors -d "{\"password\":\"$(KIBANA_SYSTEM_PASSWORD)\"}" | grep -q "^{}")
-
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
 	@ docker rm -f $(ELASTICSEARCH_NAME) $(KIBANA_NAME) || true
