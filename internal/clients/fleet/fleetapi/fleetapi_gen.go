@@ -29,6 +29,22 @@ const (
 	Metrics AgentPolicyUpdateRequestMonitoringEnabled = "metrics"
 )
 
+// Defines values for OutputType.
+const (
+	OutputTypeElasticsearch OutputType = "elasticsearch"
+	OutputTypeLogstash      OutputType = "logstash"
+)
+
+// Defines values for PostOutputsJSONBodyType.
+const (
+	PostOutputsJSONBodyTypeElasticsearch PostOutputsJSONBodyType = "elasticsearch"
+)
+
+// Defines values for UpdateOutputJSONBodyType.
+const (
+	Elasticsearch UpdateOutputJSONBodyType = "elasticsearch"
+)
+
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AgentFeatures *[]struct {
@@ -112,6 +128,15 @@ type EnrollmentApiKey struct {
 	PolicyId  *string `json:"policy_id,omitempty"`
 }
 
+// FleetServerHost defines model for fleet_server_host.
+type FleetServerHost struct {
+	HostUrls        []string `json:"host_urls"`
+	Id              string   `json:"id"`
+	IsDefault       bool     `json:"is_default"`
+	IsPreconfigured bool     `json:"is_preconfigured"`
+	Name            *string  `json:"name,omitempty"`
+}
+
 // NewPackagePolicy defines model for new_package_policy.
 type NewPackagePolicy struct {
 	Description *string `json:"description,omitempty"`
@@ -134,6 +159,38 @@ type NewPackagePolicy struct {
 	} `json:"package,omitempty"`
 	PolicyId *string `json:"policy_id,omitempty"`
 }
+
+// Output defines model for output.
+type Output struct {
+	CaSha256             *string                 `json:"ca_sha256,omitempty"`
+	CaTrustedFingerprint *string                 `json:"ca_trusted_fingerprint,omitempty"`
+	Config               *map[string]interface{} `json:"config,omitempty"`
+	ConfigYaml           *string                 `json:"config_yaml,omitempty"`
+	Hosts                *[]string               `json:"hosts,omitempty"`
+	Id                   string                  `json:"id"`
+	IsDefault            bool                    `json:"is_default"`
+	IsDefaultMonitoring  *bool                   `json:"is_default_monitoring,omitempty"`
+	Name                 string                  `json:"name"`
+	ProxyId              *string                 `json:"proxy_id,omitempty"`
+	Shipper              *struct {
+		CompressionLevel            *float32 `json:"compression_level,omitempty"`
+		DiskQueueCompressionEnabled *bool    `json:"disk_queue_compression_enabled,omitempty"`
+		DiskQueueEnabled            *bool    `json:"disk_queue_enabled,omitempty"`
+		DiskQueueEncryptionEnabled  *bool    `json:"disk_queue_encryption_enabled,omitempty"`
+		DiskQueueMaxSize            *float32 `json:"disk_queue_max_size,omitempty"`
+		DiskQueuePath               *string  `json:"disk_queue_path,omitempty"`
+		Loadbalance                 *bool    `json:"loadbalance,omitempty"`
+	} `json:"shipper,omitempty"`
+	Ssl *struct {
+		Certificate            *string   `json:"certificate,omitempty"`
+		CertificateAuthorities *[]string `json:"certificate_authorities,omitempty"`
+		Key                    *string   `json:"key,omitempty"`
+	} `json:"ssl,omitempty"`
+	Type OutputType `json:"type"`
+}
+
+// OutputType defines model for Output.Type.
+type OutputType string
 
 // PackagePolicy defines model for package_policy.
 type PackagePolicy struct {
@@ -160,17 +217,55 @@ type PackagePolicy struct {
 	Revision float32 `json:"revision"`
 }
 
-// Error defines model for error.
-type Error struct {
-	Error      *string  `json:"error,omitempty"`
-	Message    *string  `json:"message,omitempty"`
-	StatusCode *float32 `json:"statusCode,omitempty"`
-}
-
 // DeleteAgentPolicyJSONBody defines parameters for DeleteAgentPolicy.
 type DeleteAgentPolicyJSONBody struct {
 	AgentPolicyId string `json:"agentPolicyId"`
 }
+
+// PostFleetServerHostsJSONBody defines parameters for PostFleetServerHosts.
+type PostFleetServerHostsJSONBody struct {
+	HostUrls  []string `json:"host_urls"`
+	Id        *string  `json:"id,omitempty"`
+	IsDefault *bool    `json:"is_default,omitempty"`
+	Name      string   `json:"name"`
+}
+
+// UpdateFleetServerHostsJSONBody defines parameters for UpdateFleetServerHosts.
+type UpdateFleetServerHostsJSONBody struct {
+	HostUrls  *[]string `json:"host_urls,omitempty"`
+	IsDefault *bool     `json:"is_default,omitempty"`
+	Name      *string   `json:"name,omitempty"`
+}
+
+// PostOutputsJSONBody defines parameters for PostOutputs.
+type PostOutputsJSONBody struct {
+	CaSha256            *string                 `json:"ca_sha256,omitempty"`
+	ConfigYaml          *string                 `json:"config_yaml,omitempty"`
+	Hosts               *[]string               `json:"hosts,omitempty"`
+	Id                  *string                 `json:"id,omitempty"`
+	IsDefault           *bool                   `json:"is_default,omitempty"`
+	IsDefaultMonitoring *bool                   `json:"is_default_monitoring,omitempty"`
+	Name                string                  `json:"name"`
+	Type                PostOutputsJSONBodyType `json:"type"`
+}
+
+// PostOutputsJSONBodyType defines parameters for PostOutputs.
+type PostOutputsJSONBodyType string
+
+// UpdateOutputJSONBody defines parameters for UpdateOutput.
+type UpdateOutputJSONBody struct {
+	CaSha256             *string                  `json:"ca_sha256,omitempty"`
+	CaTrustedFingerprint *string                  `json:"ca_trusted_fingerprint,omitempty"`
+	ConfigYaml           *string                  `json:"config_yaml,omitempty"`
+	Hosts                *[]string                `json:"hosts,omitempty"`
+	IsDefault            *bool                    `json:"is_default,omitempty"`
+	IsDefaultMonitoring  *bool                    `json:"is_default_monitoring,omitempty"`
+	Name                 string                   `json:"name"`
+	Type                 UpdateOutputJSONBodyType `json:"type"`
+}
+
+// UpdateOutputJSONBodyType defines parameters for UpdateOutput.
+type UpdateOutputJSONBodyType string
 
 // CreateAgentPolicyJSONRequestBody defines body for CreateAgentPolicy for application/json ContentType.
 type CreateAgentPolicyJSONRequestBody = AgentPolicyCreateRequest
@@ -180,3 +275,15 @@ type DeleteAgentPolicyJSONRequestBody DeleteAgentPolicyJSONBody
 
 // UpdateAgentPolicyJSONRequestBody defines body for UpdateAgentPolicy for application/json ContentType.
 type UpdateAgentPolicyJSONRequestBody = AgentPolicyUpdateRequest
+
+// PostFleetServerHostsJSONRequestBody defines body for PostFleetServerHosts for application/json ContentType.
+type PostFleetServerHostsJSONRequestBody PostFleetServerHostsJSONBody
+
+// UpdateFleetServerHostsJSONRequestBody defines body for UpdateFleetServerHosts for application/json ContentType.
+type UpdateFleetServerHostsJSONRequestBody UpdateFleetServerHostsJSONBody
+
+// PostOutputsJSONRequestBody defines body for PostOutputs for application/json ContentType.
+type PostOutputsJSONRequestBody PostOutputsJSONBody
+
+// UpdateOutputJSONRequestBody defines body for UpdateOutput for application/json ContentType.
+type UpdateOutputJSONRequestBody UpdateOutputJSONBody
