@@ -63,7 +63,7 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
 - `feature_states` (Set of String) Feature states to include in the snapshot.
 - `ignore_unavailable` (Boolean) If `false`, the snapshot fails if any data stream or index in indices is missing or closed. If `true`, the snapshot ignores missing or closed data streams and indices.
 - `include_global_state` (Boolean) If `true`, include the cluster state in the snapshot.
-- `indices` (Set of String) Comma-separated list of data streams and indices to include in the snapshot.
+- `indices` (List of String) Comma-separated list of data streams and indices to include in the snapshot.
 - `max_count` (Number) Maximum number of snapshots to retain, even if the snapshots have not yet expired.
 - `metadata` (String) Attaches arbitrary metadata to the snapshot.
 - `min_count` (Number) Minimum number of snapshots to retain, even if the snapshots have expired.

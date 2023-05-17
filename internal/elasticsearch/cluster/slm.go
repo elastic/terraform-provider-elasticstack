@@ -73,7 +73,7 @@ func ResourceSlm() *schema.Resource {
 		},
 		"indices": {
 			Description: "Comma-separated list of data streams and indices to include in the snapshot.",
-			Type:        schema.TypeSet,
+			Type:        schema.TypeList,
 			Optional:    true,
 			Computed:    true,
 			Elem: &schema.Schema{
@@ -201,9 +201,9 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
-		p := v.(*schema.Set)
-		for _, e := range p.List() {
-			indices = append(indices, e.(string))
+		list := v.([]interface{})
+		for _, idx := range list {
+			indices = append(indices, idx.(string))
 		}
 	}
 	slmConfig.Indices = indices
