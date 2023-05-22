@@ -90,6 +90,134 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 	}
 }
 
+// ReadOutput reads a specific output from the API.
+func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.Output, diag.Diagnostics) {
+	resp, err := client.API.GetOutputWithResponse(ctx, id)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// CreateOutput creates a new output.
+func CreateOutput(ctx context.Context, client *Client, req fleetapi.PostOutputsJSONRequestBody) (*fleetapi.Output, diag.Diagnostics) {
+	resp, err := client.API.PostOutputsWithResponse(ctx, req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp.JSON200.Item, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UpdateOutput updates an existing output.
+func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.UpdateOutputJSONRequestBody) (*fleetapi.Output, diag.Diagnostics) {
+	resp, err := client.API.UpdateOutputWithResponse(ctx, id, req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeleteOutput deletes an existing output
+func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnostics {
+	resp, err := client.API.DeleteOutputWithResponse(ctx, id)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// ReadFleetServerHost reads a specific fleet server host from the API.
+func ReadFleetServerHost(ctx context.Context, client *Client, id string) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+	resp, err := client.API.GetOneFleetServerHostsWithResponse(ctx, id)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// CreateFleetServerHost creates a new fleet server host.
+func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.PostFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+	resp, err := client.API.PostFleetServerHostsWithResponse(ctx, req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp.JSON200.Item, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UpdateFleetServerHost updates an existing fleet server host.
+func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req fleetapi.UpdateFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+	resp, err := client.API.UpdateFleetServerHostsWithResponse(ctx, id, req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeleteFleetServerHost deletes an existing fleet server host.
+func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetServerHostsWithResponse(ctx, id)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 func reportUnknownError(statusCode int, body []byte) diag.Diagnostics {
 	return diag.Diagnostics{
 		diag.Diagnostic{

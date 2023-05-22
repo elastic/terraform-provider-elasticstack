@@ -104,6 +104,8 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_action_connector": kibana.ResourceActionConnector(),
 
 			"elasticstack_fleet_agent_policy": fleet.ResourceAgentPolicy(),
+			"elasticstack_fleet_output":       fleet.ResourceOutput(),
+			"elasticstack_fleet_server_host":  fleet.ResourceFleetServerHost(),
 		},
 	}
 

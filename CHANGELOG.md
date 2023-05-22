@@ -25,6 +25,7 @@
 - Add `elasticstack_kibana_alerting_rule` for managing Kibana alerting rules ([#292](https://github.com/elastic/terraform-provider-elasticstack/pull/292))
 - Add client for communicating with the Fleet APIs ([#311](https://github.com/elastic/terraform-provider-elasticstack/pull/311)])
 - Add `elasticstack_fleet_enrollment_tokens` and `elasticstack_fleet_agent_policy` for managing Fleet enrollment tokens and agent policies ([#322](https://github.com/elastic/terraform-provider-elasticstack/pull/322)])
+- Add `elasticstack_fleet_output` and `elasticstack_fleet_server_host` for managing Fleet outputs and server hosts ([#327](https://github.com/elastic/terraform-provider-elasticstack/pull/327)])
 
 ### Fixed
 - Updated unsupported queue_max_bytes_number and queue_max_bytes_units with queue.max_bytes ([#266](https://github.com/elastic/terraform-provider-elasticstack/issues/266))
@@ -51,6 +52,7 @@
       })
     }
     ```
+- Fix order of `indices` field in SLM ([#326](https://github.com/elastic/terraform-provider-elasticstack/pull/326))
 
 ## [0.5.0] - 2022-12-07
 

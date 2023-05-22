@@ -109,6 +109,38 @@ type ClientInterface interface {
 
 	// GetEnrollmentApiKeys request
 	GetEnrollmentApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostFleetServerHosts request with any body
+	PostFleetServerHostsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostFleetServerHosts(ctx context.Context, body PostFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteFleetServerHosts request
+	DeleteFleetServerHosts(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOneFleetServerHosts request
+	GetOneFleetServerHosts(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateFleetServerHosts request with any body
+	UpdateFleetServerHostsWithBody(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateFleetServerHosts(ctx context.Context, itemId string, body UpdateFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostOutputs request with any body
+	PostOutputsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostOutputs(ctx context.Context, body PostOutputsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteOutput request
+	DeleteOutput(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOutput request
+	GetOutput(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateOutput request with any body
+	UpdateOutputWithBody(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateOutput(ctx context.Context, outputId string, body UpdateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) CreateAgentPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -197,6 +229,150 @@ func (c *Client) UpdateAgentPolicy(ctx context.Context, agentPolicyId string, bo
 
 func (c *Client) GetEnrollmentApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetEnrollmentApiKeysRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostFleetServerHostsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetServerHostsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostFleetServerHosts(ctx context.Context, body PostFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetServerHostsRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteFleetServerHosts(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFleetServerHostsRequest(c.Server, itemId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOneFleetServerHosts(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOneFleetServerHostsRequest(c.Server, itemId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateFleetServerHostsWithBody(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateFleetServerHostsRequestWithBody(c.Server, itemId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateFleetServerHosts(ctx context.Context, itemId string, body UpdateFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateFleetServerHostsRequest(c.Server, itemId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostOutputsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostOutputsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostOutputs(ctx context.Context, body PostOutputsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostOutputsRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteOutput(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteOutputRequest(c.Server, outputId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOutput(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOutputRequest(c.Server, outputId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateOutputWithBody(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOutputRequestWithBody(c.Server, outputId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateOutput(ctx context.Context, outputId string, body UpdateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOutputRequest(c.Server, outputId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -395,6 +571,316 @@ func NewGetEnrollmentApiKeysRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewPostFleetServerHostsRequest calls the generic PostFleetServerHosts builder with application/json body
+func NewPostFleetServerHostsRequest(server string, body PostFleetServerHostsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostFleetServerHostsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostFleetServerHostsRequestWithBody generates requests for PostFleetServerHosts with any type of body
+func NewPostFleetServerHostsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/fleet_server_hosts")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteFleetServerHostsRequest generates requests for DeleteFleetServerHosts
+func NewDeleteFleetServerHostsRequest(server string, itemId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "itemId", runtime.ParamLocationPath, itemId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/fleet_server_hosts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOneFleetServerHostsRequest generates requests for GetOneFleetServerHosts
+func NewGetOneFleetServerHostsRequest(server string, itemId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "itemId", runtime.ParamLocationPath, itemId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/fleet_server_hosts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateFleetServerHostsRequest calls the generic UpdateFleetServerHosts builder with application/json body
+func NewUpdateFleetServerHostsRequest(server string, itemId string, body UpdateFleetServerHostsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateFleetServerHostsRequestWithBody(server, itemId, "application/json", bodyReader)
+}
+
+// NewUpdateFleetServerHostsRequestWithBody generates requests for UpdateFleetServerHosts with any type of body
+func NewUpdateFleetServerHostsRequestWithBody(server string, itemId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "itemId", runtime.ParamLocationPath, itemId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/fleet_server_hosts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostOutputsRequest calls the generic PostOutputs builder with application/json body
+func NewPostOutputsRequest(server string, body PostOutputsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostOutputsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostOutputsRequestWithBody generates requests for PostOutputs with any type of body
+func NewPostOutputsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/outputs")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteOutputRequest generates requests for DeleteOutput
+func NewDeleteOutputRequest(server string, outputId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "outputId", runtime.ParamLocationPath, outputId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/outputs/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOutputRequest generates requests for GetOutput
+func NewGetOutputRequest(server string, outputId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "outputId", runtime.ParamLocationPath, outputId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/outputs/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateOutputRequest calls the generic UpdateOutput builder with application/json body
+func NewUpdateOutputRequest(server string, outputId string, body UpdateOutputJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateOutputRequestWithBody(server, outputId, "application/json", bodyReader)
+}
+
+// NewUpdateOutputRequestWithBody generates requests for UpdateOutput with any type of body
+func NewUpdateOutputRequestWithBody(server string, outputId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "outputId", runtime.ParamLocationPath, outputId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/outputs/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -458,6 +944,38 @@ type ClientWithResponsesInterface interface {
 
 	// GetEnrollmentApiKeys request
 	GetEnrollmentApiKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEnrollmentApiKeysResponse, error)
+
+	// PostFleetServerHosts request with any body
+	PostFleetServerHostsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetServerHostsResponse, error)
+
+	PostFleetServerHostsWithResponse(ctx context.Context, body PostFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetServerHostsResponse, error)
+
+	// DeleteFleetServerHosts request
+	DeleteFleetServerHostsWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*DeleteFleetServerHostsResponse, error)
+
+	// GetOneFleetServerHosts request
+	GetOneFleetServerHostsWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*GetOneFleetServerHostsResponse, error)
+
+	// UpdateFleetServerHosts request with any body
+	UpdateFleetServerHostsWithBodyWithResponse(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateFleetServerHostsResponse, error)
+
+	UpdateFleetServerHostsWithResponse(ctx context.Context, itemId string, body UpdateFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateFleetServerHostsResponse, error)
+
+	// PostOutputs request with any body
+	PostOutputsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostOutputsResponse, error)
+
+	PostOutputsWithResponse(ctx context.Context, body PostOutputsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostOutputsResponse, error)
+
+	// DeleteOutput request
+	DeleteOutputWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*DeleteOutputResponse, error)
+
+	// GetOutput request
+	GetOutputWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*GetOutputResponse, error)
+
+	// UpdateOutput request with any body
+	UpdateOutputWithBodyWithResponse(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOutputResponse, error)
+
+	UpdateOutputWithResponse(ctx context.Context, outputId string, body UpdateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOutputResponse, error)
 }
 
 type CreateAgentPolicyResponse struct {
@@ -465,11 +983,6 @@ type CreateAgentPolicyResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *struct {
 		Item *AgentPolicy `json:"item,omitempty"`
-	}
-	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    *string  `json:"message,omitempty"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
 	}
 }
 
@@ -496,11 +1009,6 @@ type DeleteAgentPolicyResponse struct {
 		Id      string `json:"id"`
 		Success bool   `json:"success"`
 	}
-	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    *string  `json:"message,omitempty"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
-	}
 }
 
 // Status returns HTTPResponse.Status
@@ -525,11 +1033,6 @@ type AgentPolicyInfoResponse struct {
 	JSON200      *struct {
 		Item AgentPolicy `json:"item"`
 	}
-	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    *string  `json:"message,omitempty"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
-	}
 }
 
 // Status returns HTTPResponse.Status
@@ -553,11 +1056,6 @@ type UpdateAgentPolicyResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *struct {
 		Item AgentPolicy `json:"item"`
-	}
-	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    *string  `json:"message,omitempty"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
 	}
 }
 
@@ -587,11 +1085,6 @@ type GetEnrollmentApiKeysResponse struct {
 		PerPage float32             `json:"perPage"`
 		Total   float32             `json:"total"`
 	}
-	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    *string  `json:"message,omitempty"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
-	}
 }
 
 // Status returns HTTPResponse.Status
@@ -604,6 +1097,198 @@ func (r GetEnrollmentApiKeysResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetEnrollmentApiKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostFleetServerHostsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item *FleetServerHost `json:"item,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostFleetServerHostsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostFleetServerHostsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteFleetServerHostsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Id string `json:"id"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteFleetServerHostsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteFleetServerHostsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetOneFleetServerHostsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item FleetServerHost `json:"item"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOneFleetServerHostsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOneFleetServerHostsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateFleetServerHostsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item FleetServerHost `json:"item"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateFleetServerHostsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateFleetServerHostsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostOutputsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item *Output `json:"item,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostOutputsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostOutputsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteOutputResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Id string `json:"id"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteOutputResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteOutputResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetOutputResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item Output `json:"item"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOutputResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOutputResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateOutputResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Item Output `json:"item"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateOutputResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateOutputResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -679,6 +1364,110 @@ func (c *ClientWithResponses) GetEnrollmentApiKeysWithResponse(ctx context.Conte
 	return ParseGetEnrollmentApiKeysResponse(rsp)
 }
 
+// PostFleetServerHostsWithBodyWithResponse request with arbitrary body returning *PostFleetServerHostsResponse
+func (c *ClientWithResponses) PostFleetServerHostsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetServerHostsResponse, error) {
+	rsp, err := c.PostFleetServerHostsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostFleetServerHostsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostFleetServerHostsWithResponse(ctx context.Context, body PostFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetServerHostsResponse, error) {
+	rsp, err := c.PostFleetServerHosts(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostFleetServerHostsResponse(rsp)
+}
+
+// DeleteFleetServerHostsWithResponse request returning *DeleteFleetServerHostsResponse
+func (c *ClientWithResponses) DeleteFleetServerHostsWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*DeleteFleetServerHostsResponse, error) {
+	rsp, err := c.DeleteFleetServerHosts(ctx, itemId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteFleetServerHostsResponse(rsp)
+}
+
+// GetOneFleetServerHostsWithResponse request returning *GetOneFleetServerHostsResponse
+func (c *ClientWithResponses) GetOneFleetServerHostsWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*GetOneFleetServerHostsResponse, error) {
+	rsp, err := c.GetOneFleetServerHosts(ctx, itemId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOneFleetServerHostsResponse(rsp)
+}
+
+// UpdateFleetServerHostsWithBodyWithResponse request with arbitrary body returning *UpdateFleetServerHostsResponse
+func (c *ClientWithResponses) UpdateFleetServerHostsWithBodyWithResponse(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateFleetServerHostsResponse, error) {
+	rsp, err := c.UpdateFleetServerHostsWithBody(ctx, itemId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateFleetServerHostsResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateFleetServerHostsWithResponse(ctx context.Context, itemId string, body UpdateFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateFleetServerHostsResponse, error) {
+	rsp, err := c.UpdateFleetServerHosts(ctx, itemId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateFleetServerHostsResponse(rsp)
+}
+
+// PostOutputsWithBodyWithResponse request with arbitrary body returning *PostOutputsResponse
+func (c *ClientWithResponses) PostOutputsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostOutputsResponse, error) {
+	rsp, err := c.PostOutputsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostOutputsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostOutputsWithResponse(ctx context.Context, body PostOutputsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostOutputsResponse, error) {
+	rsp, err := c.PostOutputs(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostOutputsResponse(rsp)
+}
+
+// DeleteOutputWithResponse request returning *DeleteOutputResponse
+func (c *ClientWithResponses) DeleteOutputWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*DeleteOutputResponse, error) {
+	rsp, err := c.DeleteOutput(ctx, outputId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteOutputResponse(rsp)
+}
+
+// GetOutputWithResponse request returning *GetOutputResponse
+func (c *ClientWithResponses) GetOutputWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*GetOutputResponse, error) {
+	rsp, err := c.GetOutput(ctx, outputId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOutputResponse(rsp)
+}
+
+// UpdateOutputWithBodyWithResponse request with arbitrary body returning *UpdateOutputResponse
+func (c *ClientWithResponses) UpdateOutputWithBodyWithResponse(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOutputResponse, error) {
+	rsp, err := c.UpdateOutputWithBody(ctx, outputId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOutputResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateOutputWithResponse(ctx context.Context, outputId string, body UpdateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOutputResponse, error) {
+	rsp, err := c.UpdateOutput(ctx, outputId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOutputResponse(rsp)
+}
+
 // ParseCreateAgentPolicyResponse parses an HTTP response from a CreateAgentPolicyWithResponse call
 func ParseCreateAgentPolicyResponse(rsp *http.Response) (*CreateAgentPolicyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -701,17 +1490,6 @@ func ParseCreateAgentPolicyResponse(rsp *http.Response) (*CreateAgentPolicyRespo
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    *string  `json:"message,omitempty"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
 
 	}
 
@@ -742,17 +1520,6 @@ func ParseDeleteAgentPolicyResponse(rsp *http.Response) (*DeleteAgentPolicyRespo
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    *string  `json:"message,omitempty"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
 	}
 
 	return response, nil
@@ -781,17 +1548,6 @@ func ParseAgentPolicyInfoResponse(rsp *http.Response) (*AgentPolicyInfoResponse,
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    *string  `json:"message,omitempty"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
 	}
 
 	return response, nil
@@ -819,17 +1575,6 @@ func ParseUpdateAgentPolicyResponse(rsp *http.Response) (*UpdateAgentPolicyRespo
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    *string  `json:"message,omitempty"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
 
 	}
 
@@ -863,16 +1608,229 @@ func ParseGetEnrollmentApiKeysResponse(rsp *http.Response) (*GetEnrollmentApiKey
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+	}
+
+	return response, nil
+}
+
+// ParsePostFleetServerHostsResponse parses an HTTP response from a PostFleetServerHostsWithResponse call
+func ParsePostFleetServerHostsResponse(rsp *http.Response) (*PostFleetServerHostsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostFleetServerHostsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    *string  `json:"message,omitempty"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Item *FleetServerHost `json:"item,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON400 = &dest
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteFleetServerHostsResponse parses an HTTP response from a DeleteFleetServerHostsWithResponse call
+func ParseDeleteFleetServerHostsResponse(rsp *http.Response) (*DeleteFleetServerHostsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteFleetServerHostsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Id string `json:"id"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOneFleetServerHostsResponse parses an HTTP response from a GetOneFleetServerHostsWithResponse call
+func ParseGetOneFleetServerHostsResponse(rsp *http.Response) (*GetOneFleetServerHostsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOneFleetServerHostsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Item FleetServerHost `json:"item"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateFleetServerHostsResponse parses an HTTP response from a UpdateFleetServerHostsWithResponse call
+func ParseUpdateFleetServerHostsResponse(rsp *http.Response) (*UpdateFleetServerHostsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateFleetServerHostsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Item FleetServerHost `json:"item"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostOutputsResponse parses an HTTP response from a PostOutputsWithResponse call
+func ParsePostOutputsResponse(rsp *http.Response) (*PostOutputsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostOutputsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Item *Output `json:"item,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteOutputResponse parses an HTTP response from a DeleteOutputWithResponse call
+func ParseDeleteOutputResponse(rsp *http.Response) (*DeleteOutputResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteOutputResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Id string `json:"id"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOutputResponse parses an HTTP response from a GetOutputWithResponse call
+func ParseGetOutputResponse(rsp *http.Response) (*GetOutputResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOutputResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Item Output `json:"item"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateOutputResponse parses an HTTP response from a UpdateOutputWithResponse call
+func ParseUpdateOutputResponse(rsp *http.Response) (*UpdateOutputResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateOutputResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Item Output `json:"item"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 
