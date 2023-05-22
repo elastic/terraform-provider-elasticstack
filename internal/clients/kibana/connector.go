@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -248,8 +249,7 @@ func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 		*custom.CreateIncidentMethod = connectors.ConfigPropertiesCasesWebhookCreateIncidentMethodPost
 	}
 	if custom.HasAuth == nil {
-		custom.HasAuth = new(bool)
-		*custom.HasAuth = true
+		custom.HasAuth = utils.Pointer(true)
 	}
 	if custom.UpdateIncidentMethod == nil {
 		custom.UpdateIncidentMethod = new(connectors.ConfigPropertiesCasesWebhookUpdateIncidentMethod)
@@ -268,8 +268,7 @@ func connectorConfigWithDefaultsEmail(plan string) (string, error) {
 		return "", err
 	}
 	if custom.HasAuth == nil {
-		custom.HasAuth = new(bool)
-		*custom.HasAuth = true
+		custom.HasAuth = utils.Pointer(true)
 	}
 	if custom.Service == nil {
 		custom.Service = new(string)
@@ -288,8 +287,7 @@ func connectorConfigWithDefaultsIndex(plan string) (string, error) {
 		return "", err
 	}
 	if custom.Refresh == nil {
-		custom.Refresh = new(bool)
-		*custom.Refresh = false
+		custom.Refresh = utils.Pointer(false)
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
@@ -324,12 +322,10 @@ func connectorConfigWithDefaultsServicenow(plan, backend string) (string, error)
 		return "", err
 	}
 	if planConfig.IsOAuth == nil && backendConfig.IsOAuth != nil && !*backendConfig.IsOAuth {
-		planConfig.IsOAuth = new(bool)
-		*planConfig.IsOAuth = false
+		planConfig.IsOAuth = utils.Pointer(false)
 	}
 	if planConfig.UsesTableApi == nil {
-		planConfig.UsesTableApi = new(bool)
-		*planConfig.UsesTableApi = true
+		planConfig.UsesTableApi = utils.Pointer(true)
 	}
 	customJSON, err := json.Marshal(planConfig)
 	if err != nil {
@@ -344,8 +340,7 @@ func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
 		return "", err
 	}
 	if custom.IsOAuth == nil {
-		custom.IsOAuth = new(bool)
-		*custom.IsOAuth = false
+		custom.IsOAuth = utils.Pointer(false)
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
@@ -387,8 +382,7 @@ func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
 		return "", err
 	}
 	if custom.UsesBasic == nil {
-		custom.UsesBasic = new(bool)
-		*custom.UsesBasic = true
+		custom.UsesBasic = utils.Pointer(true)
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
