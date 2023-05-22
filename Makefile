@@ -161,7 +161,6 @@ tools: $(GOBIN) ## Install useful tools for linting, docs generation and develop
 	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@ cd tools && go install github.com/goreleaser/goreleaser
 	@ cd tools && go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
-	@ go get github.com/deepmap/oapi-codegen/pkg/codegen@v1.12.4
 
 .PHONY: misspell
 misspell:
@@ -254,7 +253,7 @@ generate-alerting-client: ## generate Kibana alerting client
 
 .PHONY: generate-connectors-client
 generate-connectors-client: tools ## generate Kibana connectors client
-	@ go generate
+	@ cd tools && go generate
 	@ go fmt ./generated/connectors/...
 
 .PHONY: generate-slo-client
