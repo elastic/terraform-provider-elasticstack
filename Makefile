@@ -161,8 +161,7 @@ tools: $(GOBIN) ## Install useful tools for linting, docs generation and develop
 	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@ cd tools && go install github.com/goreleaser/goreleaser
 	@ cd tools && go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
-	@ cd tools && go install github.com/deepmap/oapi-codegen
-
+	@ go get github.com/deepmap/oapi-codegen/pkg/codegen@v1.12.4
 
 .PHONY: misspell
 misspell:
@@ -259,7 +258,7 @@ generate-connectors-client: tools ## generate Kibana connectors client
 	@ go fmt ./generated/connectors/...
 
 .PHONY: generate-slo-client
-generate-slo-client: ## generate Kibana slo client
+generate-slo-client: tools ## generate Kibana slo client
 	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
 		-i https://raw.githubusercontent.com/elastic/kibana/master/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
 		--skip-validate-spec \
@@ -274,4 +273,4 @@ generate-slo-client: ## generate Kibana slo client
 	@ go fmt ./generated/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client ## generate all clients
+generate-clients: generate-alerting-client generate-slo-client generate-connectors-client ## generate all clients
