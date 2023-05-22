@@ -186,5 +186,5 @@ func ConvertSettingsKeyToTFFieldKey(settingKey string) string {
 }
 
 func Pointer[T any](value T) *T {
-    return &value
+	return &value
 }
