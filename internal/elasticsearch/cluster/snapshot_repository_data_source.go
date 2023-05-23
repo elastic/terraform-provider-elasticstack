@@ -117,7 +117,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 		},
 	}
 
-	s3Settings := map[string]*schema.Schema{
+	s3Settings := map[ss3tring]*schema.Schema{
 		"bucket": {
 			Description: "Name of the S3 bucket to use for snapshots.",
 			Type:        schema.TypeString,
@@ -151,6 +151,11 @@ func DataSourceSnapshotRespository() *schema.Resource {
 		"storage_class": {
 			Description: "Sets the S3 storage class for objects stored in the snapshot repository.",
 			Type:        schema.TypeString,
+			Computed:    true,
+		},
+		"path_style_access": {
+			Description: "If true, path style access pattern will be used.",
+			Type:        schema.TypeBool,
 			Computed:    true,
 		},
 	}
