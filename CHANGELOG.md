@@ -26,7 +26,7 @@
 - Add client for communicating with the Fleet APIs ([#311](https://github.com/elastic/terraform-provider-elasticstack/pull/311)])
 - Add `elasticstack_fleet_enrollment_tokens` and `elasticstack_fleet_agent_policy` for managing Fleet enrollment tokens and agent policies ([#322](https://github.com/elastic/terraform-provider-elasticstack/pull/322)])
 - Add `elasticstack_fleet_output` and `elasticstack_fleet_server_host` for managing Fleet outputs and server hosts ([#327](https://github.com/elastic/terraform-provider-elasticstack/pull/327)])
-- Add `path_style_access` setting to `elasticstack_elasticsearch_snapshot_repository` on s3 repositories to enable path style access pattern ([#331](https://github.com/elastic/terraform-provider-elasticstack/pull/331))`
+- Add `path_style_access` setting to `elasticstack_elasticsearch_snapshot_repository` on s3 repositories to enable path style access pattern ([#331](https://github.com/elastic/terraform-provider-elasticstack/pull/331))
 
 ### Fixed
 - Updated unsupported queue_max_bytes_number and queue_max_bytes_units with queue.max_bytes ([#266](https://github.com/elastic/terraform-provider-elasticstack/issues/266))
