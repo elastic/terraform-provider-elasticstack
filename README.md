@@ -129,3 +129,8 @@ go mod tidy
 ```
 
 Then commit the changes to `go.mod` and `go.sum`.
+
+### Generating Kibana clients
+
+Kibana clients for some APIs are generated based on Kibana OpenAPI specs.
+Please see [Makefile](./Makefile) tasks for more details.

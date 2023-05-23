@@ -184,3 +184,7 @@ func ExpandIndividuallyDefinedSettings(ctx context.Context, d *schema.ResourceDa
 func ConvertSettingsKeyToTFFieldKey(settingKey string) string {
 	return strings.Replace(settingKey, ".", "_", -1)
 }
+
+func Pointer[T any](value T) *T {
+	return &value
+}

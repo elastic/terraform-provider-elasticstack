@@ -99,8 +99,9 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_transform":             transform.ResourceTransform(),
 			"elasticstack_elasticsearch_watch":                 watcher.ResourceWatch(),
 
-			"elasticstack_kibana_alerting_rule": kibana.ResourceAlertingRule(),
-			"elasticstack_kibana_space":         kibana.ResourceSpace(),
+			"elasticstack_kibana_alerting_rule":    kibana.ResourceAlertingRule(),
+			"elasticstack_kibana_space":            kibana.ResourceSpace(),
+			"elasticstack_kibana_action_connector": kibana.ResourceActionConnector(),
 
 			"elasticstack_fleet_agent_policy": fleet.ResourceAgentPolicy(),
 			"elasticstack_fleet_output":       fleet.ResourceOutput(),
