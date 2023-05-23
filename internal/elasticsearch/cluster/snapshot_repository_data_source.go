@@ -117,7 +117,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 		},
 	}
 
-	s3Settings := map[ss3tring]*schema.Schema{
+	s3Settings := map[string]*schema.Schema{
 		"bucket": {
 			Description: "Name of the S3 bucket to use for snapshots.",
 			Type:        schema.TypeString,
