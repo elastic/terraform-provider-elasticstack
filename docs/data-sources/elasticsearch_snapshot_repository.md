@@ -166,6 +166,7 @@ Read-Only:
 - `compress` (Boolean)
 - `max_restore_bytes_per_sec` (String)
 - `max_snapshot_bytes_per_sec` (String)
+- `path_style_access` (Boolean)
 - `readonly` (Boolean)
 - `server_side_encryption` (Boolean)
 - `storage_class` (String)
