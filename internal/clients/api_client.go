@@ -16,6 +16,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
+	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -67,6 +68,7 @@ type ApiClient struct {
 	kibana                   *kibana.Client
 	alerting                 alerting.AlertingApi
 	connectors               *connectors.Client
+	slo                      slo.SlosApi
 	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
 	version                  string
@@ -162,6 +164,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 			elasticsearch: es,
 			kibana:        kib,
 			alerting:      buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
+			slo:           buildSloClient(baseConfig, kibanaConfig).SlosApi,
 			connectors:    actionConnectors,
 			kibanaConfig:  kibanaConfig,
 			fleet:         fleetClient,
@@ -238,6 +241,14 @@ func (a *ApiClient) GetKibanaConnectorsClient(ctx context.Context) (*connectors.
 	return a.connectors, nil
 }
 
+func (a *ApiClient) GetSloClient() (slo.SlosApi, error) {
+	if a.slo == nil {
+		return nil, errors.New("slo client not found")
+	}
+
+	return a.slo, nil
+}
+
 func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
 	if a.fleet == nil {
 		return nil, errors.New("fleet client not found")
@@ -246,7 +257,8 @@ func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
 	return a.fleet, nil
 }
 
-func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
+func (a *ApiClient) SetGeneratedClientAuthContext(ctx context.Context) context.Context {
+	//I don't like that I'm using "alerting" here when the context is used for more than just alerting -- worth pulling these structs out somewhere else?
 	return context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
 		UserName: a.kibanaConfig.Username,
 		Password: a.kibanaConfig.Password,
@@ -576,6 +588,20 @@ func buildConnectorsClient(baseConfig BaseConfig, config kibana.Config) (*connec
 	)
 }
 
+func buildSloClient(baseConfig BaseConfig, config kibana.Config) *slo.APIClient {
+	//again this is the same -- worth pulling this out into a common place?
+	sloConfig := slo.Configuration{
+		UserAgent: baseConfig.UserAgent,
+		Servers: slo.ServerConfigurations{
+			{
+				URL: config.Address,
+			},
+		},
+		Debug: logging.IsDebugOrHigher(),
+	}
+	return slo.NewAPIClient(&sloConfig)
+}
+
 func buildFleetClient(d *schema.ResourceData, kibanaCfg kibana.Config) (*fleet.Client, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -667,6 +693,7 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 	}
 
 	alertingClient := buildAlertingClient(baseConfig, kibanaConfig)
+	sloClient := buildSloClient(baseConfig, kibanaConfig)
 
 	connectorsClient, err := buildConnectorsClient(baseConfig, kibanaConfig)
 	if err != nil {
@@ -685,6 +712,7 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 		kibanaConfig:             kibanaConfig,
 		alerting:                 alertingClient.AlertingApi,
 		connectors:               connectorsClient,
+		slo:                      sloClient.SlosApi,
 		fleet:                    fleetClient,
 		version:                  version,
 	}, nil

@@ -31,19 +31,22 @@ type IndicatorPropertiesApmLatencyParams struct {
 	Filter *string `json:"filter,omitempty"`
 	// The index used by APM metrics
 	Index string `json:"index"`
+	// The latency threshold in milliseconds
+	Threshold float32 `json:"threshold"`
 }
 
 // NewIndicatorPropertiesApmLatencyParams instantiates a new IndicatorPropertiesApmLatencyParams object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewIndicatorPropertiesApmLatencyParams(service string, environment string, transactionType string, transactionName string, index string) *IndicatorPropertiesApmLatencyParams {
+func NewIndicatorPropertiesApmLatencyParams(service string, environment string, transactionType string, transactionName string, index string, threshold float32) *IndicatorPropertiesApmLatencyParams {
 	this := IndicatorPropertiesApmLatencyParams{}
 	this.Service = service
 	this.Environment = environment
 	this.TransactionType = transactionType
 	this.TransactionName = transactionName
 	this.Index = index
+	this.Threshold = threshold
 	return &this
 }
 
@@ -207,6 +210,30 @@ func (o *IndicatorPropertiesApmLatencyParams) SetIndex(v string) {
 	o.Index = v
 }
 
+// GetThreshold returns the Threshold field value
+func (o *IndicatorPropertiesApmLatencyParams) GetThreshold() float32 {
+	if o == nil {
+		var ret float32
+		return ret
+	}
+
+	return o.Threshold
+}
+
+// GetThresholdOk returns a tuple with the Threshold field value
+// and a boolean to check if the value has been set.
+func (o *IndicatorPropertiesApmLatencyParams) GetThresholdOk() (*float32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Threshold, true
+}
+
+// SetThreshold sets field value
+func (o *IndicatorPropertiesApmLatencyParams) SetThreshold(v float32) {
+	o.Threshold = v
+}
+
 func (o IndicatorPropertiesApmLatencyParams) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -225,6 +252,7 @@ func (o IndicatorPropertiesApmLatencyParams) ToMap() (map[string]interface{}, er
 		toSerialize["filter"] = o.Filter
 	}
 	toSerialize["index"] = o.Index
+	toSerialize["threshold"] = o.Threshold
 	return toSerialize, nil
 }
 

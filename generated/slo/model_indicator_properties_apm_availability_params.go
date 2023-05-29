@@ -27,8 +27,6 @@ type IndicatorPropertiesApmAvailabilityParams struct {
 	TransactionType string `json:"transactionType"`
 	// The APM transaction name or \"*\"
 	TransactionName string `json:"transactionName"`
-	// The status codes considered as good events. Default to 2xx, 3xx and 4xx
-	GoodStatusCodes []string `json:"goodStatusCodes,omitempty"`
 	// KQL query used for filtering the data
 	Filter *string `json:"filter,omitempty"`
 	// The index used by APM metrics
@@ -153,38 +151,6 @@ func (o *IndicatorPropertiesApmAvailabilityParams) SetTransactionName(v string) 
 	o.TransactionName = v
 }
 
-// GetGoodStatusCodes returns the GoodStatusCodes field value if set, zero value otherwise.
-func (o *IndicatorPropertiesApmAvailabilityParams) GetGoodStatusCodes() []string {
-	if o == nil || IsNil(o.GoodStatusCodes) {
-		var ret []string
-		return ret
-	}
-	return o.GoodStatusCodes
-}
-
-// GetGoodStatusCodesOk returns a tuple with the GoodStatusCodes field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *IndicatorPropertiesApmAvailabilityParams) GetGoodStatusCodesOk() ([]string, bool) {
-	if o == nil || IsNil(o.GoodStatusCodes) {
-		return nil, false
-	}
-	return o.GoodStatusCodes, true
-}
-
-// HasGoodStatusCodes returns a boolean if a field has been set.
-func (o *IndicatorPropertiesApmAvailabilityParams) HasGoodStatusCodes() bool {
-	if o != nil && !IsNil(o.GoodStatusCodes) {
-		return true
-	}
-
-	return false
-}
-
-// SetGoodStatusCodes gets a reference to the given []string and assigns it to the GoodStatusCodes field.
-func (o *IndicatorPropertiesApmAvailabilityParams) SetGoodStatusCodes(v []string) {
-	o.GoodStatusCodes = v
-}
-
 // GetFilter returns the Filter field value if set, zero value otherwise.
 func (o *IndicatorPropertiesApmAvailabilityParams) GetFilter() string {
 	if o == nil || IsNil(o.Filter) {
@@ -255,9 +221,6 @@ func (o IndicatorPropertiesApmAvailabilityParams) ToMap() (map[string]interface{
 	toSerialize["environment"] = o.Environment
 	toSerialize["transactionType"] = o.TransactionType
 	toSerialize["transactionName"] = o.TransactionName
-	if !IsNil(o.GoodStatusCodes) {
-		toSerialize["goodStatusCodes"] = o.GoodStatusCodes
-	}
 	if !IsNil(o.Filter) {
 		toSerialize["filter"] = o.Filter
 	}

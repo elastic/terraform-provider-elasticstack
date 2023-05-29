@@ -4,9 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**Id** | Pointer to **string** | A unique identifier for the SLO. Must be between 8 and 36 chars | [optional] 
 **Name** | **string** | A name for the SLO. | 
 **Description** | **string** | A description for the SLO. | 
-**Indicator** | [**SloResponseIndicator**](SloResponseIndicator.md) |  | 
+**Indicator** | [**CreateSloRequestIndicator**](CreateSloRequestIndicator.md) |  | 
 **TimeWindow** | [**SloResponseTimeWindow**](SloResponseTimeWindow.md) |  | 
 **BudgetingMethod** | [**BudgetingMethod**](BudgetingMethod.md) |  | 
 **Objective** | [**Objective**](Objective.md) |  | 
@@ -16,7 +17,7 @@ Name | Type | Description | Notes
 
 ### NewCreateSloRequest
 
-`func NewCreateSloRequest(name string, description string, indicator SloResponseIndicator, timeWindow SloResponseTimeWindow, budgetingMethod BudgetingMethod, objective Objective, ) *CreateSloRequest`
+`func NewCreateSloRequest(name string, description string, indicator CreateSloRequestIndicator, timeWindow SloResponseTimeWindow, budgetingMethod BudgetingMethod, objective Objective, ) *CreateSloRequest`
 
 NewCreateSloRequest instantiates a new CreateSloRequest object
 This constructor will assign default values to properties that have it defined,
@@ -30,6 +31,31 @@ will change when the set of required properties is changed
 NewCreateSloRequestWithDefaults instantiates a new CreateSloRequest object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
+
+### GetId
+
+`func (o *CreateSloRequest) GetId() string`
+
+GetId returns the Id field if non-nil, zero value otherwise.
+
+### GetIdOk
+
+`func (o *CreateSloRequest) GetIdOk() (*string, bool)`
+
+GetIdOk returns a tuple with the Id field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetId
+
+`func (o *CreateSloRequest) SetId(v string)`
+
+SetId sets Id field to given value.
+
+### HasId
+
+`func (o *CreateSloRequest) HasId() bool`
+
+HasId returns a boolean if a field has been set.
 
 ### GetName
 
@@ -73,20 +99,20 @@ SetDescription sets Description field to given value.
 
 ### GetIndicator
 
-`func (o *CreateSloRequest) GetIndicator() SloResponseIndicator`
+`func (o *CreateSloRequest) GetIndicator() CreateSloRequestIndicator`
 
 GetIndicator returns the Indicator field if non-nil, zero value otherwise.
 
 ### GetIndicatorOk
 
-`func (o *CreateSloRequest) GetIndicatorOk() (*SloResponseIndicator, bool)`
+`func (o *CreateSloRequest) GetIndicatorOk() (*CreateSloRequestIndicator, bool)`
 
 GetIndicatorOk returns a tuple with the Indicator field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetIndicator
 
-`func (o *CreateSloRequest) SetIndicator(v SloResponseIndicator)`
+`func (o *CreateSloRequest) SetIndicator(v CreateSloRequestIndicator)`
 
 SetIndicator sets Indicator field to given value.
 

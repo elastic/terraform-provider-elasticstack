@@ -11,15 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func unwrapOptionalField[T any](field *T) T {
-	var value T
-	if field != nil {
-		value = *field
-	}
-
-	return value
-}
-
 func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *models.AlertingRule {
 	if res == nil {
 		return nil
@@ -77,7 +68,7 @@ func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
+	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
 
 	reqModel := alerting.CreateRuleRequest{
 		Consumer:   rule.Consumer,
@@ -109,7 +100,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
+	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
 
 	reqModel := alerting.UpdateRuleRequest{
 		Actions:    ruleActionsToActionsInner((rule.Actions)),
@@ -165,7 +156,7 @@ func GetAlertingRule(ctx context.Context, apiClient *clients.ApiClient, id, spac
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
+	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
 	req := client.GetRule(ctxWithAuth, id, spaceID)
 	ruleRes, res, err := req.Execute()
 	if err != nil && res == nil {
@@ -185,7 +176,7 @@ func DeleteAlertingRule(ctx context.Context, apiClient *clients.ApiClient, ruleI
 		return diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
+	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
 	req := client.DeleteRule(ctxWithAuth, ruleId, spaceId).KbnXsrf("true")
 	res, err := req.Execute()
 	if err != nil && res == nil {

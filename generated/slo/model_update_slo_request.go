@@ -22,12 +22,12 @@ type UpdateSloRequest struct {
 	// A name for the SLO.
 	Name *string `json:"name,omitempty"`
 	// A description for the SLO.
-	Description     *string                `json:"description,omitempty"`
-	Indicator       *SloResponseIndicator  `json:"indicator,omitempty"`
-	TimeWindow      *SloResponseTimeWindow `json:"timeWindow,omitempty"`
-	BudgetingMethod *BudgetingMethod       `json:"budgetingMethod,omitempty"`
-	Objective       *Objective             `json:"objective,omitempty"`
-	Settings        *Settings              `json:"settings,omitempty"`
+	Description     *string                    `json:"description,omitempty"`
+	Indicator       *CreateSloRequestIndicator `json:"indicator,omitempty"`
+	TimeWindow      *SloResponseTimeWindow     `json:"timeWindow,omitempty"`
+	BudgetingMethod *BudgetingMethod           `json:"budgetingMethod,omitempty"`
+	Objective       *Objective                 `json:"objective,omitempty"`
+	Settings        *Settings                  `json:"settings,omitempty"`
 }
 
 // NewUpdateSloRequest instantiates a new UpdateSloRequest object
@@ -112,9 +112,9 @@ func (o *UpdateSloRequest) SetDescription(v string) {
 }
 
 // GetIndicator returns the Indicator field value if set, zero value otherwise.
-func (o *UpdateSloRequest) GetIndicator() SloResponseIndicator {
+func (o *UpdateSloRequest) GetIndicator() CreateSloRequestIndicator {
 	if o == nil || IsNil(o.Indicator) {
-		var ret SloResponseIndicator
+		var ret CreateSloRequestIndicator
 		return ret
 	}
 	return *o.Indicator
@@ -122,7 +122,7 @@ func (o *UpdateSloRequest) GetIndicator() SloResponseIndicator {
 
 // GetIndicatorOk returns a tuple with the Indicator field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *UpdateSloRequest) GetIndicatorOk() (*SloResponseIndicator, bool) {
+func (o *UpdateSloRequest) GetIndicatorOk() (*CreateSloRequestIndicator, bool) {
 	if o == nil || IsNil(o.Indicator) {
 		return nil, false
 	}
@@ -138,8 +138,8 @@ func (o *UpdateSloRequest) HasIndicator() bool {
 	return false
 }
 
-// SetIndicator gets a reference to the given SloResponseIndicator and assigns it to the Indicator field.
-func (o *UpdateSloRequest) SetIndicator(v SloResponseIndicator) {
+// SetIndicator gets a reference to the given CreateSloRequestIndicator and assigns it to the Indicator field.
+func (o *UpdateSloRequest) SetIndicator(v CreateSloRequestIndicator) {
 	o.Indicator = &v
 }
 

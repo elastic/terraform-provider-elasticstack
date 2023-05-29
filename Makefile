@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.5.0
+VERSION ?= 0.6.0
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -259,7 +259,7 @@ generate-connectors-client: tools ## generate Kibana connectors client
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
 	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
-		-i https://raw.githubusercontent.com/elastic/kibana/master/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
+		-i /local/generated/slo-spec-test.yml \
 		--skip-validate-spec \
 		--git-repo-id terraform-provider-elasticstack \
 		--git-user-id elastic \

@@ -19,22 +19,24 @@ var _ MappedNullable = &CreateSloRequest{}
 
 // CreateSloRequest The create SLO API request body varies depending on the type of indicator, time window and budgeting method.
 type CreateSloRequest struct {
+	// A unique identifier for the SLO. Must be between 8 and 36 chars
+	Id *string `json:"id,omitempty"`
 	// A name for the SLO.
 	Name string `json:"name"`
 	// A description for the SLO.
-	Description     string                `json:"description"`
-	Indicator       SloResponseIndicator  `json:"indicator"`
-	TimeWindow      SloResponseTimeWindow `json:"timeWindow"`
-	BudgetingMethod BudgetingMethod       `json:"budgetingMethod"`
-	Objective       Objective             `json:"objective"`
-	Settings        *Settings             `json:"settings,omitempty"`
+	Description     string                    `json:"description"`
+	Indicator       CreateSloRequestIndicator `json:"indicator"`
+	TimeWindow      SloResponseTimeWindow     `json:"timeWindow"`
+	BudgetingMethod BudgetingMethod           `json:"budgetingMethod"`
+	Objective       Objective                 `json:"objective"`
+	Settings        *Settings                 `json:"settings,omitempty"`
 }
 
 // NewCreateSloRequest instantiates a new CreateSloRequest object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewCreateSloRequest(name string, description string, indicator SloResponseIndicator, timeWindow SloResponseTimeWindow, budgetingMethod BudgetingMethod, objective Objective) *CreateSloRequest {
+func NewCreateSloRequest(name string, description string, indicator CreateSloRequestIndicator, timeWindow SloResponseTimeWindow, budgetingMethod BudgetingMethod, objective Objective) *CreateSloRequest {
 	this := CreateSloRequest{}
 	this.Name = name
 	this.Description = description
@@ -51,6 +53,38 @@ func NewCreateSloRequest(name string, description string, indicator SloResponseI
 func NewCreateSloRequestWithDefaults() *CreateSloRequest {
 	this := CreateSloRequest{}
 	return &this
+}
+
+// GetId returns the Id field value if set, zero value otherwise.
+func (o *CreateSloRequest) GetId() string {
+	if o == nil || IsNil(o.Id) {
+		var ret string
+		return ret
+	}
+	return *o.Id
+}
+
+// GetIdOk returns a tuple with the Id field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *CreateSloRequest) GetIdOk() (*string, bool) {
+	if o == nil || IsNil(o.Id) {
+		return nil, false
+	}
+	return o.Id, true
+}
+
+// HasId returns a boolean if a field has been set.
+func (o *CreateSloRequest) HasId() bool {
+	if o != nil && !IsNil(o.Id) {
+		return true
+	}
+
+	return false
+}
+
+// SetId gets a reference to the given string and assigns it to the Id field.
+func (o *CreateSloRequest) SetId(v string) {
+	o.Id = &v
 }
 
 // GetName returns the Name field value
@@ -102,9 +136,9 @@ func (o *CreateSloRequest) SetDescription(v string) {
 }
 
 // GetIndicator returns the Indicator field value
-func (o *CreateSloRequest) GetIndicator() SloResponseIndicator {
+func (o *CreateSloRequest) GetIndicator() CreateSloRequestIndicator {
 	if o == nil {
-		var ret SloResponseIndicator
+		var ret CreateSloRequestIndicator
 		return ret
 	}
 
@@ -113,7 +147,7 @@ func (o *CreateSloRequest) GetIndicator() SloResponseIndicator {
 
 // GetIndicatorOk returns a tuple with the Indicator field value
 // and a boolean to check if the value has been set.
-func (o *CreateSloRequest) GetIndicatorOk() (*SloResponseIndicator, bool) {
+func (o *CreateSloRequest) GetIndicatorOk() (*CreateSloRequestIndicator, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -121,7 +155,7 @@ func (o *CreateSloRequest) GetIndicatorOk() (*SloResponseIndicator, bool) {
 }
 
 // SetIndicator sets field value
-func (o *CreateSloRequest) SetIndicator(v SloResponseIndicator) {
+func (o *CreateSloRequest) SetIndicator(v CreateSloRequestIndicator) {
 	o.Indicator = v
 }
 
@@ -239,6 +273,9 @@ func (o CreateSloRequest) MarshalJSON() ([]byte, error) {
 
 func (o CreateSloRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.Id) {
+		toSerialize["id"] = o.Id
+	}
 	toSerialize["name"] = o.Name
 	toSerialize["description"] = o.Description
 	toSerialize["indicator"] = o.Indicator

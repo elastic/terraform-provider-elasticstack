@@ -4,14 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Duration** | **string** | the duration formatted as {duration}{unit} | 
-**Calendar** | [**TimeWindowCalendarAlignedCalendar**](TimeWindowCalendarAlignedCalendar.md) |  | 
+**Duration** | **string** | the duration formatted as {duration}{unit}, accept &#39;1w&#39; (weekly calendar) or &#39;1M&#39; (monthly calendar) only | 
+**IsCalendar** | **bool** | Indicates a calendar aligned time window | 
 
 ## Methods
 
 ### NewTimeWindowCalendarAligned
 
-`func NewTimeWindowCalendarAligned(duration string, calendar TimeWindowCalendarAlignedCalendar, ) *TimeWindowCalendarAligned`
+`func NewTimeWindowCalendarAligned(duration string, isCalendar bool, ) *TimeWindowCalendarAligned`
 
 NewTimeWindowCalendarAligned instantiates a new TimeWindowCalendarAligned object
 This constructor will assign default values to properties that have it defined,
@@ -46,24 +46,24 @@ and a boolean to check if the value has been set.
 SetDuration sets Duration field to given value.
 
 
-### GetCalendar
+### GetIsCalendar
 
-`func (o *TimeWindowCalendarAligned) GetCalendar() TimeWindowCalendarAlignedCalendar`
+`func (o *TimeWindowCalendarAligned) GetIsCalendar() bool`
 
-GetCalendar returns the Calendar field if non-nil, zero value otherwise.
+GetIsCalendar returns the IsCalendar field if non-nil, zero value otherwise.
 
-### GetCalendarOk
+### GetIsCalendarOk
 
-`func (o *TimeWindowCalendarAligned) GetCalendarOk() (*TimeWindowCalendarAlignedCalendar, bool)`
+`func (o *TimeWindowCalendarAligned) GetIsCalendarOk() (*bool, bool)`
 
-GetCalendarOk returns a tuple with the Calendar field if it's non-nil, zero value otherwise
+GetIsCalendarOk returns a tuple with the IsCalendar field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetCalendar
+### SetIsCalendar
 
-`func (o *TimeWindowCalendarAligned) SetCalendar(v TimeWindowCalendarAlignedCalendar)`
+`func (o *TimeWindowCalendarAligned) SetIsCalendar(v bool)`
 
-SetCalendar sets Calendar field to given value.
+SetIsCalendar sets IsCalendar field to given value.
 
 
 

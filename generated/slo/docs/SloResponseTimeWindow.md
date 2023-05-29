@@ -4,15 +4,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Duration** | **string** | the duration formatted as {duration}{unit} | 
+**Duration** | **string** | the duration formatted as {duration}{unit}, accept &#39;1w&#39; (weekly calendar) or &#39;1M&#39; (monthly calendar) only | 
 **IsRolling** | **bool** | Indicates a rolling time window | 
-**Calendar** | [**TimeWindowCalendarAlignedCalendar**](TimeWindowCalendarAlignedCalendar.md) |  | 
+**IsCalendar** | **bool** | Indicates a calendar aligned time window | 
 
 ## Methods
 
 ### NewSloResponseTimeWindow
 
-`func NewSloResponseTimeWindow(duration string, isRolling bool, calendar TimeWindowCalendarAlignedCalendar, ) *SloResponseTimeWindow`
+`func NewSloResponseTimeWindow(duration string, isRolling bool, isCalendar bool, ) *SloResponseTimeWindow`
 
 NewSloResponseTimeWindow instantiates a new SloResponseTimeWindow object
 This constructor will assign default values to properties that have it defined,
@@ -67,24 +67,24 @@ and a boolean to check if the value has been set.
 SetIsRolling sets IsRolling field to given value.
 
 
-### GetCalendar
+### GetIsCalendar
 
-`func (o *SloResponseTimeWindow) GetCalendar() TimeWindowCalendarAlignedCalendar`
+`func (o *SloResponseTimeWindow) GetIsCalendar() bool`
 
-GetCalendar returns the Calendar field if non-nil, zero value otherwise.
+GetIsCalendar returns the IsCalendar field if non-nil, zero value otherwise.
 
-### GetCalendarOk
+### GetIsCalendarOk
 
-`func (o *SloResponseTimeWindow) GetCalendarOk() (*TimeWindowCalendarAlignedCalendar, bool)`
+`func (o *SloResponseTimeWindow) GetIsCalendarOk() (*bool, bool)`
 
-GetCalendarOk returns a tuple with the Calendar field if it's non-nil, zero value otherwise
+GetIsCalendarOk returns a tuple with the IsCalendar field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetCalendar
+### SetIsCalendar
 
-`func (o *SloResponseTimeWindow) SetCalendar(v TimeWindowCalendarAlignedCalendar)`
+`func (o *SloResponseTimeWindow) SetIsCalendar(v bool)`
 
-SetCalendar sets Calendar field to given value.
+SetIsCalendar sets IsCalendar field to given value.
 
 
 

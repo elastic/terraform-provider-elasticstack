@@ -102,6 +102,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_alerting_rule":    kibana.ResourceAlertingRule(),
 			"elasticstack_kibana_space":            kibana.ResourceSpace(),
 			"elasticstack_kibana_action_connector": kibana.ResourceActionConnector(),
+			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
 
 			"elasticstack_fleet_agent_policy": fleet.ResourceAgentPolicy(),
 			"elasticstack_fleet_output":       fleet.ResourceOutput(),

@@ -8,7 +8,6 @@ Name | Type | Description | Notes
 **Environment** | **string** | The APM service environment or \&quot;*\&quot; | 
 **TransactionType** | **string** | The APM transaction type or \&quot;*\&quot; | 
 **TransactionName** | **string** | The APM transaction name or \&quot;*\&quot; | 
-**GoodStatusCodes** | Pointer to **[]string** | The status codes considered as good events. Default to 2xx, 3xx and 4xx | [optional] 
 **Filter** | Pointer to **string** | KQL query used for filtering the data | [optional] 
 **Index** | **string** | The index used by APM metrics | 
 
@@ -110,31 +109,6 @@ and a boolean to check if the value has been set.
 
 SetTransactionName sets TransactionName field to given value.
 
-
-### GetGoodStatusCodes
-
-`func (o *IndicatorPropertiesApmAvailabilityParams) GetGoodStatusCodes() []string`
-
-GetGoodStatusCodes returns the GoodStatusCodes field if non-nil, zero value otherwise.
-
-### GetGoodStatusCodesOk
-
-`func (o *IndicatorPropertiesApmAvailabilityParams) GetGoodStatusCodesOk() (*[]string, bool)`
-
-GetGoodStatusCodesOk returns a tuple with the GoodStatusCodes field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetGoodStatusCodes
-
-`func (o *IndicatorPropertiesApmAvailabilityParams) SetGoodStatusCodes(v []string)`
-
-SetGoodStatusCodes sets GoodStatusCodes field to given value.
-
-### HasGoodStatusCodes
-
-`func (o *IndicatorPropertiesApmAvailabilityParams) HasGoodStatusCodes() bool`
-
-HasGoodStatusCodes returns a boolean if a field has been set.
 
 ### GetFilter
 

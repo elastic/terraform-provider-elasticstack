@@ -10,12 +10,13 @@ Name | Type | Description | Notes
 **TransactionName** | **string** | The APM transaction name or \&quot;*\&quot; | 
 **Filter** | Pointer to **string** | KQL query used for filtering the data | [optional] 
 **Index** | **string** | The index used by APM metrics | 
+**Threshold** | **float32** | The latency threshold in milliseconds | 
 
 ## Methods
 
 ### NewIndicatorPropertiesApmLatencyParams
 
-`func NewIndicatorPropertiesApmLatencyParams(service string, environment string, transactionType string, transactionName string, index string, ) *IndicatorPropertiesApmLatencyParams`
+`func NewIndicatorPropertiesApmLatencyParams(service string, environment string, transactionType string, transactionName string, index string, threshold float32, ) *IndicatorPropertiesApmLatencyParams`
 
 NewIndicatorPropertiesApmLatencyParams instantiates a new IndicatorPropertiesApmLatencyParams object
 This constructor will assign default values to properties that have it defined,
@@ -153,6 +154,26 @@ and a boolean to check if the value has been set.
 `func (o *IndicatorPropertiesApmLatencyParams) SetIndex(v string)`
 
 SetIndex sets Index field to given value.
+
+
+### GetThreshold
+
+`func (o *IndicatorPropertiesApmLatencyParams) GetThreshold() float32`
+
+GetThreshold returns the Threshold field if non-nil, zero value otherwise.
+
+### GetThresholdOk
+
+`func (o *IndicatorPropertiesApmLatencyParams) GetThresholdOk() (*float32, bool)`
+
+GetThresholdOk returns a tuple with the Threshold field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetThreshold
+
+`func (o *IndicatorPropertiesApmLatencyParams) SetThreshold(v float32)`
+
+SetThreshold sets Threshold field to given value.
 
 
 

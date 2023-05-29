@@ -38,7 +38,7 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    createSloRequest := *openapiclient.NewCreateSloRequest("Name_example", "Description_example", openapiclient.slo_response_indicator{IndicatorPropertiesApmAvailability: openapiclient.NewIndicatorPropertiesApmAvailability(*openapiclient.NewIndicatorPropertiesApmAvailabilityParams("o11y-app", "production", "request", "GET /my/api", "metrics-apm*,apm*"), "sli.apm.transactionDuration")}, openapiclient.slo_response_timeWindow{TimeWindowCalendarAligned: openapiclient.NewTimeWindowCalendarAligned("1M", *openapiclient.NewTimeWindowCalendarAlignedCalendar())}, openapiclient.budgeting_method("occurrences"), *openapiclient.NewObjective(float32(0.99))) // CreateSloRequest | 
+    createSloRequest := *openapiclient.NewCreateSloRequest("Name_example", "Description_example", openapiclient.create_slo_request_indicator{IndicatorPropertiesApmAvailability: openapiclient.NewIndicatorPropertiesApmAvailability(*openapiclient.NewIndicatorPropertiesApmAvailabilityParams("o11y-app", "production", "request", "GET /my/api", "metrics-apm*,apm*"), "sli.apm.transactionDuration")}, openapiclient.slo_response_timeWindow{TimeWindowCalendarAligned: openapiclient.NewTimeWindowCalendarAligned("1M", true)}, openapiclient.budgeting_method("occurrences"), *openapiclient.NewObjective(float32(0.99))) // CreateSloRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)

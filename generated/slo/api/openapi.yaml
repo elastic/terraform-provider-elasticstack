@@ -179,6 +179,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/4xx_response'
           description: Unauthorized response
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/4xx_response'
+          description: Conflict - The SLO id already exists
       servers:
       - url: https://localhost:5601
       summary: Creates an SLO.
@@ -598,14 +604,17 @@ components:
       description: Defines properties for calendar aligned time window
       properties:
         duration:
-          description: "the duration formatted as {duration}{unit}"
+          description: "the duration formatted as {duration}{unit}, accept '1w' (weekly\
+            \ calendar) or '1M' (monthly calendar) only"
           example: 1M
           type: string
-        calendar:
-          $ref: '#/components/schemas/time_window_calendar_aligned_calendar'
+        isCalendar:
+          description: Indicates a calendar aligned time window
+          example: true
+          type: boolean
       required:
-      - calendar
       - duration
+      - isCalendar
       title: Calendar aligned time window definition
       type: object
     budgeting_method:
@@ -877,6 +886,10 @@ components:
       description: |
         The create SLO API request body varies depending on the type of indicator, time window and budgeting method.
       properties:
+        id:
+          description: A unique identifier for the SLO. Must be between 8 and 36 chars
+          example: my-super-slo-id
+          type: string
         name:
           description: A name for the SLO.
           type: string
@@ -884,7 +897,7 @@ components:
           description: A description for the SLO.
           type: string
         indicator:
-          $ref: '#/components/schemas/slo_response_indicator'
+          $ref: '#/components/schemas/create_slo_request_indicator'
         timeWindow:
           $ref: '#/components/schemas/slo_response_timeWindow'
         budgetingMethod:
@@ -924,7 +937,7 @@ components:
           description: A description for the SLO.
           type: string
         indicator:
-          $ref: '#/components/schemas/slo_response_indicator'
+          $ref: '#/components/schemas/create_slo_request_indicator'
         timeWindow:
           $ref: '#/components/schemas/slo_response_timeWindow'
         budgetingMethod:
@@ -1003,16 +1016,6 @@ components:
           description: The APM transaction name or "*"
           example: GET /my/api
           type: string
-        goodStatusCodes:
-          description: "The status codes considered as good events. Default to 2xx,\
-            \ 3xx and 4xx"
-          example:
-          - 2xx
-          - 3xx
-          - 4xx
-          items:
-            type: string
-          type: array
         filter:
           description: KQL query used for filtering the data
           example: "service.foo : \"bar\""
@@ -1056,22 +1059,21 @@ components:
           description: The index used by APM metrics
           example: "metrics-apm*,apm*"
           type: string
+        threshold:
+          description: The latency threshold in milliseconds
+          example: 250
+          type: number
       required:
       - environment
       - index
       - service
+      - threshold
       - transactionName
       - transactionType
       type: object
-    time_window_calendar_aligned_calendar:
-      description: Defines the calendar start date
-      properties:
-        startTime:
-          description: The start date to use.
-          example: 2022-01-01T08:00:00.000Z
-          type: string
-      type: object
     slo_response_indicator:
+      discriminator:
+        propertyName: type
       oneOf:
       - $ref: '#/components/schemas/indicator_properties_custom_kql'
       - $ref: '#/components/schemas/indicator_properties_apm_availability'
@@ -1080,6 +1082,11 @@ components:
       oneOf:
       - $ref: '#/components/schemas/time_window_rolling'
       - $ref: '#/components/schemas/time_window_calendar_aligned'
+    create_slo_request_indicator:
+      oneOf:
+      - $ref: '#/components/schemas/indicator_properties_custom_kql'
+      - $ref: '#/components/schemas/indicator_properties_apm_availability'
+      - $ref: '#/components/schemas/indicator_properties_apm_latency'
     Historical_summary_response_inner:
       properties:
         date:

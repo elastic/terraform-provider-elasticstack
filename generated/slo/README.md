@@ -91,6 +91,7 @@ Class | Method | HTTP request | Description
 
  - [BudgetingMethod](docs/BudgetingMethod.md)
  - [CreateSloRequest](docs/CreateSloRequest.md)
+ - [CreateSloRequestIndicator](docs/CreateSloRequestIndicator.md)
  - [CreateSloResponse](docs/CreateSloResponse.md)
  - [ErrorBudget](docs/ErrorBudget.md)
  - [FindSloResponse](docs/FindSloResponse.md)
@@ -110,7 +111,6 @@ Class | Method | HTTP request | Description
  - [SloResponseTimeWindow](docs/SloResponseTimeWindow.md)
  - [Summary](docs/Summary.md)
  - [TimeWindowCalendarAligned](docs/TimeWindowCalendarAligned.md)
- - [TimeWindowCalendarAlignedCalendar](docs/TimeWindowCalendarAlignedCalendar.md)
  - [TimeWindowRolling](docs/TimeWindowRolling.md)
  - [UpdateSloRequest](docs/UpdateSloRequest.md)
 

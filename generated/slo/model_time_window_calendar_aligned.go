@@ -19,19 +19,20 @@ var _ MappedNullable = &TimeWindowCalendarAligned{}
 
 // TimeWindowCalendarAligned Defines properties for calendar aligned time window
 type TimeWindowCalendarAligned struct {
-	// the duration formatted as {duration}{unit}
-	Duration string                            `json:"duration"`
-	Calendar TimeWindowCalendarAlignedCalendar `json:"calendar"`
+	// the duration formatted as {duration}{unit}, accept '1w' (weekly calendar) or '1M' (monthly calendar) only
+	Duration string `json:"duration"`
+	// Indicates a calendar aligned time window
+	IsCalendar bool `json:"isCalendar"`
 }
 
 // NewTimeWindowCalendarAligned instantiates a new TimeWindowCalendarAligned object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewTimeWindowCalendarAligned(duration string, calendar TimeWindowCalendarAlignedCalendar) *TimeWindowCalendarAligned {
+func NewTimeWindowCalendarAligned(duration string, isCalendar bool) *TimeWindowCalendarAligned {
 	this := TimeWindowCalendarAligned{}
 	this.Duration = duration
-	this.Calendar = calendar
+	this.IsCalendar = isCalendar
 	return &this
 }
 
@@ -67,28 +68,28 @@ func (o *TimeWindowCalendarAligned) SetDuration(v string) {
 	o.Duration = v
 }
 
-// GetCalendar returns the Calendar field value
-func (o *TimeWindowCalendarAligned) GetCalendar() TimeWindowCalendarAlignedCalendar {
+// GetIsCalendar returns the IsCalendar field value
+func (o *TimeWindowCalendarAligned) GetIsCalendar() bool {
 	if o == nil {
-		var ret TimeWindowCalendarAlignedCalendar
+		var ret bool
 		return ret
 	}
 
-	return o.Calendar
+	return o.IsCalendar
 }
 
-// GetCalendarOk returns a tuple with the Calendar field value
+// GetIsCalendarOk returns a tuple with the IsCalendar field value
 // and a boolean to check if the value has been set.
-func (o *TimeWindowCalendarAligned) GetCalendarOk() (*TimeWindowCalendarAlignedCalendar, bool) {
+func (o *TimeWindowCalendarAligned) GetIsCalendarOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Calendar, true
+	return &o.IsCalendar, true
 }
 
-// SetCalendar sets field value
-func (o *TimeWindowCalendarAligned) SetCalendar(v TimeWindowCalendarAlignedCalendar) {
-	o.Calendar = v
+// SetIsCalendar sets field value
+func (o *TimeWindowCalendarAligned) SetIsCalendar(v bool) {
+	o.IsCalendar = v
 }
 
 func (o TimeWindowCalendarAligned) MarshalJSON() ([]byte, error) {
@@ -102,7 +103,7 @@ func (o TimeWindowCalendarAligned) MarshalJSON() ([]byte, error) {
 func (o TimeWindowCalendarAligned) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["duration"] = o.Duration
-	toSerialize["calendar"] = o.Calendar
+	toSerialize["isCalendar"] = o.IsCalendar
 	return toSerialize, nil
 }
 
