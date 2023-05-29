@@ -33,6 +33,8 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceId),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Updated %s", spaceId)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Updated space description"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "ingestManager"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "enterpriseSearch"),
 				),
 			},
 		},
@@ -62,9 +64,10 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_space" "test_space" {
-  space_id    = "%s"
-  name        = "%s"
-  description = "Updated space description"
+  space_id          = "%s"
+  name              = "%s"
+  description       = "Updated space description"
+  disabled_features = ["ingestManager", "enterpriseSearch"]
 }
 	`, id, fmt.Sprintf("Updated %s", id))
 }

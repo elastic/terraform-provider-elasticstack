@@ -21,6 +21,9 @@ resource "elasticstack_elasticsearch_watch" "example" {
   metadata = jsonencode({
     "example_key" = "example_value"
   })
+  transform = jsonencode({
+    "script" = "return [ 'time' : ctx.trigger.scheduled_time ]"
+  })
   throttle_period_in_millis = 10000
 }
 

@@ -73,6 +73,13 @@ func ResourceWatch() *schema.Resource {
 			Optional:         true,
 			Default:          "{}",
 		},
+		"transform": {
+			Description:      "Processes the watch payload to prepare it for the watch actions.",
+			Type:             schema.TypeString,
+			ValidateFunc:     validation.StringIsJSON,
+			DiffSuppressFunc: utils.DiffJsonSuppress,
+			Optional:         true,
+		},
 		"throttle_period_in_millis": {
 			Description: "Minimum time in milliseconds between actions being run. Defaults to 5000.",
 			Type:        schema.TypeInt,
@@ -142,6 +149,14 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.FromErr(err)
 	}
 	watch.Body.Metadata = metadata
+
+	if transformJSON, ok := d.GetOk("transform"); ok {
+		var transform map[string]interface{}
+		if err := json.Unmarshal([]byte(transformJSON.(string)), &transform); err != nil {
+			return diag.FromErr(err)
+		}
+		watch.Body.Transform = transform
+	}
 
 	watch.Body.Throttle_period_in_millis = d.Get("throttle_period_in_millis").(int)
 
@@ -218,6 +233,16 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	}
 	if err := d.Set("metadata", string(metadata)); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if watch.Body.Transform != nil {
+		transform, err := json.Marshal(watch.Body.Transform)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("transform", string(transform)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("throttle_period_in_millis", watch.Body.Throttle_period_in_millis); err != nil {
