@@ -41,6 +41,7 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", `{"never":{}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", `{"log":{"logging":{"level":"info","text":"example logging text"}}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", `{"example_key":"example_value"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "transform", `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,"search_type":"query_then_fetch"}}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "throttle_period_in_millis", "10000"),
 				),
 			},
@@ -111,6 +112,23 @@ EOF
 	metadata = <<EOF
 	{
 		"example_key" : "example_value"
+	}
+EOF
+
+	transform = <<EOF
+	{
+		"search" : {
+      "request" : {
+        "body" : { 
+					"query" : { 
+						"match_all" : {} 
+					}
+				},
+				"indices": [],
+				"rest_total_hits_as_int" : true,
+				"search_type": "query_then_fetch"
+      }
+    }
 	}
 EOF
 
