@@ -127,8 +127,8 @@ EOF
 				"indices": [],
 				"rest_total_hits_as_int" : true,
 				"search_type": "query_then_fetch"
-      }
-    }
+			}
+		}
 	}
 EOF
 

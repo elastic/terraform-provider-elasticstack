@@ -67,7 +67,7 @@ resource "elasticstack_kibana_space" "test_space" {
   space_id          = "%s"
   name              = "%s"
   description       = "Updated space description"
-	disabled_features = ["ingestManager", "enterpriseSearch"]
+  disabled_features = ["ingestManager", "enterpriseSearch"]
 }
 	`, id, fmt.Sprintf("Updated %s", id))
 }
