@@ -4,6 +4,9 @@
 - Add `path_style_access` setting to `elasticstack_elasticsearch_snapshot_repository` on s3 repositories to enable path style access pattern ([#331](https://github.com/elastic/terraform-provider-elasticstack/pull/331))
 - Add `transform` field to `elasticstack_elasticsearch_watch` to allow for payload transforms to be defined ([#340](https://github.com/elastic/terraform-provider-elasticstack/pull/340))
 
+### Fixed
+- Fix error presented by incorrect handling of `disabled_features` field in `elasticstack_kibana_space` resource ([#340](https://github.com/elastic/terraform-provider-elasticstack/pull/340))
+
 ## [0.6.0] - 2023-05-24
 
 ### Added
