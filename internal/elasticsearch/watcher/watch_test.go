@@ -118,8 +118,8 @@ EOF
 	transform = <<EOF
 	{
 		"search" : {
-      "request" : {
-        "body" : { 
+			"request" : {
+				"body" : { 
 					"query" : { 
 						"match_all" : {} 
 					}
