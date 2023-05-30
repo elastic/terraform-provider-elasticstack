@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+## [0.6.1] - 2023-05-30
+
+### Added
+- Add `path_style_access` setting to `elasticstack_elasticsearch_snapshot_repository` on s3 repositories to enable path style access pattern ([#331](https://github.com/elastic/terraform-provider-elasticstack/pull/331))
+- Add `transform` field to `elasticstack_elasticsearch_watch` to allow for payload transforms to be defined ([#340](https://github.com/elastic/terraform-provider-elasticstack/pull/340))
+
+### Fixed
+- Fix error presented by incorrect handling of `disabled_features` field in `elasticstack_kibana_space` resource ([#340](https://github.com/elastic/terraform-provider-elasticstack/pull/340))
+
 ## [0.6.0] - 2023-05-24
 
 ### Added
@@ -55,6 +64,14 @@
       })
     }
     ```
+  - If migrating existing resources in state from a previous version of the provider, then you will need to remove the reference to the resources in state before reapplying / reimporting:
+    - Run `terraform state rm` against your logstash pipelines (https://developer.hashicorp.com/terraform/cli/commands/state/rm)
+    - Ensure any definitions of the `pipeline_metadata` field in your resource definitions have been encapsulated with `jsonencode()` as mentioned above.
+    - EITHER
+      - run `terraform plan`
+      - run `terraform apply`
+    - OR
+      - reimport the resources into state using `terraform import` (https://developer.hashicorp.com/terraform/cli/import)
 - Fix order of `indices` field in SLM ([#326](https://github.com/elastic/terraform-provider-elasticstack/pull/326))
 
 ## [0.5.0] - 2022-12-07
@@ -145,7 +162,9 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.3.2...v0.3.3

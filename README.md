@@ -22,7 +22,7 @@ terraform {
   required_providers {
     elasticstack = {
       source  = "elastic/elasticstack"
-      version = "~> 0.6.0"
+      version = "~> 0.6.1"
     }
   }
 }
@@ -97,7 +97,7 @@ $ make docker-testacc
 
 To clean up the used containers and to free up the assigned container names, run `make docker-clean`.
 
-Note: there have been some issues encountered when using `tfenv` for local development. It's recommended you move your version management for terraform to `asdf` instead. 
+Note: there have been some issues encountered when using `tfenv` for local development. It's recommended you move your version management for terraform to `asdf` instead.
 
 
 ### Requirements

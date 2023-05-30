@@ -182,6 +182,12 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Default:      "standard",
 			ValidateFunc: validation.StringInSlice([]string{"standard", "reduced_redundancy", "standard_ia", "onezone_ia", "intelligent_tiering"}, false),
 		},
+		"path_style_access": {
+			Description: "If true, path style access pattern will be used.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
+		},
 	}
 
 	hdfsSettings := map[string]*schema.Schema{

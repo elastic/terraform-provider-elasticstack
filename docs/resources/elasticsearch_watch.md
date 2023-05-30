@@ -36,6 +36,9 @@ resource "elasticstack_elasticsearch_watch" "example" {
   metadata = jsonencode({
     "example_key" = "example_value"
   })
+  transform = jsonencode({
+    "script" = "return [ 'time' : ctx.trigger.scheduled_time ]"
+  })
   throttle_period_in_millis = 10000
 }
 
@@ -60,6 +63,7 @@ output "watch" {
 - `input` (String) The input that defines the input that loads the data for the watch.
 - `metadata` (String) Metadata json that will be copied into the history entries.
 - `throttle_period_in_millis` (Number) Minimum time in milliseconds between actions being run. Defaults to 5000.
+- `transform` (String) Processes the watch payload to prepare it for the watch actions.
 
 ### Read-Only
 
