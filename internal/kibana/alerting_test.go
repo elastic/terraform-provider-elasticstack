@@ -15,9 +15,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var minSupportedVersion = version.Must(version.NewSemver("7.14.0"))
-
 func TestAccResourceAlertingRule(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{

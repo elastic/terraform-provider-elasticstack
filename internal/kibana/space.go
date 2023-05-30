@@ -90,9 +90,14 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 		space.Description = description.(string)
 	}
 
-	if disabledFeatures, ok := d.GetOk("disabled_features"); ok {
-		space.DisabledFeatures = disabledFeatures.([]string)
+	features := make([]string, 0)
+	if v, ok := d.GetOk("disabled_features"); ok {
+		p := v.(*schema.Set)
+		for _, e := range p.List() {
+			features = append(features, e.(string))
+		}
 	}
+	space.DisabledFeatures = features
 
 	if initials, ok := d.GetOk("initials"); ok {
 		space.Initials = initials.(string)

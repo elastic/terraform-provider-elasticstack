@@ -103,12 +103,12 @@ func Test_ruleResponseToModel(t *testing.T) {
 					Status:            makePtr("firing"),
 				},
 				Actions: []models.AlertingRuleAction{
-					models.AlertingRuleAction{
+					{
 						Group:  "group-1",
 						ID:     "id",
 						Params: map[string]interface{}{},
 					},
-					models.AlertingRuleAction{
+					{
 						Group:  "group-2",
 						ID:     "id",
 						Params: map[string]interface{}{},

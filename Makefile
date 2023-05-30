@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.5.0
+VERSION ?= 0.6.1
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -15,7 +15,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= 1.19
 
-STACK_VERSION ?= 8.0.0
+STACK_VERSION ?= 8.6.0
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -67,6 +67,8 @@ retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$atte
 		backoff=$$((backoff * 2)); \
 	done
 
+# To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
+# To enable tracing (or debugging), execute `make docker-testacc TFLOG=TRACE`
 .PHONY: docker-testacc
 docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in the docker container
 	@ docker run --rm \
@@ -74,10 +76,11 @@ docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in th
 		-e KIBANA_ENDPOINT="$(KIBANA_ENDPOINT)" \
 		-e ELASTICSEARCH_USERNAME="$(ELASTICSEARCH_USERNAME)" \
 		-e ELASTICSEARCH_PASSWORD="$(ELASTICSEARCH_PASSWORD)" \
+		-e TF_LOG="$(TF_LOG)" \
 		--network $(ELASTICSEARCH_NETWORK) \
 		-w "/provider" \
 		-v "$(SOURCE_LOCATION):/provider" \
-		golang:$(GOVERSION) make testacc
+		golang:$(GOVERSION) make testacc TESTARGS="$(TESTARGS)"
 
 .PHONY: docker-elasticsearch
 docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
@@ -158,7 +161,6 @@ tools: $(GOBIN) ## Install useful tools for linting, docs generation and develop
 	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@ cd tools && go install github.com/goreleaser/goreleaser
 	@ cd tools && go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
-
 
 .PHONY: misspell
 misspell:
@@ -247,11 +249,15 @@ generate-alerting-client: ## generate Kibana alerting client
 		-g go \
 		-o /local/generated/alerting
 	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
-	@ go fmt ./generated/...
+	@ go fmt ./generated/alerting/...
 
+.PHONY: generate-connectors-client
+generate-connectors-client: tools ## generate Kibana connectors client
+	@ cd tools && go generate
+	@ go fmt ./generated/connectors/...
 
 .PHONY: generate-slo-client
-generate-slo-client: ## generate Kibana slo client
+generate-slo-client: tools ## generate Kibana slo client
 	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
 		-i https://raw.githubusercontent.com/elastic/kibana/master/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
 		--skip-validate-spec \
@@ -266,4 +272,4 @@ generate-slo-client: ## generate Kibana slo client
 	@ go fmt ./generated/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client ## generate all clients
+generate-clients: generate-alerting-client generate-slo-client generate-connectors-client ## generate all clients

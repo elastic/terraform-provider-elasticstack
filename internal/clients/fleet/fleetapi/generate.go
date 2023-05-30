@@ -38,12 +38,22 @@ type Endpoint struct {
 	Summary     string           `json:"summary,omitempty"`
 	Tags        []string         `json:"tags,omitempty"`
 	Responses   map[string]any   `json:"responses,omitempty"`
+	RequestBody map[string]any   `json:"requestBody,omitempty"`
 	OperationID string           `json:"operationId,omitempty"`
 	Parameters  []map[string]any `json:"parameters,omitempty"`
 	Deprecated  bool             `json:"deprecated,omitempty"`
 }
 
-var includePaths = map[string][]string{}
+var includePaths = map[string][]string{
+	"/agent_policies":                 {"post"},
+	"/agent_policies/{agentPolicyId}": {"get", "put"},
+	"/agent_policies/delete":          {"post"},
+	"/enrollment_api_keys":            {"get"},
+	"/fleet_server_hosts":             {"post"},
+	"/fleet_server_hosts/{itemId}":    {"get", "put", "delete"},
+	"/outputs":                        {"post"},
+	"/outputs/{outputId}":             {"get", "put", "delete"},
+}
 
 func downloadFile(url string) ([]byte, error) {
 	resp, err := http.Get(url)

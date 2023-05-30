@@ -11,9 +11,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
+	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -64,6 +66,7 @@ type ApiClient struct {
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
 	alerting                 alerting.AlertingApi
+	connectors               *connectors.Client
 	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
 	version                  string
@@ -135,6 +138,10 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
+	actionConnectors, err := buildConnectorsClient(baseConfig, kibanaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create Kibana action connectors client: [%w]", err)
+	}
 	fleetCfg := fleet.Config{
 		URL:      kibanaConfig.Address,
 		Username: kibanaConfig.Username,
@@ -155,6 +162,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 			elasticsearch: es,
 			kibana:        kib,
 			alerting:      buildAlertingClient(baseConfig, kibanaConfig).AlertingApi,
+			connectors:    actionConnectors,
 			kibanaConfig:  kibanaConfig,
 			fleet:         fleetClient,
 			version:       "acceptance-testing",
@@ -220,6 +228,14 @@ func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
 	}
 
 	return a.alerting, nil
+}
+
+func (a *ApiClient) GetKibanaConnectorsClient(ctx context.Context) (*connectors.Client, error) {
+	if a.connectors == nil {
+		return nil, errors.New("kibana action connector client not found")
+	}
+
+	return a.connectors, nil
 }
 
 func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
@@ -549,6 +565,17 @@ func buildAlertingClient(baseConfig BaseConfig, config kibana.Config) *alerting.
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
+func buildConnectorsClient(baseConfig BaseConfig, config kibana.Config) (*connectors.Client, error) {
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(config.Username, config.Password)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
+	}
+	return connectors.NewClient(
+		config.Address,
+		connectors.WithRequestEditorFn(basicAuthProvider.Intercept),
+	)
+}
+
 func buildFleetClient(d *schema.ResourceData, kibanaCfg kibana.Config) (*fleet.Client, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -623,7 +650,6 @@ func buildFleetClient(d *schema.ResourceData, kibanaCfg kibana.Config) (*fleet.C
 const esKey string = "elasticsearch"
 
 func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	baseConfig := buildBaseConfig(d, version, esKey)
 	kibanaConfig, diags := buildKibanaConfig(d, baseConfig)
 	if diags.HasError() {
@@ -642,6 +668,11 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 
 	alertingClient := buildAlertingClient(baseConfig, kibanaConfig)
 
+	connectorsClient, err := buildConnectorsClient(baseConfig, kibanaConfig)
+	if err != nil {
+		return nil, diag.FromErr(fmt.Errorf("cannot create Kibana connectors client: [%w]", err))
+	}
+
 	fleetClient, diags := buildFleetClient(d, kibanaConfig)
 	if diags.HasError() {
 		return nil, diags
@@ -653,7 +684,8 @@ func newApiClient(d *schema.ResourceData, version string) (*ApiClient, diag.Diag
 		kibana:                   kibanaClient,
 		kibanaConfig:             kibanaConfig,
 		alerting:                 alertingClient.AlertingApi,
+		connectors:               connectorsClient,
 		fleet:                    fleetClient,
 		version:                  version,
-	}, diags
+	}, nil
 }

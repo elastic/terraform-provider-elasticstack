@@ -153,6 +153,11 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
+		"path_style_access": {
+			Description: "If true, path style access pattern will be used.",
+			Type:        schema.TypeBool,
+			Computed:    true,
+		},
 	}
 
 	hdfsSettings := map[string]*schema.Schema{

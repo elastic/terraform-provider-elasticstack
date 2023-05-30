@@ -35,3 +35,21 @@ func NormalizeIndexSettings(m map[string]interface{}) map[string]interface{} {
 	}
 	return out
 }
+
+func DiffNullMapEntriesSuppress(key, old, new string, d *schema.ResourceData) bool {
+	var oldMap, newMap map[string]interface{}
+	if err := json.Unmarshal([]byte(old), &oldMap); err != nil {
+		return false
+	}
+	if err := json.Unmarshal([]byte(new), &newMap); err != nil {
+		return false
+	}
+	for _, m := range [...]map[string]interface{}{oldMap, newMap} {
+		for k, v := range m {
+			if v == nil {
+				delete(m, k)
+			}
+		}
+	}
+	return MapsEqual(oldMap, newMap)
+}

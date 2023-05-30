@@ -165,6 +165,7 @@ Optional:
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `path_style_access` (Boolean) If true, path style access pattern will be used.
 - `readonly` (Boolean) If true, the repository is read-only.
 - `server_side_encryption` (Boolean) When true, files are encrypted server-side using AES-256 algorithm.
 - `storage_class` (String) Sets the S3 storage class for objects stored in the snapshot repository.
