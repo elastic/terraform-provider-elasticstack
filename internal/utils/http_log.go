@@ -1,11 +1,10 @@
-package fleet
+package utils
 
 import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -26,7 +25,7 @@ type debugRoundTripper struct {
 	transport http.RoundTripper
 }
 
-func newDebugTransport(name string, transport http.RoundTripper) *debugRoundTripper {
+func NewDebugTransport(name string, transport http.RoundTripper) *debugRoundTripper {
 	return &debugRoundTripper{
 		name:      name,
 		transport: transport,
@@ -37,7 +36,7 @@ func (d *debugRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	ctx := r.Context()
 	reqData, err := httputil.DumpRequestOut(r, true)
 	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, d.name, utils.PrettyPrintJSONLines(reqData)))
+		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, d.name, PrettyPrintJSONLines(reqData)))
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("%s API request dump error: %#v", d.name, err))
 	}
@@ -49,7 +48,7 @@ func (d *debugRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	respData, err := httputil.DumpResponse(resp, true)
 	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, d.name, utils.PrettyPrintJSONLines(respData)))
+		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, d.name, PrettyPrintJSONLines(respData)))
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("%s API response dump error: %#v", d.name, err))
 	}
