@@ -118,9 +118,9 @@ provider "elasticstack" {
 
 ### Optional
 
-- `elasticsearch` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
-- `fleet` (Block List, Max: 1) Fleet connection configuration block. (see [below for nested schema](#nestedblock--fleet))
-- `kibana` (Block List, Max: 1) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana))
+- `elasticsearch` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
+- `fleet` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--fleet))
+- `kibana` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana))
 
 <a id="nestedblock--elasticsearch"></a>
 ### Nested Schema for `elasticsearch`
@@ -132,7 +132,7 @@ Optional:
 - `ca_file` (String) Path to a custom Certificate Authority certificate
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
-- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
@@ -145,9 +145,8 @@ Optional:
 
 Optional:
 
-- `api_key` (String, Sensitive) API key to use for API authentication to Fleet.
+- `api_key` (String, Sensitive) API Key to use for authentication to Fleet.
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Fleet server.
-- `endpoint` (String, Sensitive) The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Fleet.
 - `username` (String) Username to use for API authentication to Fleet.
@@ -158,7 +157,7 @@ Optional:
 
 Optional:
 
-- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

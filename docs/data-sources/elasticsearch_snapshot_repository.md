@@ -89,7 +89,7 @@ Optional:
 - `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
 - `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
-- `username` (String) Username to use for API authentication to Elasticsearch.
+- `username` (String) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead.
 
 
 <a id="nestedatt--azure"></a>
