@@ -21,8 +21,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
-	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
@@ -74,20 +72,6 @@ type ApiClient struct {
 	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
 	version                  string
-}
-
-type ElasticsearchConnection struct {
-	Username  types.String `tfsdk:"username"`
-	Password  types.String `tfsdk:"password"`
-	APIKey    types.String `tfsdk:"api_key"`
-	Endpoints types.List   `tfsdk:"endpoints"`
-	Insecure  types.Bool   `tfsdk:"insecure"`
-	CAFile    types.String `tfsdk:"ca_file"`
-	CAData    types.String `tfsdk:"ca_data"`
-	CertFile  types.String `tfsdk:"cert_file"`
-	KeyFile   types.String `tfsdk:"key_file"`
-	CertData  types.String `tfsdk:"cert_data"`
-	KeyData   types.String `tfsdk:"key_data"`
 }
 
 func NewApiClientFunc(version string) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
@@ -358,117 +342,6 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 		There might be a problem with permissions or cluster is still starting up and UUID has not been populated yet.`,
 	})
 	return nil, diags
-}
-
-func NewFWApiClient(ctx context.Context, esConn *ElasticsearchConnection, version string, useEnvAsDefault bool) (*ApiClient, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-	config := elasticsearch.Config{}
-	config.Username = getStringValue(esConn.Username, "ELASTICSEARCH_USERNAME", true)
-	config.Password = getStringValue(esConn.Password, "ELASTICSEARCH_PASSWORD", true)
-	config.APIKey = getStringValue(esConn.APIKey, "ELASTICSEARCH_API_KEY", true)
-
-	var addrs []string
-	diags.Append(esConn.Endpoints.ElementsAs(ctx, &addrs, true)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if len(addrs) == 0 && useEnvAsDefault {
-		if endpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS"); endpoints != "" {
-			for _, e := range strings.Split(endpoints, ",") {
-				addrs = append(addrs, strings.TrimSpace(e))
-			}
-		}
-	}
-	config.Addresses = addrs
-
-	envInsecure, _ := strconv.ParseBool(os.Getenv("ELASTICSEARCH_INSECURE"))
-	if esConn.Insecure.ValueBool() || envInsecure {
-		tlsClientConfig := ensureTLSClientConfig(&config)
-		tlsClientConfig.InsecureSkipVerify = true
-	}
-
-	if esConn.CAFile.ValueString() != "" {
-		caCert, err := os.ReadFile(esConn.CAFile.ValueString())
-		if err != nil {
-			diags.Append(fwdiag.NewErrorDiagnostic(
-				"Unable to read CA File",
-				err.Error(),
-			))
-			return nil, diags
-		}
-		config.CACert = caCert
-	}
-	if esConn.CAData.ValueString() != "" {
-		config.CACert = []byte(esConn.CAData.ValueString())
-	}
-
-	if certFile := esConn.CertFile.ValueString(); certFile != "" {
-		if keyFile := esConn.KeyFile.ValueString(); keyFile != "" {
-			cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-			if err != nil {
-				diags.Append(fwdiag.NewErrorDiagnostic(
-					"Unable to read certificate or key file",
-					err.Error(),
-				))
-				return nil, diags
-			}
-			tlsClientConfig := ensureTLSClientConfig(&config)
-			tlsClientConfig.Certificates = []tls.Certificate{cert}
-		} else {
-			diags.Append(fwdiag.NewErrorDiagnostic(
-				"Unable to read key file",
-				"Path to key file has not been configured or is empty",
-			))
-			return nil, diags
-		}
-	}
-	if certData := esConn.CertData.ValueString(); certData != "" {
-		if keyData := esConn.KeyData.ValueString(); keyData != "" {
-			cert, err := tls.X509KeyPair([]byte(certData), []byte(keyData))
-			if err != nil {
-				diags.Append(fwdiag.NewErrorDiagnostic(
-					"Unable to parse certificate or key",
-					err.Error(),
-				))
-				return nil, diags
-			}
-			tlsClientConfig := ensureTLSClientConfig(&config)
-			tlsClientConfig.Certificates = []tls.Certificate{cert}
-		} else {
-			diags.Append(fwdiag.NewErrorDiagnostic(
-				"Unable to parse key",
-				"Key data has not been configured or is empty",
-			))
-			return nil, diags
-		}
-	}
-
-	es, err := elasticsearch.NewClient(config)
-	if err != nil {
-		diags.Append(fwdiag.NewErrorDiagnostic(
-			"Unable to create Elasticsearch client",
-			err.Error(),
-		))
-		return nil, diags
-	}
-	if logging.IsDebugOrHigher() {
-		config.EnableDebugLogger = true
-		config.Logger = &debugLogger{Name: "elasticsearch"}
-	}
-
-	return &ApiClient{
-		elasticsearch: es,
-		version:       version,
-	}, diags
-}
-
-func getStringValue(s types.String, envKey string, useEnvAsDefault bool) string {
-	if s.IsNull() {
-		if useEnvAsDefault {
-			return os.Getenv(envKey)
-		}
-	}
-	return s.ValueString()
 }
 
 type BaseConfig struct {

@@ -39,8 +39,8 @@ func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res
 }
 
 func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureRequest, res *fwprovider.ConfigureResponse) {
-	esConn := []*clients.ApiClient{}
-	diags := req.Config.GetAttribute(ctx, path.Root(esKeyName), &esConn)
+	apiClients := []*clients.ApiClient{}
+	diags := req.Config.GetAttribute(ctx, path.Root(esKeyName), &apiClients)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
