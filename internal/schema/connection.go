@@ -57,7 +57,7 @@ func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 					},
 				},
 				"endpoints": fwschema.ListAttribute{
-					MarkdownDescription: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					MarkdownDescription: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
@@ -133,7 +133,7 @@ func GetKbFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 	passwordValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(usernamePath))}
 
 	return fwschema.ListNestedBlock{
-		MarkdownDescription: fmt.Sprintf("Kibana connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
+		MarkdownDescription: "Kibana connection configuration block.",
 		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
@@ -174,7 +174,7 @@ func GetFleetFWConnectionBlock(keyName string, isProviderConfiguration bool) fws
 	passwordValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(usernamePath))}
 
 	return fwschema.ListNestedBlock{
-		MarkdownDescription: fmt.Sprintf("Kibana connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
+		MarkdownDescription: "Fleet connection configuration block.",
 		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
@@ -197,6 +197,11 @@ func GetFleetFWConnectionBlock(keyName string, isProviderConfiguration bool) fws
 						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("username")),
 						stringvalidator.ConflictsWith(path.MatchRoot(passwordPath)),
 					},
+				},
+				"endpoint": fwschema.StringAttribute{
+					MarkdownDescription: "The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Optional:            true,
+					Sensitive:           true,
 				},
 				"ca_certs": fwschema.ListAttribute{
 					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Fleet server.",
@@ -247,7 +252,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"username": {
-					Description:  fmt.Sprintf("Elasticsearch connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
+					Description:  "Username to use for API authentication to Elasticsearch.",
 					Type:         schema.TypeString,
 					Optional:     true,
 					DefaultFunc:  withEnvDefault("ELASTICSEARCH_USERNAME", nil),
@@ -352,7 +357,7 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					RequiredWith: []string{"kibana.0.username"},
 				},
 				"endpoints": {
-					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Type:        schema.TypeList,
 					Optional:    true,
 					Sensitive:   true,
@@ -394,7 +399,7 @@ func GetFleetConnectionSchema() *schema.Schema {
 					RequiredWith: []string{"fleet.0.username"},
 				},
 				"api_key": {
-					Description: "API key to use for API authentication to Fleet.",
+					Description: "API Key to use for authentication to Fleet.",
 					Type:        schema.TypeString,
 					Optional:    true,
 					Sensitive:   true,

@@ -22,7 +22,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -359,21 +358,6 @@ func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 		There might be a problem with permissions or cluster is still starting up and UUID has not been populated yet.`,
 	})
 	return nil, diags
-}
-
-func NewFWApiClientFromState(ctx context.Context, state tfsdk.State, defaultClient *ApiClient) (*ApiClient, fwdiag.Diagnostics) {
-	var es struct {
-		Connection []*ElasticsearchConnection `tfsdk:"elasticsearch_connection"`
-	}
-	diags := state.Get(ctx, &es)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if len(es.Connection) > 0 {
-		return NewFWApiClient(ctx, es.Connection[0], defaultClient.version, false)
-	}
-
-	return defaultClient, nil
 }
 
 func NewFWApiClient(ctx context.Context, esConn *ElasticsearchConnection, version string, useEnvAsDefault bool) (*ApiClient, fwdiag.Diagnostics) {
