@@ -17,6 +17,8 @@ import (
 )
 
 const esKeyName = "elasticsearch"
+const kbKeyName = "kibana"
+const fleetKeyName = "fleet"
 
 func init() {
 	// Set descriptions to support markdown syntax, this will be used in document generation

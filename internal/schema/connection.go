@@ -3,8 +3,217 @@ package schema
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+	usernamePath := makePathRef(keyName, "username")
+	passwordPath := makePathRef(keyName, "password")
+	caFilePath := makePathRef(keyName, "ca_file")
+	caDataPath := makePathRef(keyName, "ca_data")
+	certFilePath := makePathRef(keyName, "cert_file")
+	certDataPath := makePathRef(keyName, "cert_data")
+	keyFilePath := makePathRef(keyName, "key_file")
+	keyDataPath := makePathRef(keyName, "key_data")
+
+	usernameValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(passwordPath))}
+	passwordValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(usernamePath))}
+
+	if isProviderConfiguration {
+		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
+		usernameValidators = nil
+		passwordValidators = nil
+	}
+
+	return fwschema.ListNestedBlock{
+		MarkdownDescription: fmt.Sprintf("Elasticsearch connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
+		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
+		NestedObject: fwschema.NestedBlockObject{
+			Attributes: map[string]fwschema.Attribute{
+				"username": fwschema.StringAttribute{
+					MarkdownDescription: "Username to use for API authentication to Elasticsearch.",
+					Optional:            true,
+					Validators:          usernameValidators,
+				},
+				"password": fwschema.StringAttribute{
+					MarkdownDescription: "Password to use for API authentication to Elasticsearch.",
+					Optional:            true,
+					Sensitive:           true,
+					Validators:          passwordValidators,
+				},
+				"api_key": fwschema.StringAttribute{
+					MarkdownDescription: "API Key to use for authentication to Elasticsearch",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("username")),
+						stringvalidator.ConflictsWith(path.MatchRoot(passwordPath)),
+					},
+				},
+				"endpoints": fwschema.ListAttribute{
+					MarkdownDescription: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Optional:            true,
+					Sensitive:           true,
+					ElementType:         types.StringType,
+				},
+				"insecure": fwschema.BoolAttribute{
+					MarkdownDescription: "Disable TLS certificate validation",
+					Optional:            true,
+				},
+				"ca_file": fwschema.StringAttribute{
+					MarkdownDescription: "Path to a custom Certificate Authority certificate",
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(path.MatchRoot(caDataPath)),
+					},
+				},
+				"ca_data": fwschema.StringAttribute{
+					MarkdownDescription: "PEM-encoded custom Certificate Authority certificate",
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(path.MatchRoot(caFilePath)),
+					},
+				},
+				"cert_file": fwschema.StringAttribute{
+					MarkdownDescription: "Path to a file containing the PEM encoded certificate for client auth",
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.AlsoRequires(path.MatchRoot(keyFilePath)),
+						stringvalidator.ConflictsWith(path.MatchRoot(certDataPath)),
+						stringvalidator.ConflictsWith(path.MatchRoot(keyDataPath)),
+					},
+				},
+				"key_file": fwschema.StringAttribute{
+					MarkdownDescription: "Path to a file containing the PEM encoded private key for client auth",
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.AlsoRequires(path.MatchRoot(certFilePath)),
+						stringvalidator.ConflictsWith(path.MatchRoot(certDataPath)),
+						stringvalidator.ConflictsWith(path.MatchRoot(keyDataPath)),
+					},
+				},
+				"cert_data": fwschema.StringAttribute{
+					MarkdownDescription: "PEM encoded certificate for client auth",
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.AlsoRequires(path.MatchRoot(keyDataPath)),
+						stringvalidator.ConflictsWith(path.MatchRoot(certFilePath)),
+						stringvalidator.ConflictsWith(path.MatchRoot(keyFilePath)),
+					},
+				},
+				"key_data": fwschema.StringAttribute{
+					MarkdownDescription: "PEM encoded private key for client auth",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.AlsoRequires(path.MatchRoot(certDataPath)),
+						stringvalidator.ConflictsWith(path.MatchRoot(certFilePath)),
+						stringvalidator.ConflictsWith(path.MatchRoot(keyFilePath)),
+					},
+				},
+			},
+		},
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+	}
+}
+
+func GetKbFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+	usernamePath := makePathRef(keyName, "username")
+	passwordPath := makePathRef(keyName, "password")
+
+	usernameValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(passwordPath))}
+	passwordValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(usernamePath))}
+
+	return fwschema.ListNestedBlock{
+		MarkdownDescription: fmt.Sprintf("Kibana connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
+		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
+		NestedObject: fwschema.NestedBlockObject{
+			Attributes: map[string]fwschema.Attribute{
+				"username": fwschema.StringAttribute{
+					MarkdownDescription: "Username to use for API authentication to Kibana.",
+					Optional:            true,
+					Validators:          usernameValidators,
+				},
+				"password": fwschema.StringAttribute{
+					MarkdownDescription: "Password to use for API authentication to Kibana.",
+					Optional:            true,
+					Sensitive:           true,
+					Validators:          passwordValidators,
+				},
+				"endpoints": fwschema.ListAttribute{
+					MarkdownDescription: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Optional:            true,
+					Sensitive:           true,
+					ElementType:         types.StringType,
+				},
+				"insecure": fwschema.BoolAttribute{
+					MarkdownDescription: "Disable TLS certificate validation",
+					Optional:            true,
+				},
+			},
+		},
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+	}
+}
+
+func GetFleetFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+	usernamePath := makePathRef(keyName, "username")
+	passwordPath := makePathRef(keyName, "password")
+
+	usernameValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(passwordPath))}
+	passwordValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(usernamePath))}
+
+	return fwschema.ListNestedBlock{
+		MarkdownDescription: fmt.Sprintf("Kibana connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
+		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
+		NestedObject: fwschema.NestedBlockObject{
+			Attributes: map[string]fwschema.Attribute{
+				"username": fwschema.StringAttribute{
+					MarkdownDescription: "Username to use for API authentication to Fleet.",
+					Optional:            true,
+					Validators:          usernameValidators,
+				},
+				"password": fwschema.StringAttribute{
+					MarkdownDescription: "Password to use for API authentication to Fleet.",
+					Optional:            true,
+					Sensitive:           true,
+					Validators:          passwordValidators,
+				},
+				"api_key": fwschema.StringAttribute{
+					MarkdownDescription: "API Key to use for authentication to Fleet.",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("username")),
+						stringvalidator.ConflictsWith(path.MatchRoot(passwordPath)),
+					},
+				},
+				"ca_certs": fwschema.ListAttribute{
+					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Fleet server.",
+					Optional:            true,
+					ElementType:         types.StringType,
+				},
+				"insecure": fwschema.BoolAttribute{
+					MarkdownDescription: "Disable TLS certificate validation",
+					Optional:            true,
+				},
+			},
+		},
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+	}
+}
 
 func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema.Schema {
 	usernamePath := makePathRef(keyName, "username")
@@ -20,11 +229,9 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	passwordRequiredWithValidation := []string{usernamePath}
 
 	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
-	deprecationMessage := "This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead."
 
 	if isProviderConfiguration {
 		withEnvDefault = func(key string, dv interface{}) schema.SchemaDefaultFunc { return schema.EnvDefaultFunc(key, dv) }
-		deprecationMessage = ""
 
 		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
 		usernameRequiredWithValidation = nil
@@ -32,15 +239,15 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	}
 
 	return &schema.Schema{
-		Description: fmt.Sprintf("Elasticsearch connection configuration block. %s", deprecationMessage),
-		Deprecated:  deprecationMessage,
+		Description: fmt.Sprintf("Elasticsearch connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
+		Deprecated:  getDeprecationMessage(isProviderConfiguration),
 		Type:        schema.TypeList,
 		MaxItems:    1,
 		Optional:    true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"username": {
-					Description:  "Username to use for API authentication to Elasticsearch.",
+					Description:  fmt.Sprintf("Elasticsearch connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
 					Type:         schema.TypeString,
 					Optional:     true,
 					DefaultFunc:  withEnvDefault("ELASTICSEARCH_USERNAME", nil),
@@ -219,4 +426,11 @@ func GetFleetConnectionSchema() *schema.Schema {
 
 func makePathRef(keyName string, keyValue string) string {
 	return fmt.Sprintf("%s.0.%s", keyName, keyValue)
+}
+
+func getDeprecationMessage(isProviderConfiguration bool) string {
+	if isProviderConfiguration {
+		return ""
+	}
+	return "This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead."
 }
