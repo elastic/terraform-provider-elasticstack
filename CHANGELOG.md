@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Added
+- Logging of Kibana action connectors HTTP requests and responses when [Terraform logs are enabled](https://developer.hashicorp.com/terraform/internals/debugging).
+
 ## [0.6.1] - 2023-05-30
 
 ### Added

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet/fleetapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
@@ -52,7 +53,7 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	if logging.IsDebugOrHigher() {
-		roundTripper = newDebugTransport("Fleet", roundTripper)
+		roundTripper = utils.NewDebugTransport("Fleet", roundTripper)
 	}
 
 	httpClient := &http.Client{

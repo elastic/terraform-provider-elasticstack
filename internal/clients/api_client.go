@@ -570,9 +570,19 @@ func buildConnectorsClient(baseConfig BaseConfig, config kibana.Config) (*connec
 	if err != nil {
 		return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
 	}
+
+	httpClient := &http.Client{}
+
+	if logging.IsDebugOrHigher() {
+		httpClient = &http.Client{
+			Transport: utils.NewDebugTransport("Kibana Action Connectors", http.DefaultTransport),
+		}
+	}
+
 	return connectors.NewClient(
 		config.Address,
 		connectors.WithRequestEditorFn(basicAuthProvider.Intercept),
+		connectors.WithHTTPClient(httpClient),
 	)
 }
 
