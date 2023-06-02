@@ -134,3 +134,8 @@ Then commit the changes to `go.mod` and `go.sum`.
 
 Kibana clients for some APIs are generated based on Kibana OpenAPI specs.
 Please see [Makefile](./Makefile) tasks for more details.
+
+## Support
+
+Support tickets related to the terraform provider can be opened with Elastic, however, since terraform is a 3rd party tool (by Hashicorp) which Elastic has no full control over, we will not be able to treat support requests as severity-1(immediate time frame). Also, since urgent production-related terraform issues can be resolved via regular API or UI interaction, we ask customers to resort to such methods in case of urgent deployment downtime or issue.
+
