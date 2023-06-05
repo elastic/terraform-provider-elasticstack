@@ -137,5 +137,10 @@ Please see [Makefile](./Makefile) tasks for more details.
 
 ## Support
 
-Support tickets related to the terraform provider can be opened with Elastic, however, since terraform is a 3rd party tool (by Hashicorp) which Elastic has no full control over, we will not be able to treat support requests as severity-1(immediate time frame). Also, since urgent production-related terraform issues can be resolved via regular API or UI interaction, we ask customers to resort to such methods in case of urgent deployment downtime or issue.
+We welcome questions on how to use the Elastic providers. The providers are supported by Elastic. General questions, bugs and product issues should be raised in their corresponding repositories, either for the Elastic Stack provider, or the Elastic Cloud one. Questions can also be directed to the discuss forum. https://discuss.elastic.co/c/orchestration.
 
+We will not, however, fix bugs upon customer demand, as we have to prioritize all pending bugs and features, as part of the product's backlog and release cycles.
+
+### Support tickets severity
+
+Support tickets related to the terraform provider can be opened with Elastic, however, since terraform is a 3rd party tool (by Hashicorp) which Elastic has no full control over, we will not be able to treat support requests as severity-1(immediate time frame). Also, since urgent production-related terraform issues can be resolved via regular API or UI interaction, we ask customers to resort to such methods in case of urgent deployment downtime or issue.
