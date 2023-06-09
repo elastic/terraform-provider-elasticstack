@@ -2,7 +2,7 @@
 
 ### Added
 - Logging of Kibana action connectors HTTP requests and responses when [Terraform logs are enabled](https://developer.hashicorp.com/terraform/internals/debugging).
-- Add `skip_destroy` flag to `elasticstack_fleet_agent_policy` resource ([#1](https://github.com/elastic/terraform-provider-elasticstack/pull/1))
+- Add `skip_destroy` flag to `elasticstack_fleet_agent_policy` resource ([#357](https://github.com/elastic/terraform-provider-elasticstack/pull/357))
 
 ## [0.6.1] - 2023-05-30
 
