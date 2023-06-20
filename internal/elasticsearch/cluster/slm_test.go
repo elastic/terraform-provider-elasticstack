@@ -42,6 +42,18 @@ func TestAccResourceSLM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "include_global_state", "false"),
 				),
 			},
+			{
+				ResourceName: "elasticstack_elasticsearch_snapshot_lifecycle.test_slm",
+				ImportState:  true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					importedName := is[0].Attributes["name"]
+					if importedName != name {
+						return fmt.Errorf("expected imported slm policy name [%s] to equal [%s]", importedName, name)
+					}
+
+					return nil
+				},
+			},
 		},
 	})
 }
