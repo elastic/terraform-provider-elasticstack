@@ -256,6 +256,9 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diags
 	}
 
+	if err := d.Set("name", id.ResourceId); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("snapshot_name", slm.Name); err != nil {
 		return diag.FromErr(err)
 	}
