@@ -1,0 +1,24 @@
+---
+subcategory: ""
+page_title: "Managing Kibana connector and rule resources"
+description: |-
+    An example of how to define an index connector and index threshold rule.
+---
+
+# Managing Kibana connector and rule resources
+
+You can use rules to detect complex conditions and generate alerts and actions when those conditions are met.
+
+For example, you can define an index threshold rule to detect when the results from an Elasticsearch query exceed a threshold:
+
+{{ tffile "examples/resources/elasticstack_kibana_alerting_rule/resource.tf" }}
+
+If you want the rule to run actions when its conditions are met (or recovery actions when its conditions are no longer met), you must create a Kibana action connector.
+
+For example, create a connector that indexes a document in Elasticsearch:
+
+{{ tffile "examples/resources/elasticstack_kibana_action_connector/resource.tf" }}
+
+You can then update your rule to include actions that use this connector. For example:
+
+{{ tffile "examples/resources/elasticstack_kibana_alerting_rule/resource-actions.tf" }}
