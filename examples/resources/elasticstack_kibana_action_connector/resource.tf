@@ -12,7 +12,7 @@ resource "elasticstack_kibana_action_connector" "example" {
 }
 
 resource "elasticstack_kibana_action_connector" "pagerduty-connector" {
-  name = "pagerduty"
+  name              = "pagerduty"
   connector_type_id = ".pagerduty"
   config = jsonencode({
     apiUrl = "https://events.pagerduty.com/v2/enqueue"
@@ -23,7 +23,7 @@ resource "elasticstack_kibana_action_connector" "pagerduty-connector" {
 }
 
 resource "elasticstack_kibana_action_connector" "slack-connector" {
-  name = "slack"
+  name              = "slack"
   connector_type_id = ".slack"
   secrets = jsonencode({
     webhookUrl = "<your-webhookUrl>"
