@@ -21,7 +21,7 @@ resource "elasticstack_kibana_action_connector" "pagerduty-connector" {
     routingKey = pagerduty_service_integration.kibana.integration_key
   })
 }
-.
+
 resource "elasticstack_kibana_action_connector" "slack-connector" {
   name = "slack"
   connector_type_id = ".slack"
