@@ -3,9 +3,13 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_alerting_rule" "example" {
-  name        = "%s"
-  consumer    = "alerts"
-  notify_when = "onActiveAlert"
+  name         = "%s"
+  consumer     = "alerts"
+  notify_when  = "onActiveAlert"
+  rule_type_id = ".index-threshold"
+  interval     = "1m"
+  enabled      = true
+
   params = jsonencode({
     aggType             = "avg"
     groupBy             = "top"
@@ -19,16 +23,14 @@ resource "elasticstack_kibana_alerting_rule" "example" {
     aggField            = "version"
     termField           = "name"
   })
-  rule_type_id = ".index-threshold"
-  interval     = "1m"
-  enabled      = true
+
   actions {
-    id = elasticstack_kibana_action_connector.example.connector_type_id
+    id    = elasticstack_kibana_action_connector.example.connector_type_id
+    group = "threshold met"
     params = jsonencode({
       "documents" : [{
         "rule_id" : "{{rule.id}}",
-        "alert_id" : "{{alert.id}}",
-        "timestamp" : "{{context.date}}
+        "alert_id" : "{{alert.id}}"
       }]
     })
   }
