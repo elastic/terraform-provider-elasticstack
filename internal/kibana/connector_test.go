@@ -455,6 +455,7 @@ func TestAccResourceKibanaConnectorPagerduty(t *testing.T) {
 	resource "elasticstack_kibana_action_connector" "test" {
 	  name         = "%s"
 	  config       = jsonencode({
+   		apiUrl = "https://elastic.co"
 	  })
 	  secrets = jsonencode({
 		routingKey = "test1"
@@ -474,6 +475,7 @@ func TestAccResourceKibanaConnectorPagerduty(t *testing.T) {
 	resource "elasticstack_kibana_action_connector" "test" {
 	  name         = "Updated %s"
 	  config       = jsonencode({
+   		apiUrl = "https://elasticsearch.com"
 	})
 	secrets = jsonencode({
 	  routingKey = "test2"
@@ -494,6 +496,7 @@ func TestAccResourceKibanaConnectorPagerduty(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".pagerduty"),
 
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elastic\.co\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"routingKey\":\"test1\"`)),
 				),
 			},
@@ -503,6 +506,7 @@ func TestAccResourceKibanaConnectorPagerduty(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".pagerduty"),
 
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elasticsearch\.com\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"routingKey\":\"test2\"`)),
 				),
 			},

@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet/fleetapi"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -70,6 +71,11 @@ func ResourceAgentPolicy() *schema.Resource {
 		},
 		"monitor_metrics": {
 			Description: "Enable collection of agent metrics.",
+			Type:        schema.TypeBool,
+			Optional:    true,
+		},
+		"skip_destroy": {
+			Description: "Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
@@ -264,6 +270,11 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceAgentPolicyDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	if d.Get("skip_destroy").(bool) {
+		tflog.Debug(ctx, "Skipping destroy of Agent Policy", map[string]interface{}{"policy_id": d.Id()})
+		return nil
+	}
+
 	fleetClient, diags := getFleetClient(d, meta)
 	if diags.HasError() {
 		return diags

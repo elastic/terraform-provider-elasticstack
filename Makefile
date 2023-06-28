@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.6.1
+VERSION ?= 0.6.2
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -200,7 +200,7 @@ setup: tools ## Setup the dev environment
 
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
-	@ $(GOBIN)/goreleaser release --snapshot --rm-dist
+	@ $(GOBIN)/goreleaser release --snapshot --clean
 
 
 .PHONY: release-no-publish
@@ -210,7 +210,7 @@ release-no-publish: tools check-sign-release ## Make a release without publishin
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ $(GOBIN)/goreleaser release --rm-dist
+	@ $(GOBIN)/goreleaser release --clean
 
 
 .PHONY: check-sign-release
