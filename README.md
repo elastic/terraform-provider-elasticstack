@@ -134,3 +134,13 @@ Then commit the changes to `go.mod` and `go.sum`.
 
 Kibana clients for some APIs are generated based on Kibana OpenAPI specs.
 Please see [Makefile](./Makefile) tasks for more details.
+
+## Support
+
+We welcome questions on how to use the Elastic providers. The providers are supported by Elastic. General questions, bugs and product issues should be raised in their corresponding repositories, either for the Elastic Stack provider, or the Elastic Cloud one. Questions can also be directed to the discuss forum. https://discuss.elastic.co/c/orchestration.
+
+We will not, however, fix bugs upon customer demand, as we have to prioritize all pending bugs and features, as part of the product's backlog and release cycles.
+
+### Support tickets severity
+
+Support tickets related to the Terraform provider can be opened with Elastic, however since the provider is just a client of the underlying product API's, we will not be able to treat provider related support requests as a Severity-1 (Immedediate time frame). Urgent, production-related Terraform issues can be resolved via direct interaction with the underlying project API or UI. We will ask customers to resort to these methods to resolve downtime or urgent issues.
