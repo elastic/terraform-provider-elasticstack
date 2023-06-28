@@ -143,4 +143,4 @@ We will not, however, fix bugs upon customer demand, as we have to prioritize al
 
 ### Support tickets severity
 
-Support tickets related to the terraform provider can be opened with Elastic, however, since terraform is a 3rd party tool (by Hashicorp) which Elastic has no full control over, we will not be able to treat support requests as severity-1(immediate time frame). Also, since urgent production-related terraform issues can be resolved via regular API or UI interaction, we ask customers to resort to such methods in case of urgent deployment downtime or issue.
+Support tickets related to the Terraform provider can be opened with Elastic, however since the provider is just a client of the underlying product API's, we will not be able to treat provider related support requests as a Severity-1 (Immedediate time frame). Urgent, production-related Terraform issues can be resolved via direct interaction with the underlying project API or UI. We will ask customers to resort to these methods to resolve downtime or urgent issues.
