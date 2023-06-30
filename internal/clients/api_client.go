@@ -247,10 +247,16 @@ func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
 }
 
 func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
-		UserName: a.kibanaConfig.Username,
-		Password: a.kibanaConfig.Password,
-	})
+	if a.kibanaConfig.ApiKey != "" {
+		return context.WithValue(ctx, alerting.ContextAPIKeys, alerting.APIKey{
+			Key: a.kibanaConfig.ApiKey,
+		})
+	} else {
+		return context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
+			UserName: a.kibanaConfig.Username,
+			Password: a.kibanaConfig.Password,
+		})
+	}
 }
 
 func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
@@ -508,6 +514,9 @@ func buildKibanaConfig(d *schema.ResourceData, baseConfig BaseConfig) (kibana.Co
 		if password := os.Getenv("KIBANA_PASSWORD"); password != "" {
 			config.Password = strings.TrimSpace(password)
 		}
+		if api_key := os.Getenv("KIBANA_API_KEY"); api_key != "" {
+			config.ApiKey = strings.TrimSpace(api_key)
+		}
 		if endpoint := os.Getenv("KIBANA_ENDPOINT"); endpoint != "" {
 			config.Address = endpoint
 		}
@@ -522,6 +531,10 @@ func buildKibanaConfig(d *schema.ResourceData, baseConfig BaseConfig) (kibana.Co
 		}
 		if password, ok := kibConfig["password"]; ok && password != "" {
 			config.Password = password.(string)
+		}
+
+		if api_key, ok := kibConfig["api_key"]; ok && api_key != "" {
+			config.ApiKey = api_key.(string)
 		}
 
 		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
