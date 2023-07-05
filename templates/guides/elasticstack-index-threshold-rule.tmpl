@@ -9,16 +9,44 @@ description: |-
 
 You can use rules to detect complex conditions and generate alerts and actions when those conditions are met.
 
-For example, you can define an index threshold rule to detect when the results from an Elasticsearch query exceed a threshold:
+For example, let's take a simple data stream that contains some logs or metrics:
 
-{{ tffile "examples/resources/elasticstack_kibana_alerting_rule/resource.tf" }}
+{{ tffile "examples/resources/elasticstack_elasticsearch_data_stream/resource-index-rule.tf" }}
 
-If you want the rule to run actions when its conditions are met (or recovery actions when its conditions are no longer met), you must create a Kibana action connector.
+You can define an index threshold rule to detect when your data stream exceeds a threshold.
+In this simple example, the rule checks whether the count of all documents in the data stream exceeds 10 over a period of 1 day:
 
-For example, create a connector that indexes a document in Elasticsearch:
+{{ tffile "examples/resources/elasticstack_kibana_alerting_rule/resource-index-rule.tf" }}
 
-{{ tffile "examples/resources/elasticstack_kibana_action_connector/resource.tf" }}
+NOTE: When you've finished playing with this example, remember to destroy the rule resource, since it has a low threshold and generates a lot of documents for testing purposes.
 
-You can then update your rule to include actions that use this connector. For example:
+There are many different methods that you can use to be notified when the threshold is met and when it recovers.
+In this example, the rule uses an index connector to write a document in an Elasticsearch index when the rule conditions are met:
 
-{{ tffile "examples/resources/elasticstack_kibana_alerting_rule/resource-actions.tf" }}
+{{ tffile "examples/resources/elasticstack_kibana_action_connector/resource-index-connector.tf" }}
+
+The `executionTimeField` is optional; in this case we set it so that each document will contain a timestamp that indicates when the alert occurred.
+For example, the index connector can generate documents in a simple index like this:
+
+{{ tffile "examples/resources/elasticstack_elasticsearch_index/resource-index-rule.tf" }}
+
+After you apply these resources, add some documents to the data stream:
+https://www.elastic.co/guide/en/elasticsearch/reference/current/use-a-data-stream.html#add-documents-to-a-data-stream
+
+For example:
+
+````
+PUT my-data-stream/_bulk
+{ "create":{ } }
+{ "@timestamp": "2023-07-04T16:21:15.000Z", "field1": "host1", "field2": "test message" }
+{ "create":{ } }
+{ "@timestamp": "2023-07-04T16:25:42.000Z", "field1": "host2", "field2": "test message" }
+
+````
+
+When the rule conditions are met, you'll start to see documents added to `my-index`.
+Try out different rule action variables to customize the notification message:
+https://www.elastic.co/guide/en/kibana/current/rule-action-variables.html
+
+To learn about more types of rules and connectors, check out https://www.elastic.co/guide/en/kibana/current/rule-types.html and https://www.elastic.co/guide/en/kibana/current/action-types.html.
+
