@@ -26,9 +26,9 @@ resource "elasticstack_kibana_alerting_rule" "my_rule" {
     group = "threshold met"
     params = jsonencode({
       "documents" : [{
-      "rule_id" : "{{rule.id}}",
-      "rule_name": "{{rule.name}}",
-      "message": "{{context.message}}"
+        "rule_id" : "{{rule.id}}",
+        "rule_name" : "{{rule.name}}",
+        "message" : "{{context.message}}"
       }]
     })
   }

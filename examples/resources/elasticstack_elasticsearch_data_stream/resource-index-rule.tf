@@ -28,11 +28,11 @@ resource "elasticstack_elasticsearch_component_template" "my_mappings" {
   name = "my_mappings"
   template {
     mappings = jsonencode({
-    properties = {
-      field1 = { type = "keyword" }
-      field2 = { type = "text" }
-      "@timestamp" = { type = "date" }
-    }
+      properties = {
+        field1       = { type = "keyword" }
+        field2       = { type = "text" }
+        "@timestamp" = { type = "date" }
+      }
     })
   }
 }
@@ -49,8 +49,8 @@ resource "elasticstack_elasticsearch_component_template" "my_settings" {
 
 // Create an index template that uses the component templates
 resource "elasticstack_elasticsearch_index_template" "my_index_template" {
-  name = "my_index_template"
-  priority = 500
+  name           = "my_index_template"
+  priority       = 500
   index_patterns = ["my-data-stream*"]
   composed_of    = [elasticstack_elasticsearch_component_template.my_mappings.name, elasticstack_elasticsearch_component_template.my_settings.name]
   data_stream {}
