@@ -3,12 +3,12 @@ subcategory: "Kibana"
 layout: ""
 page_title: "Elasticstack: elasticstack_kibana_action_connector Resource"
 description: |-
-  Creates or updates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/8.7/action-types.html
+  Creates or updates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html
 ---
 
 # Resource: elasticstack_kibana_action_connector
 
-Creates or updates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/8.7/action-types.html
+Creates or updates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html
 
 ## Example Usage
 

@@ -71,7 +71,7 @@ func ResourceActionConnector() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Creates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/8.7/action-types.html",
+		Description: "Creates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html",
 
 		CreateContext: resourceConnectorCreate,
 		UpdateContext: resourceConnectorUpdate,
