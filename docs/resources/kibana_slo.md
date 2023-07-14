@@ -112,8 +112,8 @@ Required:
 
 Optional:
 
-- `timeslices_target` (Number)
-- `timeslices_window` (String)
+- `timeslice_target` (Number)
+- `timeslice_window` (String)
 
 
 <a id="nestedblock--time_window"></a>
@@ -122,11 +122,7 @@ Optional:
 Required:
 
 - `duration` (String)
-
-Optional:
-
-- `is_calendar` (Boolean)
-- `is_rolling` (Boolean)
+- `type` (String)
 
 
 <a id="nestedblock--settings"></a>
