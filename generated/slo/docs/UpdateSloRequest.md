@@ -6,8 +6,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Name** | Pointer to **string** | A name for the SLO. | [optional] 
 **Description** | Pointer to **string** | A description for the SLO. | [optional] 
-**Indicator** | Pointer to [**SloResponseIndicator**](SloResponseIndicator.md) |  | [optional] 
-**TimeWindow** | Pointer to [**SloResponseTimeWindow**](SloResponseTimeWindow.md) |  | [optional] 
+**Indicator** | Pointer to [**CreateSloRequestIndicator**](CreateSloRequestIndicator.md) |  | [optional] 
+**TimeWindow** | Pointer to [**TimeWindow**](TimeWindow.md) |  | [optional] 
 **BudgetingMethod** | Pointer to [**BudgetingMethod**](BudgetingMethod.md) |  | [optional] 
 **Objective** | Pointer to [**Objective**](Objective.md) |  | [optional] 
 **Settings** | Pointer to [**Settings**](Settings.md) |  | [optional] 
@@ -83,20 +83,20 @@ HasDescription returns a boolean if a field has been set.
 
 ### GetIndicator
 
-`func (o *UpdateSloRequest) GetIndicator() SloResponseIndicator`
+`func (o *UpdateSloRequest) GetIndicator() CreateSloRequestIndicator`
 
 GetIndicator returns the Indicator field if non-nil, zero value otherwise.
 
 ### GetIndicatorOk
 
-`func (o *UpdateSloRequest) GetIndicatorOk() (*SloResponseIndicator, bool)`
+`func (o *UpdateSloRequest) GetIndicatorOk() (*CreateSloRequestIndicator, bool)`
 
 GetIndicatorOk returns a tuple with the Indicator field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetIndicator
 
-`func (o *UpdateSloRequest) SetIndicator(v SloResponseIndicator)`
+`func (o *UpdateSloRequest) SetIndicator(v CreateSloRequestIndicator)`
 
 SetIndicator sets Indicator field to given value.
 
@@ -108,20 +108,20 @@ HasIndicator returns a boolean if a field has been set.
 
 ### GetTimeWindow
 
-`func (o *UpdateSloRequest) GetTimeWindow() SloResponseTimeWindow`
+`func (o *UpdateSloRequest) GetTimeWindow() TimeWindow`
 
 GetTimeWindow returns the TimeWindow field if non-nil, zero value otherwise.
 
 ### GetTimeWindowOk
 
-`func (o *UpdateSloRequest) GetTimeWindowOk() (*SloResponseTimeWindow, bool)`
+`func (o *UpdateSloRequest) GetTimeWindowOk() (*TimeWindow, bool)`
 
 GetTimeWindowOk returns a tuple with the TimeWindow field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTimeWindow
 
-`func (o *UpdateSloRequest) SetTimeWindow(v SloResponseTimeWindow)`
+`func (o *UpdateSloRequest) SetTimeWindow(v TimeWindow)`
 
 SetTimeWindow sets TimeWindow field to given value.
 

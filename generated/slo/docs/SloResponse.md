@@ -8,11 +8,11 @@ Name | Type | Description | Notes
 **Name** | Pointer to **string** | The name of the SLO. | [optional] 
 **Description** | Pointer to **string** | The description of the SLO. | [optional] 
 **Indicator** | Pointer to [**SloResponseIndicator**](SloResponseIndicator.md) |  | [optional] 
-**TimeWindow** | Pointer to [**SloResponseTimeWindow**](SloResponseTimeWindow.md) |  | [optional] 
+**TimeWindow** | Pointer to [**TimeWindow**](TimeWindow.md) |  | [optional] 
 **BudgetingMethod** | Pointer to [**BudgetingMethod**](BudgetingMethod.md) |  | [optional] 
 **Objective** | Pointer to [**Objective**](Objective.md) |  | [optional] 
 **Settings** | Pointer to [**Settings**](Settings.md) |  | [optional] 
-**Revision** | Pointer to **float32** | The SLO revision | [optional] 
+**Revision** | Pointer to **float64** | The SLO revision | [optional] 
 **Summary** | Pointer to [**Summary**](Summary.md) |  | [optional] 
 **Enabled** | Pointer to **bool** | Indicate if the SLO is enabled | [optional] 
 **CreatedAt** | Pointer to **string** | The creation date | [optional] 
@@ -139,20 +139,20 @@ HasIndicator returns a boolean if a field has been set.
 
 ### GetTimeWindow
 
-`func (o *SloResponse) GetTimeWindow() SloResponseTimeWindow`
+`func (o *SloResponse) GetTimeWindow() TimeWindow`
 
 GetTimeWindow returns the TimeWindow field if non-nil, zero value otherwise.
 
 ### GetTimeWindowOk
 
-`func (o *SloResponse) GetTimeWindowOk() (*SloResponseTimeWindow, bool)`
+`func (o *SloResponse) GetTimeWindowOk() (*TimeWindow, bool)`
 
 GetTimeWindowOk returns a tuple with the TimeWindow field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTimeWindow
 
-`func (o *SloResponse) SetTimeWindow(v SloResponseTimeWindow)`
+`func (o *SloResponse) SetTimeWindow(v TimeWindow)`
 
 SetTimeWindow sets TimeWindow field to given value.
 
@@ -239,20 +239,20 @@ HasSettings returns a boolean if a field has been set.
 
 ### GetRevision
 
-`func (o *SloResponse) GetRevision() float32`
+`func (o *SloResponse) GetRevision() float64`
 
 GetRevision returns the Revision field if non-nil, zero value otherwise.
 
 ### GetRevisionOk
 
-`func (o *SloResponse) GetRevisionOk() (*float32, bool)`
+`func (o *SloResponse) GetRevisionOk() (*float64, bool)`
 
 GetRevisionOk returns a tuple with the Revision field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetRevision
 
-`func (o *SloResponse) SetRevision(v float32)`
+`func (o *SloResponse) SetRevision(v float64)`
 
 SetRevision sets Revision field to given value.
 
