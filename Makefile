@@ -15,7 +15,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= 1.19
 
-STACK_VERSION ?= 8.6.0
+STACK_VERSION ?= 8.8.2
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -258,16 +258,18 @@ generate-connectors-client: tools ## generate Kibana connectors client
 
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
-		-i https://raw.githubusercontent.com/elastic/kibana/master/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
-		--skip-validate-spec \
+	@ rm -rf generated/slo
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.0-beta generate \
+		-i /local/generated/slo-spec.yml \
 		--git-repo-id terraform-provider-elasticstack \
 		--git-user-id elastic \
 		-p isGoSubmodule=true \
 		-p packageName=slo \
 		-p generateInterfaces=true \
+		-p useOneOfDiscriminatorLookup=true \
 		-g go \
-		-o /local/generated/slo
+		-o /local/generated/slo \
+		 --type-mappings=float32=float64
 	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
 	@ go fmt ./generated/...
 
