@@ -39,7 +39,7 @@ func ResourceSlo() *schema.Resource {
 					"type": {
 						Type:         schema.TypeString,
 						Required:     true,
-						ValidateFunc: validation.StringInSlice([]string{"sli.kql.custom", "sli.apm.transactionErrorRate", "sli.apm.transactionDuration"}, false),
+						ValidateFunc: validation.StringInSlice([]string{"sli.kql.custom", "sli.apm.transactionErrorRate", "sli.apm.transactionDuration", "sli.histogram.custom"}, false),
 					},
 					"params": {
 						Type:     schema.TypeList,

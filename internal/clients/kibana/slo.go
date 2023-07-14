@@ -124,25 +124,25 @@ func responseIndicatorToCreateSloRequestIndicator(s slo.SloResponseIndicator) (s
 	var ret slo.CreateSloRequestIndicator
 
 	ind := s.GetActualInstance()
-	switch ind.(type) {
+	switch ind.(type) { //nolint:all
 	case *slo.IndicatorPropertiesApmAvailability:
-		i, _ := ind.(*slo.IndicatorPropertiesApmAvailability)
+		i, _ := ind.(*slo.IndicatorPropertiesApmAvailability) //nolint:all
 		ret.IndicatorPropertiesApmAvailability = i
 
 	case *slo.IndicatorPropertiesApmLatency:
-		i, _ := ind.(*slo.IndicatorPropertiesApmLatency)
+		i, _ := ind.(*slo.IndicatorPropertiesApmLatency) //nolint:all
 		ret.IndicatorPropertiesApmLatency = i
 
 	case *slo.IndicatorPropertiesCustomKql:
-		i, _ := ind.(*slo.IndicatorPropertiesCustomKql)
+		i, _ := ind.(*slo.IndicatorPropertiesCustomKql) //nolint:all
 		ret.IndicatorPropertiesCustomKql = i
 
 	case *slo.IndicatorPropertiesCustomMetric:
-		i, _ := ind.(*slo.IndicatorPropertiesCustomMetric)
+		i, _ := ind.(*slo.IndicatorPropertiesCustomMetric) //nolint:all
 		ret.IndicatorPropertiesCustomMetric = i
 
 	case *slo.IndicatorPropertiesHistogram:
-		i, _ := ind.(*slo.IndicatorPropertiesHistogram)
+		i, _ := ind.(*slo.IndicatorPropertiesHistogram) //nolint:all
 		ret.IndicatorPropertiesHistogram = i
 
 	default:
