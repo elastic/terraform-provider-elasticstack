@@ -19,7 +19,7 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 	}
 
 	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
-	req := client.GetSloOp(ctxWithAuth, "default", id).KbnXsrf("true") //fuck kibana spaces
+	req := client.GetSloOp(ctxWithAuth, "default", id).KbnXsrf("true")
 	sloRes, res, err := req.Execute()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -29,7 +29,7 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	return sloResponseToModel("default", sloRes), utils.CheckHttpError(res, "Unable to get slo with ID "+string(id)) //fuck kibana spaces
+	return sloResponseToModel("default", sloRes), utils.CheckHttpError(res, "Unable to get slo with ID "+string(id))
 }
 
 func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, spaceId string) diag.Diagnostics {
