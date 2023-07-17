@@ -8,7 +8,7 @@ description: |-
 
 # Resource: elasticstack_kibana_alerting_rule
 
-Creates or updates a Kibana alerting rule. See https://www.elastic.co/guide/en/kibana/8.6/create-and-manage-rules.html
+Creates or updates a Kibana alerting rule. See https://www.elastic.co/guide/en/kibana/current/create-and-manage-rules.html
 
 ## Example Usage
 
