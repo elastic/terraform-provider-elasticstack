@@ -1,9 +1,5 @@
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_kibana_alerting_rule" "my_rule" {
-  name         = "my_rule"
+resource "elasticstack_kibana_alerting_rule" "DailyDocumentCountThresholdExceeded" {
+  name         = "DailyDocumentCountThresholdExceeded"
   consumer     = "alerts"
   rule_type_id = ".index-threshold"
   interval     = "1m"

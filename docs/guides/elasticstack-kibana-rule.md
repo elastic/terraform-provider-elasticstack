@@ -8,6 +8,8 @@ description: |-
 
 ## Prerequisites
 
+This example assumes you have already set up your provider to access an Elastic Stack cluster or a Elastic Cloud deployment.
+
 To use the Kibana alerting features, you must have the appropriate feature privileges.
 For example, to create Stack rules such as the index threshold rule, you must have `all` privileges for the **Management > Stack Rules** feature in Kibana.
 To add rule actions and test connectors, you must also have `read` privileges for the **Actions and Connectors** feature in Kibana.
@@ -23,10 +25,6 @@ You can use rules to detect complex conditions and generate alerts and actions w
 For example, let's take a simple data stream that contains some logs or metrics:
 
 ```terraform
-provider "elasticstack" {
-  elasticsearch {}
-}
-
 // Create an ILM policy for our data stream
 resource "elasticstack_elasticsearch_index_lifecycle" "my_lifecycle_policy" {
   name = "my_lifecycle_policy"
@@ -98,10 +96,6 @@ There are many different methods that you can use to be notified when the condit
 In this example, we will use an index connector to write a document in an Elasticsearch index:
 
 ```terraform
-provider "elasticstack" {
-  elasticsearch {}
-}
-
 resource "elasticstack_elasticsearch_index" "my_index" {
   name = "my-index"
   mappings = jsonencode({
@@ -118,10 +112,6 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 When you define the connector, you can optionally specify an `executionTimeField`:
 
 ```terraform
-provider "elasticstack" {
-  elasticsearch {}
-}
-
 resource "elasticstack_kibana_action_connector" "index_example" {
   name              = "my_index_connector"
   connector_type_id = ".index"
@@ -140,12 +130,8 @@ You can now create an index threshold rule that detects when your data stream ex
 In this example, the rule checks whether the count of all documents in the data stream exceeds 10 over a period of 1 day:
 
 ```terraform
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_kibana_alerting_rule" "my_rule" {
-  name         = "my_rule"
+resource "elasticstack_kibana_alerting_rule" "DailyDocumentCountThresholdExceeded" {
+  name         = "DailyDocumentCountThresholdExceeded"
   consumer     = "alerts"
   rule_type_id = ".index-threshold"
   interval     = "1m"
