@@ -48,18 +48,18 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 - `consumer` (String) The name of the application or feature that owns the rule.
 - `interval` (String) The check interval, which specifies how frequently the rule conditions are checked. The interval must be specified in seconds, minutes, hours or days.
 - `name` (String) The name of the rule. While this name does not have to be unique, a distinctive name can help you identify a rule.
-- `notify_when` (String) Defines how often alerts generate actions. One of `onActionGroupChange`, `onActiveAlert`, or `onThrottleInterval`.
-- `params` (String) The parameters to pass to the rule type executor params value. This will also validate against the rule type params validator, if defined.
+- `notify_when` (String) Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.
+- `params` (String) The rule parameters, which differ for each rule type.
 - `rule_type_id` (String) The ID of the rule type that you want to call when the rule is scheduled to run. For more information about the valid values, list the rule types using [Get rule types API](https://www.elastic.co/guide/en/kibana/master/list-rule-types-api.html) or refer to the [Rule types documentation](https://www.elastic.co/guide/en/kibana/master/rule-types.html).
 
 ### Optional
 
-- `actions` (Block List) An array of action objects. (see [below for nested schema](#nestedblock--actions))
+- `actions` (Block List) An action that runs under defined conditions. (see [below for nested schema](#nestedblock--actions))
 - `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
 - `rule_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) A list of tag names that are applied to the rule.
-- `throttle` (String) Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is used only if notify_when is onThrottleInterval.
+- `throttle` (String) Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.
 
 ### Read-Only
 
@@ -73,12 +73,12 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 
 Required:
 
-- `id` (String) The ID of the connector saved object.
-- `params` (String) The map to the `params` that the connector type will receive.
+- `id` (String) The identifier for the connector saved object.
+- `params` (String) The parameters for the action, which are sent to the connector.
 
 Optional:
 
-- `group` (String) Grouping actions is recommended for escalations for different types of alerts.
+- `group` (String) The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names.
 
 ## Import
 
