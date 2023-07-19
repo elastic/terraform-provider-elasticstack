@@ -160,6 +160,18 @@ resource "elasticstack_kibana_alerting_rule" "DailyDocumentCountThresholdExceede
       }]
     })
   }
+
+  actions {
+    id    = elasticstack_kibana_action_connector.index_example.connector_id
+    group = "recovered"
+    params = jsonencode({
+      "documents" : [{
+        "rule_id" : "{{rule.id}}",
+        "rule_name" : "{{rule.name}}",
+        "message" : "Recovered"
+      }]
+    })
+  }
 }
 ```
 
