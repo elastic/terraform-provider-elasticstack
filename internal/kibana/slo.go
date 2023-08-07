@@ -170,6 +170,12 @@ func ResourceSlo() *schema.Resource {
 			Default:     "default",
 			ForceNew:    true,
 		},
+		"group_by": {
+			Description: "Optional group by field to use to generate an SLO per distinct value.",
+			Type:        schema.TypeString,
+			Optional:    true,
+			ForceNew:    false,
+		},
 	}
 
 	return &schema.Resource{
@@ -291,6 +297,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		Objective:       objective,
 		Settings:        settings,
 		SpaceID:         d.Get("space_id").(string),
+		GroupBy:         getOrNilString("group_by", d),
 	}
 
 	return slo, diags
@@ -444,6 +451,12 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 				"frequency":  s.Settings.Frequency,
 			},
 		}); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if s.GroupBy != nil {
+		if err := d.Set("group_by", s.GroupBy); err != nil {
 			return diag.FromErr(err)
 		}
 	}
