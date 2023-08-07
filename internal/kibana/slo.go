@@ -419,32 +419,36 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diag.FromErr(err)
 	}
 
-	time_window := []interface{}{}
-	time_window = append(time_window, map[string]interface{}{
-		"duration": s.TimeWindow.Duration,
-		"type":     s.TimeWindow.Type,
-	})
+	time_window := []interface{}{
+		map[string]interface{}{
+			"duration": s.TimeWindow.Duration,
+			"type":     s.TimeWindow.Type,
+		},
+	}
 	if err := d.Set("time_window", time_window); err != nil {
 		return diag.FromErr(err)
 	}
 
-	objective := []interface{}{}
-	objective = append(objective, map[string]interface{}{
-		"target":           s.Objective.Target,
-		"timeslice_target": s.Objective.TimesliceTarget,
-		"timeslice_window": s.Objective.TimesliceWindow,
-	})
+	objective := []interface{}{
+		map[string]interface{}{
+			"target":           s.Objective.Target,
+			"timeslice_target": s.Objective.TimesliceTarget,
+			"timeslice_window": s.Objective.TimesliceWindow,
+		},
+	}
 	if err := d.Set("objective", objective); err != nil {
 		return diag.FromErr(err)
 	}
 
-	settings := []interface{}{}
-	settings = append(settings, map[string]interface{}{
-		"sync_delay": s.Settings.SyncDelay,
-		"frequency":  s.Settings.Frequency,
-	})
-	if err := d.Set("settings", settings); err != nil {
-		return diag.FromErr(err)
+	if s.Settings != nil {
+		if err := d.Set("settings", []interface{}{
+			map[string]interface{}{
+				"sync_delay": s.Settings.SyncDelay,
+				"frequency":  s.Settings.Frequency,
+			},
+		}); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("id", s.ID); err != nil {
