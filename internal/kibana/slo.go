@@ -311,12 +311,7 @@ func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 
-	id, diags := client.ID(ctx, res.ID)
-	if diags.HasError() {
-		return diags
-	}
-
-	id.ResourceId = res.ID
+	id := &clients.CompositeId{ClusterId: slo.SpaceID, ResourceId: res.ID}
 	d.SetId(id.String())
 
 	return resourceSloRead(ctx, d, meta)
