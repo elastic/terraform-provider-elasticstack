@@ -72,12 +72,13 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 
 	req := client.UpdateSloOp(ctxWithAuth, s.SpaceID, s.ID).KbnXsrf("true").UpdateSloRequest(reqModel)
 	slo, res, err := req.Execute()
-	if err != nil && res == nil {
+
+	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
 	defer res.Body.Close()
-	if diags := utils.CheckHttpError(res, "Unable to update slo with id "+s.ID); diags.HasError() {
+	if diags := utils.CheckHttpError(res, "unable to update slo with id "+s.ID); diags.HasError() {
 		return nil, diags
 	}
 
@@ -106,12 +107,12 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 	}
 	req := client.CreateSloOp(ctxWithAuth, s.SpaceID).KbnXsrf("true").CreateSloRequest(reqModel)
 	sloRes, res, err := req.Execute()
-	if err != nil && res == nil {
+	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
 
-	if diags := utils.CheckHttpError(res, "Unable to create slo"); diags.HasError() {
+	if diags := utils.CheckHttpError(res, "unable to create slo with id "+s.ID); diags.HasError() {
 		return nil, diags
 	}
 
