@@ -9,7 +9,6 @@ import (
 )
 
 func Test_sloResponseToModel(t *testing.T) {
-	// now := time.Now()
 	tests := []struct {
 		name          string
 		spaceId       string
