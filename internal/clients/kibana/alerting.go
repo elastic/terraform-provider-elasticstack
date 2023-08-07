@@ -68,7 +68,7 @@ func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
+	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
 	reqModel := alerting.CreateRuleRequest{
 		Consumer:   rule.Consumer,
@@ -100,7 +100,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
+	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
 	reqModel := alerting.UpdateRuleRequest{
 		Actions:    ruleActionsToActionsInner((rule.Actions)),
@@ -156,7 +156,7 @@ func GetAlertingRule(ctx context.Context, apiClient *clients.ApiClient, id, spac
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
+	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 	req := client.GetRule(ctxWithAuth, id, spaceID)
 	ruleRes, res, err := req.Execute()
 	if err != nil && res == nil {
@@ -176,7 +176,7 @@ func DeleteAlertingRule(ctx context.Context, apiClient *clients.ApiClient, ruleI
 		return diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
+	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 	req := client.DeleteRule(ctxWithAuth, ruleId, spaceId).KbnXsrf("true")
 	res, err := req.Execute()
 	if err != nil && res == nil {

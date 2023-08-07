@@ -18,7 +18,7 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
+	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
 	req := client.GetSloOp(ctxWithAuth, "default", id).KbnXsrf("true")
 	sloRes, res, err := req.Execute()
 	if err != nil {
@@ -38,7 +38,7 @@ func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, 
 		return diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
+	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
 	req := client.DeleteSloOp(ctxWithAuth, sloId, spaceId).KbnXsrf("true")
 	res, err := req.Execute()
 	if err != nil && res == nil {
@@ -55,7 +55,7 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
+	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
 	indicator, err := responseIndicatorToCreateSloRequestIndicator(s.Indicator)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -90,7 +90,7 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetGeneratedClientAuthContext(ctx)
+	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
 	indicator, err := responseIndicatorToCreateSloRequestIndicator(s.Indicator)
 	if err != nil {
 		return nil, diag.FromErr(err)

@@ -257,7 +257,14 @@ func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
 	return a.fleet, nil
 }
 
-func (a *ApiClient) SetGeneratedClientAuthContext(ctx context.Context) context.Context {
+func (a *ApiClient) SetSloAuthContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, slo.ContextBasicAuth, slo.BasicAuth{
+		UserName: a.kibanaConfig.Username,
+		Password: a.kibanaConfig.Password,
+	})
+}
+
+func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, slo.ContextBasicAuth, slo.BasicAuth{
 		UserName: a.kibanaConfig.Username,
 		Password: a.kibanaConfig.Password,
