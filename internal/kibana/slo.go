@@ -288,12 +288,14 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		settings = nil
 	}
 
+	budgetingMethod := slo.BudgetingMethod(d.Get("budgeting_method").(string))
+
 	slo := models.Slo{
 		Name:            d.Get("name").(string),
 		Description:     d.Get("description").(string),
 		Indicator:       indicator,
 		TimeWindow:      timeWindow,
-		BudgetingMethod: d.Get("budgeting_method").(string),
+		BudgetingMethod: budgetingMethod,
 		Objective:       objective,
 		Settings:        settings,
 		SpaceID:         d.Get("space_id").(string),
