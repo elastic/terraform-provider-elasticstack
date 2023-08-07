@@ -272,12 +272,14 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		TimesliceWindow: getOrNilString("objective.0.timeslice_window", d),
 	}
 
-	var settings slo.Settings
+	var settings *slo.Settings
 	if _, ok := d.GetOk("settings"); ok {
-		settings = slo.Settings{
+		settings = &slo.Settings{
 			SyncDelay: getOrNilString("settings.0.sync_delay", d),
 			Frequency: getOrNilString("settings.0.frequency", d),
 		}
+	} else {
+		settings = nil
 	}
 
 	slo := models.Slo{
@@ -287,7 +289,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		TimeWindow:      timeWindow,
 		BudgetingMethod: d.Get("budgeting_method").(string),
 		Objective:       objective,
-		Settings:        &settings,
+		Settings:        settings,
 		SpaceID:         d.Get("space_id").(string),
 	}
 
