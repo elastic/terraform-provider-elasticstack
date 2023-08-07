@@ -125,26 +125,22 @@ func responseIndicatorToCreateSloRequestIndicator(s slo.SloResponseIndicator) (s
 	var ret slo.CreateSloRequestIndicator
 
 	ind := s.GetActualInstance()
-	switch ind.(type) { //nolint:all
+	switch ind := ind.(type) {
+
 	case *slo.IndicatorPropertiesApmAvailability:
-		i, _ := ind.(*slo.IndicatorPropertiesApmAvailability) //nolint:all
-		ret.IndicatorPropertiesApmAvailability = i
+		ret.IndicatorPropertiesApmAvailability = ind
 
 	case *slo.IndicatorPropertiesApmLatency:
-		i, _ := ind.(*slo.IndicatorPropertiesApmLatency) //nolint:all
-		ret.IndicatorPropertiesApmLatency = i
+		ret.IndicatorPropertiesApmLatency = ind
 
 	case *slo.IndicatorPropertiesCustomKql:
-		i, _ := ind.(*slo.IndicatorPropertiesCustomKql) //nolint:all
-		ret.IndicatorPropertiesCustomKql = i
+		ret.IndicatorPropertiesCustomKql = ind
 
 	case *slo.IndicatorPropertiesCustomMetric:
-		i, _ := ind.(*slo.IndicatorPropertiesCustomMetric) //nolint:all
-		ret.IndicatorPropertiesCustomMetric = i
+		ret.IndicatorPropertiesCustomMetric = ind
 
 	case *slo.IndicatorPropertiesHistogram:
-		i, _ := ind.(*slo.IndicatorPropertiesHistogram) //nolint:all
-		ret.IndicatorPropertiesHistogram = i
+		ret.IndicatorPropertiesHistogram = ind
 
 	default:
 		return ret, fmt.Errorf("unknown indicator type: %T", ind)
