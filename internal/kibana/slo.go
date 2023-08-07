@@ -41,7 +41,7 @@ func ResourceSlo() *schema.Resource {
 					"type": {
 						Type:         schema.TypeString,
 						Required:     true,
-						ValidateFunc: validation.StringInSlice([]string{"sli.kql.custom", "sli.apm.transactionErrorRate", "sli.apm.transactionDuration", "sli.histogram.custom"}, false),
+						ValidateFunc: validation.StringInSlice([]string{"sli.kql.custom", "sli.apm.transactionErrorRate", "sli.apm.transactionDuration", "sli.histogram.custom", "sli.metric.custom"}, false),
 					},
 					"params": {
 						Type:     schema.TypeList,
@@ -378,10 +378,10 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diags
 	}
 
-	indicators := []interface{}{}
+	indicator := []interface{}{}
 	if s.Indicator.IndicatorPropertiesApmAvailability != nil {
 		params := s.Indicator.IndicatorPropertiesApmAvailability.Params
-		indicators = append(indicators, map[string]interface{}{
+		indicator = append(indicator, map[string]interface{}{
 			"type": s.Indicator.IndicatorPropertiesApmAvailability.Type,
 			"params": []map[string]interface{}{{
 				"environment":      params.Environment,
@@ -394,7 +394,7 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 		})
 	} else if s.Indicator.IndicatorPropertiesApmLatency != nil {
 		params := s.Indicator.IndicatorPropertiesApmLatency.Params
-		indicators = append(indicators, map[string]interface{}{
+		indicator = append(indicator, map[string]interface{}{
 			"type": s.Indicator.IndicatorPropertiesApmLatency.Type,
 			"params": []map[string]interface{}{{
 				"environment":      params.Environment,
@@ -408,20 +408,22 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 		})
 	} else if s.Indicator.IndicatorPropertiesCustomKql != nil {
 		params := s.Indicator.IndicatorPropertiesCustomKql.Params
-		indicators = append(indicators, map[string]interface{}{
+		indicator = append(indicator, map[string]interface{}{
 			"type": s.Indicator.IndicatorPropertiesCustomKql.Type,
 			"params": []map[string]interface{}{{
 				"index":           params.Index,
 				"filter":          params.Filter,
-				"good":            params.Filter,
+				"good":            params.Good,
 				"total":           params.Total,
 				"timestamp_field": params.TimestampField,
 			}},
 		})
+	} else if s.Indicator.IndicatorPropertiesHistogram != nil {
+		return diag.Errorf("Histogram indicator type not currently supported")
 	} else {
-		return diag.Errorf("unknown indicator type")
+		return diag.Errorf("indicator not set")
 	}
-	if err := d.Set("indicator", indicators); err != nil {
+	if err := d.Set("indicator", indicator); err != nil {
 		return diag.FromErr(err)
 	}
 
