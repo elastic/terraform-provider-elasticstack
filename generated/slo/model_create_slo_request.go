@@ -30,6 +30,8 @@ type CreateSloRequest struct {
 	BudgetingMethod BudgetingMethod           `json:"budgetingMethod"`
 	Objective       Objective                 `json:"objective"`
 	Settings        *Settings                 `json:"settings,omitempty"`
+	// optional group by field to use to generate an SLO per distinct value
+	GroupBy *string `json:"groupBy,omitempty"`
 }
 
 // NewCreateSloRequest instantiates a new CreateSloRequest object
@@ -263,6 +265,38 @@ func (o *CreateSloRequest) SetSettings(v Settings) {
 	o.Settings = &v
 }
 
+// GetGroupBy returns the GroupBy field value if set, zero value otherwise.
+func (o *CreateSloRequest) GetGroupBy() string {
+	if o == nil || IsNil(o.GroupBy) {
+		var ret string
+		return ret
+	}
+	return *o.GroupBy
+}
+
+// GetGroupByOk returns a tuple with the GroupBy field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *CreateSloRequest) GetGroupByOk() (*string, bool) {
+	if o == nil || IsNil(o.GroupBy) {
+		return nil, false
+	}
+	return o.GroupBy, true
+}
+
+// HasGroupBy returns a boolean if a field has been set.
+func (o *CreateSloRequest) HasGroupBy() bool {
+	if o != nil && !IsNil(o.GroupBy) {
+		return true
+	}
+
+	return false
+}
+
+// SetGroupBy gets a reference to the given string and assigns it to the GroupBy field.
+func (o *CreateSloRequest) SetGroupBy(v string) {
+	o.GroupBy = &v
+}
+
 func (o CreateSloRequest) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -284,6 +318,9 @@ func (o CreateSloRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize["objective"] = o.Objective
 	if !IsNil(o.Settings) {
 		toSerialize["settings"] = o.Settings
+	}
+	if !IsNil(o.GroupBy) {
+		toSerialize["groupBy"] = o.GroupBy
 	}
 	return toSerialize, nil
 }

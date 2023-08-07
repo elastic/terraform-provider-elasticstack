@@ -129,18 +129,6 @@ func (dst *SloResponseIndicator) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	// check if the discriminator value is 'sli.apm.sli.metric.custom'
-	if jsonDict["type"] == "sli.apm.sli.metric.custom" {
-		// try to unmarshal JSON data into IndicatorPropertiesCustomMetric
-		err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomMetric)
-		if err == nil {
-			return nil // data stored in dst.IndicatorPropertiesCustomMetric, return on the first match
-		} else {
-			dst.IndicatorPropertiesCustomMetric = nil
-			return fmt.Errorf("failed to unmarshal SloResponseIndicator as IndicatorPropertiesCustomMetric: %s", err.Error())
-		}
-	}
-
 	// check if the discriminator value is 'sli.apm.transactionDuration'
 	if jsonDict["type"] == "sli.apm.transactionDuration" {
 		// try to unmarshal JSON data into IndicatorPropertiesApmLatency
@@ -165,6 +153,18 @@ func (dst *SloResponseIndicator) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	// check if the discriminator value is 'sli.histogram.custom'
+	if jsonDict["type"] == "sli.histogram.custom" {
+		// try to unmarshal JSON data into IndicatorPropertiesHistogram
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesHistogram)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesHistogram, return on the first match
+		} else {
+			dst.IndicatorPropertiesHistogram = nil
+			return fmt.Errorf("failed to unmarshal SloResponseIndicator as IndicatorPropertiesHistogram: %s", err.Error())
+		}
+	}
+
 	// check if the discriminator value is 'sli.kql.custom'
 	if jsonDict["type"] == "sli.kql.custom" {
 		// try to unmarshal JSON data into IndicatorPropertiesCustomKql
@@ -174,6 +174,18 @@ func (dst *SloResponseIndicator) UnmarshalJSON(data []byte) error {
 		} else {
 			dst.IndicatorPropertiesCustomKql = nil
 			return fmt.Errorf("failed to unmarshal SloResponseIndicator as IndicatorPropertiesCustomKql: %s", err.Error())
+		}
+	}
+
+	// check if the discriminator value is 'sli.metric.custom'
+	if jsonDict["type"] == "sli.metric.custom" {
+		// try to unmarshal JSON data into IndicatorPropertiesCustomMetric
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomMetric)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesCustomMetric, return on the first match
+		} else {
+			dst.IndicatorPropertiesCustomMetric = nil
+			return fmt.Errorf("failed to unmarshal SloResponseIndicator as IndicatorPropertiesCustomMetric: %s", err.Error())
 		}
 	}
 

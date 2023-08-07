@@ -310,7 +310,7 @@ Name | Type | Description  | Notes
 
 ## FindSlosOp
 
-> FindSloResponse FindSlosOp(ctx, spaceId).KbnXsrf(kbnXsrf).Name(name).IndicatorTypes(indicatorTypes).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
+> FindSloResponse FindSlosOp(ctx, spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
 
 Retrieves a paginated list of SLOs
 
@@ -331,16 +331,15 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    name := "awesome-service" // string | Filter by name (optional)
-    indicatorTypes := []string{"Inner_example"} // []string | Filter by indicator type (optional)
+    kqlQuery := "slo.name:latency* and slo.tags : "prod"" // string | A valid kql query to filter the SLO with (optional)
     page := int32(1) // int32 | The page number to return (optional) (default to 1)
-    perPage := int32(20) // int32 | The number of SLOs to return per page (optional) (default to 25)
-    sortBy := "creationTime" // string | Sort by field (optional) (default to "creationTime")
+    perPage := int32(25) // int32 | The number of SLOs to return per page (optional) (default to 25)
+    sortBy := "status" // string | Sort by field (optional) (default to "status")
     sortDirection := "asc" // string | Sort order (optional) (default to "asc")
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SloAPI.FindSlosOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).Name(name).IndicatorTypes(indicatorTypes).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
+    resp, r, err := apiClient.SloAPI.FindSlosOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.FindSlosOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -367,11 +366,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
- **name** | **string** | Filter by name | 
- **indicatorTypes** | **[]string** | Filter by indicator type | 
+ **kqlQuery** | **string** | A valid kql query to filter the SLO with | 
  **page** | **int32** | The page number to return | [default to 1]
  **perPage** | **int32** | The number of SLOs to return per page | [default to 25]
- **sortBy** | **string** | Sort by field | [default to &quot;creationTime&quot;]
+ **sortBy** | **string** | Sort by field | [default to &quot;status&quot;]
  **sortDirection** | **string** | Sort order | [default to &quot;asc&quot;]
 
 ### Return type
@@ -394,7 +392,7 @@ Name | Type | Description  | Notes
 
 ## GetSloOp
 
-> SloResponse GetSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+> SloResponse GetSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).InstanceId(instanceId).Execute()
 
 Retrieves a SLO
 
@@ -416,10 +414,11 @@ func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
+    instanceId := "host-abcde" // string | the specific instanceId used by the summary calculation (optional)
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SloAPI.GetSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    resp, r, err := apiClient.SloAPI.GetSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).InstanceId(instanceId).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.GetSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -448,6 +447,7 @@ Name | Type | Description  | Notes
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
 
+ **instanceId** | **string** | the specific instanceId used by the summary calculation | 
 
 ### Return type
 

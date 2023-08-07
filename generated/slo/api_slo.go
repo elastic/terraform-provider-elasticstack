@@ -16,7 +16,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 )
 
@@ -259,6 +258,7 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 			}
 		}
 	}
+
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err
@@ -832,16 +832,15 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 }
 
 type ApiFindSlosOpRequest struct {
-	ctx            context.Context
-	ApiService     SloAPI
-	kbnXsrf        *string
-	spaceId        string
-	name           *string
-	indicatorTypes *[]string
-	page           *int32
-	perPage        *int32
-	sortBy         *string
-	sortDirection  *string
+	ctx           context.Context
+	ApiService    SloAPI
+	kbnXsrf       *string
+	spaceId       string
+	kqlQuery      *string
+	page          *int32
+	perPage       *int32
+	sortBy        *string
+	sortDirection *string
 }
 
 // Cross-site request forgery protection
@@ -850,15 +849,9 @@ func (r ApiFindSlosOpRequest) KbnXsrf(kbnXsrf string) ApiFindSlosOpRequest {
 	return r
 }
 
-// Filter by name
-func (r ApiFindSlosOpRequest) Name(name string) ApiFindSlosOpRequest {
-	r.name = &name
-	return r
-}
-
-// Filter by indicator type
-func (r ApiFindSlosOpRequest) IndicatorTypes(indicatorTypes []string) ApiFindSlosOpRequest {
-	r.indicatorTypes = &indicatorTypes
+// A valid kql query to filter the SLO with
+func (r ApiFindSlosOpRequest) KqlQuery(kqlQuery string) ApiFindSlosOpRequest {
+	r.kqlQuery = &kqlQuery
 	return r
 }
 
@@ -933,19 +926,8 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 		return localVarReturnValue, nil, reportError("kbnXsrf is required and must be specified")
 	}
 
-	if r.name != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "name", r.name, "")
-	}
-	if r.indicatorTypes != nil {
-		t := *r.indicatorTypes
-		if reflect.TypeOf(t).Kind() == reflect.Slice {
-			s := reflect.ValueOf(t)
-			for i := 0; i < s.Len(); i++ {
-				parameterAddToHeaderOrQuery(localVarQueryParams, "indicatorTypes", s.Index(i).Interface(), "multi")
-			}
-		} else {
-			parameterAddToHeaderOrQuery(localVarQueryParams, "indicatorTypes", t, "multi")
-		}
+	if r.kqlQuery != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "kqlQuery", r.kqlQuery, "")
 	}
 	if r.page != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "page", r.page, "")
@@ -1077,11 +1059,18 @@ type ApiGetSloOpRequest struct {
 	kbnXsrf    *string
 	spaceId    string
 	sloId      string
+	instanceId *string
 }
 
 // Cross-site request forgery protection
 func (r ApiGetSloOpRequest) KbnXsrf(kbnXsrf string) ApiGetSloOpRequest {
 	r.kbnXsrf = &kbnXsrf
+	return r
+}
+
+// the specific instanceId used by the summary calculation
+func (r ApiGetSloOpRequest) InstanceId(instanceId string) ApiGetSloOpRequest {
+	r.instanceId = &instanceId
 	return r
 }
 
@@ -1135,6 +1124,9 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloResponse, *ht
 		return localVarReturnValue, nil, reportError("kbnXsrf is required and must be specified")
 	}
 
+	if r.instanceId != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "instanceId", r.instanceId, "")
+	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 

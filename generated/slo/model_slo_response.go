@@ -35,6 +35,10 @@ type SloResponse struct {
 	Summary  *Summary `json:"summary,omitempty"`
 	// Indicate if the SLO is enabled
 	Enabled *bool `json:"enabled,omitempty"`
+	// optional group by field to use to generate an SLO per distinct value
+	GroupBy *string `json:"groupBy,omitempty"`
+	// the value derived from the groupBy field, if present, otherwise '*'
+	InstanceId *string `json:"instanceId,omitempty"`
 	// The creation date
 	CreatedAt *string `json:"createdAt,omitempty"`
 	// The last update date
@@ -410,6 +414,70 @@ func (o *SloResponse) SetEnabled(v bool) {
 	o.Enabled = &v
 }
 
+// GetGroupBy returns the GroupBy field value if set, zero value otherwise.
+func (o *SloResponse) GetGroupBy() string {
+	if o == nil || IsNil(o.GroupBy) {
+		var ret string
+		return ret
+	}
+	return *o.GroupBy
+}
+
+// GetGroupByOk returns a tuple with the GroupBy field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *SloResponse) GetGroupByOk() (*string, bool) {
+	if o == nil || IsNil(o.GroupBy) {
+		return nil, false
+	}
+	return o.GroupBy, true
+}
+
+// HasGroupBy returns a boolean if a field has been set.
+func (o *SloResponse) HasGroupBy() bool {
+	if o != nil && !IsNil(o.GroupBy) {
+		return true
+	}
+
+	return false
+}
+
+// SetGroupBy gets a reference to the given string and assigns it to the GroupBy field.
+func (o *SloResponse) SetGroupBy(v string) {
+	o.GroupBy = &v
+}
+
+// GetInstanceId returns the InstanceId field value if set, zero value otherwise.
+func (o *SloResponse) GetInstanceId() string {
+	if o == nil || IsNil(o.InstanceId) {
+		var ret string
+		return ret
+	}
+	return *o.InstanceId
+}
+
+// GetInstanceIdOk returns a tuple with the InstanceId field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *SloResponse) GetInstanceIdOk() (*string, bool) {
+	if o == nil || IsNil(o.InstanceId) {
+		return nil, false
+	}
+	return o.InstanceId, true
+}
+
+// HasInstanceId returns a boolean if a field has been set.
+func (o *SloResponse) HasInstanceId() bool {
+	if o != nil && !IsNil(o.InstanceId) {
+		return true
+	}
+
+	return false
+}
+
+// SetInstanceId gets a reference to the given string and assigns it to the InstanceId field.
+func (o *SloResponse) SetInstanceId(v string) {
+	o.InstanceId = &v
+}
+
 // GetCreatedAt returns the CreatedAt field value if set, zero value otherwise.
 func (o *SloResponse) GetCreatedAt() string {
 	if o == nil || IsNil(o.CreatedAt) {
@@ -516,6 +584,12 @@ func (o SloResponse) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Enabled) {
 		toSerialize["enabled"] = o.Enabled
+	}
+	if !IsNil(o.GroupBy) {
+		toSerialize["groupBy"] = o.GroupBy
+	}
+	if !IsNil(o.InstanceId) {
+		toSerialize["instanceId"] = o.InstanceId
 	}
 	if !IsNil(o.CreatedAt) {
 		toSerialize["createdAt"] = o.CreatedAt

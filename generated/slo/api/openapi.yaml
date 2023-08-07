@@ -45,26 +45,14 @@ paths:
           example: default
           type: string
         style: simple
-      - description: Filter by name
-        example: awesome-service
+      - description: A valid kql query to filter the SLO with
+        example: "slo.name:latency* and slo.tags : \"prod\""
         explode: true
         in: query
-        name: name
+        name: kqlQuery
         required: false
         schema:
           type: string
-        style: form
-      - description: Filter by indicator type
-        example:
-        - sli.kql.custom
-        explode: true
-        in: query
-        name: indicatorTypes
-        required: false
-        schema:
-          items:
-            type: string
-          type: array
         style: form
       - description: The page number to return
         example: 1
@@ -77,7 +65,7 @@ paths:
           type: integer
         style: form
       - description: The number of SLOs to return per page
-        example: 20
+        example: 25
         explode: true
         in: query
         name: perPage
@@ -87,16 +75,18 @@ paths:
           type: integer
         style: form
       - description: Sort by field
-        example: creationTime
+        example: status
         explode: true
         in: query
         name: sortBy
         required: false
         schema:
-          default: creationTime
+          default: status
           enum:
-          - creationTime
-          - indicatorType
+          - sli_value
+          - status
+          - error_budget_consumed
+          - error_budget_remaining
           type: string
         style: form
       - description: Sort order
@@ -306,6 +296,15 @@ paths:
           example: 9c235211-6834-11ea-a78c-6feb38a34414
           type: string
         style: simple
+      - description: the specific instanceId used by the summary calculation
+        example: host-abcde
+        explode: true
+        in: query
+        name: instanceId
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -848,6 +847,7 @@ components:
           duration: 30d
           type: rolling
         description: My SLO description
+        groupBy: some.field
         enabled: true
         objective:
           timesliceWindow: 5m
@@ -855,6 +855,7 @@ components:
           target: 0.99
         revision: 2
         createdAt: 2023-01-12T10:03:19.000Z
+        instanceId: host-abcde
         name: My Service SLO
         id: 8853df00-ae2e-11ed-90af-09bb6422b258
         budgetingMethod: occurrences
@@ -892,6 +893,16 @@ components:
           description: Indicate if the SLO is enabled
           example: true
           type: boolean
+        groupBy:
+          description: optional group by field to use to generate an SLO per distinct
+            value
+          example: some.field
+          type: string
+        instanceId:
+          description: "the value derived from the groupBy field, if present, otherwise\
+            \ '*'"
+          example: host-abcde
+          type: string
         createdAt:
           description: The creation date
           example: 2023-01-12T10:03:19.000Z
@@ -926,6 +937,7 @@ components:
             duration: 30d
             type: rolling
           description: My SLO description
+          groupBy: some.field
           enabled: true
           objective:
             timesliceWindow: 5m
@@ -933,6 +945,7 @@ components:
             target: 0.99
           revision: 2
           createdAt: 2023-01-12T10:03:19.000Z
+          instanceId: host-abcde
           name: My Service SLO
           id: 8853df00-ae2e-11ed-90af-09bb6422b258
           budgetingMethod: occurrences
@@ -953,6 +966,7 @@ components:
             duration: 30d
             type: rolling
           description: My SLO description
+          groupBy: some.field
           enabled: true
           objective:
             timesliceWindow: 5m
@@ -960,6 +974,7 @@ components:
             target: 0.99
           revision: 2
           createdAt: 2023-01-12T10:03:19.000Z
+          instanceId: host-abcde
           name: My Service SLO
           id: 8853df00-ae2e-11ed-90af-09bb6422b258
           budgetingMethod: occurrences
@@ -1077,6 +1092,11 @@ components:
           $ref: '#/components/schemas/objective'
         settings:
           $ref: '#/components/schemas/settings'
+        groupBy:
+          description: optional group by field to use to generate an SLO per distinct
+            value
+          example: some.field
+          type: string
       required:
       - budgetingMethod
       - description
@@ -1469,7 +1489,8 @@ components:
           sli.apm.transactionErrorRate: '#/components/schemas/indicator_properties_apm_availability'
           sli.kql.custom: '#/components/schemas/indicator_properties_custom_kql'
           sli.apm.transactionDuration: '#/components/schemas/indicator_properties_apm_latency'
-          sli.apm.sli.metric.custom: '#/components/schemas/indicator_properties_custom_metric'
+          sli.metric.custom: '#/components/schemas/indicator_properties_custom_metric'
+          sli.histogram.custom: '#/components/schemas/indicator_properties_histogram'
         propertyName: type
       oneOf:
       - $ref: '#/components/schemas/indicator_properties_custom_kql'

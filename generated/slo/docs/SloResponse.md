@@ -15,6 +15,8 @@ Name | Type | Description | Notes
 **Revision** | Pointer to **float64** | The SLO revision | [optional] 
 **Summary** | Pointer to [**Summary**](Summary.md) |  | [optional] 
 **Enabled** | Pointer to **bool** | Indicate if the SLO is enabled | [optional] 
+**GroupBy** | Pointer to **string** | optional group by field to use to generate an SLO per distinct value | [optional] 
+**InstanceId** | Pointer to **string** | the value derived from the groupBy field, if present, otherwise &#39;*&#39; | [optional] 
 **CreatedAt** | Pointer to **string** | The creation date | [optional] 
 **UpdatedAt** | Pointer to **string** | The last update date | [optional] 
 
@@ -311,6 +313,56 @@ SetEnabled sets Enabled field to given value.
 `func (o *SloResponse) HasEnabled() bool`
 
 HasEnabled returns a boolean if a field has been set.
+
+### GetGroupBy
+
+`func (o *SloResponse) GetGroupBy() string`
+
+GetGroupBy returns the GroupBy field if non-nil, zero value otherwise.
+
+### GetGroupByOk
+
+`func (o *SloResponse) GetGroupByOk() (*string, bool)`
+
+GetGroupByOk returns a tuple with the GroupBy field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetGroupBy
+
+`func (o *SloResponse) SetGroupBy(v string)`
+
+SetGroupBy sets GroupBy field to given value.
+
+### HasGroupBy
+
+`func (o *SloResponse) HasGroupBy() bool`
+
+HasGroupBy returns a boolean if a field has been set.
+
+### GetInstanceId
+
+`func (o *SloResponse) GetInstanceId() string`
+
+GetInstanceId returns the InstanceId field if non-nil, zero value otherwise.
+
+### GetInstanceIdOk
+
+`func (o *SloResponse) GetInstanceIdOk() (*string, bool)`
+
+GetInstanceIdOk returns a tuple with the InstanceId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetInstanceId
+
+`func (o *SloResponse) SetInstanceId(v string)`
+
+SetInstanceId sets InstanceId field to given value.
+
+### HasInstanceId
+
+`func (o *SloResponse) HasInstanceId() bool`
+
+HasInstanceId returns a boolean if a field has been set.
 
 ### GetCreatedAt
 
