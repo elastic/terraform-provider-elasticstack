@@ -10,8 +10,9 @@ type Slo struct {
 	Description     string
 	Indicator       slo.SloResponseIndicator
 	TimeWindow      slo.TimeWindow
-	BudgetingMethod string //should I make this a slo.BudgetingMethod?
+	BudgetingMethod slo.BudgetingMethod
 	Objective       slo.Objective
 	Settings        *slo.Settings
 	SpaceID         string
+	GroupBy         *string
 }

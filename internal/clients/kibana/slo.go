@@ -163,7 +163,7 @@ func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
 		SpaceID:         spaceID,
 		Name:            *res.Name,
 		Description:     *res.Description,
-		BudgetingMethod: string(*res.BudgetingMethod),
+		BudgetingMethod: *res.BudgetingMethod,
 		Indicator:       *res.Indicator,
 		TimeWindow:      *res.TimeWindow,
 		Objective:       *res.Objective,
