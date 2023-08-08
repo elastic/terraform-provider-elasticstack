@@ -21,55 +21,6 @@ func Test_sloResponseToModel(t *testing.T) {
 			sloResponse:   nil,
 			expectedModel: nil,
 		},
-		{
-			name:    "nil optional fields should not blow up the slo",
-			spaceId: "space-id",
-			sloResponse: &slo.SloResponse{
-				Id:          makePtr("id"),
-				Name:        makePtr("name"),
-				Description: makePtr("description"),
-				Indicator: &slo.SloResponseIndicator{
-					IndicatorPropertiesCustomKql: &slo.IndicatorPropertiesCustomKql{
-						Type: "sli.kql.custom",
-						Params: slo.IndicatorPropertiesCustomKqlParams{
-							Index:          "index",
-							TimestampField: "timestamp-field",
-						},
-					},
-				},
-				TimeWindow: &slo.TimeWindow{
-					Duration: "1m",
-					Type:     "rolling",
-				},
-				BudgetingMethod: (*slo.BudgetingMethod)(makePtr("budgeting-method")),
-				Objective: &slo.Objective{
-					Target: 0.99,
-				},
-			},
-			expectedModel: &models.Slo{
-				ID:          "id",
-				SpaceID:     "space-id",
-				Name:        "name",
-				Description: "description",
-				Indicator: slo.SloResponseIndicator{
-					IndicatorPropertiesCustomKql: &slo.IndicatorPropertiesCustomKql{
-						Type: "sli.kql.custom",
-						Params: slo.IndicatorPropertiesCustomKqlParams{
-							Index:          "index",
-							TimestampField: "timestamp-field",
-						},
-					},
-				},
-				TimeWindow: slo.TimeWindow{
-					Duration: "1m",
-					Type:     "rolling",
-				},
-				BudgetingMethod: "budgeting-method",
-				Objective: slo.Objective{
-					Target: 0.99,
-				},
-			},
-		},
 	}
 
 	for _, tt := range tests {

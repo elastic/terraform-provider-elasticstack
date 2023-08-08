@@ -22,35 +22,49 @@ type SloResponse struct {
 	// The identifier of the SLO.
 	Id *string `json:"id,omitempty"`
 	// The name of the SLO.
-	Name *string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// The description of the SLO.
-	Description     *string               `json:"description,omitempty"`
-	Indicator       *SloResponseIndicator `json:"indicator,omitempty"`
-	TimeWindow      *TimeWindow           `json:"timeWindow,omitempty"`
-	BudgetingMethod *BudgetingMethod      `json:"budgetingMethod,omitempty"`
-	Objective       *Objective            `json:"objective,omitempty"`
-	Settings        *Settings             `json:"settings,omitempty"`
+	Description     string               `json:"description"`
+	Indicator       SloResponseIndicator `json:"indicator"`
+	TimeWindow      TimeWindow           `json:"timeWindow"`
+	BudgetingMethod BudgetingMethod      `json:"budgetingMethod"`
+	Objective       Objective            `json:"objective"`
+	Settings        Settings             `json:"settings"`
 	// The SLO revision
-	Revision *float64 `json:"revision,omitempty"`
-	Summary  *Summary `json:"summary,omitempty"`
+	Revision float64 `json:"revision"`
+	Summary  Summary `json:"summary"`
 	// Indicate if the SLO is enabled
-	Enabled *bool `json:"enabled,omitempty"`
+	Enabled bool `json:"enabled"`
 	// optional group by field to use to generate an SLO per distinct value
-	GroupBy *string `json:"groupBy,omitempty"`
+	GroupBy string `json:"groupBy"`
 	// the value derived from the groupBy field, if present, otherwise '*'
-	InstanceId *string `json:"instanceId,omitempty"`
+	InstanceId string `json:"instanceId"`
 	// The creation date
-	CreatedAt *string `json:"createdAt,omitempty"`
+	CreatedAt string `json:"createdAt"`
 	// The last update date
-	UpdatedAt *string `json:"updatedAt,omitempty"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 // NewSloResponse instantiates a new SloResponse object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewSloResponse() *SloResponse {
+func NewSloResponse(name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string) *SloResponse {
 	this := SloResponse{}
+	this.Name = name
+	this.Description = description
+	this.Indicator = indicator
+	this.TimeWindow = timeWindow
+	this.BudgetingMethod = budgetingMethod
+	this.Objective = objective
+	this.Settings = settings
+	this.Revision = revision
+	this.Summary = summary
+	this.Enabled = enabled
+	this.GroupBy = groupBy
+	this.InstanceId = instanceId
+	this.CreatedAt = createdAt
+	this.UpdatedAt = updatedAt
 	return &this
 }
 
@@ -94,452 +108,340 @@ func (o *SloResponse) SetId(v string) {
 	o.Id = &v
 }
 
-// GetName returns the Name field value if set, zero value otherwise.
+// GetName returns the Name field value
 func (o *SloResponse) GetName() string {
-	if o == nil || IsNil(o.Name) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.Name
+
+	return o.Name
 }
 
-// GetNameOk returns a tuple with the Name field value if set, nil otherwise
+// GetNameOk returns a tuple with the Name field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetNameOk() (*string, bool) {
-	if o == nil || IsNil(o.Name) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Name, true
+	return &o.Name, true
 }
 
-// HasName returns a boolean if a field has been set.
-func (o *SloResponse) HasName() bool {
-	if o != nil && !IsNil(o.Name) {
-		return true
-	}
-
-	return false
-}
-
-// SetName gets a reference to the given string and assigns it to the Name field.
+// SetName sets field value
 func (o *SloResponse) SetName(v string) {
-	o.Name = &v
+	o.Name = v
 }
 
-// GetDescription returns the Description field value if set, zero value otherwise.
+// GetDescription returns the Description field value
 func (o *SloResponse) GetDescription() string {
-	if o == nil || IsNil(o.Description) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.Description
+
+	return o.Description
 }
 
-// GetDescriptionOk returns a tuple with the Description field value if set, nil otherwise
+// GetDescriptionOk returns a tuple with the Description field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetDescriptionOk() (*string, bool) {
-	if o == nil || IsNil(o.Description) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Description, true
+	return &o.Description, true
 }
 
-// HasDescription returns a boolean if a field has been set.
-func (o *SloResponse) HasDescription() bool {
-	if o != nil && !IsNil(o.Description) {
-		return true
-	}
-
-	return false
-}
-
-// SetDescription gets a reference to the given string and assigns it to the Description field.
+// SetDescription sets field value
 func (o *SloResponse) SetDescription(v string) {
-	o.Description = &v
+	o.Description = v
 }
 
-// GetIndicator returns the Indicator field value if set, zero value otherwise.
+// GetIndicator returns the Indicator field value
 func (o *SloResponse) GetIndicator() SloResponseIndicator {
-	if o == nil || IsNil(o.Indicator) {
+	if o == nil {
 		var ret SloResponseIndicator
 		return ret
 	}
-	return *o.Indicator
+
+	return o.Indicator
 }
 
-// GetIndicatorOk returns a tuple with the Indicator field value if set, nil otherwise
+// GetIndicatorOk returns a tuple with the Indicator field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetIndicatorOk() (*SloResponseIndicator, bool) {
-	if o == nil || IsNil(o.Indicator) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Indicator, true
+	return &o.Indicator, true
 }
 
-// HasIndicator returns a boolean if a field has been set.
-func (o *SloResponse) HasIndicator() bool {
-	if o != nil && !IsNil(o.Indicator) {
-		return true
-	}
-
-	return false
-}
-
-// SetIndicator gets a reference to the given SloResponseIndicator and assigns it to the Indicator field.
+// SetIndicator sets field value
 func (o *SloResponse) SetIndicator(v SloResponseIndicator) {
-	o.Indicator = &v
+	o.Indicator = v
 }
 
-// GetTimeWindow returns the TimeWindow field value if set, zero value otherwise.
+// GetTimeWindow returns the TimeWindow field value
 func (o *SloResponse) GetTimeWindow() TimeWindow {
-	if o == nil || IsNil(o.TimeWindow) {
+	if o == nil {
 		var ret TimeWindow
 		return ret
 	}
-	return *o.TimeWindow
+
+	return o.TimeWindow
 }
 
-// GetTimeWindowOk returns a tuple with the TimeWindow field value if set, nil otherwise
+// GetTimeWindowOk returns a tuple with the TimeWindow field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetTimeWindowOk() (*TimeWindow, bool) {
-	if o == nil || IsNil(o.TimeWindow) {
+	if o == nil {
 		return nil, false
 	}
-	return o.TimeWindow, true
+	return &o.TimeWindow, true
 }
 
-// HasTimeWindow returns a boolean if a field has been set.
-func (o *SloResponse) HasTimeWindow() bool {
-	if o != nil && !IsNil(o.TimeWindow) {
-		return true
-	}
-
-	return false
-}
-
-// SetTimeWindow gets a reference to the given TimeWindow and assigns it to the TimeWindow field.
+// SetTimeWindow sets field value
 func (o *SloResponse) SetTimeWindow(v TimeWindow) {
-	o.TimeWindow = &v
+	o.TimeWindow = v
 }
 
-// GetBudgetingMethod returns the BudgetingMethod field value if set, zero value otherwise.
+// GetBudgetingMethod returns the BudgetingMethod field value
 func (o *SloResponse) GetBudgetingMethod() BudgetingMethod {
-	if o == nil || IsNil(o.BudgetingMethod) {
+	if o == nil {
 		var ret BudgetingMethod
 		return ret
 	}
-	return *o.BudgetingMethod
+
+	return o.BudgetingMethod
 }
 
-// GetBudgetingMethodOk returns a tuple with the BudgetingMethod field value if set, nil otherwise
+// GetBudgetingMethodOk returns a tuple with the BudgetingMethod field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetBudgetingMethodOk() (*BudgetingMethod, bool) {
-	if o == nil || IsNil(o.BudgetingMethod) {
+	if o == nil {
 		return nil, false
 	}
-	return o.BudgetingMethod, true
+	return &o.BudgetingMethod, true
 }
 
-// HasBudgetingMethod returns a boolean if a field has been set.
-func (o *SloResponse) HasBudgetingMethod() bool {
-	if o != nil && !IsNil(o.BudgetingMethod) {
-		return true
-	}
-
-	return false
-}
-
-// SetBudgetingMethod gets a reference to the given BudgetingMethod and assigns it to the BudgetingMethod field.
+// SetBudgetingMethod sets field value
 func (o *SloResponse) SetBudgetingMethod(v BudgetingMethod) {
-	o.BudgetingMethod = &v
+	o.BudgetingMethod = v
 }
 
-// GetObjective returns the Objective field value if set, zero value otherwise.
+// GetObjective returns the Objective field value
 func (o *SloResponse) GetObjective() Objective {
-	if o == nil || IsNil(o.Objective) {
+	if o == nil {
 		var ret Objective
 		return ret
 	}
-	return *o.Objective
+
+	return o.Objective
 }
 
-// GetObjectiveOk returns a tuple with the Objective field value if set, nil otherwise
+// GetObjectiveOk returns a tuple with the Objective field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetObjectiveOk() (*Objective, bool) {
-	if o == nil || IsNil(o.Objective) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Objective, true
+	return &o.Objective, true
 }
 
-// HasObjective returns a boolean if a field has been set.
-func (o *SloResponse) HasObjective() bool {
-	if o != nil && !IsNil(o.Objective) {
-		return true
-	}
-
-	return false
-}
-
-// SetObjective gets a reference to the given Objective and assigns it to the Objective field.
+// SetObjective sets field value
 func (o *SloResponse) SetObjective(v Objective) {
-	o.Objective = &v
+	o.Objective = v
 }
 
-// GetSettings returns the Settings field value if set, zero value otherwise.
+// GetSettings returns the Settings field value
 func (o *SloResponse) GetSettings() Settings {
-	if o == nil || IsNil(o.Settings) {
+	if o == nil {
 		var ret Settings
 		return ret
 	}
-	return *o.Settings
+
+	return o.Settings
 }
 
-// GetSettingsOk returns a tuple with the Settings field value if set, nil otherwise
+// GetSettingsOk returns a tuple with the Settings field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetSettingsOk() (*Settings, bool) {
-	if o == nil || IsNil(o.Settings) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Settings, true
+	return &o.Settings, true
 }
 
-// HasSettings returns a boolean if a field has been set.
-func (o *SloResponse) HasSettings() bool {
-	if o != nil && !IsNil(o.Settings) {
-		return true
-	}
-
-	return false
-}
-
-// SetSettings gets a reference to the given Settings and assigns it to the Settings field.
+// SetSettings sets field value
 func (o *SloResponse) SetSettings(v Settings) {
-	o.Settings = &v
+	o.Settings = v
 }
 
-// GetRevision returns the Revision field value if set, zero value otherwise.
+// GetRevision returns the Revision field value
 func (o *SloResponse) GetRevision() float64 {
-	if o == nil || IsNil(o.Revision) {
+	if o == nil {
 		var ret float64
 		return ret
 	}
-	return *o.Revision
+
+	return o.Revision
 }
 
-// GetRevisionOk returns a tuple with the Revision field value if set, nil otherwise
+// GetRevisionOk returns a tuple with the Revision field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetRevisionOk() (*float64, bool) {
-	if o == nil || IsNil(o.Revision) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Revision, true
+	return &o.Revision, true
 }
 
-// HasRevision returns a boolean if a field has been set.
-func (o *SloResponse) HasRevision() bool {
-	if o != nil && !IsNil(o.Revision) {
-		return true
-	}
-
-	return false
-}
-
-// SetRevision gets a reference to the given float64 and assigns it to the Revision field.
+// SetRevision sets field value
 func (o *SloResponse) SetRevision(v float64) {
-	o.Revision = &v
+	o.Revision = v
 }
 
-// GetSummary returns the Summary field value if set, zero value otherwise.
+// GetSummary returns the Summary field value
 func (o *SloResponse) GetSummary() Summary {
-	if o == nil || IsNil(o.Summary) {
+	if o == nil {
 		var ret Summary
 		return ret
 	}
-	return *o.Summary
+
+	return o.Summary
 }
 
-// GetSummaryOk returns a tuple with the Summary field value if set, nil otherwise
+// GetSummaryOk returns a tuple with the Summary field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetSummaryOk() (*Summary, bool) {
-	if o == nil || IsNil(o.Summary) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Summary, true
+	return &o.Summary, true
 }
 
-// HasSummary returns a boolean if a field has been set.
-func (o *SloResponse) HasSummary() bool {
-	if o != nil && !IsNil(o.Summary) {
-		return true
-	}
-
-	return false
-}
-
-// SetSummary gets a reference to the given Summary and assigns it to the Summary field.
+// SetSummary sets field value
 func (o *SloResponse) SetSummary(v Summary) {
-	o.Summary = &v
+	o.Summary = v
 }
 
-// GetEnabled returns the Enabled field value if set, zero value otherwise.
+// GetEnabled returns the Enabled field value
 func (o *SloResponse) GetEnabled() bool {
-	if o == nil || IsNil(o.Enabled) {
+	if o == nil {
 		var ret bool
 		return ret
 	}
-	return *o.Enabled
+
+	return o.Enabled
 }
 
-// GetEnabledOk returns a tuple with the Enabled field value if set, nil otherwise
+// GetEnabledOk returns a tuple with the Enabled field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetEnabledOk() (*bool, bool) {
-	if o == nil || IsNil(o.Enabled) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Enabled, true
+	return &o.Enabled, true
 }
 
-// HasEnabled returns a boolean if a field has been set.
-func (o *SloResponse) HasEnabled() bool {
-	if o != nil && !IsNil(o.Enabled) {
-		return true
-	}
-
-	return false
-}
-
-// SetEnabled gets a reference to the given bool and assigns it to the Enabled field.
+// SetEnabled sets field value
 func (o *SloResponse) SetEnabled(v bool) {
-	o.Enabled = &v
+	o.Enabled = v
 }
 
-// GetGroupBy returns the GroupBy field value if set, zero value otherwise.
+// GetGroupBy returns the GroupBy field value
 func (o *SloResponse) GetGroupBy() string {
-	if o == nil || IsNil(o.GroupBy) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.GroupBy
+
+	return o.GroupBy
 }
 
-// GetGroupByOk returns a tuple with the GroupBy field value if set, nil otherwise
+// GetGroupByOk returns a tuple with the GroupBy field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetGroupByOk() (*string, bool) {
-	if o == nil || IsNil(o.GroupBy) {
+	if o == nil {
 		return nil, false
 	}
-	return o.GroupBy, true
+	return &o.GroupBy, true
 }
 
-// HasGroupBy returns a boolean if a field has been set.
-func (o *SloResponse) HasGroupBy() bool {
-	if o != nil && !IsNil(o.GroupBy) {
-		return true
-	}
-
-	return false
-}
-
-// SetGroupBy gets a reference to the given string and assigns it to the GroupBy field.
+// SetGroupBy sets field value
 func (o *SloResponse) SetGroupBy(v string) {
-	o.GroupBy = &v
+	o.GroupBy = v
 }
 
-// GetInstanceId returns the InstanceId field value if set, zero value otherwise.
+// GetInstanceId returns the InstanceId field value
 func (o *SloResponse) GetInstanceId() string {
-	if o == nil || IsNil(o.InstanceId) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.InstanceId
+
+	return o.InstanceId
 }
 
-// GetInstanceIdOk returns a tuple with the InstanceId field value if set, nil otherwise
+// GetInstanceIdOk returns a tuple with the InstanceId field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetInstanceIdOk() (*string, bool) {
-	if o == nil || IsNil(o.InstanceId) {
+	if o == nil {
 		return nil, false
 	}
-	return o.InstanceId, true
+	return &o.InstanceId, true
 }
 
-// HasInstanceId returns a boolean if a field has been set.
-func (o *SloResponse) HasInstanceId() bool {
-	if o != nil && !IsNil(o.InstanceId) {
-		return true
-	}
-
-	return false
-}
-
-// SetInstanceId gets a reference to the given string and assigns it to the InstanceId field.
+// SetInstanceId sets field value
 func (o *SloResponse) SetInstanceId(v string) {
-	o.InstanceId = &v
+	o.InstanceId = v
 }
 
-// GetCreatedAt returns the CreatedAt field value if set, zero value otherwise.
+// GetCreatedAt returns the CreatedAt field value
 func (o *SloResponse) GetCreatedAt() string {
-	if o == nil || IsNil(o.CreatedAt) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.CreatedAt
+
+	return o.CreatedAt
 }
 
-// GetCreatedAtOk returns a tuple with the CreatedAt field value if set, nil otherwise
+// GetCreatedAtOk returns a tuple with the CreatedAt field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetCreatedAtOk() (*string, bool) {
-	if o == nil || IsNil(o.CreatedAt) {
+	if o == nil {
 		return nil, false
 	}
-	return o.CreatedAt, true
+	return &o.CreatedAt, true
 }
 
-// HasCreatedAt returns a boolean if a field has been set.
-func (o *SloResponse) HasCreatedAt() bool {
-	if o != nil && !IsNil(o.CreatedAt) {
-		return true
-	}
-
-	return false
-}
-
-// SetCreatedAt gets a reference to the given string and assigns it to the CreatedAt field.
+// SetCreatedAt sets field value
 func (o *SloResponse) SetCreatedAt(v string) {
-	o.CreatedAt = &v
+	o.CreatedAt = v
 }
 
-// GetUpdatedAt returns the UpdatedAt field value if set, zero value otherwise.
+// GetUpdatedAt returns the UpdatedAt field value
 func (o *SloResponse) GetUpdatedAt() string {
-	if o == nil || IsNil(o.UpdatedAt) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.UpdatedAt
+
+	return o.UpdatedAt
 }
 
-// GetUpdatedAtOk returns a tuple with the UpdatedAt field value if set, nil otherwise
+// GetUpdatedAtOk returns a tuple with the UpdatedAt field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetUpdatedAtOk() (*string, bool) {
-	if o == nil || IsNil(o.UpdatedAt) {
+	if o == nil {
 		return nil, false
 	}
-	return o.UpdatedAt, true
+	return &o.UpdatedAt, true
 }
 
-// HasUpdatedAt returns a boolean if a field has been set.
-func (o *SloResponse) HasUpdatedAt() bool {
-	if o != nil && !IsNil(o.UpdatedAt) {
-		return true
-	}
-
-	return false
-}
-
-// SetUpdatedAt gets a reference to the given string and assigns it to the UpdatedAt field.
+// SetUpdatedAt sets field value
 func (o *SloResponse) SetUpdatedAt(v string) {
-	o.UpdatedAt = &v
+	o.UpdatedAt = v
 }
 
 func (o SloResponse) MarshalJSON() ([]byte, error) {
@@ -555,48 +457,20 @@ func (o SloResponse) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Id) {
 		toSerialize["id"] = o.Id
 	}
-	if !IsNil(o.Name) {
-		toSerialize["name"] = o.Name
-	}
-	if !IsNil(o.Description) {
-		toSerialize["description"] = o.Description
-	}
-	if !IsNil(o.Indicator) {
-		toSerialize["indicator"] = o.Indicator
-	}
-	if !IsNil(o.TimeWindow) {
-		toSerialize["timeWindow"] = o.TimeWindow
-	}
-	if !IsNil(o.BudgetingMethod) {
-		toSerialize["budgetingMethod"] = o.BudgetingMethod
-	}
-	if !IsNil(o.Objective) {
-		toSerialize["objective"] = o.Objective
-	}
-	if !IsNil(o.Settings) {
-		toSerialize["settings"] = o.Settings
-	}
-	if !IsNil(o.Revision) {
-		toSerialize["revision"] = o.Revision
-	}
-	if !IsNil(o.Summary) {
-		toSerialize["summary"] = o.Summary
-	}
-	if !IsNil(o.Enabled) {
-		toSerialize["enabled"] = o.Enabled
-	}
-	if !IsNil(o.GroupBy) {
-		toSerialize["groupBy"] = o.GroupBy
-	}
-	if !IsNil(o.InstanceId) {
-		toSerialize["instanceId"] = o.InstanceId
-	}
-	if !IsNil(o.CreatedAt) {
-		toSerialize["createdAt"] = o.CreatedAt
-	}
-	if !IsNil(o.UpdatedAt) {
-		toSerialize["updatedAt"] = o.UpdatedAt
-	}
+	toSerialize["name"] = o.Name
+	toSerialize["description"] = o.Description
+	toSerialize["indicator"] = o.Indicator
+	toSerialize["timeWindow"] = o.TimeWindow
+	toSerialize["budgetingMethod"] = o.BudgetingMethod
+	toSerialize["objective"] = o.Objective
+	toSerialize["settings"] = o.Settings
+	toSerialize["revision"] = o.Revision
+	toSerialize["summary"] = o.Summary
+	toSerialize["enabled"] = o.Enabled
+	toSerialize["groupBy"] = o.GroupBy
+	toSerialize["instanceId"] = o.InstanceId
+	toSerialize["createdAt"] = o.CreatedAt
+	toSerialize["updatedAt"] = o.UpdatedAt
 	return toSerialize, nil
 }
 

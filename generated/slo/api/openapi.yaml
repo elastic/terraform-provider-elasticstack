@@ -911,6 +911,21 @@ components:
           description: The last update date
           example: 2023-01-12T10:03:19.000Z
           type: string
+      required:
+      - budgetingMethod
+      - createdAt
+      - description
+      - enabled
+      - groupBy
+      - indicator
+      - instanceId
+      - name
+      - objective
+      - revision
+      - settings
+      - summary
+      - timeWindow
+      - updatedAt
       title: SLO response
       type: object
     find_slo_response:

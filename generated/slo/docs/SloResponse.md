@@ -5,26 +5,26 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Id** | Pointer to **string** | The identifier of the SLO. | [optional] 
-**Name** | Pointer to **string** | The name of the SLO. | [optional] 
-**Description** | Pointer to **string** | The description of the SLO. | [optional] 
-**Indicator** | Pointer to [**SloResponseIndicator**](SloResponseIndicator.md) |  | [optional] 
-**TimeWindow** | Pointer to [**TimeWindow**](TimeWindow.md) |  | [optional] 
-**BudgetingMethod** | Pointer to [**BudgetingMethod**](BudgetingMethod.md) |  | [optional] 
-**Objective** | Pointer to [**Objective**](Objective.md) |  | [optional] 
-**Settings** | Pointer to [**Settings**](Settings.md) |  | [optional] 
-**Revision** | Pointer to **float64** | The SLO revision | [optional] 
-**Summary** | Pointer to [**Summary**](Summary.md) |  | [optional] 
-**Enabled** | Pointer to **bool** | Indicate if the SLO is enabled | [optional] 
-**GroupBy** | Pointer to **string** | optional group by field to use to generate an SLO per distinct value | [optional] 
-**InstanceId** | Pointer to **string** | the value derived from the groupBy field, if present, otherwise &#39;*&#39; | [optional] 
-**CreatedAt** | Pointer to **string** | The creation date | [optional] 
-**UpdatedAt** | Pointer to **string** | The last update date | [optional] 
+**Name** | **string** | The name of the SLO. | 
+**Description** | **string** | The description of the SLO. | 
+**Indicator** | [**SloResponseIndicator**](SloResponseIndicator.md) |  | 
+**TimeWindow** | [**TimeWindow**](TimeWindow.md) |  | 
+**BudgetingMethod** | [**BudgetingMethod**](BudgetingMethod.md) |  | 
+**Objective** | [**Objective**](Objective.md) |  | 
+**Settings** | [**Settings**](Settings.md) |  | 
+**Revision** | **float64** | The SLO revision | 
+**Summary** | [**Summary**](Summary.md) |  | 
+**Enabled** | **bool** | Indicate if the SLO is enabled | 
+**GroupBy** | **string** | optional group by field to use to generate an SLO per distinct value | 
+**InstanceId** | **string** | the value derived from the groupBy field, if present, otherwise &#39;*&#39; | 
+**CreatedAt** | **string** | The creation date | 
+**UpdatedAt** | **string** | The last update date | 
 
 ## Methods
 
 ### NewSloResponse
 
-`func NewSloResponse() *SloResponse`
+`func NewSloResponse(name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string, ) *SloResponse`
 
 NewSloResponse instantiates a new SloResponse object
 This constructor will assign default values to properties that have it defined,
@@ -83,11 +83,6 @@ and a boolean to check if the value has been set.
 
 SetName sets Name field to given value.
 
-### HasName
-
-`func (o *SloResponse) HasName() bool`
-
-HasName returns a boolean if a field has been set.
 
 ### GetDescription
 
@@ -108,11 +103,6 @@ and a boolean to check if the value has been set.
 
 SetDescription sets Description field to given value.
 
-### HasDescription
-
-`func (o *SloResponse) HasDescription() bool`
-
-HasDescription returns a boolean if a field has been set.
 
 ### GetIndicator
 
@@ -133,11 +123,6 @@ and a boolean to check if the value has been set.
 
 SetIndicator sets Indicator field to given value.
 
-### HasIndicator
-
-`func (o *SloResponse) HasIndicator() bool`
-
-HasIndicator returns a boolean if a field has been set.
 
 ### GetTimeWindow
 
@@ -158,11 +143,6 @@ and a boolean to check if the value has been set.
 
 SetTimeWindow sets TimeWindow field to given value.
 
-### HasTimeWindow
-
-`func (o *SloResponse) HasTimeWindow() bool`
-
-HasTimeWindow returns a boolean if a field has been set.
 
 ### GetBudgetingMethod
 
@@ -183,11 +163,6 @@ and a boolean to check if the value has been set.
 
 SetBudgetingMethod sets BudgetingMethod field to given value.
 
-### HasBudgetingMethod
-
-`func (o *SloResponse) HasBudgetingMethod() bool`
-
-HasBudgetingMethod returns a boolean if a field has been set.
 
 ### GetObjective
 
@@ -208,11 +183,6 @@ and a boolean to check if the value has been set.
 
 SetObjective sets Objective field to given value.
 
-### HasObjective
-
-`func (o *SloResponse) HasObjective() bool`
-
-HasObjective returns a boolean if a field has been set.
 
 ### GetSettings
 
@@ -233,11 +203,6 @@ and a boolean to check if the value has been set.
 
 SetSettings sets Settings field to given value.
 
-### HasSettings
-
-`func (o *SloResponse) HasSettings() bool`
-
-HasSettings returns a boolean if a field has been set.
 
 ### GetRevision
 
@@ -258,11 +223,6 @@ and a boolean to check if the value has been set.
 
 SetRevision sets Revision field to given value.
 
-### HasRevision
-
-`func (o *SloResponse) HasRevision() bool`
-
-HasRevision returns a boolean if a field has been set.
 
 ### GetSummary
 
@@ -283,11 +243,6 @@ and a boolean to check if the value has been set.
 
 SetSummary sets Summary field to given value.
 
-### HasSummary
-
-`func (o *SloResponse) HasSummary() bool`
-
-HasSummary returns a boolean if a field has been set.
 
 ### GetEnabled
 
@@ -308,11 +263,6 @@ and a boolean to check if the value has been set.
 
 SetEnabled sets Enabled field to given value.
 
-### HasEnabled
-
-`func (o *SloResponse) HasEnabled() bool`
-
-HasEnabled returns a boolean if a field has been set.
 
 ### GetGroupBy
 
@@ -333,11 +283,6 @@ and a boolean to check if the value has been set.
 
 SetGroupBy sets GroupBy field to given value.
 
-### HasGroupBy
-
-`func (o *SloResponse) HasGroupBy() bool`
-
-HasGroupBy returns a boolean if a field has been set.
 
 ### GetInstanceId
 
@@ -358,11 +303,6 @@ and a boolean to check if the value has been set.
 
 SetInstanceId sets InstanceId field to given value.
 
-### HasInstanceId
-
-`func (o *SloResponse) HasInstanceId() bool`
-
-HasInstanceId returns a boolean if a field has been set.
 
 ### GetCreatedAt
 
@@ -383,11 +323,6 @@ and a boolean to check if the value has been set.
 
 SetCreatedAt sets CreatedAt field to given value.
 
-### HasCreatedAt
-
-`func (o *SloResponse) HasCreatedAt() bool`
-
-HasCreatedAt returns a boolean if a field has been set.
 
 ### GetUpdatedAt
 
@@ -408,11 +343,6 @@ and a boolean to check if the value has been set.
 
 SetUpdatedAt sets UpdatedAt field to given value.
 
-### HasUpdatedAt
-
-`func (o *SloResponse) HasUpdatedAt() bool`
-
-HasUpdatedAt returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

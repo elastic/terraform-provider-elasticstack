@@ -258,7 +258,6 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 			}
 		}
 	}
-
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err

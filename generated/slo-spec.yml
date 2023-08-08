@@ -899,6 +899,21 @@ components:
     slo_response:
       title: SLO response
       type: object
+      required:
+        - name
+        - description
+        - indicator
+        - timeWindow
+        - budgetingMethod
+        - objective
+        - settings
+        - revision
+        - summary
+        - enabled
+        - groupBy
+        - instanceId
+        - createdAt
+        - updatedAt
       properties:
         id:
           description: The identifier of the SLO.

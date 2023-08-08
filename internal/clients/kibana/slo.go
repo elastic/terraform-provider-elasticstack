@@ -158,12 +158,12 @@ func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
 	return &models.Slo{
 		ID:              *res.Id,
 		SpaceID:         spaceID,
-		Name:            *res.Name,
-		Description:     *res.Description,
-		BudgetingMethod: *res.BudgetingMethod,
-		Indicator:       *res.Indicator,
-		TimeWindow:      *res.TimeWindow,
-		Objective:       *res.Objective,
-		Settings:        res.Settings,
+		Name:            res.Name,
+		Description:     res.Description,
+		BudgetingMethod: res.BudgetingMethod,
+		Indicator:       res.Indicator,
+		TimeWindow:      res.TimeWindow,
+		Objective:       res.Objective,
+		Settings:        &res.Settings,
 	}
 }
