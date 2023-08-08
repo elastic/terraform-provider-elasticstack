@@ -372,7 +372,7 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 	s, diags := kibana.GetSlo(ctx, client, id, spaceId)
 	if s == nil && diags == nil {
 		d.SetId("")
-		return diags
+		return nil
 	}
 	if diags.HasError() {
 		return diags

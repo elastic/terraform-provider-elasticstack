@@ -21,14 +21,15 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
 	req := client.GetSloOp(ctxWithAuth, "default", id).KbnXsrf("true")
 	sloRes, res, err := req.Execute()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
 	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
+
 	return sloResponseToModel("default", sloRes), utils.CheckHttpError(res, "Unable to get slo with ID "+string(id))
 }
 
