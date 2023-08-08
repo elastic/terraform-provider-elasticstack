@@ -197,7 +197,6 @@ func ResourceSlo() *schema.Resource {
 	}
 }
 
-// surely this kind of thing exists in the SDK?
 func getOrNilString(path string, d *schema.ResourceData) *string {
 	if v, ok := d.GetOk(path); ok {
 		str := v.(string)
