@@ -3,6 +3,7 @@ package kibana_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -27,7 +28,7 @@ func TestAccResourceSlo(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   getTFConfig(sloName, "sli.apm.transactionDuration", true),
+				Config:   getTFConfig(sloName, "sli.apm.transactionDuration", false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "description", "fully sick SLO"),
@@ -44,7 +45,7 @@ func TestAccResourceSlo(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.target", "0.999"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_target", "0.95"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "1m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "1m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by", "some.field"),
@@ -52,17 +53,17 @@ func TestAccResourceSlo(t *testing.T) {
 			},
 			{ //check that name can be updated
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   getTFConfig(fmt.Sprintf("Updated %s", sloName), "sli.apm.transactionDuration", true),
+				Config:   getTFConfig(fmt.Sprintf("Updated %s", sloName), "sli.apm.transactionDuration", false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("Updated %s", sloName)),
 				),
 			},
-			{ //check that settings get reset to defauts when omitted from tf definition
+			{ //check that settings can be updated from api-computed defaults
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   getTFConfig(sloName, "sli.apm.transactionDuration", false),
+				Config:   getTFConfig(sloName, "sli.apm.transactionDuration", true),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "1m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "5m"),
 				),
 			},
 			{
@@ -109,7 +110,7 @@ func getTFConfig(name string, indicatorType string, settingsEnabled bool) string
 		settings = `
 		settings {
 			sync_delay = "5m"
-			frequency = "1m"
+			frequency = "5m"
 		}
 		`
 	} else {
@@ -155,8 +156,6 @@ resource "elasticstack_kibana_slo" "test_slo" {
   }
   
 `, name, getIndicator(indicatorType), settings)
-
-	fmt.Println("applying config: ", config)
 
 	return config
 }
@@ -207,6 +206,34 @@ func getIndicator(indicatorType string) string {
 		}
 	  }
 	  `
+
+	case "sli.histogram.custom":
+		indicator = `
+	indicator {
+		type = "sli.histogram.custom"
+		params {
+		  index = "my-index"
+		  good = "fail"
+		  total = "*"
+		  filter = "labels.groupId: group-0"
+		  timestamp_field = "custom_timestamp"
+		}
+	  }
+	  `
+	case "sli.metric.custom":
+		indicator = `
+	indicator {
+		type = "sli.metric.custom"
+		params {
+		  index = "my-index"
+		  good = "fail"
+		  total = "*"
+		  filter = "labels.groupId: group-0"
+		  timestamp_field = "custom_timestamp"
+		}
+	  }
+	  `
+
 	}
 
 	return indicator
@@ -223,7 +250,6 @@ func checkResourceSloDestroy(s *terraform.State) error {
 			continue
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
-		fmt.Printf("Checking for SLO (%s)\n", compId.ResourceId)
 
 		slo, diags := kibana.GetSlo(context.Background(), client, compId.ResourceId, compId.ClusterId)
 		if diags.HasError() {
