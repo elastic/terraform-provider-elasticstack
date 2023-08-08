@@ -605,7 +605,6 @@ func buildConnectorsClient(baseConfig BaseConfig, config kibana.Config) (*connec
 }
 
 func buildSloClient(baseConfig BaseConfig, config kibana.Config) *slo.APIClient {
-	//again this is the same -- worth pulling this out into a common place?
 	sloConfig := slo.Configuration{
 		UserAgent: baseConfig.UserAgent,
 		Servers: slo.ServerConfigurations{
