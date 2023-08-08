@@ -266,6 +266,12 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 			},
 		}
 
+	case "sli.histogram.custom":
+		return models.Slo{}, diag.Errorf("the sli.histogram.custom indicator type is currently unsupported.") //https://github.com/elastic/terraform-provider-elasticstack/issues/214
+
+	case "sli.metric.custom":
+		return models.Slo{}, diag.Errorf("the sli.metric.custom indicator type is currently unsupported.") //https://github.com/elastic/terraform-provider-elasticstack/issues/214
+
 	default:
 		return models.Slo{}, diag.Errorf("unknown indicator type %s", indicatorType)
 	}

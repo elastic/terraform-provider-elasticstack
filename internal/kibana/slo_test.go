@@ -89,6 +89,16 @@ func TestAccResourceSlo(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.timestamp_field", "custom_timestamp"),
 				),
 			},
+			{
+				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:      getTFConfig(sloName, "sli.histogram.custom", true),
+				ExpectError: regexp.MustCompile("the sli.histogram.custom indicator type is currently unsupported"),
+			},
+			{
+				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:      getTFConfig(sloName, "sli.metric.custom", true),
+				ExpectError: regexp.MustCompile("the sli.metric.custom indicator type is currently unsupported"),
+			},
 		},
 	})
 }
