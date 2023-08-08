@@ -148,6 +148,7 @@ func ResourceSlo() *schema.Resource {
 			Description: "The default settings should be sufficient for most users, but if needed, these properties can be overwritten.",
 			Type:        schema.TypeList,
 			Optional:    true,
+			Computed:    true,
 			MinItems:    1,
 			MaxItems:    1,
 			Elem: &schema.Resource{
@@ -155,10 +156,12 @@ func ResourceSlo() *schema.Resource {
 					"sync_delay": {
 						Type:     schema.TypeString,
 						Optional: true,
+						Computed: true,
 					},
 					"frequency": {
 						Type:     schema.TypeString,
 						Optional: true,
+						Computed: true,
 					},
 				},
 			},
@@ -278,14 +281,9 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		TimesliceWindow: getOrNilString("objective.0.timeslice_window", d),
 	}
 
-	var settings *slo.Settings
-	if _, ok := d.GetOk("settings"); ok {
-		settings = &slo.Settings{
-			SyncDelay: getOrNilString("settings.0.sync_delay", d),
-			Frequency: getOrNilString("settings.0.frequency", d),
-		}
-	} else {
-		settings = nil
+	settings := slo.Settings{
+		SyncDelay: getOrNilString("settings.0.sync_delay", d),
+		Frequency: getOrNilString("settings.0.frequency", d),
 	}
 
 	budgetingMethod := slo.BudgetingMethod(d.Get("budgeting_method").(string))
@@ -297,7 +295,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		TimeWindow:      timeWindow,
 		BudgetingMethod: budgetingMethod,
 		Objective:       objective,
-		Settings:        settings,
+		Settings:        &settings,
 		SpaceID:         d.Get("space_id").(string),
 		GroupBy:         getOrNilString("group_by", d),
 	}
@@ -448,15 +446,13 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diag.FromErr(err)
 	}
 
-	if s.Settings != nil {
-		if err := d.Set("settings", []interface{}{
-			map[string]interface{}{
-				"sync_delay": s.Settings.SyncDelay,
-				"frequency":  s.Settings.Frequency,
-			},
-		}); err != nil {
-			return diag.FromErr(err)
-		}
+	if err := d.Set("settings", []interface{}{
+		map[string]interface{}{
+			"sync_delay": s.Settings.SyncDelay,
+			"frequency":  s.Settings.Frequency,
+		},
+	}); err != nil {
+		return diag.FromErr(err)
 	}
 
 	if s.GroupBy != nil {
