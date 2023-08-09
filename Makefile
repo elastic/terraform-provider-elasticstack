@@ -84,6 +84,7 @@ docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in th
 
 .PHONY: docker-elasticsearch
 docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
+	@ docker rm -f $(ELASTICSEARCH_NAME) &> /dev/null || true
 	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(ELASTICSEARCH_NAME) > /dev/null 2>&1 ; then \
 		docker run -d \
 		--memory $(ELASTICSEARCH_MEM) \
@@ -103,6 +104,7 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 
 .PHONY: docker-kibana
 docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start Kibana node in docker container
+	@ docker rm -f $(KIBANA_NAME)  &> /dev/null || true
 	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(KIBANA_NAME) > /dev/null 2>&1 ; then \
 		docker run -d \
 		-p 5601:5601 \
