@@ -42,13 +42,13 @@ func ResourceAlertingRule() *schema.Resource {
 			ForceNew:    true,
 		},
 		"notify_when": {
-			Description:  "Defines how often alerts generate actions. One of `onActionGroupChange`, `onActiveAlert`, or `onThrottleInterval`.",
+			Description:  "Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.",
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"onActionGroupChange", "onActiveAlert", "onThrottleInterval"}, false),
 		},
 		"params": {
-			Description:      "The parameters to pass to the rule type executor params value. This will also validate against the rule type params validator, if defined.",
+			Description:      "The rule parameters, which differ for each rule type.",
 			Type:             schema.TypeString,
 			Required:         true,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
@@ -67,24 +67,24 @@ func ResourceAlertingRule() *schema.Resource {
 			ValidateFunc: utils.StringIsDuration,
 		},
 		"actions": {
-			Description: "An array of action objects.",
+			Description: "An action that runs under defined conditions.",
 			Type:        schema.TypeList,
 			Optional:    true,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"group": {
-						Description: "Grouping actions is recommended for escalations for different types of alerts.",
+						Description: "The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names.",
 						Type:        schema.TypeString,
 						Optional:    true,
 						Default:     "default",
 					},
 					"id": {
-						Description: "The ID of the connector saved object.",
+						Description: "The identifier for the connector saved object.",
 						Type:        schema.TypeString,
 						Required:    true,
 					},
 					"params": {
-						Description:      "The map to the `params` that the connector type will receive.",
+						Description:      "The parameters for the action, which are sent to the connector.",
 						Type:             schema.TypeString,
 						Required:         true,
 						ValidateFunc:     validation.StringIsJSON,
@@ -107,7 +107,7 @@ func ResourceAlertingRule() *schema.Resource {
 			},
 		},
 		"throttle": {
-			Description:  "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is used only if notify_when is onThrottleInterval.",
+			Description:  "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
 			Type:         schema.TypeString,
 			Optional:     true,
 			ValidateFunc: utils.StringIsDuration,
