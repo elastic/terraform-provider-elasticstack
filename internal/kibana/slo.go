@@ -382,7 +382,9 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 
 	indicator := []interface{}{}
-	if s.Indicator.IndicatorPropertiesApmAvailability != nil {
+
+	switch {
+	case s.Indicator.IndicatorPropertiesApmAvailability != nil:
 		params := s.Indicator.IndicatorPropertiesApmAvailability.Params
 		indicator = append(indicator, map[string]interface{}{
 			"type": s.Indicator.IndicatorPropertiesApmAvailability.Type,
@@ -395,7 +397,8 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 				"filter":           params.Filter,
 			}},
 		})
-	} else if s.Indicator.IndicatorPropertiesApmLatency != nil {
+
+	case s.Indicator.IndicatorPropertiesApmLatency != nil:
 		params := s.Indicator.IndicatorPropertiesApmLatency.Params
 		indicator = append(indicator, map[string]interface{}{
 			"type": s.Indicator.IndicatorPropertiesApmLatency.Type,
@@ -409,7 +412,8 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 				"threshold":        params.Threshold,
 			}},
 		})
-	} else if s.Indicator.IndicatorPropertiesCustomKql != nil {
+
+	case s.Indicator.IndicatorPropertiesCustomKql != nil:
 		params := s.Indicator.IndicatorPropertiesCustomKql.Params
 		indicator = append(indicator, map[string]interface{}{
 			"type": s.Indicator.IndicatorPropertiesCustomKql.Type,
@@ -421,9 +425,9 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 				"timestamp_field": params.TimestampField,
 			}},
 		})
-	} else if s.Indicator.IndicatorPropertiesHistogram != nil {
-		return diag.Errorf("Histogram indicator type not currently supported")
-	} else {
+	}
+
+	if len(indicator) == 0 {
 		return diag.Errorf("indicator not set")
 	}
 	if err := d.Set("indicator", indicator); err != nil {
