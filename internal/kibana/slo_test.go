@@ -16,10 +16,140 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var minSupportedVersion = version.Must(version.NewSemver("8.9.0"))
-
 func TestAccResourceSlo(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("8.9.0"))
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	getIndicator := func(indicatorType string) string {
+		var indicator string
+
+		switch indicatorType {
+		case "sli.apm.transactionDuration":
+			indicator = `
+		indicator {
+			type = "sli.apm.transactionDuration"
+			params {
+			  environment     = "production"
+			  service         = "my-service"
+			  transaction_type = "request"
+			  transaction_name = "GET /sup/dawg"
+			  index           = "my-index"
+			  threshold       = 500
+			}
+		  }
+		  `
+
+		case "sli.apm.transactionErrorRate":
+			indicator = `
+		indicator {
+			type = "sli.apm.transactionErrorRate"
+			params {
+			  environment     = "production"
+			  service         = "my-service"
+			  transaction_type = "request"
+			  transaction_name = "GET /sup/dawg"
+			  index           = "my-index"
+			}
+		  }
+		  `
+
+		case "sli.kql.custom":
+			indicator = `
+		indicator {
+			type = "sli.kql.custom"
+			params {
+			  index = "my-index"
+			  good = "latency < 300"
+			  total = "*"
+			  filter = "labels.groupId: group-0"
+			  timestamp_field = "custom_timestamp"
+			}
+		  }
+		  `
+
+		case "sli.histogram.custom":
+			indicator = `
+		indicator {
+			type = "sli.histogram.custom"
+			params {
+			  index = "my-index"
+			  good = "fail"
+			  total = "*"
+			  filter = "labels.groupId: group-0"
+			  timestamp_field = "custom_timestamp"
+			}
+		  }
+		  `
+		case "sli.metric.custom":
+			indicator = `
+		indicator {
+			type = "sli.metric.custom"
+			params {
+			  index = "my-index"
+			  good = "fail"
+			  total = "*"
+			  filter = "labels.groupId: group-0"
+			  timestamp_field = "custom_timestamp"
+			}
+		  }
+		  `
+		}
+		return indicator
+	}
+
+	getTFConfig := func(name string, indicatorType string, settingsEnabled bool) string {
+		var settings string
+		if settingsEnabled {
+			settings = `
+			settings {
+				sync_delay = "5m"
+				frequency = "5m"
+			}
+			`
+		} else {
+			settings = ""
+		}
+
+		config := fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+	
+	resource "elasticstack_elasticsearch_index" "my_index" {
+		name = "my-index"
+		deletion_protection = false
+	}  
+	
+	resource "elasticstack_kibana_slo" "test_slo" {
+		name        = "%s"
+		description = "fully sick SLO"
+	
+	%s
+	  
+		time_window {
+		  duration   = "7d"
+		  type = "rolling"
+		}
+	  
+		budgeting_method = "timeslices"
+	  
+		objective {
+		  target          = 0.999
+		  timeslice_target = 0.95
+		  timeslice_window = "5m"
+		}
+	  
+	%s
+	
+		group_by = "some.field"
+	
+		depends_on = [elasticstack_elasticsearch_index.my_index]
+	  
+	  }
+	  
+	`, name, getIndicator(indicatorType), settings)
+		return config
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -102,141 +232,6 @@ func TestAccResourceSlo(t *testing.T) {
 			},
 		},
 	})
-}
-
-func getTFConfig(name string, indicatorType string, settingsEnabled bool) string {
-	var settings string
-	if settingsEnabled {
-		settings = `
-		settings {
-			sync_delay = "5m"
-			frequency = "5m"
-		}
-		`
-	} else {
-		settings = ""
-	}
-
-	config := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_elasticsearch_index" "my_index" {
-	name = "my-index"
-	deletion_protection = false
-}  
-
-resource "elasticstack_kibana_slo" "test_slo" {
-	name        = "%s"
-	description = "fully sick SLO"
-
-%s
-  
-	time_window {
-	  duration   = "7d"
-	  type = "rolling"
-	}
-  
-	budgeting_method = "timeslices"
-  
-	objective {
-	  target          = 0.999
-	  timeslice_target = 0.95
-	  timeslice_window = "5m"
-	}
-  
-%s
-
-	group_by = "some.field"
-
-	depends_on = [elasticstack_elasticsearch_index.my_index]
-  
-  }
-  
-`, name, getIndicator(indicatorType), settings)
-
-	return config
-}
-
-func getIndicator(indicatorType string) string {
-	var indicator string
-
-	switch indicatorType {
-	case "sli.apm.transactionDuration":
-		indicator = `
-	indicator {
-		type = "sli.apm.transactionDuration"
-		params {
-		  environment     = "production"
-		  service         = "my-service"
-		  transaction_type = "request"
-		  transaction_name = "GET /sup/dawg"
-		  index           = "my-index"
-		  threshold       = 500
-		}
-	  }
-	  `
-
-	case "sli.apm.transactionErrorRate":
-		indicator = `
-	indicator {
-		type = "sli.apm.transactionErrorRate"
-		params {
-		  environment     = "production"
-		  service         = "my-service"
-		  transaction_type = "request"
-		  transaction_name = "GET /sup/dawg"
-		  index           = "my-index"
-		}
-	  }
-	  `
-
-	case "sli.kql.custom":
-		indicator = `
-	indicator {
-		type = "sli.kql.custom"
-		params {
-		  index = "my-index"
-		  good = "latency < 300"
-		  total = "*"
-		  filter = "labels.groupId: group-0"
-		  timestamp_field = "custom_timestamp"
-		}
-	  }
-	  `
-
-	case "sli.histogram.custom":
-		indicator = `
-	indicator {
-		type = "sli.histogram.custom"
-		params {
-		  index = "my-index"
-		  good = "fail"
-		  total = "*"
-		  filter = "labels.groupId: group-0"
-		  timestamp_field = "custom_timestamp"
-		}
-	  }
-	  `
-	case "sli.metric.custom":
-		indicator = `
-	indicator {
-		type = "sli.metric.custom"
-		params {
-		  index = "my-index"
-		  good = "fail"
-		  total = "*"
-		  filter = "labels.groupId: group-0"
-		  timestamp_field = "custom_timestamp"
-		}
-	  }
-	  `
-
-	}
-
-	return indicator
 }
 
 func checkResourceSloDestroy(s *terraform.State) error {
