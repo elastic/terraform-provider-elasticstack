@@ -1,0 +1,31 @@
+---
+subcategory: "Fleet"
+layout: ""
+page_title: "Elasticstack: elasticstack_fleet_package_policy Resource"
+description: |-
+  Creates or updates a Fleet Package Policy.
+---
+
+# Resource: elasticstack_fleet_package_policy
+
+Creates or updates a Fleet Package Policy.
+
+It is highly recommended that all inputs and streams are provided in the
+Terraform plan, even if some are disabled. Otherwise, differences may appear
+between what is in the plan versus what is returned by the Fleet API.
+
+The Kibana Fleet UI can be used as a reference for what data needs to be provided.
+Instead of saving a new integration configuration, the API request can be
+previewed, showing what values need to be provided for inputs and their streams.
+
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_fleet_package_policy/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+Import is supported using the following syntax:
+
+{{ codefile "shell" "examples/resources/elasticstack_fleet_package_policy/import.sh" }}
