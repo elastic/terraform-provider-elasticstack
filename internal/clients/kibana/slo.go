@@ -156,7 +156,7 @@ func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
 	}
 
 	return &models.Slo{
-		ID:              *res.Id,
+		ID:              res.Id,
 		SpaceID:         spaceID,
 		Name:            res.Name,
 		Description:     res.Description,

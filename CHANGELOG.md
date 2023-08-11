@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Added
+- Add support for Kibana SLOs ([#385](https://github.com/elastic/terraform-provider-elasticstack/pull/385))
+
 ## [0.6.2] - 2023-06-19
 
 ### Added

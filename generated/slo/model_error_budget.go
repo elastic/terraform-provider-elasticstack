@@ -20,21 +20,25 @@ var _ MappedNullable = &ErrorBudget{}
 // ErrorBudget struct for ErrorBudget
 type ErrorBudget struct {
 	// The initial error budget, as 1 - objective
-	Initial *float64 `json:"initial,omitempty"`
+	Initial float64 `json:"initial"`
 	// The error budget consummed, as a percentage of the initial value.
-	Consumed *float64 `json:"consumed,omitempty"`
+	Consumed float64 `json:"consumed"`
 	// The error budget remaining, as a percentage of the initial value.
-	Remaining *float64 `json:"remaining,omitempty"`
+	Remaining float64 `json:"remaining"`
 	// Only for SLO defined with occurrences budgeting method and calendar aligned time window.
-	IsEstimated *bool `json:"isEstimated,omitempty"`
+	IsEstimated bool `json:"isEstimated"`
 }
 
 // NewErrorBudget instantiates a new ErrorBudget object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewErrorBudget() *ErrorBudget {
+func NewErrorBudget(initial float64, consumed float64, remaining float64, isEstimated bool) *ErrorBudget {
 	this := ErrorBudget{}
+	this.Initial = initial
+	this.Consumed = consumed
+	this.Remaining = remaining
+	this.IsEstimated = isEstimated
 	return &this
 }
 
@@ -46,132 +50,100 @@ func NewErrorBudgetWithDefaults() *ErrorBudget {
 	return &this
 }
 
-// GetInitial returns the Initial field value if set, zero value otherwise.
+// GetInitial returns the Initial field value
 func (o *ErrorBudget) GetInitial() float64 {
-	if o == nil || IsNil(o.Initial) {
+	if o == nil {
 		var ret float64
 		return ret
 	}
-	return *o.Initial
+
+	return o.Initial
 }
 
-// GetInitialOk returns a tuple with the Initial field value if set, nil otherwise
+// GetInitialOk returns a tuple with the Initial field value
 // and a boolean to check if the value has been set.
 func (o *ErrorBudget) GetInitialOk() (*float64, bool) {
-	if o == nil || IsNil(o.Initial) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Initial, true
+	return &o.Initial, true
 }
 
-// HasInitial returns a boolean if a field has been set.
-func (o *ErrorBudget) HasInitial() bool {
-	if o != nil && !IsNil(o.Initial) {
-		return true
-	}
-
-	return false
-}
-
-// SetInitial gets a reference to the given float64 and assigns it to the Initial field.
+// SetInitial sets field value
 func (o *ErrorBudget) SetInitial(v float64) {
-	o.Initial = &v
+	o.Initial = v
 }
 
-// GetConsumed returns the Consumed field value if set, zero value otherwise.
+// GetConsumed returns the Consumed field value
 func (o *ErrorBudget) GetConsumed() float64 {
-	if o == nil || IsNil(o.Consumed) {
+	if o == nil {
 		var ret float64
 		return ret
 	}
-	return *o.Consumed
+
+	return o.Consumed
 }
 
-// GetConsumedOk returns a tuple with the Consumed field value if set, nil otherwise
+// GetConsumedOk returns a tuple with the Consumed field value
 // and a boolean to check if the value has been set.
 func (o *ErrorBudget) GetConsumedOk() (*float64, bool) {
-	if o == nil || IsNil(o.Consumed) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Consumed, true
+	return &o.Consumed, true
 }
 
-// HasConsumed returns a boolean if a field has been set.
-func (o *ErrorBudget) HasConsumed() bool {
-	if o != nil && !IsNil(o.Consumed) {
-		return true
-	}
-
-	return false
-}
-
-// SetConsumed gets a reference to the given float64 and assigns it to the Consumed field.
+// SetConsumed sets field value
 func (o *ErrorBudget) SetConsumed(v float64) {
-	o.Consumed = &v
+	o.Consumed = v
 }
 
-// GetRemaining returns the Remaining field value if set, zero value otherwise.
+// GetRemaining returns the Remaining field value
 func (o *ErrorBudget) GetRemaining() float64 {
-	if o == nil || IsNil(o.Remaining) {
+	if o == nil {
 		var ret float64
 		return ret
 	}
-	return *o.Remaining
+
+	return o.Remaining
 }
 
-// GetRemainingOk returns a tuple with the Remaining field value if set, nil otherwise
+// GetRemainingOk returns a tuple with the Remaining field value
 // and a boolean to check if the value has been set.
 func (o *ErrorBudget) GetRemainingOk() (*float64, bool) {
-	if o == nil || IsNil(o.Remaining) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Remaining, true
+	return &o.Remaining, true
 }
 
-// HasRemaining returns a boolean if a field has been set.
-func (o *ErrorBudget) HasRemaining() bool {
-	if o != nil && !IsNil(o.Remaining) {
-		return true
-	}
-
-	return false
-}
-
-// SetRemaining gets a reference to the given float64 and assigns it to the Remaining field.
+// SetRemaining sets field value
 func (o *ErrorBudget) SetRemaining(v float64) {
-	o.Remaining = &v
+	o.Remaining = v
 }
 
-// GetIsEstimated returns the IsEstimated field value if set, zero value otherwise.
+// GetIsEstimated returns the IsEstimated field value
 func (o *ErrorBudget) GetIsEstimated() bool {
-	if o == nil || IsNil(o.IsEstimated) {
+	if o == nil {
 		var ret bool
 		return ret
 	}
-	return *o.IsEstimated
+
+	return o.IsEstimated
 }
 
-// GetIsEstimatedOk returns a tuple with the IsEstimated field value if set, nil otherwise
+// GetIsEstimatedOk returns a tuple with the IsEstimated field value
 // and a boolean to check if the value has been set.
 func (o *ErrorBudget) GetIsEstimatedOk() (*bool, bool) {
-	if o == nil || IsNil(o.IsEstimated) {
+	if o == nil {
 		return nil, false
 	}
-	return o.IsEstimated, true
+	return &o.IsEstimated, true
 }
 
-// HasIsEstimated returns a boolean if a field has been set.
-func (o *ErrorBudget) HasIsEstimated() bool {
-	if o != nil && !IsNil(o.IsEstimated) {
-		return true
-	}
-
-	return false
-}
-
-// SetIsEstimated gets a reference to the given bool and assigns it to the IsEstimated field.
+// SetIsEstimated sets field value
 func (o *ErrorBudget) SetIsEstimated(v bool) {
-	o.IsEstimated = &v
+	o.IsEstimated = v
 }
 
 func (o ErrorBudget) MarshalJSON() ([]byte, error) {
@@ -184,18 +156,10 @@ func (o ErrorBudget) MarshalJSON() ([]byte, error) {
 
 func (o ErrorBudget) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	if !IsNil(o.Initial) {
-		toSerialize["initial"] = o.Initial
-	}
-	if !IsNil(o.Consumed) {
-		toSerialize["consumed"] = o.Consumed
-	}
-	if !IsNil(o.Remaining) {
-		toSerialize["remaining"] = o.Remaining
-	}
-	if !IsNil(o.IsEstimated) {
-		toSerialize["isEstimated"] = o.IsEstimated
-	}
+	toSerialize["initial"] = o.Initial
+	toSerialize["consumed"] = o.Consumed
+	toSerialize["remaining"] = o.Remaining
+	toSerialize["isEstimated"] = o.IsEstimated
 	return toSerialize, nil
 }
 

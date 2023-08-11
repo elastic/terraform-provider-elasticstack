@@ -20,7 +20,7 @@ var _ MappedNullable = &SloResponse{}
 // SloResponse struct for SloResponse
 type SloResponse struct {
 	// The identifier of the SLO.
-	Id *string `json:"id,omitempty"`
+	Id string `json:"id"`
 	// The name of the SLO.
 	Name string `json:"name"`
 	// The description of the SLO.
@@ -49,8 +49,9 @@ type SloResponse struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewSloResponse(name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string) *SloResponse {
+func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string) *SloResponse {
 	this := SloResponse{}
+	this.Id = id
 	this.Name = name
 	this.Description = description
 	this.Indicator = indicator
@@ -76,36 +77,28 @@ func NewSloResponseWithDefaults() *SloResponse {
 	return &this
 }
 
-// GetId returns the Id field value if set, zero value otherwise.
+// GetId returns the Id field value
 func (o *SloResponse) GetId() string {
-	if o == nil || IsNil(o.Id) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.Id
+
+	return o.Id
 }
 
-// GetIdOk returns a tuple with the Id field value if set, nil otherwise
+// GetIdOk returns a tuple with the Id field value
 // and a boolean to check if the value has been set.
 func (o *SloResponse) GetIdOk() (*string, bool) {
-	if o == nil || IsNil(o.Id) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Id, true
+	return &o.Id, true
 }
 
-// HasId returns a boolean if a field has been set.
-func (o *SloResponse) HasId() bool {
-	if o != nil && !IsNil(o.Id) {
-		return true
-	}
-
-	return false
-}
-
-// SetId gets a reference to the given string and assigns it to the Id field.
+// SetId sets field value
 func (o *SloResponse) SetId(v string) {
-	o.Id = &v
+	o.Id = v
 }
 
 // GetName returns the Name field value
@@ -454,9 +447,7 @@ func (o SloResponse) MarshalJSON() ([]byte, error) {
 
 func (o SloResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	if !IsNil(o.Id) {
-		toSerialize["id"] = o.Id
-	}
+	toSerialize["id"] = o.Id
 	toSerialize["name"] = o.Name
 	toSerialize["description"] = o.Description
 	toSerialize["indicator"] = o.Indicator

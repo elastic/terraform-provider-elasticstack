@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Id** | Pointer to **string** | The identifier of the SLO. | [optional] 
+**Id** | **string** | The identifier of the SLO. | 
 **Name** | **string** | The name of the SLO. | 
 **Description** | **string** | The description of the SLO. | 
 **Indicator** | [**SloResponseIndicator**](SloResponseIndicator.md) |  | 
@@ -24,7 +24,7 @@ Name | Type | Description | Notes
 
 ### NewSloResponse
 
-`func NewSloResponse(name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string, ) *SloResponse`
+`func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string, ) *SloResponse`
 
 NewSloResponse instantiates a new SloResponse object
 This constructor will assign default values to properties that have it defined,
@@ -58,11 +58,6 @@ and a boolean to check if the value has been set.
 
 SetId sets Id field to given value.
 
-### HasId
-
-`func (o *SloResponse) HasId() bool`
-
-HasId returns a boolean if a field has been set.
 
 ### GetName
 

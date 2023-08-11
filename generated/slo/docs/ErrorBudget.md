@@ -4,16 +4,16 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Initial** | Pointer to **float64** | The initial error budget, as 1 - objective | [optional] 
-**Consumed** | Pointer to **float64** | The error budget consummed, as a percentage of the initial value. | [optional] 
-**Remaining** | Pointer to **float64** | The error budget remaining, as a percentage of the initial value. | [optional] 
-**IsEstimated** | Pointer to **bool** | Only for SLO defined with occurrences budgeting method and calendar aligned time window. | [optional] 
+**Initial** | **float64** | The initial error budget, as 1 - objective | 
+**Consumed** | **float64** | The error budget consummed, as a percentage of the initial value. | 
+**Remaining** | **float64** | The error budget remaining, as a percentage of the initial value. | 
+**IsEstimated** | **bool** | Only for SLO defined with occurrences budgeting method and calendar aligned time window. | 
 
 ## Methods
 
 ### NewErrorBudget
 
-`func NewErrorBudget() *ErrorBudget`
+`func NewErrorBudget(initial float64, consumed float64, remaining float64, isEstimated bool, ) *ErrorBudget`
 
 NewErrorBudget instantiates a new ErrorBudget object
 This constructor will assign default values to properties that have it defined,
@@ -47,11 +47,6 @@ and a boolean to check if the value has been set.
 
 SetInitial sets Initial field to given value.
 
-### HasInitial
-
-`func (o *ErrorBudget) HasInitial() bool`
-
-HasInitial returns a boolean if a field has been set.
 
 ### GetConsumed
 
@@ -72,11 +67,6 @@ and a boolean to check if the value has been set.
 
 SetConsumed sets Consumed field to given value.
 
-### HasConsumed
-
-`func (o *ErrorBudget) HasConsumed() bool`
-
-HasConsumed returns a boolean if a field has been set.
 
 ### GetRemaining
 
@@ -97,11 +87,6 @@ and a boolean to check if the value has been set.
 
 SetRemaining sets Remaining field to given value.
 
-### HasRemaining
-
-`func (o *ErrorBudget) HasRemaining() bool`
-
-HasRemaining returns a boolean if a field has been set.
 
 ### GetIsEstimated
 
@@ -122,11 +107,6 @@ and a boolean to check if the value has been set.
 
 SetIsEstimated sets IsEstimated field to given value.
 
-### HasIsEstimated
-
-`func (o *ErrorBudget) HasIsEstimated() bool`
-
-HasIsEstimated returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

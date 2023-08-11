@@ -262,7 +262,7 @@ generate-connectors-client: tools ## generate Kibana connectors client
 generate-slo-client: tools ## generate Kibana slo client
 	@ rm -rf generated/slo
 	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.0-beta generate \
-		-i /local/generated/slo-spec.yml \
+		-i https://raw.githubusercontent.com/elastic/kibana/main/x-pack/plugins/observability/docs/openapi/slo/bundled.json \
 		--git-repo-id terraform-provider-elasticstack \
 		--git-user-id elastic \
 		-p isGoSubmodule=true \
