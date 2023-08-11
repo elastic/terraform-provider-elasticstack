@@ -9,7 +9,7 @@ resource "elasticstack_kibana_action_connector" "example" {
     refresh = true
   })
   connector_type_id = ".index"
-  secrets = jsonencode({})
+  secrets           = jsonencode({})
 }
 
 resource "elasticstack_kibana_action_connector" "pagerduty-connector" {
