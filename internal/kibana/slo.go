@@ -7,12 +7,18 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceSlo() *schema.Resource {
+	var indicatorAddresses []string
+	for i := range indicatorAddressToType {
+		indicatorAddresses = append(indicatorAddresses, i)
+	}
+
 	sloSchema := map[string]*schema.Schema{
 		"id": {
 			Description: "An ID (8 and 36 characters). If omitted, a UUIDv1 will be generated server-side.",
@@ -31,26 +37,171 @@ func ResourceSlo() *schema.Resource {
 			Type:        schema.TypeString,
 			Required:    true,
 		},
-		"indicator": {
-			Type:     schema.TypeList,
-			Required: true,
-			MinItems: 1,
-			MaxItems: 1,
+		"metric_custom_indicator": {
+			Type:         schema.TypeList,
+			MinItems:     1,
+			MaxItems:     1,
+			Optional:     true,
+			ExactlyOneOf: indicatorAddresses,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
-					"type": {
-						Type:         schema.TypeString,
-						Required:     true,
-						ValidateFunc: validation.StringInSlice([]string{"sli.kql.custom", "sli.apm.transactionErrorRate", "sli.apm.transactionDuration", "sli.histogram.custom", "sli.metric.custom"}, false),
+					"index": {
+						Type:     schema.TypeString,
+						Required: true,
 					},
-					"params": {
+					"filter": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"timestamp_field": {
+						Type:     schema.TypeString,
+						Optional: true,
+						Default:  "@timestamp",
+					},
+					"good": {
 						Type:     schema.TypeList,
 						Required: true,
 						MinItems: 1,
 						MaxItems: 1,
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
-								"index": {
+								"metrics": {
+									Type:     schema.TypeList,
+									Required: true,
+									MinItems: 1,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"name": {
+												Type:     schema.TypeString,
+												Required: true,
+											},
+											"aggregation": {
+												Type:     schema.TypeString,
+												Required: true,
+											},
+											"field": {
+												Type:     schema.TypeString,
+												Required: true,
+											},
+											"filter": {
+												Type:     schema.TypeString,
+												Optional: true,
+											},
+										},
+									},
+								},
+								"equation": {
+									Type:     schema.TypeString,
+									Required: true,
+								},
+							},
+						},
+					},
+					"total": {
+						Type:     schema.TypeList,
+						Required: true,
+						MinItems: 1,
+						MaxItems: 1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"metrics": {
+									Type:     schema.TypeList,
+									Required: true,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"name": {
+												Type:     schema.TypeString,
+												Required: true,
+											},
+											"aggregation": {
+												Type:     schema.TypeString,
+												Required: true,
+											},
+											"field": {
+												Type:     schema.TypeString,
+												Required: true,
+											},
+											"filter": {
+												Type:     schema.TypeString,
+												Optional: true,
+											},
+										},
+									},
+								},
+								"equation": {
+									Type:     schema.TypeString,
+									Required: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"histogram_custom_indicator": {
+			Type:         schema.TypeList,
+			MinItems:     1,
+			MaxItems:     1,
+			Optional:     true,
+			ExactlyOneOf: indicatorAddresses,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"index": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"filter": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"timestamp_field": {
+						Type:     schema.TypeString,
+						Optional: true,
+						Default:  "@timestamp",
+					},
+					"good": {
+						Type:     schema.TypeList,
+						Required: true,
+						MinItems: 1,
+						MaxItems: 1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"field": {
+									Type:     schema.TypeString,
+									Required: true,
+								},
+								"aggregation": {
+									Type:         schema.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringInSlice([]string{"value_count", "range"}, false),
+								},
+								"filter": {
+									Type:     schema.TypeString,
+									Optional: true,
+								},
+								"from": {
+									Type:     schema.TypeInt, //TODO: validate this is set if aggregation is range
+									Optional: true,
+								},
+								"to": {
+									Type:     schema.TypeInt, //TODO: validate this is set if aggregation is range
+									Optional: true,
+								},
+							},
+						},
+					},
+					"total": {
+						Type:     schema.TypeList,
+						Required: true,
+						MinItems: 1,
+						MaxItems: 1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"aggregation": {
+									Type:     schema.TypeString,
+									Required: true,
+								},
+								"field": {
 									Type:     schema.TypeString,
 									Required: true,
 								},
@@ -58,40 +209,122 @@ func ResourceSlo() *schema.Resource {
 									Type:     schema.TypeString,
 									Optional: true,
 								},
-								"good": {
-									Type:     schema.TypeString,
+								"from": {
+									Type:     schema.TypeFloat,
 									Optional: true,
 								},
-								"service": {
-									Type:     schema.TypeString,
-									Optional: true,
-								},
-								"environment": {
-									Type:     schema.TypeString,
-									Optional: true,
-								},
-								"transaction_type": {
-									Type:     schema.TypeString,
-									Optional: true,
-								},
-								"transaction_name": {
-									Type:     schema.TypeString,
-									Optional: true,
-								},
-								"total": {
-									Type:     schema.TypeString,
-									Optional: true,
-								},
-								"timestamp_field": {
-									Type:     schema.TypeString,
-									Optional: true,
-								},
-								"threshold": {
-									Type:     schema.TypeInt,
+								"to": {
+									Type:     schema.TypeFloat,
 									Optional: true,
 								},
 							},
 						},
+					},
+				},
+			},
+		},
+		"apm_latency_indicator": {
+			Type:         schema.TypeList,
+			MinItems:     1,
+			MaxItems:     1,
+			Optional:     true,
+			ExactlyOneOf: indicatorAddresses,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"index": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"filter": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"service": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"environment": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"transaction_type": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"transaction_name": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"threshold": {
+						Type:     schema.TypeInt,
+						Required: true,
+					},
+				},
+			},
+		},
+		"apm_availability_indicator": {
+			Type:         schema.TypeList,
+			MinItems:     1,
+			MaxItems:     1,
+			Optional:     true,
+			ExactlyOneOf: indicatorAddresses,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"index": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"filter": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"service": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"environment": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"transaction_type": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"transaction_name": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+				},
+			},
+		},
+		"kql_custom_indicator": {
+			Type:         schema.TypeList,
+			MinItems:     1,
+			MaxItems:     1,
+			Optional:     true,
+			ExactlyOneOf: indicatorAddresses,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"index": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"filter": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"good": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"total": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"timestamp_field": {
+						Type:     schema.TypeString,
+						Optional: true,
+						Default:  "@timestamp",
 					},
 				},
 			},
@@ -217,59 +450,119 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 	var diags diag.Diagnostics
 
 	var indicator slo.SloResponseIndicator
-	indicatorType := d.Get("indicator.0.type").(string)
+	var indicatorType string
+	for key := range indicatorAddressToType {
+		_, exists := d.GetOk(key)
+		if exists {
+			indicatorType = key
+		}
+	}
 
 	switch indicatorType {
-	case "sli.kql.custom":
+	case "kql_custom_indicator":
 		indicator = slo.SloResponseIndicator{
 			IndicatorPropertiesCustomKql: &slo.IndicatorPropertiesCustomKql{
-				Type: indicatorType,
+				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesCustomKqlParams{
-					Index:          d.Get("indicator.0.params.0.index").(string),
-					Filter:         getOrNilString("indicator.0.params.0.filter", d),
-					Good:           getOrNilString("indicator.0.params.0.good", d),
-					Total:          getOrNilString("indicator.0.params.0.total", d),
-					TimestampField: d.Get("indicator.0.params.0.timestamp_field").(string),
+					Index:          d.Get(indicatorType + ".0.index").(string),
+					Filter:         getOrNilString(indicatorType+".0.filter", d),
+					Good:           getOrNilString(indicatorType+".0.good", d),
+					Total:          getOrNilString(indicatorType+".0.total", d),
+					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 				},
 			},
 		}
 
-	case "sli.apm.transactionErrorRate":
+	case "apm_availability_indicator":
 		indicator = slo.SloResponseIndicator{
 			IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
-				Type: indicatorType,
+				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesApmAvailabilityParams{
-					Service:         d.Get("indicator.0.params.0.service").(string),
-					Environment:     d.Get("indicator.0.params.0.environment").(string),
-					TransactionType: d.Get("indicator.0.params.0.transaction_type").(string),
-					TransactionName: d.Get("indicator.0.params.0.transaction_name").(string),
-					Filter:          getOrNilString("indicator.0.params.0.filter", d),
-					Index:           d.Get("indicator.0.params.0.index").(string),
+					Service:         d.Get(indicatorType + ".0.service").(string),
+					Environment:     d.Get(indicatorType + ".0.environment").(string),
+					TransactionType: d.Get(indicatorType + ".0.transaction_type").(string),
+					TransactionName: d.Get(indicatorType + ".0.transaction_name").(string),
+					Filter:          getOrNilString(indicatorType+".0.filter", d),
+					Index:           d.Get(indicatorType + ".0.index").(string),
 				},
 			},
 		}
 
-	case "sli.apm.transactionDuration":
+	case "apm_latency_indicator":
 		indicator = slo.SloResponseIndicator{
 			IndicatorPropertiesApmLatency: &slo.IndicatorPropertiesApmLatency{
-				Type: indicatorType,
+				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesApmLatencyParams{
-					Service:         d.Get("indicator.0.params.0.service").(string),
-					Environment:     d.Get("indicator.0.params.0.environment").(string),
-					TransactionType: d.Get("indicator.0.params.0.transaction_type").(string),
-					TransactionName: d.Get("indicator.0.params.0.transaction_name").(string),
-					Filter:          getOrNilString("indicator.0.params.0.filter", d),
-					Index:           d.Get("indicator.0.params.0.index").(string),
-					Threshold:       float64(d.Get("indicator.0.params.0.threshold").(int)),
+					Service:         d.Get(indicatorType + ".0.service").(string),
+					Environment:     d.Get(indicatorType + ".0.environment").(string),
+					TransactionType: d.Get(indicatorType + ".0.transaction_type").(string),
+					TransactionName: d.Get(indicatorType + ".0.transaction_name").(string),
+					Filter:          getOrNilString(indicatorType+".0.filter", d),
+					Index:           d.Get(indicatorType + ".0.index").(string),
+					Threshold:       float64(d.Get(indicatorType + ".0.threshold").(int)),
 				},
 			},
 		}
 
-	case "sli.histogram.custom":
-		return models.Slo{}, diag.Errorf("the sli.histogram.custom indicator type is currently unsupported.") //https://github.com/elastic/terraform-provider-elasticstack/issues/214
+	case "histogram_custom_indicator":
+		indicator = slo.SloResponseIndicator{
+			IndicatorPropertiesHistogram: &slo.IndicatorPropertiesHistogram{
+				Type: indicatorAddressToType[indicatorType],
+				Params: slo.IndicatorPropertiesHistogramParams{
+					Filter:         getOrNilString(indicatorType+".0.filter", d),
+					Index:          d.Get(indicatorType + ".0.index").(string),
+					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
+					Good: slo.IndicatorPropertiesHistogramParamsGood{
+						Field:       d.Get(indicatorType + ".0.good.0.field").(string),
+						Aggregation: d.Get(indicatorType + ".0.good.0.aggregation").(string),
+						Filter:      getOrNilString(indicatorType+".0.good.0.filter", d),
+						From:        getOrNilFloat(indicatorType+".0.good.0.from", d),
+						To:          getOrNilFloat(indicatorType+".0.good.0.to", d),
+					},
+					Total: slo.IndicatorPropertiesHistogramParamsTotal{
+						Field:       d.Get(indicatorType + ".0.total.0.field").(string),
+						Aggregation: d.Get(indicatorType + ".0.total.0.aggregation").(string),
+						Filter:      getOrNilString(indicatorType+".0.total.0.filter", d),
+						From:        getOrNilFloat(indicatorType+".0.total.0.from", d),
+						To:          getOrNilFloat(indicatorType+".0.total.0.to", d),
+					},
+				},
+			},
+		}
 
-	case "sli.metric.custom":
-		return models.Slo{}, diag.Errorf("the sli.metric.custom indicator type is currently unsupported.") //https://github.com/elastic/terraform-provider-elasticstack/issues/214
+	case "metric_custom_indicator":
+		indicator = slo.SloResponseIndicator{
+			IndicatorPropertiesCustomMetric: &slo.IndicatorPropertiesCustomMetric{
+				Type: indicatorAddressToType[indicatorType],
+				Params: slo.IndicatorPropertiesCustomMetricParams{
+					Filter:         d.Get(indicatorType + ".0.filter").(string),
+					Index:          d.Get(indicatorType + ".0.index").(string),
+					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
+					Total: slo.IndicatorPropertiesCustomMetricParamsTotal{
+						Equation: d.Get(indicatorType + ".0.total.0.equation").(string),
+						Metrics: []slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{ //are there actually instances where there are more than one 'good' / 'total'? Need to build array if so.
+							{
+								Name:        d.Get(indicatorType + ".0.total.0.metrics.0.name").(string),
+								Field:       d.Get(indicatorType + ".0.total.0.metrics.0.field").(string),
+								Aggregation: d.Get(indicatorType + ".0.total.0.metrics.0.aggregation").(string),
+								Filter:      getOrNilString(indicatorType+".0.total.0.metrics.0.filter", d),
+							},
+						},
+					},
+					Good: slo.IndicatorPropertiesCustomMetricParamsGood{
+						Equation: d.Get(indicatorType + ".0.good.0.equation").(string),
+						Metrics: []slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{ //are there actually instances where there are more than one 'good' / 'total'? Need to build array if so.
+							{
+								Name:        d.Get(indicatorType + ".0.good.0.metrics.0.name").(string),
+								Field:       d.Get(indicatorType + ".0.good.0.metrics.0.field").(string),
+								Aggregation: d.Get(indicatorType + ".0.good.0.metrics.0.aggregation").(string),
+								Filter:      getOrNilString(indicatorType+".0.good.0.metrics.0.filter", d),
+							},
+						},
+					},
+				},
+			},
+		}
 
 	default:
 		return models.Slo{}, diag.Errorf("unknown indicator type %s", indicatorType)
@@ -382,55 +675,103 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 
 	indicator := []interface{}{}
-
+	var indicatorAddress string
 	switch {
 	case s.Indicator.IndicatorPropertiesApmAvailability != nil:
+		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesApmAvailability.Type]
 		params := s.Indicator.IndicatorPropertiesApmAvailability.Params
 		indicator = append(indicator, map[string]interface{}{
-			"type": s.Indicator.IndicatorPropertiesApmAvailability.Type,
-			"params": []map[string]interface{}{{
-				"environment":      params.Environment,
-				"service":          params.Service,
-				"transaction_type": params.TransactionType,
-				"transaction_name": params.TransactionName,
-				"index":            params.Index,
-				"filter":           params.Filter,
-			}},
+			"environment":      params.Environment,
+			"service":          params.Service,
+			"transaction_type": params.TransactionType,
+			"transaction_name": params.TransactionName,
+			"index":            params.Index,
+			"filter":           params.Filter,
 		})
 
 	case s.Indicator.IndicatorPropertiesApmLatency != nil:
+		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesApmLatency.Type]
 		params := s.Indicator.IndicatorPropertiesApmLatency.Params
 		indicator = append(indicator, map[string]interface{}{
-			"type": s.Indicator.IndicatorPropertiesApmLatency.Type,
-			"params": []map[string]interface{}{{
-				"environment":      params.Environment,
-				"service":          params.Service,
-				"transaction_type": params.TransactionType,
-				"transaction_name": params.TransactionName,
-				"index":            params.Index,
-				"filter":           params.Filter,
-				"threshold":        params.Threshold,
-			}},
+			"environment":      params.Environment,
+			"service":          params.Service,
+			"transaction_type": params.TransactionType,
+			"transaction_name": params.TransactionName,
+			"index":            params.Index,
+			"filter":           params.Filter,
+			"threshold":        params.Threshold,
 		})
 
 	case s.Indicator.IndicatorPropertiesCustomKql != nil:
+		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomKql.Type]
 		params := s.Indicator.IndicatorPropertiesCustomKql.Params
 		indicator = append(indicator, map[string]interface{}{
-			"type": s.Indicator.IndicatorPropertiesCustomKql.Type,
-			"params": []map[string]interface{}{{
-				"index":           params.Index,
-				"filter":          params.Filter,
-				"good":            params.Good,
-				"total":           params.Total,
-				"timestamp_field": params.TimestampField,
-			}},
+			"index":           params.Index,
+			"filter":          params.Filter,
+			"good":            params.Good,
+			"total":           params.Total,
+			"timestamp_field": params.TimestampField,
 		})
-	}
 
-	if len(indicator) == 0 {
+	case s.Indicator.IndicatorPropertiesHistogram != nil:
+		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesHistogram.Type]
+		params := s.Indicator.IndicatorPropertiesHistogram.Params
+		good := []map[string]interface{}{{
+			"field":       params.Good.Field,
+			"aggregation": params.Good.Aggregation,
+			"filter":      params.Good.Filter,
+			"from":        params.Good.From,
+			"to":          params.Good.To,
+		}}
+		total := []map[string]interface{}{{
+			"field":       params.Total.Field,
+			"aggregation": params.Total.Aggregation,
+			"filter":      params.Total.Filter,
+			"from":        params.Total.From,
+			"to":          params.Total.To,
+		}}
+		indicator = append(indicator, map[string]interface{}{
+			"index":           params.Index,
+			"filter":          params.Filter,
+			"timestamp_field": params.TimestampField,
+			"good":            good,
+			"total":           total,
+		})
+
+	case s.Indicator.IndicatorPropertiesCustomMetric != nil:
+		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomMetric.Type]
+		params := s.Indicator.IndicatorPropertiesCustomMetric.Params
+		good := []map[string]interface{}{{
+			"equation": params.Good.Equation,
+			"metrics": []map[string]interface{}{{
+				"name":        params.Good.Metrics[0].Name, //this is only getting the first one? Does this really need to be an array?
+				"aggregation": params.Good.Metrics[0].Aggregation,
+				"field":       params.Good.Metrics[0].Field,
+				"filter":      params.Good.Metrics[0].Filter,
+			}},
+		}}
+		total := []map[string]interface{}{{
+			"equation": params.Total.Equation,
+			"metrics": []map[string]interface{}{{
+				"name":        params.Total.Metrics[0].Name, //this is only getting the first one? Does this really need to be an array?
+				"aggregation": params.Total.Metrics[0].Aggregation,
+				"field":       params.Total.Metrics[0].Field,
+				"filter":      params.Total.Metrics[0].Filter,
+			}},
+		}}
+		indicator = append(indicator, map[string]interface{}{
+			"index":           params.Index,
+			"filter":          params.Filter,
+			"timestamp_field": params.TimestampField,
+			"good":            good,
+			"total":           total,
+		})
+
+	default:
 		return diag.Errorf("indicator not set")
 	}
-	if err := d.Set("indicator", indicator); err != nil {
+
+	if err := d.Set(indicatorAddress, indicator); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -508,3 +849,14 @@ func resourceSloDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	d.SetId("")
 	return diags
 }
+
+// indicatorAddressToType is a mapping between the terraform resource address and the internal indicator type name used by the API
+var indicatorAddressToType = map[string]string{
+	"apm_latency_indicator":      "sli.apm.transactionDuration",
+	"apm_availability_indicator": "sli.apm.transactionErrorRate",
+	"kql_custom_indicator":       "sli.kql.custom",
+	"metric_custom_indicator":    "sli.metric.custom",
+	"histogram_custom_indicator": "sli.histogram.custom",
+}
+
+var indicatorTypeToAddress = utils.FlipMap(indicatorAddressToType)

@@ -3,7 +3,6 @@ package kibana_test
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -17,78 +16,83 @@ import (
 )
 
 func TestAccResourceSlo(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("8.9.0"))
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	getIndicator := func(indicatorType string) string {
 		var indicator string
 
 		switch indicatorType {
-		case "sli.apm.transactionDuration":
+		case "apm_latency_indicator":
 			indicator = `
-		indicator {
-			type = "sli.apm.transactionDuration"
-			params {
+		apm_latency_indicator {
 			  environment     = "production"
 			  service         = "my-service"
 			  transaction_type = "request"
 			  transaction_name = "GET /sup/dawg"
 			  index           = "my-index"
 			  threshold       = 500
-			}
 		  }
 		  `
 
-		case "sli.apm.transactionErrorRate":
+		case "apm_availability_indicator":
 			indicator = `
-		indicator {
-			type = "sli.apm.transactionErrorRate"
-			params {
+		apm_availability_indicator {
 			  environment     = "production"
 			  service         = "my-service"
 			  transaction_type = "request"
 			  transaction_name = "GET /sup/dawg"
 			  index           = "my-index"
-			}
 		  }
 		  `
 
-		case "sli.kql.custom":
+		case "kql_custom_indicator":
 			indicator = `
-		indicator {
-			type = "sli.kql.custom"
-			params {
-			  index = "my-index"
-			  good = "latency < 300"
-			  total = "*"
-			  filter = "labels.groupId: group-0"
-			  timestamp_field = "custom_timestamp"
-			}
+		kql_custom_indicator {
+			index = "my-index"
+			good = "latency < 300"
+			total = "*"
+			filter = "labels.groupId: group-0"
+			timestamp_field = "custom_timestamp"
 		  }
 		  `
 
-		case "sli.histogram.custom":
+		case "histogram_custom_indicator":
 			indicator = `
-		indicator {
-			type = "sli.histogram.custom"
-			params {
-			  index = "my-index"
-			  good = "fail"
-			  total = "*"
-			  filter = "labels.groupId: group-0"
-			  timestamp_field = "custom_timestamp"
+		histogram_custom_indicator {
+			index = "my-index"
+			good {
+				field = "test"
+				aggregation = "value_count"
+				filter = "latency < 300"
 			}
+			total {
+				field = "test"
+				aggregation = "value_count"
+			}
+			filter = "labels.groupId: group-0"
+			timestamp_field = "custom_timestamp"
 		  }
 		  `
-		case "sli.metric.custom":
+
+		case "metric_custom_indicator":
 			indicator = `
-		indicator {
-			type = "sli.metric.custom"
-			params {
-			  index = "my-index"
-			  good = "fail"
-			  total = "*"
-			  filter = "labels.groupId: group-0"
-			  timestamp_field = "custom_timestamp"
+		metric_custom_indicator {
+			index = "my-index"
+			good {
+				metrics {
+						name = "A"
+						aggregation = "sum"
+						field = "processor.processed"
+				}
+				equation = "A"
+			}
+
+			total {
+				metrics {
+						name = "A"
+						aggregation = "sum"
+						field = "processor.accepted"
+				}
+				equation = "A"
 			}
 		  }
 		  `
@@ -157,18 +161,17 @@ func TestAccResourceSlo(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   getTFConfig(sloName, "sli.apm.transactionDuration", false),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				Config:   getTFConfig(sloName, "apm_latency_indicator", false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "description", "fully sick SLO"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.type", "sli.apm.transactionDuration"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.environment", "production"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.service", "my-service"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.transaction_type", "request"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.transaction_name", "GET /sup/dawg"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.index", "my-index"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.threshold", "500"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.environment", "production"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.service", "my-service"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_type", "request"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_name", "GET /sup/dawg"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.index", "my-index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.threshold", "500"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.duration", "7d"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.type", "rolling"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "budgeting_method", "timeslices"),
@@ -182,53 +185,66 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{ //check that name can be updated
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   getTFConfig(fmt.Sprintf("Updated %s", sloName), "sli.apm.transactionDuration", false),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				Config:   getTFConfig(fmt.Sprintf("Updated %s", sloName), "apm_latency_indicator", false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("Updated %s", sloName)),
 				),
 			},
 			{ //check that settings can be updated from api-computed defaults
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   getTFConfig(sloName, "sli.apm.transactionDuration", true),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				Config:   getTFConfig(sloName, "apm_latency_indicator", true),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "5m"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   getTFConfig(sloName, "sli.apm.transactionErrorRate", true),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				Config:   getTFConfig(sloName, "apm_availability_indicator", true),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.type", "sli.apm.transactionErrorRate"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.environment", "production"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.service", "my-service"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.transaction_type", "request"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.transaction_name", "GET /sup/dawg"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.index", "my-index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.environment", "production"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.service", "my-service"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.transaction_type", "request"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.transaction_name", "GET /sup/dawg"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.index", "my-index"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   getTFConfig(sloName, "sli.kql.custom", true),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				Config:   getTFConfig(sloName, "kql_custom_indicator", true),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.type", "sli.kql.custom"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.index", "my-index"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.good", "latency < 300"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.total", "*"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.filter", "labels.groupId: group-0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "indicator.0.params.0.timestamp_field", "custom_timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.total", "*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.filter", "labels.groupId: group-0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
 				),
 			},
 			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:      getTFConfig(sloName, "sli.histogram.custom", true),
-				ExpectError: regexp.MustCompile("the sli.histogram.custom indicator type is currently unsupported"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))),
+				Config:   getTFConfig(sloName, "histogram_custom_indicator", true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.index", "my-index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.field", "test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.aggregation", "value_count"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.filter", "latency < 300"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.total.0.field", "test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.total.0.aggregation", "value_count"),
+				),
 			},
 			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:      getTFConfig(sloName, "sli.metric.custom", true),
-				ExpectError: regexp.MustCompile("the sli.metric.custom indicator type is currently unsupported"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))),
+				Config:   getTFConfig(sloName, "metric_custom_indicator", true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.name", "A"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.aggregation", "sum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.field", "processor.processed"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.name", "A"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.aggregation", "sum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.field", "processor.accepted"),
+				),
 			},
 		},
 	})
