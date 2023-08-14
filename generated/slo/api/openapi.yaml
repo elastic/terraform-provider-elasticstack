@@ -1412,6 +1412,7 @@ components:
         total:
           $ref: '#/components/schemas/indicator_properties_custom_metric_params_total'
       required:
+      - filter
       - good
       - index
       - timestampField

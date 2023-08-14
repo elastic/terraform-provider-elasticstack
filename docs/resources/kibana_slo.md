@@ -63,46 +63,21 @@ resource "elasticstack_kibana_slo" "test_slo" {
 
 - `budgeting_method` (String) An occurrences budgeting method uses the number of good and total events during the time window. A timeslices budgeting method uses the number of good slices and total slices during the time window. A slice is an arbitrary time window (smaller than the overall SLO time window) that is either considered good or bad, calculated from the timeslice threshold and the ratio of good over total events that happened during the slice window. A budgeting method is required and must be either occurrences or timeslices.
 - `description` (String) A description for the SLO.
-- `indicator` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--indicator))
 - `name` (String) The name of the SLO.
 - `objective` (Block List, Min: 1, Max: 1) The target objective is the value the SLO needs to meet during the time window. If a timeslices budgeting method is used, we also need to define the timesliceTarget which can be different than the overall SLO target. (see [below for nested schema](#nestedblock--objective))
 - `time_window` (Block List, Min: 1, Max: 1) Currently support calendar aligned and rolling time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. 1w for one week, and isRolling: true. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to 1M for monthly or 1w for weekly, and isCalendar: true. (see [below for nested schema](#nestedblock--time_window))
 
 ### Optional
 
+- `apm_availability_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--apm_availability_indicator))
+- `apm_latency_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--apm_latency_indicator))
 - `group_by` (String) Optional group by field to use to generate an SLO per distinct value.
+- `histogram_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--histogram_custom_indicator))
 - `id` (String) An ID (8 and 36 characters). If omitted, a UUIDv1 will be generated server-side.
+- `kql_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--kql_custom_indicator))
+- `metric_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator))
 - `settings` (Block List, Max: 1) The default settings should be sufficient for most users, but if needed, these properties can be overwritten. (see [below for nested schema](#nestedblock--settings))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
-
-<a id="nestedblock--indicator"></a>
-### Nested Schema for `indicator`
-
-Required:
-
-- `params` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--indicator--params))
-- `type` (String)
-
-<a id="nestedblock--indicator--params"></a>
-### Nested Schema for `indicator.params`
-
-Required:
-
-- `index` (String)
-
-Optional:
-
-- `environment` (String)
-- `filter` (String)
-- `good` (String)
-- `service` (String)
-- `threshold` (Number)
-- `timestamp_field` (String)
-- `total` (String)
-- `transaction_name` (String)
-- `transaction_type` (String)
-
-
 
 <a id="nestedblock--objective"></a>
 ### Nested Schema for `objective`
@@ -124,6 +99,160 @@ Required:
 
 - `duration` (String)
 - `type` (String)
+
+
+<a id="nestedblock--apm_availability_indicator"></a>
+### Nested Schema for `apm_availability_indicator`
+
+Required:
+
+- `environment` (String)
+- `index` (String)
+- `service` (String)
+- `transaction_name` (String)
+- `transaction_type` (String)
+
+Optional:
+
+- `filter` (String)
+
+
+<a id="nestedblock--apm_latency_indicator"></a>
+### Nested Schema for `apm_latency_indicator`
+
+Required:
+
+- `environment` (String)
+- `index` (String)
+- `service` (String)
+- `threshold` (Number)
+- `transaction_name` (String)
+- `transaction_type` (String)
+
+Optional:
+
+- `filter` (String)
+
+
+<a id="nestedblock--histogram_custom_indicator"></a>
+### Nested Schema for `histogram_custom_indicator`
+
+Required:
+
+- `good` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--histogram_custom_indicator--good))
+- `index` (String)
+- `total` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--histogram_custom_indicator--total))
+
+Optional:
+
+- `filter` (String)
+- `timestamp_field` (String)
+
+<a id="nestedblock--histogram_custom_indicator--good"></a>
+### Nested Schema for `histogram_custom_indicator.good`
+
+Required:
+
+- `aggregation` (String)
+- `field` (String)
+
+Optional:
+
+- `filter` (String)
+- `from` (Number)
+- `to` (Number)
+
+
+<a id="nestedblock--histogram_custom_indicator--total"></a>
+### Nested Schema for `histogram_custom_indicator.total`
+
+Required:
+
+- `aggregation` (String)
+- `field` (String)
+
+Optional:
+
+- `filter` (String)
+- `from` (Number)
+- `to` (Number)
+
+
+
+<a id="nestedblock--kql_custom_indicator"></a>
+### Nested Schema for `kql_custom_indicator`
+
+Required:
+
+- `index` (String)
+
+Optional:
+
+- `filter` (String)
+- `good` (String)
+- `timestamp_field` (String)
+- `total` (String)
+
+
+<a id="nestedblock--metric_custom_indicator"></a>
+### Nested Schema for `metric_custom_indicator`
+
+Required:
+
+- `good` (Block List, Min: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--good))
+- `index` (String)
+- `total` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--total))
+
+Optional:
+
+- `filter` (String)
+- `timestamp_field` (String)
+
+<a id="nestedblock--metric_custom_indicator--good"></a>
+### Nested Schema for `metric_custom_indicator.good`
+
+Required:
+
+- `equation` (String)
+- `metrics` (Block List, Min: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--good--metrics))
+
+<a id="nestedblock--metric_custom_indicator--good--metrics"></a>
+### Nested Schema for `metric_custom_indicator.good.metrics`
+
+Required:
+
+- `aggregation` (String)
+- `field` (String)
+- `name` (String)
+
+Optional:
+
+- `filter` (String)
+
+
+
+<a id="nestedblock--metric_custom_indicator--total"></a>
+### Nested Schema for `metric_custom_indicator.total`
+
+Required:
+
+- `equation` (String)
+- `metrics` (Block List, Min: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--total--metrics))
+
+<a id="nestedblock--metric_custom_indicator--total--metrics"></a>
+### Nested Schema for `metric_custom_indicator.total.metrics`
+
+Required:
+
+- `aggregation` (String)
+- `field` (String)
+- `name` (String)
+
+Optional:
+
+- `filter` (String)
+
+
 
 
 <a id="nestedblock--settings"></a>
