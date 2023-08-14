@@ -199,7 +199,7 @@ Optional:
 
 Required:
 
-- `good` (Block List, Min: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--good))
+- `good` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--good))
 - `index` (String)
 - `total` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--total))
 
