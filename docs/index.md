@@ -26,7 +26,9 @@ The following methods are supported:
 
 ### Static credentials
 
-Default static credentials can be provided by adding the `username`, `password` and `endpoints` in `elasticsearch` block:
+#### Elasticsearch
+
+Default static credentials can be provided by adding the `username`, `password` and `endpoints` in the `elasticsearch` block:
 
 ```terraform
 provider "elasticstack" {
@@ -49,16 +51,47 @@ provider "elasticstack" {
 }
 ```
 
+#### Kibana
+
+Default static credentials can be provided by adding the `username`, `password` and `endpoints` in the `kibana` block:
+
+```terraform
+provider "elasticstack" {
+  kibana {
+    username  = "elastic"
+    password  = "changeme"
+    endpoints = ["http://localhost:5601"]
+  }
+}
+```
+
+If no credentials are supplied the provider will fall back to using those provided in the `elasticsearch` block.
+
 ### Environment Variables
 
-You can provide your credentials for the default connection via the `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD` and comma-separated list `ELASTICSEARCH_ENDPOINTS`,
-environment variables, representing your user, password and Elasticsearch API endpoints respectively.
+The provider configuration can be specified through environment variables.
 
-Alternatively the `ELASTICSEARCH_API_KEY` variable can be specified instead of `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD`.
+For Elasticsearch resources, you can use the following variables:
+- `ELASTICSEARCH_USERNAME` - The username to use for Elasticsearch authentication
+- `ELASTICSEARCH_PASSWORD` - The password to use for Elasticsearch authentication
+- `ELASTICSEARCH_ENDPOINTS` - A comma separated list of Elasticsearch hosts to connect to
+- `ELASTICSEARCH_API_KEY` - An Elasticsearch API key to use instead of `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD`
+
+Kibana resources will re-use any Elasticsearch credentials specified, these may be overridden with the following variables:
+- `KIBANA_USERNAME` - The username to use for Kibana authentication
+- `KIBANA_PASSWORD` - The password to use for Kibana authentication
+- `KIBANA_ENDPOINT` - The Kibana host to connect to
+
+Fleet resources will re-use any Kibana or Elasticsearch credentials specified, these may be overridden with the following variables:
+- `FLEET_USERNAME` - The username to use for Kibana authentication
+- `FLEET_PASSWORD` - The password to use for Kibana authentication
+- `FLEET_ENDPOINT` - The Kibana host to connect to. ** Note the Fleet API is hosted within Kibana. This must be a Kibana HTTP host **
+- `FLEET_API_KEY` - API key to use for authentication to Fleet
 
 ```terraform
 provider "elasticstack" {
   elasticsearch {}
+  kibana {}
 }
 ```
 
