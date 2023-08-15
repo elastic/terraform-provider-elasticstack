@@ -1,4 +1,4 @@
 provider "elasticstack" {
   elasticsearch {}
+  kibana {}
 }
-

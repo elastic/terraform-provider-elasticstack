@@ -1,5 +1,5 @@
 provider "elasticstack" {
-  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_kibana_space" "example" {

@@ -1,5 +1,5 @@
 provider "elasticstack" {
-  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_kibana_action_connector" "example" {
