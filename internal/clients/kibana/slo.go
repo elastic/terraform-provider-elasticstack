@@ -21,6 +21,9 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
 	req := client.GetSloOp(ctxWithAuth, "default", id).KbnXsrf("true")
 	sloRes, res, err := req.Execute()
+	if err != nil && res == nil {
+		return nil, diag.FromErr(err)
+	}
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
