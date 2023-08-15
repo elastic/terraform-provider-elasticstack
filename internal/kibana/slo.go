@@ -198,8 +198,9 @@ func ResourceSlo() *schema.Resource {
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"aggregation": {
-									Type:     schema.TypeString,
-									Required: true,
+									Type:         schema.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringInSlice([]string{"value_count", "range"}, false),
 								},
 								"field": {
 									Type:     schema.TypeString,
@@ -330,7 +331,7 @@ func ResourceSlo() *schema.Resource {
 			},
 		},
 		"time_window": {
-			Description: "Currently support calendar aligned and rolling time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. 1w for one week, and isRolling: true. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to 1M for monthly or 1w for weekly, and isCalendar: true.",
+			Description: "Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`.",
 			Type:        schema.TypeList,
 			Required:    true,
 			MinItems:    1,
@@ -349,7 +350,7 @@ func ResourceSlo() *schema.Resource {
 			},
 		},
 		"budgeting_method": {
-			Description:  "An occurrences budgeting method uses the number of good and total events during the time window. A timeslices budgeting method uses the number of good slices and total slices during the time window. A slice is an arbitrary time window (smaller than the overall SLO time window) that is either considered good or bad, calculated from the timeslice threshold and the ratio of good over total events that happened during the slice window. A budgeting method is required and must be either occurrences or timeslices.",
+			Description:  "An `occurrences` budgeting method uses the number of good and total events during the time window. A `timeslices` budgeting method uses the number of good slices and total slices during the time window. A slice is an arbitrary time window (smaller than the overall SLO time window) that is either considered good or bad, calculated from the timeslice threshold and the ratio of good over total events that happened during the slice window. A budgeting method is required and must be either occurrences or timeslices.",
 			Type:         schema.TypeString,
 			Required:     true,
 			ValidateFunc: validation.StringInSlice([]string{"occurrences", "timeslices"}, false),

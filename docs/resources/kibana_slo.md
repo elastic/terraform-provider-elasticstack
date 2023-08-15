@@ -8,51 +8,187 @@ description: |-
 
 # Resource: elasticstack_kibana_slo
 
-Creates or updates a Kibana SLO. UPDATE WITH LINK HERE
+Creates or updates a Kibana SLO. See the [Kibana SLO docs](https://www.elastic.co/guide/en/observability/current/slo.html) and [dev docs](https://github.com/elastic/kibana/blob/main/x-pack/plugins/observability/dev_docs/slo.md) for more information.
 
 ## Example Usage
 
 ```terraform
 provider "elasticstack" {
-  elasticsearch {
-    username  = "elastic"
-    password  = "password"
-    endpoints = ["http://localhost:9200"]
-  }
+  elasticsearch {}
+  kibana {}
 }
 
-resource "elasticstack_kibana_slo" "test_slo" {
-  name        = "%s"
-  description = "my kewl SLO"
-  indicator {
-    type = "sli.apm.transactionDuration"
-    params = {
-      environment     = "production"
-      service         = "my-service"
-      transactionType = "request"
-      transactionName = "GET /sup/dawg"
-      index           = "my-index"
-      threshold       = 500
+resource "elasticstack_kibana_slo" "auth_server_latency" {
+  name        = "Auth server latency"
+  description = "Ensures auth server is responding in time"
+
+  apm_latency_indicator {
+    environment      = "production"
+    service          = "auth"
+    transaction_type = "request"
+    transaction_name = "GET /auth"
+    index            = "metrics-apm*"
+    threshold        = 500
+  }
+
+  time_window {
+    duration = "7d"
+    type     = "rolling"
+  }
+
+  budgeting_method = "timeslices"
+
+  objective {
+    target           = 0.95
+    timeslice_target = 0.95
+    timeslice_window = "5m"
+  }
+
+  settings {
+    sync_delay = "5m"
+    frequency  = "5m"
+  }
+
+}
+
+resource "elasticstack_kibana_slo" "auth_server_availability" {
+  name        = "Auth server latency"
+  description = "Ensures auth server is responding in time"
+
+  apm_availability_indicator {
+    environment      = "production"
+    service          = "my-service"
+    transaction_type = "request"
+    transaction_name = "GET /sup/dawg"
+    index            = "metrics-apm*"
+  }
+
+  time_window {
+    duration = "7d"
+    type     = "rolling"
+  }
+
+  budgeting_method = "timeslices"
+
+  objective {
+    target           = 0.95
+    timeslice_target = 0.95
+    timeslice_window = "5m"
+  }
+
+  settings {
+    sync_delay = "5m"
+    frequency  = "5m"
+  }
+
+}
+
+resource "elasticstack_kibana_slo" "custom_kql" {
+  name        = "custom kql"
+  description = "custom kql"
+
+  kql_custom_indicator {
+    index           = "my-index"
+    good            = "latency < 300"
+    total           = "*"
+    filter          = "labels.groupId: group-0"
+    timestamp_field = "custom_timestamp"
+  }
+
+  time_window {
+    duration = "7d"
+    type     = "rolling"
+  }
+
+  budgeting_method = "timeslices"
+
+  objective {
+    target           = 0.95
+    timeslice_target = 0.95
+    timeslice_window = "5m"
+  }
+
+  settings {
+    sync_delay = "5m"
+    frequency  = "5m"
+  }
+
+}
+
+//Available from 8.10.0
+resource "elasticstack_kibana_slo" "custom_histogram" {
+  name        = "custom histogram"
+  description = "custom histogram"
+
+  histogram_custom_indicator {
+    index = "my-index"
+    good {
+      field       = "test"
+      aggregation = "value_count"
+      filter      = "latency < 300"
+    }
+    total {
+      field       = "test"
+      aggregation = "value_count"
+    }
+    filter          = "labels.groupId: group-0"
+    timestamp_field = "custom_timestamp"
+  }
+
+  time_window {
+    duration = "7d"
+    type     = "rolling"
+  }
+
+  budgeting_method = "timeslices"
+
+  objective {
+    target           = 0.95
+    timeslice_target = 0.95
+    timeslice_window = "5m"
+  }
+
+}
+
+//Available from 8.10.0
+resource "elasticstack_kibana_slo" "custom_metric" {
+  name        = "custom kql"
+  description = "custom kql"
+
+  metric_custom_indicator {
+    index = "my-index"
+    good {
+      metrics {
+        name        = "A"
+        aggregation = "sum"
+        field       = "processor.processed"
+      }
+      equation = "A"
+    }
+
+    total {
+      metrics {
+        name        = "A"
+        aggregation = "sum"
+        field       = "processor.accepted"
+      }
+      equation = "A"
     }
   }
 
   time_window {
-    duration   = "1w"
-    isCalendar = true
+    duration = "7d"
+    type     = "rolling"
   }
 
-  budgetingMethod = "timeslices"
+  budgeting_method = "timeslices"
 
   objective {
-    target          = 0.999
-    timesliceTarget = 0.95
-    timesliceWindow = "5m"
+    target           = 0.95
+    timeslice_target = 0.95
+    timeslice_window = "5m"
   }
 
-  settings {
-    syncDelay = "5m"
-    frequency = "1m"
-  }
 }
 ```
 
@@ -61,11 +197,11 @@ resource "elasticstack_kibana_slo" "test_slo" {
 
 ### Required
 
-- `budgeting_method` (String) An occurrences budgeting method uses the number of good and total events during the time window. A timeslices budgeting method uses the number of good slices and total slices during the time window. A slice is an arbitrary time window (smaller than the overall SLO time window) that is either considered good or bad, calculated from the timeslice threshold and the ratio of good over total events that happened during the slice window. A budgeting method is required and must be either occurrences or timeslices.
+- `budgeting_method` (String) An `occurrences` budgeting method uses the number of good and total events during the time window. A `timeslices` budgeting method uses the number of good slices and total slices during the time window. A slice is an arbitrary time window (smaller than the overall SLO time window) that is either considered good or bad, calculated from the timeslice threshold and the ratio of good over total events that happened during the slice window. A budgeting method is required and must be either occurrences or timeslices.
 - `description` (String) A description for the SLO.
 - `name` (String) The name of the SLO.
 - `objective` (Block List, Min: 1, Max: 1) The target objective is the value the SLO needs to meet during the time window. If a timeslices budgeting method is used, we also need to define the timesliceTarget which can be different than the overall SLO target. (see [below for nested schema](#nestedblock--objective))
-- `time_window` (Block List, Min: 1, Max: 1) Currently support calendar aligned and rolling time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. 1w for one week, and isRolling: true. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to 1M for monthly or 1w for weekly, and isCalendar: true. (see [below for nested schema](#nestedblock--time_window))
+- `time_window` (Block List, Min: 1, Max: 1) Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`. (see [below for nested schema](#nestedblock--time_window))
 
 ### Optional
 
