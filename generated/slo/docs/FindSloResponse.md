@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Page** | Pointer to **float32** |  | [optional] 
-**PerPage** | Pointer to **float32** |  | [optional] 
-**Total** | Pointer to **float32** |  | [optional] 
+**Page** | Pointer to **float64** |  | [optional] 
+**PerPage** | Pointer to **float64** |  | [optional] 
+**Total** | Pointer to **float64** |  | [optional] 
 **Results** | Pointer to [**[]SloResponse**](SloResponse.md) |  | [optional] 
 
 ## Methods
@@ -30,20 +30,20 @@ but it doesn't guarantee that properties required by API are set
 
 ### GetPage
 
-`func (o *FindSloResponse) GetPage() float32`
+`func (o *FindSloResponse) GetPage() float64`
 
 GetPage returns the Page field if non-nil, zero value otherwise.
 
 ### GetPageOk
 
-`func (o *FindSloResponse) GetPageOk() (*float32, bool)`
+`func (o *FindSloResponse) GetPageOk() (*float64, bool)`
 
 GetPageOk returns a tuple with the Page field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPage
 
-`func (o *FindSloResponse) SetPage(v float32)`
+`func (o *FindSloResponse) SetPage(v float64)`
 
 SetPage sets Page field to given value.
 
@@ -55,20 +55,20 @@ HasPage returns a boolean if a field has been set.
 
 ### GetPerPage
 
-`func (o *FindSloResponse) GetPerPage() float32`
+`func (o *FindSloResponse) GetPerPage() float64`
 
 GetPerPage returns the PerPage field if non-nil, zero value otherwise.
 
 ### GetPerPageOk
 
-`func (o *FindSloResponse) GetPerPageOk() (*float32, bool)`
+`func (o *FindSloResponse) GetPerPageOk() (*float64, bool)`
 
 GetPerPageOk returns a tuple with the PerPage field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPerPage
 
-`func (o *FindSloResponse) SetPerPage(v float32)`
+`func (o *FindSloResponse) SetPerPage(v float64)`
 
 SetPerPage sets PerPage field to given value.
 
@@ -80,20 +80,20 @@ HasPerPage returns a boolean if a field has been set.
 
 ### GetTotal
 
-`func (o *FindSloResponse) GetTotal() float32`
+`func (o *FindSloResponse) GetTotal() float64`
 
 GetTotal returns the Total field if non-nil, zero value otherwise.
 
 ### GetTotalOk
 
-`func (o *FindSloResponse) GetTotalOk() (*float32, bool)`
+`func (o *FindSloResponse) GetTotalOk() (*float64, bool)`
 
 GetTotalOk returns a tuple with the Total field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTotal
 
-`func (o *FindSloResponse) SetTotal(v float32)`
+`func (o *FindSloResponse) SetTotal(v float64)`
 
 SetTotal sets Total field to given value.
 

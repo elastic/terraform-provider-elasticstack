@@ -1,23 +1,23 @@
-# \SlosApi
+# \SloAPI
 
 All URIs are relative to *http://localhost:5601*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**CreateSlo**](SlosApi.md#CreateSlo) | **Post** /s/{spaceId}/api/observability/slos | Creates an SLO.
-[**DeleteSlo**](SlosApi.md#DeleteSlo) | **Delete** /s/{spaceId}/api/observability/slos/{sloId} | Deletes an SLO
-[**DisableSlo**](SlosApi.md#DisableSlo) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/disable | Disables an SLO
-[**EnableSlo**](SlosApi.md#EnableSlo) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/enable | Enables an SLO
-[**FindSlos**](SlosApi.md#FindSlos) | **Get** /s/{spaceId}/api/observability/slos | Retrieves a paginated list of SLOs
-[**GetSlo**](SlosApi.md#GetSlo) | **Get** /s/{spaceId}/api/observability/slos/{sloId} | Retrieves a SLO
-[**HistoricalSummary**](SlosApi.md#HistoricalSummary) | **Post** /s/{spaceId}/internal/observability/slos/_historical_summary | Retrieves the historical summary for a list of SLOs
-[**UpdateSlo**](SlosApi.md#UpdateSlo) | **Put** /s/{spaceId}/api/observability/slos/{sloId} | Updates an SLO
+[**CreateSloOp**](SloAPI.md#CreateSloOp) | **Post** /s/{spaceId}/api/observability/slos | Creates an SLO.
+[**DeleteSloOp**](SloAPI.md#DeleteSloOp) | **Delete** /s/{spaceId}/api/observability/slos/{sloId} | Deletes an SLO
+[**DisableSloOp**](SloAPI.md#DisableSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/disable | Disables an SLO
+[**EnableSloOp**](SloAPI.md#EnableSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/enable | Enables an SLO
+[**FindSlosOp**](SloAPI.md#FindSlosOp) | **Get** /s/{spaceId}/api/observability/slos | Retrieves a paginated list of SLOs
+[**GetSloOp**](SloAPI.md#GetSloOp) | **Get** /s/{spaceId}/api/observability/slos/{sloId} | Retrieves a SLO
+[**HistoricalSummaryOp**](SloAPI.md#HistoricalSummaryOp) | **Post** /s/{spaceId}/internal/observability/slos/_historical_summary | Retrieves the historical summary for a list of SLOs
+[**UpdateSloOp**](SloAPI.md#UpdateSloOp) | **Put** /s/{spaceId}/api/observability/slos/{sloId} | Updates an SLO
 
 
 
-## CreateSlo
+## CreateSloOp
 
-> CreateSloResponse CreateSlo(ctx, spaceId).KbnXsrf(kbnXsrf).CreateSloRequest(createSloRequest).Execute()
+> CreateSloResponse CreateSloOp(ctx, spaceId).KbnXsrf(kbnXsrf).CreateSloRequest(createSloRequest).Execute()
 
 Creates an SLO.
 
@@ -38,17 +38,17 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    createSloRequest := *openapiclient.NewCreateSloRequest("Name_example", "Description_example", openapiclient.slo_response_indicator{IndicatorPropertiesApmAvailability: openapiclient.NewIndicatorPropertiesApmAvailability(*openapiclient.NewIndicatorPropertiesApmAvailabilityParams("o11y-app", "production", "request", "GET /my/api", "metrics-apm*,apm*"), "sli.apm.transactionDuration")}, openapiclient.slo_response_timeWindow{TimeWindowCalendarAligned: openapiclient.NewTimeWindowCalendarAligned("1M", *openapiclient.NewTimeWindowCalendarAlignedCalendar())}, openapiclient.budgeting_method("occurrences"), *openapiclient.NewObjective(float32(0.99))) // CreateSloRequest | 
+    createSloRequest := *openapiclient.NewCreateSloRequest("Name_example", "Description_example", openapiclient.create_slo_request_indicator{IndicatorPropertiesApmAvailability: openapiclient.NewIndicatorPropertiesApmAvailability(*openapiclient.NewIndicatorPropertiesApmAvailabilityParams("o11y-app", "production", "request", "GET /my/api", "metrics-apm*,apm*"), "sli.apm.transactionDuration")}, *openapiclient.NewTimeWindow("30d", "rolling"), openapiclient.budgeting_method("occurrences"), *openapiclient.NewObjective(float64(0.99))) // CreateSloRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SlosApi.CreateSlo(context.Background(), spaceId).KbnXsrf(kbnXsrf).CreateSloRequest(createSloRequest).Execute()
+    resp, r, err := apiClient.SloAPI.CreateSloOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).CreateSloRequest(createSloRequest).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SlosApi.CreateSlo``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.CreateSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `CreateSlo`: CreateSloResponse
-    fmt.Fprintf(os.Stdout, "Response from `SlosApi.CreateSlo`: %v\n", resp)
+    // response from `CreateSloOp`: CreateSloResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.CreateSloOp`: %v\n", resp)
 }
 ```
 
@@ -62,7 +62,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiCreateSloRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiCreateSloOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -89,9 +89,9 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## DeleteSlo
+## DeleteSloOp
 
-> DeleteSlo(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+> DeleteSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
 
 Deletes an SLO
 
@@ -116,9 +116,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.SlosApi.DeleteSlo(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.SloAPI.DeleteSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SlosApi.DeleteSlo``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DeleteSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -135,7 +135,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiDeleteSloRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiDeleteSloOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -162,9 +162,9 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## DisableSlo
+## DisableSloOp
 
-> DisableSlo(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+> DisableSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
 
 Disables an SLO
 
@@ -189,9 +189,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.SlosApi.DisableSlo(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.SloAPI.DisableSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SlosApi.DisableSlo``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DisableSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -208,7 +208,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiDisableSloRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiDisableSloOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -235,9 +235,9 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## EnableSlo
+## EnableSloOp
 
-> EnableSlo(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+> EnableSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
 
 Enables an SLO
 
@@ -262,9 +262,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.SlosApi.EnableSlo(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.SloAPI.EnableSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SlosApi.EnableSlo``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.EnableSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -281,7 +281,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiEnableSloRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiEnableSloOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -308,9 +308,9 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## FindSlos
+## FindSlosOp
 
-> FindSloResponse FindSlos(ctx, spaceId).KbnXsrf(kbnXsrf).Name(name).IndicatorTypes(indicatorTypes).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
+> FindSloResponse FindSlosOp(ctx, spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
 
 Retrieves a paginated list of SLOs
 
@@ -331,22 +331,21 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    name := "awesome-service" // string | Filter by name (optional)
-    indicatorTypes := []string{"Inner_example"} // []string | Filter by indicator type (optional)
+    kqlQuery := "slo.name:latency* and slo.tags : "prod"" // string | A valid kql query to filter the SLO with (optional)
     page := int32(1) // int32 | The page number to return (optional) (default to 1)
-    perPage := int32(20) // int32 | The number of SLOs to return per page (optional) (default to 25)
-    sortBy := "name" // string | Sort by field (optional) (default to "name")
+    perPage := int32(25) // int32 | The number of SLOs to return per page (optional) (default to 25)
+    sortBy := "status" // string | Sort by field (optional) (default to "status")
     sortDirection := "asc" // string | Sort order (optional) (default to "asc")
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SlosApi.FindSlos(context.Background(), spaceId).KbnXsrf(kbnXsrf).Name(name).IndicatorTypes(indicatorTypes).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
+    resp, r, err := apiClient.SloAPI.FindSlosOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SlosApi.FindSlos``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.FindSlosOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `FindSlos`: FindSloResponse
-    fmt.Fprintf(os.Stdout, "Response from `SlosApi.FindSlos`: %v\n", resp)
+    // response from `FindSlosOp`: FindSloResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.FindSlosOp`: %v\n", resp)
 }
 ```
 
@@ -360,18 +359,17 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiFindSlosRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiFindSlosOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
- **name** | **string** | Filter by name | 
- **indicatorTypes** | **[]string** | Filter by indicator type | 
+ **kqlQuery** | **string** | A valid kql query to filter the SLO with | 
  **page** | **int32** | The page number to return | [default to 1]
  **perPage** | **int32** | The number of SLOs to return per page | [default to 25]
- **sortBy** | **string** | Sort by field | [default to &quot;name&quot;]
+ **sortBy** | **string** | Sort by field | [default to &quot;status&quot;]
  **sortDirection** | **string** | Sort order | [default to &quot;asc&quot;]
 
 ### Return type
@@ -392,9 +390,9 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## GetSlo
+## GetSloOp
 
-> SloResponse GetSlo(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+> SloResponse GetSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).InstanceId(instanceId).Execute()
 
 Retrieves a SLO
 
@@ -416,16 +414,17 @@ func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
+    instanceId := "host-abcde" // string | the specific instanceId used by the summary calculation (optional)
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SlosApi.GetSlo(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    resp, r, err := apiClient.SloAPI.GetSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).InstanceId(instanceId).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SlosApi.GetSlo``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.GetSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `GetSlo`: SloResponse
-    fmt.Fprintf(os.Stdout, "Response from `SlosApi.GetSlo`: %v\n", resp)
+    // response from `GetSloOp`: SloResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.GetSloOp`: %v\n", resp)
 }
 ```
 
@@ -440,7 +439,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiGetSloRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiGetSloOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -448,6 +447,7 @@ Name | Type | Description  | Notes
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
 
+ **instanceId** | **string** | the specific instanceId used by the summary calculation | 
 
 ### Return type
 
@@ -467,9 +467,9 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## HistoricalSummary
+## HistoricalSummaryOp
 
-> map[string][]HistoricalSummaryResponseInner HistoricalSummary(ctx, spaceId).KbnXsrf(kbnXsrf).HistoricalSummaryRequest(historicalSummaryRequest).Execute()
+> map[string][]HistoricalSummaryResponseInner HistoricalSummaryOp(ctx, spaceId).KbnXsrf(kbnXsrf).HistoricalSummaryRequest(historicalSummaryRequest).Execute()
 
 Retrieves the historical summary for a list of SLOs
 
@@ -494,13 +494,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SlosApi.HistoricalSummary(context.Background(), spaceId).KbnXsrf(kbnXsrf).HistoricalSummaryRequest(historicalSummaryRequest).Execute()
+    resp, r, err := apiClient.SloAPI.HistoricalSummaryOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).HistoricalSummaryRequest(historicalSummaryRequest).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SlosApi.HistoricalSummary``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.HistoricalSummaryOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `HistoricalSummary`: map[string][]HistoricalSummaryResponseInner
-    fmt.Fprintf(os.Stdout, "Response from `SlosApi.HistoricalSummary`: %v\n", resp)
+    // response from `HistoricalSummaryOp`: map[string][]HistoricalSummaryResponseInner
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.HistoricalSummaryOp`: %v\n", resp)
 }
 ```
 
@@ -514,7 +514,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiHistoricalSummaryRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiHistoricalSummaryOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -541,9 +541,9 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## UpdateSlo
+## UpdateSloOp
 
-> SloResponse UpdateSlo(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).UpdateSloRequest(updateSloRequest).Execute()
+> SloResponse UpdateSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).UpdateSloRequest(updateSloRequest).Execute()
 
 Updates an SLO
 
@@ -569,13 +569,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SlosApi.UpdateSlo(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).UpdateSloRequest(updateSloRequest).Execute()
+    resp, r, err := apiClient.SloAPI.UpdateSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).UpdateSloRequest(updateSloRequest).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SlosApi.UpdateSlo``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.UpdateSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `UpdateSlo`: SloResponse
-    fmt.Fprintf(os.Stdout, "Response from `SlosApi.UpdateSlo`: %v\n", resp)
+    // response from `UpdateSloOp`: SloResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.UpdateSloOp`: %v\n", resp)
 }
 ```
 
@@ -590,7 +590,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiUpdateSloRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiUpdateSloOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes

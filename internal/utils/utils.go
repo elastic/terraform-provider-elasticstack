@@ -188,3 +188,11 @@ func ConvertSettingsKeyToTFFieldKey(settingKey string) string {
 func Pointer[T any](value T) *T {
 	return &value
 }
+
+func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {
+	inv := make(map[V]K)
+	for k, v := range m {
+		inv[v] = k
+	}
+	return inv
+}

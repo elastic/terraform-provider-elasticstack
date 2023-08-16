@@ -15,7 +15,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= 1.19
 
-STACK_VERSION ?= 8.6.0
+STACK_VERSION ?= 8.9.0
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -84,6 +84,7 @@ docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in th
 
 .PHONY: docker-elasticsearch
 docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
+	@ docker rm -f $(ELASTICSEARCH_NAME) &> /dev/null || true
 	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(ELASTICSEARCH_NAME) > /dev/null 2>&1 ; then \
 		docker run -d \
 		--memory $(ELASTICSEARCH_MEM) \
@@ -103,6 +104,7 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 
 .PHONY: docker-kibana
 docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start Kibana node in docker container
+	@ docker rm -f $(KIBANA_NAME)  &> /dev/null || true
 	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(KIBANA_NAME) > /dev/null 2>&1 ; then \
 		docker run -d \
 		-p 5601:5601 \
@@ -256,18 +258,22 @@ generate-connectors-client: tools ## generate Kibana connectors client
 	@ cd tools && go generate
 	@ go fmt ./generated/connectors/...
 
+## -i https://raw.githubusercontent.com/elastic/kibana/main/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
+
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
-		-i https://raw.githubusercontent.com/elastic/kibana/master/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
-		--skip-validate-spec \
+	@ rm -rf generated/slo
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.0-beta generate \
+		-i /local/generated/slo-spec.yml \
 		--git-repo-id terraform-provider-elasticstack \
 		--git-user-id elastic \
 		-p isGoSubmodule=true \
 		-p packageName=slo \
 		-p generateInterfaces=true \
+		-p useOneOfDiscriminatorLookup=true \
 		-g go \
-		-o /local/generated/slo
+		-o /local/generated/slo \
+		 --type-mappings=float32=float64
 	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
 	@ go fmt ./generated/...
 
