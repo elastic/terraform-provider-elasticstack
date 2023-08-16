@@ -2,6 +2,7 @@
 
 ### Added
 - Add support for Kibana SLOs ([#385](https://github.com/elastic/terraform-provider-elasticstack/pull/385))
+- Document all available environment variables ([#405](https://github.com/elastic/terraform-provider-elasticstack/pull/405))
 
 ## [0.6.2] - 2023-06-19
 

@@ -14,7 +14,7 @@ Creates or updates a Kibana alerting rule. See https://www.elastic.co/guide/en/k
 
 ```terraform
 provider "elasticstack" {
-  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_kibana_alerting_rule" "example" {

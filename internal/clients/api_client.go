@@ -668,6 +668,15 @@ func buildFleetClient(d *schema.ResourceData, kibanaCfg kibana.Config) (*fleet.C
 		}
 	}
 
+	if v := os.Getenv("FLEET_ENDPOINT"); v != "" {
+		config.URL = v
+	}
+	if v := os.Getenv("FLEET_USERNAME"); v != "" {
+		config.Username = v
+	}
+	if v := os.Getenv("FLEET_PASSWORD"); v != "" {
+		config.Password = v
+	}
 	if v := os.Getenv("FLEET_API_KEY"); v != "" {
 		config.APIKey = v
 	}

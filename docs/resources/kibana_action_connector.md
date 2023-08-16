@@ -14,7 +14,7 @@ Creates or updates a Kibana action connector. See https://www.elastic.co/guide/e
 
 ```terraform
 provider "elasticstack" {
-  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_kibana_action_connector" "example" {
