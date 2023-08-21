@@ -3,10 +3,8 @@ package provider
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -39,16 +37,6 @@ func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res
 }
 
 func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureRequest, res *fwprovider.ConfigureResponse) {
-	apiClients := []*clients.ApiClient{}
-	diags := req.Config.GetAttribute(ctx, path.Root(esKeyName), &apiClients)
-	res.Diagnostics.Append(diags...)
-	if res.Diagnostics.HasError() {
-		return
-	}
-	apiClient := clients.NewApiClientFunc(p.version)
-
-	res.DataSourceData = apiClient
-	res.ResourceData = apiClient
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
