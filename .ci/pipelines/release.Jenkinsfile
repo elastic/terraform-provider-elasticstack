@@ -3,6 +3,10 @@
 node('docker && gobld/machineType:n1-highcpu-8') {
     String DOCKER_IMAGE = "golang:1.20"
 
+    options {
+        timeout(time: 1, unit: 'HOURS')
+    }
+
     stage('Checkout from GitHub') {
 	    checkout scm
     }
