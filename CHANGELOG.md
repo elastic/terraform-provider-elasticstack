@@ -1,6 +1,10 @@
 ## [Unreleased]
 
 ### Added
+
+## [0.7.0] - 2023-08-22
+
+### Added
 - Add support for Kibana SLOs ([#385](https://github.com/elastic/terraform-provider-elasticstack/pull/385))
 - Document all available environment variables ([#405](https://github.com/elastic/terraform-provider-elasticstack/pull/405))
 
@@ -172,7 +176,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.5.0...v0.6.0
