@@ -212,7 +212,7 @@ release-no-publish: tools check-sign-release ## Make a release without publishin
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ $(GOBIN)/goreleaser release --clean --debug
+	@ $(GOBIN)/goreleaser release --clean
 
 
 .PHONY: check-sign-release
