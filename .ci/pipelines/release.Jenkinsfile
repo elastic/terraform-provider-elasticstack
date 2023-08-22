@@ -1,8 +1,6 @@
 #!/usr/bin/env groovy
 
-options {
-    timeout(time: 1, unit: 'HOURS')
-}
+timeout(time: 1, unit: 'HOURS')
 
 node('docker && gobld/machineType:n1-highcpu-8') {
     String DOCKER_IMAGE = "golang:1.20"
