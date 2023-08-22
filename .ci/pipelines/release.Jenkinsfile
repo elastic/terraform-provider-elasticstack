@@ -3,6 +3,9 @@
 node('docker && gobld/machineType:n1-highcpu-8') {
     String DOCKER_IMAGE = "golang:1.20"
 
+    stage('Checkout from GitHub') {
+	    checkout scmGit
+    }
     withCredentials([
         string(credentialsId: 'vault-addr', variable: 'VAULT_ADDR'),
         string(credentialsId: 'vault-secret-id', variable: 'VAULT_SECRET_ID'),
