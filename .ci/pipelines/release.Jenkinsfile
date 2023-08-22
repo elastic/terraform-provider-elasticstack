@@ -17,7 +17,7 @@ node('docker && gobld/machineType:n1-highcpu-8') {
             }
         }
     }
-    docker.image("${DOCKER_IMAGE}") {
+    docker.image("${DOCKER_IMAGE}").inside("-u root:root") {
         try {
             stage("Download dependencies") {
                 sh 'make vendor'
@@ -30,7 +30,8 @@ node('docker && gobld/machineType:n1-highcpu-8') {
                     env.GITHUB_TOKEN = readFile(".ci/.github_token").trim()
                     env.GPG_FINGERPRINT = readFile(".ci/.gpg_fingerprint").trim()
                 }
-                sh 'ls -latr; make -C .ci cache-gpg-passphrase; make release'
+                sh 'git config --global --add safe.directory /var/lib/jenkins/workspace/elastic+terraform-provider-elasticstack+release'
+                sh 'make -C .ci cache-gpg-passphrase; make release'
             }
         } catch (Exception err) {
             throw err
