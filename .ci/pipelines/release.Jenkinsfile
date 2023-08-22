@@ -17,7 +17,7 @@ node('docker && gobld/machineType:n1-highcpu-8') {
             }
         }
     }
-    docker.image("${DOCKER_IMAGE}").inside("-u root:root") {
+    docker.image("${DOCKER_IMAGE}") {
         try {
             stage("Download dependencies") {
                 sh 'make vendor'
