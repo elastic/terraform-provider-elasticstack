@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/client9/misspell v0.3.4
-	github.com/deepmap/oapi-codegen v1.12.4
+	github.com/deepmap/oapi-codegen v1.14.0
 	github.com/golangci/golangci-lint v1.54.1
 	github.com/goreleaser/goreleaser v1.20.0
 	github.com/hashicorp/terraform-plugin-docs v0.15.0
@@ -143,7 +143,7 @@ require (
 	github.com/firefart/nonamedreturns v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
-	github.com/getkin/kin-openapi v0.107.0 // indirect
+	github.com/getkin/kin-openapi v0.118.0 // indirect
 	github.com/go-critic/go-critic v0.9.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
@@ -190,7 +190,7 @@ require (
 	github.com/google/rpmpack v0.5.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
@@ -238,8 +238,6 @@ require (
 	github.com/kunwardeep/paralleltest v1.0.8 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/kyoh86/exportloopref v0.1.11 // indirect
-	github.com/labstack/echo/v4 v4.9.1 // indirect
-	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/ldez/gomoddirectives v0.2.3 // indirect
 	github.com/ldez/tagliatelle v0.5.0 // indirect
 	github.com/leonklingele/grouper v1.1.1 // indirect
@@ -252,9 +250,9 @@ require (
 	github.com/maratori/testpackage v1.1.1 // indirect
 	github.com/matoous/godox v0.0.0-20230222163458-006bad1f9d26 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-mastodon v0.0.6 // indirect
-	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mbilski/exhaustivestruct v1.2.0 // indirect
 	github.com/mgechev/revive v1.3.2 // indirect
@@ -282,6 +280,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc3 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
+	github.com/perimeterx/marshmallow v1.1.4 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -346,8 +345,6 @@ require (
 	github.com/ultraware/funlen v0.1.0 // indirect
 	github.com/ultraware/whitespace v0.0.5 // indirect
 	github.com/uudashr/gocognit v1.0.7 // indirect
-	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
 	github.com/withfig/autocomplete-tools/integrations/cobra v1.2.1 // indirect
 	github.com/xanzy/go-gitlab v0.90.0 // indirect
