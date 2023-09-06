@@ -132,6 +132,25 @@ func NewApiClientFromFramework(ctx context.Context, cfg config.ProviderConfigura
 	return client, nil
 }
 
+func ConvertProviderData(providerData any) (*ApiClient, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
+
+	if providerData == nil {
+		return nil, diags
+	}
+
+	client, ok := providerData.(*ApiClient)
+	if !ok {
+		diags.AddError(
+			"Unexpected Provider Data",
+			fmt.Sprintf("Expected *ApiClient, got: %T. Please report this issue to the provider developers.", providerData),
+		)
+
+		return nil, diags
+	}
+	return client, diags
+}
+
 func NewApiClientFromSDKResource(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Diagnostics) {
 	defaultClient := meta.(*ApiClient)
 	version := defaultClient.version
