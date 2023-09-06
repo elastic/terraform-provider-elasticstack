@@ -61,7 +61,7 @@ func DataSourceEnrichPolicy() *schema.Resource {
 }
 
 func dataSourceEnrichPolicyRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

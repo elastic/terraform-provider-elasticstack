@@ -174,7 +174,7 @@ func ResourceRole() *schema.Resource {
 }
 
 func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -312,7 +312,7 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -420,7 +420,7 @@ func flattenIndicesData(indices *[]models.IndexPerms) []interface{} {
 }
 
 func resourceSecurityRoleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

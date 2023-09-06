@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
@@ -29,14 +31,29 @@ func (p *Provider) Metadata(_ context.Context, _ fwprovider.MetadataRequest, res
 func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
 	res.Schema = fwschema.Schema{
 		Blocks: map[string]fwschema.Block{
-			esKeyName:    schema.GetEsFWConnectionBlock(esKeyName, true),
-			kbKeyName:    schema.GetKbFWConnectionBlock(kbKeyName, true),
-			fleetKeyName: schema.GetFleetFWConnectionBlock(fleetKeyName, true),
+			esKeyName:    schema.GetEsFWConnectionBlock(esKeyName),
+			kbKeyName:    schema.GetKbFWConnectionBlock(kbKeyName),
+			fleetKeyName: schema.GetFleetFWConnectionBlock(fleetKeyName),
 		},
 	}
 }
 
 func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureRequest, res *fwprovider.ConfigureResponse) {
+	var config config.ProviderConfiguration
+
+	res.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	client, diags := clients.NewApiClientFromFramework(ctx, config, p.version)
+	res.Diagnostics.Append(diags...)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	res.DataSourceData = client
+	res.ResourceData = client
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {

@@ -12,48 +12,38 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
-	usernamePath := makePathRef(keyName, "username")
-	passwordPath := makePathRef(keyName, "password")
-	caFilePath := makePathRef(keyName, "ca_file")
-	caDataPath := makePathRef(keyName, "ca_data")
-	certFilePath := makePathRef(keyName, "cert_file")
-	certDataPath := makePathRef(keyName, "cert_data")
-	keyFilePath := makePathRef(keyName, "key_file")
-	keyDataPath := makePathRef(keyName, "key_data")
-
-	usernameValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(passwordPath))}
-	passwordValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(usernamePath))}
-
-	if isProviderConfiguration {
-		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
-		usernameValidators = nil
-		passwordValidators = nil
-	}
+func GetEsFWConnectionBlock(keyName string) fwschema.Block {
+	usernamePath := path.MatchRelative().AtParent().AtName("username")
+	passwordPath := path.MatchRelative().AtParent().AtName("password")
+	caFilePath := path.MatchRelative().AtParent().AtName("ca_file")
+	caDataPath := path.MatchRelative().AtParent().AtName("ca_data")
+	certFilePath := path.MatchRelative().AtParent().AtName("cert_file")
+	certDataPath := path.MatchRelative().AtParent().AtName("cert_data")
+	keyFilePath := path.MatchRelative().AtParent().AtName("key_file")
+	keyDataPath := path.MatchRelative().AtParent().AtName("key_data")
 
 	return fwschema.ListNestedBlock{
-		MarkdownDescription: fmt.Sprintf("Elasticsearch connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
-		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
+		MarkdownDescription: "Elasticsearch connection configuration block. ",
+		Description:         "Elasticsearch connection configuration block. ",
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
 				"username": fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Elasticsearch.",
 					Optional:            true,
-					Validators:          usernameValidators,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
 				"password": fwschema.StringAttribute{
 					MarkdownDescription: "Password to use for API authentication to Elasticsearch.",
 					Optional:            true,
 					Sensitive:           true,
-					Validators:          passwordValidators,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				"api_key": fwschema.StringAttribute{
 					MarkdownDescription: "API Key to use for authentication to Elasticsearch",
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("username")),
-						stringvalidator.ConflictsWith(path.MatchRoot(passwordPath)),
+						stringvalidator.ConflictsWith(usernamePath, passwordPath),
 					},
 				},
 				"endpoints": fwschema.ListAttribute{
@@ -70,41 +60,38 @@ func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 					MarkdownDescription: "Path to a custom Certificate Authority certificate",
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(path.MatchRoot(caDataPath)),
+						stringvalidator.ConflictsWith(caDataPath),
 					},
 				},
 				"ca_data": fwschema.StringAttribute{
 					MarkdownDescription: "PEM-encoded custom Certificate Authority certificate",
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(path.MatchRoot(caFilePath)),
+						stringvalidator.ConflictsWith(caFilePath),
 					},
 				},
 				"cert_file": fwschema.StringAttribute{
 					MarkdownDescription: "Path to a file containing the PEM encoded certificate for client auth",
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.AlsoRequires(path.MatchRoot(keyFilePath)),
-						stringvalidator.ConflictsWith(path.MatchRoot(certDataPath)),
-						stringvalidator.ConflictsWith(path.MatchRoot(keyDataPath)),
+						stringvalidator.AlsoRequires(keyFilePath),
+						stringvalidator.ConflictsWith(caDataPath, keyDataPath),
 					},
 				},
 				"key_file": fwschema.StringAttribute{
 					MarkdownDescription: "Path to a file containing the PEM encoded private key for client auth",
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.AlsoRequires(path.MatchRoot(certFilePath)),
-						stringvalidator.ConflictsWith(path.MatchRoot(certDataPath)),
-						stringvalidator.ConflictsWith(path.MatchRoot(keyDataPath)),
+						stringvalidator.AlsoRequires(certFilePath),
+						stringvalidator.ConflictsWith(certDataPath, keyDataPath),
 					},
 				},
 				"cert_data": fwschema.StringAttribute{
 					MarkdownDescription: "PEM encoded certificate for client auth",
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.AlsoRequires(path.MatchRoot(keyDataPath)),
-						stringvalidator.ConflictsWith(path.MatchRoot(certFilePath)),
-						stringvalidator.ConflictsWith(path.MatchRoot(keyFilePath)),
+						stringvalidator.AlsoRequires(keyDataPath),
+						stringvalidator.ConflictsWith(certFilePath, keyFilePath),
 					},
 				},
 				"key_data": fwschema.StringAttribute{
@@ -112,9 +99,8 @@ func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
-						stringvalidator.AlsoRequires(path.MatchRoot(certDataPath)),
-						stringvalidator.ConflictsWith(path.MatchRoot(certFilePath)),
-						stringvalidator.ConflictsWith(path.MatchRoot(keyFilePath)),
+						stringvalidator.AlsoRequires(certDataPath),
+						stringvalidator.ConflictsWith(certFilePath, keyFilePath),
 					},
 				},
 			},
@@ -125,7 +111,7 @@ func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 	}
 }
 
-func GetKbFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+func GetKbFWConnectionBlock(keyName string) fwschema.Block {
 	usernamePath := makePathRef(keyName, "username")
 	passwordPath := makePathRef(keyName, "password")
 
@@ -134,7 +120,6 @@ func GetKbFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Kibana connection configuration block.",
-		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
 				"username": fwschema.StringAttribute{
@@ -166,7 +151,7 @@ func GetKbFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 	}
 }
 
-func GetFleetFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+func GetFleetFWConnectionBlock(keyName string) fwschema.Block {
 	usernamePath := makePathRef(keyName, "username")
 	passwordPath := makePathRef(keyName, "password")
 
@@ -175,7 +160,6 @@ func GetFleetFWConnectionBlock(keyName string, isProviderConfiguration bool) fws
 
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Fleet connection configuration block.",
-		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
 				"username": fwschema.StringAttribute{
