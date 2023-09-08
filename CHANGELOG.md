@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Add support for the `.slack_api` connector type for Kibana action connectors ([#419](https://github.com/elastic/terraform-provider-elasticstack/pull/419))
 
 ## [0.7.0] - 2023-08-22
 
