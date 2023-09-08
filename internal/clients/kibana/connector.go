@@ -430,6 +430,9 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 	case connectors.ConnectorTypesDotSlack:
 		return createConnectorRequestSlack(connector)
 
+	case connectors.ConnectorTypesDotSlackApi:
+		return createConnectorRequestSlackApi(connector)
+
 	case connectors.ConnectorTypesDotSwimlane:
 		return createConnectorRequestSwimlane(connector)
 
@@ -486,6 +489,9 @@ func updateConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 		return updateConnectorRequestServerlog(connector)
 
 	case connectors.ConnectorTypesDotSlack:
+		return updateConnectorRequestSlack(connector)
+
+	case connectors.ConnectorTypesDotSlackApi:
 		return updateConnectorRequestSlack(connector)
 
 	case connectors.ConnectorTypesDotSwimlane:
@@ -636,6 +642,15 @@ func createConnectorRequestSlack(connector models.KibanaActionConnector) (io.Rea
 	return marshalConnectorRequest[any](connector, nil, &request.Secrets, &request)
 }
 
+func createConnectorRequestSlackApi(connector models.KibanaActionConnector) (io.Reader, error) {
+	request := connectors.CreateConnectorRequestSlackApi{
+		ConnectorTypeId: connectors.CreateConnectorRequestSlackApiConnectorTypeIdDotSlackApi,
+		Name:            connector.Name,
+	}
+
+	return marshalConnectorRequest[any](connector, nil, &request.Secrets, &request)
+}
+
 func createConnectorRequestSwimlane(connector models.KibanaActionConnector) (io.Reader, error) {
 	request := connectors.CreateConnectorRequestSwimlane{
 		ConnectorTypeId: connectors.CreateConnectorRequestSwimlaneConnectorTypeIdDotSwimlane,
@@ -777,6 +792,14 @@ func updateConnectorRequestSlack(connector models.KibanaActionConnector) (io.Rea
 	return marshalConnectorRequest[any](connector, nil, &request.Secrets, &request)
 }
 
+func updateConnectorRequestSlackApi(connector models.KibanaActionConnector) (io.Reader, error) {
+	request := connectors.UpdateConnectorRequestSlackApi{
+		Name: connector.Name,
+	}
+
+	return marshalConnectorRequest[any](connector, nil, &request.Secrets, &request)
+}
+
 func updateConnectorRequestSwimlane(connector models.KibanaActionConnector) (io.Reader, error) {
 	request := connectors.UpdateConnectorRequestSwimlane{
 		Name: connector.Name,
@@ -860,6 +883,9 @@ func connectorResponseToModel(spaceID string, properties connectors.ConnectorRes
 
 	case connectors.ConnectorTypesDotSlack:
 		return connectorResponseToModelSlack(discriminator, spaceID, properties)
+
+	case connectors.ConnectorTypesDotSlackApi:
+		return connectorResponseToModelSlackApi(discriminator, spaceID, properties)
 
 	case connectors.ConnectorTypesDotSwimlane:
 		return connectorResponseToModelSwimlane(discriminator, spaceID, properties)
@@ -1278,6 +1304,36 @@ func connectorResponseToModelServicenowSir(discriminator, spaceID string, proper
 
 func connectorResponseToModelSlack(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
 	resp, err := properties.AsConnectorResponsePropertiesSlack()
+	if err != nil {
+		return nil, err
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelSlackApi(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesSlackApi()
 	if err != nil {
 		return nil, err
 	}

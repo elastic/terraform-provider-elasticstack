@@ -7,6 +7,7 @@
   - `update_connector_request_pagerduty`;
   - `update_connector_request_servicenow_sir`;
   - `update_connector_request_slack`;
+  - `update_connector_request_slack_api`;
   - `update_connector_request_teams`;
   - `update_connector_request_tines`;
   - `update_connector_request_webhook`;
@@ -31,6 +32,7 @@
   - `connector_response_properties_servicenow_itom`;
   - `connector_response_properties_servicenow_sir`;
   - `connector_response_properties_slack`;
+  - `connector_response_properties_slack_api`;
   - `connector_response_properties_swimlane`;
   - `connector_response_properties_teams`;
   - `connector_response_properties_tines`;
