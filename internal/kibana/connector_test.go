@@ -990,7 +990,7 @@ func TestAccResourceKibanaConnectorSlackApi(t *testing.T) {
 	  secrets = jsonencode({
 		token = "my-token"
 	  })
-	  connector_type_id = ".slack-api"
+	  connector_type_id = ".slack_api"
 	}`,
 			name)
 	}
@@ -1007,7 +1007,7 @@ func TestAccResourceKibanaConnectorSlackApi(t *testing.T) {
 	  secrets = jsonencode({
 		token = "my-updated-token"
 	  })
-	  connector_type_id = ".slack-api"
+	  connector_type_id = ".slack_api"
 	}`,
 			name)
 	}
@@ -1021,7 +1021,7 @@ func TestAccResourceKibanaConnectorSlackApi(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				Config:   create(connectorName),
 				Check: resource.ComposeTestCheckFunc(
-					testCommonAttributes(connectorName, ".slack-api"),
+					testCommonAttributes(connectorName, ".slack_api"),
 
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"token\":\"my-token\"`)),
 				),
@@ -1030,7 +1030,7 @@ func TestAccResourceKibanaConnectorSlackApi(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				Config:   update(connectorName),
 				Check: resource.ComposeTestCheckFunc(
-					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".slack-api"),
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".slack_api"),
 
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"token\":\"my-updated-token\"`)),
 				),

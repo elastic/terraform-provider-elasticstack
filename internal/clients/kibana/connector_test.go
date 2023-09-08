@@ -97,7 +97,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 		generator(".slack", nil, func(props *connectors.ConnectorResponseProperties) error {
 			return props.FromConnectorResponsePropertiesSlack(connectors.ConnectorResponsePropertiesSlack{})
 		}),
-		generator(".slack-api", nil, func(props *connectors.ConnectorResponseProperties) error {
+		generator(".slack_api", nil, func(props *connectors.ConnectorResponseProperties) error {
 			return props.FromConnectorResponsePropertiesSlackApi(connectors.ConnectorResponsePropertiesSlackApi{})
 		}),
 		generator(".swimlane", connectors.ConfigPropertiesSwimlane{}, func(props *connectors.ConnectorResponseProperties) error {
