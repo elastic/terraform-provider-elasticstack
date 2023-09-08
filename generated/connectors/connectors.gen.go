@@ -181,7 +181,7 @@ const (
 	ConnectorTypesDotServicenowItom ConnectorTypes = ".servicenow-itom"
 	ConnectorTypesDotServicenowSir  ConnectorTypes = ".servicenow-sir"
 	ConnectorTypesDotSlack          ConnectorTypes = ".slack"
-	ConnectorTypesDotSlackApi       ConnectorTypes = ".slack-api"
+	ConnectorTypesDotSlackApi       ConnectorTypes = ".slack_api"
 	ConnectorTypesDotSwimlane       ConnectorTypes = ".swimlane"
 	ConnectorTypesDotTeams          ConnectorTypes = ".teams"
 	ConnectorTypesDotTines          ConnectorTypes = ".tines"
@@ -2740,7 +2740,7 @@ func (t ConnectorResponseProperties) AsConnectorResponsePropertiesSlackApi() (Co
 
 // FromConnectorResponsePropertiesSlackApi overwrites any union data inside the ConnectorResponseProperties as the provided ConnectorResponsePropertiesSlackApi
 func (t *ConnectorResponseProperties) FromConnectorResponsePropertiesSlackApi(v ConnectorResponsePropertiesSlackApi) error {
-	v.ConnectorTypeId = ".slack-api"
+	v.ConnectorTypeId = ".slack_api"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -2748,7 +2748,7 @@ func (t *ConnectorResponseProperties) FromConnectorResponsePropertiesSlackApi(v 
 
 // MergeConnectorResponsePropertiesSlackApi performs a merge with any union data inside the ConnectorResponseProperties, using the provided ConnectorResponsePropertiesSlackApi
 func (t *ConnectorResponseProperties) MergeConnectorResponsePropertiesSlackApi(v ConnectorResponsePropertiesSlackApi) error {
-	v.ConnectorTypeId = ".slack-api"
+	v.ConnectorTypeId = ".slack_api"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -2937,7 +2937,7 @@ func (t ConnectorResponseProperties) ValueByDiscriminator() (interface{}, error)
 		return t.AsConnectorResponsePropertiesServicenowSir()
 	case ".slack":
 		return t.AsConnectorResponsePropertiesSlack()
-	case ".slack-api":
+	case ".slack_api":
 		return t.AsConnectorResponsePropertiesSlackApi()
 	case ".swimlane":
 		return t.AsConnectorResponsePropertiesSwimlane()

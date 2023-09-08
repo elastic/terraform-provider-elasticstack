@@ -67,7 +67,7 @@ paths:
                   .servicenow-itom: '#/components/schemas/create_connector_request_servicenow_itom'
                   .servicenow-sir: '#/components/schemas/create_connector_request_servicenow_sir'
                   .slack: '#/components/schemas/create_connector_request_slack'
-                  .slack-api: '#/components/schemas/create_connector_request_slack_api'
+                  .slack_api: '#/components/schemas/create_connector_request_slack_api'
                   .swimlane: '#/components/schemas/create_connector_request_swimlane'
                   .teams: '#/components/schemas/create_connector_request_teams'
                   .tines: '#/components/schemas/create_connector_request_tines'
@@ -2368,7 +2368,7 @@ components:
           .servicenow-itom: '#/components/schemas/connector_response_properties_servicenow_itom'
           .servicenow-sir: '#/components/schemas/connector_response_properties_servicenow_sir'
           .slack: '#/components/schemas/connector_response_properties_slack'
-          .slack-api: '#/components/schemas/connector_response_properties_slack_api'
+          .slack_api: '#/components/schemas/connector_response_properties_slack_api'
           .swimlane: '#/components/schemas/connector_response_properties_swimlane'
           .teams: '#/components/schemas/connector_response_properties_teams'
           .tines: '#/components/schemas/connector_response_properties_tines'
@@ -2664,7 +2664,7 @@ components:
         - .servicenow-sir
         - .server-log
         - .slack
-        - .slack-api
+        - .slack_api
         - .swimlane
         - .teams
         - .tines
