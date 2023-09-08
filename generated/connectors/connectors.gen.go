@@ -137,6 +137,11 @@ const (
 	ConnectorResponsePropertiesSlackConnectorTypeIdDotSlack ConnectorResponsePropertiesSlackConnectorTypeId = ".slack"
 )
 
+// Defines values for ConnectorResponsePropertiesSlackApiConnectorTypeId.
+const (
+	ConnectorResponsePropertiesSlackApiConnectorTypeIdDotSlackApi ConnectorResponsePropertiesSlackApiConnectorTypeId = ".slack_api"
+)
+
 // Defines values for ConnectorResponsePropertiesSwimlaneConnectorTypeId.
 const (
 	ConnectorResponsePropertiesSwimlaneConnectorTypeIdDotSwimlane ConnectorResponsePropertiesSwimlaneConnectorTypeId = ".swimlane"
@@ -176,6 +181,7 @@ const (
 	ConnectorTypesDotServicenowItom ConnectorTypes = ".servicenow-itom"
 	ConnectorTypesDotServicenowSir  ConnectorTypes = ".servicenow-sir"
 	ConnectorTypesDotSlack          ConnectorTypes = ".slack"
+	ConnectorTypesDotSlackApi       ConnectorTypes = ".slack_api"
 	ConnectorTypesDotSwimlane       ConnectorTypes = ".swimlane"
 	ConnectorTypesDotTeams          ConnectorTypes = ".teams"
 	ConnectorTypesDotTines          ConnectorTypes = ".tines"
@@ -241,6 +247,11 @@ const (
 // Defines values for CreateConnectorRequestSlackConnectorTypeId.
 const (
 	CreateConnectorRequestSlackConnectorTypeIdDotSlack CreateConnectorRequestSlackConnectorTypeId = ".slack"
+)
+
+// Defines values for CreateConnectorRequestSlackApiConnectorTypeId.
+const (
+	CreateConnectorRequestSlackApiConnectorTypeIdDotSlackApi CreateConnectorRequestSlackApiConnectorTypeId = ".slack_api"
 )
 
 // Defines values for CreateConnectorRequestSwimlaneConnectorTypeId.
@@ -1046,6 +1057,30 @@ type ConnectorResponsePropertiesSlack struct {
 // ConnectorResponsePropertiesSlackConnectorTypeId The type of connector.
 type ConnectorResponsePropertiesSlackConnectorTypeId string
 
+// ConnectorResponsePropertiesSlackApi defines model for connector_response_properties_slack_api.
+type ConnectorResponsePropertiesSlackApi struct {
+	// ConnectorTypeId The type of connector.
+	ConnectorTypeId ConnectorResponsePropertiesSlackApiConnectorTypeId `json:"connector_type_id"`
+
+	// Id The identifier for the connector.
+	Id string `json:"id"`
+
+	// IsDeprecated Indicates whether the connector type is deprecated.
+	IsDeprecated *IsDeprecated `json:"is_deprecated,omitempty"`
+
+	// IsMissingSecrets Indicates whether secrets are missing for the connector. Secrets configuration properties vary depending on the connector type.
+	IsMissingSecrets *IsMissingSecrets `json:"is_missing_secrets,omitempty"`
+
+	// IsPreconfigured Indicates whether it is a preconfigured connector. If true, the `config` and `is_missing_secrets` properties are omitted from the response.
+	IsPreconfigured IsPreconfigured `json:"is_preconfigured"`
+
+	// Name The display name for the connector.
+	Name string `json:"name"`
+}
+
+// ConnectorResponsePropertiesSlackApiConnectorTypeId The type of connector.
+type ConnectorResponsePropertiesSlackApiConnectorTypeId string
+
 // ConnectorResponsePropertiesSwimlane defines model for connector_response_properties_swimlane.
 type ConnectorResponsePropertiesSwimlane struct {
 	// Config Defines properties for connectors when type is `.swimlane`.
@@ -1382,6 +1417,21 @@ type CreateConnectorRequestSlack struct {
 
 // CreateConnectorRequestSlackConnectorTypeId The type of connector.
 type CreateConnectorRequestSlackConnectorTypeId string
+
+// CreateConnectorRequestSlackApi The Slack connector uses Slack Incoming Webhooks.
+type CreateConnectorRequestSlackApi struct {
+	// ConnectorTypeId The type of connector.
+	ConnectorTypeId CreateConnectorRequestSlackApiConnectorTypeId `json:"connector_type_id"`
+
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.slack`.
+	Secrets SecretsPropertiesSlackApi `json:"secrets"`
+}
+
+// CreateConnectorRequestSlackApiConnectorTypeId The type of connector.
+type CreateConnectorRequestSlackApiConnectorTypeId string
 
 // CreateConnectorRequestSwimlane The Swimlane connector uses the Swimlane REST API to create Swimlane records.
 type CreateConnectorRequestSwimlane struct {
@@ -1980,6 +2030,12 @@ type SecretsPropertiesServicenow struct {
 // SecretsPropertiesSlack Defines secrets for connectors when type is `.slack`.
 type SecretsPropertiesSlack map[string]interface{}
 
+// SecretsPropertiesSlackApi Defines secrets for connectors when type is `.slack`.
+type SecretsPropertiesSlackApi struct {
+	// Token Slack bot user OAuth token.
+	Token string `json:"token"`
+}
+
 // SecretsPropertiesSwimlane Defines secrets for connectors when type is `.swimlane`.
 type SecretsPropertiesSwimlane struct {
 	// ApiToken Swimlane API authentication token.
@@ -2126,6 +2182,15 @@ type UpdateConnectorRequestSlack struct {
 
 	// Secrets Defines secrets for connectors when type is `.slack`.
 	Secrets SecretsPropertiesSlack `json:"secrets"`
+}
+
+// UpdateConnectorRequestSlackApi defines model for update_connector_request_slack_api.
+type UpdateConnectorRequestSlackApi struct {
+	// Name The display name for the connector.
+	Name string `json:"name"`
+
+	// Secrets Defines secrets for connectors when type is `.slack`.
+	Secrets SecretsPropertiesSlackApi `json:"secrets"`
 }
 
 // UpdateConnectorRequestSwimlane defines model for update_connector_request_swimlane.
@@ -2666,6 +2731,34 @@ func (t *ConnectorResponseProperties) MergeConnectorResponsePropertiesSlack(v Co
 	return err
 }
 
+// AsConnectorResponsePropertiesSlackApi returns the union data inside the ConnectorResponseProperties as a ConnectorResponsePropertiesSlackApi
+func (t ConnectorResponseProperties) AsConnectorResponsePropertiesSlackApi() (ConnectorResponsePropertiesSlackApi, error) {
+	var body ConnectorResponsePropertiesSlackApi
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromConnectorResponsePropertiesSlackApi overwrites any union data inside the ConnectorResponseProperties as the provided ConnectorResponsePropertiesSlackApi
+func (t *ConnectorResponseProperties) FromConnectorResponsePropertiesSlackApi(v ConnectorResponsePropertiesSlackApi) error {
+	v.ConnectorTypeId = ".slack_api"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeConnectorResponsePropertiesSlackApi performs a merge with any union data inside the ConnectorResponseProperties, using the provided ConnectorResponsePropertiesSlackApi
+func (t *ConnectorResponseProperties) MergeConnectorResponsePropertiesSlackApi(v ConnectorResponsePropertiesSlackApi) error {
+	v.ConnectorTypeId = ".slack_api"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsConnectorResponsePropertiesSwimlane returns the union data inside the ConnectorResponseProperties as a ConnectorResponsePropertiesSwimlane
 func (t ConnectorResponseProperties) AsConnectorResponsePropertiesSwimlane() (ConnectorResponsePropertiesSwimlane, error) {
 	var body ConnectorResponsePropertiesSwimlane
@@ -2844,6 +2937,8 @@ func (t ConnectorResponseProperties) ValueByDiscriminator() (interface{}, error)
 		return t.AsConnectorResponsePropertiesServicenowSir()
 	case ".slack":
 		return t.AsConnectorResponsePropertiesSlack()
+	case ".slack_api":
+		return t.AsConnectorResponsePropertiesSlackApi()
 	case ".swimlane":
 		return t.AsConnectorResponsePropertiesSwimlane()
 	case ".teams":

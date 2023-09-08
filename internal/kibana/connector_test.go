@@ -973,6 +973,72 @@ func TestAccResourceKibanaConnectorSlack(t *testing.T) {
 	})
 }
 
+func TestAccResourceKibanaConnectorSlackApi(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("8.8.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  secrets = jsonencode({
+		token = "my-token"
+	  })
+	  connector_type_id = ".slack_api"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  secrets = jsonencode({
+		token = "my-updated-token"
+	  })
+	  connector_type_id = ".slack_api"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".slack_api"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"token\":\"my-token\"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".slack_api"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"token\":\"my-updated-token\"`)),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceKibanaConnectorSwimlane(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
