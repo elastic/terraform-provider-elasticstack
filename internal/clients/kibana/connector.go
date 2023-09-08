@@ -492,7 +492,7 @@ func updateConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 		return updateConnectorRequestSlack(connector)
 
 	case connectors.ConnectorTypesDotSlackApi:
-		return updateConnectorRequestSlack(connector)
+		return updateConnectorRequestSlackApi(connector)
 
 	case connectors.ConnectorTypesDotSwimlane:
 		return updateConnectorRequestSwimlane(connector)
