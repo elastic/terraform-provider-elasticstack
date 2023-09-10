@@ -21,7 +21,7 @@ resource "elasticstack_elasticsearch_component_template" "my_template" {
   name = "my_template"
 
   template {
-    aliases {
+    alias {
       name = "my_template_test"
     }
 
