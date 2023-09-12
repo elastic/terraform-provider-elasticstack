@@ -44,7 +44,6 @@ func TestAccResourceSpace(t *testing.T) {
 func testAccResourceSpaceCreate(id string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -59,7 +58,6 @@ resource "elasticstack_kibana_space" "test_space" {
 func testAccResourceSpaceUpdate(id string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 

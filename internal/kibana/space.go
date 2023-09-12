@@ -2,6 +2,7 @@ package kibana
 
 import (
 	"context"
+	"strings"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -121,12 +122,7 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 	}
 
-	id, diags := client.ID(ctx, spaceResponse.ID)
-	if diags.HasError() {
-		return diags
-	}
-
-	d.SetId(id.String())
+	d.SetId(spaceResponse.ID)
 
 	return resourceSpaceRead(ctx, d, meta)
 }
@@ -136,11 +132,14 @@ func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
-	if diags.HasError() {
-		return diags
+	id := d.Id()
+	if strings.Contains(id, "/") {
+		compId, diags := clients.CompositeIdFromStr(id)
+		if diags.HasError() {
+			return diags
+		}
+		id = compId.ResourceId
 	}
-	id := compId.ResourceId
 
 	kibana, err := client.GetKibanaClient()
 	if err != nil {
@@ -184,9 +183,13 @@ func resourceSpaceDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
-	if diags.HasError() {
-		return diags
+	id := d.Id()
+	if strings.Contains(id, "/") {
+		compId, diags := clients.CompositeIdFromStr(id)
+		if diags.HasError() {
+			return diags
+		}
+		id = compId.ResourceId
 	}
 
 	kibana, err := client.GetKibanaClient()
@@ -194,7 +197,7 @@ func resourceSpaceDelete(ctx context.Context, d *schema.ResourceData, meta inter
 		return diag.FromErr(err)
 	}
 
-	err = kibana.KibanaSpaces.Delete(compId.ResourceId)
+	err = kibana.KibanaSpaces.Delete(id)
 	if err != nil {
 		return diag.FromErr(err)
 	}
