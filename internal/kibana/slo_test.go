@@ -122,16 +122,16 @@ func TestAccResourceSloErrors(t *testing.T) {
 		elasticsearch {}
 		kibana {}
 	  }
-	  
+
 	  resource "elasticstack_elasticsearch_index" "my_index" {
 		  name = "my-index"
 		  deletion_protection = false
-	  }  
-	  
+	  }
+
 	  resource "elasticstack_kibana_slo" "test_slo" {
 		  name        = "fail"
 		  description = "multiple indicator fail"
-	  
+
 		histogram_custom_indicator {
 			index = "my-index"
 			good {
@@ -146,7 +146,7 @@ func TestAccResourceSloErrors(t *testing.T) {
 			filter = "labels.groupId: group-0"
 			timestamp_field = "custom_timestamp"
 		}
-	
+
 		kql_custom_indicator {
 			index = "my-index"
 			good = "latency < 300"
@@ -154,22 +154,22 @@ func TestAccResourceSloErrors(t *testing.T) {
 			filter = "labels.groupId: group-0"
 			timestamp_field = "custom_timestamp"
 		}
-		
+
 		  time_window {
 			duration   = "7d"
 			type = "rolling"
 		  }
-		
+
 		  budgeting_method = "supdawg"
-		
+
 		  objective {
 			target          = 0.999
 			timeslice_target = 0.95
 			timeslice_window = "5m"
 		  }
-	  
+
 		  depends_on = [elasticstack_elasticsearch_index.my_index]
-		
+
 	}`
 
 	budgetingMethodFailConfig := getSLOConfig("budgetingMethodFail", "apm_latency_indicator", false)
@@ -192,7 +192,7 @@ func TestAccResourceSloErrors(t *testing.T) {
 			{
 				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
 				Config:      budgetingMethodFailConfig,
-				ExpectError: regexp.MustCompile(`expected budgeting_method to be one of \[occurrences timeslices\], got supdawg`),
+				ExpectError: regexp.MustCompile(`expected budgeting_method to be one of \["occurrences" "timeslices"\], got supdawg`),
 			},
 		},
 	})
@@ -362,7 +362,7 @@ func getSLOConfig(name string, indicatorType string, settingsEnabled bool) strin
 				}
 				equation = "A"
 			}
-	
+
 			total {
 				metrics {
 						name = "A"
