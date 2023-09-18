@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet/fleetapi"
+	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )

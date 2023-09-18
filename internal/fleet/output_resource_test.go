@@ -17,7 +17,7 @@ import (
 
 var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
 
-func TestAccResourceOutput(t *testing.T) {
+func TestAccResourceOutputElasticsearch(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -27,9 +27,9 @@ func TestAccResourceOutput(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreate(policyName),
+				Config:   testAccResourceOutputCreateElasticsearch(policyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Elasticsearch Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
@@ -39,9 +39,9 @@ func TestAccResourceOutput(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputUpdate(policyName),
+				Config:   testAccResourceOutputUpdateElasticsearch(policyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Elasticsearch Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
@@ -53,7 +53,43 @@ func TestAccResourceOutput(t *testing.T) {
 	})
 }
 
-func testAccResourceOutputCreate(id string) string {
+func TestAccResourceOutputLogstash(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceOutputDestroy,
+		ProtoV5ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config:   testAccResourceOutputCreateLogstash(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config:   testAccResourceOutputLogstashUpdate(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Logstash Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceOutputCreateElasticsearch(id string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -72,10 +108,10 @@ resource "elasticstack_fleet_output" "test_output" {
     "https://elasticsearch:9200"
   ]
 }
-`, fmt.Sprintf("Output %s", id))
+`, fmt.Sprintf("Elasticsearch Output %s", id))
 }
 
-func testAccResourceOutputUpdate(id string) string {
+func testAccResourceOutputUpdateElasticsearch(id string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -95,7 +131,52 @@ resource "elasticstack_fleet_output" "test_output" {
   ]
 }
 
-`, fmt.Sprintf("Updated Output %s", id))
+`, fmt.Sprintf("Updated Elasticsearch Output %s", id))
+}
+
+func testAccResourceOutputCreateLogstash(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_output" "test_output" {
+  name                 = "%s"
+  type                 = "logstash"
+  config_yaml = yamlencode({
+    "ssl.verification_mode" : "none"
+  })
+  default_integrations = false
+  default_monitoring   = false
+  hosts = [
+    "logstash:5044"
+  ]
+}
+`, fmt.Sprintf("Logstash Output %s", id))
+}
+
+func testAccResourceOutputLogstashUpdate(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_output" "test_output" {
+  name                 = "%s"
+  type                 = "logstash"
+  config_yaml = yamlencode({
+    "ssl.verification_mode" : "none"
+  })
+  default_integrations = false
+  default_monitoring   = false
+  hosts = [
+    "logstash:5044"
+  ]
+}
+
+`, fmt.Sprintf("Updated Logstash Output %s", id))
 }
 
 func checkResourceOutputDestroy(s *terraform.State) error {
