@@ -88,19 +88,21 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))), //TODO: once 8.10.0 is released, move to 8.10.0
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
 				Config:   getSLOConfig(sloName, "histogram_custom_indicator", true),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.index", "my-index"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.field", "test"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.aggregation", "value_count"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.filter", "latency < 300"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.from", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.to", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.total.0.field", "test"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.total.0.aggregation", "value_count"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))), //TODO: once 8.10.0 is released, move to 8.10.0
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
 				Config:   getSLOConfig(sloName, "metric_custom_indicator", true),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index"),
@@ -340,6 +342,8 @@ func getSLOConfig(name string, indicatorType string, settingsEnabled bool) strin
 				field = "test"
 				aggregation = "supdawg"
 				filter = "latency < 300"
+				from = 0
+				to = 10
 			}
 			total {
 				field = "test"
