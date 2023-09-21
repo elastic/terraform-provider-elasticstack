@@ -180,11 +180,11 @@ func ResourceSlo() *schema.Resource {
 									Optional: true,
 								},
 								"from": {
-									Type:     schema.TypeInt, //TODO: validate this is set if aggregation is range
+									Type:     schema.TypeFloat,
 									Optional: true,
 								},
 								"to": {
-									Type:     schema.TypeInt, //TODO: validate this is set if aggregation is range
+									Type:     schema.TypeFloat,
 									Optional: true,
 								},
 							},
