@@ -1309,6 +1309,8 @@ func TestAccResourceKibanaConnectorWebhook(t *testing.T) {
 	  name         = "%s"
 	  config = jsonencode({
 		url = "https://elastic.co"
+  		hasAuth = True
+    		method = "post"
 	  })
 	  secrets = jsonencode({})
 	  connector_type_id = ".webhook"
