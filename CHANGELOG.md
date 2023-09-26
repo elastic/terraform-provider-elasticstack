@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.8.0] - 2023-09-26
+
 ### Added
 - Add support for the `.slack_api` connector type for Kibana action connectors ([#419](https://github.com/elastic/terraform-provider-elasticstack/pull/419))
 - resource `elasticstack_kibana_slo`: Update `histogram_custom_indicator` `from` and `to` fields to float ([#430](https://github.com/elastic/terraform-provider-elasticstack/pull/430))
@@ -178,7 +180,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.0...v0.6.1
