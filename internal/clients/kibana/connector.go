@@ -1465,7 +1465,7 @@ func connectorResponseToModelTines(discriminator, spaceID string, properties con
 }
 
 func connectorResponseToModelWebhook(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
-	resp, err := properties.AsConnectorResponsePropertiesTines()
+	resp, err := properties.AsConnectorResponsePropertiesWebhook()
 	if err != nil {
 		return nil, err
 	}
