@@ -17,6 +17,10 @@ import (
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
 
+// TODO - Uncomment these lines when we're using a kibana client which supports create_new_copies and compatibility_mode
+// create_new_copies and compatibility_mode aren't supported by the current version of the Kibana client
+// We can add these ourselves once https://github.com/elastic/terraform-provider-elasticstack/pull/372 is merged
+
 // var _ resource.ResourceWithConfigValidators = &Resource{}
 
 // func (r *Resource) ConfigValidators(context.Context) []resource.ConfigValidator {
