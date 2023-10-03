@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Update `elasticstack_fleet_output` to use new API schema format ([#434](https://github.com/elastic/terraform-provider-elasticstack/pull/434))
+
 ## [0.8.0] - 2023-09-26
 
 ### Added
