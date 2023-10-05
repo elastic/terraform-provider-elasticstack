@@ -15,6 +15,8 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	certDataPath := makePathRef(keyName, "cert_data")
 	keyFilePath := makePathRef(keyName, "key_file")
 	keyDataPath := makePathRef(keyName, "key_data")
+	apiKeyPath := makePathRef(keyName, "api_key")
+	jwttokenPath := makePathRef(keyName, "jwt_token")
 
 	usernameRequiredWithValidation := []string{passwordPath}
 	passwordRequiredWithValidation := []string{usernamePath}
@@ -60,7 +62,15 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 					Optional:      true,
 					Sensitive:     true,
 					DefaultFunc:   withEnvDefault("ELASTICSEARCH_API_KEY", nil),
-					ConflictsWith: []string{usernamePath, passwordPath},
+					ConflictsWith: []string{usernamePath, passwordPath, jwttokenPath},
+				},
+				"jwt_token": {
+					Description:   "JWT Token Key to use for authentication to Elasticsearch",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     false,
+					DefaultFunc:   withEnvDefault("JWT_TOKEN", nil),
+					ConflictsWith: []string{usernamePath, passwordPath, apiKeyPath},
 				},
 				"endpoints": {
 					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
