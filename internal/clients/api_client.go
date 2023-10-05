@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -355,8 +356,21 @@ type BaseConfig struct {
 func buildBaseConfig(d *schema.ResourceData, version string, esKey string) BaseConfig {
 	baseConfig := BaseConfig{}
 	baseConfig.UserAgent = buildUserAgent(version)
-	baseConfig.Header = http.Header{"User-Agent": []string{baseConfig.UserAgent}}
+	if elasticDataRaw, ok := d.GetOk("elasticsearch"); ok {
+		elasticDataRaw, ok := elasticDataRaw.([]interface{})[0].(map[string]any)
+		if !ok {
+			log.Println("Error with buildBaseConfig.elasticDataRaw: ", d.GetRawConfig().GoString())
+		}
+		if v, ok := elasticDataRaw["jwt_token"].(string); ok && tokenString != "" {
+			fullToken = "Bearer " + tokenString
+			baseConfig.Header = http.Header{"Authorization": []string{fullToken}, "User-Agent": []string{baseConfig.UserAgent}}
+		}
+	} else {
+		baseConfig.Header = http.Header{"User-Agent": []string{baseConfig.UserAgent}}
+	}
+	header := fmt.Sprintf("%s", baseConfig.Header)
 
+	
 	if esConn, ok := d.GetOk(esKey); ok {
 		if resource := esConn.([]interface{})[0]; resource != nil {
 			config := resource.(map[string]interface{})
