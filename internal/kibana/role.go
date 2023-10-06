@@ -113,21 +113,19 @@ func ResourceRole() *schema.Resource {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"base": {
-						Description:  "A base privilege. When specified, the base must be [\"all\"] or [\"read\"].",
-						Type:         schema.TypeSet,
-						Optional:     true,
-						MaxItems:     1,
-						ExactlyOneOf: []string{"kibana.base", "kibana.feature"},
+						Description: "A base privilege. When specified, the base must be [\"all\"] or [\"read\"].",
+						Type:        schema.TypeSet,
+						Optional:    true,
+						MaxItems:    1,
 						Elem: &schema.Schema{
 							Type:         schema.TypeString,
 							ValidateFunc: validation.StringInSlice([]string{"all", "read"}, true),
 						},
 					},
 					"feature": {
-						Description:  "List of privileges for specific features. When the feature privileges are specified, you are unable to use the \"base\" section.",
-						Type:         schema.TypeSet,
-						Optional:     true,
-						ExactlyOneOf: []string{"kibana.base", "kibana.feature"},
+						Description: "List of privileges for specific features. When the feature privileges are specified, you are unable to use the \"base\" section.",
+						Type:        schema.TypeSet,
+						Optional:    true,
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
@@ -214,6 +212,9 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 			}
 
 			if basePrivileges, ok := each["base"].(*schema.Set); ok && basePrivileges.Len() > 0 {
+				if _features, ok := each["feature"].(*schema.Set); ok && _features.Len() > 0 {
+					return diag.Errorf("Only one of the `feature` or `base` privileges allowed!")
+				}
 				config.Base = make([]string, basePrivileges.Len())
 				for i, name := range basePrivileges.List() {
 					config.Base[i] = name.(string)
@@ -228,6 +229,8 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 					}
 					config.Feature[featureData["name"].(string)] = _features
 				}
+			} else {
+				return diag.Errorf("Either on of the `feature` or `base` privileges must be set for kibana role!")
 			}
 
 			if roleSpaces, ok := each["spaces"].(*schema.Set); ok && roleSpaces.Len() > 0 {
