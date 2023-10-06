@@ -202,130 +202,21 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 	}
 
 	if v, ok := d.GetOk("kibana"); ok {
-		definedKibanaConfigs := v.(*schema.Set)
-		kibanaRole.Kibana = make([]kbapi.KibanaRoleKibana, definedKibanaConfigs.Len())
-		for i, item := range definedKibanaConfigs.List() {
-			each := item.(map[string]interface{})
-			config := kbapi.KibanaRoleKibana{
-				Base:    []string{},
-				Feature: map[string][]string{},
-			}
-
-			if basePrivileges, ok := each["base"].(*schema.Set); ok && basePrivileges.Len() > 0 {
-				if _features, ok := each["feature"].(*schema.Set); ok && _features.Len() > 0 {
-					return diag.Errorf("Only one of the `feature` or `base` privileges allowed!")
-				}
-				config.Base = make([]string, basePrivileges.Len())
-				for i, name := range basePrivileges.List() {
-					config.Base[i] = name.(string)
-				}
-			} else if kibanaFeatures, ok := each["feature"].(*schema.Set); ok && kibanaFeatures.Len() > 0 {
-				for _, item := range kibanaFeatures.List() {
-					featureData := item.(map[string]interface{})
-					featurePrivileges := featureData["privileges"].(*schema.Set)
-					_features := make([]string, featurePrivileges.Len())
-					for i, f := range featurePrivileges.List() {
-						_features[i] = f.(string)
-					}
-					config.Feature[featureData["name"].(string)] = _features
-				}
-			} else {
-				return diag.Errorf("Either on of the `feature` or `base` privileges must be set for kibana role!")
-			}
-
-			if roleSpaces, ok := each["spaces"].(*schema.Set); ok && roleSpaces.Len() > 0 {
-				config.Spaces = make([]string, roleSpaces.Len())
-				for i, name := range roleSpaces.List() {
-					config.Spaces[i] = name.(string)
-				}
-			}
-			kibanaRole.Kibana[i] = config
+		kibanaRole.Kibana, diags = expandKibana(v)
+		if diags != nil {
+			return diags
 		}
 	}
 
 	if v, ok := d.GetOk("elasticsearch"); ok {
-		if definedElasticConfigs := v.(*schema.Set); definedElasticConfigs.Len() > 0 {
-			userElasticConfig := definedElasticConfigs.List()[0].(map[string]interface{})
-			if v, ok := userElasticConfig["cluster"]; ok {
-				definedCluster := v.(*schema.Set)
-				cls := make([]string, definedCluster.Len())
-				for i, cl := range definedCluster.List() {
-					cls[i] = cl.(string)
-				}
-				kibanaRole.Elasticsearch.Cluster = cls
-
-				if v, ok := userElasticConfig["indices"]; ok {
-					definedIndices := v.(*schema.Set)
-					indices := make([]kbapi.KibanaRoleElasticsearchIndice, definedIndices.Len())
-					for i, idx := range definedIndices.List() {
-						index := idx.(map[string]interface{})
-
-						definedNames := index["names"].(*schema.Set)
-						names := make([]string, definedNames.Len())
-						for i, name := range definedNames.List() {
-							names[i] = name.(string)
-						}
-						definedPrivileges := index["privileges"].(*schema.Set)
-						privileges := make([]string, definedPrivileges.Len())
-						for i, pr := range definedPrivileges.List() {
-							privileges[i] = pr.(string)
-						}
-
-						newIndex := kbapi.KibanaRoleElasticsearchIndice{
-							Names:      names,
-							Privileges: privileges,
-						}
-
-						if query := index["query"].(string); query != "" {
-							newIndex.Query = &query
-						}
-						if fieldSec := index["field_security"].([]interface{}); len(fieldSec) > 0 {
-							fieldSecurity := map[string]interface{}{}
-							// there must be only 1 entry
-							definedFieldSec := fieldSec[0].(map[string]interface{})
-
-							// grants
-							if gr := definedFieldSec["grant"].(*schema.Set); gr != nil {
-								grants := make([]string, gr.Len())
-								for i, grant := range gr.List() {
-									grants[i] = grant.(string)
-								}
-								fieldSecurity["grant"] = grants
-							}
-							// except
-							if exp := definedFieldSec["except"].(*schema.Set); exp != nil {
-								excepts := make([]string, exp.Len())
-								for i, except := range exp.List() {
-									excepts[i] = except.(string)
-								}
-								fieldSecurity["except"] = excepts
-							}
-							newIndex.FieldSecurity = fieldSecurity
-						}
-
-						indices[i] = newIndex
-					}
-					kibanaRole.Elasticsearch.Indices = indices
-				}
-
-				if v, ok := userElasticConfig["run_as"]; ok {
-					definedRuns := v.(*schema.Set)
-					runs := make([]string, definedRuns.Len())
-					for i, run := range definedRuns.List() {
-						runs[i] = run.(string)
-					}
-					kibanaRole.Elasticsearch.RunAs = runs
-				}
-			}
-		}
+		kibanaRole.Elasticsearch = expandElasticsearch(v)
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
-		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
-			return diag.FromErr(err)
+		kibanaRole.Metadata, diags = expandMetadata(v)
+		if diags != nil {
+			return diags
 		}
-		kibanaRole.Metadata = metadata
 	}
 
 	roleManageResponse, err := kibana.KibanaRoleManagement.CreateOrUpdate(&kibanaRole)
@@ -403,6 +294,138 @@ func resourceRoleDelete(ctx context.Context, d *schema.ResourceData, meta interf
 }
 
 // Helper functions
+
+func expandMetadata(v interface{}) (map[string]interface{}, diag.Diagnostics) {
+	metadata := make(map[string]interface{})
+	if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
+		return nil, diag.FromErr(err)
+	}
+	return metadata, nil
+}
+
+func expandElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch {
+	elasticConfig := &kbapi.KibanaRoleElasticsearch{}
+
+	if definedElasticConfigs := v.(*schema.Set); definedElasticConfigs.Len() > 0 {
+		userElasticConfig := definedElasticConfigs.List()[0].(map[string]interface{})
+		if v, ok := userElasticConfig["cluster"]; ok {
+			definedCluster := v.(*schema.Set)
+			cls := make([]string, definedCluster.Len())
+			for i, cl := range definedCluster.List() {
+				cls[i] = cl.(string)
+			}
+			elasticConfig.Cluster = cls
+
+			if v, ok := userElasticConfig["indices"]; ok {
+				definedIndices := v.(*schema.Set)
+				indices := make([]kbapi.KibanaRoleElasticsearchIndice, definedIndices.Len())
+				for i, idx := range definedIndices.List() {
+					index := idx.(map[string]interface{})
+
+					definedNames := index["names"].(*schema.Set)
+					names := make([]string, definedNames.Len())
+					for i, name := range definedNames.List() {
+						names[i] = name.(string)
+					}
+					definedPrivileges := index["privileges"].(*schema.Set)
+					privileges := make([]string, definedPrivileges.Len())
+					for i, pr := range definedPrivileges.List() {
+						privileges[i] = pr.(string)
+					}
+
+					newIndex := kbapi.KibanaRoleElasticsearchIndice{
+						Names:      names,
+						Privileges: privileges,
+					}
+
+					if query := index["query"].(string); query != "" {
+						newIndex.Query = &query
+					}
+					if fieldSec := index["field_security"].([]interface{}); len(fieldSec) > 0 {
+						fieldSecurity := map[string]interface{}{}
+						// there must be only 1 entry
+						definedFieldSec := fieldSec[0].(map[string]interface{})
+
+						// grants
+						if gr := definedFieldSec["grant"].(*schema.Set); gr != nil {
+							grants := make([]string, gr.Len())
+							for i, grant := range gr.List() {
+								grants[i] = grant.(string)
+							}
+							fieldSecurity["grant"] = grants
+						}
+						// except
+						if exp := definedFieldSec["except"].(*schema.Set); exp != nil {
+							excepts := make([]string, exp.Len())
+							for i, except := range exp.List() {
+								excepts[i] = except.(string)
+							}
+							fieldSecurity["except"] = excepts
+						}
+						newIndex.FieldSecurity = fieldSecurity
+					}
+
+					indices[i] = newIndex
+				}
+				elasticConfig.Indices = indices
+			}
+
+			if v, ok := userElasticConfig["run_as"]; ok {
+				definedRuns := v.(*schema.Set)
+				runs := make([]string, definedRuns.Len())
+				for i, run := range definedRuns.List() {
+					runs[i] = run.(string)
+				}
+				elasticConfig.RunAs = runs
+			}
+		}
+	}
+	return elasticConfig
+}
+
+func expandKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagnostics) {
+	kibanaConfigs := []kbapi.KibanaRoleKibana{}
+	definedKibanaConfigs := v.(*schema.Set)
+
+	for _, item := range definedKibanaConfigs.List() {
+		each := item.(map[string]interface{})
+		config := kbapi.KibanaRoleKibana{
+			Base:    []string{},
+			Feature: map[string][]string{},
+		}
+
+		if basePrivileges, ok := each["base"].(*schema.Set); ok && basePrivileges.Len() > 0 {
+			if _features, ok := each["feature"].(*schema.Set); ok && _features.Len() > 0 {
+				return nil, diag.Errorf("Only one of the `feature` or `base` privileges allowed!")
+			}
+			config.Base = make([]string, basePrivileges.Len())
+			for i, name := range basePrivileges.List() {
+				config.Base[i] = name.(string)
+			}
+		} else if kibanaFeatures, ok := each["feature"].(*schema.Set); ok && kibanaFeatures.Len() > 0 {
+			for _, item := range kibanaFeatures.List() {
+				featureData := item.(map[string]interface{})
+				featurePrivileges := featureData["privileges"].(*schema.Set)
+				_features := make([]string, featurePrivileges.Len())
+				for i, f := range featurePrivileges.List() {
+					_features[i] = f.(string)
+				}
+				config.Feature[featureData["name"].(string)] = _features
+			}
+		} else {
+			return nil, diag.Errorf("Either on of the `feature` or `base` privileges must be set for kibana role!")
+		}
+
+		if roleSpaces, ok := each["spaces"].(*schema.Set); ok && roleSpaces.Len() > 0 {
+			config.Spaces = make([]string, roleSpaces.Len())
+			for i, name := range roleSpaces.List() {
+				config.Spaces[i] = name.(string)
+			}
+		}
+		kibanaConfigs = append(kibanaConfigs, config)
+	}
+	return kibanaConfigs, nil
+}
 
 func flattenIndicesData(indices *[]kbapi.KibanaRoleElasticsearchIndice) []interface{} {
 	if indices != nil {
