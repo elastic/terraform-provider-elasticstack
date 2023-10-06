@@ -9,7 +9,6 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -114,35 +113,21 @@ func ResourceRole() *schema.Resource {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"base": {
-						Description: "A base privilege. When specified, the base must be [\"all\"] or [\"read\"].",
-						Type:        schema.TypeSet,
-						Optional:    true,
-						MaxItems:    1,
+						Description:  "A base privilege. When specified, the base must be [\"all\"] or [\"read\"].",
+						Type:         schema.TypeSet,
+						Optional:     true,
+						MaxItems:     1,
+						ExactlyOneOf: []string{"kibana.base", "kibana.feature"},
 						Elem: &schema.Schema{
-							Type: schema.TypeString,
-							ValidateDiagFunc: func(v any, p cty.Path) diag.Diagnostics {
-								value := v.(string)
-								expected := []string{"all", "read"}
-								var diags diag.Diagnostics
-								for _, e := range expected {
-									if e == value {
-										return diags
-									}
-								}
-								diag := diag.Diagnostic{
-									Severity: diag.Error,
-									Summary:  "Wrong value for base attribute",
-									Detail:   fmt.Sprintf("Expected %s , got %s", strings.Join(expected, " | "), value),
-								}
-								diags = append(diags, diag)
-								return diags
-							},
+							Type:         schema.TypeString,
+							ValidateFunc: validation.StringInSlice([]string{"all", "read"}, true),
 						},
 					},
 					"feature": {
-						Description: "List of privileges for specific features. When the feature privileges are specified, you are unable to use the \"base\" section.",
-						Type:        schema.TypeSet,
-						Optional:    true,
+						Description:  "List of privileges for specific features. When the feature privileges are specified, you are unable to use the \"base\" section.",
+						Type:         schema.TypeSet,
+						Optional:     true,
+						ExactlyOneOf: []string{"kibana.base", "kibana.feature"},
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
@@ -229,9 +214,6 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 			}
 
 			if basePrivileges, ok := each["base"].(*schema.Set); ok && basePrivileges.Len() > 0 {
-				if _features, ok := each["feature"].(*schema.Set); ok && _features.Len() > 0 {
-					return diag.Errorf("Only one of the `feature` or `base` privileges allowed!")
-				}
 				_config.Base = make([]string, basePrivileges.Len())
 				for i, name := range basePrivileges.List() {
 					_config.Base[i] = name.(string)
@@ -246,8 +228,6 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 					}
 					_config.Feature[featureData["name"].(string)] = _features
 				}
-			} else {
-				return diag.Errorf("Either on of the `feature` or `base` privileges must be set for kibana role!")
 			}
 
 			if roleSpaces, ok := each["spaces"].(*schema.Set); ok && roleSpaces.Len() > 0 {
