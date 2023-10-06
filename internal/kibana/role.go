@@ -208,15 +208,15 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 		kibanaRole.Kibana = make([]kbapi.KibanaRoleKibana, definedKibanaConfigs.Len())
 		for i, item := range definedKibanaConfigs.List() {
 			each := item.(map[string]interface{})
-			_config := kbapi.KibanaRoleKibana{
+			config := kbapi.KibanaRoleKibana{
 				Base:    []string{},
 				Feature: map[string][]string{},
 			}
 
 			if basePrivileges, ok := each["base"].(*schema.Set); ok && basePrivileges.Len() > 0 {
-				_config.Base = make([]string, basePrivileges.Len())
+				config.Base = make([]string, basePrivileges.Len())
 				for i, name := range basePrivileges.List() {
-					_config.Base[i] = name.(string)
+					config.Base[i] = name.(string)
 				}
 			} else if kibanaFeatures, ok := each["feature"].(*schema.Set); ok && kibanaFeatures.Len() > 0 {
 				for _, item := range kibanaFeatures.List() {
@@ -226,24 +226,24 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 					for i, f := range featurePrivileges.List() {
 						_features[i] = f.(string)
 					}
-					_config.Feature[featureData["name"].(string)] = _features
+					config.Feature[featureData["name"].(string)] = _features
 				}
 			}
 
 			if roleSpaces, ok := each["spaces"].(*schema.Set); ok && roleSpaces.Len() > 0 {
-				_config.Spaces = make([]string, roleSpaces.Len())
+				config.Spaces = make([]string, roleSpaces.Len())
 				for i, name := range roleSpaces.List() {
-					_config.Spaces[i] = name.(string)
+					config.Spaces[i] = name.(string)
 				}
 			}
-			kibanaRole.Kibana[i] = _config
+			kibanaRole.Kibana[i] = config
 		}
 	}
 
 	if v, ok := d.GetOk("elasticsearch"); ok {
-		if definedElasicConfigs := v.(*schema.Set); definedElasicConfigs.Len() > 0 {
-			userElasitcConfig := definedElasicConfigs.List()[0].(map[string]interface{})
-			if v, ok := userElasitcConfig["cluster"]; ok {
+		if definedElasticConfigs := v.(*schema.Set); definedElasticConfigs.Len() > 0 {
+			userElasticConfig := definedElasticConfigs.List()[0].(map[string]interface{})
+			if v, ok := userElasticConfig["cluster"]; ok {
 				definedCluster := v.(*schema.Set)
 				cls := make([]string, definedCluster.Len())
 				for i, cl := range definedCluster.List() {
@@ -251,7 +251,7 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 				}
 				kibanaRole.Elasticsearch.Cluster = cls
 
-				if v, ok := userElasitcConfig["indices"]; ok {
+				if v, ok := userElasticConfig["indices"]; ok {
 					definedIndices := v.(*schema.Set)
 					indices := make([]kbapi.KibanaRoleElasticsearchIndice, definedIndices.Len())
 					for i, idx := range definedIndices.List() {
@@ -305,7 +305,7 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 					kibanaRole.Elasticsearch.Indices = indices
 				}
 
-				if v, ok := userElasitcConfig["run_as"]; ok {
+				if v, ok := userElasticConfig["run_as"]; ok {
 					definedRuns := v.(*schema.Set)
 					runs := make([]string, definedRuns.Len())
 					for i, run := range definedRuns.List() {
