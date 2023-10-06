@@ -3,7 +3,6 @@ package kibana
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -154,8 +153,6 @@ func DataSourceRole() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(roleSchema)
-
 	return &schema.Resource{
 		Description: "Retrieve a specific role. See, https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html",
 		ReadContext: dataSourceSecurityRoleRead,
@@ -164,17 +161,8 @@ func DataSourceRole() *schema.Resource {
 }
 
 func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
-	if diags.HasError() {
-		return diags
-	}
-
 	roleId := d.Get("name").(string)
-	id, diags := client.ID(ctx, roleId)
-	if diags.HasError() {
-		return diags
-	}
-	d.SetId(id.String())
+	d.SetId(roleId)
 
 	return resourceRoleRead(ctx, d, meta)
 }

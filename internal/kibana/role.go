@@ -330,12 +330,7 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 		return diag.FromErr(err)
 	}
 
-	id, diags := client.ID(ctx, roleManageResponse.Name)
-	if diags.HasError() {
-		return diags
-	}
-
-	d.SetId(id.String())
+	d.SetId(roleManageResponse.Name)
 	return resourceRoleRead(ctx, d, meta)
 }
 
@@ -344,11 +339,8 @@ func resourceRoleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
-	if diags.HasError() {
-		return diags
-	}
-	name := compId.ResourceId
+
+	name := d.Id()
 
 	kibana, err := client.GetKibanaClient()
 	if err != nil {
@@ -391,17 +383,14 @@ func resourceRoleDelete(ctx context.Context, d *schema.ResourceData, meta interf
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
-	if diags.HasError() {
-		return diags
-	}
+	resourceId := d.Id()
 
 	kibana, err := client.GetKibanaClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = kibana.KibanaRoleManagement.Delete(compId.ResourceId)
+	err = kibana.KibanaRoleManagement.Delete(resourceId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
