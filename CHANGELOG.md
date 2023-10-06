@@ -1,4 +1,5 @@
 ## [Unreleased]
+- Add support for Kibana security role ([#435](https://github.com/elastic/terraform-provider-elasticstack/pull/435))
 
 ## [0.8.0] - 2023-09-26
 
