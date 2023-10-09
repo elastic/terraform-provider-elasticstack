@@ -1,6 +1,12 @@
 ## [Unreleased]
 
+## [0.9.0] - 2023-10-09
+
+### Added
 - Update `elasticstack_fleet_output` to use new API schema format ([#434](https://github.com/elastic/terraform-provider-elasticstack/pull/434))
+
+### Fixed
+- Fix mapping of webhook connectors that is stored in tfstate ([#433](https://github.com/elastic/terraform-provider-elasticstack/pull/433))
 
 ## [0.8.0] - 2023-09-26
 
