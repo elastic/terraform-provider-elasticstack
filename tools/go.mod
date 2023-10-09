@@ -1,6 +1,8 @@
 module github.com/elastic/terraform-provider-elasticstack/tools
 
-go 1.20
+go 1.21
+
+toolchain go1.21.1
 
 require (
 	github.com/client9/misspell v0.3.4
