@@ -16,13 +16,12 @@ type kibanaConfig kibana.Config
 func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConfig, sdkdiags.Diagnostics) {
 	var diags sdkdiags.Diagnostics
 
-	kibConn, ok := d.GetOk("kibana")
-	if !ok {
-		return kibanaConfig{}, diags
-	}
-
 	// Use ES details by default
 	config := base.toKibanaConfig()
+	kibConn, ok := d.GetOk("kibana")
+	if !ok {
+		return config, diags
+	}
 
 	// if defined, then we only have a single entry
 	if kib := kibConn.([]interface{})[0]; kib != nil {
@@ -83,8 +82,8 @@ func (k kibanaConfig) withEnvironmentOverrides() kibanaConfig {
 	k.Address = withEnvironmentOverride(k.Address, "KIBANA_ENDPOINT")
 
 	if insecure, ok := os.LookupEnv("KIBANA_INSECURE"); ok {
-		if insecureValue, _ := strconv.ParseBool(insecure); insecureValue {
-			k.DisableVerifySSL = true
+		if insecureValue, err := strconv.ParseBool(insecure); err == nil {
+			k.DisableVerifySSL = insecureValue
 		}
 	}
 

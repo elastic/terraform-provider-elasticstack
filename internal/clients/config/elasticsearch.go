@@ -10,7 +10,6 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -24,7 +23,7 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 		return nil, nil
 	}
 
-	var diags diag.Diagnostics
+	var diags sdkdiags.Diagnostics
 	config := base.toElasticsearchConfig()
 
 	// if defined, then we only have a single entry
@@ -47,8 +46,8 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 		if caFile, ok := esConfig["ca_file"]; ok && caFile.(string) != "" {
 			caCert, err := os.ReadFile(caFile.(string))
 			if err != nil {
-				diags = append(diags, diag.Diagnostic{
-					Severity: diag.Error,
+				diags = append(diags, sdkdiags.Diagnostic{
+					Severity: sdkdiags.Error,
 					Summary:  "Unable to read CA File",
 					Detail:   err.Error(),
 				})
@@ -64,8 +63,8 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 			if keyFile, ok := esConfig["key_file"]; ok && keyFile.(string) != "" {
 				cert, err := tls.LoadX509KeyPair(certFile.(string), keyFile.(string))
 				if err != nil {
-					diags = append(diags, diag.Diagnostic{
-						Severity: diag.Error,
+					diags = append(diags, sdkdiags.Diagnostic{
+						Severity: sdkdiags.Error,
 						Summary:  "Unable to read certificate or key file",
 						Detail:   err.Error(),
 					})
@@ -74,8 +73,8 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 				tlsClientConfig := config.ensureTLSClientConfig()
 				tlsClientConfig.Certificates = []tls.Certificate{cert}
 			} else {
-				diags = append(diags, diag.Diagnostic{
-					Severity: diag.Error,
+				diags = append(diags, sdkdiags.Diagnostic{
+					Severity: sdkdiags.Error,
 					Summary:  "Unable to read key file",
 					Detail:   "Path to key file has not been configured or is empty",
 				})
@@ -86,8 +85,8 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 			if keyData, ok := esConfig["key_data"]; ok && keyData.(string) != "" {
 				cert, err := tls.X509KeyPair([]byte(certData.(string)), []byte(keyData.(string)))
 				if err != nil {
-					diags = append(diags, diag.Diagnostic{
-						Severity: diag.Error,
+					diags = append(diags, sdkdiags.Diagnostic{
+						Severity: sdkdiags.Error,
 						Summary:  "Unable to parse certificate or key",
 						Detail:   err.Error(),
 					})
@@ -96,8 +95,8 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 				tlsClientConfig := config.ensureTLSClientConfig()
 				tlsClientConfig.Certificates = []tls.Certificate{cert}
 			} else {
-				diags = append(diags, diag.Diagnostic{
-					Severity: diag.Error,
+				diags = append(diags, sdkdiags.Diagnostic{
+					Severity: sdkdiags.Error,
 					Summary:  "Unable to parse key",
 					Detail:   "Key data has not been configured or is empty",
 				})
@@ -208,9 +207,9 @@ func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 	}
 
 	if insecure, ok := os.LookupEnv("ELASTICSEARCH_INSECURE"); ok {
-		if insecureValue, _ := strconv.ParseBool(insecure); insecureValue {
+		if insecureValue, err := strconv.ParseBool(insecure); err != nil {
 			tlsClientConfig := c.ensureTLSClientConfig()
-			tlsClientConfig.InsecureSkipVerify = true
+			tlsClientConfig.InsecureSkipVerify = insecureValue
 		}
 	}
 
