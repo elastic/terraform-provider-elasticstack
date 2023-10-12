@@ -106,7 +106,7 @@ func ResourceUser() *schema.Resource {
 }
 
 func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -161,7 +161,7 @@ func resourceSecurityUserPut(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -210,7 +210,7 @@ func resourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta 
 }
 
 func resourceSecurityUserDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

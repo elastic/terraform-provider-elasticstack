@@ -582,7 +582,7 @@ If specified, this mapping can include: field names, [field data types](https://
 					return nil, fmt.Errorf("unable to import requested index")
 				}
 
-				client, diags := clients.NewApiClient(d, m)
+				client, diags := clients.NewApiClientFromSDKResource(d, m)
 				if diags.HasError() {
 					return nil, fmt.Errorf("Unabled to create API client %v", diags)
 				}
@@ -661,7 +661,7 @@ If specified, this mapping can include: field names, [field data types](https://
 }
 
 func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -795,7 +795,7 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 
 // Because of limitation of ES API we must handle changes to aliases, mappings and settings separately
 func resourceIndexUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -899,7 +899,7 @@ func flattenIndexSettings(settings []interface{}) map[string]interface{} {
 }
 
 func resourceIndexRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -960,7 +960,7 @@ func resourceIndexDelete(ctx context.Context, d *schema.ResourceData, meta inter
 	if d.Get("deletion_protection").(bool) {
 		return diag.Errorf("cannot destroy index without setting deletion_protection=false and running `terraform apply`")
 	}
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

@@ -84,7 +84,7 @@ func ResourceRoleMapping() *schema.Resource {
 }
 
 func resourceSecurityRoleMappingPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -123,7 +123,7 @@ func resourceSecurityRoleMappingPut(ctx context.Context, d *schema.ResourceData,
 }
 
 func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -182,7 +182,7 @@ func resourceSecurityRoleMappingRead(ctx context.Context, d *schema.ResourceData
 }
 
 func resourceSecurityRoleMappingDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

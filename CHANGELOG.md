@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Added
+- Introduce `elasticstack_kibana_import_saved_objects` resource as an additive only way to manage Kibana saved objects ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
+- Add support for Terraform Plugin Framework ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
+
 ## [0.9.0] - 2023-10-09
 
 ### Added
