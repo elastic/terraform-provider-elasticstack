@@ -2,7 +2,6 @@ package fleet
 
 import (
 	"context"
-
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -206,6 +205,10 @@ func resourceOutputCreate(ctx context.Context, d *schema.ResourceData, meta inte
 	outputType := d.Get("type").(string)
 	var diags diag.Diagnostics
 
+	if id := d.Get("output_id").(string); id != "" {
+		d.SetId(id)
+	}
+
 	switch outputType {
 	case "elasticsearch":
 		diags = resourceOutputCreateElasticsearch(ctx, d, meta)
@@ -224,9 +227,6 @@ func resourceOutputUpdateElasticsearch(ctx context.Context, d *schema.ResourceDa
 	if diags.HasError() {
 		return diags
 	}
-
-	id := d.Get("output_id").(string)
-	d.SetId(id)
 
 	reqData := fleetapi.OutputUpdateRequestElasticsearch{
 		Name: d.Get("name").(string),
@@ -260,7 +260,7 @@ func resourceOutputUpdateElasticsearch(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	_, diags = fleet.UpdateOutput(ctx, fleetClient, id, req)
+	_, diags = fleet.UpdateOutput(ctx, fleetClient, d.Id(), req)
 	if diags.HasError() {
 		return diags
 	}
@@ -273,9 +273,6 @@ func resourceOutputUpdateLogstash(ctx context.Context, d *schema.ResourceData, m
 	if diags.HasError() {
 		return diags
 	}
-
-	id := d.Get("output_id").(string)
-	d.SetId(id)
 
 	reqData := fleetapi.OutputUpdateRequestLogstash{
 		Name: d.Get("name").(string),
@@ -311,7 +308,7 @@ func resourceOutputUpdateLogstash(ctx context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 
-	_, diags = fleet.UpdateOutput(ctx, fleetClient, id, req)
+	_, diags = fleet.UpdateOutput(ctx, fleetClient, d.Id(), req)
 	if diags.HasError() {
 		return diags
 	}
@@ -412,10 +409,7 @@ func resourceOutputRead(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
-	id := d.Get("output_id").(string)
-	d.SetId(id)
-
-	rawOutput, diags := fleet.ReadOutput(ctx, fleetClient, id)
+	rawOutput, diags := fleet.ReadOutput(ctx, fleetClient, d.Id())
 	if diags.HasError() {
 		return diags
 	}
@@ -455,10 +449,7 @@ func resourceOutputDelete(ctx context.Context, d *schema.ResourceData, meta inte
 		return diags
 	}
 
-	id := d.Get("output_id").(string)
-	d.SetId(id)
-
-	if diags = fleet.DeleteOutput(ctx, fleetClient, id); diags.HasError() {
+	if diags = fleet.DeleteOutput(ctx, fleetClient, d.Id()); diags.HasError() {
 		return diags
 	}
 	d.SetId("")
