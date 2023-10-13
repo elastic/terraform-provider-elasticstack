@@ -127,16 +127,14 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 		req.MonitoringOutputId = &value
 	}
 
-	var monitoringValues []fleetapi.AgentPolicyCreateRequestMonitoringEnabled
+	monitoringValues := make([]fleetapi.AgentPolicyCreateRequestMonitoringEnabled, 0, 2)
 	if value := d.Get("monitor_logs").(bool); value {
 		monitoringValues = append(monitoringValues, monitorLogs)
 	}
 	if value := d.Get("monitor_metrics").(bool); value {
 		monitoringValues = append(monitoringValues, monitorMetrics)
 	}
-	if len(monitoringValues) > 0 {
-		req.MonitoringEnabled = &monitoringValues
-	}
+	req.MonitoringEnabled = &monitoringValues
 
 	policy, diags := fleet.CreateAgentPolicy(ctx, fleetClient, req)
 	if diags.HasError() {
@@ -181,16 +179,15 @@ func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta
 		req.MonitoringOutputId = &value
 	}
 
-	var monitoringValues []fleetapi.AgentPolicyUpdateRequestMonitoringEnabled
+	monitoringValues := make([]fleetapi.AgentPolicyUpdateRequestMonitoringEnabled, 0, 2)
 	if value := d.Get("monitor_logs").(bool); value {
 		monitoringValues = append(monitoringValues, monitorLogs)
 	}
 	if value := d.Get("monitor_metrics").(bool); value {
 		monitoringValues = append(monitoringValues, monitorMetrics)
 	}
-	if len(monitoringValues) > 0 {
-		req.MonitoringEnabled = &monitoringValues
-	}
+	req.MonitoringEnabled = &monitoringValues
+
 	_, diags = fleet.UpdateAgentPolicy(ctx, fleetClient, id, req)
 	if diags.HasError() {
 		return diags
@@ -258,7 +255,7 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 					return diag.FromErr(err)
 				}
 			case monitorMetrics:
-				if err := d.Set("monitor_logs", true); err != nil {
+				if err := d.Set("monitor_metrics", true); err != nil {
 					return diag.FromErr(err)
 
 				}
