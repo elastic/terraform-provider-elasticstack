@@ -145,7 +145,7 @@ Optional:
 
 Optional:
 
-- `api_key` (String, Sensitive) API key to use for API authentication to Fleet.
+- `api_key` (String, Sensitive) API Key to use for authentication to Fleet.
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Fleet server.
 - `endpoint` (String, Sensitive) The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
@@ -158,7 +158,7 @@ Optional:
 
 Optional:
 
-- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

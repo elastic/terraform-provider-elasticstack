@@ -603,7 +603,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 }
 
 func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -626,7 +626,7 @@ func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceSloUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -655,7 +655,7 @@ func resourceSloUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -832,7 +832,7 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 }
 
 func resourceSloDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

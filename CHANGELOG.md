@@ -1,6 +1,18 @@
 ## [Unreleased]
 - Add support for Kibana security role ([#435](https://github.com/elastic/terraform-provider-elasticstack/pull/435))
 
+### Added
+- Introduce `elasticstack_kibana_import_saved_objects` resource as an additive only way to manage Kibana saved objects ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
+- Add support for Terraform Plugin Framework ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
+
+## [0.9.0] - 2023-10-09
+
+### Added
+- Update `elasticstack_fleet_output` to use new API schema format ([#434](https://github.com/elastic/terraform-provider-elasticstack/pull/434))
+
+### Fixed
+- Fix mapping of webhook connectors that is stored in tfstate ([#433](https://github.com/elastic/terraform-provider-elasticstack/pull/433))
+
 ## [0.8.0] - 2023-09-26
 
 ### Added
@@ -181,7 +193,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.1...v0.6.2

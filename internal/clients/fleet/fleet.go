@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet/fleetapi"
+	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -91,7 +91,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 }
 
 // ReadOutput reads a specific output from the API.
-func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.Output, diag.Diagnostics) {
+func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.OutputCreateRequest, diag.Diagnostics) {
 	resp, err := client.API.GetOutputWithResponse(ctx, id)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -99,7 +99,7 @@ func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.Outpu
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return &resp.JSON200.Item, nil
+		return resp.JSON200.Item, nil
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -108,7 +108,7 @@ func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.Outpu
 }
 
 // CreateOutput creates a new output.
-func CreateOutput(ctx context.Context, client *Client, req fleetapi.PostOutputsJSONRequestBody) (*fleetapi.Output, diag.Diagnostics) {
+func CreateOutput(ctx context.Context, client *Client, req fleetapi.PostOutputsJSONRequestBody) (*fleetapi.OutputCreateRequest, diag.Diagnostics) {
 	resp, err := client.API.PostOutputsWithResponse(ctx, req)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -123,7 +123,7 @@ func CreateOutput(ctx context.Context, client *Client, req fleetapi.PostOutputsJ
 }
 
 // UpdateOutput updates an existing output.
-func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.UpdateOutputJSONRequestBody) (*fleetapi.Output, diag.Diagnostics) {
+func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.UpdateOutputJSONRequestBody) (*fleetapi.OutputUpdateRequest, diag.Diagnostics) {
 	resp, err := client.API.UpdateOutputWithResponse(ctx, id, req)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -131,7 +131,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.U
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return &resp.JSON200.Item, nil
+		return resp.JSON200.Item, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
