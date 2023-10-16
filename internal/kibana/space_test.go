@@ -44,7 +44,6 @@ func TestAccResourceSpace(t *testing.T) {
 func testAccResourceSpaceCreate(id string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -59,7 +58,6 @@ resource "elasticstack_kibana_space" "test_space" {
 func testAccResourceSpaceUpdate(id string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -82,19 +80,18 @@ func checkResourceSpaceDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_kibana_space" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
 		kibanaClient, err := client.GetKibanaClient()
 		if err != nil {
 			return err
 		}
-		res, err := kibanaClient.KibanaSpaces.Get(compId.ResourceId)
+		res, err := kibanaClient.KibanaSpaces.Get(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
 		if res != nil {
-			return fmt.Errorf("Space (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Space (%s) still exists", rs.Primary.ID)
 		}
 	}
 	return nil
