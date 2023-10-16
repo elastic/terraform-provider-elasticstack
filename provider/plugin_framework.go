@@ -33,8 +33,8 @@ func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res
 	res.Schema = fwschema.Schema{
 		Blocks: map[string]fwschema.Block{
 			esKeyName:    schema.GetEsFWConnectionBlock(esKeyName),
-			kbKeyName:    schema.GetKbFWConnectionBlock(kbKeyName),
-			fleetKeyName: schema.GetFleetFWConnectionBlock(fleetKeyName),
+			kbKeyName:    schema.GetKbFWConnectionBlock(),
+			fleetKeyName: schema.GetFleetFWConnectionBlock(),
 		},
 	}
 }
