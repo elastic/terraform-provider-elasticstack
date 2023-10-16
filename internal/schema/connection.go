@@ -111,12 +111,9 @@ func GetEsFWConnectionBlock(keyName string) fwschema.Block {
 	}
 }
 
-func GetKbFWConnectionBlock(keyName string) fwschema.Block {
-	usernamePath := makePathRef(keyName, "username")
-	passwordPath := makePathRef(keyName, "password")
-
-	usernameValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(passwordPath))}
-	passwordValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(usernamePath))}
+func GetKbFWConnectionBlock() fwschema.Block {
+	usernamePath := path.MatchRelative().AtParent().AtName("username")
+	passwordPath := path.MatchRelative().AtParent().AtName("password")
 
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Kibana connection configuration block.",
@@ -125,13 +122,13 @@ func GetKbFWConnectionBlock(keyName string) fwschema.Block {
 				"username": fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Kibana.",
 					Optional:            true,
-					Validators:          usernameValidators,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
 				"password": fwschema.StringAttribute{
 					MarkdownDescription: "Password to use for API authentication to Kibana.",
 					Optional:            true,
 					Sensitive:           true,
-					Validators:          passwordValidators,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				"endpoints": fwschema.ListAttribute{
 					MarkdownDescription: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
@@ -151,12 +148,9 @@ func GetKbFWConnectionBlock(keyName string) fwschema.Block {
 	}
 }
 
-func GetFleetFWConnectionBlock(keyName string) fwschema.Block {
-	usernamePath := makePathRef(keyName, "username")
-	passwordPath := makePathRef(keyName, "password")
-
-	usernameValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(passwordPath))}
-	passwordValidators := []validator.String{stringvalidator.AlsoRequires(path.MatchRoot(usernamePath))}
+func GetFleetFWConnectionBlock() fwschema.Block {
+	usernamePath := path.MatchRelative().AtParent().AtName("username")
+	passwordPath := path.MatchRelative().AtParent().AtName("password")
 
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Fleet connection configuration block.",
@@ -165,21 +159,21 @@ func GetFleetFWConnectionBlock(keyName string) fwschema.Block {
 				"username": fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Fleet.",
 					Optional:            true,
-					Validators:          usernameValidators,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
 				"password": fwschema.StringAttribute{
 					MarkdownDescription: "Password to use for API authentication to Fleet.",
 					Optional:            true,
 					Sensitive:           true,
-					Validators:          passwordValidators,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				"api_key": fwschema.StringAttribute{
 					MarkdownDescription: "API Key to use for authentication to Fleet.",
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("username")),
-						stringvalidator.ConflictsWith(path.MatchRoot(passwordPath)),
+						stringvalidator.ConflictsWith(usernamePath),
+						stringvalidator.ConflictsWith(passwordPath),
 					},
 				},
 				"endpoint": fwschema.StringAttribute{
