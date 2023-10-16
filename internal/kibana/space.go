@@ -2,7 +2,6 @@ package kibana
 
 import (
 	"context"
-	"strings"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -133,11 +132,7 @@ func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 	id := d.Id()
-	if strings.Contains(id, "/") {
-		compId, diags := clients.CompositeIdFromStr(id)
-		if diags.HasError() {
-			return diags
-		}
+	if compId, diags := clients.CompositeIdFromStr(id); diags == nil {
 		id = compId.ResourceId
 	}
 
@@ -184,11 +179,7 @@ func resourceSpaceDelete(ctx context.Context, d *schema.ResourceData, meta inter
 		return diags
 	}
 	id := d.Id()
-	if strings.Contains(id, "/") {
-		compId, diags := clients.CompositeIdFromStr(id)
-		if diags.HasError() {
-			return diags
-		}
+	if compId, diags := clients.CompositeIdFromStr(id); diags == nil {
 		id = compId.ResourceId
 	}
 
