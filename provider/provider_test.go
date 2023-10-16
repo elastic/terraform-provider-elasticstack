@@ -10,9 +10,12 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+var minVersionForFleet = version.Must(version.NewVersion("8.6.0"))
 
 func TestProvider(t *testing.T) {
 	if err := provider.New("dev").InternalValidate(); err != nil {
@@ -45,7 +48,8 @@ func TestFleetConfiguration(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testFleetConfiguration(envConfig),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
+				Config:   testFleetConfiguration(envConfig),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
 				),
