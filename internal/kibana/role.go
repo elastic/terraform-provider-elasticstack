@@ -15,7 +15,7 @@ import (
 )
 
 func ResourceRole() *schema.Resource {
-	apikeySchema := map[string]*schema.Schema{
+	roleSchema := map[string]*schema.Schema{
 		"name": {
 			Description: "The name for the role.",
 			Type:        schema.TypeString,
@@ -177,7 +177,7 @@ func ResourceRole() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
-		Schema: apikeySchema,
+		Schema: roleSchema,
 	}
 }
 
@@ -202,18 +202,18 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 	}
 
 	if v, ok := d.GetOk("kibana"); ok {
-		kibanaRole.Kibana, diags = expandKibana(v)
+		kibanaRole.Kibana, diags = expandKibanaRoleKibana(v)
 		if diags != nil {
 			return diags
 		}
 	}
 
 	if v, ok := d.GetOk("elasticsearch"); ok {
-		kibanaRole.Elasticsearch = expandElasticsearch(v)
+		kibanaRole.Elasticsearch = expandKibanaRoleElasticsearch(v)
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
-		kibanaRole.Metadata, diags = expandMetadata(v)
+		kibanaRole.Metadata, diags = expandKibanaRoleMetadata(v)
 		if diags != nil {
 			return diags
 		}
@@ -254,10 +254,10 @@ func resourceRoleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	if err := d.Set("name", role.Name); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("elasticsearch", flattenElasticsearchData(role.Elasticsearch)); err != nil {
+	if err := d.Set("elasticsearch", flattenKibanaRoleElasticsearchData(role.Elasticsearch)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("kibana", flattenKibanaData(&role.Kibana)); err != nil {
+	if err := d.Set("kibana", flattenKibanaRoleKibanaData(&role.Kibana)); err != nil {
 		return diag.FromErr(err)
 	}
 	if role.Metadata != nil {
@@ -295,7 +295,7 @@ func resourceRoleDelete(ctx context.Context, d *schema.ResourceData, meta interf
 
 // Helper functions
 
-func expandMetadata(v interface{}) (map[string]interface{}, diag.Diagnostics) {
+func expandKibanaRoleMetadata(v interface{}) (map[string]interface{}, diag.Diagnostics) {
 	metadata := make(map[string]interface{})
 	if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 		return nil, diag.FromErr(err)
@@ -303,7 +303,7 @@ func expandMetadata(v interface{}) (map[string]interface{}, diag.Diagnostics) {
 	return metadata, nil
 }
 
-func expandElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch {
+func expandKibanaRoleElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch {
 	elasticConfig := &kbapi.KibanaRoleElasticsearch{}
 
 	if definedElasticConfigs := v.(*schema.Set); definedElasticConfigs.Len() > 0 {
@@ -383,7 +383,7 @@ func expandElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch {
 	return elasticConfig
 }
 
-func expandKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagnostics) {
+func expandKibanaRoleKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagnostics) {
 	kibanaConfigs := []kbapi.KibanaRoleKibana{}
 	definedKibanaConfigs := v.(*schema.Set)
 
@@ -427,7 +427,7 @@ func expandKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagnostics) {
 	return kibanaConfigs, nil
 }
 
-func flattenIndicesData(indices *[]kbapi.KibanaRoleElasticsearchIndice) []interface{} {
+func flattenKibanaRoleIndicesData(indices *[]kbapi.KibanaRoleElasticsearchIndice) []interface{} {
 	if indices != nil {
 		oindx := make([]interface{}, len(*indices))
 
@@ -454,13 +454,13 @@ func flattenIndicesData(indices *[]kbapi.KibanaRoleElasticsearchIndice) []interf
 	return make([]interface{}, 0)
 }
 
-func flattenElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) []interface{} {
+func flattenKibanaRoleElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) []interface{} {
 	if elastic != nil {
 		result := make(map[string]interface{})
 		if len(elastic.Cluster) > 0 {
 			result["cluster"] = elastic.Cluster
 		}
-		result["indices"] = flattenIndicesData(&elastic.Indices)
+		result["indices"] = flattenKibanaRoleIndicesData(&elastic.Indices)
 		if len(elastic.RunAs) > 0 {
 			result["run_as"] = elastic.RunAs
 		}
@@ -469,7 +469,7 @@ func flattenElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) []interfac
 	return make([]interface{}, 0)
 }
 
-func flattenKibanaFeatureData(features map[string][]string) []interface{} {
+func flattenKibanaRoleKibanaFeatureData(features map[string][]string) []interface{} {
 	if features != nil {
 		result := make([]interface{}, len(features))
 		i := 0
@@ -485,13 +485,13 @@ func flattenKibanaFeatureData(features map[string][]string) []interface{} {
 	return make([]interface{}, 0)
 }
 
-func flattenKibanaData(kibana_configs *[]kbapi.KibanaRoleKibana) []interface{} {
+func flattenKibanaRoleKibanaData(kibana_configs *[]kbapi.KibanaRoleKibana) []interface{} {
 	if kibana_configs != nil {
 		result := make([]interface{}, len(*kibana_configs))
 		for i, index := range *kibana_configs {
 			nk := make(map[string]interface{})
 			nk["base"] = index.Base
-			nk["feature"] = flattenKibanaFeatureData(index.Feature)
+			nk["feature"] = flattenKibanaRoleKibanaFeatureData(index.Feature)
 			nk["spaces"] = index.Spaces
 			result[i] = nk
 		}
