@@ -23,7 +23,7 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceOutputDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
@@ -59,7 +59,7 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceOutputDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),

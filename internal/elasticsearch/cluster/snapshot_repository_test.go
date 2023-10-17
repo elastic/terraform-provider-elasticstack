@@ -18,7 +18,7 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkRepoDestroy(name),
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRepoFsCreate(name),
@@ -51,7 +51,7 @@ func TestAccResourceSnapRepoUrl(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkRepoDestroy(name),
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRepoUrlCreate(name),

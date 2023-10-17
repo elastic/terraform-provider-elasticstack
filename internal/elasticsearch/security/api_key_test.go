@@ -24,7 +24,7 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),
