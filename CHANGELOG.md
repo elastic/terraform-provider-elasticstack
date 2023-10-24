@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Add support for Kibana security role ([#435](https://github.com/elastic/terraform-provider-elasticstack/pull/435))
 - Introduce `elasticstack_kibana_import_saved_objects` resource as an additive only way to manage Kibana saved objects ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
 - Add support for Terraform Plugin Framework ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
 - Fix fleet resources not having ID set on import ([#447](https://github.com/elastic/terraform-provider-elasticstack/pull/447))
