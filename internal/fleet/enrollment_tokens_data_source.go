@@ -78,7 +78,10 @@ func dataSourceEnrollmentTokensRead(ctx context.Context, d *schema.ResourceData,
 		return diags
 	}
 
-	policyID := d.Get("policy_id").(string)
+	if d.Id() == "" {
+		d.SetId(d.Get("policy_id").(string))
+	}
+	policyID := d.Id()
 
 	allTokens, diags := fleet.AllEnrollmentTokens(ctx, fleetClient)
 	if diags.HasError() {

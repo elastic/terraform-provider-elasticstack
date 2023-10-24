@@ -58,5 +58,5 @@ resource "elasticstack_fleet_output" "test_output" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import elasticstack_fleet_output.my_output <space id>/<output id>
+terraform import elasticstack_fleet_output.my_output <fleet_output_id>
 ```
