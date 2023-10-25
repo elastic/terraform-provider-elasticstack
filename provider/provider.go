@@ -78,6 +78,8 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
 			"elasticstack_elasticsearch_enrich_policy":                      enrich.DataSourceEnrichPolicy(),
 
+			"elasticstack_kibana_security_role": kibana.DataSourceRole(),
+
 			"elasticstack_fleet_enrollment_tokens": fleet.DataSourceEnrollmentTokens(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -104,6 +106,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_alerting_rule":    kibana.ResourceAlertingRule(),
 			"elasticstack_kibana_space":            kibana.ResourceSpace(),
 			"elasticstack_kibana_action_connector": kibana.ResourceActionConnector(),
+			"elasticstack_kibana_security_role":    kibana.ResourceRole(),
 			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
 
 			"elasticstack_fleet_agent_policy": fleet.ResourceAgentPolicy(),

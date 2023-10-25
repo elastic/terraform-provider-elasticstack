@@ -103,6 +103,10 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 		return diags
 	}
 
+	if id := d.Get("policy_id").(string); id != "" {
+		d.SetId(id)
+	}
+
 	req := fleetapi.AgentPolicyCreateRequest{
 		Name:      d.Get("name").(string),
 		Namespace: d.Get("namespace").(string),
@@ -155,9 +159,6 @@ func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta
 		return diags
 	}
 
-	id := d.Get("policy_id").(string)
-	d.SetId(id)
-
 	req := fleetapi.AgentPolicyUpdateRequest{
 		Name:      d.Get("name").(string),
 		Namespace: d.Get("namespace").(string),
@@ -188,7 +189,7 @@ func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta
 	}
 	req.MonitoringEnabled = &monitoringValues
 
-	_, diags = fleet.UpdateAgentPolicy(ctx, fleetClient, id, req)
+	_, diags = fleet.UpdateAgentPolicy(ctx, fleetClient, d.Id(), req)
 	if diags.HasError() {
 		return diags
 	}
@@ -202,10 +203,7 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
-	id := d.Get("policy_id").(string)
-	d.SetId(id)
-
-	agentPolicy, diags := fleet.ReadAgentPolicy(ctx, fleetClient, id)
+	agentPolicy, diags := fleet.ReadAgentPolicy(ctx, fleetClient, d.Id())
 	if diags.HasError() {
 		return diags
 	}
@@ -277,10 +275,7 @@ func resourceAgentPolicyDelete(ctx context.Context, d *schema.ResourceData, meta
 		return diags
 	}
 
-	id := d.Get("policy_id").(string)
-	d.SetId(id)
-
-	if diags = fleet.DeleteAgentPolicy(ctx, fleetClient, id); diags.HasError() {
+	if diags = fleet.DeleteAgentPolicy(ctx, fleetClient, d.Id()); diags.HasError() {
 		return diags
 	}
 	d.SetId("")
