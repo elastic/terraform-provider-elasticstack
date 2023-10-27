@@ -207,7 +207,7 @@ func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 	}
 
 	if insecure, ok := os.LookupEnv("ELASTICSEARCH_INSECURE"); ok {
-		if insecureValue, err := strconv.ParseBool(insecure); err == nil { // TODO: Remove
+		if insecureValue, err := strconv.ParseBool(insecure); err == nil {
 			tlsClientConfig := c.ensureTLSClientConfig()
 			tlsClientConfig.InsecureSkipVerify = insecureValue
 		}
