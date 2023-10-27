@@ -364,20 +364,6 @@ func resourcePackagePolicyRead(ctx context.Context, d *schema.ResourceData, meta
 			}
 			inputMap["vars_json"] = string(data)
 		}
-		if input.Config != nil {
-			data, err := json.Marshal(*input.Config)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			inputMap["config_json"] = string(data)
-		}
-		if input.Processors != nil {
-			data, err := json.Marshal(*input.Processors)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			inputMap["processors_json"] = string(data)
-		}
 
 		inputs = append(inputs, inputMap)
 	}
