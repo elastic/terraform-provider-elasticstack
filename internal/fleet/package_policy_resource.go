@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -288,8 +287,6 @@ func resourcePackagePolicyRead(ctx context.Context, d *schema.ResourceData, meta
 		return diags
 	}
 
-	tflog.Info(ctx, "Package policy ID is: "+d.Id())
-
 	pkgPolicy, diags := fleet.ReadPackagePolicy(ctx, fleetClient, d.Id())
 	if diags.HasError() {
 		return diags
@@ -380,12 +377,9 @@ func resourcePackagePolicyDelete(ctx context.Context, d *schema.ResourceData, me
 		return diags
 	}
 
-	id := d.Get("policy_id").(string)
-	d.SetId(id)
-
 	force := d.Get("force").(bool)
 
-	if diags = fleet.DeletePackagePolicy(ctx, fleetClient, id, force); diags.HasError() {
+	if diags = fleet.DeletePackagePolicy(ctx, fleetClient, d.Id(), force); diags.HasError() {
 		return diags
 	}
 	d.SetId("")
