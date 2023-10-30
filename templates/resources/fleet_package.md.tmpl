@@ -8,7 +8,7 @@ description: |-
 
 # Resource: elasticstack_fleet_package
 
-Creates or updates a Fleet integration package.
+Installs or uninstalls a Fleet integration package.
 
 To prevent the package from being uninstalled when the resource is destroyed,
 set `skip_destroy` to `true`.
