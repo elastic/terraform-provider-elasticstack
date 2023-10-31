@@ -15,7 +15,7 @@ func TestAccDataSourceClusterInfo(t *testing.T) {
 			{
 				Config: testAccDataSourceSecurityUser,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "tagline", "You Know, for Search "),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "tagline", "You Know, for Search"),
 				),
 			},
 		},

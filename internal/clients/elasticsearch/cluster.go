@@ -14,28 +14,25 @@ import (
 )
 
 func GetClusterInfo(ctx context.Context, apiClient *clients.ApiClient) (*models.ClusterInfo, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	res, err := esClient.Info()
+	res, err := esClient.Info(esClient.Info.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to read cluster Info."); diags.HasError() {
+	if diags := utils.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
 		return nil, diags
 	}
 
-	var infoResponse struct {
-		ClusterInfo *models.ClusterInfo `json:"script"`
-	}
-
-	if err := json.NewDecoder(res.Body).Decode(&infoResponse); err != nil {
+	info := models.ClusterInfo{}
+	if err := json.NewDecoder(res.Body).Decode(&info); err != nil {
 		return nil, diag.FromErr(err)
 	}
-
-	return infoResponse.ClusterInfo, nil
+	return &info, diags
 }
 
 func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, repository *models.SnapshotRepository) diag.Diagnostics {

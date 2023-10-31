@@ -124,6 +124,7 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 	if diags.HasError() {
 		return diags
 	}
+	d.SetId(info.ClusterUUID)
 
 	if err := d.Set("cluster_uuid", info.ClusterUUID); err != nil {
 		return diag.FromErr(err)
