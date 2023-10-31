@@ -13,6 +13,31 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
+func GetClusterInfo(ctx context.Context, apiClient *clients.ApiClient) (*models.ClusterInfo, diag.Diagnostics) {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	res, err := esClient.Info()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to read cluster Info."); diags.HasError() {
+		return nil, diags
+	}
+
+	var infoResponse struct {
+		ClusterInfo *models.ClusterInfo `json:"script"`
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&infoResponse); err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	return infoResponse.ClusterInfo, nil
+}
+
 func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, repository *models.SnapshotRepository) diag.Diagnostics {
 	var diags diag.Diagnostics
 	snapRepoBytes, err := json.Marshal(repository)
@@ -31,7 +56,11 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, re
 	if diags := utils.CheckError(res, "Unable to create or update the snapshot repository"); diags.HasError() {
 		return diags
 	}
-
+	diags = append(diags, diag.Diagnostic{
+		Severity: diag.Error,
+		Summary:  "Unable to get Cluster Info",
+		Detail:   fmt.Sprintf(`Cluster response: "%s"`, res),
+	})
 	return diags
 }
 

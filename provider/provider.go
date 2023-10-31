@@ -76,6 +76,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_security_role_mapping":              security.DataSourceRoleMapping(),
 			"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
 			"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
+			"elasticstack_elasticsearch_info":                               cluster.DataSourceClusterInfo(),
 			"elasticstack_elasticsearch_enrich_policy":                      enrich.DataSourceEnrichPolicy(),
 
 			"elasticstack_kibana_security_role": kibana.DataSourceRole(),
