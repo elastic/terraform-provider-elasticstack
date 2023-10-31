@@ -22,11 +22,13 @@ func ResourcePackage() *schema.Resource {
 		"name": {
 			Description: "The package name.",
 			Type:        schema.TypeString,
+			ForceNew:    true,
 			Required:    true,
 		},
 		"version": {
 			Description: "The package version.",
 			Type:        schema.TypeString,
+			ForceNew:    true,
 			Required:    true,
 		},
 		"force": {
