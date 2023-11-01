@@ -53,11 +53,7 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, re
 	if diags := utils.CheckError(res, "Unable to create or update the snapshot repository"); diags.HasError() {
 		return diags
 	}
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Unable to get Cluster Info",
-		Detail:   fmt.Sprintf(`Cluster response: "%s"`, res),
-	})
+
 	return diags
 }
 

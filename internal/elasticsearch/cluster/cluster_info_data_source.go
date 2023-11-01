@@ -138,6 +138,5 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 	if err := d.Set("tagline", info.Tagline); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return nil
 }
