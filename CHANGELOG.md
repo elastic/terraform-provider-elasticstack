@@ -6,6 +6,7 @@
 - Add support for Terraform Plugin Framework ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
 - Fix fleet resources not having ID set on import ([#447](https://github.com/elastic/terraform-provider-elasticstack/pull/447))
 - Fix Fleet Agent Policy monitoring settings ([#448](https://github.com/elastic/terraform-provider-elasticstack/pull/448))
+- Switch to Terraform [protocol version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) that is compatible with Terraform CLI version 1.0 and later.
 
 ## [0.9.0] - 2023-10-09
 
