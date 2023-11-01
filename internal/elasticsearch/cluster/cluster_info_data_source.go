@@ -11,73 +11,77 @@ import (
 )
 
 func DataSourceClusterInfo() *schema.Resource {
-	versionSchema := map[string]*schema.Schema{
-		"build_date": {
-			Description: "Build date.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Required:    false,
-		},
-		"build_flavor": {
-			Description: "Build Flavor.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Required:    false,
-		},
-		"build_hash": {
-			Description: "Short hash of the last git commit in this release.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Required:    false,
-		},
-		"build_snapshot": {
-			Description: "Build Snapshot.",
-			Type:        schema.TypeBool,
-			Computed:    true,
-			Required:    false,
-		},
-		"build_type": {
-			Description: "Build Type.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Required:    false,
-		},
-		"lucene_version": {
-			Description: "Lucene Version.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Required:    false,
-		},
-		"minimum_index_compatibility_version": {
-			Description: "Minium index compatibility version.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Required:    false,
-		},
-		"minimum_wire_compatibility_version": {
-			Description: "Minium wire compatibility version.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Required:    false,
-		},
-		"number": {
-			Description: "Elasticsearch version number.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Required:    false,
-		},
-	}
+	/////////////////////////////////////////
+	// Ready to add version details
+	// Struggled assigning nested structures
+	/////////////////////////////////////////
+	// versionSchema := map[string]*schema.Schema{
+	// 	"build_date": {
+	// 		Description: "Build date.",
+	// 		Type:        schema.TypeString,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// 	"build_flavor": {
+	// 		Description: "Build Flavor.",
+	// 		Type:        schema.TypeString,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// 	"build_hash": {
+	// 		Description: "Short hash of the last git commit in this release.",
+	// 		Type:        schema.TypeString,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// 	"build_snapshot": {
+	// 		Description: "Build Snapshot.",
+	// 		Type:        schema.TypeBool,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// 	"build_type": {
+	// 		Description: "Build Type.",
+	// 		Type:        schema.TypeString,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// 	"lucene_version": {
+	// 		Description: "Lucene Version.",
+	// 		Type:        schema.TypeString,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// 	"minimum_index_compatibility_version": {
+	// 		Description: "Minium index compatibility version.",
+	// 		Type:        schema.TypeString,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// 	"minimum_wire_compatibility_version": {
+	// 		Description: "Minium wire compatibility version.",
+	// 		Type:        schema.TypeString,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// 	"number": {
+	// 		Description: "Elasticsearch version number.",
+	// 		Type:        schema.TypeString,
+	// 		Computed:    true,
+	// 		Required:    false,
+	// 	},
+	// }
 
 	clusterInfoSchema := map[string]*schema.Schema{
-		"version": {
-			Description: "Contains statistics about the number of nodes selected by the request’s node filters.",
-			Type:        schema.TypeList,
-			Computed:    true,
-			Required:    false,
-			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(versionSchema),
-			},
-		},
+		// "version": {
+		// 	Description: "Contains statistics about the number of nodes selected by the request’s node filters.",
+		// 	Type:        schema.TypeSet,
+		// 	Computed:    true,
+		// 	Required:    false,
+		// 	Elem: &schema.Resource{
+		// 		Schema: utils.MergeSchemaMaps(versionSchema),
+		// 	},
+		// },
 		"cluster_name": {
 			Description: "Name of the cluster, based on the Cluster name setting setting.",
 			Type:        schema.TypeString,
@@ -136,9 +140,6 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 	if err := d.Set("tagline", info.Tagline); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("version", info.Version); err != nil {
 		return diag.FromErr(err)
 	}
 	return nil
