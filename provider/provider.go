@@ -110,9 +110,11 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_security_role":    kibana.ResourceRole(),
 			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
 
-			"elasticstack_fleet_agent_policy": fleet.ResourceAgentPolicy(),
-			"elasticstack_fleet_output":       fleet.ResourceOutput(),
-			"elasticstack_fleet_server_host":  fleet.ResourceFleetServerHost(),
+			"elasticstack_fleet_agent_policy":   fleet.ResourceAgentPolicy(),
+			"elasticstack_fleet_output":         fleet.ResourceOutput(),
+			"elasticstack_fleet_server_host":    fleet.ResourceFleetServerHost(),
+			"elasticstack_fleet_package":        fleet.ResourcePackage(),
+			"elasticstack_fleet_package_policy": fleet.ResourcePackagePolicy(),
 		},
 	}
 
