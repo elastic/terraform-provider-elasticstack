@@ -162,7 +162,7 @@ tools: $(GOBIN) ## Install useful tools for linting, docs generation and develop
 	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@ cd tools && go install github.com/goreleaser/goreleaser
-	@ cd tools && go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
+	@ cd tools && go install github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen
 
 .PHONY: misspell
 misspell:
