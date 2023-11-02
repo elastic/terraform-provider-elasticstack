@@ -17,7 +17,7 @@ var minVersionPackageDataSource = version.Must(version.NewVersion("8.6.0"))
 func TestAccDataSourcePackage(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionPackageDataSource),
