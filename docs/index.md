@@ -13,6 +13,7 @@ The Elasticstack provider provides the resources to interact with Elastic stack 
 It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
 in order to interact with the Elasticsearch and be able to use the provider's full capabilities
 
+The provider uses Terraform [protocol version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) that is compatible with Terraform CLI version 1.0 and later.
 
 ## Authentication
 
@@ -31,6 +32,16 @@ The following methods are supported:
 Default static credentials can be provided by adding the `username`, `password` and `endpoints` in the `elasticsearch` block:
 
 ```terraform
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    elasticstack = {
+      source  = "elastic/elasticstack"
+      version = "~>0.9"
+    }
+  }
+}
+
 provider "elasticstack" {
   elasticsearch {
     username  = "elastic"
@@ -104,6 +115,16 @@ See docs related to the specific resources.
 ## Example Usage
 
 ```terraform
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    elasticstack = {
+      source  = "elastic/elasticstack"
+      version = "~>0.9"
+    }
+  }
+}
+
 provider "elasticstack" {
   elasticsearch {
     username  = "elastic"

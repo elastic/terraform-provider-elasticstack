@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Added
+- Switch to Terraform [protocol version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) that is compatible with Terraform CLI version 1.0 and later.
+
 ## [0.10.0] - 2023-11-02
 
 ### Added

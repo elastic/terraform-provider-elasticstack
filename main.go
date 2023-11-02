@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/elastic/terraform-provider-elasticstack/provider"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tf5server"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6/tf6server"
 )
 
 //go:generate terraform fmt -recursive ./examples/
@@ -26,17 +26,17 @@ func main() {
 	flag.BoolVar(&debugMode, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	serverFactory, err := provider.ProtoV5ProviderServerFactory(context.Background(), version)
+	serverFactory, err := provider.ProtoV6ProviderServerFactory(context.Background(), version)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var serveOpts []tf5server.ServeOpt
+	var serveOpts []tf6server.ServeOpt
 	if debugMode {
-		serveOpts = append(serveOpts, tf5server.WithManagedDebug())
+		serveOpts = append(serveOpts, tf6server.WithManagedDebug())
 	}
 
-	err = tf5server.Serve(
+	err = tf6server.Serve(
 		"registry.terraform.io/elastic/elasticstack",
 		serverFactory,
 		serveOpts...,
