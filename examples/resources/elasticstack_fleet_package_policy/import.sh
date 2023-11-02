@@ -1,0 +1,1 @@
+terraform import elasticstack_fleet_package_policy.my_policy <fleet_package_policy_id>
