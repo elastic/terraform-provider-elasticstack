@@ -6,7 +6,7 @@ toolchain go1.21.1
 
 require (
 	github.com/client9/misspell v0.3.4
-	github.com/deepmap/oapi-codegen v1.15.0
+	github.com/deepmap/oapi-codegen/v2 v2.0.0
 	github.com/golangci/golangci-lint v1.55.1
 	github.com/goreleaser/goreleaser v1.21.2
 	github.com/hashicorp/terraform-plugin-docs v0.16.0
@@ -138,7 +138,7 @@ require (
 	github.com/disgoorg/snowflake/v2 v2.0.1 // indirect
 	github.com/docker/cli v24.0.0+incompatible // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v24.0.2+incompatible // indirect
+	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
