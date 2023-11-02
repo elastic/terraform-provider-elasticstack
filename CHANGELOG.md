@@ -6,6 +6,7 @@
 - Add support for Terraform Plugin Framework ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
 - Fix fleet resources not having ID set on import ([#447](https://github.com/elastic/terraform-provider-elasticstack/pull/447))
 - Fix Fleet Agent Policy monitoring settings ([#448](https://github.com/elastic/terraform-provider-elasticstack/pull/448))
+- Add `elasticstack_elasticsearch_info` data source. ([#467](https://github.com/elastic/terraform-provider-elasticstack/pull/467))
 
 ## [0.9.0] - 2023-10-09
 
