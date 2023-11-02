@@ -82,6 +82,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_security_role": kibana.DataSourceRole(),
 
 			"elasticstack_fleet_enrollment_tokens": fleet.DataSourceEnrollmentTokens(),
+			"elasticstack_fleet_package":           fleet.DataSourcePackage(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_cluster_settings":      cluster.ResourceSettings(),

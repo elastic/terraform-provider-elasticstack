@@ -281,6 +281,13 @@ type FleetServerHost struct {
 	Name            *string  `json:"name,omitempty"`
 }
 
+// GetPackagesResponse defines model for get_packages_response.
+type GetPackagesResponse struct {
+	Items []SearchResult `json:"items"`
+	// Deprecated:
+	Response *[]SearchResult `json:"response,omitempty"`
+}
+
 // KibanaSavedObjectType defines model for kibana_saved_object_type.
 type KibanaSavedObjectType string
 
@@ -744,6 +751,20 @@ type PackagePolicyRequestInputStream struct {
 // PackageStatus defines model for package_status.
 type PackageStatus string
 
+// SearchResult defines model for search_result.
+type SearchResult struct {
+	Description string `json:"description"`
+	Download    string `json:"download"`
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	// Deprecated:
+	SavedObject *map[string]interface{} `json:"savedObject,omitempty"`
+	Status      string                  `json:"status"`
+	Title       string                  `json:"title"`
+	Type        string                  `json:"type"`
+	Version     string                  `json:"version"`
+}
+
 // Format defines model for format.
 type Format string
 
@@ -757,6 +778,17 @@ type Error struct {
 // DeleteAgentPolicyJSONBody defines parameters for DeleteAgentPolicy.
 type DeleteAgentPolicyJSONBody struct {
 	AgentPolicyId string `json:"agentPolicyId"`
+}
+
+// ListAllPackagesParams defines parameters for ListAllPackages.
+type ListAllPackagesParams struct {
+	// ExcludeInstallStatus Whether to exclude the install status of each package. Enabling this option will opt in to caching for the response via `cache-control` headers. If you don't need up-to-date installation info for a package, and are querying for a list of available packages, providing this flag can improve performance substantially.
+	ExcludeInstallStatus *bool `form:"excludeInstallStatus,omitempty" json:"excludeInstallStatus,omitempty"`
+
+	// Prerelease Whether to return prerelease versions of packages (e.g. beta, rc, preview)
+	Prerelease   *bool   `form:"prerelease,omitempty" json:"prerelease,omitempty"`
+	Experimental *bool   `form:"experimental,omitempty" json:"experimental,omitempty"`
+	Category     *string `form:"category,omitempty" json:"category,omitempty"`
 }
 
 // DeletePackageJSONBody defines parameters for DeletePackage.
@@ -1300,6 +1332,9 @@ type ClientInterface interface {
 	// GetEnrollmentApiKeys request
 	GetEnrollmentApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListAllPackages request
+	ListAllPackages(ctx context.Context, params *ListAllPackagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeletePackageWithBody request with any body
 	DeletePackageWithBody(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1453,6 +1488,18 @@ func (c *Client) UpdateAgentPolicy(ctx context.Context, agentPolicyId string, bo
 
 func (c *Client) GetEnrollmentApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetEnrollmentApiKeysRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListAllPackages(ctx context.Context, params *ListAllPackagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAllPackagesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1941,6 +1988,103 @@ func NewGetEnrollmentApiKeysRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListAllPackagesRequest generates requests for ListAllPackages
+func NewListAllPackagesRequest(server string, params *ListAllPackagesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/epm/packages")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.ExcludeInstallStatus != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "excludeInstallStatus", runtime.ParamLocationQuery, *params.ExcludeInstallStatus); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Prerelease != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "prerelease", runtime.ParamLocationQuery, *params.Prerelease); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Experimental != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "experimental", runtime.ParamLocationQuery, *params.Experimental); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Category != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "category", runtime.ParamLocationQuery, *params.Category); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -2987,6 +3131,9 @@ type ClientWithResponsesInterface interface {
 	// GetEnrollmentApiKeysWithResponse request
 	GetEnrollmentApiKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEnrollmentApiKeysResponse, error)
 
+	// ListAllPackagesWithResponse request
+	ListAllPackagesWithResponse(ctx context.Context, params *ListAllPackagesParams, reqEditors ...RequestEditorFn) (*ListAllPackagesResponse, error)
+
 	// DeletePackageWithBodyWithResponse request with any body
 	DeletePackageWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeletePackageResponse, error)
 
@@ -3179,6 +3326,29 @@ func (r GetEnrollmentApiKeysResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetEnrollmentApiKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListAllPackagesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *GetPackagesResponse
+	JSON400      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAllPackagesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAllPackagesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -3675,6 +3845,15 @@ func (c *ClientWithResponses) GetEnrollmentApiKeysWithResponse(ctx context.Conte
 	return ParseGetEnrollmentApiKeysResponse(rsp)
 }
 
+// ListAllPackagesWithResponse request returning *ListAllPackagesResponse
+func (c *ClientWithResponses) ListAllPackagesWithResponse(ctx context.Context, params *ListAllPackagesParams, reqEditors ...RequestEditorFn) (*ListAllPackagesResponse, error) {
+	rsp, err := c.ListAllPackages(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAllPackagesResponse(rsp)
+}
+
 // DeletePackageWithBodyWithResponse request with arbitrary body returning *DeletePackageResponse
 func (c *ClientWithResponses) DeletePackageWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeletePackageResponse, error) {
 	rsp, err := c.DeletePackageWithBody(ctx, pkgName, pkgVersion, params, contentType, body, reqEditors...)
@@ -4055,6 +4234,39 @@ func ParseGetEnrollmentApiKeysResponse(rsp *http.Response) (*GetEnrollmentApiKey
 			PerPage float32             `json:"perPage"`
 			Total   float32             `json:"total"`
 		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAllPackagesResponse parses an HTTP response from a ListAllPackagesWithResponse call
+func ParseListAllPackagesResponse(rsp *http.Response) (*ListAllPackagesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAllPackagesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetPackagesResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
