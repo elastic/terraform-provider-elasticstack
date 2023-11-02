@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.10.0] - 2023-11-02
+
 ### Added
 - Add support for Kibana security role ([#435](https://github.com/elastic/terraform-provider-elasticstack/pull/435))
 - Introduce `elasticstack_kibana_import_saved_objects` resource as an additive only way to manage Kibana saved objects ([#343](https://github.com/elastic/terraform-provider-elasticstack/pull/343)).
@@ -197,7 +199,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.6.2...v0.7.0
