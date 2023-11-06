@@ -12,6 +12,7 @@ package alerting
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 // checks if the LegacyUpdateAlertRequestProperties type satisfies the MappedNullable interface at compile time
@@ -32,6 +33,8 @@ type LegacyUpdateAlertRequestProperties struct {
 	// How often this alert should fire the same actions. This will prevent the alert from sending out the same notification over and over. For example, if an alert with a schedule of 1 minute stays in a triggered state for 90 minutes, setting a throttle of `10m` or `1h` will prevent it from sending 90 notifications during this period.
 	Throttle *string `json:"throttle,omitempty"`
 }
+
+type _LegacyUpdateAlertRequestProperties LegacyUpdateAlertRequestProperties
 
 // NewLegacyUpdateAlertRequestProperties instantiates a new LegacyUpdateAlertRequestProperties object
 // This constructor will assign default values to properties that have it defined,
@@ -270,6 +273,44 @@ func (o LegacyUpdateAlertRequestProperties) ToMap() (map[string]interface{}, err
 		toSerialize["throttle"] = o.Throttle
 	}
 	return toSerialize, nil
+}
+
+func (o *LegacyUpdateAlertRequestProperties) UnmarshalJSON(bytes []byte) (err error) {
+	// This validates that all required properties are included in the JSON object
+	// by unmarshalling the object into a generic map with string keys and checking
+	// that every required field exists as a key in the generic map.
+	requiredProperties := []string{
+		"name",
+		"notifyWhen",
+		"params",
+		"schedule",
+	}
+
+	allProperties := make(map[string]interface{})
+
+	err = json.Unmarshal(bytes, &allProperties)
+
+	if err != nil {
+		return err
+	}
+
+	for _, requiredProperty := range requiredProperties {
+		if _, exists := allProperties[requiredProperty]; !exists {
+			return fmt.Errorf("no value given for required property %v", requiredProperty)
+		}
+	}
+
+	varLegacyUpdateAlertRequestProperties := _LegacyUpdateAlertRequestProperties{}
+
+	err = json.Unmarshal(bytes, &varLegacyUpdateAlertRequestProperties)
+
+	if err != nil {
+		return err
+	}
+
+	*o = LegacyUpdateAlertRequestProperties(varLegacyUpdateAlertRequestProperties)
+
+	return err
 }
 
 type NullableLegacyUpdateAlertRequestProperties struct {

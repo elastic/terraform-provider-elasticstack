@@ -102,7 +102,6 @@ paths:
               examples:
                 getRuleResponse:
                   $ref: '#/components/examples/get_rule_response'
-                  value: null
               schema:
                 $ref: '#/components/schemas/rule_response_properties'
           description: Indicates a successful call.
@@ -162,7 +161,6 @@ paths:
             examples:
               createCaseRequest:
                 $ref: '#/components/examples/create_rule_request'
-                value: null
             schema:
               $ref: '#/components/schemas/create_rule_request'
         required: true
@@ -173,7 +171,6 @@ paths:
               examples:
                 createRuleResponse:
                   $ref: '#/components/examples/create_rule_response'
-                  value: null
               schema:
                 $ref: '#/components/schemas/rule_response_properties'
           description: Indicates a successful call.
@@ -232,7 +229,6 @@ paths:
             examples:
               updateCaseRequest:
                 $ref: '#/components/examples/update_rule_request'
-                value: null
             schema:
               $ref: '#/components/schemas/update_rule_request'
         required: true
@@ -243,7 +239,6 @@ paths:
               examples:
                 updateRuleResponse:
                   $ref: '#/components/examples/update_rule_response'
-                  value: null
               schema:
                 $ref: '#/components/schemas/rule_response_properties'
           description: Indicates a successful call.
@@ -496,7 +491,6 @@ paths:
               examples:
                 findRulesResponse:
                   $ref: '#/components/examples/find_rules_response'
-                  value: null
               schema:
                 $ref: '#/components/schemas/findRules_200_response'
           description: Indicates a successful call.
@@ -536,7 +530,6 @@ paths:
               examples:
                 getAlertingHealthResponse:
                   $ref: '#/components/examples/get_health_response'
-                  value: null
               schema:
                 $ref: '#/components/schemas/getAlertingHealth_200_response'
           description: Indicates a successful call.
@@ -574,7 +567,6 @@ paths:
               examples:
                 getRuleTypesResponse:
                   $ref: '#/components/examples/get_rule_types_response'
-                  value: null
               schema:
                 items:
                   $ref: '#/components/schemas/getRuleTypes_200_response_inner'

@@ -10,7 +10,7 @@ docs/ActionsInnerFrequency.md
 docs/AlertResponseProperties.md
 docs/AlertResponsePropertiesExecutionStatus.md
 docs/AlertResponsePropertiesSchedule.md
-docs/AlertingApi.md
+docs/AlertingAPI.md
 docs/CreateRuleRequest.md
 docs/FindRules200Response.md
 docs/FindRulesHasReferenceParameter.md

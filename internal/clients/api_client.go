@@ -65,7 +65,7 @@ type ApiClient struct {
 	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
-	alerting                 alerting.AlertingApi
+	alerting                 alerting.AlertingAPI
 	connectors               *connectors.Client
 	slo                      slo.SloAPI
 	kibanaConfig             kibana.Config
@@ -106,7 +106,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	return &ApiClient{
 			elasticsearch: es,
 			kibana:        kib,
-			alerting:      buildAlertingClient(cfg).AlertingApi,
+			alerting:      buildAlertingClient(cfg).AlertingAPI,
 			slo:           buildSloClient(cfg).SloAPI,
 			connectors:    actionConnectors,
 			kibanaConfig:  *cfg.Kibana,
@@ -193,7 +193,7 @@ func (a *ApiClient) GetKibanaClient() (*kibana.Client, error) {
 	return a.kibana, nil
 }
 
-func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
+func (a *ApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
 	if a.alerting == nil {
 		return nil, errors.New("alerting client not found")
 	}
@@ -469,7 +469,7 @@ func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, erro
 		}
 
 		client.kibana = kibanaClient
-		client.alerting = buildAlertingClient(cfg).AlertingApi
+		client.alerting = buildAlertingClient(cfg).AlertingAPI
 		client.slo = buildSloClient(cfg).SloAPI
 		client.connectors = connectorsClient
 	}

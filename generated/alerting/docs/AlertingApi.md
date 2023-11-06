@@ -1,35 +1,35 @@
-# \AlertingApi
+# \AlertingAPI
 
 All URIs are relative to *http://localhost:5601*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**CreateRule**](AlertingApi.md#CreateRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule.
-[**DeleteRule**](AlertingApi.md#DeleteRule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
-[**DisableRule**](AlertingApi.md#DisableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
-[**EnableRule**](AlertingApi.md#EnableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
-[**FindRules**](AlertingApi.md#FindRules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
-[**GetAlertingHealth**](AlertingApi.md#GetAlertingHealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
-[**GetRule**](AlertingApi.md#GetRule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
-[**GetRuleTypes**](AlertingApi.md#GetRuleTypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
-[**LegacyCreateAlert**](AlertingApi.md#LegacyCreateAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.
-[**LegacyDisableAlert**](AlertingApi.md#LegacyDisableAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_disable | Disables an alert.
-[**LegacyEnableAlert**](AlertingApi.md#LegacyEnableAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_enable | Enables an alert.
-[**LegacyFindAlerts**](AlertingApi.md#LegacyFindAlerts) | **Get** /s/{spaceId}/api/alerts/alerts/_find | Retrieves a paginated set of alerts.
-[**LegacyGetAlert**](AlertingApi.md#LegacyGetAlert) | **Get** /s/{spaceId}/api/alerts/alert/{alertId} | Retrieves an alert by its identifier.
-[**LegacyGetAlertTypes**](AlertingApi.md#LegacyGetAlertTypes) | **Get** /s/{spaceId}/api/alerts/alerts/list_alert_types | Retrieves a list of alert types.
-[**LegacyGetAlertingHealth**](AlertingApi.md#LegacyGetAlertingHealth) | **Get** /s/{spaceId}/api/alerts/alerts/_health | Retrieves the health status of the alerting framework.
-[**LegacyMuteAlertInstance**](AlertingApi.md#LegacyMuteAlertInstance) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_mute | Mutes an alert instance.
-[**LegacyMuteAllAlertInstances**](AlertingApi.md#LegacyMuteAllAlertInstances) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_mute_all | Mutes all alert instances.
-[**LegacyUnmuteAlertInstance**](AlertingApi.md#LegacyUnmuteAlertInstance) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_unmute | Unmutes an alert instance.
-[**LegacyUnmuteAllAlertInstances**](AlertingApi.md#LegacyUnmuteAllAlertInstances) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_unmute_all | Unmutes all alert instances.
-[**LegacyUpdateAlert**](AlertingApi.md#LegacyUpdateAlert) | **Put** /s/{spaceId}/api/alerts/alert/{alertId} | Updates the attributes for an alert.
-[**LegaryDeleteAlert**](AlertingApi.md#LegaryDeleteAlert) | **Delete** /s/{spaceId}/api/alerts/alert/{alertId} | Permanently removes an alert.
-[**MuteAlert**](AlertingApi.md#MuteAlert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_mute | Mutes an alert.
-[**MuteAllAlerts**](AlertingApi.md#MuteAllAlerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_mute_all | Mutes all alerts.
-[**UnmuteAlert**](AlertingApi.md#UnmuteAlert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute | Unmutes an alert.
-[**UnmuteAllAlerts**](AlertingApi.md#UnmuteAllAlerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all | Unmutes all alerts.
-[**UpdateRule**](AlertingApi.md#UpdateRule) | **Put** /s/{spaceId}/api/alerting/rule/{ruleId} | Updates the attributes for a rule.
+[**CreateRule**](AlertingAPI.md#CreateRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule.
+[**DeleteRule**](AlertingAPI.md#DeleteRule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
+[**DisableRule**](AlertingAPI.md#DisableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
+[**EnableRule**](AlertingAPI.md#EnableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
+[**FindRules**](AlertingAPI.md#FindRules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
+[**GetAlertingHealth**](AlertingAPI.md#GetAlertingHealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
+[**GetRule**](AlertingAPI.md#GetRule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
+[**GetRuleTypes**](AlertingAPI.md#GetRuleTypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
+[**LegacyCreateAlert**](AlertingAPI.md#LegacyCreateAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.
+[**LegacyDisableAlert**](AlertingAPI.md#LegacyDisableAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_disable | Disables an alert.
+[**LegacyEnableAlert**](AlertingAPI.md#LegacyEnableAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_enable | Enables an alert.
+[**LegacyFindAlerts**](AlertingAPI.md#LegacyFindAlerts) | **Get** /s/{spaceId}/api/alerts/alerts/_find | Retrieves a paginated set of alerts.
+[**LegacyGetAlert**](AlertingAPI.md#LegacyGetAlert) | **Get** /s/{spaceId}/api/alerts/alert/{alertId} | Retrieves an alert by its identifier.
+[**LegacyGetAlertTypes**](AlertingAPI.md#LegacyGetAlertTypes) | **Get** /s/{spaceId}/api/alerts/alerts/list_alert_types | Retrieves a list of alert types.
+[**LegacyGetAlertingHealth**](AlertingAPI.md#LegacyGetAlertingHealth) | **Get** /s/{spaceId}/api/alerts/alerts/_health | Retrieves the health status of the alerting framework.
+[**LegacyMuteAlertInstance**](AlertingAPI.md#LegacyMuteAlertInstance) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_mute | Mutes an alert instance.
+[**LegacyMuteAllAlertInstances**](AlertingAPI.md#LegacyMuteAllAlertInstances) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_mute_all | Mutes all alert instances.
+[**LegacyUnmuteAlertInstance**](AlertingAPI.md#LegacyUnmuteAlertInstance) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_unmute | Unmutes an alert instance.
+[**LegacyUnmuteAllAlertInstances**](AlertingAPI.md#LegacyUnmuteAllAlertInstances) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_unmute_all | Unmutes all alert instances.
+[**LegacyUpdateAlert**](AlertingAPI.md#LegacyUpdateAlert) | **Put** /s/{spaceId}/api/alerts/alert/{alertId} | Updates the attributes for an alert.
+[**LegaryDeleteAlert**](AlertingAPI.md#LegaryDeleteAlert) | **Delete** /s/{spaceId}/api/alerts/alert/{alertId} | Permanently removes an alert.
+[**MuteAlert**](AlertingAPI.md#MuteAlert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_mute | Mutes an alert.
+[**MuteAllAlerts**](AlertingAPI.md#MuteAllAlerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_mute_all | Mutes all alerts.
+[**UnmuteAlert**](AlertingAPI.md#UnmuteAlert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute | Unmutes an alert.
+[**UnmuteAllAlerts**](AlertingAPI.md#UnmuteAllAlerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all | Unmutes all alerts.
+[**UpdateRule**](AlertingAPI.md#UpdateRule) | **Put** /s/{spaceId}/api/alerting/rule/{ruleId} | Updates the attributes for a rule.
 
 
 
@@ -61,13 +61,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.CreateRule(context.Background(), spaceId, ruleId).KbnXsrf(kbnXsrf).CreateRuleRequest(createRuleRequest).Execute()
+    resp, r, err := apiClient.AlertingAPI.CreateRule(context.Background(), spaceId, ruleId).KbnXsrf(kbnXsrf).CreateRuleRequest(createRuleRequest).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.CreateRule``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.CreateRule``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `CreateRule`: RuleResponseProperties
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.CreateRule`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.CreateRule`: %v\n", resp)
 }
 ```
 
@@ -137,9 +137,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.DeleteRule(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.DeleteRule(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.DeleteRule``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.DeleteRule``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -210,9 +210,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.DisableRule(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.DisableRule(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.DisableRule``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.DisableRule``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -283,9 +283,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.EnableRule(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.EnableRule(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.EnableRule``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.EnableRule``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -354,7 +354,7 @@ func main() {
     defaultSearchOperator := "OR" // string | The default operator to use for the simple_query_string. (optional) (default to "OR")
     fields := []string{"Inner_example"} // []string | The fields to return in the `attributes` key of the response. (optional)
     filter := "filter_example" // string | A KQL string that you filter with an attribute from your saved object. It should look like `savedObjectType.attributes.title: \"myTitle\"`. However, if you used a direct attribute of a saved object, such as `updatedAt`, you must define your filter, for example, `savedObjectType.updatedAt > 2018-12-22`.  (optional)
-    hasReference := map[string][]openapiclient.FindRulesHasReferenceParameter{ ... } // FindRulesHasReferenceParameter | Filters the rules that have a relation with the reference objects with a specific type and identifier. (optional)
+    hasReference := *openapiclient.NewFindRulesHasReferenceParameter() // FindRulesHasReferenceParameter | Filters the rules that have a relation with the reference objects with a specific type and identifier. (optional)
     page := int32(1) // int32 | The page number to return. (optional) (default to 1)
     perPage := int32(20) // int32 | The number of rules to return per page. (optional) (default to 20)
     search := "search_example" // string | An Elasticsearch simple_query_string query that filters the objects in the response. (optional)
@@ -364,13 +364,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.FindRules(context.Background(), spaceId).DefaultSearchOperator(defaultSearchOperator).Fields(fields).Filter(filter).HasReference(hasReference).Page(page).PerPage(perPage).Search(search).SearchFields(searchFields).SortField(sortField).SortOrder(sortOrder).Execute()
+    resp, r, err := apiClient.AlertingAPI.FindRules(context.Background(), spaceId).DefaultSearchOperator(defaultSearchOperator).Fields(fields).Filter(filter).HasReference(hasReference).Page(page).PerPage(perPage).Search(search).SearchFields(searchFields).SortField(sortField).SortOrder(sortOrder).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.FindRules``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.FindRules``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `FindRules`: FindRules200Response
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.FindRules`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.FindRules`: %v\n", resp)
 }
 ```
 
@@ -444,13 +444,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.GetAlertingHealth(context.Background(), spaceId).Execute()
+    resp, r, err := apiClient.AlertingAPI.GetAlertingHealth(context.Background(), spaceId).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.GetAlertingHealth``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.GetAlertingHealth``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `GetAlertingHealth`: GetAlertingHealth200Response
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.GetAlertingHealth`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.GetAlertingHealth`: %v\n", resp)
 }
 ```
 
@@ -515,13 +515,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.GetRule(context.Background(), ruleId, spaceId).Execute()
+    resp, r, err := apiClient.AlertingAPI.GetRule(context.Background(), ruleId, spaceId).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.GetRule``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.GetRule``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `GetRule`: RuleResponseProperties
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.GetRule`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.GetRule`: %v\n", resp)
 }
 ```
 
@@ -587,13 +587,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.GetRuleTypes(context.Background(), spaceId).Execute()
+    resp, r, err := apiClient.AlertingAPI.GetRuleTypes(context.Background(), spaceId).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.GetRuleTypes``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.GetRuleTypes``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `GetRuleTypes`: []GetRuleTypes200ResponseInner
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.GetRuleTypes`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.GetRuleTypes`: %v\n", resp)
 }
 ```
 
@@ -660,13 +660,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.LegacyCreateAlert(context.Background(), alertId, spaceId).KbnXsrf(kbnXsrf).LegacyCreateAlertRequestProperties(legacyCreateAlertRequestProperties).Execute()
+    resp, r, err := apiClient.AlertingAPI.LegacyCreateAlert(context.Background(), alertId, spaceId).KbnXsrf(kbnXsrf).LegacyCreateAlertRequestProperties(legacyCreateAlertRequestProperties).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyCreateAlert``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyCreateAlert``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `LegacyCreateAlert`: AlertResponseProperties
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.LegacyCreateAlert`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.LegacyCreateAlert`: %v\n", resp)
 }
 ```
 
@@ -736,9 +736,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.LegacyDisableAlert(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.LegacyDisableAlert(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyDisableAlert``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyDisableAlert``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -809,9 +809,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.LegacyEnableAlert(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.LegacyEnableAlert(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyEnableAlert``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyEnableAlert``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -880,7 +880,7 @@ func main() {
     defaultSearchOperator := "OR" // string | The default operator to use for the `simple_query_string`. (optional) (default to "OR")
     fields := []string{"Inner_example"} // []string | The fields to return in the `attributes` key of the response. (optional)
     filter := "filter_example" // string | A KQL string that you filter with an attribute from your saved object. It should look like `savedObjectType.attributes.title: \"myTitle\"`. However, if you used a direct attribute of a saved object, such as `updatedAt`, you must define your filter, for example, `savedObjectType.updatedAt > 2018-12-22`.  (optional)
-    hasReference := map[string][]openapiclient.FindRulesHasReferenceParameter{ ... } // FindRulesHasReferenceParameter | Filters the rules that have a relation with the reference objects with a specific type and identifier. (optional)
+    hasReference := *openapiclient.NewFindRulesHasReferenceParameter() // FindRulesHasReferenceParameter | Filters the rules that have a relation with the reference objects with a specific type and identifier. (optional)
     page := int32(1) // int32 | The page number to return. (optional) (default to 1)
     perPage := int32(20) // int32 | The number of alerts to return per page. (optional) (default to 20)
     search := "search_example" // string | An Elasticsearch `simple_query_string` query that filters the alerts in the response. (optional)
@@ -890,13 +890,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.LegacyFindAlerts(context.Background(), spaceId).DefaultSearchOperator(defaultSearchOperator).Fields(fields).Filter(filter).HasReference(hasReference).Page(page).PerPage(perPage).Search(search).SearchFields(searchFields).SortField(sortField).SortOrder(sortOrder).Execute()
+    resp, r, err := apiClient.AlertingAPI.LegacyFindAlerts(context.Background(), spaceId).DefaultSearchOperator(defaultSearchOperator).Fields(fields).Filter(filter).HasReference(hasReference).Page(page).PerPage(perPage).Search(search).SearchFields(searchFields).SortField(sortField).SortOrder(sortOrder).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyFindAlerts``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyFindAlerts``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `LegacyFindAlerts`: LegacyFindAlerts200Response
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.LegacyFindAlerts`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.LegacyFindAlerts`: %v\n", resp)
 }
 ```
 
@@ -971,13 +971,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.LegacyGetAlert(context.Background(), spaceId, alertId).Execute()
+    resp, r, err := apiClient.AlertingAPI.LegacyGetAlert(context.Background(), spaceId, alertId).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyGetAlert``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyGetAlert``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `LegacyGetAlert`: AlertResponseProperties
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.LegacyGetAlert`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.LegacyGetAlert`: %v\n", resp)
 }
 ```
 
@@ -1043,13 +1043,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.LegacyGetAlertTypes(context.Background(), spaceId).Execute()
+    resp, r, err := apiClient.AlertingAPI.LegacyGetAlertTypes(context.Background(), spaceId).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyGetAlertTypes``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyGetAlertTypes``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `LegacyGetAlertTypes`: []LegacyGetAlertTypes200ResponseInner
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.LegacyGetAlertTypes`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.LegacyGetAlertTypes`: %v\n", resp)
 }
 ```
 
@@ -1113,13 +1113,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.LegacyGetAlertingHealth(context.Background(), spaceId).Execute()
+    resp, r, err := apiClient.AlertingAPI.LegacyGetAlertingHealth(context.Background(), spaceId).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyGetAlertingHealth``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyGetAlertingHealth``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `LegacyGetAlertingHealth`: LegacyGetAlertingHealth200Response
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.LegacyGetAlertingHealth`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.LegacyGetAlertingHealth`: %v\n", resp)
 }
 ```
 
@@ -1186,9 +1186,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.LegacyMuteAlertInstance(context.Background(), spaceId, alertId, alertInstanceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.LegacyMuteAlertInstance(context.Background(), spaceId, alertId, alertInstanceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyMuteAlertInstance``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyMuteAlertInstance``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1261,9 +1261,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.LegacyMuteAllAlertInstances(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.LegacyMuteAllAlertInstances(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyMuteAllAlertInstances``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyMuteAllAlertInstances``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1335,9 +1335,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.LegacyUnmuteAlertInstance(context.Background(), spaceId, alertId, alertInstanceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.LegacyUnmuteAlertInstance(context.Background(), spaceId, alertId, alertInstanceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyUnmuteAlertInstance``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyUnmuteAlertInstance``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1410,9 +1410,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.LegacyUnmuteAllAlertInstances(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.LegacyUnmuteAllAlertInstances(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyUnmuteAllAlertInstances``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyUnmuteAllAlertInstances``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1484,13 +1484,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.LegacyUpdateAlert(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).LegacyUpdateAlertRequestProperties(legacyUpdateAlertRequestProperties).Execute()
+    resp, r, err := apiClient.AlertingAPI.LegacyUpdateAlert(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).LegacyUpdateAlertRequestProperties(legacyUpdateAlertRequestProperties).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegacyUpdateAlert``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegacyUpdateAlert``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `LegacyUpdateAlert`: AlertResponseProperties
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.LegacyUpdateAlert`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.LegacyUpdateAlert`: %v\n", resp)
 }
 ```
 
@@ -1560,9 +1560,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.LegaryDeleteAlert(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.LegaryDeleteAlert(context.Background(), spaceId, alertId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.LegaryDeleteAlert``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.LegaryDeleteAlert``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1634,9 +1634,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.MuteAlert(context.Background(), alertId, ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.MuteAlert(context.Background(), alertId, ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.MuteAlert``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.MuteAlert``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1709,9 +1709,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.MuteAllAlerts(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.MuteAllAlerts(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.MuteAllAlerts``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.MuteAllAlerts``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1783,9 +1783,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.UnmuteAlert(context.Background(), alertId, ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.UnmuteAlert(context.Background(), alertId, ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.UnmuteAlert``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.UnmuteAlert``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1858,9 +1858,9 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingApi.UnmuteAllAlerts(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.UnmuteAllAlerts(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.UnmuteAllAlerts``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.UnmuteAllAlerts``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
 }
@@ -1932,13 +1932,13 @@ func main() {
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingApi.UpdateRule(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).UpdateRuleRequest(updateRuleRequest).Execute()
+    resp, r, err := apiClient.AlertingAPI.UpdateRule(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).UpdateRuleRequest(updateRuleRequest).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `AlertingApi.UpdateRule``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.UpdateRule``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
     // response from `UpdateRule`: RuleResponseProperties
-    fmt.Fprintf(os.Stdout, "Response from `AlertingApi.UpdateRule`: %v\n", resp)
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.UpdateRule`: %v\n", resp)
 }
 ```
 
