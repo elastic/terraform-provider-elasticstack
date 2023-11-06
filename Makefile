@@ -266,7 +266,7 @@ help: ## this help
 
 .PHONY: generate-alerting-client
 generate-alerting-client: ## generate Kibana alerting client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
 		-i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/alerting/docs/openapi/bundled.json \
 		--skip-validate-spec \
 		--git-repo-id terraform-provider-elasticstack \
@@ -279,17 +279,30 @@ generate-alerting-client: ## generate Kibana alerting client
 	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
 	@ go fmt ./generated/alerting/...
 
+.PHONY: generate-data-views-client
+generate-data-views-client: ## generate Kibana data-views client
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
+		-i https://raw.githubusercontent.com/elastic/kibana/main/src/plugins/data_views/docs/openapi/bundled.yaml \
+		--skip-validate-spec \
+		--git-repo-id terraform-provider-elasticstack \
+		--git-user-id elastic \
+		-p isGoSubmodule=true \
+		-p packageName=data_views \
+		-p generateInterfaces=true \
+		-g go \
+		-o /local/generated/data_views
+	@ rm -rf generated/data_views/go.mod generated/data_views/go.sum generated/data_views/test
+	@ go fmt ./generated/data_views/...
+
 .PHONY: generate-connectors-client
 generate-connectors-client: tools ## generate Kibana connectors client
 	@ cd tools && go generate
 	@ go fmt ./generated/connectors/...
 
-## -i https://raw.githubusercontent.com/elastic/kibana/main/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
-
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
 	@ rm -rf generated/slo
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.0-beta generate \
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
 		-i /local/generated/slo-spec.yml \
 		--git-repo-id terraform-provider-elasticstack \
 		--git-user-id elastic \
@@ -304,4 +317,4 @@ generate-slo-client: tools ## generate Kibana slo client
 	@ go fmt ./generated/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client generate-connectors-client ## generate all clients
+generate-clients: generate-alerting-client generate-slo-client generate-data-views-client generate-connectors-client ## generate all clients
