@@ -378,6 +378,25 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 	}
 }
 
+// AllPackages returns information about the latest packages known to Fleet.
+func AllPackages(ctx context.Context, client *Client, prerelease bool) ([]fleetapi.SearchResult, diag.Diagnostics) {
+	params := fleetapi.ListAllPackagesParams{
+		Prerelease: &prerelease,
+	}
+
+	resp, err := client.API.ListAllPackagesWithResponse(ctx, &params)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp.JSON200.Items, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 func reportUnknownError(statusCode int, body []byte) diag.Diagnostics {
 	return diag.Diagnostics{
 		diag.Diagnostic{

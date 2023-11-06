@@ -71,6 +71,7 @@ var transformers = []TransformFunc{
 	transformSchemasInputsType,
 	transformInlinePackageDefinitions,
 	transformAddPackagePolicyVars,
+	transformFixPackageSearchResult,
 }
 
 // transformFilterPaths filters the paths in a schema down to
@@ -88,6 +89,7 @@ func transformFilterPaths(schema *Schema) {
 		"/package_policies":                    {"post"},
 		"/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
 		"/epm/packages/{pkgName}/{pkgVersion}": {"get", "put", "post", "delete"},
+		"/epm/packages":                        {"get"},
 	}
 
 	// filterKbnXsrfParameter filters out an entry if it is a kbn_xsrf parameter.
@@ -329,6 +331,17 @@ func transformAddPackagePolicyVars(schema *Schema) {
 	if _, ok = inputs.Get("vars"); !ok {
 		inputs.Set("vars.type", "object")
 	}
+}
+
+// transformFixPackageSearchResult removes unneeded fields from the
+// SearchResult struct. These fields are also causing parsing errors.
+func transformFixPackageSearchResult(schema *Schema) {
+	properties, ok := schema.Components.GetFields("schemas.search_result.properties")
+	if !ok {
+		panic("properties not found")
+	}
+	properties.Delete("icons")
+	properties.Delete("installationInfo")
 }
 
 // downloadFile will download a file from url and return the
