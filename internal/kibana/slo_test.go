@@ -189,7 +189,7 @@ func TestAccResourceSloErrors(t *testing.T) {
 			{
 				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))),
 				Config:      getSLOConfig("failwhale", "histogram_custom_indicator_agg_fail", false),
-				ExpectError: regexp.MustCompile(`expected histogram_custom_indicator.0.good.0.aggregation to be one of \[value_count range\], got supdawg`),
+				ExpectError: regexp.MustCompile(`expected histogram_custom_indicator.0.good.0.aggregation to be one of \["?value_count"? "?range"?\], got supdawg`),
 			},
 			{
 				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
