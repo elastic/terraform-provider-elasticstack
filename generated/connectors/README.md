@@ -1,5 +1,7 @@
 [OpenAPI specs](./bundled.yaml) is copied from [Kibana repo](https://raw.githubusercontent.com/elastic/kibana/8.7/x-pack/plugins/actions/docs/openapi/bundled.yaml) with some modifications:
 
+- `.slack_api` connector support comes from version 8.8 of the API specification;
+- added `.slack_api` as a possible value for `connector_types`;
 - added mapping section for discriminator field in `POST` `/s/{spaceId}/api/actions/connector`;
 - added explicit object definitions for `400`, `401` and `404` errors (`oapi-codegen` doesn't generate proper code for embedded anonymous objects in some cases) - `bad_request_error`, `authorization_error` and `object_not_found_error`;
 - added missing `oneOf` types in `requestBody` for `PUT` `/s/{spaceId}/api/actions/connector/{connectorId}` - the original `bundled.yaml` misses some connector types in the `PUT` `requestBody` defintion:
@@ -7,6 +9,7 @@
   - `update_connector_request_pagerduty`;
   - `update_connector_request_servicenow_sir`;
   - `update_connector_request_slack`;
+  - `update_connector_request_slack_api`;
   - `update_connector_request_teams`;
   - `update_connector_request_tines`;
   - `update_connector_request_webhook`;
@@ -31,6 +34,7 @@
   - `connector_response_properties_servicenow_itom`;
   - `connector_response_properties_servicenow_sir`;
   - `connector_response_properties_slack`;
+  - `connector_response_properties_slack_api`;
   - `connector_response_properties_swimlane`;
   - `connector_response_properties_teams`;
   - `connector_response_properties_tines`;

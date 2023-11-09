@@ -92,7 +92,7 @@ func ResourceEnrichPolicy() *schema.Resource {
 }
 
 func resourceEnrichPolicyRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -133,7 +133,7 @@ func resourceEnrichPolicyRead(ctx context.Context, d *schema.ResourceData, meta 
 }
 
 func resourceEnrichPolicyPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -169,7 +169,7 @@ func resourceEnrichPolicyPut(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceEnrichPolicyDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

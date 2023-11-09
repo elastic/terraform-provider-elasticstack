@@ -1,5 +1,5 @@
 provider "elasticstack" {
-  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_kibana_action_connector" "example" {
@@ -27,5 +27,13 @@ resource "elasticstack_kibana_action_connector" "slack-connector" {
   connector_type_id = ".slack"
   secrets = jsonencode({
     webhookUrl = "<your-webhookUrl>"
+  })
+}
+
+resource "elasticstack_kibana_action_connector" "slack-api-connector" {
+  name              = "slack"
+  connector_type_id = ".slack_api"
+  secrets = jsonencode({
+    token = "<your-token>"
   })
 }

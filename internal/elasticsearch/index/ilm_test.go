@@ -23,7 +23,7 @@ func TestAccResourceILM(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceILMDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceILMCreate(policyName),
@@ -86,7 +86,7 @@ func TestAccResourceILMRolloverConditions(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceILMDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(index.RolloverMinConditionsMinSupportedVersion),

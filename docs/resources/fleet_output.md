@@ -42,6 +42,7 @@ resource "elasticstack_fleet_output" "test_output" {
 ### Optional
 
 - `ca_sha256` (String) Fingerprint of the Elasticsearch CA certificate.
+- `ca_trusted_fingerprint` (String) Fingerprint of trusted CA.
 - `config_yaml` (String, Sensitive) Advanced YAML configuration. YAML settings here will be added to the output section of each agent policy.
 - `default_integrations` (Boolean) Make this output the default for agent integrations.
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
@@ -57,5 +58,5 @@ resource "elasticstack_fleet_output" "test_output" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import elasticstack_fleet_output.my_output <space id>/<output id>
+terraform import elasticstack_fleet_output.my_output <fleet_output_id>
 ```

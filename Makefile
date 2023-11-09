@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.6.2
+VERSION ?= 0.10.0
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -13,9 +13,9 @@ ACCTEST_COUNT = 1
 TEST ?= ./...
 SWAGGER_VERSION ?= 8.7
 
-GOVERSION ?= 1.19
+GOVERSION ?= 1.20
 
-STACK_VERSION ?= 8.6.0
+STACK_VERSION ?= 8.10.3
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -84,6 +84,7 @@ docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in th
 
 .PHONY: docker-elasticsearch
 docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
+	@ docker rm -f $(ELASTICSEARCH_NAME) &> /dev/null || true
 	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(ELASTICSEARCH_NAME) > /dev/null 2>&1 ; then \
 		docker run -d \
 		--memory $(ELASTICSEARCH_MEM) \
@@ -103,6 +104,7 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 
 .PHONY: docker-kibana
 docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start Kibana node in docker container
+	@ docker rm -f $(KIBANA_NAME)  &> /dev/null || true
 	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(KIBANA_NAME) > /dev/null 2>&1 ; then \
 		docker run -d \
 		-p 5601:5601 \
@@ -160,7 +162,7 @@ tools: $(GOBIN) ## Install useful tools for linting, docs generation and develop
 	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@ cd tools && go install github.com/goreleaser/goreleaser
-	@ cd tools && go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen
+	@ cd tools && go install github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen
 
 .PHONY: misspell
 misspell:
@@ -256,18 +258,22 @@ generate-connectors-client: tools ## generate Kibana connectors client
 	@ cd tools && go generate
 	@ go fmt ./generated/connectors/...
 
+## -i https://raw.githubusercontent.com/elastic/kibana/main/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
+
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
-		-i https://raw.githubusercontent.com/elastic/kibana/master/x-pack/plugins/observability/docs/openapi/slo/bundled.yaml \
-		--skip-validate-spec \
+	@ rm -rf generated/slo
+	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.0-beta generate \
+		-i /local/generated/slo-spec.yml \
 		--git-repo-id terraform-provider-elasticstack \
 		--git-user-id elastic \
 		-p isGoSubmodule=true \
 		-p packageName=slo \
 		-p generateInterfaces=true \
+		-p useOneOfDiscriminatorLookup=true \
 		-g go \
-		-o /local/generated/slo
+		-o /local/generated/slo \
+		 --type-mappings=float32=float64
 	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
 	@ go fmt ./generated/...
 

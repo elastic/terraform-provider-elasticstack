@@ -14,7 +14,7 @@ Creates or updates a Kibana space. See https://www.elastic.co/guide/en/kibana/ma
 
 ```terraform
 provider "elasticstack" {
-  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_kibana_space" "example" {

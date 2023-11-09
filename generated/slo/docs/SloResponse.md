@@ -4,25 +4,27 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Id** | Pointer to **string** | The identifier of the SLO. | [optional] 
-**Name** | Pointer to **string** | The name of the SLO. | [optional] 
-**Description** | Pointer to **string** | The description of the SLO. | [optional] 
-**Indicator** | Pointer to [**SloResponseIndicator**](SloResponseIndicator.md) |  | [optional] 
-**TimeWindow** | Pointer to [**SloResponseTimeWindow**](SloResponseTimeWindow.md) |  | [optional] 
-**BudgetingMethod** | Pointer to [**BudgetingMethod**](BudgetingMethod.md) |  | [optional] 
-**Objective** | Pointer to [**Objective**](Objective.md) |  | [optional] 
-**Settings** | Pointer to [**Settings**](Settings.md) |  | [optional] 
-**Revision** | Pointer to **float32** | The SLO revision | [optional] 
-**Summary** | Pointer to [**Summary**](Summary.md) |  | [optional] 
-**Enabled** | Pointer to **bool** | Indicate if the SLO is enabled | [optional] 
-**CreatedAt** | Pointer to **string** | The creation date | [optional] 
-**UpdatedAt** | Pointer to **string** | The last update date | [optional] 
+**Id** | **string** | The identifier of the SLO. | 
+**Name** | **string** | The name of the SLO. | 
+**Description** | **string** | The description of the SLO. | 
+**Indicator** | [**SloResponseIndicator**](SloResponseIndicator.md) |  | 
+**TimeWindow** | [**TimeWindow**](TimeWindow.md) |  | 
+**BudgetingMethod** | [**BudgetingMethod**](BudgetingMethod.md) |  | 
+**Objective** | [**Objective**](Objective.md) |  | 
+**Settings** | [**Settings**](Settings.md) |  | 
+**Revision** | **float64** | The SLO revision | 
+**Summary** | [**Summary**](Summary.md) |  | 
+**Enabled** | **bool** | Indicate if the SLO is enabled | 
+**GroupBy** | **string** | optional group by field to use to generate an SLO per distinct value | 
+**InstanceId** | **string** | the value derived from the groupBy field, if present, otherwise &#39;*&#39; | 
+**CreatedAt** | **string** | The creation date | 
+**UpdatedAt** | **string** | The last update date | 
 
 ## Methods
 
 ### NewSloResponse
 
-`func NewSloResponse() *SloResponse`
+`func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string, ) *SloResponse`
 
 NewSloResponse instantiates a new SloResponse object
 This constructor will assign default values to properties that have it defined,
@@ -56,11 +58,6 @@ and a boolean to check if the value has been set.
 
 SetId sets Id field to given value.
 
-### HasId
-
-`func (o *SloResponse) HasId() bool`
-
-HasId returns a boolean if a field has been set.
 
 ### GetName
 
@@ -81,11 +78,6 @@ and a boolean to check if the value has been set.
 
 SetName sets Name field to given value.
 
-### HasName
-
-`func (o *SloResponse) HasName() bool`
-
-HasName returns a boolean if a field has been set.
 
 ### GetDescription
 
@@ -106,11 +98,6 @@ and a boolean to check if the value has been set.
 
 SetDescription sets Description field to given value.
 
-### HasDescription
-
-`func (o *SloResponse) HasDescription() bool`
-
-HasDescription returns a boolean if a field has been set.
 
 ### GetIndicator
 
@@ -131,36 +118,26 @@ and a boolean to check if the value has been set.
 
 SetIndicator sets Indicator field to given value.
 
-### HasIndicator
-
-`func (o *SloResponse) HasIndicator() bool`
-
-HasIndicator returns a boolean if a field has been set.
 
 ### GetTimeWindow
 
-`func (o *SloResponse) GetTimeWindow() SloResponseTimeWindow`
+`func (o *SloResponse) GetTimeWindow() TimeWindow`
 
 GetTimeWindow returns the TimeWindow field if non-nil, zero value otherwise.
 
 ### GetTimeWindowOk
 
-`func (o *SloResponse) GetTimeWindowOk() (*SloResponseTimeWindow, bool)`
+`func (o *SloResponse) GetTimeWindowOk() (*TimeWindow, bool)`
 
 GetTimeWindowOk returns a tuple with the TimeWindow field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTimeWindow
 
-`func (o *SloResponse) SetTimeWindow(v SloResponseTimeWindow)`
+`func (o *SloResponse) SetTimeWindow(v TimeWindow)`
 
 SetTimeWindow sets TimeWindow field to given value.
 
-### HasTimeWindow
-
-`func (o *SloResponse) HasTimeWindow() bool`
-
-HasTimeWindow returns a boolean if a field has been set.
 
 ### GetBudgetingMethod
 
@@ -181,11 +158,6 @@ and a boolean to check if the value has been set.
 
 SetBudgetingMethod sets BudgetingMethod field to given value.
 
-### HasBudgetingMethod
-
-`func (o *SloResponse) HasBudgetingMethod() bool`
-
-HasBudgetingMethod returns a boolean if a field has been set.
 
 ### GetObjective
 
@@ -206,11 +178,6 @@ and a boolean to check if the value has been set.
 
 SetObjective sets Objective field to given value.
 
-### HasObjective
-
-`func (o *SloResponse) HasObjective() bool`
-
-HasObjective returns a boolean if a field has been set.
 
 ### GetSettings
 
@@ -231,36 +198,26 @@ and a boolean to check if the value has been set.
 
 SetSettings sets Settings field to given value.
 
-### HasSettings
-
-`func (o *SloResponse) HasSettings() bool`
-
-HasSettings returns a boolean if a field has been set.
 
 ### GetRevision
 
-`func (o *SloResponse) GetRevision() float32`
+`func (o *SloResponse) GetRevision() float64`
 
 GetRevision returns the Revision field if non-nil, zero value otherwise.
 
 ### GetRevisionOk
 
-`func (o *SloResponse) GetRevisionOk() (*float32, bool)`
+`func (o *SloResponse) GetRevisionOk() (*float64, bool)`
 
 GetRevisionOk returns a tuple with the Revision field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetRevision
 
-`func (o *SloResponse) SetRevision(v float32)`
+`func (o *SloResponse) SetRevision(v float64)`
 
 SetRevision sets Revision field to given value.
 
-### HasRevision
-
-`func (o *SloResponse) HasRevision() bool`
-
-HasRevision returns a boolean if a field has been set.
 
 ### GetSummary
 
@@ -281,11 +238,6 @@ and a boolean to check if the value has been set.
 
 SetSummary sets Summary field to given value.
 
-### HasSummary
-
-`func (o *SloResponse) HasSummary() bool`
-
-HasSummary returns a boolean if a field has been set.
 
 ### GetEnabled
 
@@ -306,11 +258,46 @@ and a boolean to check if the value has been set.
 
 SetEnabled sets Enabled field to given value.
 
-### HasEnabled
 
-`func (o *SloResponse) HasEnabled() bool`
+### GetGroupBy
 
-HasEnabled returns a boolean if a field has been set.
+`func (o *SloResponse) GetGroupBy() string`
+
+GetGroupBy returns the GroupBy field if non-nil, zero value otherwise.
+
+### GetGroupByOk
+
+`func (o *SloResponse) GetGroupByOk() (*string, bool)`
+
+GetGroupByOk returns a tuple with the GroupBy field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetGroupBy
+
+`func (o *SloResponse) SetGroupBy(v string)`
+
+SetGroupBy sets GroupBy field to given value.
+
+
+### GetInstanceId
+
+`func (o *SloResponse) GetInstanceId() string`
+
+GetInstanceId returns the InstanceId field if non-nil, zero value otherwise.
+
+### GetInstanceIdOk
+
+`func (o *SloResponse) GetInstanceIdOk() (*string, bool)`
+
+GetInstanceIdOk returns a tuple with the InstanceId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetInstanceId
+
+`func (o *SloResponse) SetInstanceId(v string)`
+
+SetInstanceId sets InstanceId field to given value.
+
 
 ### GetCreatedAt
 
@@ -331,11 +318,6 @@ and a boolean to check if the value has been set.
 
 SetCreatedAt sets CreatedAt field to given value.
 
-### HasCreatedAt
-
-`func (o *SloResponse) HasCreatedAt() bool`
-
-HasCreatedAt returns a boolean if a field has been set.
 
 ### GetUpdatedAt
 
@@ -356,11 +338,6 @@ and a boolean to check if the value has been set.
 
 SetUpdatedAt sets UpdatedAt field to given value.
 
-### HasUpdatedAt
-
-`func (o *SloResponse) HasUpdatedAt() bool`
-
-HasUpdatedAt returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

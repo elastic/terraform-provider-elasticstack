@@ -3,8 +3,8 @@ package fleet
 import (
 	"context"
 
+	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet/fleetapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -60,6 +60,10 @@ func resourceFleetServerHostCreate(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
+	if id := d.Get("host_id").(string); id != "" {
+		d.SetId(id)
+	}
+
 	req := fleetapi.PostFleetServerHostsJSONRequestBody{
 		Name: d.Get("name").(string),
 	}
@@ -94,9 +98,6 @@ func resourceFleetServerHostUpdate(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
-	id := d.Get("host_id").(string)
-	d.SetId(id)
-
 	req := fleetapi.UpdateFleetServerHostsJSONRequestBody{}
 
 	if value, ok := d.Get("name").(string); ok && value != "" {
@@ -117,7 +118,7 @@ func resourceFleetServerHostUpdate(ctx context.Context, d *schema.ResourceData, 
 		req.IsDefault = &value
 	}
 
-	_, diags = fleet.UpdateFleetServerHost(ctx, fleetClient, id, req)
+	_, diags = fleet.UpdateFleetServerHost(ctx, fleetClient, d.Id(), req)
 	if diags.HasError() {
 		return diags
 	}
@@ -131,10 +132,7 @@ func resourceFleetServerHostRead(ctx context.Context, d *schema.ResourceData, me
 		return diags
 	}
 
-	id := d.Get("host_id").(string)
-	d.SetId(id)
-
-	host, diags := fleet.ReadFleetServerHost(ctx, fleetClient, id)
+	host, diags := fleet.ReadFleetServerHost(ctx, fleetClient, d.Id())
 	if diags.HasError() {
 		return diags
 	}
@@ -166,10 +164,7 @@ func resourceFleetServerHostDelete(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
-	id := d.Get("host_id").(string)
-	d.SetId(id)
-
-	if diags = fleet.DeleteFleetServerHost(ctx, fleetClient, id); diags.HasError() {
+	if diags = fleet.DeleteFleetServerHost(ctx, fleetClient, d.Id()); diags.HasError() {
 		return diags
 	}
 	d.SetId("")

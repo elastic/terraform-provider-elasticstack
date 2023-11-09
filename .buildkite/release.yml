@@ -1,0 +1,6 @@
+steps:
+  - label: Release
+    agents:
+      image: golang:${GO_VERSION}
+    command:
+      - ".buildkite/scripts/release.sh"

@@ -1,8 +1,7 @@
 #!/usr/bin/env groovy
 
 node('docker && gobld/machineType:n1-highcpu-8') {
-    String DOCKER_IMAGE = "golang:1.19"
-    String APP_PATH = "/go/src/github.com/elastic/terraform-provider-elasticstack"
+    String DOCKER_IMAGE = "golang:1.20"
 
     stage('Checkout from GitHub') {
 	    checkout scm
@@ -18,10 +17,10 @@ node('docker && gobld/machineType:n1-highcpu-8') {
             }
         }
     }
-    docker.image("${DOCKER_IMAGE}").inside("-u root:root -v ${pwd()}:${APP_PATH} -w ${APP_PATH}") {
+    docker.image("${DOCKER_IMAGE}").inside("-u root:root") {
         try {
             stage("Download dependencies") {
-                sh 'make vendor'
+                sh 'pwd; make vendor'
             }
             stage("Import gpg key") {
                 sh 'make -C .ci import-gpg-key'
@@ -31,7 +30,7 @@ node('docker && gobld/machineType:n1-highcpu-8') {
                     env.GITHUB_TOKEN = readFile(".ci/.github_token").trim()
                     env.GPG_FINGERPRINT = readFile(".ci/.gpg_fingerprint").trim()
                 }
-                sh 'make -C .ci cache-gpg-passphrase; make release'
+                sh 'pwd; make -C .ci cache-gpg-passphrase; make release'
             }
         } catch (Exception err) {
             throw err

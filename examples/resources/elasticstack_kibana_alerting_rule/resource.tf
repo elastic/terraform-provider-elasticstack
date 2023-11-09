@@ -1,5 +1,5 @@
 provider "elasticstack" {
-  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_kibana_alerting_rule" "example" {

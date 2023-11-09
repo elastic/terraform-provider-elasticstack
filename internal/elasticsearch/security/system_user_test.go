@@ -11,7 +11,7 @@ import (
 func TestAccResourceSecuritySystemUser(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceSecuritySystemUserCreate,
@@ -34,7 +34,7 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 func TestAccResourceSecuritySystemUserNotFound(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccResourceSecuritySystemUserNotFound,

@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 **Filter** | Pointer to **string** | the KQL query to filter the documents with. | [optional] 
 **Good** | Pointer to **string** | the KQL query used to define the good events. | [optional] 
 **Total** | Pointer to **string** | the KQL query used to define all events. | [optional] 
-**TimestampField** | **string** | The timestamp field used in the source indice. If not specified, @timestamp will be used.  | 
+**TimestampField** | **string** | The timestamp field used in the source indice.  | 
 
 ## Methods
 

@@ -20,7 +20,7 @@ func TestAccResourceIndex(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexCreate(indexName),
@@ -58,7 +58,7 @@ func TestAccResourceIndexSettings(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexSettingsCreate(indexName),
@@ -109,7 +109,7 @@ func TestAccResourceIndexSettingsMigration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexSettingsMigrationCreate(indexName),
@@ -138,7 +138,7 @@ func TestAccResourceIndexSettingsConflict(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccResourceIndexSettingsConflict(indexName),
@@ -154,7 +154,7 @@ func TestAccResourceIndexRemovingField(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Confirm removing field doesn't produce recreate by using prevent_destroy
 			{Config: testAccResourceIndexRemovingFieldCreate(indexName)},

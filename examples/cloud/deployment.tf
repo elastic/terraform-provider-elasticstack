@@ -11,8 +11,13 @@ resource "ec_deployment" "monitoring" {
   version                = data.ec_stack.latest.version
   deployment_template_id = var.deployment_template_id
 
-  elasticsearch {}
-  kibana {}
+  elasticsearch = {
+    hot = {
+      autoscaling = {}
+    }
+  }
+
+  kibana = {}
 }
 
 resource "ec_deployment" "cluster" {
@@ -21,13 +26,18 @@ resource "ec_deployment" "cluster" {
   version                = data.ec_stack.latest.version
   deployment_template_id = var.deployment_template_id
 
-  observability {
+  observability = {
     deployment_id = ec_deployment.monitoring.id
     ref_id        = ec_deployment.monitoring.elasticsearch[0].ref_id
   }
 
-  elasticsearch {}
-  kibana {}
+  elasticsearch = {
+    hot = {
+      autoscaling = {}
+    }
+  }
+
+  kibana = {}
 }
 
 provider "elasticstack" {

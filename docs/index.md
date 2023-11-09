@@ -13,6 +13,7 @@ The Elasticstack provider provides the resources to interact with Elastic stack 
 It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
 in order to interact with the Elasticsearch and be able to use the provider's full capabilities
 
+The provider uses Terraform [protocol version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) that is compatible with Terraform CLI version 1.0 and later.
 
 ## Authentication
 
@@ -26,9 +27,21 @@ The following methods are supported:
 
 ### Static credentials
 
-Default static credentials can be provided by adding the `username`, `password` and `endpoints` in `elasticsearch` block:
+#### Elasticsearch
+
+Default static credentials can be provided by adding the `username`, `password` and `endpoints` in the `elasticsearch` block:
 
 ```terraform
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    elasticstack = {
+      source  = "elastic/elasticstack"
+      version = "~>0.9"
+    }
+  }
+}
+
 provider "elasticstack" {
   elasticsearch {
     username  = "elastic"
@@ -49,16 +62,47 @@ provider "elasticstack" {
 }
 ```
 
+#### Kibana
+
+Default static credentials can be provided by adding the `username`, `password` and `endpoints` in the `kibana` block:
+
+```terraform
+provider "elasticstack" {
+  kibana {
+    username  = "elastic"
+    password  = "changeme"
+    endpoints = ["http://localhost:5601"]
+  }
+}
+```
+
+If no credentials are supplied the provider will fall back to using those provided in the `elasticsearch` block.
+
 ### Environment Variables
 
-You can provide your credentials for the default connection via the `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD` and comma-separated list `ELASTICSEARCH_ENDPOINTS`,
-environment variables, representing your user, password and Elasticsearch API endpoints respectively.
+The provider configuration can be specified through environment variables.
 
-Alternatively the `ELASTICSEARCH_API_KEY` variable can be specified instead of `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD`.
+For Elasticsearch resources, you can use the following variables:
+- `ELASTICSEARCH_USERNAME` - The username to use for Elasticsearch authentication
+- `ELASTICSEARCH_PASSWORD` - The password to use for Elasticsearch authentication
+- `ELASTICSEARCH_ENDPOINTS` - A comma separated list of Elasticsearch hosts to connect to
+- `ELASTICSEARCH_API_KEY` - An Elasticsearch API key to use instead of `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD`
+
+Kibana resources will re-use any Elasticsearch credentials specified, these may be overridden with the following variables:
+- `KIBANA_USERNAME` - The username to use for Kibana authentication
+- `KIBANA_PASSWORD` - The password to use for Kibana authentication
+- `KIBANA_ENDPOINT` - The Kibana host to connect to
+
+Fleet resources will re-use any Kibana or Elasticsearch credentials specified, these may be overridden with the following variables:
+- `FLEET_USERNAME` - The username to use for Kibana authentication
+- `FLEET_PASSWORD` - The password to use for Kibana authentication
+- `FLEET_ENDPOINT` - The Kibana host to connect to. ** Note the Fleet API is hosted within Kibana. This must be a Kibana HTTP host **
+- `FLEET_API_KEY` - API key to use for authentication to Fleet
 
 ```terraform
 provider "elasticstack" {
   elasticsearch {}
+  kibana {}
 }
 ```
 
@@ -71,6 +115,16 @@ See docs related to the specific resources.
 ## Example Usage
 
 ```terraform
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    elasticstack = {
+      source  = "elastic/elasticstack"
+      version = "~>0.9"
+    }
+  }
+}
+
 provider "elasticstack" {
   elasticsearch {
     username  = "elastic"
@@ -112,7 +166,7 @@ Optional:
 
 Optional:
 
-- `api_key` (String, Sensitive) API key to use for API authentication to Fleet.
+- `api_key` (String, Sensitive) API Key to use for authentication to Fleet.
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Fleet server.
 - `endpoint` (String, Sensitive) The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
@@ -125,8 +179,9 @@ Optional:
 
 Optional:
 
+
 - `api_key` (String, Sensitive) API Key to use for authentication to Kibana
-- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

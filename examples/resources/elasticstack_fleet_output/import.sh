@@ -1,1 +1,1 @@
-terraform import elasticstack_fleet_output.my_output <space id>/<output id>
+terraform import elasticstack_fleet_output.my_output <fleet_output_id>

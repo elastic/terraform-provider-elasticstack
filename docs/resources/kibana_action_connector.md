@@ -3,18 +3,18 @@ subcategory: "Kibana"
 layout: ""
 page_title: "Elasticstack: elasticstack_kibana_action_connector Resource"
 description: |-
-  Creates or updates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/8.7/action-types.html
+  Creates or updates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html
 ---
 
 # Resource: elasticstack_kibana_action_connector
 
-Creates or updates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/8.7/action-types.html
+Creates or updates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html
 
 ## Example Usage
 
 ```terraform
 provider "elasticstack" {
-  elasticsearch {}
+  kibana {}
 }
 
 resource "elasticstack_kibana_action_connector" "example" {
@@ -42,6 +42,14 @@ resource "elasticstack_kibana_action_connector" "slack-connector" {
   connector_type_id = ".slack"
   secrets = jsonencode({
     webhookUrl = "<your-webhookUrl>"
+  })
+}
+
+resource "elasticstack_kibana_action_connector" "slack-api-connector" {
+  name              = "slack"
+  connector_type_id = ".slack_api"
+  secrets = jsonencode({
+    token = "<your-token>"
   })
 }
 ```

@@ -9,10 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makePtr[T any](v T) *T {
-	return &v
-}
-
 func Test_ruleResponseToModel(t *testing.T) {
 	now := time.Now()
 	tests := []struct {

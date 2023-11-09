@@ -11,15 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func unwrapOptionalField[T any](field *T) T {
-	var value T
-	if field != nil {
-		value = *field
-	}
-
-	return value
-}
-
 func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *models.AlertingRule {
 	if res == nil {
 		return nil

@@ -17,6 +17,8 @@ import (
 )
 
 const esKeyName = "elasticsearch"
+const kbKeyName = "kibana"
+const fleetKeyName = "fleet"
 
 func init() {
 	// Set descriptions to support markdown syntax, this will be used in document generation
@@ -27,9 +29,9 @@ func init() {
 func New(version string) *schema.Provider {
 	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			esKeyName: providerSchema.GetEsConnectionSchema(esKeyName, true),
-			"kibana":  providerSchema.GetKibanaConnectionSchema(),
-			"fleet":   providerSchema.GetFleetConnectionSchema(),
+			esKeyName:    providerSchema.GetEsConnectionSchema(esKeyName, true),
+			kbKeyName:    providerSchema.GetKibanaConnectionSchema(),
+			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),
@@ -74,9 +76,13 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_security_role_mapping":              security.DataSourceRoleMapping(),
 			"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
 			"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
+			"elasticstack_elasticsearch_info":                               cluster.DataSourceClusterInfo(),
 			"elasticstack_elasticsearch_enrich_policy":                      enrich.DataSourceEnrichPolicy(),
 
+			"elasticstack_kibana_security_role": kibana.DataSourceRole(),
+
 			"elasticstack_fleet_enrollment_tokens": fleet.DataSourceEnrollmentTokens(),
+			"elasticstack_fleet_package":           fleet.DataSourcePackage(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_cluster_settings":      cluster.ResourceSettings(),
@@ -102,14 +108,18 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_alerting_rule":    kibana.ResourceAlertingRule(),
 			"elasticstack_kibana_space":            kibana.ResourceSpace(),
 			"elasticstack_kibana_action_connector": kibana.ResourceActionConnector(),
+			"elasticstack_kibana_security_role":    kibana.ResourceRole(),
+			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
 
-			"elasticstack_fleet_agent_policy": fleet.ResourceAgentPolicy(),
-			"elasticstack_fleet_output":       fleet.ResourceOutput(),
-			"elasticstack_fleet_server_host":  fleet.ResourceFleetServerHost(),
+			"elasticstack_fleet_agent_policy":   fleet.ResourceAgentPolicy(),
+			"elasticstack_fleet_output":         fleet.ResourceOutput(),
+			"elasticstack_fleet_server_host":    fleet.ResourceFleetServerHost(),
+			"elasticstack_fleet_package":        fleet.ResourcePackage(),
+			"elasticstack_fleet_package_policy": fleet.ResourcePackagePolicy(),
 		},
 	}
 
-	p.ConfigureContextFunc = clients.NewApiClientFunc(version)
+	p.ConfigureContextFunc = clients.NewApiClientFuncFromSDK(version)
 
 	return p
 }

@@ -7,7 +7,7 @@ info:
     name: Elastic License 2.0
     url: https://www.elastic.co/licensing/elastic-license
   title: SLOs
-  version: "0.1"
+  version: "1.0"
 servers:
 - description: local
   url: http://localhost:5601
@@ -16,13 +16,16 @@ security:
 - apiKeyAuth: []
 tags:
 - description: "SLO APIs enable you to define, manage and track service-level objectives"
-  name: slos
+  name: slo
+- description: "Composite SLO APIs enable you to define, manage and track a group\
+    \ of SLOs."
+  name: composite slo
 paths:
   /s/{spaceId}/api/observability/slos:
     get:
       description: |
         You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: findSlos
+      operationId: findSlosOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -42,26 +45,14 @@ paths:
           example: default
           type: string
         style: simple
-      - description: Filter by name
-        example: awesome-service
+      - description: A valid kql query to filter the SLO with
+        example: "slo.name:latency* and slo.tags : \"prod\""
         explode: true
         in: query
-        name: name
+        name: kqlQuery
         required: false
         schema:
           type: string
-        style: form
-      - description: Filter by indicator type
-        example:
-        - sli.kql.custom
-        explode: true
-        in: query
-        name: indicatorTypes
-        required: false
-        schema:
-          items:
-            type: string
-          type: array
         style: form
       - description: The page number to return
         example: 1
@@ -74,7 +65,7 @@ paths:
           type: integer
         style: form
       - description: The number of SLOs to return per page
-        example: 20
+        example: 25
         explode: true
         in: query
         name: perPage
@@ -84,16 +75,18 @@ paths:
           type: integer
         style: form
       - description: Sort by field
-        example: name
+        example: status
         explode: true
         in: query
         name: sortBy
         required: false
         schema:
-          default: name
+          default: status
           enum:
-          - creationTime
-          - indicatorType
+          - sli_value
+          - status
+          - error_budget_consumed
+          - error_budget_remaining
           type: string
         style: form
       - description: Sort order
@@ -120,21 +113,33 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/400_response'
           description: Bad request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/401_response'
           description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Not found response
       summary: Retrieves a paginated list of SLOs
       tags:
-      - slos
+      - slo
     post:
       description: |
         You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: createSlo
+      operationId: createSloOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -171,24 +176,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/400_response'
           description: Bad request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/401_response'
           description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/409_response'
+          description: Conflict - The SLO id already exists
       servers:
       - url: https://localhost:5601
       summary: Creates an SLO.
       tags:
-      - slos
+      - slo
   /s/{spaceId}/api/observability/slos/{sloId}:
     delete:
       description: |
         You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: deleteSlo
+      operationId: deleteSloOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -224,21 +241,33 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/400_response'
           description: Bad request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/401_response'
           description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Not found response
       summary: Deletes an SLO
       tags:
-      - slos
+      - slo
     get:
       description: |
         You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: getSlo
+      operationId: getSloOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -267,6 +296,15 @@ paths:
           example: 9c235211-6834-11ea-a78c-6feb38a34414
           type: string
         style: simple
+      - description: the specific instanceId used by the summary calculation
+        example: host-abcde
+        explode: true
+        in: query
+        name: instanceId
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -278,21 +316,33 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/400_response'
           description: Bad request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/401_response'
           description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Not found response
       summary: Retrieves a SLO
       tags:
-      - slos
+      - slo
     put:
       description: |
         You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: updateSlo
+      operationId: updateSloOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -338,22 +388,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/400_response'
           description: Bad request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/401_response'
           description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Not found response
       summary: Updates an SLO
       tags:
-      - slos
+      - slo
   /s/{spaceId}/api/observability/slos/{sloId}/enable:
     post:
       description: |
         You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: enableSlo
+      operationId: enableSloOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -389,22 +451,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/400_response'
           description: Bad request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/401_response'
           description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Not found response
       summary: Enables an SLO
       tags:
-      - slos
+      - slo
   /s/{spaceId}/api/observability/slos/{sloId}/disable:
     post:
       description: |
         You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: disableSlo
+      operationId: disableSloOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -440,22 +514,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/400_response'
           description: Bad request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/401_response'
           description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Not found response
       summary: Disables an SLO
       tags:
-      - slos
+      - slo
   /s/{spaceId}/internal/observability/slos/_historical_summary:
     post:
       description: |
         You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: historicalSummary
+      operationId: historicalSummaryOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -492,17 +578,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/400_response'
           description: Bad request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/4xx_response'
+                $ref: '#/components/schemas/401_response'
+          description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
           description: Unauthorized response
       summary: Retrieves the historical summary for a list of SLOs
       tags:
-      - slos
+      - slo
 components:
   parameters:
     kbn_xsrf:
@@ -536,20 +628,6 @@ components:
         type: string
       style: simple
   schemas:
-    indicator_properties_custom_kql:
-      description: Defines properties for a custom KQL indicator type
-      properties:
-        params:
-          $ref: '#/components/schemas/indicator_properties_custom_kql_params'
-        type:
-          description: The type of indicator.
-          example: sli.kql.custom
-          type: string
-      required:
-      - params
-      - type
-      title: Custom KQL indicator type definition
-      type: object
     indicator_properties_apm_availability:
       description: Defines properties for the APM availability indicator type
       properties:
@@ -562,7 +640,21 @@ components:
       required:
       - params
       - type
-      title: APM availability indicator type definition
+      title: APM availability
+      type: object
+    indicator_properties_custom_kql:
+      description: Defines properties for a custom KQL indicator type
+      properties:
+        params:
+          $ref: '#/components/schemas/indicator_properties_custom_kql_params'
+        type:
+          description: The type of indicator.
+          example: sli.kql.custom
+          type: string
+      required:
+      - params
+      - type
+      title: Custom KQL
       type: object
     indicator_properties_apm_latency:
       description: Defines properties for the APM latency indicator type
@@ -576,40 +668,63 @@ components:
       required:
       - params
       - type
-      title: APM latency indicator type definition
+      title: APM latency
       type: object
-    time_window_rolling:
-      description: Defines properties for rolling time window
+    indicator_properties_custom_metric:
+      description: Defines properties for a custom metric indicator type
+      properties:
+        params:
+          $ref: '#/components/schemas/indicator_properties_custom_metric_params'
+        type:
+          description: The type of indicator.
+          example: sli.metric.custom
+          type: string
+      required:
+      - params
+      - type
+      title: Custom metric
+      type: object
+    indicator_properties_histogram:
+      description: Defines properties for a histogram indicator type
+      properties:
+        params:
+          $ref: '#/components/schemas/indicator_properties_histogram_params'
+        type:
+          description: The type of indicator.
+          example: sli.histogram.custom
+          type: string
+      required:
+      - params
+      - type
+      title: Histogram indicator
+      type: object
+    time_window:
+      description: Defines properties for the SLO time window
+      example:
+        duration: 30d
+        type: rolling
       properties:
         duration:
-          description: "the duration formatted as {duration}{unit}"
-          example: 28d
+          description: "the duration formatted as {duration}{unit}. Accepted values\
+            \ for rolling: 7d, 30d, 90d. Accepted values for calendar aligned: 1w\
+            \ (weekly) or 1M (monthly)"
+          example: 30d
           type: string
-        isRolling:
-          description: Indicates a rolling time window
-          example: true
-          type: boolean
+        type:
+          description: Indicates weither the time window is a rolling or a calendar
+            aligned time window.
+          enum:
+          - rolling
+          - calendarAligned
+          example: rolling
+          type: string
       required:
       - duration
-      - isRolling
-      title: Rolling time window definition
-      type: object
-    time_window_calendar_aligned:
-      description: Defines properties for calendar aligned time window
-      properties:
-        duration:
-          description: "the duration formatted as {duration}{unit}"
-          example: 1M
-          type: string
-        calendar:
-          $ref: '#/components/schemas/time_window_calendar_aligned_calendar'
-      required:
-      - calendar
-      - duration
-      title: Calendar aligned time window definition
+      - type
+      title: Time window
       type: object
     budgeting_method:
-      description: The budgeting method to use
+      description: The budgeting method to use when computing the rollup data.
       enum:
       - occurrences
       - timeslices
@@ -617,32 +732,32 @@ components:
       title: Budgeting method
       type: string
     objective:
-      description: Defines properties for objective
+      description: Defines properties for the SLO objective
       example:
-        timeslicesTarget: 0.995
-        timeslicesWindow: 5m
+        timesliceWindow: 5m
+        timesliceTarget: 0.995
         target: 0.99
       properties:
         target:
           description: the target objective between 0 and 1 excluded
           example: 0.99
           type: number
-        timeslicesTarget:
+        timesliceTarget:
           description: the target objective for each slice when using a timeslices
             budgeting method
           example: 0.995
           type: number
-        timeslicesWindow:
+        timesliceWindow:
           description: "the duration of each slice when using a timeslices budgeting\
             \ method, as {duraton}{unit}"
           example: 5m
           type: string
       required:
       - target
-      title: Objective definition
+      title: Objective
       type: object
     settings:
-      description: Defines properties for settings.
+      description: Defines properties for SLO settings.
       example:
         syncDelay: 5m
         frequency: 5m
@@ -655,8 +770,17 @@ components:
           description: "Configure how often the transform runs, default 1m"
           example: 5m
           type: string
-      title: Settings definition
+      title: Settings
       type: object
+    summary_status:
+      enum:
+      - NO_DATA
+      - HEALTHY
+      - DEGRADING
+      - VIOLATED
+      example: HEALTHY
+      title: summary status
+      type: string
     error_budget:
       example:
         consumed: 0.8
@@ -683,9 +807,15 @@ components:
             calendar aligned time window.
           example: true
           type: boolean
-      title: Error budget definition
+      required:
+      - consumed
+      - initial
+      - isEstimated
+      - remaining
+      title: Error budget
       type: object
     summary:
+      description: The SLO computed data
       example:
         errorBudget:
           consumed: 0.8
@@ -696,19 +826,17 @@ components:
         sliValue: 0.9836
       properties:
         status:
-          enum:
-          - NO_DATA
-          - HEALTHY
-          - DEGRADING
-          - VIOLATED
-          example: HEALTHY
-          type: string
+          $ref: '#/components/schemas/summary_status'
         sliValue:
           example: 0.9836
           type: number
         errorBudget:
           $ref: '#/components/schemas/error_budget'
-      title: Summary definition
+      required:
+      - errorBudget
+      - sliValue
+      - status
+      title: Summary
       type: object
     slo_response:
       example:
@@ -724,15 +852,19 @@ components:
         settings:
           syncDelay: 5m
           frequency: 5m
-        timeWindow: null
+        timeWindow:
+          duration: 30d
+          type: rolling
         description: My SLO description
+        groupBy: some.field
         enabled: true
         objective:
-          timeslicesTarget: 0.995
-          timeslicesWindow: 5m
+          timesliceWindow: 5m
+          timesliceTarget: 0.995
           target: 0.99
         revision: 2
         createdAt: 2023-01-12T10:03:19.000Z
+        instanceId: host-abcde
         name: My Service SLO
         id: 8853df00-ae2e-11ed-90af-09bb6422b258
         budgetingMethod: occurrences
@@ -753,7 +885,7 @@ components:
         indicator:
           $ref: '#/components/schemas/slo_response_indicator'
         timeWindow:
-          $ref: '#/components/schemas/slo_response_timeWindow'
+          $ref: '#/components/schemas/time_window'
         budgetingMethod:
           $ref: '#/components/schemas/budgeting_method'
         objective:
@@ -770,6 +902,16 @@ components:
           description: Indicate if the SLO is enabled
           example: true
           type: boolean
+        groupBy:
+          description: optional group by field to use to generate an SLO per distinct
+            value
+          example: some.field
+          type: string
+        instanceId:
+          description: "the value derived from the groupBy field, if present, otherwise\
+            \ '*'"
+          example: host-abcde
+          type: string
         createdAt:
           description: The creation date
           example: 2023-01-12T10:03:19.000Z
@@ -778,7 +920,23 @@ components:
           description: The last update date
           example: 2023-01-12T10:03:19.000Z
           type: string
-      title: SLO Response
+      required:
+      - budgetingMethod
+      - createdAt
+      - description
+      - enabled
+      - groupBy
+      - id
+      - indicator
+      - instanceId
+      - name
+      - objective
+      - revision
+      - settings
+      - summary
+      - timeWindow
+      - updatedAt
+      title: SLO response
       type: object
     find_slo_response:
       description: |
@@ -800,15 +958,19 @@ components:
           settings:
             syncDelay: 5m
             frequency: 5m
-          timeWindow: null
+          timeWindow:
+            duration: 30d
+            type: rolling
           description: My SLO description
+          groupBy: some.field
           enabled: true
           objective:
-            timeslicesTarget: 0.995
-            timeslicesWindow: 5m
+            timesliceWindow: 5m
+            timesliceTarget: 0.995
             target: 0.99
           revision: 2
           createdAt: 2023-01-12T10:03:19.000Z
+          instanceId: host-abcde
           name: My Service SLO
           id: 8853df00-ae2e-11ed-90af-09bb6422b258
           budgetingMethod: occurrences
@@ -825,15 +987,19 @@ components:
           settings:
             syncDelay: 5m
             frequency: 5m
-          timeWindow: null
+          timeWindow:
+            duration: 30d
+            type: rolling
           description: My SLO description
+          groupBy: some.field
           enabled: true
           objective:
-            timeslicesTarget: 0.995
-            timeslicesWindow: 5m
+            timesliceWindow: 5m
+            timesliceTarget: 0.995
             target: 0.99
           revision: 2
           createdAt: 2023-01-12T10:03:19.000Z
+          instanceId: host-abcde
           name: My Service SLO
           id: 8853df00-ae2e-11ed-90af-09bb6422b258
           budgetingMethod: occurrences
@@ -854,7 +1020,24 @@ components:
           type: array
       title: Find SLO response
       type: object
-    "4xx_response":
+    "400_response":
+      properties:
+        statusCode:
+          example: 400
+          type: number
+        error:
+          example: Bad Request
+          type: string
+        message:
+          example: "Invalid value 'foo' supplied to: [...]"
+          type: string
+      required:
+      - error
+      - message
+      - statusCode
+      title: Bad request
+      type: object
+    "401_response":
       properties:
         statusCode:
           example: 401
@@ -871,12 +1054,53 @@ components:
       - error
       - message
       - statusCode
-      title: Bad response
+      title: Unauthorized
+      type: object
+    "403_response":
+      properties:
+        statusCode:
+          example: 403
+          type: number
+        error:
+          example: Unauthorized
+          type: string
+        message:
+          example: "[security_exception\n\tRoot causes:\n\t\tsecurity_exception: unable\
+            \ to authenticate user [elastics] for REST request [/_security/_authenticate]]:\
+            \ unable to authenticate user [elastics] for REST request [/_security/_authenticate]"
+          type: string
+      required:
+      - error
+      - message
+      - statusCode
+      title: Unauthorized
+      type: object
+    "404_response":
+      properties:
+        statusCode:
+          example: 404
+          type: number
+        error:
+          example: Not Found
+          type: string
+        message:
+          example: "SLO [3749f390-03a3-11ee-8139-c7ff60a1692d] not found"
+          type: string
+      required:
+      - error
+      - message
+      - statusCode
+      title: Not found
       type: object
     create_slo_request:
       description: |
         The create SLO API request body varies depending on the type of indicator, time window and budgeting method.
       properties:
+        id:
+          description: A optional and unique identifier for the SLO. Must be between
+            8 and 36 chars
+          example: my-super-slo-id
+          type: string
         name:
           description: A name for the SLO.
           type: string
@@ -884,15 +1108,20 @@ components:
           description: A description for the SLO.
           type: string
         indicator:
-          $ref: '#/components/schemas/slo_response_indicator'
+          $ref: '#/components/schemas/create_slo_request_indicator'
         timeWindow:
-          $ref: '#/components/schemas/slo_response_timeWindow'
+          $ref: '#/components/schemas/time_window'
         budgetingMethod:
           $ref: '#/components/schemas/budgeting_method'
         objective:
           $ref: '#/components/schemas/objective'
         settings:
           $ref: '#/components/schemas/settings'
+        groupBy:
+          description: optional group by field to use to generate an SLO per distinct
+            value
+          example: some.field
+          type: string
       required:
       - budgetingMethod
       - description
@@ -913,9 +1142,26 @@ components:
       - id
       title: Create SLO response
       type: object
+    "409_response":
+      properties:
+        statusCode:
+          example: 409
+          type: number
+        error:
+          example: Conflict
+          type: string
+        message:
+          example: "SLO [d077e940-1515-11ee-9c50-9d096392f520] already exists"
+          type: string
+      required:
+      - error
+      - message
+      - statusCode
+      title: Conflict
+      type: object
     update_slo_request:
       description: |
-        The update SLO API request body varies depending on the type of indicator, time window and budgeting method.  Partial update is handled.
+        The update SLO API request body varies depending on the type of indicator, time window and budgeting method. Partial update is handled.
       properties:
         name:
           description: A name for the SLO.
@@ -924,9 +1170,9 @@ components:
           description: A description for the SLO.
           type: string
         indicator:
-          $ref: '#/components/schemas/slo_response_indicator'
+          $ref: '#/components/schemas/create_slo_request_indicator'
         timeWindow:
-          $ref: '#/components/schemas/slo_response_timeWindow'
+          $ref: '#/components/schemas/time_window'
         budgetingMethod:
           $ref: '#/components/schemas/budgeting_method'
         objective:
@@ -954,6 +1200,41 @@ components:
         type: array
       title: Historical summary response
       type: object
+    indicator_properties_apm_availability_params:
+      description: An object containing the indicator parameters.
+      nullable: false
+      properties:
+        service:
+          description: The APM service name
+          example: o11y-app
+          type: string
+        environment:
+          description: The APM service environment or "*"
+          example: production
+          type: string
+        transactionType:
+          description: The APM transaction type or "*"
+          example: request
+          type: string
+        transactionName:
+          description: The APM transaction name or "*"
+          example: GET /my/api
+          type: string
+        filter:
+          description: KQL query used for filtering the data
+          example: "service.foo : \"bar\""
+          type: string
+        index:
+          description: The index used by APM metrics
+          example: "metrics-apm*,apm*"
+          type: string
+      required:
+      - environment
+      - index
+      - service
+      - transactionName
+      - transactionType
+      type: object
     indicator_properties_custom_kql_params:
       description: An object containing the indicator parameters.
       nullable: false
@@ -976,57 +1257,12 @@ components:
           type: string
         timestampField:
           description: |
-            The timestamp field used in the source indice. If not specified, @timestamp will be used.
+            The timestamp field used in the source indice.
           example: timestamp
           type: string
       required:
       - index
       - timestampField
-      type: object
-    indicator_properties_apm_availability_params:
-      description: An object containing the indicator parameters.
-      nullable: false
-      properties:
-        service:
-          description: The APM service name
-          example: o11y-app
-          type: string
-        environment:
-          description: The APM service environment or "*"
-          example: production
-          type: string
-        transactionType:
-          description: The APM transaction type or "*"
-          example: request
-          type: string
-        transactionName:
-          description: The APM transaction name or "*"
-          example: GET /my/api
-          type: string
-        goodStatusCodes:
-          description: "The status codes considered as good events. Default to 2xx,\
-            \ 3xx and 4xx"
-          example:
-          - 2xx
-          - 3xx
-          - 4xx
-          items:
-            type: string
-          type: array
-        filter:
-          description: KQL query used for filtering the data
-          example: "service.foo : \"bar\""
-          type: string
-        index:
-          description: The index used by APM metrics
-          example: "metrics-apm*,apm*"
-          type: string
-      required:
-      - environment
-      - index
-      - service
-      - transactionName
-      - transactionType
       type: object
     indicator_properties_apm_latency_params:
       description: An object containing the indicator parameters.
@@ -1056,43 +1292,252 @@ components:
           description: The index used by APM metrics
           example: "metrics-apm*,apm*"
           type: string
+        threshold:
+          description: The latency threshold in milliseconds
+          example: 250
+          type: number
       required:
       - environment
       - index
       - service
+      - threshold
       - transactionName
       - transactionType
       type: object
-    time_window_calendar_aligned_calendar:
-      description: Defines the calendar start date
+    indicator_properties_custom_metric_params_good_metrics_inner:
       properties:
-        startTime:
-          description: The start date to use.
-          example: 2022-01-01T08:00:00.000Z
+        name:
+          description: The name of the metric. Only valid options are A-Z
+          example: A
+          pattern: "^[A-Z]$"
           type: string
+        aggregation:
+          description: The aggregation type of the metric. Only valid option is "sum"
+          enum:
+          - sum
+          example: sum
+          type: string
+        field:
+          description: The field of the metric.
+          example: processor.processed
+          type: string
+        filter:
+          description: The filter to apply to the metric.
+          example: "processor.outcome: \"success\""
+          type: string
+      required:
+      - aggregation
+      - field
+      - name
+      type: object
+    indicator_properties_custom_metric_params_good:
+      description: |
+        An object defining the "good" metrics and equation
+      properties:
+        metrics:
+          description: "List of metrics with their name, aggregation type, and field."
+          items:
+            $ref: '#/components/schemas/indicator_properties_custom_metric_params_good_metrics_inner'
+          type: array
+        equation:
+          description: The equation to calculate the "good" metric.
+          example: A
+          type: string
+      required:
+      - equation
+      - metrics
+      type: object
+    indicator_properties_custom_metric_params_total_metrics_inner:
+      properties:
+        name:
+          description: The name of the metric. Only valid options are A-Z
+          example: A
+          pattern: "^[A-Z]$"
+          type: string
+        aggregation:
+          description: The aggregation type of the metric. Only valid option is "sum"
+          enum:
+          - sum
+          example: sum
+          type: string
+        field:
+          description: The field of the metric.
+          example: processor.processed
+          type: string
+        filter:
+          description: The filter to apply to the metric.
+          example: "processor.outcome: *"
+          type: string
+      required:
+      - aggregation
+      - field
+      - name
+      type: object
+    indicator_properties_custom_metric_params_total:
+      description: |
+        An object defining the "total" metrics and equation
+      properties:
+        metrics:
+          description: "List of metrics with their name, aggregation type, and field."
+          items:
+            $ref: '#/components/schemas/indicator_properties_custom_metric_params_total_metrics_inner'
+          type: array
+        equation:
+          description: The equation to calculate the "total" metric.
+          example: A
+          type: string
+      required:
+      - equation
+      - metrics
+      type: object
+    indicator_properties_custom_metric_params:
+      description: An object containing the indicator parameters.
+      nullable: false
+      properties:
+        index:
+          description: The index or index pattern to use
+          example: my-service-*
+          type: string
+        filter:
+          description: the KQL query to filter the documents with.
+          example: "field.environment : \"production\" and service.name : \"my-service\""
+          type: string
+        timestampField:
+          description: |
+            The timestamp field used in the source indice.
+          example: timestamp
+          type: string
+        good:
+          $ref: '#/components/schemas/indicator_properties_custom_metric_params_good'
+        total:
+          $ref: '#/components/schemas/indicator_properties_custom_metric_params_total'
+      required:
+      - filter
+      - good
+      - index
+      - timestampField
+      - total
+      type: object
+    indicator_properties_histogram_params_good:
+      description: |
+        An object defining the "good" events
+      properties:
+        field:
+          description: The field use to aggregate the good events.
+          example: processor.latency
+          type: string
+        aggregation:
+          description: The type of aggregation to use.
+          enum:
+          - value_count
+          - range
+          example: value_count
+          type: string
+        filter:
+          description: The filter for good events.
+          example: "processor.outcome: \"success\""
+          type: string
+        from:
+          description: The starting value of the range. Only required for "range"
+            aggregations.
+          example: 0
+          type: number
+        to:
+          description: The ending value of the range. Only required for "range" aggregations.
+          example: 100
+          type: number
+      required:
+      - aggregation
+      - field
+      type: object
+    indicator_properties_histogram_params_total:
+      description: |
+        An object defining the "total" events
+      properties:
+        field:
+          description: The field use to aggregate the good events.
+          example: processor.latency
+          type: string
+        aggregation:
+          description: The type of aggregation to use.
+          enum:
+          - value_count
+          - range
+          example: value_count
+          type: string
+        filter:
+          description: The filter for total events.
+          example: "processor.outcome : *"
+          type: string
+        from:
+          description: The starting value of the range. Only required for "range"
+            aggregations.
+          example: 0
+          type: number
+        to:
+          description: The ending value of the range. Only required for "range" aggregations.
+          example: 100
+          type: number
+      required:
+      - aggregation
+      - field
+      type: object
+    indicator_properties_histogram_params:
+      description: An object containing the indicator parameters.
+      nullable: false
+      properties:
+        index:
+          description: The index or index pattern to use
+          example: my-service-*
+          type: string
+        filter:
+          description: the KQL query to filter the documents with.
+          example: "field.environment : \"production\" and service.name : \"my-service\""
+          type: string
+        timestampField:
+          description: |
+            The timestamp field used in the source indice.
+          example: timestamp
+          type: string
+        good:
+          $ref: '#/components/schemas/indicator_properties_histogram_params_good'
+        total:
+          $ref: '#/components/schemas/indicator_properties_histogram_params_total'
+      required:
+      - good
+      - index
+      - timestampField
+      - total
       type: object
     slo_response_indicator:
+      discriminator:
+        mapping:
+          sli.apm.transactionErrorRate: '#/components/schemas/indicator_properties_apm_availability'
+          sli.kql.custom: '#/components/schemas/indicator_properties_custom_kql'
+          sli.apm.transactionDuration: '#/components/schemas/indicator_properties_apm_latency'
+          sli.metric.custom: '#/components/schemas/indicator_properties_custom_metric'
+          sli.histogram.custom: '#/components/schemas/indicator_properties_histogram'
+        propertyName: type
       oneOf:
       - $ref: '#/components/schemas/indicator_properties_custom_kql'
       - $ref: '#/components/schemas/indicator_properties_apm_availability'
       - $ref: '#/components/schemas/indicator_properties_apm_latency'
-    slo_response_timeWindow:
+      - $ref: '#/components/schemas/indicator_properties_custom_metric'
+      - $ref: '#/components/schemas/indicator_properties_histogram'
+    create_slo_request_indicator:
       oneOf:
-      - $ref: '#/components/schemas/time_window_rolling'
-      - $ref: '#/components/schemas/time_window_calendar_aligned'
+      - $ref: '#/components/schemas/indicator_properties_custom_kql'
+      - $ref: '#/components/schemas/indicator_properties_apm_availability'
+      - $ref: '#/components/schemas/indicator_properties_apm_latency'
+      - $ref: '#/components/schemas/indicator_properties_custom_metric'
+      - $ref: '#/components/schemas/indicator_properties_histogram'
     Historical_summary_response_inner:
       properties:
         date:
           example: 2022-01-01T00:00:00.000Z
           type: string
         status:
-          enum:
-          - NO_DATA
-          - HEALTHY
-          - DEGRADING
-          - VIOLATED
-          example: HEALTHY
-          type: string
+          $ref: '#/components/schemas/summary_status'
         sliValue:
           example: 0.9836
           type: number

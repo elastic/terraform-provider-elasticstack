@@ -2,11 +2,17 @@ package fleet
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet/fleetapi"
+	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+)
+
+var (
+	ErrPackageNotFound = errors.New("package not found")
 )
 
 // AllEnrollmentTokens reads all enrollment tokens from the API.
@@ -91,7 +97,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 }
 
 // ReadOutput reads a specific output from the API.
-func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.Output, diag.Diagnostics) {
+func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.OutputCreateRequest, diag.Diagnostics) {
 	resp, err := client.API.GetOutputWithResponse(ctx, id)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -99,7 +105,7 @@ func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.Outpu
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return &resp.JSON200.Item, nil
+		return resp.JSON200.Item, nil
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -108,7 +114,7 @@ func ReadOutput(ctx context.Context, client *Client, id string) (*fleetapi.Outpu
 }
 
 // CreateOutput creates a new output.
-func CreateOutput(ctx context.Context, client *Client, req fleetapi.PostOutputsJSONRequestBody) (*fleetapi.Output, diag.Diagnostics) {
+func CreateOutput(ctx context.Context, client *Client, req fleetapi.PostOutputsJSONRequestBody) (*fleetapi.OutputCreateRequest, diag.Diagnostics) {
 	resp, err := client.API.PostOutputsWithResponse(ctx, req)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -123,7 +129,7 @@ func CreateOutput(ctx context.Context, client *Client, req fleetapi.PostOutputsJ
 }
 
 // UpdateOutput updates an existing output.
-func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.UpdateOutputJSONRequestBody) (*fleetapi.Output, diag.Diagnostics) {
+func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.UpdateOutputJSONRequestBody) (*fleetapi.OutputUpdateRequest, diag.Diagnostics) {
 	resp, err := client.API.UpdateOutputWithResponse(ctx, id, req)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -131,7 +137,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.U
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return &resp.JSON200.Item, nil
+		return resp.JSON200.Item, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
@@ -215,6 +221,179 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.
 		return nil
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// ReadPackagePolicy reads a specific package policy from the API.
+func ReadPackagePolicy(ctx context.Context, client *Client, id string) (*fleetapi.PackagePolicy, diag.Diagnostics) {
+	format := fleetapi.GetPackagePolicyParamsFormatSimplified
+	params := fleetapi.GetPackagePolicyParams{
+		Format: &format,
+	}
+
+	resp, err := client.API.GetPackagePolicyWithResponse(ctx, id, &params)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// CreatePackagePolicy creates a new package policy.
+func CreatePackagePolicy(ctx context.Context, client *Client, req fleetapi.CreatePackagePolicyJSONRequestBody) (*fleetapi.PackagePolicy, diag.Diagnostics) {
+	format := fleetapi.CreatePackagePolicyParamsFormatSimplified
+	params := fleetapi.CreatePackagePolicyParams{
+		Format: &format,
+	}
+
+	resp, err := client.API.CreatePackagePolicyWithResponse(ctx, &params, req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UpdatePackagePolicy updates an existing package policy.
+func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req fleetapi.UpdatePackagePolicyJSONRequestBody) (*fleetapi.PackagePolicy, diag.Diagnostics) {
+	format := fleetapi.UpdatePackagePolicyParamsFormatSimplified
+	params := fleetapi.UpdatePackagePolicyParams{
+		Format: &format,
+	}
+
+	resp, err := client.API.UpdatePackagePolicyWithResponse(ctx, id, &params, req)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeletePackagePolicy deletes an existing package policy.
+func DeletePackagePolicy(ctx context.Context, client *Client, id string, force bool) diag.Diagnostics {
+	params := fleetapi.DeletePackagePolicyParams{Force: &force}
+	resp, err := client.API.DeletePackagePolicyWithResponse(ctx, id, &params)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// ReadPackage reads a specific package from the API.
+func ReadPackage(ctx context.Context, client *Client, name, version string) diag.Diagnostics {
+	params := fleetapi.GetPackageParams{}
+
+	resp, err := client.API.GetPackage(ctx, name, version, &params)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return diag.FromErr(ErrPackageNotFound)
+	default:
+		errData, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		return reportUnknownError(resp.StatusCode, errData)
+	}
+}
+
+// InstallPackage installs a package.
+func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+	params := fleetapi.InstallPackageParams{}
+	body := fleetapi.InstallPackageJSONRequestBody{
+		Force:             &force,
+		IgnoreConstraints: nil,
+	}
+
+	resp, err := client.API.InstallPackage(ctx, name, version, &params, body)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	default:
+		errData, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		return reportUnknownError(resp.StatusCode, errData)
+	}
+}
+
+// Uninstall uninstalls a package.
+func Uninstall(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+	params := fleetapi.DeletePackageParams{}
+	body := fleetapi.DeletePackageJSONRequestBody{
+		Force: &force,
+	}
+
+	resp, err := client.API.DeletePackageWithResponse(ctx, name, version, &params, body)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// AllPackages returns information about the latest packages known to Fleet.
+func AllPackages(ctx context.Context, client *Client, prerelease bool) ([]fleetapi.SearchResult, diag.Diagnostics) {
+	params := fleetapi.ListAllPackagesParams{
+		Prerelease: &prerelease,
+	}
+
+	resp, err := client.API.ListAllPackagesWithResponse(ctx, &params)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp.JSON200.Items, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 

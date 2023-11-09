@@ -1,1 +1,1 @@
-terraform import elasticstack_fleet_server_host.my_host <space id>/<host id>
+terraform import elasticstack_fleet_server_host.my_host <fleet_server_host_id>
