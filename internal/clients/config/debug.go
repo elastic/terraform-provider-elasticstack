@@ -3,11 +3,12 @@ package config
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v7/estransport"
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -22,7 +23,7 @@ const logRespMsg = `%s API Response for [%s] Details:
 %s
 -----------------------------------------------------`
 
-var _ estransport.Logger = &debugLogger{}
+var _ elastictransport.Logger = &elastictransport.JSONLogger{}
 
 type debugLogger struct {
 	Name string
@@ -31,10 +32,19 @@ type debugLogger struct {
 func (l *debugLogger) LogRoundTrip(req *http.Request, resp *http.Response, err error, start time.Time, duration time.Duration) error {
 	ctx := req.Context()
 	requestId := "<nil>"
+
 	if req != nil {
 		requestId = fmt.Sprintf("%s %s", req.Method, req.URL)
 	}
-	tflog.Debug(ctx, fmt.Sprintf("%s request [%s] executed. Took %s. %#v", l.Name, requestId, duration, err))
+	if err != nil {
+		if err == io.EOF {
+			tflog.Debug(ctx, fmt.Sprintf("%s response for [%s] is empty (EOF)", l.Name, requestId))
+		} else {
+			tflog.Debug(ctx, fmt.Sprintf("%s request [%s] executed with error: %s", l.Name, requestId, err.Error()))
+		}
+	} else {
+		tflog.Debug(ctx, fmt.Sprintf("%s request [%s] executed. Took %s. %#v", l.Name, requestId, duration, err))
+	}
 
 	if req != nil && req.Body != nil {
 		l.logRequest(ctx, req, requestId)
@@ -42,9 +52,7 @@ func (l *debugLogger) LogRoundTrip(req *http.Request, resp *http.Response, err e
 
 	if resp != nil && resp.Body != nil {
 		l.logResponse(ctx, resp, requestId)
-	}
-
-	if resp == nil {
+	} else {
 		tflog.Debug(ctx, fmt.Sprintf("%s response for [%s] is nil", l.Name, requestId))
 	}
 

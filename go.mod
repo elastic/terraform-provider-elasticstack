@@ -27,6 +27,8 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.3.0 // indirect
+	github.com/elastic/go-elasticsearch/v8 v8.11.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/go-test/deep v1.0.8 // indirect
