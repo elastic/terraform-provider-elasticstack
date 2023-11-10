@@ -1,12 +1,12 @@
 ---
 subcategory: "Fleet"
 layout: ""
-page_title: "Elasticstack: elasticstack_fleet_package Resource"
+page_title: "Elasticstack: elasticstack_fleet_integration Resource"
 description: |-
   Installs or uninstalls a Fleet integration package.
 ---
 
-# Resource: elasticstack_fleet_package
+# Resource: elasticstack_fleet_integration
 
 Installs or uninstalls a Fleet integration package. The Kibana Fleet UI can be
 used to view available packages. Additional information for managing integration
@@ -22,7 +22,7 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_fleet_package" "test_package" {
+resource "elasticstack_fleet_integration" "test_integration" {
   name    = "tcp"
   version = "1.16.0"
   force   = true
@@ -34,13 +34,13 @@ resource "elasticstack_fleet_package" "test_package" {
 
 ### Required
 
-- `name` (String) The package name.
-- `version` (String) The package version.
+- `name` (String) The integration package name.
+- `version` (String) The integration package version.
 
 ### Optional
 
 - `force` (Boolean) Set to true to force the requested action.
-- `skip_destroy` (Boolean) Set to true if you do not wish the package to be uninstalled at destroy time, and instead just remove the package from the Terraform state.
+- `skip_destroy` (Boolean) Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.
 
 ### Read-Only
 

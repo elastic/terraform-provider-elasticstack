@@ -1,12 +1,12 @@
 ---
 subcategory: "Fleet"
 layout: ""
-page_title: "Elasticstack: elasticstack_fleet_package Resource"
+page_title: "Elasticstack: elasticstack_fleet_integration Resource"
 description: |-
   Installs or uninstalls a Fleet integration package.
 ---
 
-# Resource: elasticstack_fleet_package
+# Resource: elasticstack_fleet_integration
 
 Installs or uninstalls a Fleet integration package. The Kibana Fleet UI can be
 used to view available packages. Additional information for managing integration
@@ -17,6 +17,6 @@ set `skip_destroy` to `true`.
 
 ## Example Usage
 
-{{ tffile "examples/resources/elasticstack_fleet_package/resource.tf" }}
+{{ tffile "examples/resources/elasticstack_fleet_integration/resource.tf" }}
 
 {{ .SchemaMarkdown | trimspace }}
