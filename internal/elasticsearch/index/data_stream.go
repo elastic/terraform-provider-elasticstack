@@ -119,7 +119,7 @@ func ResourceDataStream() *schema.Resource {
 }
 
 func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -138,7 +138,7 @@ func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta int
 }
 
 func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -211,7 +211,7 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 }
 
 func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

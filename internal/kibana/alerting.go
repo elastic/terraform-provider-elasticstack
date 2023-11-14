@@ -216,7 +216,7 @@ func getActionsFromResourceData(d *schema.ResourceData) ([]models.AlertingRuleAc
 }
 
 func resourceRuleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -239,7 +239,7 @@ func resourceRuleCreate(ctx context.Context, d *schema.ResourceData, meta interf
 }
 
 func resourceRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -268,7 +268,7 @@ func resourceRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interf
 }
 
 func resourceRuleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -357,7 +357,7 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 }
 
 func resourceRuleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

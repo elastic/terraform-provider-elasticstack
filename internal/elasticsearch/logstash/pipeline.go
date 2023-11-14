@@ -183,7 +183,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 }
 
 func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -223,7 +223,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -287,7 +287,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

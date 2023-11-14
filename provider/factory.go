@@ -2,22 +2,37 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-mux/tf5muxserver"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
+	"github.com/hashicorp/terraform-plugin-mux/tf6muxserver"
 )
 
-// ProtoV5ProviderServerFactory returns a muxed terraform-plugin-go protocol v5 provider factory function.
-func ProtoV5ProviderServerFactory(ctx context.Context, version string) (func() tfprotov5.ProviderServer, error) {
+func ProtoV6ProviderServerFactory(ctx context.Context, version string) (func() tfprotov6.ProviderServer, error) {
 	sdkv2Provider := New(version)
+	frameworkProvider := providerserver.NewProtocol6(NewFrameworkProvider(version))
 
-	servers := []func() tfprotov5.ProviderServer{
+	upgradedSdkProvider, err := tf5to6server.UpgradeServer(
+		context.Background(),
 		sdkv2Provider.GRPCProvider,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot upgrade the SDKv2 provider to protocol 6: %w", err)
 	}
 
-	muxServer, err := tf5muxserver.NewMuxServer(ctx, servers...)
+	servers := []func() tfprotov6.ProviderServer{
+		frameworkProvider,
+		func() tfprotov6.ProviderServer {
+			return upgradedSdkProvider
+		},
+	}
+
+	muxServer, err := tf6muxserver.NewMuxServer(ctx, servers...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("initialize mux server: %w", err)
 	}
 
 	return muxServer.ProviderServer, nil

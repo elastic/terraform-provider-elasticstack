@@ -66,7 +66,7 @@ func ResourceScript() *schema.Resource {
 }
 
 func resourceScriptRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -100,7 +100,7 @@ func resourceScriptRead(ctx context.Context, d *schema.ResourceData, meta interf
 }
 
 func resourceScriptPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -137,7 +137,7 @@ func resourceScriptPut(ctx context.Context, d *schema.ResourceData, meta interfa
 }
 
 func resourceScriptDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

@@ -135,7 +135,7 @@ func ResourceComponentTemplate() *schema.Resource {
 }
 
 func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -228,7 +228,7 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -282,7 +282,7 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

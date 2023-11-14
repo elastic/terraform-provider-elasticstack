@@ -322,7 +322,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 }
 
 func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -367,7 +367,7 @@ func expandFsSettings(source, target map[string]interface{}) {
 }
 
 func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -450,7 +450,7 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 }
 
 func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

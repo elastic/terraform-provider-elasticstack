@@ -155,7 +155,7 @@ func ResourceSlm() *schema.Resource {
 }
 
 func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -237,7 +237,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 }
 
 func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -329,7 +329,7 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 }
 
 func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

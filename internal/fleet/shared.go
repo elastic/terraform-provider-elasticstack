@@ -8,7 +8,7 @@ import (
 )
 
 func getFleetClient(d *schema.ResourceData, meta interface{}) (*fleet.Client, diag.Diagnostics) {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return nil, diags
 	}

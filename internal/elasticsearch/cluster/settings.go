@@ -86,7 +86,7 @@ func ResourceSettings() *schema.Resource {
 }
 
 func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -204,7 +204,7 @@ func expandSettings(s interface{}) (map[string]interface{}, diag.Diagnostics) {
 }
 
 func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -258,7 +258,7 @@ func flattenSettings(name string, old, new map[string]interface{}) []interface{}
 }
 
 func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClient(d, meta)
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
