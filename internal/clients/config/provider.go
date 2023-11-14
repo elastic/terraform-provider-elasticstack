@@ -12,6 +12,8 @@ type ElasticsearchConnection struct {
 	Username  types.String `tfsdk:"username"`
 	Password  types.String `tfsdk:"password"`
 	APIKey    types.String `tfsdk:"api_key"`
+	BearerToken types.String `tfsdk:"bearer_token"`
+	ESClientAuthentication types.String `tfsdk:"es_client_authentication"`
 	Endpoints types.List   `tfsdk:"endpoints"`
 	Insecure  types.Bool   `tfsdk:"insecure"`
 	CAFile    types.String `tfsdk:"ca_file"`
