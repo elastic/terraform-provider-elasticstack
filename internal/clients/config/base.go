@@ -70,8 +70,8 @@ func newBaseConfigFromFramework(config ProviderConfiguration, version string) ba
 		baseConfig.Password = esConfig.Password.ValueString()
 		baseConfig.ApiKey = esConfig.APIKey.ValueString()
 		if esConfig.BearerToken.ValueString() != "" || esConfig.BearerToken.ValueString() != "null" {
-			if esConfig.EsClientAuthentication.ValueString() != "" || esConfig.EsClientAuthentication.ValueString() != "null" {
-				baseConfig.Header = http.Header{"Authorization": []string{esConfig.BearerToken.ValueString()}, "ES-Client-Authentication": []string{esConfig.EsClientAuthentication.ValueString()}, "User-Agent": []string{userAgent}}
+			if esConfig.ESClientAuthentication.ValueString() != "" || esConfig.ESClientAuthentication.ValueString() != "null" {
+				baseConfig.Header = http.Header{"Authorization": []string{esConfig.BearerToken.ValueString()}, "ES-Client-Authentication": []string{esConfig.ESClientAuthentication.ValueString()}, "User-Agent": []string{userAgent}}
 			} else {
 			baseConfig.Header = http.Header{"Authorization": []string{esConfig.BearerToken.ValueString()}, "User-Agent": []string{userAgent}}
 			}
