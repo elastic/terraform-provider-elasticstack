@@ -1,14 +1,14 @@
 ---
 subcategory: "Fleet"
 layout: ""
-page_title: "Elasticstack: elasticstack_fleet_package_policy Resource"
+page_title: "Elasticstack: elasticstack_fleet_integration_policy Resource"
 description: |-
-  Creates or updates a Fleet Package Policy.
+  Creates or updates a Fleet Integration Policy.
 ---
 
-# Resource: elasticstack_fleet_package_policy
+# Resource: elasticstack_fleet_integration_policy
 
-Creates or updates a Fleet Package Policy.
+Creates or updates a Fleet Integration Policy.
 
 It is highly recommended that all inputs and streams are provided in the
 Terraform plan, even if some are disabled. Otherwise, differences may appear
@@ -26,14 +26,14 @@ provider "elasticstack" {
   fleet {}
 }
 
-// The package to use.
-resource "elasticstack_fleet_package" "sample" {
+// The integration to use.
+resource "elasticstack_fleet_integration" "sample" {
   name    = "tcp"
   version = "1.16.0"
   force   = true
 }
 
-// An agent policy to hold the package policy.
+// An agent policy to hold the integration policy.
 resource "elasticstack_fleet_agent_policy" "sample" {
   name            = "Sample Agent Policy"
   namespace       = "default"
@@ -48,14 +48,14 @@ data "elasticstack_fleet_enrollment_tokens" "sample" {
   policy_id = elasticstack_fleet_agent_policy.sample.policy_id
 }
 
-// The package policy.
-resource "elasticstack_fleet_package_policy" "sample" {
-  name            = "Sample Package Policy"
-  namespace       = "default"
-  description     = "A sample package policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.sample.policy_id
-  package_name    = elasticstack_fleet_package.sample.name
-  package_version = elasticstack_fleet_package.sample.version
+// The integration policy.
+resource "elasticstack_fleet_integration_policy" "sample" {
+  name                = "Sample Integration Policy"
+  namespace           = "default"
+  description         = "A sample integration policy"
+  agent_policy_id     = elasticstack_fleet_agent_policy.sample.policy_id
+  integration_name    = elasticstack_fleet_integration.sample.name
+  integration_version = elasticstack_fleet_integration.sample.version
 
   input {
     input_id = "tcp-tcp"
@@ -84,18 +84,18 @@ resource "elasticstack_fleet_package_policy" "sample" {
 
 - `agent_policy_id` (String) ID of the agent policy.
 - `input` (Block List, Min: 1) (see [below for nested schema](#nestedblock--input))
-- `name` (String) The name of the package policy.
-- `namespace` (String) The namespace of the package policy.
-- `package_name` (String) The name of the package.
-- `package_version` (String) The version of the package.
+- `integration_name` (String) The name of the integration package.
+- `integration_version` (String) The version of the integration package.
+- `name` (String) The name of the integration policy.
+- `namespace` (String) The namespace of the integration policy.
 
 ### Optional
 
-- `description` (String) The description of the package policy.
-- `enabled` (Boolean) Enable the package policy.
+- `description` (String) The description of the integration policy.
+- `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
-- `policy_id` (String) Unique identifier of the package policy.
-- `vars_json` (String, Sensitive) Package-level variables as JSON.
+- `policy_id` (String) Unique identifier of the integration policy.
+- `vars_json` (String, Sensitive) Integration-level variables as JSON.
 
 ### Read-Only
 
@@ -119,5 +119,5 @@ Optional:
 Import is supported using the following syntax:
 
 ```shell
-terraform import elasticstack_fleet_package_policy.my_policy <fleet_package_policy_id>
+terraform import elasticstack_fleet_integration_policy.my_policy <fleet_integration_policy_id>
 ```
