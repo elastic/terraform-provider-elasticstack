@@ -23,6 +23,20 @@ func newBaseConfigFromSDK(d *schema.ResourceData, version string, esKey string) 
 		Header:    http.Header{"User-Agent": []string{userAgent}},
 	}
 
+	if elasticDataRaw, ok := d.GetOk("elasticsearch"); ok {
+		elasticDataRaw, ok := elasticDataRaw.([]interface{})[0].(map[string]any)
+		if token_value, ok := elasticDataRaw["bearer_token"].(string); ok && token_value != "" {
+			token_value = "Bearer " + token_value
+			if es_client_authentication, ok := elasticDataRaw["es_client_authentication"].(string); ok && es_client_authentication != "" {
+				baseConfig.Header = http.Header{"Authorization": []string{token_value}, "ES-Client-Authentication": []string{es_client_authentication}, "User-Agent": []string{userAgent}}
+			} else {
+				baseConfig.Header = http.Header{"Authorization": []string{token_value}, "User-Agent": []string{userAgent}}
+			}
+		}
+	} else {
+		baseConfig.Header = http.Header{"User-Agent": []string{userAgent}}
+	}
+
 	if esConn, ok := d.GetOk(esKey); ok {
 		if resource := esConn.([]interface{})[0]; resource != nil {
 			config := resource.(map[string]interface{})
@@ -55,6 +69,13 @@ func newBaseConfigFromFramework(config ProviderConfiguration, version string) ba
 		baseConfig.Username = esConfig.Username.ValueString()
 		baseConfig.Password = esConfig.Password.ValueString()
 		baseConfig.ApiKey = esConfig.APIKey.ValueString()
+		if esConfig.BearerToken.ValueString() != "" || esConfig.BearerToken.ValueString() != "null" {
+			if esConfig.EsClientAuthentication.ValueString() != "" || esConfig.EsClientAuthentication.ValueString() != "null" {
+				baseConfig.Header = http.Header{"Authorization": []string{esConfig.BearerToken.ValueString()}, "ES-Client-Authentication": []string{esConfig.EsClientAuthentication.ValueString()}, "User-Agent": []string{userAgent}}
+			} else {
+			baseConfig.Header = http.Header{"Authorization": []string{esConfig.BearerToken.ValueString()}, "User-Agent": []string{userAgent}}
+			}
+		}
 	}
 
 	return baseConfig.withEnvironmentOverrides()
