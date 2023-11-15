@@ -15,8 +15,8 @@ import (
 func GetEsFWConnectionBlock(keyName string) fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
-	apiKeyPath := path.MatchRelative().atParent().AtName("api_key")
-	bearerTokenPath := path.MatchRelative().atParent().AtName("bearer_token")
+	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
+	bearerTokenPath := path.MatchRelative().AtParent().AtName("bearer_token")
 	caFilePath := path.MatchRelative().AtParent().AtName("ca_file")
 	caDataPath := path.MatchRelative().AtParent().AtName("ca_data")
 	certFilePath := path.MatchRelative().AtParent().AtName("cert_file")
@@ -216,6 +216,8 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema.Schema {
 	usernamePath := makePathRef(keyName, "username")
 	passwordPath := makePathRef(keyName, "password")
+	apiKeyPath := makePathRef(keyName, "api_key")
+	bearerTokenPath := makePathRef(keyName, "bearer_token")
 	caFilePath := makePathRef(keyName, "ca_file")
 	caDataPath := makePathRef(keyName, "ca_data")
 	certFilePath := makePathRef(keyName, "cert_file")
