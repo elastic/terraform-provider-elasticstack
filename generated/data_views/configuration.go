@@ -96,7 +96,7 @@ func NewConfiguration() *Configuration {
 		Debug:         false,
 		Servers: ServerConfigurations{
 			{
-				URL:         "https://raw.githubusercontent.com",
+				URL:         "",
 				Description: "No description provided",
 			},
 		},

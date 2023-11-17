@@ -20,23 +20,23 @@ var _ MappedNullable = &UpdateDataViewRequestObjectDataView{}
 // UpdateDataViewRequestObjectDataView The data view properties you want to update. Only the specified properties are updated in the data view. Unspecified fields stay as they are persisted.
 type UpdateDataViewRequestObjectDataView struct {
 	// Allows the data view saved object to exist before the data is available.
-	AllowNoIndex interface{} `json:"allowNoIndex,omitempty"`
+	AllowNoIndex *bool `json:"allowNoIndex,omitempty"`
 	// A map of field formats by field name.
-	FieldFormats interface{} `json:"fieldFormats,omitempty"`
-	Fields       interface{} `json:"fields,omitempty"`
-	Name         interface{} `json:"name,omitempty"`
+	FieldFormats map[string]interface{} `json:"fieldFormats,omitempty"`
+	Fields       map[string]interface{} `json:"fields,omitempty"`
+	Name         *string                `json:"name,omitempty"`
 	// A map of runtime field definitions by field name.
-	RuntimeFieldMap interface{} `json:"runtimeFieldMap,omitempty"`
+	RuntimeFieldMap map[string]interface{} `json:"runtimeFieldMap,omitempty"`
 	// The array of field names you want to filter out in Discover.
-	SourceFilters interface{} `json:"sourceFilters,omitempty"`
+	SourceFilters []SourcefiltersInner `json:"sourceFilters,omitempty"`
 	// The timestamp field name, which you use for time-based data views.
-	TimeFieldName interface{} `json:"timeFieldName,omitempty"`
+	TimeFieldName *string `json:"timeFieldName,omitempty"`
 	// Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
-	Title interface{} `json:"title,omitempty"`
+	Title *string `json:"title,omitempty"`
 	// When set to `rollup`, identifies the rollup data views.
-	Type interface{} `json:"type,omitempty"`
+	Type *string `json:"type,omitempty"`
 	// When you use rollup indices, contains the field list for the rollup data view API endpoints.
-	TypeMeta interface{} `json:"typeMeta,omitempty"`
+	TypeMeta map[string]interface{} `json:"typeMeta,omitempty"`
 }
 
 // NewUpdateDataViewRequestObjectDataView instantiates a new UpdateDataViewRequestObjectDataView object
@@ -56,43 +56,42 @@ func NewUpdateDataViewRequestObjectDataViewWithDefaults() *UpdateDataViewRequest
 	return &this
 }
 
-// GetAllowNoIndex returns the AllowNoIndex field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetAllowNoIndex() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetAllowNoIndex returns the AllowNoIndex field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetAllowNoIndex() bool {
+	if o == nil || IsNil(o.AllowNoIndex) {
+		var ret bool
 		return ret
 	}
-	return o.AllowNoIndex
+	return *o.AllowNoIndex
 }
 
 // GetAllowNoIndexOk returns a tuple with the AllowNoIndex field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetAllowNoIndexOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetAllowNoIndexOk() (*bool, bool) {
 	if o == nil || IsNil(o.AllowNoIndex) {
 		return nil, false
 	}
-	return &o.AllowNoIndex, true
+	return o.AllowNoIndex, true
 }
 
 // HasAllowNoIndex returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasAllowNoIndex() bool {
-	if o != nil && IsNil(o.AllowNoIndex) {
+	if o != nil && !IsNil(o.AllowNoIndex) {
 		return true
 	}
 
 	return false
 }
 
-// SetAllowNoIndex gets a reference to the given interface{} and assigns it to the AllowNoIndex field.
-func (o *UpdateDataViewRequestObjectDataView) SetAllowNoIndex(v interface{}) {
-	o.AllowNoIndex = v
+// SetAllowNoIndex gets a reference to the given bool and assigns it to the AllowNoIndex field.
+func (o *UpdateDataViewRequestObjectDataView) SetAllowNoIndex(v bool) {
+	o.AllowNoIndex = &v
 }
 
-// GetFieldFormats returns the FieldFormats field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetFieldFormats() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetFieldFormats returns the FieldFormats field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetFieldFormats() map[string]interface{} {
+	if o == nil || IsNil(o.FieldFormats) {
+		var ret map[string]interface{}
 		return ret
 	}
 	return o.FieldFormats
@@ -100,32 +99,31 @@ func (o *UpdateDataViewRequestObjectDataView) GetFieldFormats() interface{} {
 
 // GetFieldFormatsOk returns a tuple with the FieldFormats field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetFieldFormatsOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetFieldFormatsOk() (map[string]interface{}, bool) {
 	if o == nil || IsNil(o.FieldFormats) {
-		return nil, false
+		return map[string]interface{}{}, false
 	}
-	return &o.FieldFormats, true
+	return o.FieldFormats, true
 }
 
 // HasFieldFormats returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasFieldFormats() bool {
-	if o != nil && IsNil(o.FieldFormats) {
+	if o != nil && !IsNil(o.FieldFormats) {
 		return true
 	}
 
 	return false
 }
 
-// SetFieldFormats gets a reference to the given interface{} and assigns it to the FieldFormats field.
-func (o *UpdateDataViewRequestObjectDataView) SetFieldFormats(v interface{}) {
+// SetFieldFormats gets a reference to the given map[string]interface{} and assigns it to the FieldFormats field.
+func (o *UpdateDataViewRequestObjectDataView) SetFieldFormats(v map[string]interface{}) {
 	o.FieldFormats = v
 }
 
-// GetFields returns the Fields field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetFields() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetFields returns the Fields field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetFields() map[string]interface{} {
+	if o == nil || IsNil(o.Fields) {
+		var ret map[string]interface{}
 		return ret
 	}
 	return o.Fields
@@ -133,65 +131,63 @@ func (o *UpdateDataViewRequestObjectDataView) GetFields() interface{} {
 
 // GetFieldsOk returns a tuple with the Fields field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetFieldsOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetFieldsOk() (map[string]interface{}, bool) {
 	if o == nil || IsNil(o.Fields) {
-		return nil, false
+		return map[string]interface{}{}, false
 	}
-	return &o.Fields, true
+	return o.Fields, true
 }
 
 // HasFields returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasFields() bool {
-	if o != nil && IsNil(o.Fields) {
+	if o != nil && !IsNil(o.Fields) {
 		return true
 	}
 
 	return false
 }
 
-// SetFields gets a reference to the given interface{} and assigns it to the Fields field.
-func (o *UpdateDataViewRequestObjectDataView) SetFields(v interface{}) {
+// SetFields gets a reference to the given map[string]interface{} and assigns it to the Fields field.
+func (o *UpdateDataViewRequestObjectDataView) SetFields(v map[string]interface{}) {
 	o.Fields = v
 }
 
-// GetName returns the Name field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetName() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetName returns the Name field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetName() string {
+	if o == nil || IsNil(o.Name) {
+		var ret string
 		return ret
 	}
-	return o.Name
+	return *o.Name
 }
 
 // GetNameOk returns a tuple with the Name field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetNameOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetNameOk() (*string, bool) {
 	if o == nil || IsNil(o.Name) {
 		return nil, false
 	}
-	return &o.Name, true
+	return o.Name, true
 }
 
 // HasName returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasName() bool {
-	if o != nil && IsNil(o.Name) {
+	if o != nil && !IsNil(o.Name) {
 		return true
 	}
 
 	return false
 }
 
-// SetName gets a reference to the given interface{} and assigns it to the Name field.
-func (o *UpdateDataViewRequestObjectDataView) SetName(v interface{}) {
-	o.Name = v
+// SetName gets a reference to the given string and assigns it to the Name field.
+func (o *UpdateDataViewRequestObjectDataView) SetName(v string) {
+	o.Name = &v
 }
 
-// GetRuntimeFieldMap returns the RuntimeFieldMap field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetRuntimeFieldMap() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetRuntimeFieldMap returns the RuntimeFieldMap field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetRuntimeFieldMap() map[string]interface{} {
+	if o == nil || IsNil(o.RuntimeFieldMap) {
+		var ret map[string]interface{}
 		return ret
 	}
 	return o.RuntimeFieldMap
@@ -199,32 +195,31 @@ func (o *UpdateDataViewRequestObjectDataView) GetRuntimeFieldMap() interface{} {
 
 // GetRuntimeFieldMapOk returns a tuple with the RuntimeFieldMap field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetRuntimeFieldMapOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetRuntimeFieldMapOk() (map[string]interface{}, bool) {
 	if o == nil || IsNil(o.RuntimeFieldMap) {
-		return nil, false
+		return map[string]interface{}{}, false
 	}
-	return &o.RuntimeFieldMap, true
+	return o.RuntimeFieldMap, true
 }
 
 // HasRuntimeFieldMap returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasRuntimeFieldMap() bool {
-	if o != nil && IsNil(o.RuntimeFieldMap) {
+	if o != nil && !IsNil(o.RuntimeFieldMap) {
 		return true
 	}
 
 	return false
 }
 
-// SetRuntimeFieldMap gets a reference to the given interface{} and assigns it to the RuntimeFieldMap field.
-func (o *UpdateDataViewRequestObjectDataView) SetRuntimeFieldMap(v interface{}) {
+// SetRuntimeFieldMap gets a reference to the given map[string]interface{} and assigns it to the RuntimeFieldMap field.
+func (o *UpdateDataViewRequestObjectDataView) SetRuntimeFieldMap(v map[string]interface{}) {
 	o.RuntimeFieldMap = v
 }
 
-// GetSourceFilters returns the SourceFilters field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetSourceFilters() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetSourceFilters returns the SourceFilters field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetSourceFilters() []SourcefiltersInner {
+	if o == nil || IsNil(o.SourceFilters) {
+		var ret []SourcefiltersInner
 		return ret
 	}
 	return o.SourceFilters
@@ -232,131 +227,127 @@ func (o *UpdateDataViewRequestObjectDataView) GetSourceFilters() interface{} {
 
 // GetSourceFiltersOk returns a tuple with the SourceFilters field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetSourceFiltersOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetSourceFiltersOk() ([]SourcefiltersInner, bool) {
 	if o == nil || IsNil(o.SourceFilters) {
 		return nil, false
 	}
-	return &o.SourceFilters, true
+	return o.SourceFilters, true
 }
 
 // HasSourceFilters returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasSourceFilters() bool {
-	if o != nil && IsNil(o.SourceFilters) {
+	if o != nil && !IsNil(o.SourceFilters) {
 		return true
 	}
 
 	return false
 }
 
-// SetSourceFilters gets a reference to the given interface{} and assigns it to the SourceFilters field.
-func (o *UpdateDataViewRequestObjectDataView) SetSourceFilters(v interface{}) {
+// SetSourceFilters gets a reference to the given []SourcefiltersInner and assigns it to the SourceFilters field.
+func (o *UpdateDataViewRequestObjectDataView) SetSourceFilters(v []SourcefiltersInner) {
 	o.SourceFilters = v
 }
 
-// GetTimeFieldName returns the TimeFieldName field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetTimeFieldName() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetTimeFieldName returns the TimeFieldName field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetTimeFieldName() string {
+	if o == nil || IsNil(o.TimeFieldName) {
+		var ret string
 		return ret
 	}
-	return o.TimeFieldName
+	return *o.TimeFieldName
 }
 
 // GetTimeFieldNameOk returns a tuple with the TimeFieldName field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetTimeFieldNameOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetTimeFieldNameOk() (*string, bool) {
 	if o == nil || IsNil(o.TimeFieldName) {
 		return nil, false
 	}
-	return &o.TimeFieldName, true
+	return o.TimeFieldName, true
 }
 
 // HasTimeFieldName returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasTimeFieldName() bool {
-	if o != nil && IsNil(o.TimeFieldName) {
+	if o != nil && !IsNil(o.TimeFieldName) {
 		return true
 	}
 
 	return false
 }
 
-// SetTimeFieldName gets a reference to the given interface{} and assigns it to the TimeFieldName field.
-func (o *UpdateDataViewRequestObjectDataView) SetTimeFieldName(v interface{}) {
-	o.TimeFieldName = v
+// SetTimeFieldName gets a reference to the given string and assigns it to the TimeFieldName field.
+func (o *UpdateDataViewRequestObjectDataView) SetTimeFieldName(v string) {
+	o.TimeFieldName = &v
 }
 
-// GetTitle returns the Title field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetTitle() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetTitle returns the Title field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetTitle() string {
+	if o == nil || IsNil(o.Title) {
+		var ret string
 		return ret
 	}
-	return o.Title
+	return *o.Title
 }
 
 // GetTitleOk returns a tuple with the Title field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetTitleOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetTitleOk() (*string, bool) {
 	if o == nil || IsNil(o.Title) {
 		return nil, false
 	}
-	return &o.Title, true
+	return o.Title, true
 }
 
 // HasTitle returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasTitle() bool {
-	if o != nil && IsNil(o.Title) {
+	if o != nil && !IsNil(o.Title) {
 		return true
 	}
 
 	return false
 }
 
-// SetTitle gets a reference to the given interface{} and assigns it to the Title field.
-func (o *UpdateDataViewRequestObjectDataView) SetTitle(v interface{}) {
-	o.Title = v
+// SetTitle gets a reference to the given string and assigns it to the Title field.
+func (o *UpdateDataViewRequestObjectDataView) SetTitle(v string) {
+	o.Title = &v
 }
 
-// GetType returns the Type field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetType() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetType returns the Type field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetType() string {
+	if o == nil || IsNil(o.Type) {
+		var ret string
 		return ret
 	}
-	return o.Type
+	return *o.Type
 }
 
 // GetTypeOk returns a tuple with the Type field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetTypeOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetTypeOk() (*string, bool) {
 	if o == nil || IsNil(o.Type) {
 		return nil, false
 	}
-	return &o.Type, true
+	return o.Type, true
 }
 
 // HasType returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasType() bool {
-	if o != nil && IsNil(o.Type) {
+	if o != nil && !IsNil(o.Type) {
 		return true
 	}
 
 	return false
 }
 
-// SetType gets a reference to the given interface{} and assigns it to the Type field.
-func (o *UpdateDataViewRequestObjectDataView) SetType(v interface{}) {
-	o.Type = v
+// SetType gets a reference to the given string and assigns it to the Type field.
+func (o *UpdateDataViewRequestObjectDataView) SetType(v string) {
+	o.Type = &v
 }
 
-// GetTypeMeta returns the TypeMeta field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObjectDataView) GetTypeMeta() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetTypeMeta returns the TypeMeta field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObjectDataView) GetTypeMeta() map[string]interface{} {
+	if o == nil || IsNil(o.TypeMeta) {
+		var ret map[string]interface{}
 		return ret
 	}
 	return o.TypeMeta
@@ -364,25 +355,24 @@ func (o *UpdateDataViewRequestObjectDataView) GetTypeMeta() interface{} {
 
 // GetTypeMetaOk returns a tuple with the TypeMeta field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObjectDataView) GetTypeMetaOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObjectDataView) GetTypeMetaOk() (map[string]interface{}, bool) {
 	if o == nil || IsNil(o.TypeMeta) {
-		return nil, false
+		return map[string]interface{}{}, false
 	}
-	return &o.TypeMeta, true
+	return o.TypeMeta, true
 }
 
 // HasTypeMeta returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObjectDataView) HasTypeMeta() bool {
-	if o != nil && IsNil(o.TypeMeta) {
+	if o != nil && !IsNil(o.TypeMeta) {
 		return true
 	}
 
 	return false
 }
 
-// SetTypeMeta gets a reference to the given interface{} and assigns it to the TypeMeta field.
-func (o *UpdateDataViewRequestObjectDataView) SetTypeMeta(v interface{}) {
+// SetTypeMeta gets a reference to the given map[string]interface{} and assigns it to the TypeMeta field.
+func (o *UpdateDataViewRequestObjectDataView) SetTypeMeta(v map[string]interface{}) {
 	o.TypeMeta = v
 }
 
@@ -396,34 +386,34 @@ func (o UpdateDataViewRequestObjectDataView) MarshalJSON() ([]byte, error) {
 
 func (o UpdateDataViewRequestObjectDataView) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	if o.AllowNoIndex != nil {
+	if !IsNil(o.AllowNoIndex) {
 		toSerialize["allowNoIndex"] = o.AllowNoIndex
 	}
-	if o.FieldFormats != nil {
+	if !IsNil(o.FieldFormats) {
 		toSerialize["fieldFormats"] = o.FieldFormats
 	}
-	if o.Fields != nil {
+	if !IsNil(o.Fields) {
 		toSerialize["fields"] = o.Fields
 	}
-	if o.Name != nil {
+	if !IsNil(o.Name) {
 		toSerialize["name"] = o.Name
 	}
-	if o.RuntimeFieldMap != nil {
+	if !IsNil(o.RuntimeFieldMap) {
 		toSerialize["runtimeFieldMap"] = o.RuntimeFieldMap
 	}
-	if o.SourceFilters != nil {
+	if !IsNil(o.SourceFilters) {
 		toSerialize["sourceFilters"] = o.SourceFilters
 	}
-	if o.TimeFieldName != nil {
+	if !IsNil(o.TimeFieldName) {
 		toSerialize["timeFieldName"] = o.TimeFieldName
 	}
-	if o.Title != nil {
+	if !IsNil(o.Title) {
 		toSerialize["title"] = o.Title
 	}
-	if o.Type != nil {
+	if !IsNil(o.Type) {
 		toSerialize["type"] = o.Type
 	}
-	if o.TypeMeta != nil {
+	if !IsNil(o.TypeMeta) {
 		toSerialize["typeMeta"] = o.TypeMeta
 	}
 	return toSerialize, nil

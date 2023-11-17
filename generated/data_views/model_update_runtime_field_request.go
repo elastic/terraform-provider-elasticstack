@@ -20,14 +20,14 @@ var _ MappedNullable = &UpdateRuntimeFieldRequest{}
 // UpdateRuntimeFieldRequest struct for UpdateRuntimeFieldRequest
 type UpdateRuntimeFieldRequest struct {
 	// The runtime field definition object.  You can update following fields:  - `type` - `script`
-	RuntimeField interface{} `json:"runtimeField"`
+	RuntimeField map[string]interface{} `json:"runtimeField"`
 }
 
 // NewUpdateRuntimeFieldRequest instantiates a new UpdateRuntimeFieldRequest object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewUpdateRuntimeFieldRequest(runtimeField interface{}) *UpdateRuntimeFieldRequest {
+func NewUpdateRuntimeFieldRequest(runtimeField map[string]interface{}) *UpdateRuntimeFieldRequest {
 	this := UpdateRuntimeFieldRequest{}
 	this.RuntimeField = runtimeField
 	return &this
@@ -42,10 +42,9 @@ func NewUpdateRuntimeFieldRequestWithDefaults() *UpdateRuntimeFieldRequest {
 }
 
 // GetRuntimeField returns the RuntimeField field value
-// If the value is explicit nil, the zero value for interface{} will be returned
-func (o *UpdateRuntimeFieldRequest) GetRuntimeField() interface{} {
+func (o *UpdateRuntimeFieldRequest) GetRuntimeField() map[string]interface{} {
 	if o == nil {
-		var ret interface{}
+		var ret map[string]interface{}
 		return ret
 	}
 
@@ -54,16 +53,15 @@ func (o *UpdateRuntimeFieldRequest) GetRuntimeField() interface{} {
 
 // GetRuntimeFieldOk returns a tuple with the RuntimeField field value
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateRuntimeFieldRequest) GetRuntimeFieldOk() (*interface{}, bool) {
-	if o == nil || IsNil(o.RuntimeField) {
-		return nil, false
+func (o *UpdateRuntimeFieldRequest) GetRuntimeFieldOk() (map[string]interface{}, bool) {
+	if o == nil {
+		return map[string]interface{}{}, false
 	}
-	return &o.RuntimeField, true
+	return o.RuntimeField, true
 }
 
 // SetRuntimeField sets field value
-func (o *UpdateRuntimeFieldRequest) SetRuntimeField(v interface{}) {
+func (o *UpdateRuntimeFieldRequest) SetRuntimeField(v map[string]interface{}) {
 	o.RuntimeField = v
 }
 
@@ -77,9 +75,7 @@ func (o UpdateRuntimeFieldRequest) MarshalJSON() ([]byte, error) {
 
 func (o UpdateRuntimeFieldRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	if o.RuntimeField != nil {
-		toSerialize["runtimeField"] = o.RuntimeField
-	}
+	toSerialize["runtimeField"] = o.RuntimeField
 	return toSerialize, nil
 }
 

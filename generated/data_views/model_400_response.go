@@ -19,16 +19,16 @@ var _ MappedNullable = &Model400Response{}
 
 // Model400Response struct for Model400Response
 type Model400Response struct {
-	StatusCode interface{} `json:"statusCode"`
-	Error      interface{} `json:"error"`
-	Message    interface{} `json:"message"`
+	StatusCode float32 `json:"statusCode"`
+	Error      string  `json:"error"`
+	Message    string  `json:"message"`
 }
 
 // NewModel400Response instantiates a new Model400Response object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewModel400Response(statusCode interface{}, error_ interface{}, message interface{}) *Model400Response {
+func NewModel400Response(statusCode float32, error_ string, message string) *Model400Response {
 	this := Model400Response{}
 	this.StatusCode = statusCode
 	this.Error = error_
@@ -45,10 +45,9 @@ func NewModel400ResponseWithDefaults() *Model400Response {
 }
 
 // GetStatusCode returns the StatusCode field value
-// If the value is explicit nil, the zero value for interface{} will be returned
-func (o *Model400Response) GetStatusCode() interface{} {
+func (o *Model400Response) GetStatusCode() float32 {
 	if o == nil {
-		var ret interface{}
+		var ret float32
 		return ret
 	}
 
@@ -57,24 +56,22 @@ func (o *Model400Response) GetStatusCode() interface{} {
 
 // GetStatusCodeOk returns a tuple with the StatusCode field value
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model400Response) GetStatusCodeOk() (*interface{}, bool) {
-	if o == nil || IsNil(o.StatusCode) {
+func (o *Model400Response) GetStatusCodeOk() (*float32, bool) {
+	if o == nil {
 		return nil, false
 	}
 	return &o.StatusCode, true
 }
 
 // SetStatusCode sets field value
-func (o *Model400Response) SetStatusCode(v interface{}) {
+func (o *Model400Response) SetStatusCode(v float32) {
 	o.StatusCode = v
 }
 
 // GetError returns the Error field value
-// If the value is explicit nil, the zero value for interface{} will be returned
-func (o *Model400Response) GetError() interface{} {
+func (o *Model400Response) GetError() string {
 	if o == nil {
-		var ret interface{}
+		var ret string
 		return ret
 	}
 
@@ -83,24 +80,22 @@ func (o *Model400Response) GetError() interface{} {
 
 // GetErrorOk returns a tuple with the Error field value
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model400Response) GetErrorOk() (*interface{}, bool) {
-	if o == nil || IsNil(o.Error) {
+func (o *Model400Response) GetErrorOk() (*string, bool) {
+	if o == nil {
 		return nil, false
 	}
 	return &o.Error, true
 }
 
 // SetError sets field value
-func (o *Model400Response) SetError(v interface{}) {
+func (o *Model400Response) SetError(v string) {
 	o.Error = v
 }
 
 // GetMessage returns the Message field value
-// If the value is explicit nil, the zero value for interface{} will be returned
-func (o *Model400Response) GetMessage() interface{} {
+func (o *Model400Response) GetMessage() string {
 	if o == nil {
-		var ret interface{}
+		var ret string
 		return ret
 	}
 
@@ -109,16 +104,15 @@ func (o *Model400Response) GetMessage() interface{} {
 
 // GetMessageOk returns a tuple with the Message field value
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model400Response) GetMessageOk() (*interface{}, bool) {
-	if o == nil || IsNil(o.Message) {
+func (o *Model400Response) GetMessageOk() (*string, bool) {
+	if o == nil {
 		return nil, false
 	}
 	return &o.Message, true
 }
 
 // SetMessage sets field value
-func (o *Model400Response) SetMessage(v interface{}) {
+func (o *Model400Response) SetMessage(v string) {
 	o.Message = v
 }
 
@@ -132,15 +126,9 @@ func (o Model400Response) MarshalJSON() ([]byte, error) {
 
 func (o Model400Response) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	if o.StatusCode != nil {
-		toSerialize["statusCode"] = o.StatusCode
-	}
-	if o.Error != nil {
-		toSerialize["error"] = o.Error
-	}
-	if o.Message != nil {
-		toSerialize["message"] = o.Message
-	}
+	toSerialize["statusCode"] = o.StatusCode
+	toSerialize["error"] = o.Error
+	toSerialize["message"] = o.Message
 	return toSerialize, nil
 }
 

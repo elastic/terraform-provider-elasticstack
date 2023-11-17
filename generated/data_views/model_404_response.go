@@ -19,9 +19,9 @@ var _ MappedNullable = &Model404Response{}
 
 // Model404Response struct for Model404Response
 type Model404Response struct {
-	Error      interface{} `json:"error,omitempty"`
-	Message    interface{} `json:"message,omitempty"`
-	StatusCode interface{} `json:"statusCode,omitempty"`
+	Error      *string `json:"error,omitempty"`
+	Message    *string `json:"message,omitempty"`
+	StatusCode *int32  `json:"statusCode,omitempty"`
 }
 
 // NewModel404Response instantiates a new Model404Response object
@@ -41,103 +41,100 @@ func NewModel404ResponseWithDefaults() *Model404Response {
 	return &this
 }
 
-// GetError returns the Error field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *Model404Response) GetError() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetError returns the Error field value if set, zero value otherwise.
+func (o *Model404Response) GetError() string {
+	if o == nil || IsNil(o.Error) {
+		var ret string
 		return ret
 	}
-	return o.Error
+	return *o.Error
 }
 
 // GetErrorOk returns a tuple with the Error field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model404Response) GetErrorOk() (*interface{}, bool) {
+func (o *Model404Response) GetErrorOk() (*string, bool) {
 	if o == nil || IsNil(o.Error) {
 		return nil, false
 	}
-	return &o.Error, true
+	return o.Error, true
 }
 
 // HasError returns a boolean if a field has been set.
 func (o *Model404Response) HasError() bool {
-	if o != nil && IsNil(o.Error) {
+	if o != nil && !IsNil(o.Error) {
 		return true
 	}
 
 	return false
 }
 
-// SetError gets a reference to the given interface{} and assigns it to the Error field.
-func (o *Model404Response) SetError(v interface{}) {
-	o.Error = v
+// SetError gets a reference to the given string and assigns it to the Error field.
+func (o *Model404Response) SetError(v string) {
+	o.Error = &v
 }
 
-// GetMessage returns the Message field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *Model404Response) GetMessage() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetMessage returns the Message field value if set, zero value otherwise.
+func (o *Model404Response) GetMessage() string {
+	if o == nil || IsNil(o.Message) {
+		var ret string
 		return ret
 	}
-	return o.Message
+	return *o.Message
 }
 
 // GetMessageOk returns a tuple with the Message field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model404Response) GetMessageOk() (*interface{}, bool) {
+func (o *Model404Response) GetMessageOk() (*string, bool) {
 	if o == nil || IsNil(o.Message) {
 		return nil, false
 	}
-	return &o.Message, true
+	return o.Message, true
 }
 
 // HasMessage returns a boolean if a field has been set.
 func (o *Model404Response) HasMessage() bool {
-	if o != nil && IsNil(o.Message) {
+	if o != nil && !IsNil(o.Message) {
 		return true
 	}
 
 	return false
 }
 
-// SetMessage gets a reference to the given interface{} and assigns it to the Message field.
-func (o *Model404Response) SetMessage(v interface{}) {
-	o.Message = v
+// SetMessage gets a reference to the given string and assigns it to the Message field.
+func (o *Model404Response) SetMessage(v string) {
+	o.Message = &v
 }
 
-// GetStatusCode returns the StatusCode field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *Model404Response) GetStatusCode() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetStatusCode returns the StatusCode field value if set, zero value otherwise.
+func (o *Model404Response) GetStatusCode() int32 {
+	if o == nil || IsNil(o.StatusCode) {
+		var ret int32
 		return ret
 	}
-	return o.StatusCode
+	return *o.StatusCode
 }
 
 // GetStatusCodeOk returns a tuple with the StatusCode field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model404Response) GetStatusCodeOk() (*interface{}, bool) {
+func (o *Model404Response) GetStatusCodeOk() (*int32, bool) {
 	if o == nil || IsNil(o.StatusCode) {
 		return nil, false
 	}
-	return &o.StatusCode, true
+	return o.StatusCode, true
 }
 
 // HasStatusCode returns a boolean if a field has been set.
 func (o *Model404Response) HasStatusCode() bool {
-	if o != nil && IsNil(o.StatusCode) {
+	if o != nil && !IsNil(o.StatusCode) {
 		return true
 	}
 
 	return false
 }
 
-// SetStatusCode gets a reference to the given interface{} and assigns it to the StatusCode field.
-func (o *Model404Response) SetStatusCode(v interface{}) {
-	o.StatusCode = v
+// SetStatusCode gets a reference to the given int32 and assigns it to the StatusCode field.
+func (o *Model404Response) SetStatusCode(v int32) {
+	o.StatusCode = &v
 }
 
 func (o Model404Response) MarshalJSON() ([]byte, error) {
@@ -150,13 +147,13 @@ func (o Model404Response) MarshalJSON() ([]byte, error) {
 
 func (o Model404Response) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	if o.Error != nil {
+	if !IsNil(o.Error) {
 		toSerialize["error"] = o.Error
 	}
-	if o.Message != nil {
+	if !IsNil(o.Message) {
 		toSerialize["message"] = o.Message
 	}
-	if o.StatusCode != nil {
+	if !IsNil(o.StatusCode) {
 		toSerialize["statusCode"] = o.StatusCode
 	}
 	return toSerialize, nil

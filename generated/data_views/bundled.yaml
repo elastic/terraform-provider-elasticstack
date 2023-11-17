@@ -1,541 +1,504 @@
 openapi: 3.0.1
 info:
+  title: Data views
+  description: OpenAPI schema for data view endpoints
+  version: '0.1'
   contact:
     name: Kibana Core Team
-  description: OpenAPI schema for data view endpoints
   license:
     name: Elastic License 2.0
     url: https://www.elastic.co/licensing/elastic-license
-  title: Data views
-  version: "0.1"
 servers:
-- url: /
+  - url: /
 security:
-- basicAuth: []
-- apiKeyAuth: []
+  - basicAuth: []
+  - apiKeyAuth: []
 tags:
-- description: "Data view APIs enable you to manage data views, formerly known as\
-    \ Kibana index patterns."
-  name: data views
+  - name: data views
+    description: Data view APIs enable you to manage data views, formerly known as Kibana index patterns.
 paths:
   /api/data_views:
     get:
+      summary: Retrieves a list of all data views.
+      operationId: getAllDataViews
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: getAllDataViews
+      tags:
+        - data views
       responses:
-        "200":
+        '200':
+          description: Indicates a successful call.
           content:
             application/json:
+              schema:
+                type: object
+                properties:
+                  data_view:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        namespaces:
+                          type: array
+                          items:
+                            type: string
+                        title:
+                          type: string
+                        typeMeta:
+                          type: object
               examples:
                 getAllDataViewsResponse:
                   $ref: '#/components/examples/get_data_views_response'
-              schema:
-                $ref: '#/components/schemas/getAllDataViews_200_response'
-          description: Indicates a successful call.
-        "400":
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Retrieves a list of all data views.
-      tags:
-      - data views
   /api/data_views/data_view:
     post:
+      summary: Creates a data view.
+      operationId: createDataView
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: createDataView
+      tags:
+        - data views
       parameters:
-      - description: Cross-site request forgery protection
-        explode: false
-        in: header
-        name: kbn-xsrf
-        required: true
-        schema:
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/kbn_xsrf'
       requestBody:
+        required: true
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/create_data_view_request_object'
             examples:
               createDataViewRequest:
                 $ref: '#/components/examples/create_data_view_request'
-            schema:
-              $ref: '#/components/schemas/create_data_view_request_object'
-        required: true
       responses:
-        "200":
+        '200':
+          description: Indicates a successful call.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/data_view_response_object'
-          description: Indicates a successful call.
-        "400":
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Creates a data view.
-      tags:
-      - data views
   /api/data_views/data_view/{viewId}:
-    delete:
+    get:
+      summary: Retrieves a single data view by identifier.
+      operationId: getDataView
       description: |
-        WARNING: When you delete a data view, it cannot be recovered. This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: deleteDataView
+        This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
+      tags:
+        - data views
       parameters:
-      - description: Cross-site request forgery protection
-        explode: false
-        in: header
-        name: kbn-xsrf
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: An identifier for the data view.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/view_id'
       responses:
-        "204":
+        '200':
           description: Indicates a successful call.
-        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/404_response'
-          description: Object is not found.
-      summary: Deletes a data view.
-      tags:
-      - data views
-    get:
-      description: |
-        This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: getDataView
-      parameters:
-      - description: An identifier for the data view.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        style: simple
-      responses:
-        "200":
-          content:
-            application/json:
+                $ref: '#/components/schemas/data_view_response_object'
               examples:
                 getDataViewResponse:
                   $ref: '#/components/examples/get_data_view_response'
-              schema:
-                $ref: '#/components/schemas/data_view_response_object'
-          description: Indicates a successful call.
-        "404":
+        '404':
+          description: Object is not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/404_response'
-          description: Object is not found.
-      summary: Retrieves a single data view by identifier.
+    delete:
+      summary: Deletes a data view.
+      operationId: deleteDataView
+      description: |
+        WARNING: When you delete a data view, it cannot be recovered. This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
       tags:
-      - data views
+        - data views
+      parameters:
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/view_id'
+      responses:
+        '204':
+          description: Indicates a successful call.
+        '404':
+          description: Object is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
     post:
+      summary: Updates a data view.
+      operationId: updateDataView
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: updateDataView
+      tags:
+        - data views
       parameters:
-      - description: Cross-site request forgery protection
-        explode: false
-        in: header
-        name: kbn-xsrf
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: An identifier for the data view.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/view_id'
       requestBody:
+        required: true
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/update_data_view_request_object'
             examples:
               updateDataViewRequest:
                 $ref: '#/components/examples/update_data_view_request'
-            schema:
-              $ref: '#/components/schemas/update_data_view_request_object'
-        required: true
       responses:
-        "200":
+        '200':
+          description: Indicates a successful call.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/data_view_response_object'
-          description: Indicates a successful call.
-        "400":
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Updates a data view.
-      tags:
-      - data views
   /api/data_views/data_view/{viewId}/fields:
     post:
+      summary: Update fields presentation metadata such as count, customLabel and format.
+      operationId: updateFieldsMetadata
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. You can update multiple fields in one request. Updates are merged with persisted metadata. To remove existing metadata, specify null as the value.
-      operationId: updateFieldsMetadata
+      tags:
+        - data views
       parameters:
-      - description: Cross-site request forgery protection
-        explode: false
-        in: header
-        name: kbn-xsrf
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: An identifier for the data view.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/view_id'
       requestBody:
+        required: true
         content:
           application/json:
+            schema:
+              type: object
+              required:
+                - fields
+              properties:
+                fields:
+                  description: The field object.
+                  type: object
             examples:
               updateFieldsMetadataRequest:
                 $ref: '#/components/examples/update_field_metadata_request'
-            schema:
-              $ref: '#/components/schemas/updateFieldsMetadata_request'
-        required: true
       responses:
-        "200":
+        '200':
+          description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/updateFieldsMetadata_200_response'
-          description: Indicates a successful call.
-        "400":
+                type: object
+                properties:
+                  acknowledged:
+                    type: boolean
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: "Update fields presentation metadata such as count, customLabel and\
-        \ format."
-      tags:
-      - data views
   /api/data_views/data_view/{viewId}/runtime_field:
     post:
+      summary: Creates a runtime field.
+      operationId: createRuntimeField
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: createRuntimeField
+      tags:
+        - data views
       parameters:
-      - description: Cross-site request forgery protection
-        explode: false
-        in: header
-        name: kbn-xsrf
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: An identifier for the data view.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/view_id'
       requestBody:
+        required: true
         content:
           application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - runtimeField
+              properties:
+                name:
+                  type: string
+                  description: |
+                    The name for a runtime field.
+                runtimeField:
+                  type: object
+                  description: |
+                    The runtime field definition object.
             examples:
               createRuntimeFieldRequest:
                 $ref: '#/components/examples/create_runtime_field_request'
-            schema:
-              $ref: '#/components/schemas/createUpdateRuntimeField_request'
-        required: true
-      summary: Creates a runtime field.
-      tags:
-      - data views
     put:
+      summary: Create or update an existing runtime field.
+      operationId: createUpdateRuntimeField
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: createUpdateRuntimeField
+      tags:
+        - data views
       parameters:
-      - description: Cross-site request forgery protection
-        explode: false
-        in: header
-        name: kbn-xsrf
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: |
-          The ID of the data view fields you want to update.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - name: viewId
+          in: path
+          description: |
+            The ID of the data view fields you want to update.
+          required: true
+          schema:
+            type: string
       requestBody:
+        required: true
         content:
           application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - runtimeField
+              properties:
+                name:
+                  type: string
+                  description: |
+                    The name for a runtime field.
+                runtimeField:
+                  type: object
+                  description: |
+                    The runtime field definition object.
             examples:
               updateRuntimeFieldRequest:
                 $ref: '#/components/examples/create_runtime_field_request'
-            schema:
-              $ref: '#/components/schemas/createUpdateRuntimeField_request'
-        required: true
       responses:
-        "200":
+        '200':
+          description: Indicates a successful call.
           content:
             application/json:
+              schema:
+                type: object
+                properties:
+                  data_view:
+                    type: object
+                  fields:
+                    type: array
+                    items:
+                      type: object
               examples:
                 createRuntimeFieldResponse:
                   $ref: '#/components/examples/create_runtime_field_response'
-              schema:
-                $ref: '#/components/schemas/createUpdateRuntimeField_200_response'
-          description: Indicates a successful call.
-        "400":
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Create or update an existing runtime field.
-      tags:
-      - data views
   /api/data_views/data_view/{viewId}/runtime_field/{fieldName}:
-    delete:
+    get:
+      summary: Retrieves a runtime field.
+      operationId: getRuntimeField
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: deleteRuntimeField
+      tags:
+        - data views
       parameters:
-      - description: The name of the runtime field.
-        explode: false
-        in: path
-        name: fieldName
-        required: true
-        schema:
-          example: hour_of_day
-          type: string
-        style: simple
-      - description: An identifier for the data view.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/field_name'
+        - $ref: '#/components/parameters/view_id'
       responses:
-        "200":
+        '200':
           description: Indicates a successful call.
-        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/404_response'
-          description: Object is not found.
-      summary: Delete a runtime field from a data view.
-      tags:
-      - data views
-    get:
-      description: |
-        This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: getRuntimeField
-      parameters:
-      - description: The name of the runtime field.
-        explode: false
-        in: path
-        name: fieldName
-        required: true
-        schema:
-          example: hour_of_day
-          type: string
-        style: simple
-      - description: An identifier for the data view.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        style: simple
-      responses:
-        "200":
-          content:
-            application/json:
+                type: object
+                properties:
+                  data_view:
+                    type: object
+                  fields:
+                    type: array
+                    items:
+                      type: object
               examples:
                 getRuntimeFieldResponse:
                   $ref: '#/components/examples/get_runtime_field_response'
-              schema:
-                $ref: '#/components/schemas/createUpdateRuntimeField_200_response'
-          description: Indicates a successful call.
-        "404":
+        '404':
+          description: Object is not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/404_response'
-          description: Object is not found.
-      summary: Retrieves a runtime field.
-      tags:
-      - data views
-    post:
+    delete:
+      summary: Delete a runtime field from a data view.
+      operationId: deleteRuntimeField
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: updateRuntimeField
+      tags:
+        - data views
       parameters:
-      - description: The name of the runtime field.
-        explode: false
-        in: path
-        name: fieldName
-        required: true
-        schema:
-          example: hour_of_day
-          type: string
-        style: simple
-      - description: An identifier for the data view.
-        explode: false
-        in: path
-        name: viewId
-        required: true
-        schema:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/field_name'
+        - $ref: '#/components/parameters/view_id'
+      responses:
+        '200':
+          description: Indicates a successful call.
+        '404':
+          description: Object is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+    post:
+      summary: Update an existing runtime field.
+      operationId: updateRuntimeField
+      description: |
+        This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
+      tags:
+        - data views
+      parameters:
+        - $ref: '#/components/parameters/field_name'
+        - $ref: '#/components/parameters/view_id'
       requestBody:
+        required: true
         content:
           application/json:
+            schema:
+              type: object
+              required:
+                - runtimeField
+              properties:
+                runtimeField:
+                  type: object
+                  description: |
+                    The runtime field definition object.
+
+                    You can update following fields:
+
+                    - `type`
+                    - `script`
             examples:
               updateRuntimeFieldRequest:
                 $ref: '#/components/examples/update_runtime_field_request'
-            schema:
-              $ref: '#/components/schemas/updateRuntimeField_request'
-        required: true
       responses:
-        "200":
+        '200':
           description: Indicates a successful call.
-        "400":
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Update an existing runtime field.
-      tags:
-      - data views
   /api/data_views/default:
     get:
+      summary: Retrieves the default data view identifier.
+      operationId: getDefaultDataView
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: getDefaultDataView
+      tags:
+        - data views
       responses:
-        "200":
+        '200':
+          description: Indicates a successful call.
           content:
             application/json:
+              schema:
+                type: object
+                properties:
+                  data_view_id:
+                    type: string
               examples:
                 getDefaultDataViewResponse:
                   $ref: '#/components/examples/get_default_data_view_response'
-              schema:
-                $ref: '#/components/schemas/getDefaultDataView_200_response'
-          description: Indicates a successful call.
-        "400":
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Retrieves the default data view identifier.
-      tags:
-      - data views
     post:
+      summary: Sets the default data view identifier.
+      operationId: setDefaultDatailView
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: setDefaultDatailView
+      tags:
+        - data views
       parameters:
-      - description: Cross-site request forgery protection
-        explode: false
-        in: header
-        name: kbn-xsrf
-        required: true
-        schema:
-          type: string
-        style: simple
+        - $ref: '#/components/parameters/kbn_xsrf'
       requestBody:
+        required: true
         content:
           application/json:
+            schema:
+              type: object
+              required:
+                - data_view_id
+              properties:
+                data_view_id:
+                  type:
+                    - string
+                    - 'null'
+                  description: |
+                    The data view identifier. NOTE: The API does not validate whether it is a valid identifier. Use `null` to unset the default data view.
+                force:
+                  type: boolean
+                  description: Update an existing default data view identifier.
+                  default: false
             examples:
               setDefaultDataViewRequest:
                 $ref: '#/components/examples/set_default_data_view_request'
-            schema:
-              $ref: '#/components/schemas/setDefaultDatailView_request'
-        required: true
       responses:
-        "200":
+        '200':
+          description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/updateFieldsMetadata_200_response'
-          description: Indicates a successful call.
-        "400":
+                type: object
+                properties:
+                  acknowledged:
+                    type: boolean
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Sets the default data view identifier.
-      tags:
-      - data views
 components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: ApiKey
   examples:
     get_data_views_response:
       summary: The get all data views API returns a list of data views.
       value:
         data_view:
-        - id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          namespaces:
-          - default
-          title: kibana_sample_data_ecommerce
-          typeMeta: {}
-          name: Kibana Sample Data eCommerce
-        - id: d3d7af60-4c81-11e8-b3d7-01146121b73d
-          namespaces:
-          - default
-          title: kibana_sample_data_flights
-          name: Kibana Sample Data Flights
-        - id: 90943e30-9a47-11e8-b64d-95841ca0b247
-          namespaces:
-          - default
-          title: kibana_sample_data_logs
-          name: Kibana Sample Data Logs
+          - id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+            namespaces:
+              - default
+            title: kibana_sample_data_ecommerce
+            typeMeta: {}
+            name: Kibana Sample Data eCommerce
+          - id: d3d7af60-4c81-11e8-b3d7-01146121b73d
+            namespaces:
+              - default
+            title: kibana_sample_data_flights
+            name: Kibana Sample Data Flights
+          - id: 90943e30-9a47-11e8-b64d-95841ca0b247
+            namespaces:
+              - default
+            title: kibana_sample_data_logs
+            name: Kibana Sample Data Logs
     create_data_view_request:
       summary: Create a data view with runtime fields.
       value:
@@ -546,10 +509,9 @@ components:
             runtime_shape_name:
               type: keyword
               script:
-                source: "emit(doc['shape_name'].value)"
+                source: emit(doc['shape_name'].value)
     get_data_view_response:
-      summary: The get data view API returns a JSON object that contains information
-        about the data view.
+      summary: The get data view API returns a JSON object that contains information about the data view.
       value:
         data_view:
           id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
@@ -563,7 +525,7 @@ components:
               name: _id
               type: string
               esTypes:
-              - _id
+                - _id
               scripted: false
               searchable: true
               aggregatable: false
@@ -577,7 +539,7 @@ components:
               name: _index
               type: string
               esTypes:
-              - _index
+                - _index
               scripted: false
               searchable: true
               aggregatable: true
@@ -603,7 +565,7 @@ components:
               name: _source
               type: _source
               esTypes:
-              - _source
+                - _source
               scripted: false
               searchable: false
               aggregatable: false
@@ -617,7 +579,7 @@ components:
               name: category
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -631,7 +593,7 @@ components:
               name: category.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -648,7 +610,7 @@ components:
               name: currency
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -662,7 +624,7 @@ components:
               name: customer_birth_date
               type: date
               esTypes:
-              - date
+                - date
               scripted: false
               searchable: true
               aggregatable: true
@@ -676,7 +638,7 @@ components:
               name: customer_first_name
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -690,7 +652,7 @@ components:
               name: customer_first_name.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -707,7 +669,7 @@ components:
               name: customer_full_name
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -721,7 +683,7 @@ components:
               name: customer_full_name.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -738,7 +700,7 @@ components:
               name: customer_gender
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -752,7 +714,7 @@ components:
               name: customer_id
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -766,7 +728,7 @@ components:
               name: customer_last_name
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -780,7 +742,7 @@ components:
               name: customer_last_name.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -797,7 +759,7 @@ components:
               name: customer_phone
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -811,7 +773,7 @@ components:
               name: day_of_week
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -825,7 +787,7 @@ components:
               name: day_of_week_i
               type: number
               esTypes:
-              - integer
+                - integer
               scripted: false
               searchable: true
               aggregatable: true
@@ -839,7 +801,7 @@ components:
               name: email
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -853,7 +815,7 @@ components:
               name: event.dataset
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -867,7 +829,7 @@ components:
               name: geoip.city_name
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -881,7 +843,7 @@ components:
               name: geoip.continent_name
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -895,7 +857,7 @@ components:
               name: geoip.country_iso_code
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -909,7 +871,7 @@ components:
               name: geoip.location
               type: geo_point
               esTypes:
-              - geo_point
+                - geo_point
               scripted: false
               searchable: true
               aggregatable: true
@@ -925,7 +887,7 @@ components:
               name: geoip.region_name
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -939,7 +901,7 @@ components:
               name: manufacturer
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -953,7 +915,7 @@ components:
               name: manufacturer.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -970,7 +932,7 @@ components:
               name: order_date
               type: date
               esTypes:
-              - date
+                - date
               scripted: false
               searchable: true
               aggregatable: true
@@ -984,7 +946,7 @@ components:
               name: order_id
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -998,7 +960,7 @@ components:
               name: products._id
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -1012,7 +974,7 @@ components:
               name: products._id.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1029,7 +991,7 @@ components:
               name: products.base_price
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1037,7 +999,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.00"
+                  pattern: $0,0.00
               shortDotsEnable: false
               isMapped: true
             products.base_unit_price:
@@ -1045,7 +1007,7 @@ components:
               name: products.base_unit_price
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1053,7 +1015,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.00"
+                  pattern: $0,0.00
               shortDotsEnable: false
               isMapped: true
             products.category:
@@ -1061,7 +1023,7 @@ components:
               name: products.category
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -1075,7 +1037,7 @@ components:
               name: products.category.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1092,7 +1054,7 @@ components:
               name: products.created_on
               type: date
               esTypes:
-              - date
+                - date
               scripted: false
               searchable: true
               aggregatable: true
@@ -1106,7 +1068,7 @@ components:
               name: products.discount_amount
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1120,7 +1082,7 @@ components:
               name: products.discount_percentage
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1134,7 +1096,7 @@ components:
               name: products.manufacturer
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -1148,7 +1110,7 @@ components:
               name: products.manufacturer.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1165,7 +1127,7 @@ components:
               name: products.min_price
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1173,7 +1135,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.00"
+                  pattern: $0,0.00
               shortDotsEnable: false
               isMapped: true
             products.price:
@@ -1181,7 +1143,7 @@ components:
               name: products.price
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1189,7 +1151,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.00"
+                  pattern: $0,0.00
               shortDotsEnable: false
               isMapped: true
             products.product_id:
@@ -1197,7 +1159,7 @@ components:
               name: products.product_id
               type: number
               esTypes:
-              - long
+                - long
               scripted: false
               searchable: true
               aggregatable: true
@@ -1211,7 +1173,7 @@ components:
               name: products.product_name
               type: string
               esTypes:
-              - text
+                - text
               scripted: false
               searchable: true
               aggregatable: false
@@ -1225,7 +1187,7 @@ components:
               name: products.product_name.keyword
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1242,7 +1204,7 @@ components:
               name: products.quantity
               type: number
               esTypes:
-              - integer
+                - integer
               scripted: false
               searchable: true
               aggregatable: true
@@ -1256,7 +1218,7 @@ components:
               name: products.sku
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1270,7 +1232,7 @@ components:
               name: products.tax_amount
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1284,7 +1246,7 @@ components:
               name: products.taxful_price
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1292,7 +1254,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.00"
+                  pattern: $0,0.00
               shortDotsEnable: false
               isMapped: true
             products.taxless_price:
@@ -1300,7 +1262,7 @@ components:
               name: products.taxless_price
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1308,7 +1270,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.00"
+                  pattern: $0,0.00
               shortDotsEnable: false
               isMapped: true
             products.unit_discount_amount:
@@ -1316,7 +1278,7 @@ components:
               name: products.unit_discount_amount
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1330,7 +1292,7 @@ components:
               name: sku
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1344,7 +1306,7 @@ components:
               name: taxful_total_price
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1352,7 +1314,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.[00]"
+                  pattern: $0,0.[00]
               shortDotsEnable: false
               isMapped: true
             taxless_total_price:
@@ -1360,7 +1322,7 @@ components:
               name: taxless_total_price
               type: number
               esTypes:
-              - half_float
+                - half_float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1368,7 +1330,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.00"
+                  pattern: $0,0.00
               shortDotsEnable: false
               isMapped: true
             total_quantity:
@@ -1376,7 +1338,7 @@ components:
               name: total_quantity
               type: number
               esTypes:
-              - integer
+                - integer
               scripted: false
               searchable: true
               aggregatable: true
@@ -1390,7 +1352,7 @@ components:
               name: total_unique_products
               type: number
               esTypes:
-              - integer
+                - integer
               scripted: false
               searchable: true
               aggregatable: true
@@ -1404,7 +1366,7 @@ components:
               name: type
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1418,7 +1380,7 @@ components:
               name: user
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1432,35 +1394,35 @@ components:
             taxful_total_price:
               id: number
               params:
-                pattern: "$0,0.[00]"
+                pattern: $0,0.[00]
             products.price:
               id: number
               params:
-                pattern: "$0,0.00"
+                pattern: $0,0.00
             taxless_total_price:
               id: number
               params:
-                pattern: "$0,0.00"
+                pattern: $0,0.00
             products.taxless_price:
               id: number
               params:
-                pattern: "$0,0.00"
+                pattern: $0,0.00
             products.taxful_price:
               id: number
               params:
-                pattern: "$0,0.00"
+                pattern: $0,0.00
             products.min_price:
               id: number
               params:
-                pattern: "$0,0.00"
+                pattern: $0,0.00
             products.base_unit_price:
               id: number
               params:
-                pattern: "$0,0.00"
+                pattern: $0,0.00
             products.base_price:
               id: number
               params:
-                pattern: "$0,0.00"
+                pattern: $0,0.00
           runtimeFieldMap: {}
           fieldAttrs:
             products.manufacturer:
@@ -1474,7 +1436,7 @@ components:
           allowNoIndex: false
           name: Kibana Sample Data eCommerce
           namespaces:
-          - default
+            - default
     update_data_view_request:
       summary: Update some properties for a data view.
       value:
@@ -1497,34 +1459,32 @@ components:
         runtimeField:
           type: long
           script:
-            source: "emit(doc[\"foo\"].value)"
+            source: emit(doc["foo"].value)
     create_runtime_field_response:
-      summary: The API returns created runtime field object array and updated data
-        view object.
+      summary: The API returns created runtime field object array and updated data view object.
       value:
         data_view:
-          "...": null
+          ...: null
         fields:
-        - '...'
+          - ...
     get_runtime_field_response:
-      summary: The get runtime field API returns a JSON object that contains information
-        about the runtime field (`hour_of_day`) and the data view (`d3d7af60-4c81-11e8-b3d7-01146121b73d`).
+      summary: The get runtime field API returns a JSON object that contains information about the runtime field (`hour_of_day`) and the data view (`d3d7af60-4c81-11e8-b3d7-01146121b73d`).
       value:
         fields:
-        - count: 0
-          name: hour_of_day
-          type: number
-          esTypes:
-          - long
-          scripted: false
-          searchable: true
-          aggregatable: true
-          readFromDocValues: false
-          shortDotsEnable: false
-          runtimeField:
-            type: long
-            script:
-              source: "emit(doc['timestamp'].value.getHour());"
+          - count: 0
+            name: hour_of_day
+            type: number
+            esTypes:
+              - long
+            scripted: false
+            searchable: true
+            aggregatable: true
+            readFromDocValues: false
+            shortDotsEnable: false
+            runtimeField:
+              type: long
+              script:
+                source: emit(doc['timestamp'].value.getHour());
         data_view:
           id: d3d7af60-4c81-11e8-b3d7-01146121b73d
           version: WzM2LDJd
@@ -1537,7 +1497,7 @@ components:
               name: hour_of_day
               type: number
               esTypes:
-              - long
+                - long
               scripted: false
               searchable: true
               aggregatable: true
@@ -1545,18 +1505,18 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "00"
+                  pattern: '00'
               shortDotsEnable: false
               runtimeField:
                 type: long
                 script:
-                  source: "emit(doc['timestamp'].value.getHour());"
+                  source: emit(doc['timestamp'].value.getHour());
             AvgTicketPrice:
               count: 0
               name: AvgTicketPrice
               type: number
               esTypes:
-              - float
+                - float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1564,7 +1524,7 @@ components:
               format:
                 id: number
                 params:
-                  pattern: "$0,0.[00]"
+                  pattern: $0,0.[00]
               shortDotsEnable: false
               isMapped: true
             Cancelled:
@@ -1572,7 +1532,7 @@ components:
               name: Cancelled
               type: boolean
               esTypes:
-              - boolean
+                - boolean
               scripted: false
               searchable: true
               aggregatable: true
@@ -1586,7 +1546,7 @@ components:
               name: Carrier
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1600,7 +1560,7 @@ components:
               name: Dest
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1614,7 +1574,7 @@ components:
               name: DestAirportID
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1628,7 +1588,7 @@ components:
               name: DestCityName
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1642,7 +1602,7 @@ components:
               name: DestCountry
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1656,7 +1616,7 @@ components:
               name: DestLocation
               type: geo_point
               esTypes:
-              - geo_point
+                - geo_point
               scripted: false
               searchable: true
               aggregatable: true
@@ -1672,7 +1632,7 @@ components:
               name: DestRegion
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1686,7 +1646,7 @@ components:
               name: DestWeather
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1700,7 +1660,7 @@ components:
               name: DistanceKilometers
               type: number
               esTypes:
-              - float
+                - float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1714,7 +1674,7 @@ components:
               name: DistanceMiles
               type: number
               esTypes:
-              - float
+                - float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1728,7 +1688,7 @@ components:
               name: FlightDelay
               type: boolean
               esTypes:
-              - boolean
+                - boolean
               scripted: false
               searchable: true
               aggregatable: true
@@ -1742,7 +1702,7 @@ components:
               name: FlightDelayMin
               type: number
               esTypes:
-              - integer
+                - integer
               scripted: false
               searchable: true
               aggregatable: true
@@ -1756,7 +1716,7 @@ components:
               name: FlightDelayType
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1770,7 +1730,7 @@ components:
               name: FlightNum
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1784,7 +1744,7 @@ components:
               name: FlightTimeHour
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1798,7 +1758,7 @@ components:
               name: FlightTimeMin
               type: number
               esTypes:
-              - float
+                - float
               scripted: false
               searchable: true
               aggregatable: true
@@ -1812,7 +1772,7 @@ components:
               name: Origin
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1826,7 +1786,7 @@ components:
               name: OriginAirportID
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1840,7 +1800,7 @@ components:
               name: OriginCityName
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1854,7 +1814,7 @@ components:
               name: OriginCountry
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1868,7 +1828,7 @@ components:
               name: OriginLocation
               type: geo_point
               esTypes:
-              - geo_point
+                - geo_point
               scripted: false
               searchable: true
               aggregatable: true
@@ -1884,7 +1844,7 @@ components:
               name: OriginRegion
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1898,7 +1858,7 @@ components:
               name: OriginWeather
               type: string
               esTypes:
-              - keyword
+                - keyword
               scripted: false
               searchable: true
               aggregatable: true
@@ -1912,7 +1872,7 @@ components:
               name: _id
               type: string
               esTypes:
-              - _id
+                - _id
               scripted: false
               searchable: true
               aggregatable: false
@@ -1926,7 +1886,7 @@ components:
               name: _index
               type: string
               esTypes:
-              - _index
+                - _index
               scripted: false
               searchable: true
               aggregatable: true
@@ -1952,7 +1912,7 @@ components:
               name: _source
               type: _source
               esTypes:
-              - _source
+                - _source
               scripted: false
               searchable: false
               aggregatable: false
@@ -1966,7 +1926,7 @@ components:
               name: dayOfWeek
               type: number
               esTypes:
-              - integer
+                - integer
               scripted: false
               searchable: true
               aggregatable: true
@@ -1980,7 +1940,7 @@ components:
               name: timestamp
               type: date
               esTypes:
-              - date
+                - date
               scripted: false
               searchable: true
               aggregatable: true
@@ -1993,16 +1953,16 @@ components:
             hour_of_day:
               id: number
               params:
-                pattern: "00"
+                pattern: '00'
             AvgTicketPrice:
               id: number
               params:
-                pattern: "$0,0.[00]"
+                pattern: $0,0.[00]
           runtimeFieldMap:
             hour_of_day:
               type: long
               script:
-                source: "emit(doc['timestamp'].value.getHour());"
+                source: emit(doc['timestamp'].value.getHour());
           fieldAttrs: {}
           allowNoIndex: false
           name: Kibana Sample Data Flights
@@ -2011,7 +1971,7 @@ components:
       value:
         runtimeField:
           script:
-            source: "emit(doc[\"bar\"].value)"
+            source: emit(doc["bar"].value)
     get_default_data_view_response:
       summary: The get default data view API returns the default data view identifier.
       value:
@@ -2021,457 +1981,216 @@ components:
       value:
         data_view_id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
         force: true
-  parameters:
-    kbn_xsrf:
-      description: Cross-site request forgery protection
-      explode: false
-      in: header
-      name: kbn-xsrf
-      required: true
-      schema:
-        type: string
-      style: simple
-    view_id:
-      description: An identifier for the data view.
-      explode: false
-      in: path
-      name: viewId
-      required: true
-      schema:
-        example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-        type: string
-      style: simple
-    field_name:
-      description: The name of the runtime field.
-      explode: false
-      in: path
-      name: fieldName
-      required: true
-      schema:
-        example: hour_of_day
-        type: string
-      style: simple
   schemas:
-    "400_response":
-      properties:
-        statusCode:
-          example: 400
-          type: number
-        error:
-          example: Bad Request
-          type: string
-        message:
-          type: string
-      required:
-      - error
-      - message
-      - statusCode
+    400_response:
       title: Bad request
       type: object
+      required:
+        - statusCode
+        - error
+        - message
+      properties:
+        statusCode:
+          type: number
+          example: 400
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
     allownoindex:
-      description: Allows the data view saved object to exist before the data is available.
       type: boolean
+      description: Allows the data view saved object to exist before the data is available.
     fieldattrs:
+      type: object
       description: A map of field attributes by field name.
-      type: object
     fieldformats:
+      type: object
       description: A map of field formats by field name.
-      type: object
     namespaces:
-      description: An array of space identifiers for sharing the data view between
-        multiple spaces.
-      items:
-        default: default
-        type: string
       type: array
+      description: An array of space identifiers for sharing the data view between multiple spaces.
+      items:
+        type: string
+        default: default
     runtimefieldmap:
-      description: A map of runtime field definitions by field name.
       type: object
+      description: A map of runtime field definitions by field name.
     sourcefilters:
+      type: array
       description: The array of field names you want to filter out in Discover.
       items:
-        $ref: '#/components/schemas/sourcefilters_inner'
-      type: array
+        type: object
+        required:
+          - value
+        properties:
+          value:
+            type: string
     timefieldname:
-      description: "The timestamp field name, which you use for time-based data views."
       type: string
+      description: The timestamp field name, which you use for time-based data views.
     title:
-      description: "Comma-separated list of data streams, indices, and aliases that\
-        \ you want to search. Supports wildcards (`*`)."
       type: string
+      description: Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
     type:
-      description: "When set to `rollup`, identifies the rollup data views."
       type: string
+      description: When set to `rollup`, identifies the rollup data views.
     typemeta:
-      description: "When you use rollup indices, contains the field list for the rollup\
-        \ data view API endpoints."
       type: object
+      description: When you use rollup indices, contains the field list for the rollup data view API endpoints.
     create_data_view_request_object:
-      properties:
-        data_view:
-          $ref: '#/components/schemas/create_data_view_request_object_data_view'
-        override:
-          default: false
-          description: Override an existing data view if a data view with the provided
-            title already exists.
-          type: boolean
-      required:
-      - data_view
       title: Create data view request
       type: object
-    data_view_response_object:
-      example:
-        data_view:
-          title: title
-          version: WzQ2LDJd
-          allowNoIndex: true
-          runtimeFieldMap: "{}"
-          fieldAttrs: "{}"
-          sourceFilters:
-          - value: value
-          - value: value
-          typeMeta: "{}"
-          timeFieldName: timeFieldName
-          fieldFormats: "{}"
-          name: name
-          id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          fields: "{}"
-          namespaces:
-          - default
-          - default
+      required:
+        - data_view
       properties:
         data_view:
-          $ref: '#/components/schemas/data_view_response_object_data_view'
+          type: object
+          required:
+            - title
+          description: The data view object.
+          properties:
+            allowNoIndex:
+              $ref: '#/components/schemas/allownoindex'
+            fieldAttrs:
+              $ref: '#/components/schemas/fieldattrs'
+            fieldFormats:
+              $ref: '#/components/schemas/fieldformats'
+            fields:
+              type: object
+            id:
+              type: string
+            name:
+              type: string
+              description: The data view name.
+            namespaces:
+              $ref: '#/components/schemas/namespaces'
+            runtimeFieldMap:
+              $ref: '#/components/schemas/runtimefieldmap'
+            sourceFilters:
+              $ref: '#/components/schemas/sourcefilters'
+            timeFieldName:
+              $ref: '#/components/schemas/timefieldname'
+            title:
+              $ref: '#/components/schemas/title'
+            type:
+              $ref: '#/components/schemas/type'
+            typeMeta:
+              $ref: '#/components/schemas/typemeta'
+            version:
+              type: string
+        override:
+          type: boolean
+          description: Override an existing data view if a data view with the provided title already exists.
+          default: false
+    data_view_response_object:
       title: Data view response properties
       type: object
-    "404_response":
+      properties:
+        data_view:
+          type: object
+          properties:
+            allowNoIndex:
+              $ref: '#/components/schemas/allownoindex'
+            fieldAttrs:
+              $ref: '#/components/schemas/fieldattrs'
+            fieldFormats:
+              $ref: '#/components/schemas/fieldformats'
+            fields:
+              type: object
+            id:
+              type: string
+              example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+            name:
+              type: string
+              description: The data view name.
+            namespaces:
+              $ref: '#/components/schemas/namespaces'
+            runtimeFieldMap:
+              $ref: '#/components/schemas/runtimefieldmap'
+            sourceFilters:
+              $ref: '#/components/schemas/sourcefilters'
+            timeFieldName:
+              $ref: '#/components/schemas/timefieldname'
+            title:
+              $ref: '#/components/schemas/title'
+            typeMeta:
+              $ref: '#/components/schemas/typemeta'
+            version:
+              type: string
+              example: WzQ2LDJd
+    404_response:
+      type: object
       properties:
         error:
-          enum:
-          - Not Found
+          type: string
           example: Not Found
-          type: string
-        message:
-          example: "Saved object [index-pattern/caaad6d0-920c-11ed-b36a-874bd1548a00]\
-            \ not found"
-          type: string
-        statusCode:
           enum:
-          - 404
-          example: 404
+            - Not Found
+        message:
+          type: string
+          example: Saved object [index-pattern/caaad6d0-920c-11ed-b36a-874bd1548a00] not found
+        statusCode:
           type: integer
-      type: object
+          example: 404
+          enum:
+            - 404
     update_data_view_request_object:
-      properties:
-        data_view:
-          $ref: '#/components/schemas/update_data_view_request_object_data_view'
-        refresh_fields:
-          default: false
-          description: Reloads the data view fields after the data view is updated.
-          type: boolean
-      required:
-      - data_view
       title: Update data view request
       type: object
-    getAllDataViews_200_response_data_view_inner:
-      example:
-        typeMeta: "{}"
-        name: name
-        id: id
-        title: title
-        namespaces:
-        - namespaces
-        - namespaces
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        namespaces:
-          items:
-            type: string
-          type: array
-        title:
-          type: string
-        typeMeta:
-          type: object
-      type: object
-    getAllDataViews_200_response:
-      example:
-        data_view:
-        - typeMeta: "{}"
-          name: name
-          id: id
-          title: title
-          namespaces:
-          - namespaces
-          - namespaces
-        - typeMeta: "{}"
-          name: name
-          id: id
-          title: title
-          namespaces:
-          - namespaces
-          - namespaces
-      properties:
-        data_view:
-          items:
-            $ref: '#/components/schemas/getAllDataViews_200_response_data_view_inner'
-          type: array
-      type: object
-    updateFieldsMetadata_request:
-      properties:
-        fields:
-          description: The field object.
-          type: object
       required:
-      - fields
-      type: object
-    updateFieldsMetadata_200_response:
-      example:
-        acknowledged: true
+        - data_view
       properties:
-        acknowledged:
+        data_view:
+          type: object
+          description: |
+            The data view properties you want to update. Only the specified properties are updated in the data view. Unspecified fields stay as they are persisted.
+          properties:
+            allowNoIndex:
+              $ref: '#/components/schemas/allownoindex'
+            fieldFormats:
+              $ref: '#/components/schemas/fieldformats'
+            fields:
+              type: object
+            name:
+              type: string
+            runtimeFieldMap:
+              $ref: '#/components/schemas/runtimefieldmap'
+            sourceFilters:
+              $ref: '#/components/schemas/sourcefilters'
+            timeFieldName:
+              $ref: '#/components/schemas/timefieldname'
+            title:
+              $ref: '#/components/schemas/title'
+            type:
+              $ref: '#/components/schemas/type'
+            typeMeta:
+              $ref: '#/components/schemas/typemeta'
+        refresh_fields:
           type: boolean
-      type: object
-    createUpdateRuntimeField_request:
-      properties:
-        name:
-          description: |
-            The name for a runtime field.
-          type: string
-        runtimeField:
-          description: |
-            The runtime field definition object.
-          type: object
-      required:
-      - name
-      - runtimeField
-      type: object
-    createUpdateRuntimeField_200_response:
-      example:
-        data_view: "{}"
-        fields:
-        - "{}"
-        - "{}"
-      properties:
-        data_view:
-          type: object
-        fields:
-          items:
-            type: object
-          type: array
-      type: object
-    updateRuntimeField_request:
-      properties:
-        runtimeField:
-          description: |
-            The runtime field definition object.
-
-            You can update following fields:
-
-            - `type`
-            - `script`
-          type: object
-      required:
-      - runtimeField
-      type: object
-    getDefaultDataView_200_response:
-      example:
-        data_view_id: data_view_id
-      properties:
-        data_view_id:
-          type: string
-      type: object
-    setDefaultDatailView_request:
-      properties:
-        data_view_id:
-          description: |
-            The data view identifier. NOTE: The API does not validate whether it is a valid identifier. Use `null` to unset the default data view.
-        force:
+          description: Reloads the data view fields after the data view is updated.
           default: false
-          description: Update an existing default data view identifier.
-          type: boolean
-      required:
-      - data_view_id
-      type: object
-    sourcefilters_inner:
-      example:
-        value: value
-      properties:
-        value:
-          type: string
-      required:
-      - value
-      type: object
-    create_data_view_request_object_data_view:
-      description: The data view object.
-      properties:
-        allowNoIndex:
-          description: Allows the data view saved object to exist before the data
-            is available.
-          type: boolean
-        fieldAttrs:
-          description: A map of field attributes by field name.
-          type: object
-        fieldFormats:
-          description: A map of field formats by field name.
-          type: object
-        fields:
-          type: object
-        id:
-          type: string
-        name:
-          description: The data view name.
-          type: string
-        namespaces:
-          description: An array of space identifiers for sharing the data view between
-            multiple spaces.
-          items:
-            default: default
-            type: string
-          type: array
-        runtimeFieldMap:
-          description: A map of runtime field definitions by field name.
-          type: object
-        sourceFilters:
-          description: The array of field names you want to filter out in Discover.
-          items:
-            $ref: '#/components/schemas/sourcefilters_inner'
-          type: array
-        timeFieldName:
-          description: "The timestamp field name, which you use for time-based data\
-            \ views."
-          type: string
-        title:
-          description: "Comma-separated list of data streams, indices, and aliases\
-            \ that you want to search. Supports wildcards (`*`)."
-          type: string
-        type:
-          description: "When set to `rollup`, identifies the rollup data views."
-          type: string
-        typeMeta:
-          description: "When you use rollup indices, contains the field list for the\
-            \ rollup data view API endpoints."
-          type: object
-        version:
-          type: string
-      required:
-      - title
-      type: object
-    data_view_response_object_data_view:
-      example:
-        title: title
-        version: WzQ2LDJd
-        allowNoIndex: true
-        runtimeFieldMap: "{}"
-        fieldAttrs: "{}"
-        sourceFilters:
-        - value: value
-        - value: value
-        typeMeta: "{}"
-        timeFieldName: timeFieldName
-        fieldFormats: "{}"
-        name: name
-        id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-        fields: "{}"
-        namespaces:
-        - default
-        - default
-      properties:
-        allowNoIndex:
-          description: Allows the data view saved object to exist before the data
-            is available.
-          type: boolean
-        fieldAttrs:
-          description: A map of field attributes by field name.
-          type: object
-        fieldFormats:
-          description: A map of field formats by field name.
-          type: object
-        fields:
-          type: object
-        id:
-          example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-          type: string
-        name:
-          description: The data view name.
-          type: string
-        namespaces:
-          description: An array of space identifiers for sharing the data view between
-            multiple spaces.
-          items:
-            default: default
-            type: string
-          type: array
-        runtimeFieldMap:
-          description: A map of runtime field definitions by field name.
-          type: object
-        sourceFilters:
-          description: The array of field names you want to filter out in Discover.
-          items:
-            $ref: '#/components/schemas/sourcefilters_inner'
-          type: array
-        timeFieldName:
-          description: "The timestamp field name, which you use for time-based data\
-            \ views."
-          type: string
-        title:
-          description: "Comma-separated list of data streams, indices, and aliases\
-            \ that you want to search. Supports wildcards (`*`)."
-          type: string
-        typeMeta:
-          description: "When you use rollup indices, contains the field list for the\
-            \ rollup data view API endpoints."
-          type: object
-        version:
-          example: WzQ2LDJd
-          type: string
-      type: object
-    update_data_view_request_object_data_view:
-      description: |
-        The data view properties you want to update. Only the specified properties are updated in the data view. Unspecified fields stay as they are persisted.
-      properties:
-        allowNoIndex:
-          description: Allows the data view saved object to exist before the data
-            is available.
-          type: boolean
-        fieldFormats:
-          description: A map of field formats by field name.
-          type: object
-        fields:
-          type: object
-        name:
-          type: string
-        runtimeFieldMap:
-          description: A map of runtime field definitions by field name.
-          type: object
-        sourceFilters:
-          description: The array of field names you want to filter out in Discover.
-          items:
-            $ref: '#/components/schemas/sourcefilters_inner'
-          type: array
-        timeFieldName:
-          description: "The timestamp field name, which you use for time-based data\
-            \ views."
-          type: string
-        title:
-          description: "Comma-separated list of data streams, indices, and aliases\
-            \ that you want to search. Supports wildcards (`*`)."
-          type: string
-        type:
-          description: "When set to `rollup`, identifies the rollup data views."
-          type: string
-        typeMeta:
-          description: "When you use rollup indices, contains the field list for the\
-            \ rollup data view API endpoints."
-          type: object
-      type: object
-  securitySchemes:
-    basicAuth:
-      scheme: basic
-      type: http
-    apiKeyAuth:
+  parameters:
+    kbn_xsrf:
+      schema:
+        type: string
       in: header
-      name: ApiKey
-      type: apiKey
+      name: kbn-xsrf
+      description: Cross-site request forgery protection
+      required: true
+    view_id:
+      in: path
+      name: viewId
+      description: An identifier for the data view.
+      required: true
+      schema:
+        type: string
+        example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+    field_name:
+      in: path
+      name: fieldName
+      description: The name of the runtime field.
+      required: true
+      schema:
+        type: string
+        example: hour_of_day

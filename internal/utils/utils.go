@@ -13,21 +13,22 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func CheckError(res *esapi.Response, errMsg string) diag.Diagnostics {
-	var diags diag.Diagnostics
+func CheckError(res *esapi.Response, errMsg string) sdkdiag.Diagnostics {
+	var diags sdkdiag.Diagnostics
 
 	if res.IsError() {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			return diag.FromErr(err)
+			return sdkdiag.FromErr(err)
 		}
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
+		diags = append(diags, sdkdiag.Diagnostic{
+			Severity: sdkdiag.Error,
 			Summary:  errMsg,
 			Detail:   fmt.Sprintf("Failed with: %s", body),
 		})
@@ -36,19 +37,34 @@ func CheckError(res *esapi.Response, errMsg string) diag.Diagnostics {
 	return diags
 }
 
-func CheckHttpError(res *http.Response, errMsg string) diag.Diagnostics {
-	var diags diag.Diagnostics
+func CheckHttpError(res *http.Response, errMsg string) sdkdiag.Diagnostics {
+	var diags sdkdiag.Diagnostics
 
 	if res.StatusCode >= 400 {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			return diag.FromErr(err)
+			return sdkdiag.FromErr(err)
 		}
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
+		diags = append(diags, sdkdiag.Diagnostic{
+			Severity: sdkdiag.Error,
 			Summary:  errMsg,
 			Detail:   fmt.Sprintf("Failed with: %s", body),
 		})
+		return diags
+	}
+	return diags
+}
+
+func CheckHttpErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	if res.StatusCode >= 400 {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			diags.AddError(errMsg, err.Error())
+			return diags
+		}
+		diags.AddError(errMsg, fmt.Sprintf("Failed with: %s", body))
 		return diags
 	}
 	return diags

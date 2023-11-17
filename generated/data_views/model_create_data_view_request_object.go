@@ -21,7 +21,7 @@ var _ MappedNullable = &CreateDataViewRequestObject{}
 type CreateDataViewRequestObject struct {
 	DataView CreateDataViewRequestObjectDataView `json:"data_view"`
 	// Override an existing data view if a data view with the provided title already exists.
-	Override interface{} `json:"override,omitempty"`
+	Override *bool `json:"override,omitempty"`
 }
 
 // NewCreateDataViewRequestObject instantiates a new CreateDataViewRequestObject object
@@ -31,6 +31,8 @@ type CreateDataViewRequestObject struct {
 func NewCreateDataViewRequestObject(dataView CreateDataViewRequestObjectDataView) *CreateDataViewRequestObject {
 	this := CreateDataViewRequestObject{}
 	this.DataView = dataView
+	var override bool = false
+	this.Override = &override
 	return &this
 }
 
@@ -39,6 +41,8 @@ func NewCreateDataViewRequestObject(dataView CreateDataViewRequestObjectDataView
 // but it doesn't guarantee that properties required by API are set
 func NewCreateDataViewRequestObjectWithDefaults() *CreateDataViewRequestObject {
 	this := CreateDataViewRequestObject{}
+	var override bool = false
+	this.Override = &override
 	return &this
 }
 
@@ -66,37 +70,36 @@ func (o *CreateDataViewRequestObject) SetDataView(v CreateDataViewRequestObjectD
 	o.DataView = v
 }
 
-// GetOverride returns the Override field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *CreateDataViewRequestObject) GetOverride() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetOverride returns the Override field value if set, zero value otherwise.
+func (o *CreateDataViewRequestObject) GetOverride() bool {
+	if o == nil || IsNil(o.Override) {
+		var ret bool
 		return ret
 	}
-	return o.Override
+	return *o.Override
 }
 
 // GetOverrideOk returns a tuple with the Override field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *CreateDataViewRequestObject) GetOverrideOk() (*interface{}, bool) {
+func (o *CreateDataViewRequestObject) GetOverrideOk() (*bool, bool) {
 	if o == nil || IsNil(o.Override) {
 		return nil, false
 	}
-	return &o.Override, true
+	return o.Override, true
 }
 
 // HasOverride returns a boolean if a field has been set.
 func (o *CreateDataViewRequestObject) HasOverride() bool {
-	if o != nil && IsNil(o.Override) {
+	if o != nil && !IsNil(o.Override) {
 		return true
 	}
 
 	return false
 }
 
-// SetOverride gets a reference to the given interface{} and assigns it to the Override field.
-func (o *CreateDataViewRequestObject) SetOverride(v interface{}) {
-	o.Override = v
+// SetOverride gets a reference to the given bool and assigns it to the Override field.
+func (o *CreateDataViewRequestObject) SetOverride(v bool) {
+	o.Override = &v
 }
 
 func (o CreateDataViewRequestObject) MarshalJSON() ([]byte, error) {
@@ -110,7 +113,7 @@ func (o CreateDataViewRequestObject) MarshalJSON() ([]byte, error) {
 func (o CreateDataViewRequestObject) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["data_view"] = o.DataView
-	if o.Override != nil {
+	if !IsNil(o.Override) {
 		toSerialize["override"] = o.Override
 	}
 	return toSerialize, nil

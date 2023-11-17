@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **DataView** | [**UpdateDataViewRequestObjectDataView**](UpdateDataViewRequestObjectDataView.md) |  | 
-**RefreshFields** | Pointer to **interface{}** | Reloads the data view fields after the data view is updated. | [optional] [default to false]
+**RefreshFields** | Pointer to **bool** | Reloads the data view fields after the data view is updated. | [optional] [default to false]
 
 ## Methods
 
@@ -48,20 +48,20 @@ SetDataView sets DataView field to given value.
 
 ### GetRefreshFields
 
-`func (o *UpdateDataViewRequestObject) GetRefreshFields() interface{}`
+`func (o *UpdateDataViewRequestObject) GetRefreshFields() bool`
 
 GetRefreshFields returns the RefreshFields field if non-nil, zero value otherwise.
 
 ### GetRefreshFieldsOk
 
-`func (o *UpdateDataViewRequestObject) GetRefreshFieldsOk() (*interface{}, bool)`
+`func (o *UpdateDataViewRequestObject) GetRefreshFieldsOk() (*bool, bool)`
 
 GetRefreshFieldsOk returns a tuple with the RefreshFields field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetRefreshFields
 
-`func (o *UpdateDataViewRequestObject) SetRefreshFields(v interface{})`
+`func (o *UpdateDataViewRequestObject) SetRefreshFields(v bool)`
 
 SetRefreshFields sets RefreshFields field to given value.
 
@@ -71,16 +71,6 @@ SetRefreshFields sets RefreshFields field to given value.
 
 HasRefreshFields returns a boolean if a field has been set.
 
-### SetRefreshFieldsNil
-
-`func (o *UpdateDataViewRequestObject) SetRefreshFieldsNil(b bool)`
-
- SetRefreshFieldsNil sets the value for RefreshFields to be an explicit nil
-
-### UnsetRefreshFields
-`func (o *UpdateDataViewRequestObject) UnsetRefreshFields()`
-
-UnsetRefreshFields ensures that no value is present for RefreshFields, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **DataView** | Pointer to **map[string]interface{}** |  | [optional] 
-**Fields** | Pointer to **interface{}** |  | [optional] 
+**Fields** | Pointer to **[]map[string]interface{}** |  | [optional] 
 
 ## Methods
 
@@ -53,20 +53,20 @@ HasDataView returns a boolean if a field has been set.
 
 ### GetFields
 
-`func (o *GetRuntimeField200Response) GetFields() interface{}`
+`func (o *GetRuntimeField200Response) GetFields() []map[string]interface{}`
 
 GetFields returns the Fields field if non-nil, zero value otherwise.
 
 ### GetFieldsOk
 
-`func (o *GetRuntimeField200Response) GetFieldsOk() (*interface{}, bool)`
+`func (o *GetRuntimeField200Response) GetFieldsOk() (*[]map[string]interface{}, bool)`
 
 GetFieldsOk returns a tuple with the Fields field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetFields
 
-`func (o *GetRuntimeField200Response) SetFields(v interface{})`
+`func (o *GetRuntimeField200Response) SetFields(v []map[string]interface{})`
 
 SetFields sets Fields field to given value.
 
@@ -76,16 +76,6 @@ SetFields sets Fields field to given value.
 
 HasFields returns a boolean if a field has been set.
 
-### SetFieldsNil
-
-`func (o *GetRuntimeField200Response) SetFieldsNil(b bool)`
-
- SetFieldsNil sets the value for Fields to be an explicit nil
-
-### UnsetFields
-`func (o *GetRuntimeField200Response) UnsetFields()`
-
-UnsetFields ensures that no value is present for Fields, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

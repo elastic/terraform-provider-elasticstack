@@ -21,7 +21,7 @@ var _ MappedNullable = &UpdateDataViewRequestObject{}
 type UpdateDataViewRequestObject struct {
 	DataView UpdateDataViewRequestObjectDataView `json:"data_view"`
 	// Reloads the data view fields after the data view is updated.
-	RefreshFields interface{} `json:"refresh_fields,omitempty"`
+	RefreshFields *bool `json:"refresh_fields,omitempty"`
 }
 
 // NewUpdateDataViewRequestObject instantiates a new UpdateDataViewRequestObject object
@@ -31,6 +31,8 @@ type UpdateDataViewRequestObject struct {
 func NewUpdateDataViewRequestObject(dataView UpdateDataViewRequestObjectDataView) *UpdateDataViewRequestObject {
 	this := UpdateDataViewRequestObject{}
 	this.DataView = dataView
+	var refreshFields bool = false
+	this.RefreshFields = &refreshFields
 	return &this
 }
 
@@ -39,6 +41,8 @@ func NewUpdateDataViewRequestObject(dataView UpdateDataViewRequestObjectDataView
 // but it doesn't guarantee that properties required by API are set
 func NewUpdateDataViewRequestObjectWithDefaults() *UpdateDataViewRequestObject {
 	this := UpdateDataViewRequestObject{}
+	var refreshFields bool = false
+	this.RefreshFields = &refreshFields
 	return &this
 }
 
@@ -66,37 +70,36 @@ func (o *UpdateDataViewRequestObject) SetDataView(v UpdateDataViewRequestObjectD
 	o.DataView = v
 }
 
-// GetRefreshFields returns the RefreshFields field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *UpdateDataViewRequestObject) GetRefreshFields() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetRefreshFields returns the RefreshFields field value if set, zero value otherwise.
+func (o *UpdateDataViewRequestObject) GetRefreshFields() bool {
+	if o == nil || IsNil(o.RefreshFields) {
+		var ret bool
 		return ret
 	}
-	return o.RefreshFields
+	return *o.RefreshFields
 }
 
 // GetRefreshFieldsOk returns a tuple with the RefreshFields field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *UpdateDataViewRequestObject) GetRefreshFieldsOk() (*interface{}, bool) {
+func (o *UpdateDataViewRequestObject) GetRefreshFieldsOk() (*bool, bool) {
 	if o == nil || IsNil(o.RefreshFields) {
 		return nil, false
 	}
-	return &o.RefreshFields, true
+	return o.RefreshFields, true
 }
 
 // HasRefreshFields returns a boolean if a field has been set.
 func (o *UpdateDataViewRequestObject) HasRefreshFields() bool {
-	if o != nil && IsNil(o.RefreshFields) {
+	if o != nil && !IsNil(o.RefreshFields) {
 		return true
 	}
 
 	return false
 }
 
-// SetRefreshFields gets a reference to the given interface{} and assigns it to the RefreshFields field.
-func (o *UpdateDataViewRequestObject) SetRefreshFields(v interface{}) {
-	o.RefreshFields = v
+// SetRefreshFields gets a reference to the given bool and assigns it to the RefreshFields field.
+func (o *UpdateDataViewRequestObject) SetRefreshFields(v bool) {
+	o.RefreshFields = &v
 }
 
 func (o UpdateDataViewRequestObject) MarshalJSON() ([]byte, error) {
@@ -110,7 +113,7 @@ func (o UpdateDataViewRequestObject) MarshalJSON() ([]byte, error) {
 func (o UpdateDataViewRequestObject) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["data_view"] = o.DataView
-	if o.RefreshFields != nil {
+	if !IsNil(o.RefreshFields) {
 		toSerialize["refresh_fields"] = o.RefreshFields
 	}
 	return toSerialize, nil

@@ -19,8 +19,8 @@ var _ MappedNullable = &CreateUpdateRuntimeField200Response{}
 
 // CreateUpdateRuntimeField200Response struct for CreateUpdateRuntimeField200Response
 type CreateUpdateRuntimeField200Response struct {
-	DataView map[string]interface{} `json:"data_view,omitempty"`
-	Fields   interface{}            `json:"fields,omitempty"`
+	DataView map[string]interface{}   `json:"data_view,omitempty"`
+	Fields   []map[string]interface{} `json:"fields,omitempty"`
 }
 
 // NewCreateUpdateRuntimeField200Response instantiates a new CreateUpdateRuntimeField200Response object
@@ -72,10 +72,10 @@ func (o *CreateUpdateRuntimeField200Response) SetDataView(v map[string]interface
 	o.DataView = v
 }
 
-// GetFields returns the Fields field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *CreateUpdateRuntimeField200Response) GetFields() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetFields returns the Fields field value if set, zero value otherwise.
+func (o *CreateUpdateRuntimeField200Response) GetFields() []map[string]interface{} {
+	if o == nil || IsNil(o.Fields) {
+		var ret []map[string]interface{}
 		return ret
 	}
 	return o.Fields
@@ -83,25 +83,24 @@ func (o *CreateUpdateRuntimeField200Response) GetFields() interface{} {
 
 // GetFieldsOk returns a tuple with the Fields field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *CreateUpdateRuntimeField200Response) GetFieldsOk() (*interface{}, bool) {
+func (o *CreateUpdateRuntimeField200Response) GetFieldsOk() ([]map[string]interface{}, bool) {
 	if o == nil || IsNil(o.Fields) {
 		return nil, false
 	}
-	return &o.Fields, true
+	return o.Fields, true
 }
 
 // HasFields returns a boolean if a field has been set.
 func (o *CreateUpdateRuntimeField200Response) HasFields() bool {
-	if o != nil && IsNil(o.Fields) {
+	if o != nil && !IsNil(o.Fields) {
 		return true
 	}
 
 	return false
 }
 
-// SetFields gets a reference to the given interface{} and assigns it to the Fields field.
-func (o *CreateUpdateRuntimeField200Response) SetFields(v interface{}) {
+// SetFields gets a reference to the given []map[string]interface{} and assigns it to the Fields field.
+func (o *CreateUpdateRuntimeField200Response) SetFields(v []map[string]interface{}) {
 	o.Fields = v
 }
 
@@ -118,7 +117,7 @@ func (o CreateUpdateRuntimeField200Response) ToMap() (map[string]interface{}, er
 	if !IsNil(o.DataView) {
 		toSerialize["data_view"] = o.DataView
 	}
-	if o.Fields != nil {
+	if !IsNil(o.Fields) {
 		toSerialize["fields"] = o.Fields
 	}
 	return toSerialize, nil

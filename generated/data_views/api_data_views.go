@@ -46,7 +46,7 @@ type DataViewsAPI interface {
 		@param viewId An identifier for the data view.
 		@return ApiCreateRuntimeFieldRequest
 	*/
-	CreateRuntimeField(ctx context.Context, viewId interface{}) ApiCreateRuntimeFieldRequest
+	CreateRuntimeField(ctx context.Context, viewId string) ApiCreateRuntimeFieldRequest
 
 	// CreateRuntimeFieldExecute executes the request
 	CreateRuntimeFieldExecute(r ApiCreateRuntimeFieldRequest) (*http.Response, error)
@@ -77,7 +77,7 @@ type DataViewsAPI interface {
 		@param viewId An identifier for the data view.
 		@return ApiDeleteDataViewRequest
 	*/
-	DeleteDataView(ctx context.Context, viewId interface{}) ApiDeleteDataViewRequest
+	DeleteDataView(ctx context.Context, viewId string) ApiDeleteDataViewRequest
 
 	// DeleteDataViewExecute executes the request
 	DeleteDataViewExecute(r ApiDeleteDataViewRequest) (*http.Response, error)
@@ -93,7 +93,7 @@ type DataViewsAPI interface {
 		@param viewId An identifier for the data view.
 		@return ApiDeleteRuntimeFieldRequest
 	*/
-	DeleteRuntimeField(ctx context.Context, fieldName interface{}, viewId interface{}) ApiDeleteRuntimeFieldRequest
+	DeleteRuntimeField(ctx context.Context, fieldName string, viewId string) ApiDeleteRuntimeFieldRequest
 
 	// DeleteRuntimeFieldExecute executes the request
 	DeleteRuntimeFieldExecute(r ApiDeleteRuntimeFieldRequest) (*http.Response, error)
@@ -123,7 +123,7 @@ type DataViewsAPI interface {
 		@param viewId An identifier for the data view.
 		@return ApiGetDataViewRequest
 	*/
-	GetDataView(ctx context.Context, viewId interface{}) ApiGetDataViewRequest
+	GetDataView(ctx context.Context, viewId string) ApiGetDataViewRequest
 
 	// GetDataViewExecute executes the request
 	//  @return DataViewResponseObject
@@ -155,11 +155,11 @@ type DataViewsAPI interface {
 		@param viewId An identifier for the data view.
 		@return ApiGetRuntimeFieldRequest
 	*/
-	GetRuntimeField(ctx context.Context, fieldName interface{}, viewId interface{}) ApiGetRuntimeFieldRequest
+	GetRuntimeField(ctx context.Context, fieldName string, viewId string) ApiGetRuntimeFieldRequest
 
 	// GetRuntimeFieldExecute executes the request
-	//  @return GetRuntimeField200Response
-	GetRuntimeFieldExecute(r ApiGetRuntimeFieldRequest) (*GetRuntimeField200Response, *http.Response, error)
+	//  @return CreateUpdateRuntimeField200Response
+	GetRuntimeFieldExecute(r ApiGetRuntimeFieldRequest) (*CreateUpdateRuntimeField200Response, *http.Response, error)
 
 	/*
 		SetDefaultDatailView Sets the default data view identifier.
@@ -186,7 +186,7 @@ type DataViewsAPI interface {
 		@param viewId An identifier for the data view.
 		@return ApiUpdateDataViewRequest
 	*/
-	UpdateDataView(ctx context.Context, viewId interface{}) ApiUpdateDataViewRequest
+	UpdateDataView(ctx context.Context, viewId string) ApiUpdateDataViewRequest
 
 	// UpdateDataViewExecute executes the request
 	//  @return DataViewResponseObject
@@ -202,7 +202,7 @@ type DataViewsAPI interface {
 		@param viewId An identifier for the data view.
 		@return ApiUpdateFieldsMetadataRequest
 	*/
-	UpdateFieldsMetadata(ctx context.Context, viewId interface{}) ApiUpdateFieldsMetadataRequest
+	UpdateFieldsMetadata(ctx context.Context, viewId string) ApiUpdateFieldsMetadataRequest
 
 	// UpdateFieldsMetadataExecute executes the request
 	//  @return UpdateFieldsMetadata200Response
@@ -219,7 +219,7 @@ type DataViewsAPI interface {
 		@param viewId An identifier for the data view.
 		@return ApiUpdateRuntimeFieldRequest
 	*/
-	UpdateRuntimeField(ctx context.Context, fieldName interface{}, viewId interface{}) ApiUpdateRuntimeFieldRequest
+	UpdateRuntimeField(ctx context.Context, fieldName string, viewId string) ApiUpdateRuntimeFieldRequest
 
 	// UpdateRuntimeFieldExecute executes the request
 	UpdateRuntimeFieldExecute(r ApiUpdateRuntimeFieldRequest) (*http.Response, error)
@@ -231,12 +231,12 @@ type DataViewsAPIService service
 type ApiCreateDataViewRequest struct {
 	ctx                         context.Context
 	ApiService                  DataViewsAPI
-	kbnXsrf                     *interface{}
+	kbnXsrf                     *string
 	createDataViewRequestObject *CreateDataViewRequestObject
 }
 
 // Cross-site request forgery protection
-func (r ApiCreateDataViewRequest) KbnXsrf(kbnXsrf interface{}) ApiCreateDataViewRequest {
+func (r ApiCreateDataViewRequest) KbnXsrf(kbnXsrf string) ApiCreateDataViewRequest {
 	r.kbnXsrf = &kbnXsrf
 	return r
 }
@@ -375,21 +375,21 @@ func (a *DataViewsAPIService) CreateDataViewExecute(r ApiCreateDataViewRequest) 
 }
 
 type ApiCreateRuntimeFieldRequest struct {
-	ctx                       context.Context
-	ApiService                DataViewsAPI
-	kbnXsrf                   *interface{}
-	viewId                    interface{}
-	createRuntimeFieldRequest *CreateRuntimeFieldRequest
+	ctx                             context.Context
+	ApiService                      DataViewsAPI
+	kbnXsrf                         *string
+	viewId                          string
+	createUpdateRuntimeFieldRequest *CreateUpdateRuntimeFieldRequest
 }
 
 // Cross-site request forgery protection
-func (r ApiCreateRuntimeFieldRequest) KbnXsrf(kbnXsrf interface{}) ApiCreateRuntimeFieldRequest {
+func (r ApiCreateRuntimeFieldRequest) KbnXsrf(kbnXsrf string) ApiCreateRuntimeFieldRequest {
 	r.kbnXsrf = &kbnXsrf
 	return r
 }
 
-func (r ApiCreateRuntimeFieldRequest) CreateRuntimeFieldRequest(createRuntimeFieldRequest CreateRuntimeFieldRequest) ApiCreateRuntimeFieldRequest {
-	r.createRuntimeFieldRequest = &createRuntimeFieldRequest
+func (r ApiCreateRuntimeFieldRequest) CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest CreateUpdateRuntimeFieldRequest) ApiCreateRuntimeFieldRequest {
+	r.createUpdateRuntimeFieldRequest = &createUpdateRuntimeFieldRequest
 	return r
 }
 
@@ -406,7 +406,7 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param viewId An identifier for the data view.
 	@return ApiCreateRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) CreateRuntimeField(ctx context.Context, viewId interface{}) ApiCreateRuntimeFieldRequest {
+func (a *DataViewsAPIService) CreateRuntimeField(ctx context.Context, viewId string) ApiCreateRuntimeFieldRequest {
 	return ApiCreateRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -436,8 +436,8 @@ func (a *DataViewsAPIService) CreateRuntimeFieldExecute(r ApiCreateRuntimeFieldR
 	if r.kbnXsrf == nil {
 		return nil, reportError("kbnXsrf is required and must be specified")
 	}
-	if r.createRuntimeFieldRequest == nil {
-		return nil, reportError("createRuntimeFieldRequest is required and must be specified")
+	if r.createUpdateRuntimeFieldRequest == nil {
+		return nil, reportError("createUpdateRuntimeFieldRequest is required and must be specified")
 	}
 
 	// to determine the Content-Type header
@@ -459,7 +459,7 @@ func (a *DataViewsAPIService) CreateRuntimeFieldExecute(r ApiCreateRuntimeFieldR
 	}
 	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	// body params
-	localVarPostBody = r.createRuntimeFieldRequest
+	localVarPostBody = r.createUpdateRuntimeFieldRequest
 	if r.ctx != nil {
 		// API Key Authentication
 		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
@@ -505,13 +505,13 @@ func (a *DataViewsAPIService) CreateRuntimeFieldExecute(r ApiCreateRuntimeFieldR
 type ApiCreateUpdateRuntimeFieldRequest struct {
 	ctx                             context.Context
 	ApiService                      DataViewsAPI
-	kbnXsrf                         *interface{}
+	kbnXsrf                         *string
 	viewId                          string
 	createUpdateRuntimeFieldRequest *CreateUpdateRuntimeFieldRequest
 }
 
 // Cross-site request forgery protection
-func (r ApiCreateUpdateRuntimeFieldRequest) KbnXsrf(kbnXsrf interface{}) ApiCreateUpdateRuntimeFieldRequest {
+func (r ApiCreateUpdateRuntimeFieldRequest) KbnXsrf(kbnXsrf string) ApiCreateUpdateRuntimeFieldRequest {
 	r.kbnXsrf = &kbnXsrf
 	return r
 }
@@ -655,7 +655,14 @@ func (a *DataViewsAPIService) CreateUpdateRuntimeFieldExecute(r ApiCreateUpdateR
 type ApiDeleteDataViewRequest struct {
 	ctx        context.Context
 	ApiService DataViewsAPI
-	viewId     interface{}
+	kbnXsrf    *string
+	viewId     string
+}
+
+// Cross-site request forgery protection
+func (r ApiDeleteDataViewRequest) KbnXsrf(kbnXsrf string) ApiDeleteDataViewRequest {
+	r.kbnXsrf = &kbnXsrf
+	return r
 }
 
 func (r ApiDeleteDataViewRequest) Execute() (*http.Response, error) {
@@ -671,7 +678,7 @@ WARNING: When you delete a data view, it cannot be recovered. This functionality
 	@param viewId An identifier for the data view.
 	@return ApiDeleteDataViewRequest
 */
-func (a *DataViewsAPIService) DeleteDataView(ctx context.Context, viewId interface{}) ApiDeleteDataViewRequest {
+func (a *DataViewsAPIService) DeleteDataView(ctx context.Context, viewId string) ApiDeleteDataViewRequest {
 	return ApiDeleteDataViewRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -698,6 +705,9 @@ func (a *DataViewsAPIService) DeleteDataViewExecute(r ApiDeleteDataViewRequest) 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
+	if r.kbnXsrf == nil {
+		return nil, reportError("kbnXsrf is required and must be specified")
+	}
 
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -716,6 +726,7 @@ func (a *DataViewsAPIService) DeleteDataViewExecute(r ApiDeleteDataViewRequest) 
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	if r.ctx != nil {
 		// API Key Authentication
 		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
@@ -771,8 +782,8 @@ func (a *DataViewsAPIService) DeleteDataViewExecute(r ApiDeleteDataViewRequest) 
 type ApiDeleteRuntimeFieldRequest struct {
 	ctx        context.Context
 	ApiService DataViewsAPI
-	fieldName  interface{}
-	viewId     interface{}
+	fieldName  string
+	viewId     string
 }
 
 func (r ApiDeleteRuntimeFieldRequest) Execute() (*http.Response, error) {
@@ -789,7 +800,7 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param viewId An identifier for the data view.
 	@return ApiDeleteRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) DeleteRuntimeField(ctx context.Context, fieldName interface{}, viewId interface{}) ApiDeleteRuntimeFieldRequest {
+func (a *DataViewsAPIService) DeleteRuntimeField(ctx context.Context, fieldName string, viewId string) ApiDeleteRuntimeFieldRequest {
 	return ApiDeleteRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1015,7 +1026,7 @@ func (a *DataViewsAPIService) GetAllDataViewsExecute(r ApiGetAllDataViewsRequest
 type ApiGetDataViewRequest struct {
 	ctx        context.Context
 	ApiService DataViewsAPI
-	viewId     interface{}
+	viewId     string
 }
 
 func (r ApiGetDataViewRequest) Execute() (*DataViewResponseObject, *http.Response, error) {
@@ -1031,7 +1042,7 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param viewId An identifier for the data view.
 	@return ApiGetDataViewRequest
 */
-func (a *DataViewsAPIService) GetDataView(ctx context.Context, viewId interface{}) ApiGetDataViewRequest {
+func (a *DataViewsAPIService) GetDataView(ctx context.Context, viewId string) ApiGetDataViewRequest {
 	return ApiGetDataViewRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1267,11 +1278,11 @@ func (a *DataViewsAPIService) GetDefaultDataViewExecute(r ApiGetDefaultDataViewR
 type ApiGetRuntimeFieldRequest struct {
 	ctx        context.Context
 	ApiService DataViewsAPI
-	fieldName  interface{}
-	viewId     interface{}
+	fieldName  string
+	viewId     string
 }
 
-func (r ApiGetRuntimeFieldRequest) Execute() (*GetRuntimeField200Response, *http.Response, error) {
+func (r ApiGetRuntimeFieldRequest) Execute() (*CreateUpdateRuntimeField200Response, *http.Response, error) {
 	return r.ApiService.GetRuntimeFieldExecute(r)
 }
 
@@ -1285,7 +1296,7 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param viewId An identifier for the data view.
 	@return ApiGetRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) GetRuntimeField(ctx context.Context, fieldName interface{}, viewId interface{}) ApiGetRuntimeFieldRequest {
+func (a *DataViewsAPIService) GetRuntimeField(ctx context.Context, fieldName string, viewId string) ApiGetRuntimeFieldRequest {
 	return ApiGetRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1296,13 +1307,13 @@ func (a *DataViewsAPIService) GetRuntimeField(ctx context.Context, fieldName int
 
 // Execute executes the request
 //
-//	@return GetRuntimeField200Response
-func (a *DataViewsAPIService) GetRuntimeFieldExecute(r ApiGetRuntimeFieldRequest) (*GetRuntimeField200Response, *http.Response, error) {
+//	@return CreateUpdateRuntimeField200Response
+func (a *DataViewsAPIService) GetRuntimeFieldExecute(r ApiGetRuntimeFieldRequest) (*CreateUpdateRuntimeField200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *GetRuntimeField200Response
+		localVarReturnValue *CreateUpdateRuntimeField200Response
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DataViewsAPIService.GetRuntimeField")
@@ -1399,12 +1410,12 @@ func (a *DataViewsAPIService) GetRuntimeFieldExecute(r ApiGetRuntimeFieldRequest
 type ApiSetDefaultDatailViewRequest struct {
 	ctx                         context.Context
 	ApiService                  DataViewsAPI
-	kbnXsrf                     *interface{}
+	kbnXsrf                     *string
 	setDefaultDatailViewRequest *SetDefaultDatailViewRequest
 }
 
 // Cross-site request forgery protection
-func (r ApiSetDefaultDatailViewRequest) KbnXsrf(kbnXsrf interface{}) ApiSetDefaultDatailViewRequest {
+func (r ApiSetDefaultDatailViewRequest) KbnXsrf(kbnXsrf string) ApiSetDefaultDatailViewRequest {
 	r.kbnXsrf = &kbnXsrf
 	return r
 }
@@ -1545,13 +1556,13 @@ func (a *DataViewsAPIService) SetDefaultDatailViewExecute(r ApiSetDefaultDatailV
 type ApiUpdateDataViewRequest struct {
 	ctx                         context.Context
 	ApiService                  DataViewsAPI
-	kbnXsrf                     *interface{}
-	viewId                      interface{}
+	kbnXsrf                     *string
+	viewId                      string
 	updateDataViewRequestObject *UpdateDataViewRequestObject
 }
 
 // Cross-site request forgery protection
-func (r ApiUpdateDataViewRequest) KbnXsrf(kbnXsrf interface{}) ApiUpdateDataViewRequest {
+func (r ApiUpdateDataViewRequest) KbnXsrf(kbnXsrf string) ApiUpdateDataViewRequest {
 	r.kbnXsrf = &kbnXsrf
 	return r
 }
@@ -1574,7 +1585,7 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param viewId An identifier for the data view.
 	@return ApiUpdateDataViewRequest
 */
-func (a *DataViewsAPIService) UpdateDataView(ctx context.Context, viewId interface{}) ApiUpdateDataViewRequest {
+func (a *DataViewsAPIService) UpdateDataView(ctx context.Context, viewId string) ApiUpdateDataViewRequest {
 	return ApiUpdateDataViewRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1695,13 +1706,13 @@ func (a *DataViewsAPIService) UpdateDataViewExecute(r ApiUpdateDataViewRequest) 
 type ApiUpdateFieldsMetadataRequest struct {
 	ctx                         context.Context
 	ApiService                  DataViewsAPI
-	kbnXsrf                     *interface{}
-	viewId                      interface{}
+	kbnXsrf                     *string
+	viewId                      string
 	updateFieldsMetadataRequest *UpdateFieldsMetadataRequest
 }
 
 // Cross-site request forgery protection
-func (r ApiUpdateFieldsMetadataRequest) KbnXsrf(kbnXsrf interface{}) ApiUpdateFieldsMetadataRequest {
+func (r ApiUpdateFieldsMetadataRequest) KbnXsrf(kbnXsrf string) ApiUpdateFieldsMetadataRequest {
 	r.kbnXsrf = &kbnXsrf
 	return r
 }
@@ -1724,7 +1735,7 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param viewId An identifier for the data view.
 	@return ApiUpdateFieldsMetadataRequest
 */
-func (a *DataViewsAPIService) UpdateFieldsMetadata(ctx context.Context, viewId interface{}) ApiUpdateFieldsMetadataRequest {
+func (a *DataViewsAPIService) UpdateFieldsMetadata(ctx context.Context, viewId string) ApiUpdateFieldsMetadataRequest {
 	return ApiUpdateFieldsMetadataRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1845,8 +1856,8 @@ func (a *DataViewsAPIService) UpdateFieldsMetadataExecute(r ApiUpdateFieldsMetad
 type ApiUpdateRuntimeFieldRequest struct {
 	ctx                       context.Context
 	ApiService                DataViewsAPI
-	fieldName                 interface{}
-	viewId                    interface{}
+	fieldName                 string
+	viewId                    string
 	updateRuntimeFieldRequest *UpdateRuntimeFieldRequest
 }
 
@@ -1869,7 +1880,7 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param viewId An identifier for the data view.
 	@return ApiUpdateRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) UpdateRuntimeField(ctx context.Context, fieldName interface{}, viewId interface{}) ApiUpdateRuntimeFieldRequest {
+func (a *DataViewsAPIService) UpdateRuntimeField(ctx context.Context, fieldName string, viewId string) ApiUpdateRuntimeFieldRequest {
 	return ApiUpdateRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,

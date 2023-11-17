@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **DataViewId** | **interface{}** | The data view identifier. NOTE: The API does not validate whether it is a valid identifier. Use &#x60;null&#x60; to unset the default data view.  | 
-**Force** | Pointer to **interface{}** | Update an existing default data view identifier. | [optional] [default to false]
+**Force** | Pointer to **bool** | Update an existing default data view identifier. | [optional] [default to false]
 
 ## Methods
 
@@ -58,20 +58,20 @@ SetDataViewId sets DataViewId field to given value.
 UnsetDataViewId ensures that no value is present for DataViewId, not even an explicit nil
 ### GetForce
 
-`func (o *SetDefaultDatailViewRequest) GetForce() interface{}`
+`func (o *SetDefaultDatailViewRequest) GetForce() bool`
 
 GetForce returns the Force field if non-nil, zero value otherwise.
 
 ### GetForceOk
 
-`func (o *SetDefaultDatailViewRequest) GetForceOk() (*interface{}, bool)`
+`func (o *SetDefaultDatailViewRequest) GetForceOk() (*bool, bool)`
 
 GetForceOk returns a tuple with the Force field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetForce
 
-`func (o *SetDefaultDatailViewRequest) SetForce(v interface{})`
+`func (o *SetDefaultDatailViewRequest) SetForce(v bool)`
 
 SetForce sets Force field to given value.
 
@@ -81,16 +81,6 @@ SetForce sets Force field to given value.
 
 HasForce returns a boolean if a field has been set.
 
-### SetForceNil
-
-`func (o *SetDefaultDatailViewRequest) SetForceNil(b bool)`
-
- SetForceNil sets the value for Force to be an explicit nil
-
-### UnsetForce
-`func (o *SetDefaultDatailViewRequest) UnsetForce()`
-
-UnsetForce ensures that no value is present for Force, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

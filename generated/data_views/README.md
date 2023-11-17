@@ -73,7 +73,7 @@ ctx = context.WithValue(context.Background(), data_views.ContextOperationServerV
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *https://raw.githubusercontent.com*
+All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
@@ -96,7 +96,6 @@ Class | Method | HTTP request | Description
 
  - [CreateDataViewRequestObject](docs/CreateDataViewRequestObject.md)
  - [CreateDataViewRequestObjectDataView](docs/CreateDataViewRequestObjectDataView.md)
- - [CreateRuntimeFieldRequest](docs/CreateRuntimeFieldRequest.md)
  - [CreateUpdateRuntimeField200Response](docs/CreateUpdateRuntimeField200Response.md)
  - [CreateUpdateRuntimeFieldRequest](docs/CreateUpdateRuntimeFieldRequest.md)
  - [DataViewResponseObject](docs/DataViewResponseObject.md)
@@ -104,10 +103,10 @@ Class | Method | HTTP request | Description
  - [GetAllDataViews200Response](docs/GetAllDataViews200Response.md)
  - [GetAllDataViews200ResponseDataViewInner](docs/GetAllDataViews200ResponseDataViewInner.md)
  - [GetDefaultDataView200Response](docs/GetDefaultDataView200Response.md)
- - [GetRuntimeField200Response](docs/GetRuntimeField200Response.md)
  - [Model400Response](docs/Model400Response.md)
  - [Model404Response](docs/Model404Response.md)
  - [SetDefaultDatailViewRequest](docs/SetDefaultDatailViewRequest.md)
+ - [SourcefiltersInner](docs/SourcefiltersInner.md)
  - [UpdateDataViewRequestObject](docs/UpdateDataViewRequestObject.md)
  - [UpdateDataViewRequestObjectDataView](docs/UpdateDataViewRequestObjectDataView.md)
  - [UpdateFieldsMetadata200Response](docs/UpdateFieldsMetadata200Response.md)

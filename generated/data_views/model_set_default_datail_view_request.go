@@ -22,7 +22,7 @@ type SetDefaultDatailViewRequest struct {
 	// The data view identifier. NOTE: The API does not validate whether it is a valid identifier. Use `null` to unset the default data view.
 	DataViewId interface{} `json:"data_view_id"`
 	// Update an existing default data view identifier.
-	Force interface{} `json:"force,omitempty"`
+	Force *bool `json:"force,omitempty"`
 }
 
 // NewSetDefaultDatailViewRequest instantiates a new SetDefaultDatailViewRequest object
@@ -32,6 +32,8 @@ type SetDefaultDatailViewRequest struct {
 func NewSetDefaultDatailViewRequest(dataViewId interface{}) *SetDefaultDatailViewRequest {
 	this := SetDefaultDatailViewRequest{}
 	this.DataViewId = dataViewId
+	var force bool = false
+	this.Force = &force
 	return &this
 }
 
@@ -40,6 +42,8 @@ func NewSetDefaultDatailViewRequest(dataViewId interface{}) *SetDefaultDatailVie
 // but it doesn't guarantee that properties required by API are set
 func NewSetDefaultDatailViewRequestWithDefaults() *SetDefaultDatailViewRequest {
 	this := SetDefaultDatailViewRequest{}
+	var force bool = false
+	this.Force = &force
 	return &this
 }
 
@@ -69,37 +73,36 @@ func (o *SetDefaultDatailViewRequest) SetDataViewId(v interface{}) {
 	o.DataViewId = v
 }
 
-// GetForce returns the Force field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *SetDefaultDatailViewRequest) GetForce() interface{} {
-	if o == nil {
-		var ret interface{}
+// GetForce returns the Force field value if set, zero value otherwise.
+func (o *SetDefaultDatailViewRequest) GetForce() bool {
+	if o == nil || IsNil(o.Force) {
+		var ret bool
 		return ret
 	}
-	return o.Force
+	return *o.Force
 }
 
 // GetForceOk returns a tuple with the Force field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *SetDefaultDatailViewRequest) GetForceOk() (*interface{}, bool) {
+func (o *SetDefaultDatailViewRequest) GetForceOk() (*bool, bool) {
 	if o == nil || IsNil(o.Force) {
 		return nil, false
 	}
-	return &o.Force, true
+	return o.Force, true
 }
 
 // HasForce returns a boolean if a field has been set.
 func (o *SetDefaultDatailViewRequest) HasForce() bool {
-	if o != nil && IsNil(o.Force) {
+	if o != nil && !IsNil(o.Force) {
 		return true
 	}
 
 	return false
 }
 
-// SetForce gets a reference to the given interface{} and assigns it to the Force field.
-func (o *SetDefaultDatailViewRequest) SetForce(v interface{}) {
-	o.Force = v
+// SetForce gets a reference to the given bool and assigns it to the Force field.
+func (o *SetDefaultDatailViewRequest) SetForce(v bool) {
+	o.Force = &v
 }
 
 func (o SetDefaultDatailViewRequest) MarshalJSON() ([]byte, error) {
@@ -115,7 +118,7 @@ func (o SetDefaultDatailViewRequest) ToMap() (map[string]interface{}, error) {
 	if o.DataViewId != nil {
 		toSerialize["data_view_id"] = o.DataViewId
 	}
-	if o.Force != nil {
+	if !IsNil(o.Force) {
 		toSerialize["force"] = o.Force
 	}
 	return toSerialize, nil

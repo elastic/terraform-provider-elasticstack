@@ -1,6 +1,6 @@
 # \DataViewsAPI
 
-All URIs are relative to *https://raw.githubusercontent.com*
+All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -41,8 +41,8 @@ import (
 )
 
 func main() {
-    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
-    createDataViewRequestObject := *openapiclient.NewCreateDataViewRequestObject(*openapiclient.NewCreateDataViewRequestObjectDataView(interface{}(123))) // CreateDataViewRequestObject | 
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    createDataViewRequestObject := *openapiclient.NewCreateDataViewRequestObject(*openapiclient.NewCreateDataViewRequestObjectDataView("Title_example")) // CreateDataViewRequestObject | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -67,7 +67,7 @@ Other parameters are passed through a pointer to a apiCreateDataViewRequest stru
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
  **createDataViewRequestObject** | [**CreateDataViewRequestObject**](CreateDataViewRequestObject.md) |  | 
 
 ### Return type
@@ -90,7 +90,7 @@ Name | Type | Description  | Notes
 
 ## CreateRuntimeField
 
-> CreateRuntimeField(ctx, viewId).KbnXsrf(kbnXsrf).CreateRuntimeFieldRequest(createRuntimeFieldRequest).Execute()
+> CreateRuntimeField(ctx, viewId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
 
 Creates a runtime field.
 
@@ -109,13 +109,13 @@ import (
 )
 
 func main() {
-    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
-    viewId := TODO // interface{} | An identifier for the data view.
-    createRuntimeFieldRequest := *openapiclient.NewCreateRuntimeFieldRequest(interface{}(123), interface{}(123)) // CreateRuntimeFieldRequest | 
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    createUpdateRuntimeFieldRequest := *openapiclient.NewCreateUpdateRuntimeFieldRequest("Name_example", map[string]interface{}(123)) // CreateUpdateRuntimeFieldRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.DataViewsAPI.CreateRuntimeField(context.Background(), viewId).KbnXsrf(kbnXsrf).CreateRuntimeFieldRequest(createRuntimeFieldRequest).Execute()
+    r, err := apiClient.DataViewsAPI.CreateRuntimeField(context.Background(), viewId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.CreateRuntimeField``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -129,7 +129,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**viewId** | [**interface{}**](.md) | An identifier for the data view. | 
+**viewId** | **string** | An identifier for the data view. | 
 
 ### Other Parameters
 
@@ -138,9 +138,9 @@ Other parameters are passed through a pointer to a apiCreateRuntimeFieldRequest 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
- **createRuntimeFieldRequest** | [**CreateRuntimeFieldRequest**](CreateRuntimeFieldRequest.md) |  | 
+ **createUpdateRuntimeFieldRequest** | [**CreateUpdateRuntimeFieldRequest**](CreateUpdateRuntimeFieldRequest.md) |  | 
 
 ### Return type
 
@@ -181,7 +181,7 @@ import (
 )
 
 func main() {
-    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     viewId := "viewId_example" // string | The ID of the data view fields you want to update. 
     createUpdateRuntimeFieldRequest := *openapiclient.NewCreateUpdateRuntimeFieldRequest("Name_example", map[string]interface{}(123)) // CreateUpdateRuntimeFieldRequest | 
 
@@ -212,7 +212,7 @@ Other parameters are passed through a pointer to a apiCreateUpdateRuntimeFieldRe
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
  **createUpdateRuntimeFieldRequest** | [**CreateUpdateRuntimeFieldRequest**](CreateUpdateRuntimeFieldRequest.md) |  | 
 
@@ -236,7 +236,7 @@ Name | Type | Description  | Notes
 
 ## DeleteDataView
 
-> DeleteDataView(ctx, viewId).Execute()
+> DeleteDataView(ctx, viewId).KbnXsrf(kbnXsrf).Execute()
 
 Deletes a data view.
 
@@ -255,11 +255,12 @@ import (
 )
 
 func main() {
-    viewId := TODO // interface{} | An identifier for the data view.
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.DataViewsAPI.DeleteDataView(context.Background(), viewId).Execute()
+    r, err := apiClient.DataViewsAPI.DeleteDataView(context.Background(), viewId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.DeleteDataView``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -273,7 +274,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**viewId** | [**interface{}**](.md) | An identifier for the data view. | 
+**viewId** | **string** | An identifier for the data view. | 
 
 ### Other Parameters
 
@@ -282,6 +283,7 @@ Other parameters are passed through a pointer to a apiDeleteDataViewRequest stru
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
 
 ### Return type
@@ -323,8 +325,8 @@ import (
 )
 
 func main() {
-    fieldName := TODO // interface{} | The name of the runtime field.
-    viewId := TODO // interface{} | An identifier for the data view.
+    fieldName := "hour_of_day" // string | The name of the runtime field.
+    viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -342,8 +344,8 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**fieldName** | [**interface{}**](.md) | The name of the runtime field. | 
-**viewId** | [**interface{}**](.md) | An identifier for the data view. | 
+**fieldName** | **string** | The name of the runtime field. | 
+**viewId** | **string** | An identifier for the data view. | 
 
 ### Other Parameters
 
@@ -455,7 +457,7 @@ import (
 )
 
 func main() {
-    viewId := TODO // interface{} | An identifier for the data view.
+    viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -475,7 +477,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**viewId** | [**interface{}**](.md) | An identifier for the data view. | 
+**viewId** | **string** | An identifier for the data view. | 
 
 ### Other Parameters
 
@@ -567,7 +569,7 @@ Other parameters are passed through a pointer to a apiGetDefaultDataViewRequest 
 
 ## GetRuntimeField
 
-> GetRuntimeField200Response GetRuntimeField(ctx, fieldName, viewId).Execute()
+> CreateUpdateRuntimeField200Response GetRuntimeField(ctx, fieldName, viewId).Execute()
 
 Retrieves a runtime field.
 
@@ -586,8 +588,8 @@ import (
 )
 
 func main() {
-    fieldName := TODO // interface{} | The name of the runtime field.
-    viewId := TODO // interface{} | An identifier for the data view.
+    fieldName := "hour_of_day" // string | The name of the runtime field.
+    viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -596,7 +598,7 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.GetRuntimeField``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `GetRuntimeField`: GetRuntimeField200Response
+    // response from `GetRuntimeField`: CreateUpdateRuntimeField200Response
     fmt.Fprintf(os.Stdout, "Response from `DataViewsAPI.GetRuntimeField`: %v\n", resp)
 }
 ```
@@ -607,8 +609,8 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**fieldName** | [**interface{}**](.md) | The name of the runtime field. | 
-**viewId** | [**interface{}**](.md) | An identifier for the data view. | 
+**fieldName** | **string** | The name of the runtime field. | 
+**viewId** | **string** | An identifier for the data view. | 
 
 ### Other Parameters
 
@@ -622,7 +624,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**GetRuntimeField200Response**](GetRuntimeField200Response.md)
+[**CreateUpdateRuntimeField200Response**](CreateUpdateRuntimeField200Response.md)
 
 ### Authorization
 
@@ -659,7 +661,7 @@ import (
 )
 
 func main() {
-    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     setDefaultDatailViewRequest := *openapiclient.NewSetDefaultDatailViewRequest(interface{}(123)) // SetDefaultDatailViewRequest | 
 
     configuration := openapiclient.NewConfiguration()
@@ -685,7 +687,7 @@ Other parameters are passed through a pointer to a apiSetDefaultDatailViewReques
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
  **setDefaultDatailViewRequest** | [**SetDefaultDatailViewRequest**](SetDefaultDatailViewRequest.md) |  | 
 
 ### Return type
@@ -727,8 +729,8 @@ import (
 )
 
 func main() {
-    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
-    viewId := TODO // interface{} | An identifier for the data view.
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
     updateDataViewRequestObject := *openapiclient.NewUpdateDataViewRequestObject(*openapiclient.NewUpdateDataViewRequestObjectDataView()) // UpdateDataViewRequestObject | 
 
     configuration := openapiclient.NewConfiguration()
@@ -749,7 +751,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**viewId** | [**interface{}**](.md) | An identifier for the data view. | 
+**viewId** | **string** | An identifier for the data view. | 
 
 ### Other Parameters
 
@@ -758,7 +760,7 @@ Other parameters are passed through a pointer to a apiUpdateDataViewRequest stru
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
  **updateDataViewRequestObject** | [**UpdateDataViewRequestObject**](UpdateDataViewRequestObject.md) |  | 
 
@@ -801,8 +803,8 @@ import (
 )
 
 func main() {
-    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
-    viewId := TODO // interface{} | An identifier for the data view.
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
     updateFieldsMetadataRequest := *openapiclient.NewUpdateFieldsMetadataRequest(map[string]interface{}(123)) // UpdateFieldsMetadataRequest | 
 
     configuration := openapiclient.NewConfiguration()
@@ -823,7 +825,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**viewId** | [**interface{}**](.md) | An identifier for the data view. | 
+**viewId** | **string** | An identifier for the data view. | 
 
 ### Other Parameters
 
@@ -832,7 +834,7 @@ Other parameters are passed through a pointer to a apiUpdateFieldsMetadataReques
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
  **updateFieldsMetadataRequest** | [**UpdateFieldsMetadataRequest**](UpdateFieldsMetadataRequest.md) |  | 
 
@@ -875,9 +877,9 @@ import (
 )
 
 func main() {
-    fieldName := TODO // interface{} | The name of the runtime field.
-    viewId := TODO // interface{} | An identifier for the data view.
-    updateRuntimeFieldRequest := *openapiclient.NewUpdateRuntimeFieldRequest(interface{}(123)) // UpdateRuntimeFieldRequest | 
+    fieldName := "hour_of_day" // string | The name of the runtime field.
+    viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    updateRuntimeFieldRequest := *openapiclient.NewUpdateRuntimeFieldRequest(map[string]interface{}(123)) // UpdateRuntimeFieldRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -895,8 +897,8 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**fieldName** | [**interface{}**](.md) | The name of the runtime field. | 
-**viewId** | [**interface{}**](.md) | An identifier for the data view. | 
+**fieldName** | **string** | The name of the runtime field. | 
+**viewId** | **string** | An identifier for the data view. | 
 
 ### Other Parameters
 
