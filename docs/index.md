@@ -92,6 +92,7 @@ Kibana resources will re-use any Elasticsearch credentials specified, these may 
 - `KIBANA_USERNAME` - The username to use for Kibana authentication
 - `KIBANA_PASSWORD` - The password to use for Kibana authentication
 - `KIBANA_ENDPOINT` - The Kibana host to connect to
+- `KIBANA_API_KEY` - An Elasticsearch API key to use instead of `KIBANA_USERNAME` and `KIBANA_PASSWORD`
 
 Fleet resources will re-use any Kibana or Elasticsearch credentials specified, these may be overridden with the following variables:
 - `FLEET_USERNAME` - The username to use for Kibana authentication
@@ -178,7 +179,6 @@ Optional:
 ### Nested Schema for `kibana`
 
 Optional:
-
 
 - `api_key` (String, Sensitive) API Key to use for authentication to Kibana
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
