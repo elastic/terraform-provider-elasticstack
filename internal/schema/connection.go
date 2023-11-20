@@ -119,6 +119,14 @@ func GetKbFWConnectionBlock() fwschema.Block {
 		MarkdownDescription: "Kibana connection configuration block.",
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
+				"api_key": fwschema.StringAttribute{
+					MarkdownDescription: "API Key to use for authentication to Elasticsearch",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath),
+					},
+				},
 				"username": fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Kibana.",
 					Optional:            true,
