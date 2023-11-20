@@ -3,6 +3,7 @@
 ### Added
 - Switch to Terraform [protocol version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) that is compatible with Terraform CLI version 1.0 and later.
 - Add 'elasticstack_fleet_package' data source ([#469](https://github.com/elastic/terraform-provider-elasticstack/pull/469))
+- Add support for Authoization header - Bearer Token and ES-Client-Authentication fields added.
 
 ## [0.10.0] - 2023-11-02
 
