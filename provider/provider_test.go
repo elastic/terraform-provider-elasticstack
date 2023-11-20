@@ -62,15 +62,17 @@ func TestKibanaConfiguration(t *testing.T) {
 	var envConfig config.Client
 
 	testCases := []struct {
+		name string
 		tc   func() resource.TestCase
-		pre  func()
-		post func()
+		pre  func(t *testing.T)
+		post func(t *testing.T)
 	}{
 		{
-			pre: func() {
+			name: "with username and password",
+			pre: func(t *testing.T) {
 				envConfig = config.NewFromEnv("acceptance-testing")
 			},
-			post: func() {},
+			post: func(t *testing.T) {},
 			tc: func() resource.TestCase {
 				return resource.TestCase{
 					PreCheck:                 func() { acctest.PreCheck(t) },
@@ -87,11 +89,14 @@ func TestKibanaConfiguration(t *testing.T) {
 			},
 		},
 		{
-			pre: func() {
+			name: "with api key",
+			pre: func(t *testing.T) {
+				t.Setenv("KIBANA_USERNAME", "")
+				t.Setenv("KIBANA_PASSWORD", "")
 				t.Setenv("KIBANA_API_KEY", "test") // Inject the API key for
 				envConfig = config.NewFromEnv("acceptance-testing")
 			},
-			post: func() {},
+			post: func(t *testing.T) {},
 			tc: func() resource.TestCase {
 				return resource.TestCase{
 					PreCheck:                 func() { acctest.PreCheck(t) },
@@ -108,10 +113,13 @@ func TestKibanaConfiguration(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range testCases {
-		tt.pre()
-		resource.Test(t, tt.tc())
-		tt.post()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.pre(t)
+			resource.Test(t, tc.tc())
+			tc.post(t)
+		})
+
 	}
 }
 
