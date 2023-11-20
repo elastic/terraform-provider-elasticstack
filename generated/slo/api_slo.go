@@ -254,7 +254,7 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -427,7 +427,7 @@ func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Respo
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -591,7 +591,7 @@ func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Res
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -755,7 +755,7 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -968,7 +968,7 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1154,7 +1154,7 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloResponse, *ht
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1337,7 +1337,7 @@ func (a *SloAPIService) HistoricalSummaryOpExecute(r ApiHistoricalSummaryOpReque
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1513,7 +1513,7 @@ func (a *SloAPIService) UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloRespons
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}

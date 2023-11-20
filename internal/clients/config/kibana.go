@@ -34,6 +34,10 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 			config.Password = password.(string)
 		}
 
+		if apiKey, ok := kibConfig["api_key"]; ok && apiKey != "" {
+			config.ApiKey = apiKey.(string)
+		}
+
 		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
 			// We're curently limited by the API to a single endpoint
 			if endpoint := endpoints.([]interface{})[0]; endpoint != nil {
@@ -79,7 +83,7 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 func (k kibanaConfig) withEnvironmentOverrides() kibanaConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
-	k.ApiKey = withEnvironmentOverride(k.Password, "KIBANA_API_KEY")
+	k.ApiKey = withEnvironmentOverride(k.ApiKey, "KIBANA_API_KEY")
 	k.Address = withEnvironmentOverride(k.Address, "KIBANA_ENDPOINT")
 
 	if insecure, ok := os.LookupEnv("KIBANA_INSECURE"); ok {
