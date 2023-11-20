@@ -121,11 +121,10 @@ jobs:
           KIBANA_SYSTEM_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
           KIBANA_SYSTEM_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
 
-      - name: Get ES API key
-        id: get-api-key
-        uses: sergeysova/jq-action@v2
-        with:
-          cmd: echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
+      - id: get-api-key
+        name: Get ES API key
+        run: |-
+          echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
         env:
           ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
           ELASTICSEARCH_USERNAME: "elastic"
