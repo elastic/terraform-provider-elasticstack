@@ -64,6 +64,9 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 		if kibConfig.Password.ValueString() != "" {
 			config.Password = kibConfig.Password.ValueString()
 		}
+		if kibConfig.ApiKey.ValueString() != "" {
+			config.ApiKey = kibConfig.ApiKey.ValueString()
+		}
 		var endpoints []string
 		diags := kibConfig.Endpoints.ElementsAs(ctx, &endpoints, true)
 		if diags.HasError() {

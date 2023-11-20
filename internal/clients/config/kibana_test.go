@@ -190,7 +190,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 			},
 		},
 		{
-			name: "should use api_key when provided config options",
+			name: "should use api_key when provided in config options",
 			args: func() args {
 				baseCfg := baseConfig{
 					ApiKey: "test",
@@ -260,6 +260,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			os.Unsetenv("KIBANA_USERNAME")
 			os.Unsetenv("KIBANA_PASSWORD")
+			os.Unsetenv("KIBANA_API_KEY")
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_INSECURE")
 
