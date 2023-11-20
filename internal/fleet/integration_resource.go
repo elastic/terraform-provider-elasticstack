@@ -17,16 +17,16 @@ func getPackageID(name, version string) string {
 	return *hash
 }
 
-func ResourcePackage() *schema.Resource {
+func ResourceIntegration() *schema.Resource {
 	packageSchema := map[string]*schema.Schema{
 		"name": {
-			Description: "The package name.",
+			Description: "The integration package name.",
 			Type:        schema.TypeString,
 			ForceNew:    true,
 			Required:    true,
 		},
 		"version": {
-			Description: "The package version.",
+			Description: "The integration package version.",
 			Type:        schema.TypeString,
 			ForceNew:    true,
 			Required:    true,
@@ -37,19 +37,19 @@ func ResourcePackage() *schema.Resource {
 			Optional:    true,
 		},
 		"skip_destroy": {
-			Description: "Set to true if you do not wish the package to be uninstalled at destroy time, and instead just remove the package from the Terraform state.",
+			Description: "Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
 	}
 
 	return &schema.Resource{
-		Description: "Manage installation of a Fleet package.",
+		Description: "Manage installation of a Fleet integration package.",
 
-		CreateContext: resourcePackageInstall,
-		ReadContext:   resourcePackageRead,
-		UpdateContext: resourcePackageInstall,
-		DeleteContext: resourcePackageDelete,
+		CreateContext: resourceIntegrationInstall,
+		ReadContext:   resourceIntegrationRead,
+		UpdateContext: resourceIntegrationInstall,
+		DeleteContext: resourceIntegrationDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -59,7 +59,7 @@ func ResourcePackage() *schema.Resource {
 	}
 }
 
-func resourcePackageInstall(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIntegrationInstall(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
 	if diags.HasError() {
 		return diags
@@ -75,10 +75,10 @@ func resourcePackageInstall(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 
-	return resourcePackageRead(ctx, d, meta)
+	return resourceIntegrationRead(ctx, d, meta)
 }
 
-func resourcePackageRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIntegrationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
 	if diags.HasError() {
 		return diags
@@ -96,13 +96,13 @@ func resourcePackageRead(ctx context.Context, d *schema.ResourceData, meta inter
 	return nil
 }
 
-func resourcePackageDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIntegrationDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	name := d.Get("name").(string)
 	version := d.Get("version").(string)
 	force := d.Get("force").(bool)
 
 	if d.Get("skip_destroy").(bool) {
-		tflog.Debug(ctx, "Skipping uninstall of Package", map[string]interface{}{"name": name, "version": version})
+		tflog.Debug(ctx, "Skipping uninstall of integration package", map[string]interface{}{"name": name, "version": version})
 		return nil
 	}
 
