@@ -38,6 +38,14 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 			config.Addresses = addrs
 		}
 
+		if bearer_token, ok := esConfig["bearer_token"].(string); ok && bearer_token != "" {
+			base.Header.Set("Authorization", bearer_token)
+		}
+
+		if es_client_authentication, ok := esConfig["es_client_authentication"].(string); ok && es_client_authentication != "" {
+			base.Header.Set("ES-Client-Authentication", es_client_authentication)
+		}
+
 		if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
 			tlsClientConfig := config.ensureTLSClientConfig()
 			tlsClientConfig.InsecureSkipVerify = true
@@ -132,6 +140,13 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 		config.Addresses = endpoints
 	}
 
+	if esConfig.BearerToken.ValueString() != "" || esConfig.BearerToken.ValueString() != "null" {
+		config.Header.Set("Authorization", esConfig.BearerToken.ValueString())
+		if esConfig.ESClientAuthentication.ValueString() != "" || esConfig.ESClientAuthentication.ValueString() != "null" {
+			config.Header.Set("ES-Client-authentication", esConfig.ESClientAuthentication.ValueString())
+		}
+	}
+
 	if esConfig.Insecure.ValueBool() {
 		tlsClientConfig := config.ensureTLSClientConfig()
 		tlsClientConfig.InsecureSkipVerify = true
@@ -211,6 +226,14 @@ func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 			tlsClientConfig := c.ensureTLSClientConfig()
 			tlsClientConfig.InsecureSkipVerify = insecureValue
 		}
+	}
+
+	if bearerToken := os.Getenv("ELASTICSEARCH_BEARER_TOKEN"); bearerToken != "" {
+		c.Header.Set("Authorization", bearerToken)
+	}
+
+	if esClientAuthentication := os.Getenv("ELASTICSEARCH_BEARER_TOKEN"); esClientAuthentication != "" {
+		c.Header.Set("ES-Client-authentication", esClientAuthentication)
 	}
 
 	return c
