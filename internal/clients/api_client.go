@@ -369,9 +369,23 @@ func buildAlertingClient(cfg config.Client) *alerting.APIClient {
 }
 
 func buildConnectorsClient(cfg config.Client) (*connectors.Client, error) {
-	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cfg.Kibana.Username, cfg.Kibana.Password)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
+	var authInterceptor connectors.ClientOption
+	if cfg.Kibana.ApiKey != "" {
+		apiKeyProvider, err := securityprovider.NewSecurityProviderApiKey(
+			"header",
+			"Authorization",
+			"ApiKey "+cfg.Kibana.ApiKey,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create api key auth provider: %w", err)
+		}
+		authInterceptor = connectors.WithRequestEditorFn(apiKeyProvider.Intercept)
+	} else {
+		basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cfg.Kibana.Username, cfg.Kibana.Password)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
+		}
+		authInterceptor = connectors.WithRequestEditorFn(basicAuthProvider.Intercept)
 	}
 
 	httpClient := &http.Client{}
@@ -384,7 +398,7 @@ func buildConnectorsClient(cfg config.Client) (*connectors.Client, error) {
 
 	return connectors.NewClient(
 		cfg.Kibana.Address,
-		connectors.WithRequestEditorFn(basicAuthProvider.Intercept),
+		authInterceptor,
 		connectors.WithHTTPClient(httpClient),
 	)
 }
