@@ -103,6 +103,7 @@ func (k kibanaConfig) toFleetConfig() fleetConfig {
 		URL:      k.Address,
 		Username: k.Username,
 		Password: k.Password,
+		APIKey:   k.ApiKey,
 		Insecure: k.DisableVerifySSL,
 	}
 }
