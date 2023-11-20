@@ -79,6 +79,7 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 func (k kibanaConfig) withEnvironmentOverrides() kibanaConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
+	k.ApiKey = withEnvironmentOverride(k.Password, "KIBANA_API_KEY")
 	k.Address = withEnvironmentOverride(k.Address, "KIBANA_ENDPOINT")
 
 	if insecure, ok := os.LookupEnv("KIBANA_INSECURE"); ok {
