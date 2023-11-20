@@ -42,7 +42,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			},
 		},
 		{
-			name: "should use the provided config optios",
+			name: "should use the provided config options",
 			args: func() args {
 				baseCfg := baseConfig{
 					Username: "elastic",
@@ -113,6 +113,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			os.Unsetenv("KIBANA_PASSWORD")
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_INSECURE")
+			os.Unsetenv("KIBANA_API_KEY")
 
 			args := tt.args()
 			rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{

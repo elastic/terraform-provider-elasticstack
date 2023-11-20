@@ -28,6 +28,7 @@ KIBANA_NAME ?= terraform-elasticstack-kb
 KIBANA_ENDPOINT ?= http://$(KIBANA_NAME):5601
 KIBANA_SYSTEM_USERNAME ?= kibana_system
 KIBANA_SYSTEM_PASSWORD ?= password
+KIBANA_API_KEY_NAME ?= kibana-api-key
 
 SOURCE_LOCATION ?= $(shell pwd)
 
@@ -128,6 +129,10 @@ docker-network: ## Create a dedicated network for ES and test runs
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
 	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d "{\"password\":\"$(KIBANA_SYSTEM_PASSWORD)\"}" | grep -q "^{}")
+
+.PHONY: create-es-api-key
+create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200
+	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/api_key -d "{\"name\":\"$(KIBANA_API_KEY_NAME)\"}")
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network

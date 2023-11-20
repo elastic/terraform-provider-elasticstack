@@ -91,9 +91,10 @@ func TestKibanaConfiguration(t *testing.T) {
 		{
 			name: "with api key",
 			pre: func(t *testing.T) {
+				apiKey := os.Getenv("KIBANA_API_KEY")
 				t.Setenv("KIBANA_USERNAME", "")
 				t.Setenv("KIBANA_PASSWORD", "")
-				t.Setenv("KIBANA_API_KEY", "test") // Inject the API key for
+				t.Setenv("KIBANA_API_KEY", apiKey)
 				envConfig = config.NewFromEnv("acceptance-testing")
 			},
 			post: func(t *testing.T) {},
