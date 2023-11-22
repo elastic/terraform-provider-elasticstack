@@ -229,7 +229,7 @@ func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 	}
 
 	if bearerToken := os.Getenv("ELASTICSEARCH_BEARER_TOKEN"); bearerToken != "" {
-		c.Header.Set("Authorization", bearerToken)
+		c.Header.Set("Authorization", bearerToken) // testing 2
 	}
 
 	if esClientAuthentication := os.Getenv("ELASTICSEARCH_BEARER_TOKEN"); esClientAuthentication != "" {
