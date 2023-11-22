@@ -29,3 +29,26 @@ spec:
           access_level: MANAGE_BUILD_AND_READ
         everyone:
           access_level: READ_ONLY
+---
+# yaml-language-server: $schema=https://gist.githubusercontent.com/elasticmachine/988b80dae436cafea07d9a4a460a011d/raw/rre.schema.json
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: buildkite-pipeline-terraform-provider-elasticstack
+spec:
+  implementation:
+    apiVersion: buildkite.elastic.dev/v1
+    kind: Pipeline
+    metadata:
+      description: Pipeline for Terraform provider for the Elastic Stack
+      name: terraform-provider-elasticstack
+    spec:
+      provider_settings:
+        build_tags: true
+      repository: elastic/terraform-provider-elasticstack
+      teams:
+        cloud-k8s-region: {}
+        control-plane-stateful-applications: {}
+        control-plane-stateful-foundations: {}
+  owner: group:control-plane-applications
+  type: buildkite-pipeline
