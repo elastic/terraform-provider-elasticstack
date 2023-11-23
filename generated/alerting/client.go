@@ -414,6 +414,11 @@ func (c *APIClient) prepareRequest(
 			localVarRequest.SetBasicAuth(auth.UserName, auth.Password)
 		}
 
+		// APIKey Authentication
+		if auth, ok := ctx.Value(ContextAPIKeys).(APIKey); ok {
+			localVarRequest.Header.Add("Authorization", "ApiKey "+auth.Key)
+		}
+
 	}
 
 	for header, value := range c.cfg.DefaultHeader {

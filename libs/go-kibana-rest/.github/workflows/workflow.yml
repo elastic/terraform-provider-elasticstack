@@ -1,0 +1,51 @@
+name: "build"
+
+on:
+  push:
+    branches:
+      - main
+      - 7.x
+      - 8.x
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - main
+      - 7.x
+      - 8.x
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.19"
+      - name: Setup Elasticsearch / Kibana
+        run: |
+          set -e
+          docker-compose up elasticsearch &
+          echo "Waiting for Elasticsearch availability"
+          until curl -s http://localhost:9200 | grep -q 'missing authentication credentials'; do sleep 30; done;
+          echo "Setting kibana_system password"
+          until curl -s -X POST -u elastic:changeme -H "Content-Type: application/json" http://localhost:9200/_security/user/kibana_system/_password -d "{\"password\":\"changeme\"}" | grep -q "^{}"; do sleep 10; done
+          curl -XPOST -u elastic:changeme http://localhost:9200/_license/start_trial?acknowledge=true
+          docker-compose up kibana &
+          until $(curl --output /dev/null --silent --head --fail -u elastic:changeme http://localhost:5601); do sleep 5; done
+          sleep 10
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --timeout 600s
+      - name: Run build
+        run: go build
+      - name: Run test
+        run: make test
+      - uses: codecov/codecov-action@v2
+        with:
+          files: coverage.out
+          flags: unittests
+          fail_ci_if_error: true

@@ -72,6 +72,7 @@ func (b baseConfig) toKibanaConfig() kibanaConfig {
 	return kibanaConfig{
 		Username: b.Username,
 		Password: b.Password,
+		ApiKey:   b.ApiKey,
 	}
 }
 
