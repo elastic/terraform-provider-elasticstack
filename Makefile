@@ -212,7 +212,7 @@ release-snapshot: tools ## Make local-only test release to see if it works using
 
 .PHONY: release-no-publish
 release-no-publish: tools check-sign-release ## Make a release without publishing artifacts
-	@ $(GOBIN)/goreleaser release --skip=publish,announce,validate  --parallelism=4
+	@ $(GOBIN)/goreleaser release --skip=publish,announce,validate  --parallelism=2
 
 
 .PHONY: release
