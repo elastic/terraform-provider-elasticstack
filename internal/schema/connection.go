@@ -282,11 +282,11 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 					ConflictsWith: []string{usernamePath, passwordPath, apiKeyPath},
 				},
 				"es_client_authentication": {
-					Description:   "ES Client Authentication field to be used with the bearer token",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					DefaultFunc:   withEnvDefault("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION", nil),
+					Description: "ES Client Authentication field to be used with the bearer token",
+					Type:        schema.TypeString,
+					Optional:    true,
+					Sensitive:   true,
+					DefaultFunc: withEnvDefault("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION", nil),
 				},
 				"endpoints": {
 					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
