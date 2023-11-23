@@ -140,7 +140,7 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 		config.Addresses = endpoints
 	}
 
-	if esConfig.BearerToken.ValueString() != "" || esConfig.BearerToken.ValueString() != "null" {
+	if esConfig.BearerToken.ValueString() != "" {
 		config.Header.Set("Authorization", esConfig.BearerToken.ValueString())
 		if esConfig.ESClientAuthentication.ValueString() != "" || esConfig.ESClientAuthentication.ValueString() != "null" {
 			config.Header.Set("ES-Client-authentication", esConfig.ESClientAuthentication.ValueString())
