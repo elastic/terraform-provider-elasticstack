@@ -2,14 +2,14 @@ provider "elasticstack" {
   fleet {}
 }
 
-// The package to use.
-resource "elasticstack_fleet_package" "sample" {
+// The integration to use.
+resource "elasticstack_fleet_integration" "sample" {
   name    = "tcp"
   version = "1.16.0"
   force   = true
 }
 
-// An agent policy to hold the package policy.
+// An agent policy to hold the integration policy.
 resource "elasticstack_fleet_agent_policy" "sample" {
   name            = "Sample Agent Policy"
   namespace       = "default"
@@ -24,14 +24,14 @@ data "elasticstack_fleet_enrollment_tokens" "sample" {
   policy_id = elasticstack_fleet_agent_policy.sample.policy_id
 }
 
-// The package policy.
-resource "elasticstack_fleet_package_policy" "sample" {
-  name            = "Sample Package Policy"
-  namespace       = "default"
-  description     = "A sample package policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.sample.policy_id
-  package_name    = elasticstack_fleet_package.sample.name
-  package_version = elasticstack_fleet_package.sample.version
+// The integration policy.
+resource "elasticstack_fleet_integration_policy" "sample" {
+  name                = "Sample Integration Policy"
+  namespace           = "default"
+  description         = "A sample integration policy"
+  agent_policy_id     = elasticstack_fleet_agent_policy.sample.policy_id
+  integration_name    = elasticstack_fleet_integration.sample.name
+  integration_version = elasticstack_fleet_integration.sample.version
 
   input {
     input_id = "tcp-tcp"

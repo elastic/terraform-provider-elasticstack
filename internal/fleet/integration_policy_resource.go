@@ -12,22 +12,22 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 )
 
-func ResourcePackagePolicy() *schema.Resource {
+func ResourceIntegrationPolicy() *schema.Resource {
 	packagePolicySchema := map[string]*schema.Schema{
 		"policy_id": {
-			Description: "Unique identifier of the package policy.",
+			Description: "Unique identifier of the integration policy.",
 			Type:        schema.TypeString,
 			Computed:    true,
 			Optional:    true,
 			ForceNew:    true,
 		},
 		"name": {
-			Description: "The name of the package policy.",
+			Description: "The name of the integration policy.",
 			Type:        schema.TypeString,
 			Required:    true,
 		},
 		"namespace": {
-			Description: "The namespace of the package policy.",
+			Description: "The namespace of the integration policy.",
 			Type:        schema.TypeString,
 			Required:    true,
 		},
@@ -37,12 +37,12 @@ func ResourcePackagePolicy() *schema.Resource {
 			Required:    true,
 		},
 		"description": {
-			Description: "The description of the package policy.",
+			Description: "The description of the integration policy.",
 			Type:        schema.TypeString,
 			Optional:    true,
 		},
 		"enabled": {
-			Description: "Enable the package policy.",
+			Description: "Enable the integration policy.",
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Computed:    true,
@@ -52,13 +52,13 @@ func ResourcePackagePolicy() *schema.Resource {
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
-		"package_name": {
-			Description: "The name of the package.",
+		"integration_name": {
+			Description: "The name of the integration package.",
 			Type:        schema.TypeString,
 			Required:    true,
 		},
-		"package_version": {
-			Description: "The version of the package.",
+		"integration_version": {
+			Description: "The version of the integration package.",
 			Type:        schema.TypeString,
 			Required:    true,
 		},
@@ -98,7 +98,7 @@ func ResourcePackagePolicy() *schema.Resource {
 			},
 		},
 		"vars_json": {
-			Description:  "Package-level variables as JSON.",
+			Description:  "Integration-level variables as JSON.",
 			Type:         schema.TypeString,
 			ValidateFunc: validation.StringIsJSON,
 			Computed:     true,
@@ -108,12 +108,12 @@ func ResourcePackagePolicy() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Creates a new Fleet Package Policy. See https://www.elastic.co/guide/en/fleet/current/agent-policy.html",
+		Description: "Creates a new Fleet Integration Policy. See https://www.elastic.co/guide/en/fleet/current/add-integration-to-policy.html",
 
-		CreateContext: resourcePackagePolicyCreate,
-		ReadContext:   resourcePackagePolicyRead,
-		UpdateContext: resourcePackagePolicyUpdate,
-		DeleteContext: resourcePackagePolicyDelete,
+		CreateContext: resourceIntegrationPolicyCreate,
+		ReadContext:   resourceIntegrationPolicyRead,
+		UpdateContext: resourceIntegrationPolicyUpdate,
+		DeleteContext: resourceIntegrationPolicyDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -123,7 +123,7 @@ func ResourcePackagePolicy() *schema.Resource {
 	}
 }
 
-func resourcePackagePolicyCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIntegrationPolicyCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
 	if diags.HasError() {
 		return diags
@@ -137,8 +137,8 @@ func resourcePackagePolicyCreate(ctx context.Context, d *schema.ResourceData, me
 		PolicyId: d.Get("agent_policy_id").(string),
 		Name:     d.Get("name").(string),
 	}
-	req.Package.Name = d.Get("package_name").(string)
-	req.Package.Version = d.Get("package_version").(string)
+	req.Package.Name = d.Get("integration_name").(string)
+	req.Package.Version = d.Get("integration_version").(string)
 
 	if value := d.Get("policy_id").(string); value != "" {
 		req.Id = &value
@@ -204,10 +204,10 @@ func resourcePackagePolicyCreate(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 
-	return resourcePackagePolicyRead(ctx, d, meta)
+	return resourceIntegrationPolicyRead(ctx, d, meta)
 }
 
-func resourcePackagePolicyUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIntegrationPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
 	if diags.HasError() {
 		return diags
@@ -217,8 +217,8 @@ func resourcePackagePolicyUpdate(ctx context.Context, d *schema.ResourceData, me
 		PolicyId: d.Get("agent_policy_id").(string),
 		Name:     d.Get("name").(string),
 	}
-	req.Package.Name = d.Get("package_name").(string)
-	req.Package.Version = d.Get("package_version").(string)
+	req.Package.Name = d.Get("integration_name").(string)
+	req.Package.Version = d.Get("integration_version").(string)
 
 	if value := d.Get("policy_id").(string); value != "" {
 		req.Id = &value
@@ -278,10 +278,10 @@ func resourcePackagePolicyUpdate(ctx context.Context, d *schema.ResourceData, me
 		return diags
 	}
 
-	return resourcePackagePolicyRead(ctx, d, meta)
+	return resourceIntegrationPolicyRead(ctx, d, meta)
 }
 
-func resourcePackagePolicyRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIntegrationPolicyRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
 	if diags.HasError() {
 		return diags
@@ -304,10 +304,10 @@ func resourcePackagePolicyRead(ctx context.Context, d *schema.ResourceData, meta
 	if err := d.Set("namespace", pkgPolicy.Namespace); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("package_name", pkgPolicy.Package.Name); err != nil {
+	if err := d.Set("integration_name", pkgPolicy.Package.Name); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("package_version", pkgPolicy.Package.Version); err != nil {
+	if err := d.Set("integration_version", pkgPolicy.Package.Version); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("agent_policy_id", pkgPolicy.PolicyId); err != nil {
@@ -371,7 +371,7 @@ func resourcePackagePolicyRead(ctx context.Context, d *schema.ResourceData, meta
 	return nil
 }
 
-func resourcePackagePolicyDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIntegrationPolicyDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
 	if diags.HasError() {
 		return diags

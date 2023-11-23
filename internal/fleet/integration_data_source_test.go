@@ -12,32 +12,32 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 )
 
-var minVersionPackageDataSource = version.Must(version.NewVersion("8.6.0"))
+var minVersionIntegrationDataSource = version.Must(version.NewVersion("8.6.0"))
 
-func TestAccDataSourcePackage(t *testing.T) {
+func TestAccDataSourceIntegration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionPackageDataSource),
-				Config:   testAccDataSourcePackage,
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
+				Config:   testAccDataSourceIntegration,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_package.test", "name", "tcp"),
-					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_package.test", "version"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
+					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
 				),
 			},
 		},
 	})
 }
 
-const testAccDataSourcePackage = `
+const testAccDataSourceIntegration = `
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
 }
 
-data "elasticstack_fleet_package" "test" {
+data "elasticstack_fleet_integration" "test" {
     name = "tcp"
 }
 `

@@ -10,10 +10,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 )
 
-func DataSourcePackage() *schema.Resource {
+func DataSourceIntegration() *schema.Resource {
 	packageSchema := map[string]*schema.Schema{
 		"name": {
-			Description: "The package name.",
+			Description: "The integration package name.",
 			Type:        schema.TypeString,
 			Required:    true,
 		},
@@ -23,7 +23,7 @@ func DataSourcePackage() *schema.Resource {
 			Optional:    true,
 		},
 		"version": {
-			Description: "The package version.",
+			Description: "The integration package version.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
@@ -32,13 +32,13 @@ func DataSourcePackage() *schema.Resource {
 	return &schema.Resource{
 		Description: "Retrieves the latest version of an integration package in Fleet.",
 
-		ReadContext: dataSourcePackageRead,
+		ReadContext: dataSourceIntegrationRead,
 
 		Schema: packageSchema,
 	}
 }
 
-func dataSourcePackageRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceIntegrationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
 	if diags.HasError() {
 		return diags
