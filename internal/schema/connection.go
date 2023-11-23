@@ -60,6 +60,10 @@ func GetEsFWConnectionBlock(keyName string) fwschema.Block {
 					MarkdownDescription: "ES Client Authentication field to be used with the bearer token",
 					Optional:            true,
 					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
+						stringvalidator.AlsoRequires(bearerTokenPath),
+					},
 				},
 				"endpoints": fwschema.ListAttribute{
 					MarkdownDescription: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
