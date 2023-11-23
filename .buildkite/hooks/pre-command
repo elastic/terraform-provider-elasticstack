@@ -5,3 +5,12 @@ set -euo pipefail
 echo "--- Golang version:"
 export GO_VERSION="1.20"
 echo "${GO_VERSION}"
+
+VAULT_PATH=secret/ci/elastic-terraform-provider-elasticstack/terraform-provider-secrets
+
+if [[ "$BUILDKITE_PIPELINE_SLUG" == "terraform-provider-elasticstack-release" ]]; then
+  export GPG_PRIVATE_SECRET=$(scripts/retry.sh 5 vault kv get -field gpg_private ${VAULT_PATH})
+  export GPG_PASSPHRASE_SECRET=$(scripts/retry.sh 5 vault kv get -field gpg_passphrase ${VAULT_PATH})
+  export GPG_FINGERPRINT_SECRET=$(scripts/retry.sh 5 vault kv get -field gpg_fingerprint ${VAULT_PATH})
+  export GITHUB_TOKEN=$(scripts/retry.sh 5 vault kv get -field gh_personal_access_token ${VAULT_PATH})
+fi

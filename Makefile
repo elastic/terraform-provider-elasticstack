@@ -212,18 +212,18 @@ release-snapshot: tools ## Make local-only test release to see if it works using
 
 .PHONY: release-no-publish
 release-no-publish: tools check-sign-release ## Make a release without publishing artifacts
-	@ $(GOBIN)/goreleaser release --skip-publish --skip-announce --skip-validate
+	@ $(GOBIN)/goreleaser release --skip-publish --skip-announce --skip-validate  --parallelism=4
 
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ $(GOBIN)/goreleaser release --clean
+	@ $(GOBIN)/goreleaser release --clean  --parallelism=4
 
 
 .PHONY: check-sign-release
 check-sign-release:
-ifndef GPG_FINGERPRINT
-	$(error GPG_FINGERPRINT is undefined, but required for signing the release)
+ifndef GPG_FINGERPRINT_SECRET
+	$(error GPG_FINGERPRINT_SECRET is undefined, but required for signing the release)
 endif
 
 
