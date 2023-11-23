@@ -39,11 +39,11 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 		}
 
 		if bearer_token, ok := esConfig["bearer_token"].(string); ok && bearer_token != "" {
-			base.Header.Set("Authorization", bearer_token)
+			config.Header.Set("Authorization", bearer_token)
 		}
 
 		if es_client_authentication, ok := esConfig["es_client_authentication"].(string); ok && es_client_authentication != "" {
-			base.Header.Set("ES-Client-Authentication", es_client_authentication)
+			config.Header.Set("ES-Client-Authentication", es_client_authentication)
 		}
 
 		if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
