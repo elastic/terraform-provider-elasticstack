@@ -42,7 +42,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			},
 		},
 		{
-			name: "should use the provided config optios",
+			name: "should use the provided config options",
 			args: func() args {
 				baseCfg := baseConfig{
 					Username: "elastic",
@@ -113,6 +113,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			os.Unsetenv("KIBANA_PASSWORD")
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_INSECURE")
+			os.Unsetenv("KIBANA_API_KEY")
 
 			args := tt.args()
 			rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
@@ -159,7 +160,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 			},
 		},
 		{
-			name: "should use the provided config optios",
+			name: "should use the provided config options",
 			args: func() args {
 				baseCfg := baseConfig{
 					Username: "elastic",
@@ -184,6 +185,34 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 						Address:          "example.com/kibana",
 						Username:         "kibana",
 						Password:         "baltic",
+						DisableVerifySSL: true,
+					},
+				}
+			},
+		},
+		{
+			name: "should use api_key when provided in config options",
+			args: func() args {
+				baseCfg := baseConfig{
+					ApiKey: "test",
+				}
+
+				return args{
+					baseCfg: baseCfg,
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								ApiKey: types.StringValue("test"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("example.com/kibana"),
+								}),
+								Insecure: types.BoolValue(true),
+							},
+						},
+					},
+					expectedConfig: kibanaConfig{
+						Address:          "example.com/kibana",
+						ApiKey:           "test",
 						DisableVerifySSL: true,
 					},
 				}
@@ -232,6 +261,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			os.Unsetenv("KIBANA_USERNAME")
 			os.Unsetenv("KIBANA_PASSWORD")
+			os.Unsetenv("KIBANA_API_KEY")
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_INSECURE")
 
