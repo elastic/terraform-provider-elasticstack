@@ -64,7 +64,7 @@ func ResourceIntegrationPolicy() *schema.Resource {
 		},
 		"input": {
 			Type:     schema.TypeList,
-			Required: true,
+			Optional: true,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"input_id": {
