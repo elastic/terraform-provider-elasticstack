@@ -83,7 +83,6 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 ### Required
 
 - `agent_policy_id` (String) ID of the agent policy.
-- `input` (Block List, Min: 1) (see [below for nested schema](#nestedblock--input))
 - `integration_name` (String) The name of the integration package.
 - `integration_version` (String) The version of the integration package.
 - `name` (String) The name of the integration policy.
@@ -94,6 +93,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `description` (String) The description of the integration policy.
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
+- `input` (Block List) (see [below for nested schema](#nestedblock--input))
 - `policy_id` (String) Unique identifier of the integration policy.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON.
 
