@@ -3,6 +3,7 @@ package fleet
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -340,7 +341,15 @@ func resourceIntegrationPolicyRead(ctx context.Context, d *schema.ResourceData, 
 		}
 	}
 
-	var inputs []any
+	existingInputs, _ := d.Get("input").([]any)
+	inputIDToIndex := make(map[string]int, len(existingInputs))
+	for i, v := range existingInputs {
+		inputData, _ := v.(map[string]any)
+		inputID, _ := inputData["input_id"].(string)
+		inputIDToIndex[inputID] = i
+	}
+
+	newInputs := make([]any, 0, len(pkgPolicy.Inputs))
 	for inputID, input := range pkgPolicy.Inputs {
 		inputMap := map[string]any{
 			"input_id": inputID,
@@ -362,9 +371,28 @@ func resourceIntegrationPolicyRead(ctx context.Context, d *schema.ResourceData, 
 			inputMap["vars_json"] = string(data)
 		}
 
-		inputs = append(inputs, inputMap)
+		newInputs = append(newInputs, inputMap)
 	}
-	if err := d.Set("input", inputs); err != nil {
+
+	sort.Slice(newInputs, func(i, j int) bool {
+		iInput, _ := newInputs[i].(map[string]any)
+		iID, _ := iInput["input_id"].(string)
+		iIdx, ok := inputIDToIndex[iID]
+		if !ok {
+			return false
+		}
+
+		jInput, _ := newInputs[j].(map[string]any)
+		jID, _ := jInput["input_id"].(string)
+		jIdx, ok := inputIDToIndex[jID]
+		if !ok {
+			return true
+		}
+
+		return iIdx < jIdx
+	})
+
+	if err := d.Set("input", newInputs); err != nil {
 		return diag.FromErr(err)
 	}
 
