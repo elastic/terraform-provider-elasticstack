@@ -71,6 +71,9 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate_authorities.0", "placeholder"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate", "placeholder"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.key", "placeholder"),
 				),
 			},
 			{
@@ -83,6 +86,9 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate_authorities.0", "placeholder"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate", "placeholder"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.key", "placeholder"),
 				),
 			},
 		},
@@ -152,6 +158,11 @@ resource "elasticstack_fleet_output" "test_output" {
   hosts = [
     "logstash:5044"
   ]
+  ssl {
+	certificate_authorities = ["placeholder"]
+	certficiate             = "placeholder"
+	key                     = "placeholder"
+  }
 }
 `, fmt.Sprintf("Logstash Output %s", id))
 }
@@ -174,6 +185,11 @@ resource "elasticstack_fleet_output" "test_output" {
   hosts = [
     "logstash:5044"
   ]
+  ssl {
+	certificate_authorities = ["placeholder"]
+	certficiate             = "placeholder"
+	key                     = "placeholder"
+  }
 }
 
 `, fmt.Sprintf("Updated Logstash Output %s", id))

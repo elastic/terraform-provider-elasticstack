@@ -48,10 +48,23 @@ resource "elasticstack_fleet_output" "test_output" {
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
 - `hosts` (List of String) A list of hosts.
 - `output_id` (String) Unique identifier of the output.
+- `ssl` (Block List, Max: 1) SSL configuration. (see [below for nested schema](#nestedblock--ssl))
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+
+<a id="nestedblock--ssl"></a>
+### Nested Schema for `ssl`
+
+Required:
+
+- `certificate` (String) Client SSL certificate.
+- `key` (String, Sensitive) Client SSL certificate key.
+
+Optional:
+
+- `certificate_authorities` (List of String) Server SSL certificate authorities.
 
 ## Import
 

@@ -57,6 +57,35 @@ func ResourceOutput() *schema.Resource {
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
+		"ssl": {
+			Description: "SSL configuration.",
+			Type:        schema.TypeList,
+			Optional:    true,
+			MaxItems:    1,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"certificate_authorities": {
+						Description: "Server SSL certificate authorities.",
+						Type:        schema.TypeList,
+						Optional:    true,
+						Elem: &schema.Schema{
+							Type: schema.TypeString,
+						},
+					},
+					"certificate": {
+						Description: "Client SSL certificate.",
+						Type:        schema.TypeString,
+						Required:    true,
+					},
+					"key": {
+						Description: "Client SSL certificate key.",
+						Type:        schema.TypeString,
+						Required:    true,
+						Sensitive:   true,
+					},
+				},
+			},
+		},
 		"config_yaml": {
 			Description: "Advanced YAML configuration. YAML settings here will be added to the output section of each agent policy.",
 			Type:        schema.TypeString,
@@ -173,6 +202,18 @@ func resourceOutputCreateLogstash(ctx context.Context, d *schema.ResourceData, m
 	}
 	if value, ok := d.Get("ca_trusted_fingerprint").(string); ok && value != "" {
 		reqData.CaTrustedFingerprint = &value
+	}
+	if value, ok := d.GetOk("ssl"); ok {
+		ssl := value.([]interface{})[0].(map[string]interface{})
+		if value, ok := ssl["certificate_authorities"].([]string); ok {
+			reqData.Ssl.CertificateAuthorities = &value
+		}
+		if value, ok := ssl["certificate"].(string); ok {
+			reqData.Ssl.Certificate = &value
+		}
+		if value, ok := ssl["key"].(string); ok {
+			reqData.Ssl.Key = &value
+		}
 	}
 	if value, ok := d.Get("config_yaml").(string); ok && value != "" {
 		reqData.ConfigYaml = &value
@@ -299,6 +340,23 @@ func resourceOutputUpdateLogstash(ctx context.Context, d *schema.ResourceData, m
 	if value, ok := d.Get("ca_sha256").(string); ok && value != "" {
 		reqData.CaSha256 = &value
 	}
+	if value, ok := d.GetOk("ssl"); ok {
+		ssl := value.([]interface{})[0].(map[string]interface{})
+		reqData.Ssl = &struct {
+			Certificate            *string   `json:"certificate,omitempty"`
+			CertificateAuthorities *[]string `json:"certificate_authorities,omitempty"`
+			Key                    *string   `json:"key,omitempty"`
+		}{}
+		if value, ok := ssl["certificate_authorities"].([]string); ok {
+			reqData.Ssl.CertificateAuthorities = &value
+		}
+		if value, ok := ssl["certificate"].(string); ok {
+			reqData.Ssl.Certificate = &value
+		}
+		if value, ok := ssl["key"].(string); ok {
+			reqData.Ssl.Key = &value
+		}
+	}
 	if value, ok := d.Get("config_yaml").(string); ok && value != "" {
 		reqData.ConfigYaml = &value
 	}
@@ -394,6 +452,9 @@ func resourceOutputReadLogstash(d *schema.ResourceData, data fleetapi.OutputCrea
 			return diag.FromErr(err)
 		}
 	}
+	if err := d.Set("ssl", flattenSslConfig(data)); err != nil {
+		return diag.FromErr(err)
+	}
 	if data.ConfigYaml != nil {
 		if err := d.Set("config_yaml", *data.ConfigYaml); err != nil {
 			return diag.FromErr(err)
@@ -455,4 +516,23 @@ func resourceOutputDelete(ctx context.Context, d *schema.ResourceData, meta inte
 	d.SetId("")
 
 	return diags
+}
+
+func flattenSslConfig(data fleetapi.OutputCreateRequestLogstash) []interface{} {
+	if data.Ssl == nil {
+		return []interface{}{}
+	}
+
+	ssl := make(map[string]interface{})
+	if data.Ssl.CertificateAuthorities != nil {
+		ssl["certificate_authorities"] = *data.Ssl.CertificateAuthorities
+	}
+	if data.Ssl.Certificate != nil {
+		ssl["certificate"] = *data.Ssl.Certificate
+	}
+	if data.Ssl.Key != nil {
+		ssl["key"] = *data.Ssl.Key
+	}
+
+	return []interface{}{ssl}
 }
