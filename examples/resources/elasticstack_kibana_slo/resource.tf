@@ -34,8 +34,6 @@ resource "elasticstack_kibana_slo" "auth_server_latency" {
     frequency  = "5m"
   }
 
-  tags = ["tag-1", "another_tag"]
-
 }
 
 resource "elasticstack_kibana_slo" "auth_server_availability" {
@@ -134,6 +132,8 @@ resource "elasticstack_kibana_slo" "custom_histogram" {
     timeslice_target = 0.95
     timeslice_window = "5m"
   }
+
+  tags = ["tag-1", "another_tag"]
 
 }
 
