@@ -1,4 +1,4 @@
-# SloResponseIndicator
+# IndicatorPropertiesTimesliceMetric
 
 ## Properties
 
@@ -9,59 +9,59 @@ Name | Type | Description | Notes
 
 ## Methods
 
-### NewSloResponseIndicator
+### NewIndicatorPropertiesTimesliceMetric
 
-`func NewSloResponseIndicator(params IndicatorPropertiesTimesliceMetricParams, type_ string, ) *SloResponseIndicator`
+`func NewIndicatorPropertiesTimesliceMetric(params IndicatorPropertiesTimesliceMetricParams, type_ string, ) *IndicatorPropertiesTimesliceMetric`
 
-NewSloResponseIndicator instantiates a new SloResponseIndicator object
+NewIndicatorPropertiesTimesliceMetric instantiates a new IndicatorPropertiesTimesliceMetric object
 This constructor will assign default values to properties that have it defined,
 and makes sure properties required by API are set, but the set of arguments
 will change when the set of required properties is changed
 
-### NewSloResponseIndicatorWithDefaults
+### NewIndicatorPropertiesTimesliceMetricWithDefaults
 
-`func NewSloResponseIndicatorWithDefaults() *SloResponseIndicator`
+`func NewIndicatorPropertiesTimesliceMetricWithDefaults() *IndicatorPropertiesTimesliceMetric`
 
-NewSloResponseIndicatorWithDefaults instantiates a new SloResponseIndicator object
+NewIndicatorPropertiesTimesliceMetricWithDefaults instantiates a new IndicatorPropertiesTimesliceMetric object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
 ### GetParams
 
-`func (o *SloResponseIndicator) GetParams() IndicatorPropertiesTimesliceMetricParams`
+`func (o *IndicatorPropertiesTimesliceMetric) GetParams() IndicatorPropertiesTimesliceMetricParams`
 
 GetParams returns the Params field if non-nil, zero value otherwise.
 
 ### GetParamsOk
 
-`func (o *SloResponseIndicator) GetParamsOk() (*IndicatorPropertiesTimesliceMetricParams, bool)`
+`func (o *IndicatorPropertiesTimesliceMetric) GetParamsOk() (*IndicatorPropertiesTimesliceMetricParams, bool)`
 
 GetParamsOk returns a tuple with the Params field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetParams
 
-`func (o *SloResponseIndicator) SetParams(v IndicatorPropertiesTimesliceMetricParams)`
+`func (o *IndicatorPropertiesTimesliceMetric) SetParams(v IndicatorPropertiesTimesliceMetricParams)`
 
 SetParams sets Params field to given value.
 
 
 ### GetType
 
-`func (o *SloResponseIndicator) GetType() string`
+`func (o *IndicatorPropertiesTimesliceMetric) GetType() string`
 
 GetType returns the Type field if non-nil, zero value otherwise.
 
 ### GetTypeOk
 
-`func (o *SloResponseIndicator) GetTypeOk() (*string, bool)`
+`func (o *IndicatorPropertiesTimesliceMetric) GetTypeOk() (*string, bool)`
 
 GetTypeOk returns a tuple with the Type field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetType
 
-`func (o *SloResponseIndicator) SetType(v string)`
+`func (o *IndicatorPropertiesTimesliceMetric) SetType(v string)`
 
 SetType sets Type field to given value.
 

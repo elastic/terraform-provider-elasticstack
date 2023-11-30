@@ -34,6 +34,8 @@ resource "elasticstack_kibana_slo" "auth_server_latency" {
     frequency  = "5m"
   }
 
+  tags = ["tag-1", "another_tag"]
+
 }
 
 resource "elasticstack_kibana_slo" "auth_server_availability" {

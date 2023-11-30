@@ -2,6 +2,7 @@ package kibana_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -28,7 +29,7 @@ func TestAccResourceSlo(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
-				Config:   getSLOConfig(sloName, "apm_latency_indicator", false),
+				Config:   getSLOConfig(sloName, "apm_latency_indicator", false, []string{}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "description", "fully sick SLO"),
@@ -52,14 +53,14 @@ func TestAccResourceSlo(t *testing.T) {
 			},
 			{ //check that name can be updated
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
-				Config:   getSLOConfig(fmt.Sprintf("Updated %s", sloName), "apm_latency_indicator", false),
+				Config:   getSLOConfig(fmt.Sprintf("Updated %s", sloName), "apm_latency_indicator", false, []string{}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("Updated %s", sloName)),
 				),
 			},
 			{ //check that settings can be updated from api-computed defaults
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
-				Config:   getSLOConfig(sloName, "apm_latency_indicator", true),
+				Config:   getSLOConfig(sloName, "apm_latency_indicator", true, []string{}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "5m"),
@@ -67,7 +68,7 @@ func TestAccResourceSlo(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
-				Config:   getSLOConfig(sloName, "apm_availability_indicator", true),
+				Config:   getSLOConfig(sloName, "apm_availability_indicator", true, []string{}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.environment", "production"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.service", "my-service"),
@@ -78,7 +79,7 @@ func TestAccResourceSlo(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
-				Config:   getSLOConfig(sloName, "kql_custom_indicator", true),
+				Config:   getSLOConfig(sloName, "kql_custom_indicator", true, []string{}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
@@ -89,7 +90,7 @@ func TestAccResourceSlo(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
-				Config:   getSLOConfig(sloName, "histogram_custom_indicator", true),
+				Config:   getSLOConfig(sloName, "histogram_custom_indicator", true, []string{}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.index", "my-index"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.field", "test"),
@@ -103,7 +104,7 @@ func TestAccResourceSlo(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
-				Config:   getSLOConfig(sloName, "metric_custom_indicator", true),
+				Config:   getSLOConfig(sloName, "metric_custom_indicator", true, []string{}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.name", "A"),
@@ -112,6 +113,14 @@ func TestAccResourceSlo(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.name", "A"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.aggregation", "sum"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.field", "processor.accepted"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
+				Config:   getSLOConfig(sloName, "metric_custom_indicator", true, []string{"tag-1", "another_tag"}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.0", "tag-1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.1", "another_tag"),
 				),
 			},
 		},
@@ -174,7 +183,7 @@ func TestAccResourceSloErrors(t *testing.T) {
 
 	}`
 
-	budgetingMethodFailConfig := getSLOConfig("budgetingMethodFail", "apm_latency_indicator", false)
+	budgetingMethodFailConfig := getSLOConfig("budgetingMethodFail", "apm_latency_indicator", false, []string{})
 	budgetingMethodFailConfig = strings.Replace(budgetingMethodFailConfig, "budgeting_method = \"timeslices\"", "budgeting_method = \"supdawg\"", -1)
 
 	resource.Test(t, resource.TestCase{
@@ -188,7 +197,7 @@ func TestAccResourceSloErrors(t *testing.T) {
 			},
 			{
 				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))),
-				Config:      getSLOConfig("failwhale", "histogram_custom_indicator_agg_fail", false),
+				Config:      getSLOConfig("failwhale", "histogram_custom_indicator_agg_fail", false, []string{}),
 				ExpectError: regexp.MustCompile(`expected histogram_custom_indicator.0.good.0.aggregation to be one of \["?value_count"? "?range"?\], got supdawg`),
 			},
 			{
@@ -226,7 +235,7 @@ func checkResourceSloDestroy(s *terraform.State) error {
 	return nil
 }
 
-func getSLOConfig(name string, indicatorType string, settingsEnabled bool) string {
+func getSLOConfig(name string, indicatorType string, settingsEnabled bool, tags []string) string {
 	var settings string
 	if settingsEnabled {
 		settings = `
@@ -237,6 +246,14 @@ func getSLOConfig(name string, indicatorType string, settingsEnabled bool) strin
 		`
 	} else {
 		settings = ""
+	}
+
+	var tagsOption string
+	if len(tags) != 0 {
+		tagsJson, _ := json.Marshal(tags)
+		tagsOption = "tags = " + string(tagsJson)
+	} else {
+		tagsOption = ""
 	}
 
 	configTemplate := `
@@ -275,6 +292,7 @@ func getSLOConfig(name string, indicatorType string, settingsEnabled bool) strin
 
 			depends_on = [elasticstack_elasticsearch_index.my_index]
 
+			%s
 		}
 	`
 
@@ -381,6 +399,6 @@ func getSLOConfig(name string, indicatorType string, settingsEnabled bool) strin
 		return indicator
 	}
 
-	config := fmt.Sprintf(configTemplate, name, getIndicator(indicatorType), settings)
+	config := fmt.Sprintf(configTemplate, name, getIndicator(indicatorType), settings, tagsOption)
 	return config
 }
