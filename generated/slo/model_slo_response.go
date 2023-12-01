@@ -39,6 +39,8 @@ type SloResponse struct {
 	GroupBy string `json:"groupBy"`
 	// the value derived from the groupBy field, if present, otherwise '*'
 	InstanceId string `json:"instanceId"`
+	// List of tags
+	Tags []string `json:"tags"`
 	// The creation date
 	CreatedAt string `json:"createdAt"`
 	// The last update date
@@ -49,7 +51,7 @@ type SloResponse struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string) *SloResponse {
+func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, tags []string, createdAt string, updatedAt string) *SloResponse {
 	this := SloResponse{}
 	this.Id = id
 	this.Name = name
@@ -64,6 +66,7 @@ func NewSloResponse(id string, name string, description string, indicator SloRes
 	this.Enabled = enabled
 	this.GroupBy = groupBy
 	this.InstanceId = instanceId
+	this.Tags = tags
 	this.CreatedAt = createdAt
 	this.UpdatedAt = updatedAt
 	return &this
@@ -389,6 +392,30 @@ func (o *SloResponse) SetInstanceId(v string) {
 	o.InstanceId = v
 }
 
+// GetTags returns the Tags field value
+func (o *SloResponse) GetTags() []string {
+	if o == nil {
+		var ret []string
+		return ret
+	}
+
+	return o.Tags
+}
+
+// GetTagsOk returns a tuple with the Tags field value
+// and a boolean to check if the value has been set.
+func (o *SloResponse) GetTagsOk() ([]string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Tags, true
+}
+
+// SetTags sets field value
+func (o *SloResponse) SetTags(v []string) {
+	o.Tags = v
+}
+
 // GetCreatedAt returns the CreatedAt field value
 func (o *SloResponse) GetCreatedAt() string {
 	if o == nil {
@@ -460,6 +487,7 @@ func (o SloResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize["enabled"] = o.Enabled
 	toSerialize["groupBy"] = o.GroupBy
 	toSerialize["instanceId"] = o.InstanceId
+	toSerialize["tags"] = o.Tags
 	toSerialize["createdAt"] = o.CreatedAt
 	toSerialize["updatedAt"] = o.UpdatedAt
 	return toSerialize, nil

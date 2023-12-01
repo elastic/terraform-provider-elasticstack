@@ -27,7 +27,7 @@ func TestElasticsearchAPIKeyConnection(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),
@@ -45,7 +45,7 @@ func TestFleetConfiguration(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV5ProviderFactories: acctest.Providers,
+		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
@@ -59,20 +59,69 @@ func TestFleetConfiguration(t *testing.T) {
 }
 
 func TestKibanaConfiguration(t *testing.T) {
-	envConfig := config.NewFromEnv("acceptance-testing")
+	var envConfig config.Client
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV5ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				Config: testKibanaConfiguration(envConfig),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
-				),
+	testCases := []struct {
+		name string
+		tc   func() resource.TestCase
+		pre  func(t *testing.T)
+		post func(t *testing.T)
+	}{
+		{
+			name: "with username and password",
+			pre: func(t *testing.T) {
+				envConfig = config.NewFromEnv("acceptance-testing")
+			},
+			post: func(t *testing.T) {},
+			tc: func() resource.TestCase {
+				return resource.TestCase{
+					PreCheck:                 func() { acctest.PreCheck(t) },
+					ProtoV6ProviderFactories: acctest.Providers,
+					Steps: []resource.TestStep{
+						{
+							Config: testKibanaConfiguration(envConfig),
+							Check: resource.ComposeTestCheckFunc(
+								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+							),
+						},
+					},
+				}
 			},
 		},
-	})
+		{
+			name: "with api key",
+			pre: func(t *testing.T) {
+				apiKey := os.Getenv("KIBANA_API_KEY")
+				t.Setenv("KIBANA_USERNAME", "")
+				t.Setenv("KIBANA_PASSWORD", "")
+				t.Setenv("KIBANA_API_KEY", apiKey)
+				envConfig = config.NewFromEnv("acceptance-testing")
+			},
+			post: func(t *testing.T) {},
+			tc: func() resource.TestCase {
+				return resource.TestCase{
+					PreCheck:                 func() { acctest.PreCheck(t) },
+					ProtoV6ProviderFactories: acctest.Providers,
+					Steps: []resource.TestStep{
+						{
+							Config: testKibanaApiKeyConfiguration(envConfig),
+							Check: resource.ComposeTestCheckFunc(
+								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+							),
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.pre(t)
+			resource.Test(t, tc.tc())
+			tc.post(t)
+		})
+
+	}
 }
 
 func testKibanaConfiguration(cfg config.Client) string {
@@ -90,6 +139,22 @@ resource "elasticstack_kibana_space" "acc_test" {
 	space_id          = "acc_test_space"
 	name              = "Acceptance Test Space"
 }`, cfg.Kibana.Address, cfg.Kibana.Username, cfg.Kibana.Password)
+}
+
+func testKibanaApiKeyConfiguration(cfg config.Client) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+	elasticsearch {}
+	kibana {
+		endpoints = ["%s"]
+		api_key   = "%s"
+	}
+}
+
+resource "elasticstack_kibana_space" "acc_test" {
+	space_id          = "acc_test_space"
+	name              = "Acceptance Test Space"
+}`, cfg.Kibana.Address, cfg.Kibana.ApiKey)
 }
 
 func testFleetConfiguration(cfg config.Client) string {
