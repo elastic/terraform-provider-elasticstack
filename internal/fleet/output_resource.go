@@ -347,8 +347,12 @@ func resourceOutputUpdateLogstash(ctx context.Context, d *schema.ResourceData, m
 			CertificateAuthorities *[]string `json:"certificate_authorities,omitempty"`
 			Key                    *string   `json:"key,omitempty"`
 		}{}
-		if value, ok := ssl["certificate_authorities"].([]string); ok {
-			reqData.Ssl.CertificateAuthorities = &value
+		if value, ok := ssl["certificate_authorities"].([]interface{}); ok {
+			certs := make([]string, len(value))
+			for i, v := range value {
+				certs[i] = v.(string)
+			}
+			reqData.Ssl.CertificateAuthorities = &certs
 		}
 		if value, ok := ssl["certificate"].(string); ok {
 			reqData.Ssl.Certificate = &value
