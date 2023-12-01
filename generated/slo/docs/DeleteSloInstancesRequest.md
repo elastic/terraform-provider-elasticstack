@@ -1,46 +1,46 @@
-# HistoricalSummaryRequest
+# DeleteSloInstancesRequest
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**List** | **[]string** | The list of SLO identifiers to get the historical summary for | 
+**List** | [**[]DeleteSloInstancesRequestListInner**](DeleteSloInstancesRequestListInner.md) | An array of slo id and instance id | 
 
 ## Methods
 
-### NewHistoricalSummaryRequest
+### NewDeleteSloInstancesRequest
 
-`func NewHistoricalSummaryRequest(list []string, ) *HistoricalSummaryRequest`
+`func NewDeleteSloInstancesRequest(list []DeleteSloInstancesRequestListInner, ) *DeleteSloInstancesRequest`
 
-NewHistoricalSummaryRequest instantiates a new HistoricalSummaryRequest object
+NewDeleteSloInstancesRequest instantiates a new DeleteSloInstancesRequest object
 This constructor will assign default values to properties that have it defined,
 and makes sure properties required by API are set, but the set of arguments
 will change when the set of required properties is changed
 
-### NewHistoricalSummaryRequestWithDefaults
+### NewDeleteSloInstancesRequestWithDefaults
 
-`func NewHistoricalSummaryRequestWithDefaults() *HistoricalSummaryRequest`
+`func NewDeleteSloInstancesRequestWithDefaults() *DeleteSloInstancesRequest`
 
-NewHistoricalSummaryRequestWithDefaults instantiates a new HistoricalSummaryRequest object
+NewDeleteSloInstancesRequestWithDefaults instantiates a new DeleteSloInstancesRequest object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
 ### GetList
 
-`func (o *HistoricalSummaryRequest) GetList() []string`
+`func (o *DeleteSloInstancesRequest) GetList() []DeleteSloInstancesRequestListInner`
 
 GetList returns the List field if non-nil, zero value otherwise.
 
 ### GetListOk
 
-`func (o *HistoricalSummaryRequest) GetListOk() (*[]string, bool)`
+`func (o *DeleteSloInstancesRequest) GetListOk() (*[]DeleteSloInstancesRequestListInner, bool)`
 
 GetListOk returns a tuple with the List field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetList
 
-`func (o *HistoricalSummaryRequest) SetList(v []string)`
+`func (o *DeleteSloInstancesRequest) SetList(v []DeleteSloInstancesRequestListInner)`
 
 SetList sets List field to given value.
 
