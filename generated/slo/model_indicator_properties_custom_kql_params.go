@@ -24,9 +24,9 @@ type IndicatorPropertiesCustomKqlParams struct {
 	// the KQL query to filter the documents with.
 	Filter *string `json:"filter,omitempty"`
 	// the KQL query used to define the good events.
-	Good *string `json:"good,omitempty"`
+	Good string `json:"good"`
 	// the KQL query used to define all events.
-	Total *string `json:"total,omitempty"`
+	Total string `json:"total"`
 	// The timestamp field used in the source indice.
 	TimestampField string `json:"timestampField"`
 }
@@ -35,9 +35,11 @@ type IndicatorPropertiesCustomKqlParams struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewIndicatorPropertiesCustomKqlParams(index string, timestampField string) *IndicatorPropertiesCustomKqlParams {
+func NewIndicatorPropertiesCustomKqlParams(index string, good string, total string, timestampField string) *IndicatorPropertiesCustomKqlParams {
 	this := IndicatorPropertiesCustomKqlParams{}
 	this.Index = index
+	this.Good = good
+	this.Total = total
 	this.TimestampField = timestampField
 	return &this
 }
@@ -106,68 +108,52 @@ func (o *IndicatorPropertiesCustomKqlParams) SetFilter(v string) {
 	o.Filter = &v
 }
 
-// GetGood returns the Good field value if set, zero value otherwise.
+// GetGood returns the Good field value
 func (o *IndicatorPropertiesCustomKqlParams) GetGood() string {
-	if o == nil || IsNil(o.Good) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.Good
+
+	return o.Good
 }
 
-// GetGoodOk returns a tuple with the Good field value if set, nil otherwise
+// GetGoodOk returns a tuple with the Good field value
 // and a boolean to check if the value has been set.
 func (o *IndicatorPropertiesCustomKqlParams) GetGoodOk() (*string, bool) {
-	if o == nil || IsNil(o.Good) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Good, true
+	return &o.Good, true
 }
 
-// HasGood returns a boolean if a field has been set.
-func (o *IndicatorPropertiesCustomKqlParams) HasGood() bool {
-	if o != nil && !IsNil(o.Good) {
-		return true
-	}
-
-	return false
-}
-
-// SetGood gets a reference to the given string and assigns it to the Good field.
+// SetGood sets field value
 func (o *IndicatorPropertiesCustomKqlParams) SetGood(v string) {
-	o.Good = &v
+	o.Good = v
 }
 
-// GetTotal returns the Total field value if set, zero value otherwise.
+// GetTotal returns the Total field value
 func (o *IndicatorPropertiesCustomKqlParams) GetTotal() string {
-	if o == nil || IsNil(o.Total) {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.Total
+
+	return o.Total
 }
 
-// GetTotalOk returns a tuple with the Total field value if set, nil otherwise
+// GetTotalOk returns a tuple with the Total field value
 // and a boolean to check if the value has been set.
 func (o *IndicatorPropertiesCustomKqlParams) GetTotalOk() (*string, bool) {
-	if o == nil || IsNil(o.Total) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Total, true
+	return &o.Total, true
 }
 
-// HasTotal returns a boolean if a field has been set.
-func (o *IndicatorPropertiesCustomKqlParams) HasTotal() bool {
-	if o != nil && !IsNil(o.Total) {
-		return true
-	}
-
-	return false
-}
-
-// SetTotal gets a reference to the given string and assigns it to the Total field.
+// SetTotal sets field value
 func (o *IndicatorPropertiesCustomKqlParams) SetTotal(v string) {
-	o.Total = &v
+	o.Total = v
 }
 
 // GetTimestampField returns the TimestampField field value
@@ -208,12 +194,8 @@ func (o IndicatorPropertiesCustomKqlParams) ToMap() (map[string]interface{}, err
 	if !IsNil(o.Filter) {
 		toSerialize["filter"] = o.Filter
 	}
-	if !IsNil(o.Good) {
-		toSerialize["good"] = o.Good
-	}
-	if !IsNil(o.Total) {
-		toSerialize["total"] = o.Total
-	}
+	toSerialize["good"] = o.Good
+	toSerialize["total"] = o.Total
 	toSerialize["timestampField"] = o.TimestampField
 	return toSerialize, nil
 }

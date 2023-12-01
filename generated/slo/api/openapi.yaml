@@ -17,9 +17,6 @@ security:
 tags:
 - description: "SLO APIs enable you to define, manage and track service-level objectives"
   name: slo
-- description: "Composite SLO APIs enable you to define, manage and track a group\
-    \ of SLOs."
-  name: composite slo
 paths:
   /s/{spaceId}/api/observability/slos:
     get:
@@ -72,6 +69,7 @@ paths:
         required: false
         schema:
           default: 25
+          maximum: 5000
           type: integer
         style: form
       - description: Sort by field
@@ -595,6 +593,63 @@ paths:
       summary: Retrieves the historical summary for a list of SLOs
       tags:
       - slo
+  /s/{spaceId}/api/observability/slos/_delete_instances:
+    post:
+      description: |
+        You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+      operationId: deleteSloInstancesOp
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/delete_slo_instances_request'
+        required: true
+      responses:
+        "204":
+          description: Successful request
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+          description: Bad request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+      servers:
+      - url: https://localhost:5601
+      summary: Batch delete rollup and summary data for the matching list of sloId
+        and instanceId
+      tags:
+      - slo
 components:
   parameters:
     kbn_xsrf:
@@ -697,6 +752,107 @@ components:
       - params
       - type
       title: Histogram indicator
+      type: object
+    timeslice_metric_basic_metric_with_field:
+      properties:
+        name:
+          description: The name of the metric. Only valid options are A-Z
+          example: A
+          pattern: "^[A-Z]$"
+          type: string
+        aggregation:
+          description: The aggregation type of the metric.
+          enum:
+          - sum
+          - avg
+          - min
+          - max
+          - std_deviation
+          - last_value
+          - cardinality
+          example: sum
+          type: string
+        field:
+          description: The field of the metric.
+          example: processor.processed
+          type: string
+        filter:
+          description: The filter to apply to the metric.
+          example: "processor.outcome: \"success\""
+          type: string
+      required:
+      - aggregation
+      - field
+      - name
+      title: Timeslice Metric Basic Metric with Field
+      type: object
+    timeslice_metric_percentile_metric:
+      properties:
+        name:
+          description: The name of the metric. Only valid options are A-Z
+          example: A
+          pattern: "^[A-Z]$"
+          type: string
+        aggregation:
+          description: The aggregation type of the metric. Only valid option is "percentile"
+          enum:
+          - percentile
+          example: percentile
+          type: string
+        field:
+          description: The field of the metric.
+          example: processor.processed
+          type: string
+        percentile:
+          description: The percentile value.
+          example: 95
+          type: number
+        filter:
+          description: The filter to apply to the metric.
+          example: "processor.outcome: \"success\""
+          type: string
+      required:
+      - aggregation
+      - field
+      - name
+      - percentile
+      title: Timeslice Metric Percentile Metric
+      type: object
+    timeslice_metric_doc_count_metric:
+      properties:
+        name:
+          description: The name of the metric. Only valid options are A-Z
+          example: A
+          pattern: "^[A-Z]$"
+          type: string
+        aggregation:
+          description: The aggregation type of the metric. Only valid option is "doc_count"
+          enum:
+          - doc_count
+          example: doc_count
+          type: string
+        filter:
+          description: The filter to apply to the metric.
+          example: "processor.outcome: \"success\""
+          type: string
+      required:
+      - aggregation
+      - name
+      title: Timeslice Metric Doc Count Metric
+      type: object
+    indicator_properties_timeslice_metric:
+      description: Defines properties for a timeslice metric indicator type
+      properties:
+        params:
+          $ref: '#/components/schemas/indicator_properties_timeslice_metric_params'
+        type:
+          description: The type of indicator.
+          example: sli.metric.timeslice
+          type: string
+      required:
+      - params
+      - type
+      title: Timeslice metric
       type: object
     time_window:
       description: Defines properties for the SLO time window
@@ -863,6 +1019,9 @@ components:
           timesliceTarget: 0.995
           target: 0.99
         revision: 2
+        tags:
+        - tags
+        - tags
         createdAt: 2023-01-12T10:03:19.000Z
         instanceId: host-abcde
         name: My Service SLO
@@ -912,6 +1071,11 @@ components:
             \ '*'"
           example: host-abcde
           type: string
+        tags:
+          description: List of tags
+          items:
+            type: string
+          type: array
         createdAt:
           description: The creation date
           example: 2023-01-12T10:03:19.000Z
@@ -934,6 +1098,7 @@ components:
       - revision
       - settings
       - summary
+      - tags
       - timeWindow
       - updatedAt
       title: SLO response
@@ -969,6 +1134,9 @@ components:
             timesliceTarget: 0.995
             target: 0.99
           revision: 2
+          tags:
+          - tags
+          - tags
           createdAt: 2023-01-12T10:03:19.000Z
           instanceId: host-abcde
           name: My Service SLO
@@ -998,6 +1166,9 @@ components:
             timesliceTarget: 0.995
             target: 0.99
           revision: 2
+          tags:
+          - tags
+          - tags
           createdAt: 2023-01-12T10:03:19.000Z
           instanceId: host-abcde
           name: My Service SLO
@@ -1122,6 +1293,11 @@ components:
             value
           example: some.field
           type: string
+        tags:
+          description: List of tags
+          items:
+            type: string
+          type: array
       required:
       - budgetingMethod
       - description
@@ -1179,18 +1355,23 @@ components:
           $ref: '#/components/schemas/objective'
         settings:
           $ref: '#/components/schemas/settings'
+        tags:
+          description: List of tags
+          items:
+            type: string
+          type: array
       title: Update SLO request
       type: object
     historical_summary_request:
       properties:
-        sloIds:
+        list:
           description: The list of SLO identifiers to get the historical summary for
           items:
             example: 8853df00-ae2e-11ed-90af-09bb6422b258
             type: string
           type: array
       required:
-      - sloIds
+      - list
       title: Historical summary request
       type: object
     historical_summary_response:
@@ -1199,6 +1380,19 @@ components:
           $ref: '#/components/schemas/Historical_summary_response_inner'
         type: array
       title: Historical summary response
+      type: object
+    delete_slo_instances_request:
+      description: |
+        The delete SLO instances request takes a list of SLO id and instance id, then delete the rollup and summary data. This API can be used to remove the staled data of an instance SLO that no longer get updated.
+      properties:
+        list:
+          description: An array of slo id and instance id
+          items:
+            $ref: '#/components/schemas/delete_slo_instances_request_list_inner'
+          type: array
+      required:
+      - list
+      title: Delete SLO instances request
       type: object
     indicator_properties_apm_availability_params:
       description: An object containing the indicator parameters.
@@ -1261,8 +1455,10 @@ components:
           example: timestamp
           type: string
       required:
+      - good
       - index
       - timestampField
+      - total
       type: object
     indicator_properties_apm_latency_params:
       description: An object containing the indicator parameters.
@@ -1412,7 +1608,6 @@ components:
         total:
           $ref: '#/components/schemas/indicator_properties_custom_metric_params_total'
       required:
-      - filter
       - good
       - index
       - timestampField
@@ -1509,6 +1704,68 @@ components:
       - timestampField
       - total
       type: object
+    indicator_properties_timeslice_metric_params_metric_metrics_inner:
+      anyOf:
+      - $ref: '#/components/schemas/timeslice_metric_basic_metric_with_field'
+      - $ref: '#/components/schemas/timeslice_metric_percentile_metric'
+      - $ref: '#/components/schemas/timeslice_metric_doc_count_metric'
+    indicator_properties_timeslice_metric_params_metric:
+      description: |
+        An object defining the metrics, equation, and threshold to determine if it's a good slice or not
+      properties:
+        metrics:
+          description: "List of metrics with their name, aggregation type, and field."
+          items:
+            $ref: '#/components/schemas/indicator_properties_timeslice_metric_params_metric_metrics_inner'
+          type: array
+        equation:
+          description: The equation to calculate the metric.
+          example: A
+          type: string
+        comparator:
+          description: The comparator to use to compare the equation to the threshold.
+          enum:
+          - GT
+          - GTE
+          - LT
+          - LTE
+          example: GT
+          type: string
+        threshold:
+          description: The threshold used to determine if the metric is a good slice
+            or not.
+          example: 100
+          type: number
+      required:
+      - comparator
+      - equation
+      - metrics
+      - threshold
+      type: object
+    indicator_properties_timeslice_metric_params:
+      description: An object containing the indicator parameters.
+      nullable: false
+      properties:
+        index:
+          description: The index or index pattern to use
+          example: my-service-*
+          type: string
+        filter:
+          description: the KQL query to filter the documents with.
+          example: "field.environment : \"production\" and service.name : \"my-service\""
+          type: string
+        timestampField:
+          description: |
+            The timestamp field used in the source indice.
+          example: timestamp
+          type: string
+        metric:
+          $ref: '#/components/schemas/indicator_properties_timeslice_metric_params_metric'
+      required:
+      - index
+      - metric
+      - timestampField
+      type: object
     slo_response_indicator:
       discriminator:
         mapping:
@@ -1517,6 +1774,7 @@ components:
           sli.apm.transactionDuration: '#/components/schemas/indicator_properties_apm_latency'
           sli.metric.custom: '#/components/schemas/indicator_properties_custom_metric'
           sli.histogram.custom: '#/components/schemas/indicator_properties_histogram'
+          sli.metric.timeslice: '#/components/schemas/indicator_properties_timeslice_metric'
         propertyName: type
       oneOf:
       - $ref: '#/components/schemas/indicator_properties_custom_kql'
@@ -1524,6 +1782,7 @@ components:
       - $ref: '#/components/schemas/indicator_properties_apm_latency'
       - $ref: '#/components/schemas/indicator_properties_custom_metric'
       - $ref: '#/components/schemas/indicator_properties_histogram'
+      - $ref: '#/components/schemas/indicator_properties_timeslice_metric'
     create_slo_request_indicator:
       oneOf:
       - $ref: '#/components/schemas/indicator_properties_custom_kql'
@@ -1531,6 +1790,7 @@ components:
       - $ref: '#/components/schemas/indicator_properties_apm_latency'
       - $ref: '#/components/schemas/indicator_properties_custom_metric'
       - $ref: '#/components/schemas/indicator_properties_histogram'
+      - $ref: '#/components/schemas/indicator_properties_timeslice_metric'
     Historical_summary_response_inner:
       properties:
         date:
@@ -1544,11 +1804,26 @@ components:
         errorBudget:
           $ref: '#/components/schemas/error_budget'
       type: object
+    delete_slo_instances_request_list_inner:
+      properties:
+        sloId:
+          description: The SLO unique identifier
+          example: 8853df00-ae2e-11ed-90af-09bb6422b258
+          type: string
+        instanceId:
+          description: The SLO instance identifier
+          example: 8853df00-ae2e-11ed-90af-09bb6422b258
+          type: string
+      required:
+      - instanceId
+      - sloId
+      type: object
   securitySchemes:
     basicAuth:
       scheme: basic
       type: http
     apiKeyAuth:
+      description: "e.g. Authorization: ApiKey base64AccessApiKey"
       in: header
-      name: ApiKey
+      name: Authorization
       type: apiKey

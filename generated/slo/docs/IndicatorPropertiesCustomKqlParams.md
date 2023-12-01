@@ -6,15 +6,15 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Index** | **string** | The index or index pattern to use | 
 **Filter** | Pointer to **string** | the KQL query to filter the documents with. | [optional] 
-**Good** | Pointer to **string** | the KQL query used to define the good events. | [optional] 
-**Total** | Pointer to **string** | the KQL query used to define all events. | [optional] 
+**Good** | **string** | the KQL query used to define the good events. | 
+**Total** | **string** | the KQL query used to define all events. | 
 **TimestampField** | **string** | The timestamp field used in the source indice.  | 
 
 ## Methods
 
 ### NewIndicatorPropertiesCustomKqlParams
 
-`func NewIndicatorPropertiesCustomKqlParams(index string, timestampField string, ) *IndicatorPropertiesCustomKqlParams`
+`func NewIndicatorPropertiesCustomKqlParams(index string, good string, total string, timestampField string, ) *IndicatorPropertiesCustomKqlParams`
 
 NewIndicatorPropertiesCustomKqlParams instantiates a new IndicatorPropertiesCustomKqlParams object
 This constructor will assign default values to properties that have it defined,
@@ -93,11 +93,6 @@ and a boolean to check if the value has been set.
 
 SetGood sets Good field to given value.
 
-### HasGood
-
-`func (o *IndicatorPropertiesCustomKqlParams) HasGood() bool`
-
-HasGood returns a boolean if a field has been set.
 
 ### GetTotal
 
@@ -118,11 +113,6 @@ and a boolean to check if the value has been set.
 
 SetTotal sets Total field to given value.
 
-### HasTotal
-
-`func (o *IndicatorPropertiesCustomKqlParams) HasTotal() bool`
-
-HasTotal returns a boolean if a field has been set.
 
 ### GetTimestampField
 

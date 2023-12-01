@@ -15,4 +15,5 @@ type Slo struct {
 	Settings        *slo.Settings
 	SpaceID         string
 	GroupBy         *string
+	Tags            []string
 }
