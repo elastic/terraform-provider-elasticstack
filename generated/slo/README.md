@@ -78,6 +78,7 @@ All URIs are relative to *http://localhost:5601*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *SloAPI* | [**CreateSloOp**](docs/SloAPI.md#createsloop) | **Post** /s/{spaceId}/api/observability/slos | Creates an SLO.
+*SloAPI* | [**DeleteSloInstancesOp**](docs/SloAPI.md#deletesloinstancesop) | **Post** /s/{spaceId}/api/observability/slos/_delete_instances | Batch delete rollup and summary data for the matching list of sloId and instanceId
 *SloAPI* | [**DeleteSloOp**](docs/SloAPI.md#deletesloop) | **Delete** /s/{spaceId}/api/observability/slos/{sloId} | Deletes an SLO
 *SloAPI* | [**DisableSloOp**](docs/SloAPI.md#disablesloop) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/disable | Disables an SLO
 *SloAPI* | [**EnableSloOp**](docs/SloAPI.md#enablesloop) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/enable | Enables an SLO
@@ -93,6 +94,8 @@ Class | Method | HTTP request | Description
  - [CreateSloRequest](docs/CreateSloRequest.md)
  - [CreateSloRequestIndicator](docs/CreateSloRequestIndicator.md)
  - [CreateSloResponse](docs/CreateSloResponse.md)
+ - [DeleteSloInstancesRequest](docs/DeleteSloInstancesRequest.md)
+ - [DeleteSloInstancesRequestListInner](docs/DeleteSloInstancesRequestListInner.md)
  - [ErrorBudget](docs/ErrorBudget.md)
  - [FindSloResponse](docs/FindSloResponse.md)
  - [HistoricalSummaryRequest](docs/HistoricalSummaryRequest.md)
@@ -113,6 +116,10 @@ Class | Method | HTTP request | Description
  - [IndicatorPropertiesHistogramParams](docs/IndicatorPropertiesHistogramParams.md)
  - [IndicatorPropertiesHistogramParamsGood](docs/IndicatorPropertiesHistogramParamsGood.md)
  - [IndicatorPropertiesHistogramParamsTotal](docs/IndicatorPropertiesHistogramParamsTotal.md)
+ - [IndicatorPropertiesTimesliceMetric](docs/IndicatorPropertiesTimesliceMetric.md)
+ - [IndicatorPropertiesTimesliceMetricParams](docs/IndicatorPropertiesTimesliceMetricParams.md)
+ - [IndicatorPropertiesTimesliceMetricParamsMetric](docs/IndicatorPropertiesTimesliceMetricParamsMetric.md)
+ - [IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner](docs/IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner.md)
  - [Model400Response](docs/Model400Response.md)
  - [Model401Response](docs/Model401Response.md)
  - [Model403Response](docs/Model403Response.md)
@@ -125,6 +132,9 @@ Class | Method | HTTP request | Description
  - [Summary](docs/Summary.md)
  - [SummaryStatus](docs/SummaryStatus.md)
  - [TimeWindow](docs/TimeWindow.md)
+ - [TimesliceMetricBasicMetricWithField](docs/TimesliceMetricBasicMetricWithField.md)
+ - [TimesliceMetricDocCountMetric](docs/TimesliceMetricDocCountMetric.md)
+ - [TimesliceMetricPercentileMetric](docs/TimesliceMetricPercentileMetric.md)
  - [UpdateSloRequest](docs/UpdateSloRequest.md)
 
 
@@ -149,10 +159,10 @@ r, err := client.Service.Operation(auth, args)
 ### apiKeyAuth
 
 - **Type**: API key
-- **API key parameter name**: ApiKey
+- **API key parameter name**: Authorization
 - **Location**: HTTP header
 
-Note, each API key must be added to a map of `map[string]APIKey` where the key is: ApiKey and passed in as the auth context for each request.
+Note, each API key must be added to a map of `map[string]APIKey` where the key is: Authorization and passed in as the auth context for each request.
 
 Example
 
@@ -161,7 +171,7 @@ auth := context.WithValue(
 		context.Background(),
 		sw.ContextAPIKeys,
 		map[string]sw.APIKey{
-			"ApiKey": {Key: "API_KEY_STRING"},
+			"Authorization": {Key: "API_KEY_STRING"},
 		},
 	)
 r, err := client.Service.Operation(auth, args)

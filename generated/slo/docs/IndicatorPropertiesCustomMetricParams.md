@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Index** | **string** | The index or index pattern to use | 
-**Filter** | **string** | the KQL query to filter the documents with. | 
+**Filter** | Pointer to **string** | the KQL query to filter the documents with. | [optional] 
 **TimestampField** | **string** | The timestamp field used in the source indice.  | 
 **Good** | [**IndicatorPropertiesCustomMetricParamsGood**](IndicatorPropertiesCustomMetricParamsGood.md) |  | 
 **Total** | [**IndicatorPropertiesCustomMetricParamsTotal**](IndicatorPropertiesCustomMetricParamsTotal.md) |  | 
@@ -14,7 +14,7 @@ Name | Type | Description | Notes
 
 ### NewIndicatorPropertiesCustomMetricParams
 
-`func NewIndicatorPropertiesCustomMetricParams(index string, filter string, timestampField string, good IndicatorPropertiesCustomMetricParamsGood, total IndicatorPropertiesCustomMetricParamsTotal, ) *IndicatorPropertiesCustomMetricParams`
+`func NewIndicatorPropertiesCustomMetricParams(index string, timestampField string, good IndicatorPropertiesCustomMetricParamsGood, total IndicatorPropertiesCustomMetricParamsTotal, ) *IndicatorPropertiesCustomMetricParams`
 
 NewIndicatorPropertiesCustomMetricParams instantiates a new IndicatorPropertiesCustomMetricParams object
 This constructor will assign default values to properties that have it defined,
@@ -68,6 +68,11 @@ and a boolean to check if the value has been set.
 
 SetFilter sets Filter field to given value.
 
+### HasFilter
+
+`func (o *IndicatorPropertiesCustomMetricParams) HasFilter() bool`
+
+HasFilter returns a boolean if a field has been set.
 
 ### GetTimestampField
 

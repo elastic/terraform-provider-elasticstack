@@ -69,7 +69,7 @@ retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$atte
 	done
 
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
-# To enable tracing (or debugging), execute `make docker-testacc TFLOG=TRACE`
+# To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
 .PHONY: docker-testacc
 docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in the docker container
 	@ docker run --rm \
