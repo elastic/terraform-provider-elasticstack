@@ -22,7 +22,7 @@ type IndicatorPropertiesCustomMetricParams struct {
 	// The index or index pattern to use
 	Index string `json:"index"`
 	// the KQL query to filter the documents with.
-	Filter string `json:"filter"`
+	Filter *string `json:"filter,omitempty"`
 	// The timestamp field used in the source indice.
 	TimestampField string                                     `json:"timestampField"`
 	Good           IndicatorPropertiesCustomMetricParamsGood  `json:"good"`
@@ -33,10 +33,9 @@ type IndicatorPropertiesCustomMetricParams struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewIndicatorPropertiesCustomMetricParams(index string, filter string, timestampField string, good IndicatorPropertiesCustomMetricParamsGood, total IndicatorPropertiesCustomMetricParamsTotal) *IndicatorPropertiesCustomMetricParams {
+func NewIndicatorPropertiesCustomMetricParams(index string, timestampField string, good IndicatorPropertiesCustomMetricParamsGood, total IndicatorPropertiesCustomMetricParamsTotal) *IndicatorPropertiesCustomMetricParams {
 	this := IndicatorPropertiesCustomMetricParams{}
 	this.Index = index
-	this.Filter = filter
 	this.TimestampField = timestampField
 	this.Good = good
 	this.Total = total
@@ -75,28 +74,36 @@ func (o *IndicatorPropertiesCustomMetricParams) SetIndex(v string) {
 	o.Index = v
 }
 
-// GetFilter returns the Filter field value
+// GetFilter returns the Filter field value if set, zero value otherwise.
 func (o *IndicatorPropertiesCustomMetricParams) GetFilter() string {
-	if o == nil {
+	if o == nil || IsNil(o.Filter) {
 		var ret string
 		return ret
 	}
-
-	return o.Filter
+	return *o.Filter
 }
 
-// GetFilterOk returns a tuple with the Filter field value
+// GetFilterOk returns a tuple with the Filter field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *IndicatorPropertiesCustomMetricParams) GetFilterOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.Filter) {
 		return nil, false
 	}
-	return &o.Filter, true
+	return o.Filter, true
 }
 
-// SetFilter sets field value
+// HasFilter returns a boolean if a field has been set.
+func (o *IndicatorPropertiesCustomMetricParams) HasFilter() bool {
+	if o != nil && !IsNil(o.Filter) {
+		return true
+	}
+
+	return false
+}
+
+// SetFilter gets a reference to the given string and assigns it to the Filter field.
 func (o *IndicatorPropertiesCustomMetricParams) SetFilter(v string) {
-	o.Filter = v
+	o.Filter = &v
 }
 
 // GetTimestampField returns the TimestampField field value
@@ -182,7 +189,9 @@ func (o IndicatorPropertiesCustomMetricParams) MarshalJSON() ([]byte, error) {
 func (o IndicatorPropertiesCustomMetricParams) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["index"] = o.Index
-	toSerialize["filter"] = o.Filter
+	if !IsNil(o.Filter) {
+		toSerialize["filter"] = o.Filter
+	}
 	toSerialize["timestampField"] = o.TimestampField
 	toSerialize["good"] = o.Good
 	toSerialize["total"] = o.Total

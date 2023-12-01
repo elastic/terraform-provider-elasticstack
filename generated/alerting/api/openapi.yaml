@@ -3627,5 +3627,5 @@ components:
       type: http
     apiKeyAuth:
       in: header
-      name: ApiKey
+      name: Authorization
       type: apiKey

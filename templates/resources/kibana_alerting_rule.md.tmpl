@@ -14,6 +14,13 @@ Creates or updates a Kibana alerting rule. See https://www.elastic.co/guide/en/k
 
 {{ tffile "examples/resources/elasticstack_kibana_alerting_rule/resource.tf" }}
 
+
+**NOTE:** `api_key` authentication is only supported for alerting rule resources from version 8.8.0 of the Elastic stack. Using an `api_key` will result in an error message like:
+
+```
+Could not create API key - Unsupported scheme "ApiKey" for granting API Key
+```
+
 {{ .SchemaMarkdown | trimspace }}
 
 ## Import
