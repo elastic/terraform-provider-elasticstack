@@ -134,7 +134,6 @@ resource "elasticstack_kibana_slo" "custom_histogram" {
   }
 
   tags = ["tag-1", "another_tag"]
-
 }
 
 //Available from 8.10.0
