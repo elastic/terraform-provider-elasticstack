@@ -413,6 +413,15 @@ func ResourceSlo() *schema.Resource {
 			Optional:    true,
 			ForceNew:    false,
 		},
+		"tags": {
+			Description: "The tags for the SLO.",
+			Type:        schema.TypeList,
+			Optional:    true,
+			ForceNew:    false,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
 	}
 
 	return &schema.Resource{
@@ -467,8 +476,8 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 				Params: slo.IndicatorPropertiesCustomKqlParams{
 					Index:          d.Get(indicatorType + ".0.index").(string),
 					Filter:         getOrNilString(indicatorType+".0.filter", d),
-					Good:           getOrNilString(indicatorType+".0.good", d),
-					Total:          getOrNilString(indicatorType+".0.total", d),
+					Good:           d.Get(indicatorType + ".0.good").(string),
+					Total:          d.Get(indicatorType + ".0.total").(string),
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 				},
 			},
@@ -536,7 +545,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 			IndicatorPropertiesCustomMetric: &slo.IndicatorPropertiesCustomMetric{
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesCustomMetricParams{
-					Filter:         d.Get(indicatorType + ".0.filter").(string),
+					Filter:         getOrNilString(indicatorType+".0.filter", d),
 					Index:          d.Get(indicatorType + ".0.index").(string),
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 					Total: slo.IndicatorPropertiesCustomMetricParamsTotal{
@@ -597,6 +606,12 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		Settings:        &settings,
 		SpaceID:         d.Get("space_id").(string),
 		GroupBy:         getOrNilString("group_by", d),
+	}
+
+	if tags, ok := d.GetOk("tags"); ok {
+		for _, t := range tags.([]interface{}) {
+			slo.Tags = append(slo.Tags, t.(string))
+		}
 	}
 
 	return slo, diags
@@ -825,6 +840,9 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diag.FromErr(err)
 	}
 	if err := d.Set("budgeting_method", s.BudgetingMethod); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("tags", s.Tags); err != nil {
 		return diag.FromErr(err)
 	}
 

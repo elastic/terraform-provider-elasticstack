@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/deepmap/oapi-codegen/v2/pkg/securityprovider"
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
@@ -226,17 +226,33 @@ func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
 }
 
 func (a *ApiClient) SetSloAuthContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, slo.ContextBasicAuth, slo.BasicAuth{
-		UserName: a.kibanaConfig.Username,
-		Password: a.kibanaConfig.Password,
-	})
+	if a.kibanaConfig.ApiKey != "" {
+		return context.WithValue(ctx, slo.ContextAPIKeys, map[string]slo.APIKey{
+			"apiKeyAuth": {
+				Prefix: "ApiKey",
+				Key:    a.kibanaConfig.ApiKey,
+			}})
+	} else {
+		return context.WithValue(ctx, slo.ContextBasicAuth, slo.BasicAuth{
+			UserName: a.kibanaConfig.Username,
+			Password: a.kibanaConfig.Password,
+		})
+	}
 }
 
 func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
-		UserName: a.kibanaConfig.Username,
-		Password: a.kibanaConfig.Password,
-	})
+	if a.kibanaConfig.ApiKey != "" {
+		return context.WithValue(ctx, alerting.ContextAPIKeys, map[string]alerting.APIKey{
+			"apiKeyAuth": {
+				Prefix: "ApiKey",
+				Key:    a.kibanaConfig.ApiKey,
+			}})
+	} else {
+		return context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
+			UserName: a.kibanaConfig.Username,
+			Password: a.kibanaConfig.Password,
+		})
+	}
 }
 
 func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
@@ -331,6 +347,7 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 	}
 
 	kib, err := kibana.NewClient(*cfg.Kibana)
+
 	if err != nil {
 		return nil, err
 	}
@@ -356,9 +373,23 @@ func buildAlertingClient(cfg config.Client) *alerting.APIClient {
 }
 
 func buildConnectorsClient(cfg config.Client) (*connectors.Client, error) {
-	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cfg.Kibana.Username, cfg.Kibana.Password)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
+	var authInterceptor connectors.ClientOption
+	if cfg.Kibana.ApiKey != "" {
+		apiKeyProvider, err := securityprovider.NewSecurityProviderApiKey(
+			"header",
+			"Authorization",
+			"ApiKey "+cfg.Kibana.ApiKey,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create api key auth provider: %w", err)
+		}
+		authInterceptor = connectors.WithRequestEditorFn(apiKeyProvider.Intercept)
+	} else {
+		basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cfg.Kibana.Username, cfg.Kibana.Password)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
+		}
+		authInterceptor = connectors.WithRequestEditorFn(basicAuthProvider.Intercept)
 	}
 
 	httpClient := &http.Client{}
@@ -371,7 +402,7 @@ func buildConnectorsClient(cfg config.Client) (*connectors.Client, error) {
 
 	return connectors.NewClient(
 		cfg.Kibana.Address,
-		connectors.WithRequestEditorFn(basicAuthProvider.Intercept),
+		authInterceptor,
 		connectors.WithHTTPClient(httpClient),
 	)
 }

@@ -38,6 +38,21 @@ type SloAPI interface {
 	CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloResponse, *http.Response, error)
 
 	/*
+		DeleteSloInstancesOp Batch delete rollup and summary data for the matching list of sloId and instanceId
+
+		You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@return ApiDeleteSloInstancesOpRequest
+	*/
+	DeleteSloInstancesOp(ctx context.Context, spaceId string) ApiDeleteSloInstancesOpRequest
+
+	// DeleteSloInstancesOpExecute executes the request
+	DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpRequest) (*http.Response, error)
+
+	/*
 		DeleteSloOp Deletes an SLO
 
 		You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
@@ -254,7 +269,7 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -336,6 +351,166 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 	}
 
 	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiDeleteSloInstancesOpRequest struct {
+	ctx                       context.Context
+	ApiService                SloAPI
+	kbnXsrf                   *string
+	spaceId                   string
+	deleteSloInstancesRequest *DeleteSloInstancesRequest
+}
+
+// Cross-site request forgery protection
+func (r ApiDeleteSloInstancesOpRequest) KbnXsrf(kbnXsrf string) ApiDeleteSloInstancesOpRequest {
+	r.kbnXsrf = &kbnXsrf
+	return r
+}
+
+func (r ApiDeleteSloInstancesOpRequest) DeleteSloInstancesRequest(deleteSloInstancesRequest DeleteSloInstancesRequest) ApiDeleteSloInstancesOpRequest {
+	r.deleteSloInstancesRequest = &deleteSloInstancesRequest
+	return r
+}
+
+func (r ApiDeleteSloInstancesOpRequest) Execute() (*http.Response, error) {
+	return r.ApiService.DeleteSloInstancesOpExecute(r)
+}
+
+/*
+DeleteSloInstancesOp Batch delete rollup and summary data for the matching list of sloId and instanceId
+
+You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@return ApiDeleteSloInstancesOpRequest
+*/
+func (a *SloAPIService) DeleteSloInstancesOp(ctx context.Context, spaceId string) ApiDeleteSloInstancesOpRequest {
+	return ApiDeleteSloInstancesOpRequest{
+		ApiService: a,
+		ctx:        ctx,
+		spaceId:    spaceId,
+	}
+}
+
+// Execute executes the request
+func (a *SloAPIService) DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpRequest) (*http.Response, error) {
+	var (
+		localVarHTTPMethod = http.MethodPost
+		localVarPostBody   interface{}
+		formFiles          []formFile
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.DeleteSloInstancesOp")
+	if err != nil {
+		return nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/s/{spaceId}/api/observability/slos/_delete_instances"
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.kbnXsrf == nil {
+		return nil, reportError("kbnXsrf is required and must be specified")
+	}
+	if r.deleteSloInstancesRequest == nil {
+		return nil, reportError("deleteSloInstancesRequest is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
+	// body params
+	localVarPostBody = r.deleteSloInstancesRequest
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["apiKeyAuth"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		if localVarHTTPResponse.StatusCode == 400 {
+			var v Model400Response
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+			return localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 401 {
+			var v Model401Response
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+			return localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 403 {
+			var v Model403Response
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+		}
+		return localVarHTTPResponse, newErr
+	}
+
+	return localVarHTTPResponse, nil
 }
 
 type ApiDeleteSloOpRequest struct {
@@ -427,7 +602,7 @@ func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Respo
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -591,7 +766,7 @@ func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Res
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -755,7 +930,7 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -968,7 +1143,7 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1154,7 +1329,7 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloResponse, *ht
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1337,7 +1512,7 @@ func (a *SloAPIService) HistoricalSummaryOpExecute(r ApiHistoricalSummaryOpReque
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1513,7 +1688,7 @@ func (a *SloAPIService) UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloRespons
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}

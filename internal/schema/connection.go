@@ -119,6 +119,14 @@ func GetKbFWConnectionBlock() fwschema.Block {
 		MarkdownDescription: "Kibana connection configuration block.",
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
+				"api_key": fwschema.StringAttribute{
+					MarkdownDescription: "API Key to use for authentication to Kibana",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath),
+					},
+				},
 				"username": fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Kibana.",
 					Optional:            true,
@@ -314,6 +322,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 }
 
 func GetKibanaConnectionSchema() *schema.Schema {
+	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
 	return &schema.Schema{
 		Description: "Kibana connection configuration block.",
 		Type:        schema.TypeList,
@@ -321,6 +330,14 @@ func GetKibanaConnectionSchema() *schema.Schema {
 		Optional:    true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"api_key": {
+					Description:   "API Key to use for authentication to Kibana",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					DefaultFunc:   withEnvDefault("KIBANA_API_KEY", nil),
+					ConflictsWith: []string{"kibana.0.password", "kibana.0.username"},
+				},
 				"username": {
 					Description:  "Username to use for API authentication to Kibana.",
 					Type:         schema.TypeString,

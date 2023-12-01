@@ -68,20 +68,28 @@ var transformers = []TransformFunc{
 	transformFilterPaths,
 	transformOutputTypeRequired,
 	transformOutputResponseType,
+	transformSchemasInputsType,
+	transformInlinePackageDefinitions,
+	transformAddPackagePolicyVars,
+	transformFixPackageSearchResult,
 }
 
 // transformFilterPaths filters the paths in a schema down to
 // a specified list of endpoints and methods.
 func transformFilterPaths(schema *Schema) {
 	var includePaths = map[string][]string{
-		"/agent_policies":                 {"post"},
-		"/agent_policies/{agentPolicyId}": {"get", "put"},
-		"/agent_policies/delete":          {"post"},
-		"/enrollment_api_keys":            {"get"},
-		"/fleet_server_hosts":             {"post"},
-		"/fleet_server_hosts/{itemId}":    {"get", "put", "delete"},
-		"/outputs":                        {"post"},
-		"/outputs/{outputId}":             {"get", "put", "delete"},
+		"/agent_policies":                      {"post"},
+		"/agent_policies/{agentPolicyId}":      {"get", "put"},
+		"/agent_policies/delete":               {"post"},
+		"/enrollment_api_keys":                 {"get"},
+		"/fleet_server_hosts":                  {"post"},
+		"/fleet_server_hosts/{itemId}":         {"get", "put", "delete"},
+		"/outputs":                             {"post"},
+		"/outputs/{outputId}":                  {"get", "put", "delete"},
+		"/package_policies":                    {"post"},
+		"/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
+		"/epm/packages/{pkgName}/{pkgVersion}": {"get", "put", "post", "delete"},
+		"/epm/packages":                        {"get"},
 	}
 
 	// filterKbnXsrfParameter filters out an entry if it is a kbn_xsrf parameter.
@@ -188,6 +196,152 @@ func transformOutputResponseType(schema *Schema) {
 			resSchema.Delete("$ref")
 		}
 	}
+}
+
+// transformSchemasInputsType transforms the "inputs" property on the
+// "new_package_policy" component schema from an array to an object,
+// so it aligns with expected data type from the Fleet API.
+func transformSchemasInputsType(schema *Schema) {
+	inputs, ok := schema.Components.GetFields("schemas.new_package_policy.properties.inputs")
+	if !ok {
+		return
+	}
+
+	inputs.Set("items.properties.streams.type", "object")
+
+	inputs.Set("type", "object")
+	inputs.Move("items", "additionalProperties")
+
+	// Drop package_policies from Agent Policy, these will be managed separately
+	// through the Package Policy resource.
+	agentPolicy, _ := schema.Components.GetFields("schemas.agent_policy")
+	agentPolicy.Delete("properties.package_policies")
+}
+
+// transformInlinePackageDefinitions relocates inline type definitions for the
+// EPM endpoints to the dedicated schemas section of the OpenAPI schema. This needs
+// to be done as there is a bug in the OpenAPI generator which causes types to
+// be generated with invalid names:
+// https://github.com/deepmap/oapi-codegen/issues/1121
+func transformInlinePackageDefinitions(schema *Schema) {
+	epmPath, ok := schema.Paths["/epm/packages/{pkgName}/{pkgVersion}"]
+	if !ok {
+		panic("epm path not found")
+	}
+
+	// Get
+	{
+		props, ok := epmPath.Get.Responses.GetFields("200.content.application/json.schema.allOf.1.properties")
+		if !ok {
+			panic("properties not found")
+		}
+
+		// status needs to be moved to schemes and a ref inserted in its place.
+		value, _ := props.Get("status")
+		schema.Components.Set("schemas.package_status", value)
+		props.Delete("status")
+		props.Set("status.$ref", "#/components/schemas/package_status")
+	}
+
+	// Post
+	{
+		props, ok := epmPath.Post.Responses.GetFields("200.content.application/json.schema.properties")
+		if !ok {
+			panic("properties not found")
+		}
+
+		// _meta.properties.install_source
+		value, _ := props.GetFields("_meta.properties.install_source")
+		schema.Components.Set("schemas.package_install_source", value)
+		props.Delete("_meta.properties.install_source")
+		props.Set("_meta.properties.install_source.$ref", "#/components/schemas/package_install_source")
+
+		// items.items.properties.type
+		value, _ = props.GetFields("items.items.properties.type")
+		schema.Components.Set("schemas.package_item_type", value)
+		props.Delete("items.items.properties.type")
+		props.Set("items.items.properties.type.$ref", "#/components/schemas/package_item_type")
+	}
+
+	// Put
+	{
+		props, ok := epmPath.Put.Responses.GetFields("200.content.application/json.schema.properties")
+		if !ok {
+			panic("properties not found")
+		}
+
+		// items.items.properties.type (definition already moved by Post)
+		props.Delete("items.items.properties.type")
+		props.Set("items.items.properties.type.$ref", "#/components/schemas/package_item_type")
+	}
+
+	// Delete
+	{
+		props, ok := epmPath.Delete.Responses.GetFields("200.content.application/json.schema.properties")
+		if !ok {
+			panic("properties not found")
+		}
+
+		// items.items.properties.type (definition already moved by Post)
+		props.Delete("items.items.properties.type")
+		props.Set("items.items.properties.type.$ref", "#/components/schemas/package_item_type")
+	}
+
+	// Move embedded objects (structs) to schemas so Go-types are generated.
+	{
+		// package_policy_request_input_stream
+		field, _ := schema.Components.GetFields("schemas.package_policy_request.properties.inputs.additionalProperties.properties.streams")
+		props, _ := field.Get("additionalProperties")
+		schema.Components.Set("schemas.package_policy_request_input_stream", props)
+		field.Delete("additionalProperties")
+		field.Set("additionalProperties.$ref", "#/components/schemas/package_policy_request_input_stream")
+
+		// package_policy_request_input
+		field, _ = schema.Components.GetFields("schemas.package_policy_request.properties.inputs")
+		props, _ = field.Get("additionalProperties")
+		schema.Components.Set("schemas.package_policy_request_input", props)
+		field.Delete("additionalProperties")
+		field.Set("additionalProperties.$ref", "#/components/schemas/package_policy_request_input")
+
+		// package_policy_package_info
+		field, _ = schema.Components.GetFields("schemas.new_package_policy.properties")
+		props, _ = field.Get("package")
+		schema.Components.Set("schemas.package_policy_package_info", props)
+		field.Delete("package")
+		field.Set("package.$ref", "#/components/schemas/package_policy_package_info")
+
+		// package_policy_input
+		field, _ = schema.Components.GetFields("schemas.new_package_policy.properties.inputs")
+		props, _ = field.Get("additionalProperties")
+		schema.Components.Set("schemas.package_policy_input", props)
+		field.Delete("additionalProperties")
+		field.Set("additionalProperties.$ref", "#/components/schemas/package_policy_input")
+	}
+}
+
+// transformAddPackagePolicyVars adds the missing 'vars' field to the
+// PackagePolicy schema struct.
+func transformAddPackagePolicyVars(schema *Schema) {
+	inputs, ok := schema.Components.GetFields("schemas.new_package_policy.properties")
+	if !ok {
+		panic("properties not found")
+	}
+
+	// Only add it if it doesn't exist.
+	if _, ok = inputs.Get("vars"); !ok {
+		inputs.Set("vars.type", "object")
+	}
+}
+
+// transformFixPackageSearchResult removes unneeded fields from the
+// SearchResult struct. These fields are also causing parsing errors.
+func transformFixPackageSearchResult(schema *Schema) {
+	properties, ok := schema.Components.GetFields("schemas.search_result.properties")
+	if !ok {
+		panic("properties not found")
+	}
+	properties.Delete("icons")
+	properties.Delete("installationInfo")
 }
 
 // downloadFile will download a file from url and return the

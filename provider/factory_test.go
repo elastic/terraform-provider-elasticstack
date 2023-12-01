@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -20,10 +20,10 @@ func TestMuxServer(t *testing.T) {
 	  }
 	`
 	resource.Test(t, resource.TestCase{
-		ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
-			"elasticstack": func() (tfprotov5.ProviderServer, error) {
+		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
+			"elasticstack": func() (tfprotov6.ProviderServer, error) {
 				version := "acceptance_test"
-				server, err := ProtoV5ProviderServerFactory(context.Background(), version)
+				server, err := ProtoV6ProviderServerFactory(context.Background(), version)
 				if err != nil {
 					return nil, err
 				}

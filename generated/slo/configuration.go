@@ -107,6 +107,12 @@ func NewConfiguration() *Configuration {
 					Description: "No description provided",
 				},
 			},
+			"SloAPIService.DeleteSloInstancesOp": {
+				{
+					URL:         "https://localhost:5601",
+					Description: "No description provided",
+				},
+			},
 		},
 	}
 	return cfg
