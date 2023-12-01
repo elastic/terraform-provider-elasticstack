@@ -83,7 +83,7 @@ If you wish to work on the provider, you'll first need [Go](http://www.golang.or
 
 To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
-To install the provider locally into the `~/.terraform.d/plugins/...` directory one can use `make install` command. This will allow to refer this provider dirrecty in the Terraform configuration without needing to download it from the registry.
+To install the provider locally into the `~/.terraform.d/plugins/...` directory one can use `make install` command. This will allow to refer this provider directly in the Terraform configuration without needing to download it from the registry.
 
 To generate or update documentation, run `make gen`. All the generated docs will have to be committed to the repository as well.
 

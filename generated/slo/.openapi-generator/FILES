@@ -10,6 +10,8 @@ docs/BudgetingMethod.md
 docs/CreateSloRequest.md
 docs/CreateSloRequestIndicator.md
 docs/CreateSloResponse.md
+docs/DeleteSloInstancesRequest.md
+docs/DeleteSloInstancesRequestListInner.md
 docs/ErrorBudget.md
 docs/FindSloResponse.md
 docs/HistoricalSummaryRequest.md
@@ -30,6 +32,10 @@ docs/IndicatorPropertiesHistogram.md
 docs/IndicatorPropertiesHistogramParams.md
 docs/IndicatorPropertiesHistogramParamsGood.md
 docs/IndicatorPropertiesHistogramParamsTotal.md
+docs/IndicatorPropertiesTimesliceMetric.md
+docs/IndicatorPropertiesTimesliceMetricParams.md
+docs/IndicatorPropertiesTimesliceMetricParamsMetric.md
+docs/IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner.md
 docs/Model400Response.md
 docs/Model401Response.md
 docs/Model403Response.md
@@ -43,6 +49,9 @@ docs/SloResponseIndicator.md
 docs/Summary.md
 docs/SummaryStatus.md
 docs/TimeWindow.md
+docs/TimesliceMetricBasicMetricWithField.md
+docs/TimesliceMetricDocCountMetric.md
+docs/TimesliceMetricPercentileMetric.md
 docs/UpdateSloRequest.md
 git_push.sh
 go.mod
@@ -56,6 +65,8 @@ model_budgeting_method.go
 model_create_slo_request.go
 model_create_slo_request_indicator.go
 model_create_slo_response.go
+model_delete_slo_instances_request.go
+model_delete_slo_instances_request_list_inner.go
 model_error_budget.go
 model_find_slo_response.go
 model_historical_summary_request.go
@@ -76,6 +87,10 @@ model_indicator_properties_histogram.go
 model_indicator_properties_histogram_params.go
 model_indicator_properties_histogram_params_good.go
 model_indicator_properties_histogram_params_total.go
+model_indicator_properties_timeslice_metric.go
+model_indicator_properties_timeslice_metric_params.go
+model_indicator_properties_timeslice_metric_params_metric.go
+model_indicator_properties_timeslice_metric_params_metric_metrics_inner.go
 model_objective.go
 model_settings.go
 model_slo_response.go
@@ -83,6 +98,9 @@ model_slo_response_indicator.go
 model_summary.go
 model_summary_status.go
 model_time_window.go
+model_timeslice_metric_basic_metric_with_field.go
+model_timeslice_metric_doc_count_metric.go
+model_timeslice_metric_percentile_metric.go
 model_update_slo_request.go
 response.go
 test/api_slo_test.go

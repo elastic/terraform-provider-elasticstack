@@ -79,6 +79,69 @@ func Test_sloResponseToModel(t *testing.T) {
 		},
 
 		{
+			name:    "should return tags if available",
+			spaceId: "space-id",
+			sloResponse: &slo.SloResponse{
+				Id:          "slo-id",
+				Name:        "slo-name",
+				Description: "slo-description",
+				Indicator: slo.SloResponseIndicator{
+					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
+						Type: "sli.apm.transactionErrorRate",
+						Params: slo.IndicatorPropertiesApmAvailabilityParams{
+							Service:         "slo-service",
+							Environment:     "slo-environment",
+							TransactionType: "slo-transaction-type",
+							TransactionName: "slo-transaction-name",
+							Index:           "slo-index",
+						},
+					},
+				},
+				TimeWindow: slo.TimeWindow{
+					Duration: "7d",
+					Type:     "rolling",
+				},
+				BudgetingMethod: "occurrences",
+				Settings: slo.Settings{
+					SyncDelay: &syncDelay,
+				},
+				Tags:      []string{"tag-1", "another_tag"},
+				Revision:  5.0,
+				Enabled:   true,
+				CreatedAt: "2023-08-11T00:05:36.567Z",
+				UpdatedAt: "2023-08-11T00:05:36.567Z",
+			},
+			expectedModel: &models.Slo{
+				ID:          "slo-id",
+				Name:        "slo-name",
+				Description: "slo-description",
+				Indicator: slo.SloResponseIndicator{
+					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
+						Type: "sli.apm.transactionErrorRate",
+						Params: slo.IndicatorPropertiesApmAvailabilityParams{
+							Service:         "slo-service",
+							Environment:     "slo-environment",
+							TransactionType: "slo-transaction-type",
+							TransactionName: "slo-transaction-name",
+							Index:           "slo-index",
+						},
+					},
+				},
+				TimeWindow: slo.TimeWindow{
+					Duration: "7d",
+					Type:     "rolling",
+				},
+				BudgetingMethod: "occurrences",
+				Settings: &slo.Settings{
+					SyncDelay: &syncDelay,
+				},
+				SpaceID: "space-id",
+				Tags:    []string{"tag-1", "another_tag"},
+				GroupBy: nil,
+			},
+		},
+
+		{
 			name:          "nil response should return a nil model",
 			spaceId:       "space-id",
 			sloResponse:   nil,

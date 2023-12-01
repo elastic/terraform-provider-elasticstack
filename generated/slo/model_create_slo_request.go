@@ -32,6 +32,8 @@ type CreateSloRequest struct {
 	Settings        *Settings                 `json:"settings,omitempty"`
 	// optional group by field to use to generate an SLO per distinct value
 	GroupBy *string `json:"groupBy,omitempty"`
+	// List of tags
+	Tags []string `json:"tags,omitempty"`
 }
 
 // NewCreateSloRequest instantiates a new CreateSloRequest object
@@ -297,6 +299,38 @@ func (o *CreateSloRequest) SetGroupBy(v string) {
 	o.GroupBy = &v
 }
 
+// GetTags returns the Tags field value if set, zero value otherwise.
+func (o *CreateSloRequest) GetTags() []string {
+	if o == nil || IsNil(o.Tags) {
+		var ret []string
+		return ret
+	}
+	return o.Tags
+}
+
+// GetTagsOk returns a tuple with the Tags field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *CreateSloRequest) GetTagsOk() ([]string, bool) {
+	if o == nil || IsNil(o.Tags) {
+		return nil, false
+	}
+	return o.Tags, true
+}
+
+// HasTags returns a boolean if a field has been set.
+func (o *CreateSloRequest) HasTags() bool {
+	if o != nil && !IsNil(o.Tags) {
+		return true
+	}
+
+	return false
+}
+
+// SetTags gets a reference to the given []string and assigns it to the Tags field.
+func (o *CreateSloRequest) SetTags(v []string) {
+	o.Tags = v
+}
+
 func (o CreateSloRequest) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -321,6 +355,9 @@ func (o CreateSloRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.GroupBy) {
 		toSerialize["groupBy"] = o.GroupBy
+	}
+	if !IsNil(o.Tags) {
+		toSerialize["tags"] = o.Tags
 	}
 	return toSerialize, nil
 }
