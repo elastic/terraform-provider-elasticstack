@@ -4,13 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**SloIds** | **[]string** | The list of SLO identifiers to get the historical summary for | 
+**List** | **[]string** | The list of SLO identifiers to get the historical summary for | 
 
 ## Methods
 
 ### NewHistoricalSummaryRequest
 
-`func NewHistoricalSummaryRequest(sloIds []string, ) *HistoricalSummaryRequest`
+`func NewHistoricalSummaryRequest(list []string, ) *HistoricalSummaryRequest`
 
 NewHistoricalSummaryRequest instantiates a new HistoricalSummaryRequest object
 This constructor will assign default values to properties that have it defined,
@@ -25,24 +25,24 @@ NewHistoricalSummaryRequestWithDefaults instantiates a new HistoricalSummaryRequ
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetSloIds
+### GetList
 
-`func (o *HistoricalSummaryRequest) GetSloIds() []string`
+`func (o *HistoricalSummaryRequest) GetList() []string`
 
-GetSloIds returns the SloIds field if non-nil, zero value otherwise.
+GetList returns the List field if non-nil, zero value otherwise.
 
-### GetSloIdsOk
+### GetListOk
 
-`func (o *HistoricalSummaryRequest) GetSloIdsOk() (*[]string, bool)`
+`func (o *HistoricalSummaryRequest) GetListOk() (*[]string, bool)`
 
-GetSloIdsOk returns a tuple with the SloIds field if it's non-nil, zero value otherwise
+GetListOk returns a tuple with the List field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetSloIds
+### SetList
 
-`func (o *HistoricalSummaryRequest) SetSloIds(v []string)`
+`func (o *HistoricalSummaryRequest) SetList(v []string)`
 
-SetSloIds sets SloIds field to given value.
+SetList sets List field to given value.
 
 
 

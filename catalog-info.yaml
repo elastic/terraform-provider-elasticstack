@@ -22,6 +22,12 @@ spec:
     spec:
       repository: elastic/terraform-provider-elasticstack
       pipeline_file: ".buildkite/release.yml"
+      provider_settings:
+        build_branches: false
+        build_pull_request_forks: false
+        build_tags: true
+        filter_condition: 'build.tag =~ /^v[0-9.]+$/'
+        filter_enabled: true
       teams:
         control-plane-stateful-applications:
           access_level: MANAGE_BUILD_AND_READ

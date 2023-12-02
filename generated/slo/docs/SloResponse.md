@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **Enabled** | **bool** | Indicate if the SLO is enabled | 
 **GroupBy** | **string** | optional group by field to use to generate an SLO per distinct value | 
 **InstanceId** | **string** | the value derived from the groupBy field, if present, otherwise &#39;*&#39; | 
+**Tags** | **[]string** | List of tags | 
 **CreatedAt** | **string** | The creation date | 
 **UpdatedAt** | **string** | The last update date | 
 
@@ -24,7 +25,7 @@ Name | Type | Description | Notes
 
 ### NewSloResponse
 
-`func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, createdAt string, updatedAt string, ) *SloResponse`
+`func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, tags []string, createdAt string, updatedAt string, ) *SloResponse`
 
 NewSloResponse instantiates a new SloResponse object
 This constructor will assign default values to properties that have it defined,
@@ -297,6 +298,26 @@ and a boolean to check if the value has been set.
 `func (o *SloResponse) SetInstanceId(v string)`
 
 SetInstanceId sets InstanceId field to given value.
+
+
+### GetTags
+
+`func (o *SloResponse) GetTags() []string`
+
+GetTags returns the Tags field if non-nil, zero value otherwise.
+
+### GetTagsOk
+
+`func (o *SloResponse) GetTagsOk() (*[]string, bool)`
+
+GetTagsOk returns a tuple with the Tags field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetTags
+
+`func (o *SloResponse) SetTags(v []string)`
+
+SetTags sets Tags field to given value.
 
 
 ### GetCreatedAt

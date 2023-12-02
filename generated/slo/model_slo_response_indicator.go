@@ -22,6 +22,7 @@ type SloResponseIndicator struct {
 	IndicatorPropertiesCustomKql       *IndicatorPropertiesCustomKql
 	IndicatorPropertiesCustomMetric    *IndicatorPropertiesCustomMetric
 	IndicatorPropertiesHistogram       *IndicatorPropertiesHistogram
+	IndicatorPropertiesTimesliceMetric *IndicatorPropertiesTimesliceMetric
 }
 
 // IndicatorPropertiesApmAvailabilityAsSloResponseIndicator is a convenience function that returns IndicatorPropertiesApmAvailability wrapped in SloResponseIndicator
@@ -56,6 +57,13 @@ func IndicatorPropertiesCustomMetricAsSloResponseIndicator(v *IndicatorPropertie
 func IndicatorPropertiesHistogramAsSloResponseIndicator(v *IndicatorPropertiesHistogram) SloResponseIndicator {
 	return SloResponseIndicator{
 		IndicatorPropertiesHistogram: v,
+	}
+}
+
+// IndicatorPropertiesTimesliceMetricAsSloResponseIndicator is a convenience function that returns IndicatorPropertiesTimesliceMetric wrapped in SloResponseIndicator
+func IndicatorPropertiesTimesliceMetricAsSloResponseIndicator(v *IndicatorPropertiesTimesliceMetric) SloResponseIndicator {
+	return SloResponseIndicator{
+		IndicatorPropertiesTimesliceMetric: v,
 	}
 }
 
@@ -129,6 +137,18 @@ func (dst *SloResponseIndicator) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	// check if the discriminator value is 'indicator_properties_timeslice_metric'
+	if jsonDict["type"] == "indicator_properties_timeslice_metric" {
+		// try to unmarshal JSON data into IndicatorPropertiesTimesliceMetric
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesTimesliceMetric)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesTimesliceMetric, return on the first match
+		} else {
+			dst.IndicatorPropertiesTimesliceMetric = nil
+			return fmt.Errorf("failed to unmarshal SloResponseIndicator as IndicatorPropertiesTimesliceMetric: %s", err.Error())
+		}
+	}
+
 	// check if the discriminator value is 'sli.apm.transactionDuration'
 	if jsonDict["type"] == "sli.apm.transactionDuration" {
 		// try to unmarshal JSON data into IndicatorPropertiesApmLatency
@@ -189,6 +209,18 @@ func (dst *SloResponseIndicator) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	// check if the discriminator value is 'sli.metric.timeslice'
+	if jsonDict["type"] == "sli.metric.timeslice" {
+		// try to unmarshal JSON data into IndicatorPropertiesTimesliceMetric
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesTimesliceMetric)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesTimesliceMetric, return on the first match
+		} else {
+			dst.IndicatorPropertiesTimesliceMetric = nil
+			return fmt.Errorf("failed to unmarshal SloResponseIndicator as IndicatorPropertiesTimesliceMetric: %s", err.Error())
+		}
+	}
+
 	return nil
 }
 
@@ -212,6 +244,10 @@ func (src SloResponseIndicator) MarshalJSON() ([]byte, error) {
 
 	if src.IndicatorPropertiesHistogram != nil {
 		return json.Marshal(&src.IndicatorPropertiesHistogram)
+	}
+
+	if src.IndicatorPropertiesTimesliceMetric != nil {
+		return json.Marshal(&src.IndicatorPropertiesTimesliceMetric)
 	}
 
 	return nil, nil // no data in oneOf schemas
@@ -240,6 +276,10 @@ func (obj *SloResponseIndicator) GetActualInstance() interface{} {
 
 	if obj.IndicatorPropertiesHistogram != nil {
 		return obj.IndicatorPropertiesHistogram
+	}
+
+	if obj.IndicatorPropertiesTimesliceMetric != nil {
+		return obj.IndicatorPropertiesTimesliceMetric
 	}
 
 	// all schemas are nil
