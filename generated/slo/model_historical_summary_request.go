@@ -20,16 +20,16 @@ var _ MappedNullable = &HistoricalSummaryRequest{}
 // HistoricalSummaryRequest struct for HistoricalSummaryRequest
 type HistoricalSummaryRequest struct {
 	// The list of SLO identifiers to get the historical summary for
-	SloIds []string `json:"sloIds"`
+	List []string `json:"list"`
 }
 
 // NewHistoricalSummaryRequest instantiates a new HistoricalSummaryRequest object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewHistoricalSummaryRequest(sloIds []string) *HistoricalSummaryRequest {
+func NewHistoricalSummaryRequest(list []string) *HistoricalSummaryRequest {
 	this := HistoricalSummaryRequest{}
-	this.SloIds = sloIds
+	this.List = list
 	return &this
 }
 
@@ -41,28 +41,28 @@ func NewHistoricalSummaryRequestWithDefaults() *HistoricalSummaryRequest {
 	return &this
 }
 
-// GetSloIds returns the SloIds field value
-func (o *HistoricalSummaryRequest) GetSloIds() []string {
+// GetList returns the List field value
+func (o *HistoricalSummaryRequest) GetList() []string {
 	if o == nil {
 		var ret []string
 		return ret
 	}
 
-	return o.SloIds
+	return o.List
 }
 
-// GetSloIdsOk returns a tuple with the SloIds field value
+// GetListOk returns a tuple with the List field value
 // and a boolean to check if the value has been set.
-func (o *HistoricalSummaryRequest) GetSloIdsOk() ([]string, bool) {
+func (o *HistoricalSummaryRequest) GetListOk() ([]string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return o.SloIds, true
+	return o.List, true
 }
 
-// SetSloIds sets field value
-func (o *HistoricalSummaryRequest) SetSloIds(v []string) {
-	o.SloIds = v
+// SetList sets field value
+func (o *HistoricalSummaryRequest) SetList(v []string) {
+	o.List = v
 }
 
 func (o HistoricalSummaryRequest) MarshalJSON() ([]byte, error) {
@@ -75,7 +75,7 @@ func (o HistoricalSummaryRequest) MarshalJSON() ([]byte, error) {
 
 func (o HistoricalSummaryRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["sloIds"] = o.SloIds
+	toSerialize["list"] = o.List
 	return toSerialize, nil
 }
 

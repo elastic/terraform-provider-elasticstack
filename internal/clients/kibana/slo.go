@@ -72,6 +72,7 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		BudgetingMethod: (*slo.BudgetingMethod)(&s.BudgetingMethod),
 		Objective:       &s.Objective,
 		Settings:        s.Settings,
+		Tags:            s.Tags,
 	}
 
 	req := client.UpdateSloOp(ctxWithAuth, s.SpaceID, s.ID).KbnXsrf("true").UpdateSloRequest(reqModel)
@@ -108,6 +109,8 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		BudgetingMethod: slo.BudgetingMethod(s.BudgetingMethod),
 		Objective:       s.Objective,
 		Settings:        s.Settings,
+		GroupBy:         s.GroupBy,
+		Tags:            s.Tags,
 	}
 	req := client.CreateSloOp(ctxWithAuth, s.SpaceID).KbnXsrf("true").CreateSloRequest(reqModel)
 	sloRes, res, err := req.Execute()
@@ -168,5 +171,6 @@ func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
 		TimeWindow:      res.TimeWindow,
 		Objective:       res.Objective,
 		Settings:        &res.Settings,
+		Tags:            res.Tags,
 	}
 }

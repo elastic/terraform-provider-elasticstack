@@ -27,6 +27,7 @@ type ElasticsearchConnection struct {
 type KibanaConnection struct {
 	Username  types.String `tfsdk:"username"`
 	Password  types.String `tfsdk:"password"`
+	ApiKey    types.String `tfsdk:"api_key"`
 	Endpoints types.List   `tfsdk:"endpoints"`
 	Insecure  types.Bool   `tfsdk:"insecure"`
 }

@@ -3,6 +3,7 @@ package fleet
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -64,7 +65,7 @@ func ResourceIntegrationPolicy() *schema.Resource {
 		},
 		"input": {
 			Type:     schema.TypeList,
-			Required: true,
+			Optional: true,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"input_id": {
@@ -340,9 +341,9 @@ func resourceIntegrationPolicyRead(ctx context.Context, d *schema.ResourceData, 
 		}
 	}
 
-	var inputs []any
+	newInputs := make([]any, 0, len(pkgPolicy.Inputs))
 	for inputID, input := range pkgPolicy.Inputs {
-		inputMap := map[string]any{
+		inputData := map[string]any{
 			"input_id": inputID,
 			"enabled":  input.Enabled,
 		}
@@ -352,19 +353,23 @@ func resourceIntegrationPolicyRead(ctx context.Context, d *schema.ResourceData, 
 			if err != nil {
 				return diag.FromErr(err)
 			}
-			inputMap["streams_json"] = string(data)
+			inputData["streams_json"] = string(data)
 		}
 		if input.Vars != nil {
 			data, err := json.Marshal(*input.Vars)
 			if err != nil {
 				return diag.FromErr(err)
 			}
-			inputMap["vars_json"] = string(data)
+			inputData["vars_json"] = string(data)
 		}
 
-		inputs = append(inputs, inputMap)
+		newInputs = append(newInputs, inputData)
 	}
-	if err := d.Set("input", inputs); err != nil {
+
+	existingInputs, _ := d.Get("input").([]any)
+	sortInputs(newInputs, existingInputs)
+
+	if err := d.Set("input", newInputs); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -385,4 +390,35 @@ func resourceIntegrationPolicyDelete(ctx context.Context, d *schema.ResourceData
 	d.SetId("")
 
 	return diags
+}
+
+// sortInputs will sort the 'incoming' list of input definitions based on
+// the order of inputs defined in the 'existing' list. Inputs not present in
+// 'existing' will be placed at the end of the list. Inputs are identified by
+// their ID ('input_id'). The 'incoming' slice will be sorted in-place.
+func sortInputs(incoming []any, existing []any) {
+	idToIndex := make(map[string]int, len(existing))
+	for i, v := range existing {
+		inputData, _ := v.(map[string]any)
+		inputID, _ := inputData["input_id"].(string)
+		idToIndex[inputID] = i
+	}
+
+	sort.Slice(incoming, func(i, j int) bool {
+		iInput, _ := incoming[i].(map[string]any)
+		iID, _ := iInput["input_id"].(string)
+		iIdx, ok := idToIndex[iID]
+		if !ok {
+			return false
+		}
+
+		jInput, _ := incoming[j].(map[string]any)
+		jID, _ := jInput["input_id"].(string)
+		jIdx, ok := idToIndex[jID]
+		if !ok {
+			return true
+		}
+
+		return iIdx < jIdx
+	})
 }

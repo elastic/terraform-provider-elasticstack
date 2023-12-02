@@ -2,5 +2,7 @@ steps:
   - label: Release
     agents:
       image: golang:${GO_VERSION}
+      cpu: "8"
+      memory: "4G"
     command:
       - ".buildkite/scripts/release.sh"

@@ -148,6 +148,7 @@ resource "elasticstack_kibana_slo" "custom_histogram" {
     timeslice_window = "5m"
   }
 
+  tags = ["tag-1", "another_tag"]
 }
 
 //Available from 8.10.0
@@ -214,6 +215,7 @@ resource "elasticstack_kibana_slo" "custom_metric" {
 - `metric_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator))
 - `settings` (Block List, Max: 1) The default settings should be sufficient for most users, but if needed, these properties can be overwritten. (see [below for nested schema](#nestedblock--settings))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
+- `tags` (List of String) The tags for the SLO.
 
 <a id="nestedblock--objective"></a>
 ### Nested Schema for `objective`
