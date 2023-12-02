@@ -10,7 +10,7 @@
 - Fix a provider crash when managing SLOs outside of the default Kibana space. ([#485](https://github.com/elastic/terraform-provider-elasticstack/pull/485))
 - Make input optional for `elasticstack_fleet_integration_policy` ([#493](https://github.com/elastic/terraform-provider-elasticstack/pull/493))
 - Sort Fleet integration policy inputs to ensure consistency ([#494](https://github.com/elastic/terraform-provider-elasticstack/pull/494))
-- Updated Elasticsearch role_mapping.go to enforce the replacement/updates of role mapping resources when the name field is altered. ([#501]()https://github.com/elastic/terraform-provider-elasticstack/pull/501)
+- Updated Elasticsearch role_mapping.go to enforce the replacement/updates of role mapping resources when the name field is altered. ([#503](https://github.com/elastic/terraform-provider-elasticstack/pull/503))
 
 ## [0.10.0] - 2023-11-02
 
