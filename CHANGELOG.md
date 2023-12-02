@@ -4,6 +4,7 @@
 - Switch to Terraform [protocol version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) that is compatible with Terraform CLI version 1.0 and later.
 - Add 'elasticstack_fleet_package' data source ([#469](https://github.com/elastic/terraform-provider-elasticstack/pull/469))
 - Add `tags` option to Kibana's SLOs ([#495](https://github.com/elastic/terraform-provider-elasticstack/pull/495))
+- Add support for Authorization header - Bearer Token and ES-Client-Authentication fields added.([#481]()https://github.com/elastic/terraform-provider-elasticstack/pull/481)
 
 ### Fixed
 - Rename fleet package objects to `elasticstack_fleet_integration` and `elasticstack_fleet_integration_policy` ([#476](https://github.com/elastic/terraform-provider-elasticstack/pull/476))

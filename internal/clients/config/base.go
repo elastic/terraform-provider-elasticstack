@@ -78,7 +78,7 @@ func (b baseConfig) toKibanaConfig() kibanaConfig {
 
 func (b baseConfig) toElasticsearchConfig() elasticsearchConfig {
 	return elasticsearchConfig{
-		Header:   b.Header,
+		Header:   b.Header.Clone(),
 		Username: b.Username,
 		Password: b.Password,
 		APIKey:   b.ApiKey,
