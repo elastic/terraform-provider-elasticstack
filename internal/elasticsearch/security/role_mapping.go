@@ -25,6 +25,7 @@ func ResourceRoleMapping() *schema.Resource {
 			Type:        schema.TypeString,
 			Required:    true,
 			Description: "The distinct name that identifies the role mapping, used solely as an identifier.",
+			ForceNew:    true,
 		},
 		"enabled": {
 			Type:        schema.TypeBool,
