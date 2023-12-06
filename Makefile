@@ -83,6 +83,22 @@ docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in th
 		-v "$(SOURCE_LOCATION):/provider" \
 		golang:$(GOVERSION) make testacc TESTARGS="$(TESTARGS)"
 
+# To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
+# To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
+.PHONY: docker-testacc-with-token
+docker-testacc-with-token:
+	@ docker run --rm \
+		-e ELASTICSEARCH_ENDPOINTS="$(ELASTICSEARCH_ENDPOINTS)" \
+		-e KIBANA_ENDPOINT="$(KIBANA_ENDPOINT)" \
+		-e ELASTICSEARCH_BEARER_TOKEN="$(ELASTICSEARCH_BEARER_TOKEN)" \
+		-e KIBANA_USERNAME="$(ELASTICSEARCH_USERNAME)" \
+		-e KIBANA_PASSWORD="$(ELASTICSEARCH_PASSWORD)" \
+		-e TF_LOG="$(TF_LOG)" \
+		--network $(ELASTICSEARCH_NETWORK) \
+		-w "/provider" \
+		-v "$(SOURCE_LOCATION):/provider" \
+		golang:$(GOVERSION) make testacc TESTARGS="$(TESTARGS)"
+
 .PHONY: docker-elasticsearch
 docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
 	@ docker rm -f $(ELASTICSEARCH_NAME) &> /dev/null || true
@@ -93,6 +109,7 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 		-e "discovery.type=single-node" \
 		-e "xpack.security.enabled=true" \
 		-e "xpack.security.authc.api_key.enabled=true" \
+		-e "xpack.security.authc.token.enabled=true" \
 		-e "xpack.watcher.enabled=true" \
 		-e "xpack.license.self_generated.type=trial" \
 		-e "repositories.url.allowed_urls=https://example.com/*" \
@@ -133,6 +150,10 @@ set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_
 .PHONY: create-es-api-key
 create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200
 	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/api_key -d "{\"name\":\"$(KIBANA_API_KEY_NAME)\"}")
+
+.PHONY: create-es-bearer-token
+create-es-bearer-token:
+	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/oauth2/token -d "{\"grant_type\": \"client_credentials\"}")
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
