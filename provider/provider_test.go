@@ -79,6 +79,9 @@ func TestKibanaConfiguration(t *testing.T) {
 					ProtoV6ProviderFactories: acctest.Providers,
 					Steps: []resource.TestStep{
 						{
+							SkipFunc: func() (bool, error) {
+								return envConfig.Kibana.Username == "", nil
+							},
 							Config: testKibanaConfiguration(envConfig),
 							Check: resource.ComposeTestCheckFunc(
 								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
@@ -104,6 +107,9 @@ func TestKibanaConfiguration(t *testing.T) {
 					ProtoV6ProviderFactories: acctest.Providers,
 					Steps: []resource.TestStep{
 						{
+							SkipFunc: func() (bool, error) {
+								return os.Getenv("KIBANA_API_KEY") == "", nil
+							},
 							Config: testKibanaApiKeyConfiguration(envConfig),
 							Check: resource.ComposeTestCheckFunc(
 								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),

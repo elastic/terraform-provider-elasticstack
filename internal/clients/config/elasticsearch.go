@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,7 +16,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type elasticsearchConfig elasticsearch.Config
+type elasticsearchConfig struct {
+	config                 elasticsearch.Config
+	bearerToken            string
+	esClientAuthentication string
+}
 
 func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key string, useEnvAsDefault bool) (*elasticsearchConfig, sdkdiags.Diagnostics) {
 	esConn, ok := d.GetOk(key)
@@ -35,15 +40,15 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 			for _, e := range endpoints.([]interface{}) {
 				addrs = append(addrs, e.(string))
 			}
-			config.Addresses = addrs
+			config.config.Addresses = addrs
 		}
 
 		if bearer_token, ok := esConfig["bearer_token"].(string); ok && bearer_token != "" {
-			config.Header.Set("Authorization", bearer_token)
+			config.bearerToken = bearer_token
 		}
 
 		if es_client_authentication, ok := esConfig["es_client_authentication"].(string); ok && es_client_authentication != "" {
-			config.Header.Set("ES-Client-Authentication", es_client_authentication)
+			config.esClientAuthentication = es_client_authentication
 		}
 
 		if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
@@ -61,10 +66,10 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 				})
 				return nil, diags
 			}
-			config.CACert = caCert
+			config.config.CACert = caCert
 		}
 		if caData, ok := esConfig["ca_data"]; ok && caData.(string) != "" {
-			config.CACert = []byte(caData.(string))
+			config.config.CACert = []byte(caData.(string))
 		}
 
 		if certFile, ok := esConfig["cert_file"]; ok && certFile.(string) != "" {
@@ -114,8 +119,8 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 	}
 
 	if logging.IsDebugOrHigher() {
-		config.EnableDebugLogger = true
-		config.Logger = &debugLogger{Name: "elasticsearch"}
+		config.config.EnableDebugLogger = true
+		config.config.Logger = &debugLogger{Name: "elasticsearch"}
 	}
 
 	config = config.withEnvironmentOverrides()
@@ -137,13 +142,13 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 	}
 
 	if len(endpoints) > 0 {
-		config.Addresses = endpoints
+		config.config.Addresses = endpoints
 	}
 
 	if esConfig.BearerToken.ValueString() != "" {
-		config.Header.Set("Authorization", esConfig.BearerToken.ValueString())
+		config.bearerToken = esConfig.BearerToken.ValueString()
 		if esConfig.ESClientAuthentication.ValueString() != "" {
-			config.Header.Set("ES-Client-authentication", esConfig.ESClientAuthentication.ValueString())
+			config.esClientAuthentication = esConfig.ESClientAuthentication.ValueString()
 		}
 	}
 
@@ -158,10 +163,10 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 			diags.Append(fwdiags.NewErrorDiagnostic("Unable to read CA file", err.Error()))
 			return nil, diags
 		}
-		config.CACert = caCert
+		config.config.CACert = caCert
 	}
 	if caData := esConfig.CAData.ValueString(); caData != "" {
-		config.CACert = []byte(caData)
+		config.config.CACert = []byte(caData)
 	}
 
 	if certFile := esConfig.CertFile.ValueString(); certFile != "" {
@@ -194,8 +199,8 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 	}
 
 	if logging.IsDebugOrHigher() {
-		config.EnableDebugLogger = true
-		config.Logger = &debugLogger{Name: "elasticsearch"}
+		config.config.EnableDebugLogger = true
+		config.config.Logger = &debugLogger{Name: "elasticsearch"}
 	}
 
 	config = config.withEnvironmentOverrides()
@@ -203,13 +208,13 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 }
 
 func (c *elasticsearchConfig) ensureTLSClientConfig() *tls.Config {
-	if c.Transport == nil {
-		c.Transport = http.DefaultTransport.(*http.Transport)
+	if c.config.Transport == nil {
+		c.config.Transport = http.DefaultTransport.(*http.Transport)
 	}
-	if c.Transport.(*http.Transport).TLSClientConfig == nil {
-		c.Transport.(*http.Transport).TLSClientConfig = &tls.Config{}
+	if c.config.Transport.(*http.Transport).TLSClientConfig == nil {
+		c.config.Transport.(*http.Transport).TLSClientConfig = &tls.Config{}
 	}
-	return c.Transport.(*http.Transport).TLSClientConfig
+	return c.config.Transport.(*http.Transport).TLSClientConfig
 }
 
 func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
@@ -218,7 +223,7 @@ func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 		for _, e := range strings.Split(endpointsCSV, ",") {
 			endpoints = append(endpoints, strings.TrimSpace(e))
 		}
-		c.Addresses = endpoints
+		c.config.Addresses = endpoints
 	}
 
 	if insecure, ok := os.LookupEnv("ELASTICSEARCH_INSECURE"); ok {
@@ -229,12 +234,24 @@ func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 	}
 
 	if bearerToken := os.Getenv("ELASTICSEARCH_BEARER_TOKEN"); bearerToken != "" {
-		c.Header.Set("Authorization", bearerToken)
+		c.bearerToken = bearerToken
 	}
 
-	if esClientAuthentication := os.Getenv("ELASTICSEARCH_BEARER_TOKEN"); esClientAuthentication != "" {
-		c.Header.Set("ES-Client-authentication", esClientAuthentication)
+	if esClientAuthentication := os.Getenv("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION"); esClientAuthentication != "" {
+		c.esClientAuthentication = esClientAuthentication
 	}
 
 	return c
+}
+
+func (c elasticsearchConfig) toElasticsearchConfiguration() elasticsearch.Config {
+	if c.bearerToken != "" {
+		c.config.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.bearerToken))
+	}
+
+	if c.esClientAuthentication != "" {
+		c.config.Header.Set("ES-Client-Authentication", fmt.Sprintf("SharedSecret %s", c.esClientAuthentication))
+	}
+
+	return c.config
 }

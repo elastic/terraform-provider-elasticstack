@@ -1,15 +1,18 @@
 package config
 
 import (
+	"net/http"
+
 	"github.com/disaster37/go-kibana-rest/v8"
-	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 )
 
 func NewFromEnv(version string) Client {
+	ua := buildUserAgent(version)
 	base := baseConfig{
-		UserAgent: buildUserAgent(version),
+		UserAgent: ua,
+		Header:    http.Header{"User-Agent": []string{ua}},
 	}.withEnvironmentOverrides()
 
 	client := Client{
@@ -17,7 +20,7 @@ func NewFromEnv(version string) Client {
 	}
 
 	esCfg := base.toElasticsearchConfig().withEnvironmentOverrides()
-	client.Elasticsearch = utils.Pointer(elasticsearch.Config(esCfg))
+	client.Elasticsearch = utils.Pointer(esCfg.toElasticsearchConfiguration())
 
 	kibanaCfg := base.toKibanaConfig().withEnvironmentOverrides()
 	client.Kibana = (*kibana.Config)(&kibanaCfg)
