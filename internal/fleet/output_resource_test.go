@@ -187,7 +187,7 @@ resource "elasticstack_fleet_output" "test_output" {
   ]
   ssl {
 	certificate_authorities = ["placeholder"]
-	certficiate             = "placeholder"
+	certificate             = "placeholder"
 	key                     = "placeholder"
   }
 }
