@@ -4,14 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Params** | [**IndicatorPropertiesHistogramParams**](IndicatorPropertiesHistogramParams.md) |  | 
+**Params** | [**IndicatorPropertiesTimesliceMetricParams**](IndicatorPropertiesTimesliceMetricParams.md) |  | 
 **Type** | **string** | The type of indicator. | 
 
 ## Methods
 
 ### NewSloResponseIndicator
 
-`func NewSloResponseIndicator(params IndicatorPropertiesHistogramParams, type_ string, ) *SloResponseIndicator`
+`func NewSloResponseIndicator(params IndicatorPropertiesTimesliceMetricParams, type_ string, ) *SloResponseIndicator`
 
 NewSloResponseIndicator instantiates a new SloResponseIndicator object
 This constructor will assign default values to properties that have it defined,
@@ -28,20 +28,20 @@ but it doesn't guarantee that properties required by API are set
 
 ### GetParams
 
-`func (o *SloResponseIndicator) GetParams() IndicatorPropertiesHistogramParams`
+`func (o *SloResponseIndicator) GetParams() IndicatorPropertiesTimesliceMetricParams`
 
 GetParams returns the Params field if non-nil, zero value otherwise.
 
 ### GetParamsOk
 
-`func (o *SloResponseIndicator) GetParamsOk() (*IndicatorPropertiesHistogramParams, bool)`
+`func (o *SloResponseIndicator) GetParamsOk() (*IndicatorPropertiesTimesliceMetricParams, bool)`
 
 GetParamsOk returns a tuple with the Params field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetParams
 
-`func (o *SloResponseIndicator) SetParams(v IndicatorPropertiesHistogramParams)`
+`func (o *SloResponseIndicator) SetParams(v IndicatorPropertiesTimesliceMetricParams)`
 
 SetParams sets Params field to given value.
 

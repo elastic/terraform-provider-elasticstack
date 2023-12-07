@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -72,15 +73,18 @@ func (b baseConfig) toKibanaConfig() kibanaConfig {
 	return kibanaConfig{
 		Username: b.Username,
 		Password: b.Password,
+		ApiKey:   b.ApiKey,
 	}
 }
 
 func (b baseConfig) toElasticsearchConfig() elasticsearchConfig {
 	return elasticsearchConfig{
-		Header:   b.Header,
-		Username: b.Username,
-		Password: b.Password,
-		APIKey:   b.ApiKey,
+		config: elasticsearch.Config{
+			Header:   b.Header.Clone(),
+			Username: b.Username,
+			Password: b.Password,
+			APIKey:   b.ApiKey,
+		},
 	}
 }
 

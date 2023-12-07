@@ -87,11 +87,14 @@ For Elasticsearch resources, you can use the following variables:
 - `ELASTICSEARCH_PASSWORD` - The password to use for Elasticsearch authentication
 - `ELASTICSEARCH_ENDPOINTS` - A comma separated list of Elasticsearch hosts to connect to
 - `ELASTICSEARCH_API_KEY` - An Elasticsearch API key to use instead of `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD`
+- `ELASTICSEARCH_BEARER_TOKEN` - A bearer token to use for Elasticsearch authorization header.
+- `ELASTICSEARCH_ES_CLIENT_AUTHENTICATION` - The shared secret for the Elasticsearch authorization header.
 
 Kibana resources will re-use any Elasticsearch credentials specified, these may be overridden with the following variables:
 - `KIBANA_USERNAME` - The username to use for Kibana authentication
 - `KIBANA_PASSWORD` - The password to use for Kibana authentication
 - `KIBANA_ENDPOINT` - The Kibana host to connect to
+- `KIBANA_API_KEY` - An Elasticsearch API key to use instead of `KIBANA_USERNAME` and `KIBANA_PASSWORD`
 
 Fleet resources will re-use any Kibana or Elasticsearch credentials specified, these may be overridden with the following variables:
 - `FLEET_USERNAME` - The username to use for Kibana authentication
@@ -149,11 +152,13 @@ provider "elasticstack" {
 Optional:
 
 - `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Elasticsearch
 - `ca_data` (String) PEM-encoded custom Certificate Authority certificate
 - `ca_file` (String) Path to a custom Certificate Authority certificate
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
 - `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the bearer token
 - `insecure` (Boolean) Disable TLS certificate validation
 - `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
@@ -179,6 +184,7 @@ Optional:
 
 Optional:
 
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.

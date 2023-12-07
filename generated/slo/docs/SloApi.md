@@ -5,6 +5,7 @@ All URIs are relative to *http://localhost:5601*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**CreateSloOp**](SloAPI.md#CreateSloOp) | **Post** /s/{spaceId}/api/observability/slos | Creates an SLO.
+[**DeleteSloInstancesOp**](SloAPI.md#DeleteSloInstancesOp) | **Post** /s/{spaceId}/api/observability/slos/_delete_instances | Batch delete rollup and summary data for the matching list of sloId and instanceId
 [**DeleteSloOp**](SloAPI.md#DeleteSloOp) | **Delete** /s/{spaceId}/api/observability/slos/{sloId} | Deletes an SLO
 [**DisableSloOp**](SloAPI.md#DisableSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/disable | Disables an SLO
 [**EnableSloOp**](SloAPI.md#EnableSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/enable | Enables an SLO
@@ -74,6 +75,78 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**CreateSloResponse**](CreateSloResponse.md)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## DeleteSloInstancesOp
+
+> DeleteSloInstancesOp(ctx, spaceId).KbnXsrf(kbnXsrf).DeleteSloInstancesRequest(deleteSloInstancesRequest).Execute()
+
+Batch delete rollup and summary data for the matching list of sloId and instanceId
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
+)
+
+func main() {
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    deleteSloInstancesRequest := *openapiclient.NewDeleteSloInstancesRequest([]openapiclient.DeleteSloInstancesRequestListInner{*openapiclient.NewDeleteSloInstancesRequestListInner("8853df00-ae2e-11ed-90af-09bb6422b258", "8853df00-ae2e-11ed-90af-09bb6422b258")}) // DeleteSloInstancesRequest | 
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    r, err := apiClient.SloAPI.DeleteSloInstancesOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).DeleteSloInstancesRequest(deleteSloInstancesRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DeleteSloInstancesOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiDeleteSloInstancesOpRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
+ **deleteSloInstancesRequest** | [**DeleteSloInstancesRequest**](DeleteSloInstancesRequest.md) |  | 
+
+### Return type
+
+ (empty response body)
 
 ### Authorization
 

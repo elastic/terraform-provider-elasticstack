@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **BudgetingMethod** | Pointer to [**BudgetingMethod**](BudgetingMethod.md) |  | [optional] 
 **Objective** | Pointer to [**Objective**](Objective.md) |  | [optional] 
 **Settings** | Pointer to [**Settings**](Settings.md) |  | [optional] 
+**Tags** | Pointer to **[]string** | List of tags | [optional] 
 
 ## Methods
 
@@ -205,6 +206,31 @@ SetSettings sets Settings field to given value.
 `func (o *UpdateSloRequest) HasSettings() bool`
 
 HasSettings returns a boolean if a field has been set.
+
+### GetTags
+
+`func (o *UpdateSloRequest) GetTags() []string`
+
+GetTags returns the Tags field if non-nil, zero value otherwise.
+
+### GetTagsOk
+
+`func (o *UpdateSloRequest) GetTagsOk() (*[]string, bool)`
+
+GetTagsOk returns a tuple with the Tags field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetTags
+
+`func (o *UpdateSloRequest) SetTags(v []string)`
+
+SetTags sets Tags field to given value.
+
+### HasTags
+
+`func (o *UpdateSloRequest) HasTags() bool`
+
+HasTags returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

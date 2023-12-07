@@ -15,6 +15,8 @@ import (
 func GetEsFWConnectionBlock(keyName string) fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
+	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
+	bearerTokenPath := path.MatchRelative().AtParent().AtName("bearer_token")
 	caFilePath := path.MatchRelative().AtParent().AtName("ca_file")
 	caDataPath := path.MatchRelative().AtParent().AtName("ca_data")
 	certFilePath := path.MatchRelative().AtParent().AtName("cert_file")
@@ -43,7 +45,24 @@ func GetEsFWConnectionBlock(keyName string) fwschema.Block {
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath, passwordPath),
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
+					},
+				},
+				"bearer_token": fwschema.StringAttribute{
+					MarkdownDescription: "Bearer Token to use for authentication to Elasticsearch",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
+					},
+				},
+				"es_client_authentication": fwschema.StringAttribute{
+					MarkdownDescription: "ES Client Authentication field to be used with the bearer token",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
+						stringvalidator.AlsoRequires(bearerTokenPath),
 					},
 				},
 				"endpoints": fwschema.ListAttribute{
@@ -119,6 +138,14 @@ func GetKbFWConnectionBlock() fwschema.Block {
 		MarkdownDescription: "Kibana connection configuration block.",
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
+				"api_key": fwschema.StringAttribute{
+					MarkdownDescription: "API Key to use for authentication to Kibana",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath),
+					},
+				},
 				"username": fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Kibana.",
 					Optional:            true,
@@ -201,6 +228,8 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema.Schema {
 	usernamePath := makePathRef(keyName, "username")
 	passwordPath := makePathRef(keyName, "password")
+	apiKeyPath := makePathRef(keyName, "api_key")
+	bearerTokenPath := makePathRef(keyName, "bearer_token")
 	caFilePath := makePathRef(keyName, "ca_file")
 	caDataPath := makePathRef(keyName, "ca_data")
 	certFilePath := makePathRef(keyName, "cert_file")
@@ -250,7 +279,22 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 					Optional:      true,
 					Sensitive:     true,
 					DefaultFunc:   withEnvDefault("ELASTICSEARCH_API_KEY", nil),
-					ConflictsWith: []string{usernamePath, passwordPath},
+					ConflictsWith: []string{usernamePath, passwordPath, bearerTokenPath},
+				},
+				"bearer_token": {
+					Description:   "Bearer Token to use for authentication to Elasticsearch",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					DefaultFunc:   withEnvDefault("ELASTICSEARCH_BEARER_TOKEN", nil),
+					ConflictsWith: []string{usernamePath, passwordPath, apiKeyPath},
+				},
+				"es_client_authentication": {
+					Description: "ES Client Authentication field to be used with the bearer token",
+					Type:        schema.TypeString,
+					Optional:    true,
+					Sensitive:   true,
+					DefaultFunc: withEnvDefault("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION", nil),
 				},
 				"endpoints": {
 					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
@@ -314,6 +358,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 }
 
 func GetKibanaConnectionSchema() *schema.Schema {
+	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
 	return &schema.Schema{
 		Description: "Kibana connection configuration block.",
 		Type:        schema.TypeList,
@@ -321,6 +366,14 @@ func GetKibanaConnectionSchema() *schema.Schema {
 		Optional:    true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"api_key": {
+					Description:   "API Key to use for authentication to Kibana",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					DefaultFunc:   withEnvDefault("KIBANA_API_KEY", nil),
+					ConflictsWith: []string{"kibana.0.password", "kibana.0.username"},
+				},
 				"username": {
 					Description:  "Username to use for API authentication to Kibana.",
 					Type:         schema.TypeString,

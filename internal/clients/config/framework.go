@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/disaster37/go-kibana-rest/v8"
-	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -22,7 +21,7 @@ func NewFromFramework(ctx context.Context, cfg ProviderConfiguration, version st
 	}
 
 	if esCfg != nil {
-		client.Elasticsearch = utils.Pointer(elasticsearch.Config(*esCfg))
+		client.Elasticsearch = utils.Pointer(esCfg.toElasticsearchConfiguration())
 	}
 
 	kibanaCfg, diags := newKibanaConfigFromFramework(ctx, cfg, base)

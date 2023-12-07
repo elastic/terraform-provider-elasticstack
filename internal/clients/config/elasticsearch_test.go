@@ -43,7 +43,7 @@ func Test_newElasticsearchConfigFromSDK(t *testing.T) {
 				}
 
 				config := base.toElasticsearchConfig()
-				config.Addresses = []string{"localhost", "example.com"}
+				config.config.Addresses = []string{"localhost", "example.com"}
 				tlsConfig := config.ensureTLSClientConfig()
 				tlsConfig.InsecureSkipVerify = true
 
@@ -70,7 +70,7 @@ func Test_newElasticsearchConfigFromSDK(t *testing.T) {
 				}
 
 				config := base.toElasticsearchConfig()
-				config.Addresses = []string{"127.0.0.1", "example.com/elastic"}
+				config.config.Addresses = []string{"127.0.0.1", "example.com/elastic"}
 				tlsConfig := config.ensureTLSClientConfig()
 				tlsConfig.InsecureSkipVerify = false
 
@@ -98,6 +98,8 @@ func Test_newElasticsearchConfigFromSDK(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			os.Unsetenv("ELASTICSEARCH_ENDPOINTS")
 			os.Unsetenv("ELASTICSEARCH_INSECURE")
+			os.Unsetenv("ELASTICSEARCH_BEARER_TOKEN")
+			os.Unsetenv("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION")
 
 			key := "elasticsearch"
 			args := tt.args(key)
@@ -146,7 +148,7 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 				}
 
 				config := base.toElasticsearchConfig()
-				config.Addresses = []string{"localhost", "example.com"}
+				config.config.Addresses = []string{"localhost", "example.com"}
 				tlsConfig := config.ensureTLSClientConfig()
 				tlsConfig.InsecureSkipVerify = true
 
@@ -179,7 +181,7 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 				}
 
 				config := base.toElasticsearchConfig()
-				config.Addresses = []string{"127.0.0.1", "example.com/elastic"}
+				config.config.Addresses = []string{"127.0.0.1", "example.com/elastic"}
 				tlsConfig := config.ensureTLSClientConfig()
 				tlsConfig.InsecureSkipVerify = false
 
@@ -213,6 +215,8 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			os.Unsetenv("ELASTICSEARCH_ENDPOINTS")
 			os.Unsetenv("ELASTICSEARCH_INSECURE")
+			os.Unsetenv("ELASTICSEARCH_BEARER_TOKEN")
+			os.Unsetenv("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION")
 
 			args := tt.args()
 

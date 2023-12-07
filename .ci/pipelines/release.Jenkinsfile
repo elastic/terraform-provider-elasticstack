@@ -28,7 +28,7 @@ node('docker && gobld/machineType:n1-highcpu-8') {
             stage("Cache GPG key and release the binaries") {
                 script {
                     env.GITHUB_TOKEN = readFile(".ci/.github_token").trim()
-                    env.GPG_FINGERPRINT = readFile(".ci/.gpg_fingerprint").trim()
+                    env.GPG_FINGERPRINT_SECRET = readFile(".ci/.gpg_fingerprint").trim()
                 }
                 sh 'pwd; make -C .ci cache-gpg-passphrase; make release'
             }

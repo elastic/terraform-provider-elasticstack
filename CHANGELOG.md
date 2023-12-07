@@ -3,9 +3,14 @@
 ### Added
 - Switch to Terraform [protocol version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) that is compatible with Terraform CLI version 1.0 and later.
 - Add 'elasticstack_fleet_package' data source ([#469](https://github.com/elastic/terraform-provider-elasticstack/pull/469))
-
+- Add `tags` option to Kibana's SLOs ([#495](https://github.com/elastic/terraform-provider-elasticstack/pull/495))
+- Add support for Authorization header - Bearer Token and ES-Client-Authentication fields added.([#500](https://github.com/elastic/terraform-provider-elasticstack/pull/500))
 ### Fixed
 - Rename fleet package objects to `elasticstack_fleet_integration` and `elasticstack_fleet_integration_policy` ([#476](https://github.com/elastic/terraform-provider-elasticstack/pull/476))
+- Fix a provider crash when managing SLOs outside of the default Kibana space. ([#485](https://github.com/elastic/terraform-provider-elasticstack/pull/485))
+- Make input optional for `elasticstack_fleet_integration_policy` ([#493](https://github.com/elastic/terraform-provider-elasticstack/pull/493))
+- Sort Fleet integration policy inputs to ensure consistency ([#494](https://github.com/elastic/terraform-provider-elasticstack/pull/494))
+- Updated Elasticsearch role_mapping.go to enforce the replacement/updates of role mapping resources when the name field is altered. ([#503](https://github.com/elastic/terraform-provider-elasticstack/pull/503))
 
 ## [0.10.0] - 2023-11-02
 
