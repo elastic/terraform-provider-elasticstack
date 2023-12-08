@@ -279,8 +279,6 @@ generate-alerting-client: ## generate Kibana alerting client
 	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
 	@ go fmt ./generated/alerting/...
 
-#  https://raw.githubusercontent.com/elastic/kibana/main/src/plugins/data_views/docs/openapi/bundled.yaml \
-
 .PHONY: generate-data-views-client
 generate-data-views-client: ## generate Kibana data-views client
 	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
