@@ -101,157 +101,157 @@ func NewConfiguration() *Configuration {
 			},
 		},
 		OperationServers: map[string]ServerConfigurations{
-			"AlertingApiService.CreateRule": {
+			"AlertingAPIService.CreateRule": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.DeleteRule": {
+			"AlertingAPIService.DeleteRule": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.DisableRule": {
+			"AlertingAPIService.DisableRule": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.EnableRule": {
+			"AlertingAPIService.EnableRule": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.FindRules": {
+			"AlertingAPIService.FindRules": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.GetAlertingHealth": {
+			"AlertingAPIService.GetAlertingHealth": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.GetRule": {
+			"AlertingAPIService.GetRule": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.GetRuleTypes": {
+			"AlertingAPIService.GetRuleTypes": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyCreateAlert": {
+			"AlertingAPIService.LegacyCreateAlert": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyDisableAlert": {
+			"AlertingAPIService.LegacyDisableAlert": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyEnableAlert": {
+			"AlertingAPIService.LegacyEnableAlert": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyFindAlerts": {
+			"AlertingAPIService.LegacyFindAlerts": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyGetAlert": {
+			"AlertingAPIService.LegacyGetAlert": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyGetAlertTypes": {
+			"AlertingAPIService.LegacyGetAlertTypes": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyGetAlertingHealth": {
+			"AlertingAPIService.LegacyGetAlertingHealth": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyMuteAlertInstance": {
+			"AlertingAPIService.LegacyMuteAlertInstance": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyMuteAllAlertInstances": {
+			"AlertingAPIService.LegacyMuteAllAlertInstances": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyUnmuteAlertInstance": {
+			"AlertingAPIService.LegacyUnmuteAlertInstance": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyUnmuteAllAlertInstances": {
+			"AlertingAPIService.LegacyUnmuteAllAlertInstances": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegacyUpdateAlert": {
+			"AlertingAPIService.LegacyUpdateAlert": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.LegaryDeleteAlert": {
+			"AlertingAPIService.LegaryDeleteAlert": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.MuteAlert": {
+			"AlertingAPIService.MuteAlert": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.MuteAllAlerts": {
+			"AlertingAPIService.MuteAllAlerts": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.UnmuteAlert": {
+			"AlertingAPIService.UnmuteAlert": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.UnmuteAllAlerts": {
+			"AlertingAPIService.UnmuteAllAlerts": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",
 				},
 			},
-			"AlertingApiService.UpdateRule": {
+			"AlertingAPIService.UpdateRule": {
 				{
 					URL:         "https://localhost:5601",
 					Description: "No description provided",

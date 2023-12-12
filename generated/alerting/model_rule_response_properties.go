@@ -12,6 +12,7 @@ package alerting
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -57,6 +58,8 @@ type RuleResponseProperties struct {
 	// The identifier for the user that updated this rule most recently.
 	UpdatedBy NullableString `json:"updated_by"`
 }
+
+type _RuleResponseProperties RuleResponseProperties
 
 // NewRuleResponseProperties instantiates a new RuleResponseProperties object
 // This constructor will assign default values to properties that have it defined,
@@ -756,6 +759,58 @@ func (o RuleResponseProperties) ToMap() (map[string]interface{}, error) {
 	toSerialize["updated_at"] = o.UpdatedAt
 	toSerialize["updated_by"] = o.UpdatedBy.Get()
 	return toSerialize, nil
+}
+
+func (o *RuleResponseProperties) UnmarshalJSON(bytes []byte) (err error) {
+	// This validates that all required properties are included in the JSON object
+	// by unmarshalling the object into a generic map with string keys and checking
+	// that every required field exists as a key in the generic map.
+	requiredProperties := []string{
+		"actions",
+		"api_key_owner",
+		"consumer",
+		"created_at",
+		"created_by",
+		"enabled",
+		"execution_status",
+		"id",
+		"muted_alert_ids",
+		"mute_all",
+		"name",
+		"params",
+		"rule_type_id",
+		"schedule",
+		"tags",
+		"throttle",
+		"updated_at",
+		"updated_by",
+	}
+
+	allProperties := make(map[string]interface{})
+
+	err = json.Unmarshal(bytes, &allProperties)
+
+	if err != nil {
+		return err
+	}
+
+	for _, requiredProperty := range requiredProperties {
+		if _, exists := allProperties[requiredProperty]; !exists {
+			return fmt.Errorf("no value given for required property %v", requiredProperty)
+		}
+	}
+
+	varRuleResponseProperties := _RuleResponseProperties{}
+
+	err = json.Unmarshal(bytes, &varRuleResponseProperties)
+
+	if err != nil {
+		return err
+	}
+
+	*o = RuleResponseProperties(varRuleResponseProperties)
+
+	return err
 }
 
 type NullableRuleResponseProperties struct {

@@ -36,7 +36,7 @@ Default configuration comes with `Servers` field that contains server objects as
 
 ### Select Server Configuration
 
-For using other server than the one defined on index 0 set context value `sw.ContextServerIndex` of type `int`.
+For using other server than the one defined on index 0 set context value `alerting.ContextServerIndex` of type `int`.
 
 ```golang
 ctx := context.WithValue(context.Background(), alerting.ContextServerIndex, 1)
@@ -44,7 +44,7 @@ ctx := context.WithValue(context.Background(), alerting.ContextServerIndex, 1)
 
 ### Templated Server URL
 
-Templated server URL is formatted using default variables from configuration or from context value `sw.ContextServerVariables` of type `map[string]string`.
+Templated server URL is formatted using default variables from configuration or from context value `alerting.ContextServerVariables` of type `map[string]string`.
 
 ```golang
 ctx := context.WithValue(context.Background(), alerting.ContextServerVariables, map[string]string{
@@ -58,7 +58,7 @@ Note, enum values are always validated and all unused variables are silently ign
 
 Each operation can use different server URL defined using `OperationServers` map in the `Configuration`.
 An operation is uniquely identified by `"{classname}Service.{nickname}"` string.
-Similar rules for overriding default operation server index and variables applies by using `sw.ContextOperationServerIndices` and `sw.ContextOperationServerVariables` context maps.
+Similar rules for overriding default operation server index and variables applies by using `alerting.ContextOperationServerIndices` and `alerting.ContextOperationServerVariables` context maps.
 
 ```golang
 ctx := context.WithValue(context.Background(), alerting.ContextOperationServerIndices, map[string]int{
@@ -77,32 +77,32 @@ All URIs are relative to *http://localhost:5601*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*AlertingApi* | [**CreateRule**](docs/AlertingApi.md#createrule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule.
-*AlertingApi* | [**DeleteRule**](docs/AlertingApi.md#deleterule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
-*AlertingApi* | [**DisableRule**](docs/AlertingApi.md#disablerule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
-*AlertingApi* | [**EnableRule**](docs/AlertingApi.md#enablerule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
-*AlertingApi* | [**FindRules**](docs/AlertingApi.md#findrules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
-*AlertingApi* | [**GetAlertingHealth**](docs/AlertingApi.md#getalertinghealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
-*AlertingApi* | [**GetRule**](docs/AlertingApi.md#getrule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
-*AlertingApi* | [**GetRuleTypes**](docs/AlertingApi.md#getruletypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
-*AlertingApi* | [**LegacyCreateAlert**](docs/AlertingApi.md#legacycreatealert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.
-*AlertingApi* | [**LegacyDisableAlert**](docs/AlertingApi.md#legacydisablealert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_disable | Disables an alert.
-*AlertingApi* | [**LegacyEnableAlert**](docs/AlertingApi.md#legacyenablealert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_enable | Enables an alert.
-*AlertingApi* | [**LegacyFindAlerts**](docs/AlertingApi.md#legacyfindalerts) | **Get** /s/{spaceId}/api/alerts/alerts/_find | Retrieves a paginated set of alerts.
-*AlertingApi* | [**LegacyGetAlert**](docs/AlertingApi.md#legacygetalert) | **Get** /s/{spaceId}/api/alerts/alert/{alertId} | Retrieves an alert by its identifier.
-*AlertingApi* | [**LegacyGetAlertTypes**](docs/AlertingApi.md#legacygetalerttypes) | **Get** /s/{spaceId}/api/alerts/alerts/list_alert_types | Retrieves a list of alert types.
-*AlertingApi* | [**LegacyGetAlertingHealth**](docs/AlertingApi.md#legacygetalertinghealth) | **Get** /s/{spaceId}/api/alerts/alerts/_health | Retrieves the health status of the alerting framework.
-*AlertingApi* | [**LegacyMuteAlertInstance**](docs/AlertingApi.md#legacymutealertinstance) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_mute | Mutes an alert instance.
-*AlertingApi* | [**LegacyMuteAllAlertInstances**](docs/AlertingApi.md#legacymuteallalertinstances) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_mute_all | Mutes all alert instances.
-*AlertingApi* | [**LegacyUnmuteAlertInstance**](docs/AlertingApi.md#legacyunmutealertinstance) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_unmute | Unmutes an alert instance.
-*AlertingApi* | [**LegacyUnmuteAllAlertInstances**](docs/AlertingApi.md#legacyunmuteallalertinstances) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_unmute_all | Unmutes all alert instances.
-*AlertingApi* | [**LegacyUpdateAlert**](docs/AlertingApi.md#legacyupdatealert) | **Put** /s/{spaceId}/api/alerts/alert/{alertId} | Updates the attributes for an alert.
-*AlertingApi* | [**LegaryDeleteAlert**](docs/AlertingApi.md#legarydeletealert) | **Delete** /s/{spaceId}/api/alerts/alert/{alertId} | Permanently removes an alert.
-*AlertingApi* | [**MuteAlert**](docs/AlertingApi.md#mutealert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_mute | Mutes an alert.
-*AlertingApi* | [**MuteAllAlerts**](docs/AlertingApi.md#muteallalerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_mute_all | Mutes all alerts.
-*AlertingApi* | [**UnmuteAlert**](docs/AlertingApi.md#unmutealert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute | Unmutes an alert.
-*AlertingApi* | [**UnmuteAllAlerts**](docs/AlertingApi.md#unmuteallalerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all | Unmutes all alerts.
-*AlertingApi* | [**UpdateRule**](docs/AlertingApi.md#updaterule) | **Put** /s/{spaceId}/api/alerting/rule/{ruleId} | Updates the attributes for a rule.
+*AlertingAPI* | [**CreateRule**](docs/AlertingAPI.md#createrule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule.
+*AlertingAPI* | [**DeleteRule**](docs/AlertingAPI.md#deleterule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
+*AlertingAPI* | [**DisableRule**](docs/AlertingAPI.md#disablerule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
+*AlertingAPI* | [**EnableRule**](docs/AlertingAPI.md#enablerule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
+*AlertingAPI* | [**FindRules**](docs/AlertingAPI.md#findrules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
+*AlertingAPI* | [**GetAlertingHealth**](docs/AlertingAPI.md#getalertinghealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
+*AlertingAPI* | [**GetRule**](docs/AlertingAPI.md#getrule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
+*AlertingAPI* | [**GetRuleTypes**](docs/AlertingAPI.md#getruletypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
+*AlertingAPI* | [**LegacyCreateAlert**](docs/AlertingAPI.md#legacycreatealert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.
+*AlertingAPI* | [**LegacyDisableAlert**](docs/AlertingAPI.md#legacydisablealert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_disable | Disables an alert.
+*AlertingAPI* | [**LegacyEnableAlert**](docs/AlertingAPI.md#legacyenablealert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_enable | Enables an alert.
+*AlertingAPI* | [**LegacyFindAlerts**](docs/AlertingAPI.md#legacyfindalerts) | **Get** /s/{spaceId}/api/alerts/alerts/_find | Retrieves a paginated set of alerts.
+*AlertingAPI* | [**LegacyGetAlert**](docs/AlertingAPI.md#legacygetalert) | **Get** /s/{spaceId}/api/alerts/alert/{alertId} | Retrieves an alert by its identifier.
+*AlertingAPI* | [**LegacyGetAlertTypes**](docs/AlertingAPI.md#legacygetalerttypes) | **Get** /s/{spaceId}/api/alerts/alerts/list_alert_types | Retrieves a list of alert types.
+*AlertingAPI* | [**LegacyGetAlertingHealth**](docs/AlertingAPI.md#legacygetalertinghealth) | **Get** /s/{spaceId}/api/alerts/alerts/_health | Retrieves the health status of the alerting framework.
+*AlertingAPI* | [**LegacyMuteAlertInstance**](docs/AlertingAPI.md#legacymutealertinstance) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_mute | Mutes an alert instance.
+*AlertingAPI* | [**LegacyMuteAllAlertInstances**](docs/AlertingAPI.md#legacymuteallalertinstances) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_mute_all | Mutes all alert instances.
+*AlertingAPI* | [**LegacyUnmuteAlertInstance**](docs/AlertingAPI.md#legacyunmutealertinstance) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_unmute | Unmutes an alert instance.
+*AlertingAPI* | [**LegacyUnmuteAllAlertInstances**](docs/AlertingAPI.md#legacyunmuteallalertinstances) | **Post** /s/{spaceId}/api/alerts/alert/{alertId}/_unmute_all | Unmutes all alert instances.
+*AlertingAPI* | [**LegacyUpdateAlert**](docs/AlertingAPI.md#legacyupdatealert) | **Put** /s/{spaceId}/api/alerts/alert/{alertId} | Updates the attributes for an alert.
+*AlertingAPI* | [**LegaryDeleteAlert**](docs/AlertingAPI.md#legarydeletealert) | **Delete** /s/{spaceId}/api/alerts/alert/{alertId} | Permanently removes an alert.
+*AlertingAPI* | [**MuteAlert**](docs/AlertingAPI.md#mutealert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_mute | Mutes an alert.
+*AlertingAPI* | [**MuteAllAlerts**](docs/AlertingAPI.md#muteallalerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_mute_all | Mutes all alerts.
+*AlertingAPI* | [**UnmuteAlert**](docs/AlertingAPI.md#unmutealert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute | Unmutes an alert.
+*AlertingAPI* | [**UnmuteAllAlerts**](docs/AlertingAPI.md#unmuteallalerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all | Unmutes all alerts.
+*AlertingAPI* | [**UpdateRule**](docs/AlertingAPI.md#updaterule) | **Put** /s/{spaceId}/api/alerting/rule/{ruleId} | Updates the attributes for a rule.
 
 
 ## Documentation For Models
@@ -160,7 +160,7 @@ Class | Method | HTTP request | Description
 ## Documentation For Authorization
 
 
-
+Authentication schemes defined for the API:
 ### basicAuth
 
 - **Type**: HTTP basic authentication
@@ -168,13 +168,12 @@ Class | Method | HTTP request | Description
 Example
 
 ```golang
-auth := context.WithValue(context.Background(), sw.ContextBasicAuth, sw.BasicAuth{
+auth := context.WithValue(context.Background(), alerting.ContextBasicAuth, alerting.BasicAuth{
     UserName: "username",
     Password: "password",
 })
 r, err := client.Service.Operation(auth, args)
 ```
-
 
 ### apiKeyAuth
 
@@ -183,6 +182,19 @@ r, err := client.Service.Operation(auth, args)
 - **Location**: HTTP header
 
 Note, each API key must be added to a map of `map[string]APIKey` where the key is: ApiKey and passed in as the auth context for each request.
+
+Example
+
+```golang
+auth := context.WithValue(
+		context.Background(),
+		alerting.ContextAPIKeys,
+		map[string]alerting.APIKey{
+			"ApiKey": {Key: "API_KEY_STRING"},
+		},
+	)
+r, err := client.Service.Operation(auth, args)
+```
 
 
 ## Documentation for Utility Methods

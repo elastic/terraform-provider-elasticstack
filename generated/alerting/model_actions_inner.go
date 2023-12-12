@@ -217,7 +217,9 @@ func (o ActionsInner) MarshalJSON() ([]byte, error) {
 
 func (o ActionsInner) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	// skip: connector_type_id is readOnly
+	if !IsNil(o.ConnectorTypeId) {
+		toSerialize["connector_type_id"] = o.ConnectorTypeId
+	}
 	if !IsNil(o.Frequency) {
 		toSerialize["frequency"] = o.Frequency
 	}

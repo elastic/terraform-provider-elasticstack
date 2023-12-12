@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-type AlertingApi interface {
+type AlertingAPI interface {
 
 	/*
 		CreateRule Creates a rule.
@@ -477,12 +477,12 @@ type AlertingApi interface {
 	UpdateRuleExecute(r ApiUpdateRuleRequest) (*RuleResponseProperties, *http.Response, error)
 }
 
-// AlertingApiService AlertingApi service
-type AlertingApiService service
+// AlertingAPIService AlertingAPI service
+type AlertingAPIService service
 
 type ApiCreateRuleRequest struct {
 	ctx               context.Context
-	ApiService        AlertingApi
+	ApiService        AlertingAPI
 	kbnXsrf           *string
 	spaceId           string
 	ruleId            string
@@ -514,7 +514,7 @@ You must have `all` privileges for the appropriate Kibana features, depending on
 	@param ruleId An UUID v1 or v4 identifier for the rule. If you omit this parameter, an identifier is randomly generated.
 	@return ApiCreateRuleRequest
 */
-func (a *AlertingApiService) CreateRule(ctx context.Context, spaceId string, ruleId string) ApiCreateRuleRequest {
+func (a *AlertingAPIService) CreateRule(ctx context.Context, spaceId string, ruleId string) ApiCreateRuleRequest {
 	return ApiCreateRuleRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -526,7 +526,7 @@ func (a *AlertingApiService) CreateRule(ctx context.Context, spaceId string, rul
 // Execute executes the request
 //
 //	@return RuleResponseProperties
-func (a *AlertingApiService) CreateRuleExecute(r ApiCreateRuleRequest) (*RuleResponseProperties, *http.Response, error) {
+func (a *AlertingAPIService) CreateRuleExecute(r ApiCreateRuleRequest) (*RuleResponseProperties, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
@@ -534,7 +534,7 @@ func (a *AlertingApiService) CreateRuleExecute(r ApiCreateRuleRequest) (*RuleRes
 		localVarReturnValue *RuleResponseProperties
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.CreateRule")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.CreateRule")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -647,7 +647,7 @@ func (a *AlertingApiService) CreateRuleExecute(r ApiCreateRuleRequest) (*RuleRes
 
 type ApiDeleteRuleRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	ruleId     string
 	spaceId    string
@@ -673,7 +673,7 @@ You must have `all` privileges for the appropriate Kibana features, depending on
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiDeleteRuleRequest
 */
-func (a *AlertingApiService) DeleteRule(ctx context.Context, ruleId string, spaceId string) ApiDeleteRuleRequest {
+func (a *AlertingAPIService) DeleteRule(ctx context.Context, ruleId string, spaceId string) ApiDeleteRuleRequest {
 	return ApiDeleteRuleRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -683,14 +683,14 @@ func (a *AlertingApiService) DeleteRule(ctx context.Context, ruleId string, spac
 }
 
 // Execute executes the request
-func (a *AlertingApiService) DeleteRuleExecute(r ApiDeleteRuleRequest) (*http.Response, error) {
+func (a *AlertingAPIService) DeleteRuleExecute(r ApiDeleteRuleRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodDelete
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.DeleteRule")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.DeleteRule")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -789,7 +789,7 @@ func (a *AlertingApiService) DeleteRuleExecute(r ApiDeleteRuleRequest) (*http.Re
 
 type ApiDisableRuleRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	ruleId     string
 	spaceId    string
@@ -815,7 +815,7 @@ You must have `all` privileges for the appropriate Kibana features, depending on
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiDisableRuleRequest
 */
-func (a *AlertingApiService) DisableRule(ctx context.Context, ruleId string, spaceId string) ApiDisableRuleRequest {
+func (a *AlertingAPIService) DisableRule(ctx context.Context, ruleId string, spaceId string) ApiDisableRuleRequest {
 	return ApiDisableRuleRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -825,14 +825,14 @@ func (a *AlertingApiService) DisableRule(ctx context.Context, ruleId string, spa
 }
 
 // Execute executes the request
-func (a *AlertingApiService) DisableRuleExecute(r ApiDisableRuleRequest) (*http.Response, error) {
+func (a *AlertingAPIService) DisableRuleExecute(r ApiDisableRuleRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.DisableRule")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.DisableRule")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -931,7 +931,7 @@ func (a *AlertingApiService) DisableRuleExecute(r ApiDisableRuleRequest) (*http.
 
 type ApiEnableRuleRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	ruleId     string
 	spaceId    string
@@ -957,7 +957,7 @@ This API supports token-based authentication only. You must have `all` privilege
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiEnableRuleRequest
 */
-func (a *AlertingApiService) EnableRule(ctx context.Context, ruleId string, spaceId string) ApiEnableRuleRequest {
+func (a *AlertingAPIService) EnableRule(ctx context.Context, ruleId string, spaceId string) ApiEnableRuleRequest {
 	return ApiEnableRuleRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -967,14 +967,14 @@ func (a *AlertingApiService) EnableRule(ctx context.Context, ruleId string, spac
 }
 
 // Execute executes the request
-func (a *AlertingApiService) EnableRuleExecute(r ApiEnableRuleRequest) (*http.Response, error) {
+func (a *AlertingAPIService) EnableRuleExecute(r ApiEnableRuleRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.EnableRule")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.EnableRule")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1073,7 +1073,7 @@ func (a *AlertingApiService) EnableRuleExecute(r ApiEnableRuleRequest) (*http.Re
 
 type ApiFindRulesRequest struct {
 	ctx                   context.Context
-	ApiService            AlertingApi
+	ApiService            AlertingAPI
 	spaceId               string
 	defaultSearchOperator *string
 	fields                *[]string
@@ -1160,7 +1160,7 @@ You must have `read` privileges for the appropriate Kibana features, depending o
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiFindRulesRequest
 */
-func (a *AlertingApiService) FindRules(ctx context.Context, spaceId string) ApiFindRulesRequest {
+func (a *AlertingAPIService) FindRules(ctx context.Context, spaceId string) ApiFindRulesRequest {
 	return ApiFindRulesRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1171,7 +1171,7 @@ func (a *AlertingApiService) FindRules(ctx context.Context, spaceId string) ApiF
 // Execute executes the request
 //
 //	@return FindRules200Response
-func (a *AlertingApiService) FindRulesExecute(r ApiFindRulesRequest) (*FindRules200Response, *http.Response, error) {
+func (a *AlertingAPIService) FindRulesExecute(r ApiFindRulesRequest) (*FindRules200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -1179,7 +1179,7 @@ func (a *AlertingApiService) FindRulesExecute(r ApiFindRulesRequest) (*FindRules
 		localVarReturnValue *FindRules200Response
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.FindRules")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.FindRules")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1193,13 +1193,16 @@ func (a *AlertingApiService) FindRulesExecute(r ApiFindRulesRequest) (*FindRules
 
 	if r.defaultSearchOperator != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "default_search_operator", r.defaultSearchOperator, "")
+	} else {
+		var defaultValue string = "OR"
+		r.defaultSearchOperator = &defaultValue
 	}
 	if r.fields != nil {
 		t := *r.fields
 		if reflect.TypeOf(t).Kind() == reflect.Slice {
 			s := reflect.ValueOf(t)
 			for i := 0; i < s.Len(); i++ {
-				parameterAddToHeaderOrQuery(localVarQueryParams, "fields", s.Index(i), "multi")
+				parameterAddToHeaderOrQuery(localVarQueryParams, "fields", s.Index(i).Interface(), "multi")
 			}
 		} else {
 			parameterAddToHeaderOrQuery(localVarQueryParams, "fields", t, "multi")
@@ -1213,9 +1216,15 @@ func (a *AlertingApiService) FindRulesExecute(r ApiFindRulesRequest) (*FindRules
 	}
 	if r.page != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "page", r.page, "")
+	} else {
+		var defaultValue int32 = 1
+		r.page = &defaultValue
 	}
 	if r.perPage != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "per_page", r.perPage, "")
+	} else {
+		var defaultValue int32 = 20
+		r.perPage = &defaultValue
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
@@ -1228,6 +1237,9 @@ func (a *AlertingApiService) FindRulesExecute(r ApiFindRulesRequest) (*FindRules
 	}
 	if r.sortOrder != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "sort_order", r.sortOrder, "")
+	} else {
+		var defaultValue string = "desc"
+		r.sortOrder = &defaultValue
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -1309,7 +1321,7 @@ func (a *AlertingApiService) FindRulesExecute(r ApiFindRulesRequest) (*FindRules
 
 type ApiGetAlertingHealthRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	spaceId    string
 }
 
@@ -1326,7 +1338,7 @@ You must have `read` privileges for the **Management > Stack Rules** feature or 
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiGetAlertingHealthRequest
 */
-func (a *AlertingApiService) GetAlertingHealth(ctx context.Context, spaceId string) ApiGetAlertingHealthRequest {
+func (a *AlertingAPIService) GetAlertingHealth(ctx context.Context, spaceId string) ApiGetAlertingHealthRequest {
 	return ApiGetAlertingHealthRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1337,7 +1349,7 @@ func (a *AlertingApiService) GetAlertingHealth(ctx context.Context, spaceId stri
 // Execute executes the request
 //
 //	@return GetAlertingHealth200Response
-func (a *AlertingApiService) GetAlertingHealthExecute(r ApiGetAlertingHealthRequest) (*GetAlertingHealth200Response, *http.Response, error) {
+func (a *AlertingAPIService) GetAlertingHealthExecute(r ApiGetAlertingHealthRequest) (*GetAlertingHealth200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -1345,7 +1357,7 @@ func (a *AlertingApiService) GetAlertingHealthExecute(r ApiGetAlertingHealthRequ
 		localVarReturnValue *GetAlertingHealth200Response
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.GetAlertingHealth")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.GetAlertingHealth")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1437,7 +1449,7 @@ func (a *AlertingApiService) GetAlertingHealthExecute(r ApiGetAlertingHealthRequ
 
 type ApiGetRuleRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	ruleId     string
 	spaceId    string
 }
@@ -1456,7 +1468,7 @@ You must have `read` privileges for the appropriate Kibana features, depending o
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiGetRuleRequest
 */
-func (a *AlertingApiService) GetRule(ctx context.Context, ruleId string, spaceId string) ApiGetRuleRequest {
+func (a *AlertingAPIService) GetRule(ctx context.Context, ruleId string, spaceId string) ApiGetRuleRequest {
 	return ApiGetRuleRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1468,7 +1480,7 @@ func (a *AlertingApiService) GetRule(ctx context.Context, ruleId string, spaceId
 // Execute executes the request
 //
 //	@return RuleResponseProperties
-func (a *AlertingApiService) GetRuleExecute(r ApiGetRuleRequest) (*RuleResponseProperties, *http.Response, error) {
+func (a *AlertingAPIService) GetRuleExecute(r ApiGetRuleRequest) (*RuleResponseProperties, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -1476,7 +1488,7 @@ func (a *AlertingApiService) GetRuleExecute(r ApiGetRuleRequest) (*RuleResponseP
 		localVarReturnValue *RuleResponseProperties
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.GetRule")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.GetRule")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1580,7 +1592,7 @@ func (a *AlertingApiService) GetRuleExecute(r ApiGetRuleRequest) (*RuleResponseP
 
 type ApiGetRuleTypesRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	spaceId    string
 }
 
@@ -1597,7 +1609,7 @@ If you have `read` privileges for one or more Kibana features, the API response 
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiGetRuleTypesRequest
 */
-func (a *AlertingApiService) GetRuleTypes(ctx context.Context, spaceId string) ApiGetRuleTypesRequest {
+func (a *AlertingAPIService) GetRuleTypes(ctx context.Context, spaceId string) ApiGetRuleTypesRequest {
 	return ApiGetRuleTypesRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1608,7 +1620,7 @@ func (a *AlertingApiService) GetRuleTypes(ctx context.Context, spaceId string) A
 // Execute executes the request
 //
 //	@return []GetRuleTypes200ResponseInner
-func (a *AlertingApiService) GetRuleTypesExecute(r ApiGetRuleTypesRequest) ([]GetRuleTypes200ResponseInner, *http.Response, error) {
+func (a *AlertingAPIService) GetRuleTypesExecute(r ApiGetRuleTypesRequest) ([]GetRuleTypes200ResponseInner, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -1616,7 +1628,7 @@ func (a *AlertingApiService) GetRuleTypesExecute(r ApiGetRuleTypesRequest) ([]Ge
 		localVarReturnValue []GetRuleTypes200ResponseInner
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.GetRuleTypes")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.GetRuleTypes")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1708,7 +1720,7 @@ func (a *AlertingApiService) GetRuleTypesExecute(r ApiGetRuleTypesRequest) ([]Ge
 
 type ApiLegacyCreateAlertRequest struct {
 	ctx                                context.Context
-	ApiService                         AlertingApi
+	ApiService                         AlertingAPI
 	kbnXsrf                            *string
 	alertId                            string
 	spaceId                            string
@@ -1742,7 +1754,7 @@ Deprecated in 7.13.0. Use the create rule API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyCreateAlert(ctx context.Context, alertId string, spaceId string) ApiLegacyCreateAlertRequest {
+func (a *AlertingAPIService) LegacyCreateAlert(ctx context.Context, alertId string, spaceId string) ApiLegacyCreateAlertRequest {
 	return ApiLegacyCreateAlertRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1756,7 +1768,7 @@ func (a *AlertingApiService) LegacyCreateAlert(ctx context.Context, alertId stri
 //	@return AlertResponseProperties
 //
 // Deprecated
-func (a *AlertingApiService) LegacyCreateAlertExecute(r ApiLegacyCreateAlertRequest) (*AlertResponseProperties, *http.Response, error) {
+func (a *AlertingAPIService) LegacyCreateAlertExecute(r ApiLegacyCreateAlertRequest) (*AlertResponseProperties, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
@@ -1764,7 +1776,7 @@ func (a *AlertingApiService) LegacyCreateAlertExecute(r ApiLegacyCreateAlertRequ
 		localVarReturnValue *AlertResponseProperties
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyCreateAlert")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyCreateAlert")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1866,7 +1878,7 @@ func (a *AlertingApiService) LegacyCreateAlertExecute(r ApiLegacyCreateAlertRequ
 
 type ApiLegacyDisableAlertRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	spaceId    string
 	alertId    string
@@ -1894,7 +1906,7 @@ Deprecated in 7.13.0. Use the disable rule API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyDisableAlert(ctx context.Context, spaceId string, alertId string) ApiLegacyDisableAlertRequest {
+func (a *AlertingAPIService) LegacyDisableAlert(ctx context.Context, spaceId string, alertId string) ApiLegacyDisableAlertRequest {
 	return ApiLegacyDisableAlertRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -1905,14 +1917,14 @@ func (a *AlertingApiService) LegacyDisableAlert(ctx context.Context, spaceId str
 
 // Execute executes the request
 // Deprecated
-func (a *AlertingApiService) LegacyDisableAlertExecute(r ApiLegacyDisableAlertRequest) (*http.Response, error) {
+func (a *AlertingAPIService) LegacyDisableAlertExecute(r ApiLegacyDisableAlertRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyDisableAlert")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyDisableAlert")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -2000,7 +2012,7 @@ func (a *AlertingApiService) LegacyDisableAlertExecute(r ApiLegacyDisableAlertRe
 
 type ApiLegacyEnableAlertRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	spaceId    string
 	alertId    string
@@ -2028,7 +2040,7 @@ Deprecated in 7.13.0. Use the enable rule API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyEnableAlert(ctx context.Context, spaceId string, alertId string) ApiLegacyEnableAlertRequest {
+func (a *AlertingAPIService) LegacyEnableAlert(ctx context.Context, spaceId string, alertId string) ApiLegacyEnableAlertRequest {
 	return ApiLegacyEnableAlertRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -2039,14 +2051,14 @@ func (a *AlertingApiService) LegacyEnableAlert(ctx context.Context, spaceId stri
 
 // Execute executes the request
 // Deprecated
-func (a *AlertingApiService) LegacyEnableAlertExecute(r ApiLegacyEnableAlertRequest) (*http.Response, error) {
+func (a *AlertingAPIService) LegacyEnableAlertExecute(r ApiLegacyEnableAlertRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyEnableAlert")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyEnableAlert")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -2134,7 +2146,7 @@ func (a *AlertingApiService) LegacyEnableAlertExecute(r ApiLegacyEnableAlertRequ
 
 type ApiLegacyFindAlertsRequest struct {
 	ctx                   context.Context
-	ApiService            AlertingApi
+	ApiService            AlertingAPI
 	spaceId               string
 	defaultSearchOperator *string
 	fields                *[]string
@@ -2223,7 +2235,7 @@ Deprecated in 7.13.0. Use the find rules API instead. NOTE: Alert `params` are s
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyFindAlerts(ctx context.Context, spaceId string) ApiLegacyFindAlertsRequest {
+func (a *AlertingAPIService) LegacyFindAlerts(ctx context.Context, spaceId string) ApiLegacyFindAlertsRequest {
 	return ApiLegacyFindAlertsRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -2236,7 +2248,7 @@ func (a *AlertingApiService) LegacyFindAlerts(ctx context.Context, spaceId strin
 //	@return LegacyFindAlerts200Response
 //
 // Deprecated
-func (a *AlertingApiService) LegacyFindAlertsExecute(r ApiLegacyFindAlertsRequest) (*LegacyFindAlerts200Response, *http.Response, error) {
+func (a *AlertingAPIService) LegacyFindAlertsExecute(r ApiLegacyFindAlertsRequest) (*LegacyFindAlerts200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -2244,7 +2256,7 @@ func (a *AlertingApiService) LegacyFindAlertsExecute(r ApiLegacyFindAlertsReques
 		localVarReturnValue *LegacyFindAlerts200Response
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyFindAlerts")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyFindAlerts")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -2258,13 +2270,16 @@ func (a *AlertingApiService) LegacyFindAlertsExecute(r ApiLegacyFindAlertsReques
 
 	if r.defaultSearchOperator != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "default_search_operator", r.defaultSearchOperator, "")
+	} else {
+		var defaultValue string = "OR"
+		r.defaultSearchOperator = &defaultValue
 	}
 	if r.fields != nil {
 		t := *r.fields
 		if reflect.TypeOf(t).Kind() == reflect.Slice {
 			s := reflect.ValueOf(t)
 			for i := 0; i < s.Len(); i++ {
-				parameterAddToHeaderOrQuery(localVarQueryParams, "fields", s.Index(i), "multi")
+				parameterAddToHeaderOrQuery(localVarQueryParams, "fields", s.Index(i).Interface(), "multi")
 			}
 		} else {
 			parameterAddToHeaderOrQuery(localVarQueryParams, "fields", t, "multi")
@@ -2278,9 +2293,15 @@ func (a *AlertingApiService) LegacyFindAlertsExecute(r ApiLegacyFindAlertsReques
 	}
 	if r.page != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "page", r.page, "")
+	} else {
+		var defaultValue int32 = 1
+		r.page = &defaultValue
 	}
 	if r.perPage != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "per_page", r.perPage, "")
+	} else {
+		var defaultValue int32 = 20
+		r.perPage = &defaultValue
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
@@ -2293,6 +2314,9 @@ func (a *AlertingApiService) LegacyFindAlertsExecute(r ApiLegacyFindAlertsReques
 	}
 	if r.sortOrder != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "sort_order", r.sortOrder, "")
+	} else {
+		var defaultValue string = "desc"
+		r.sortOrder = &defaultValue
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -2374,7 +2398,7 @@ func (a *AlertingApiService) LegacyFindAlertsExecute(r ApiLegacyFindAlertsReques
 
 type ApiLegacyGetAlertRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	spaceId    string
 	alertId    string
 }
@@ -2395,7 +2419,7 @@ Deprecated in 7.13.0. Use the get rule API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyGetAlert(ctx context.Context, spaceId string, alertId string) ApiLegacyGetAlertRequest {
+func (a *AlertingAPIService) LegacyGetAlert(ctx context.Context, spaceId string, alertId string) ApiLegacyGetAlertRequest {
 	return ApiLegacyGetAlertRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -2409,7 +2433,7 @@ func (a *AlertingApiService) LegacyGetAlert(ctx context.Context, spaceId string,
 //	@return AlertResponseProperties
 //
 // Deprecated
-func (a *AlertingApiService) LegacyGetAlertExecute(r ApiLegacyGetAlertRequest) (*AlertResponseProperties, *http.Response, error) {
+func (a *AlertingAPIService) LegacyGetAlertExecute(r ApiLegacyGetAlertRequest) (*AlertResponseProperties, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -2417,7 +2441,7 @@ func (a *AlertingApiService) LegacyGetAlertExecute(r ApiLegacyGetAlertRequest) (
 		localVarReturnValue *AlertResponseProperties
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyGetAlert")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyGetAlert")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -2510,7 +2534,7 @@ func (a *AlertingApiService) LegacyGetAlertExecute(r ApiLegacyGetAlertRequest) (
 
 type ApiLegacyGetAlertTypesRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	spaceId    string
 }
 
@@ -2529,7 +2553,7 @@ Deprecated in 7.13.0. Use the get rule types API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyGetAlertTypes(ctx context.Context, spaceId string) ApiLegacyGetAlertTypesRequest {
+func (a *AlertingAPIService) LegacyGetAlertTypes(ctx context.Context, spaceId string) ApiLegacyGetAlertTypesRequest {
 	return ApiLegacyGetAlertTypesRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -2542,7 +2566,7 @@ func (a *AlertingApiService) LegacyGetAlertTypes(ctx context.Context, spaceId st
 //	@return []LegacyGetAlertTypes200ResponseInner
 //
 // Deprecated
-func (a *AlertingApiService) LegacyGetAlertTypesExecute(r ApiLegacyGetAlertTypesRequest) ([]LegacyGetAlertTypes200ResponseInner, *http.Response, error) {
+func (a *AlertingAPIService) LegacyGetAlertTypesExecute(r ApiLegacyGetAlertTypesRequest) ([]LegacyGetAlertTypes200ResponseInner, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -2550,7 +2574,7 @@ func (a *AlertingApiService) LegacyGetAlertTypesExecute(r ApiLegacyGetAlertTypes
 		localVarReturnValue []LegacyGetAlertTypes200ResponseInner
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyGetAlertTypes")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyGetAlertTypes")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -2642,7 +2666,7 @@ func (a *AlertingApiService) LegacyGetAlertTypesExecute(r ApiLegacyGetAlertTypes
 
 type ApiLegacyGetAlertingHealthRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	spaceId    string
 }
 
@@ -2661,7 +2685,7 @@ Deprecated in 7.13.0. Use the get alerting framework health API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyGetAlertingHealth(ctx context.Context, spaceId string) ApiLegacyGetAlertingHealthRequest {
+func (a *AlertingAPIService) LegacyGetAlertingHealth(ctx context.Context, spaceId string) ApiLegacyGetAlertingHealthRequest {
 	return ApiLegacyGetAlertingHealthRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -2674,7 +2698,7 @@ func (a *AlertingApiService) LegacyGetAlertingHealth(ctx context.Context, spaceI
 //	@return LegacyGetAlertingHealth200Response
 //
 // Deprecated
-func (a *AlertingApiService) LegacyGetAlertingHealthExecute(r ApiLegacyGetAlertingHealthRequest) (*LegacyGetAlertingHealth200Response, *http.Response, error) {
+func (a *AlertingAPIService) LegacyGetAlertingHealthExecute(r ApiLegacyGetAlertingHealthRequest) (*LegacyGetAlertingHealth200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -2682,7 +2706,7 @@ func (a *AlertingApiService) LegacyGetAlertingHealthExecute(r ApiLegacyGetAlerti
 		localVarReturnValue *LegacyGetAlertingHealth200Response
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyGetAlertingHealth")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyGetAlertingHealth")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -2774,7 +2798,7 @@ func (a *AlertingApiService) LegacyGetAlertingHealthExecute(r ApiLegacyGetAlerti
 
 type ApiLegacyMuteAlertInstanceRequest struct {
 	ctx             context.Context
-	ApiService      AlertingApi
+	ApiService      AlertingAPI
 	kbnXsrf         *string
 	spaceId         string
 	alertId         string
@@ -2804,7 +2828,7 @@ Deprecated in 7.13.0. Use the mute alert API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyMuteAlertInstance(ctx context.Context, spaceId string, alertId string, alertInstanceId string) ApiLegacyMuteAlertInstanceRequest {
+func (a *AlertingAPIService) LegacyMuteAlertInstance(ctx context.Context, spaceId string, alertId string, alertInstanceId string) ApiLegacyMuteAlertInstanceRequest {
 	return ApiLegacyMuteAlertInstanceRequest{
 		ApiService:      a,
 		ctx:             ctx,
@@ -2816,14 +2840,14 @@ func (a *AlertingApiService) LegacyMuteAlertInstance(ctx context.Context, spaceI
 
 // Execute executes the request
 // Deprecated
-func (a *AlertingApiService) LegacyMuteAlertInstanceExecute(r ApiLegacyMuteAlertInstanceRequest) (*http.Response, error) {
+func (a *AlertingAPIService) LegacyMuteAlertInstanceExecute(r ApiLegacyMuteAlertInstanceRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyMuteAlertInstance")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyMuteAlertInstance")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -2912,7 +2936,7 @@ func (a *AlertingApiService) LegacyMuteAlertInstanceExecute(r ApiLegacyMuteAlert
 
 type ApiLegacyMuteAllAlertInstancesRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	spaceId    string
 	alertId    string
@@ -2940,7 +2964,7 @@ Deprecated in 7.13.0. Use the mute all alerts API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyMuteAllAlertInstances(ctx context.Context, spaceId string, alertId string) ApiLegacyMuteAllAlertInstancesRequest {
+func (a *AlertingAPIService) LegacyMuteAllAlertInstances(ctx context.Context, spaceId string, alertId string) ApiLegacyMuteAllAlertInstancesRequest {
 	return ApiLegacyMuteAllAlertInstancesRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -2951,14 +2975,14 @@ func (a *AlertingApiService) LegacyMuteAllAlertInstances(ctx context.Context, sp
 
 // Execute executes the request
 // Deprecated
-func (a *AlertingApiService) LegacyMuteAllAlertInstancesExecute(r ApiLegacyMuteAllAlertInstancesRequest) (*http.Response, error) {
+func (a *AlertingAPIService) LegacyMuteAllAlertInstancesExecute(r ApiLegacyMuteAllAlertInstancesRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyMuteAllAlertInstances")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyMuteAllAlertInstances")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -3046,7 +3070,7 @@ func (a *AlertingApiService) LegacyMuteAllAlertInstancesExecute(r ApiLegacyMuteA
 
 type ApiLegacyUnmuteAlertInstanceRequest struct {
 	ctx             context.Context
-	ApiService      AlertingApi
+	ApiService      AlertingAPI
 	kbnXsrf         *string
 	spaceId         string
 	alertId         string
@@ -3076,7 +3100,7 @@ Deprecated in 7.13.0. Use the unmute alert API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyUnmuteAlertInstance(ctx context.Context, spaceId string, alertId string, alertInstanceId string) ApiLegacyUnmuteAlertInstanceRequest {
+func (a *AlertingAPIService) LegacyUnmuteAlertInstance(ctx context.Context, spaceId string, alertId string, alertInstanceId string) ApiLegacyUnmuteAlertInstanceRequest {
 	return ApiLegacyUnmuteAlertInstanceRequest{
 		ApiService:      a,
 		ctx:             ctx,
@@ -3088,14 +3112,14 @@ func (a *AlertingApiService) LegacyUnmuteAlertInstance(ctx context.Context, spac
 
 // Execute executes the request
 // Deprecated
-func (a *AlertingApiService) LegacyUnmuteAlertInstanceExecute(r ApiLegacyUnmuteAlertInstanceRequest) (*http.Response, error) {
+func (a *AlertingAPIService) LegacyUnmuteAlertInstanceExecute(r ApiLegacyUnmuteAlertInstanceRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyUnmuteAlertInstance")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyUnmuteAlertInstance")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -3184,7 +3208,7 @@ func (a *AlertingApiService) LegacyUnmuteAlertInstanceExecute(r ApiLegacyUnmuteA
 
 type ApiLegacyUnmuteAllAlertInstancesRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	spaceId    string
 	alertId    string
@@ -3212,7 +3236,7 @@ Deprecated in 7.13.0. Use the unmute all alerts API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyUnmuteAllAlertInstances(ctx context.Context, spaceId string, alertId string) ApiLegacyUnmuteAllAlertInstancesRequest {
+func (a *AlertingAPIService) LegacyUnmuteAllAlertInstances(ctx context.Context, spaceId string, alertId string) ApiLegacyUnmuteAllAlertInstancesRequest {
 	return ApiLegacyUnmuteAllAlertInstancesRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -3223,14 +3247,14 @@ func (a *AlertingApiService) LegacyUnmuteAllAlertInstances(ctx context.Context, 
 
 // Execute executes the request
 // Deprecated
-func (a *AlertingApiService) LegacyUnmuteAllAlertInstancesExecute(r ApiLegacyUnmuteAllAlertInstancesRequest) (*http.Response, error) {
+func (a *AlertingAPIService) LegacyUnmuteAllAlertInstancesExecute(r ApiLegacyUnmuteAllAlertInstancesRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyUnmuteAllAlertInstances")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyUnmuteAllAlertInstances")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -3318,7 +3342,7 @@ func (a *AlertingApiService) LegacyUnmuteAllAlertInstancesExecute(r ApiLegacyUnm
 
 type ApiLegacyUpdateAlertRequest struct {
 	ctx                                context.Context
-	ApiService                         AlertingApi
+	ApiService                         AlertingAPI
 	kbnXsrf                            *string
 	spaceId                            string
 	alertId                            string
@@ -3352,7 +3376,7 @@ Deprecated in 7.13.0. Use the update rule API instead.
 
 Deprecated
 */
-func (a *AlertingApiService) LegacyUpdateAlert(ctx context.Context, spaceId string, alertId string) ApiLegacyUpdateAlertRequest {
+func (a *AlertingAPIService) LegacyUpdateAlert(ctx context.Context, spaceId string, alertId string) ApiLegacyUpdateAlertRequest {
 	return ApiLegacyUpdateAlertRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -3366,7 +3390,7 @@ func (a *AlertingApiService) LegacyUpdateAlert(ctx context.Context, spaceId stri
 //	@return AlertResponseProperties
 //
 // Deprecated
-func (a *AlertingApiService) LegacyUpdateAlertExecute(r ApiLegacyUpdateAlertRequest) (*AlertResponseProperties, *http.Response, error) {
+func (a *AlertingAPIService) LegacyUpdateAlertExecute(r ApiLegacyUpdateAlertRequest) (*AlertResponseProperties, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPut
 		localVarPostBody    interface{}
@@ -3374,7 +3398,7 @@ func (a *AlertingApiService) LegacyUpdateAlertExecute(r ApiLegacyUpdateAlertRequ
 		localVarReturnValue *AlertResponseProperties
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegacyUpdateAlert")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegacyUpdateAlert")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -3476,7 +3500,7 @@ func (a *AlertingApiService) LegacyUpdateAlertExecute(r ApiLegacyUpdateAlertRequ
 
 type ApiLegaryDeleteAlertRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	spaceId    string
 	alertId    string
@@ -3504,7 +3528,7 @@ Deprecated in 7.13.0. Use the delete rule API instead. WARNING: After you delete
 
 Deprecated
 */
-func (a *AlertingApiService) LegaryDeleteAlert(ctx context.Context, spaceId string, alertId string) ApiLegaryDeleteAlertRequest {
+func (a *AlertingAPIService) LegaryDeleteAlert(ctx context.Context, spaceId string, alertId string) ApiLegaryDeleteAlertRequest {
 	return ApiLegaryDeleteAlertRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -3515,14 +3539,14 @@ func (a *AlertingApiService) LegaryDeleteAlert(ctx context.Context, spaceId stri
 
 // Execute executes the request
 // Deprecated
-func (a *AlertingApiService) LegaryDeleteAlertExecute(r ApiLegaryDeleteAlertRequest) (*http.Response, error) {
+func (a *AlertingAPIService) LegaryDeleteAlertExecute(r ApiLegaryDeleteAlertRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodDelete
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.LegaryDeleteAlert")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.LegaryDeleteAlert")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -3610,7 +3634,7 @@ func (a *AlertingApiService) LegaryDeleteAlertExecute(r ApiLegaryDeleteAlertRequ
 
 type ApiMuteAlertRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	alertId    string
 	ruleId     string
@@ -3638,7 +3662,7 @@ You must have `all` privileges for the appropriate Kibana features, depending on
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiMuteAlertRequest
 */
-func (a *AlertingApiService) MuteAlert(ctx context.Context, alertId string, ruleId string, spaceId string) ApiMuteAlertRequest {
+func (a *AlertingAPIService) MuteAlert(ctx context.Context, alertId string, ruleId string, spaceId string) ApiMuteAlertRequest {
 	return ApiMuteAlertRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -3649,14 +3673,14 @@ func (a *AlertingApiService) MuteAlert(ctx context.Context, alertId string, rule
 }
 
 // Execute executes the request
-func (a *AlertingApiService) MuteAlertExecute(r ApiMuteAlertRequest) (*http.Response, error) {
+func (a *AlertingAPIService) MuteAlertExecute(r ApiMuteAlertRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.MuteAlert")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.MuteAlert")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -3745,7 +3769,7 @@ func (a *AlertingApiService) MuteAlertExecute(r ApiMuteAlertRequest) (*http.Resp
 
 type ApiMuteAllAlertsRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	ruleId     string
 	spaceId    string
@@ -3771,7 +3795,7 @@ This API snoozes the notifications for the rule indefinitely. The rule checks co
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiMuteAllAlertsRequest
 */
-func (a *AlertingApiService) MuteAllAlerts(ctx context.Context, ruleId string, spaceId string) ApiMuteAllAlertsRequest {
+func (a *AlertingAPIService) MuteAllAlerts(ctx context.Context, ruleId string, spaceId string) ApiMuteAllAlertsRequest {
 	return ApiMuteAllAlertsRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -3781,14 +3805,14 @@ func (a *AlertingApiService) MuteAllAlerts(ctx context.Context, ruleId string, s
 }
 
 // Execute executes the request
-func (a *AlertingApiService) MuteAllAlertsExecute(r ApiMuteAllAlertsRequest) (*http.Response, error) {
+func (a *AlertingAPIService) MuteAllAlertsExecute(r ApiMuteAllAlertsRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.MuteAllAlerts")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.MuteAllAlerts")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -3876,7 +3900,7 @@ func (a *AlertingApiService) MuteAllAlertsExecute(r ApiMuteAllAlertsRequest) (*h
 
 type ApiUnmuteAlertRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	alertId    string
 	ruleId     string
@@ -3904,7 +3928,7 @@ You must have `all` privileges for the appropriate Kibana features, depending on
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiUnmuteAlertRequest
 */
-func (a *AlertingApiService) UnmuteAlert(ctx context.Context, alertId string, ruleId string, spaceId string) ApiUnmuteAlertRequest {
+func (a *AlertingAPIService) UnmuteAlert(ctx context.Context, alertId string, ruleId string, spaceId string) ApiUnmuteAlertRequest {
 	return ApiUnmuteAlertRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -3915,14 +3939,14 @@ func (a *AlertingApiService) UnmuteAlert(ctx context.Context, alertId string, ru
 }
 
 // Execute executes the request
-func (a *AlertingApiService) UnmuteAlertExecute(r ApiUnmuteAlertRequest) (*http.Response, error) {
+func (a *AlertingAPIService) UnmuteAlertExecute(r ApiUnmuteAlertRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.UnmuteAlert")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.UnmuteAlert")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -4011,7 +4035,7 @@ func (a *AlertingApiService) UnmuteAlertExecute(r ApiUnmuteAlertRequest) (*http.
 
 type ApiUnmuteAllAlertsRequest struct {
 	ctx        context.Context
-	ApiService AlertingApi
+	ApiService AlertingAPI
 	kbnXsrf    *string
 	ruleId     string
 	spaceId    string
@@ -4037,7 +4061,7 @@ If the rule has its notifications snoozed indefinitely, this API cancels the sno
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiUnmuteAllAlertsRequest
 */
-func (a *AlertingApiService) UnmuteAllAlerts(ctx context.Context, ruleId string, spaceId string) ApiUnmuteAllAlertsRequest {
+func (a *AlertingAPIService) UnmuteAllAlerts(ctx context.Context, ruleId string, spaceId string) ApiUnmuteAllAlertsRequest {
 	return ApiUnmuteAllAlertsRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -4047,14 +4071,14 @@ func (a *AlertingApiService) UnmuteAllAlerts(ctx context.Context, ruleId string,
 }
 
 // Execute executes the request
-func (a *AlertingApiService) UnmuteAllAlertsExecute(r ApiUnmuteAllAlertsRequest) (*http.Response, error) {
+func (a *AlertingAPIService) UnmuteAllAlertsExecute(r ApiUnmuteAllAlertsRequest) (*http.Response, error) {
 	var (
 		localVarHTTPMethod = http.MethodPost
 		localVarPostBody   interface{}
 		formFiles          []formFile
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.UnmuteAllAlerts")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.UnmuteAllAlerts")
 	if err != nil {
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -4142,7 +4166,7 @@ func (a *AlertingApiService) UnmuteAllAlertsExecute(r ApiUnmuteAllAlertsRequest)
 
 type ApiUpdateRuleRequest struct {
 	ctx               context.Context
-	ApiService        AlertingApi
+	ApiService        AlertingAPI
 	kbnXsrf           *string
 	ruleId            string
 	spaceId           string
@@ -4174,7 +4198,7 @@ You must have `all` privileges for the appropriate Kibana features, depending on
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiUpdateRuleRequest
 */
-func (a *AlertingApiService) UpdateRule(ctx context.Context, ruleId string, spaceId string) ApiUpdateRuleRequest {
+func (a *AlertingAPIService) UpdateRule(ctx context.Context, ruleId string, spaceId string) ApiUpdateRuleRequest {
 	return ApiUpdateRuleRequest{
 		ApiService: a,
 		ctx:        ctx,
@@ -4186,7 +4210,7 @@ func (a *AlertingApiService) UpdateRule(ctx context.Context, ruleId string, spac
 // Execute executes the request
 //
 //	@return RuleResponseProperties
-func (a *AlertingApiService) UpdateRuleExecute(r ApiUpdateRuleRequest) (*RuleResponseProperties, *http.Response, error) {
+func (a *AlertingAPIService) UpdateRuleExecute(r ApiUpdateRuleRequest) (*RuleResponseProperties, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPut
 		localVarPostBody    interface{}
@@ -4194,7 +4218,7 @@ func (a *AlertingApiService) UpdateRuleExecute(r ApiUpdateRuleRequest) (*RuleRes
 		localVarReturnValue *RuleResponseProperties
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingApiService.UpdateRule")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.UpdateRule")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

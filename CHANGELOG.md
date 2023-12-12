@@ -5,6 +5,8 @@
 - Add 'elasticstack_fleet_package' data source ([#469](https://github.com/elastic/terraform-provider-elasticstack/pull/469))
 - Add `tags` option to Kibana's SLOs ([#495](https://github.com/elastic/terraform-provider-elasticstack/pull/495))
 - Add support for Authorization header - Bearer Token and ES-Client-Authentication fields added.([#500](https://github.com/elastic/terraform-provider-elasticstack/pull/500))
+- Add support for managing Kibana Data Views ([#502](https://github.com/elastic/terraform-provider-elasticstack/pull/502))
+
 ### Fixed
 - Rename fleet package objects to `elasticstack_fleet_integration` and `elasticstack_fleet_integration_policy` ([#476](https://github.com/elastic/terraform-provider-elasticstack/pull/476))
 - Fix a provider crash when managing SLOs outside of the default Kibana space. ([#485](https://github.com/elastic/terraform-provider-elasticstack/pull/485))

@@ -13,6 +13,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
+	"github.com/elastic/terraform-provider-elasticstack/generated/data_views"
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -65,7 +66,8 @@ type ApiClient struct {
 	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
-	alerting                 alerting.AlertingApi
+	alerting                 alerting.AlertingAPI
+	dataViews                data_views.DataViewsAPI
 	connectors               *connectors.Client
 	slo                      slo.SloAPI
 	kibanaConfig             kibana.Config
@@ -106,7 +108,8 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	return &ApiClient{
 			elasticsearch: es,
 			kibana:        kib,
-			alerting:      buildAlertingClient(cfg).AlertingApi,
+			alerting:      buildAlertingClient(cfg).AlertingAPI,
+			dataViews:     buildDataViewsClient(cfg).DataViewsAPI,
 			slo:           buildSloClient(cfg).SloAPI,
 			connectors:    actionConnectors,
 			kibanaConfig:  *cfg.Kibana,
@@ -193,12 +196,20 @@ func (a *ApiClient) GetKibanaClient() (*kibana.Client, error) {
 	return a.kibana, nil
 }
 
-func (a *ApiClient) GetAlertingClient() (alerting.AlertingApi, error) {
+func (a *ApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
 	if a.alerting == nil {
 		return nil, errors.New("alerting client not found")
 	}
 
 	return a.alerting, nil
+}
+
+func (a *ApiClient) GetDataViewsClient() (data_views.DataViewsAPI, error) {
+	if a.dataViews == nil {
+		return nil, errors.New("data views client not found")
+	}
+
+	return a.dataViews, nil
 }
 
 func (a *ApiClient) GetKibanaConnectorsClient(ctx context.Context) (*connectors.Client, error) {
@@ -253,6 +264,13 @@ func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context 
 			Password: a.kibanaConfig.Password,
 		})
 	}
+}
+
+func (a *ApiClient) SetDataviewAuthContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, data_views.ContextBasicAuth, data_views.BasicAuth{
+		UserName: a.kibanaConfig.Username,
+		Password: a.kibanaConfig.Password,
+	})
 }
 
 func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
@@ -372,6 +390,19 @@ func buildAlertingClient(cfg config.Client) *alerting.APIClient {
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
+func buildDataViewsClient(cfg config.Client) *data_views.APIClient {
+	dvConfig := data_views.Configuration{
+		UserAgent: cfg.UserAgent,
+		Servers: data_views.ServerConfigurations{
+			{
+				URL: cfg.Kibana.Address,
+			},
+		},
+		Debug: logging.IsDebugOrHigher(),
+	}
+	return data_views.NewAPIClient(&dvConfig)
+}
+
 func buildConnectorsClient(cfg config.Client) (*connectors.Client, error) {
 	var authInterceptor connectors.ClientOption
 	if cfg.Kibana.ApiKey != "" {
@@ -469,7 +500,8 @@ func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, erro
 		}
 
 		client.kibana = kibanaClient
-		client.alerting = buildAlertingClient(cfg).AlertingApi
+		client.alerting = buildAlertingClient(cfg).AlertingAPI
+		client.dataViews = buildDataViewsClient(cfg).DataViewsAPI
 		client.slo = buildSloClient(cfg).SloAPI
 		client.connectors = connectorsClient
 	}
