@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.0] - 2023-12-12
+
 ### Added
 - Switch to Terraform [protocol version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) that is compatible with Terraform CLI version 1.0 and later.
 - Add 'elasticstack_fleet_package' data source ([#469](https://github.com/elastic/terraform-provider-elasticstack/pull/469))
