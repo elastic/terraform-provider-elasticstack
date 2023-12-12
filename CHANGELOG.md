@@ -9,6 +9,7 @@
 - Add support for Authorization header - Bearer Token and ES-Client-Authentication fields added.([#500](https://github.com/elastic/terraform-provider-elasticstack/pull/500))
 - Add support for managing Kibana Data Views ([#502](https://github.com/elastic/terraform-provider-elasticstack/pull/502))
 - Support Logstash SSL fields in Fleet output ([#498](https://github.com/elastic/terraform-provider-elasticstack/pull/498))
+- Support for Kibana API Key authentication ([#372](https://github.com/elastic/terraform-provider-elasticstack/pull/372))
 
 ### Fixed
 - Rename fleet package objects to `elasticstack_fleet_integration` and `elasticstack_fleet_integration_policy` ([#476](https://github.com/elastic/terraform-provider-elasticstack/pull/476))
