@@ -325,8 +325,10 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	if err := d.Set("last_execution_status", rule.ExecutionStatus.Status); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("last_execution_date", rule.ExecutionStatus.LastExecutionDate.Format("2006-01-02 15:04:05.999 -0700 MST")); err != nil {
-		return diag.FromErr(err)
+	if rule.ExecutionStatus.LastExecutionDate != nil {
+		if err := d.Set("last_execution_date", rule.ExecutionStatus.LastExecutionDate.Format("2006-01-02 15:04:05.999 -0700 MST")); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	params, err := json.Marshal(rule.Params)
