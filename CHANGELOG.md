@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Fixed
+- Handle nil LastExecutionDate's in Kibana alerting rules. ([#508](https://github.com/elastic/terraform-provider-elasticstack/pull/508))
+
 ## [0.11.0] - 2023-12-12
 
 ### Added
