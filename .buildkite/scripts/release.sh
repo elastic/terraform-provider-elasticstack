@@ -12,4 +12,4 @@ echo "--- Caching GPG passphrase"
 echo "$GPG_PASSPHRASE_SECRET" | gpg --armor --detach-sign --passphrase-fd 0 --pinentry-mode loopback
 
 echo "--- Release the binaries"
-make release-no-publish
+make release
