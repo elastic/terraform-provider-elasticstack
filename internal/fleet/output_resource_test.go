@@ -50,6 +50,7 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 				),
 			},
 			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ResourceName:      "elasticstack_fleet_output.test_output",
 				ImportState:       true,
 				ImportStateVerify: true,
