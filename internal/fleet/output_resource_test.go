@@ -49,6 +49,11 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
 				),
 			},
+			{
+				ResourceName:      "elasticstack_fleet_output.test_output",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
