@@ -57,7 +57,8 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 								"endpoints": []interface{}{"example.com/kibana"},
 								"username":  "kibana",
 								"password":  "baltic",
-								"insecure":  true,
+								"ca_certs":  []interface{}{"internal", "lets_decrypt"},
+								"insecure":  false,
 							},
 						},
 					},
@@ -65,7 +66,8 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 						Address:          "example.com/kibana",
 						Username:         "kibana",
 						Password:         "baltic",
-						DisableVerifySSL: true,
+						CAs:              []string{"internal", "lets_decrypt"},
+						DisableVerifySSL: false,
 					},
 				}
 			},
@@ -86,6 +88,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 								"endpoints": []interface{}{"example.com/kibana"},
 								"username":  "kibana",
 								"password":  "baltic",
+								"ca_certs":  []interface{}{"internal", "lets_decrypt"},
 								"insecure":  true,
 							},
 						},
@@ -95,12 +98,14 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 						"KIBANA_USERNAME": "elastic",
 						"KIBANA_PASSWORD": "thin-lines",
 						"KIBANA_INSECURE": "false",
+						"KIBANA_CA_CERTS": "black,sea",
 					},
 					expectedConfig: kibanaConfig{
 						Address:          "example.com/cabana",
 						Username:         "elastic",
 						Password:         "thin-lines",
 						DisableVerifySSL: false,
+						CAs:              []string{"black", "sea"},
 					},
 				}
 			},
@@ -114,6 +119,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_INSECURE")
 			os.Unsetenv("KIBANA_API_KEY")
+			os.Unsetenv("KIBANA_CA_CERTS")
 
 			args := tt.args()
 			rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
@@ -177,7 +183,11 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 									types.StringValue("example.com/kibana"),
 								}),
-								Insecure: types.BoolValue(true),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("internal"),
+									types.StringValue("lets_decrypt"),
+								}),
+								Insecure: types.BoolValue(false),
 							},
 						},
 					},
@@ -185,7 +195,8 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 						Address:          "example.com/kibana",
 						Username:         "kibana",
 						Password:         "baltic",
-						DisableVerifySSL: true,
+						CAs:              []string{"internal", "lets_decrypt"},
+						DisableVerifySSL: false,
 					},
 				}
 			},
@@ -206,6 +217,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 									types.StringValue("example.com/kibana"),
 								}),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
 								Insecure: types.BoolValue(true),
 							},
 						},
@@ -236,6 +248,10 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 									types.StringValue("example.com/kibana"),
 								}),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("internal"),
+									types.StringValue("lets_decrypt"),
+								}),
 								Insecure: types.BoolValue(true),
 							},
 						},
@@ -245,11 +261,13 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 						"KIBANA_USERNAME": "elastic",
 						"KIBANA_PASSWORD": "thin-lines",
 						"KIBANA_INSECURE": "false",
+						"KIBANA_CA_CERTS": "black,sea",
 					},
 					expectedConfig: kibanaConfig{
 						Address:          "example.com/cabana",
 						Username:         "elastic",
 						Password:         "thin-lines",
+						CAs:              []string{"black", "sea"},
 						DisableVerifySSL: false,
 					},
 				}
@@ -263,6 +281,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 			os.Unsetenv("KIBANA_PASSWORD")
 			os.Unsetenv("KIBANA_API_KEY")
 			os.Unsetenv("KIBANA_ENDPOINT")
+			os.Unsetenv("KIBANA_CA_CERTS")
 			os.Unsetenv("KIBANA_INSECURE")
 
 			args := tt.args()

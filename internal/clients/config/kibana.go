@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/disaster37/go-kibana-rest/v8"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -45,6 +46,14 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 			}
 		}
 
+		if caCerts, ok := kibConfig["ca_certs"].([]interface{}); ok && len(caCerts) > 0 {
+			for _, elem := range caCerts {
+				if vStr, elemOk := elem.(string); elemOk {
+					config.CAs = append(config.CAs, vStr)
+				}
+			}
+		}
+
 		if insecure, ok := kibConfig["insecure"]; ok && insecure.(bool) {
 			config.DisableVerifySSL = true
 		}
@@ -69,12 +78,19 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 		}
 		var endpoints []string
 		diags := kibConfig.Endpoints.ElementsAs(ctx, &endpoints, true)
+
+		var cas []string
+		diags.Append(kibConfig.CACerts.ElementsAs(ctx, &cas, true)...)
 		if diags.HasError() {
 			return kibanaConfig{}, diags
 		}
 
 		if len(endpoints) > 0 {
 			config.Address = endpoints[0]
+		}
+
+		if len(cas) > 0 {
+			config.CAs = cas
 		}
 
 		config.DisableVerifySSL = kibConfig.Insecure.ValueBool()
@@ -88,6 +104,9 @@ func (k kibanaConfig) withEnvironmentOverrides() kibanaConfig {
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.ApiKey = withEnvironmentOverride(k.ApiKey, "KIBANA_API_KEY")
 	k.Address = withEnvironmentOverride(k.Address, "KIBANA_ENDPOINT")
+	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
+		k.CAs = strings.Split(caCerts, ",")
+	}
 
 	if insecure, ok := os.LookupEnv("KIBANA_INSECURE"); ok {
 		if insecureValue, err := strconv.ParseBool(insecure); err == nil {
@@ -104,6 +123,7 @@ func (k kibanaConfig) toFleetConfig() fleetConfig {
 		Username: k.Username,
 		Password: k.Password,
 		APIKey:   k.ApiKey,
+		CACerts:  k.CAs,
 		Insecure: k.DisableVerifySSL,
 	}
 }

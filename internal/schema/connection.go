@@ -163,6 +163,11 @@ func GetKbFWConnectionBlock() fwschema.Block {
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
+				"ca_certs": fwschema.ListAttribute{
+					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
+					Optional:            true,
+					ElementType:         types.StringType,
+				},
 				"insecure": fwschema.BoolAttribute{
 					MarkdownDescription: "Disable TLS certificate validation",
 					Optional:            true,
@@ -393,6 +398,14 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					Optional:    true,
 					Sensitive:   true,
 					MaxItems:    1, // Current API restriction
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
+				},
+				"ca_certs": {
+					Description: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
+					Type:        schema.TypeList,
+					Optional:    true,
 					Elem: &schema.Schema{
 						Type: schema.TypeString,
 					},
