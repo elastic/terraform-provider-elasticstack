@@ -2,6 +2,7 @@
 
 ### Fixed
 - Handle nil LastExecutionDate's in Kibana alerting rules. ([#508](https://github.com/elastic/terraform-provider-elasticstack/pull/508))
+- Import all relevant attributes during `elasticstack_fleet_output` import ([#522](https://github.com/elastic/terraform-provider-elasticstack/pull/522))
 
 ## [0.11.0] - 2023-12-12
 

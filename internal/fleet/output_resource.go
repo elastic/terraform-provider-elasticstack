@@ -2,6 +2,7 @@ package fleet
 
 import (
 	"context"
+
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -405,6 +406,9 @@ func resourceOutputUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 }
 
 func resourceOutputReadElasticsearch(d *schema.ResourceData, data fleetapi.OutputCreateRequestElasticsearch) diag.Diagnostics {
+	if err := d.Set("type", "elasticsearch"); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("name", data.Name); err != nil {
 		return diag.FromErr(err)
 	}
@@ -441,6 +445,9 @@ func resourceOutputReadElasticsearch(d *schema.ResourceData, data fleetapi.Outpu
 }
 
 func resourceOutputReadLogstash(d *schema.ResourceData, data fleetapi.OutputCreateRequestLogstash) diag.Diagnostics {
+	if err := d.Set("type", "logstash"); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("name", data.Name); err != nil {
 		return diag.FromErr(err)
 	}
@@ -493,22 +500,18 @@ func resourceOutputRead(ctx context.Context, d *schema.ResourceData, meta interf
 		return nil
 	}
 
-	outputType := d.Get("type").(string)
-	switch outputType {
-	case "elasticsearch":
-		output, err := rawOutput.AsOutputCreateRequestElasticsearch()
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		diags = resourceOutputReadElasticsearch(d, output)
-	case "logstash":
-		output, err := rawOutput.AsOutputCreateRequestLogstash()
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		diags = resourceOutputReadLogstash(d, output)
+	output, err := rawOutput.ValueByDiscriminator()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	switch outputType := output.(type) {
+	case fleetapi.OutputCreateRequestElasticsearch:
+		diags = resourceOutputReadElasticsearch(d, outputType)
+	case fleetapi.OutputCreateRequestLogstash:
+		diags = resourceOutputReadLogstash(d, outputType)
+	}
+	if err := d.Set("output_id", d.Id()); err != nil {
+		return diag.FromErr(err)
 	}
 	if diags.HasError() {
 		return diags
