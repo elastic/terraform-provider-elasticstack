@@ -267,10 +267,18 @@ func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context 
 }
 
 func (a *ApiClient) SetDataviewAuthContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, data_views.ContextBasicAuth, data_views.BasicAuth{
-		UserName: a.kibanaConfig.Username,
-		Password: a.kibanaConfig.Password,
-	})
+	if a.kibanaConfig.ApiKey != "" {
+		return context.WithValue(ctx, data_views.ContextAPIKeys, map[string]data_views.APIKey{
+			"apiKeyAuth": {
+				Prefix: "ApiKey",
+				Key:    a.kibanaConfig.ApiKey,
+			}})
+	} else {
+		return context.WithValue(ctx, data_views.ContextBasicAuth, data_views.BasicAuth{
+			UserName: a.kibanaConfig.Username,
+			Password: a.kibanaConfig.Password,
+		})
+	}
 }
 
 func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
