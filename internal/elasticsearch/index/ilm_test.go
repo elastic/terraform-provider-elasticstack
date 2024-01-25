@@ -31,6 +31,8 @@ func TestAccResourceILM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.min_age", "1h"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.set_priority.0.priority", "10"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.downsample.0.fixed_interval", "1d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.downsample.0.wait_timeout", "1d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.rollover.0.max_age", "1d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.readonly.0.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "delete.0.min_age", "0ms"),
@@ -127,6 +129,11 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test" {
     rollover {
       max_age = "1d"
     }
+
+		downsample {
+			fixed_interval = "1d"
+			wait_timeout = "1d"
+		}
 
     readonly {}
   }

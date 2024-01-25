@@ -46,7 +46,7 @@ func ResourceIlm() *schema.Resource {
 			MaxItems:     1,
 			AtLeastOneOf: []string{"hot", "warm", "cold", "frozen", "delete"},
 			Elem: &schema.Resource{
-				Schema: getSchema("set_priority", "unfollow", "rollover", "readonly", "shrink", "forcemerge", "searchable_snapshot"),
+				Schema: getSchema("set_priority", "unfollow", "rollover", "readonly", "shrink", "forcemerge", "searchable_snapshot", "downsample"),
 			},
 		},
 		"warm": {
@@ -56,7 +56,7 @@ func ResourceIlm() *schema.Resource {
 			MaxItems:     1,
 			AtLeastOneOf: []string{"hot", "warm", "cold", "frozen", "delete"},
 			Elem: &schema.Resource{
-				Schema: getSchema("set_priority", "unfollow", "readonly", "allocate", "migrate", "shrink", "forcemerge"),
+				Schema: getSchema("set_priority", "unfollow", "readonly", "allocate", "migrate", "shrink", "forcemerge", "downsample"),
 			},
 		},
 		"cold": {
@@ -66,7 +66,7 @@ func ResourceIlm() *schema.Resource {
 			MaxItems:     1,
 			AtLeastOneOf: []string{"hot", "warm", "cold", "frozen", "delete"},
 			Elem: &schema.Resource{
-				Schema: getSchema("set_priority", "unfollow", "readonly", "searchable_snapshot", "allocate", "migrate", "freeze"),
+				Schema: getSchema("set_priority", "unfollow", "readonly", "searchable_snapshot", "allocate", "migrate", "freeze", "downsample"),
 			},
 		},
 		"frozen": {
@@ -389,6 +389,26 @@ var supportedActions = map[string]*schema.Schema{
 			},
 		},
 	},
+	"downsample": {
+		Description: "Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity.",
+		Type:        schema.TypeList,
+		Optional:    true,
+		MaxItems:    2,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"fixed_interval": {
+					Description: "Downsampling interval",
+					Type:        schema.TypeString,
+					Required:    true,
+				},
+				"wait_timeout": {
+					Description: "Downsampling interval",
+					Type:        schema.TypeString,
+					Required:    true,
+				},
+			},
+		},
+	},
 }
 
 func getSchema(actions ...string) map[string]*schema.Schema {
@@ -519,6 +539,8 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 				}
 			case "wait_for_snapshot":
 				actions[actionName], diags = expandAction(a, serverVersion, "policy")
+			case "downsample":
+				actions[actionName], diags = expandAction(a, serverVersion, "fixed_interval", "wait_timeout")
 			default:
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
