@@ -419,7 +419,7 @@ func getSLOConfig(name string, indicatorType string, settingsEnabled bool, tags 
 				}
 				equation = "A + B"
 			}
-		  }
+		}
 		  `
 		}
 		return indicator

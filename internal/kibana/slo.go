@@ -558,7 +558,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		for n := range totalMetricsRaw {
 			idx := fmt.Sprint(n)
 			totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{
-				Name:        d.Get(indicatorType + ".0.total.0.metrics.+" + idx + ".name").(string),
+				Name:        d.Get(indicatorType + ".0.total.0.metrics." + idx + ".name").(string),
 				Field:       d.Get(indicatorType + ".0.total.0.metrics." + idx + ".field").(string),
 				Aggregation: d.Get(indicatorType + ".0.total.0.metrics." + idx + ".aggregation").(string),
 				Filter:      getOrNilString(indicatorType+".0.total.0.metrics."+idx+".filter", d),
