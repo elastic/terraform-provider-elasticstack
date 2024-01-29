@@ -2,6 +2,7 @@ package kibana
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -541,6 +542,17 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		}
 
 	case "metric_custom_indicator":
+		goodMetricsRaw := d.Get(indicatorType + ".0.good.0.metrics").([]interface{})
+		var goodMetrics []slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner
+		for n := range goodMetricsRaw {
+			idx := fmt.Sprint(n)
+			goodMetrics = append(goodMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
+				Name:        d.Get(indicatorType + ".0.good.0.metrics." + idx + ".name").(string),
+				Field:       d.Get(indicatorType + ".0.good.0.metrics." + idx + ".field").(string),
+				Aggregation: d.Get(indicatorType + ".0.good.0.metrics." + idx + ".aggregation").(string),
+				Filter:      getOrNilString(indicatorType+".0.good.0.metrics."+idx+".filter", d),
+			})
+		}
 		indicator = slo.SloResponseIndicator{
 			IndicatorPropertiesCustomMetric: &slo.IndicatorPropertiesCustomMetric{
 				Type: indicatorAddressToType[indicatorType],
@@ -561,14 +573,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 					},
 					Good: slo.IndicatorPropertiesCustomMetricParamsGood{
 						Equation: d.Get(indicatorType + ".0.good.0.equation").(string),
-						Metrics: []slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{ //are there actually instances where there are more than one 'good' / 'total'? Need to build array if so.
-							{
-								Name:        d.Get(indicatorType + ".0.good.0.metrics.0.name").(string),
-								Field:       d.Get(indicatorType + ".0.good.0.metrics.0.field").(string),
-								Aggregation: d.Get(indicatorType + ".0.good.0.metrics.0.aggregation").(string),
-								Filter:      getOrNilString(indicatorType+".0.good.0.metrics.0.filter", d),
-							},
-						},
+						Metrics:  goodMetrics,
 					},
 				},
 			},
