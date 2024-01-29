@@ -102,7 +102,7 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.11.0"))),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
 				Config:   getSLOConfig(sloName, "metric_custom_indicator", true, []string{}, "some.field"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index"),
