@@ -766,23 +766,31 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 	case s.Indicator.IndicatorPropertiesCustomMetric != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomMetric.Type]
 		params := s.Indicator.IndicatorPropertiesCustomMetric.Params
+		goodMetrics := []map[string]interface{}{}
+		for _, m := range params.Good.Metrics {
+			goodMetrics = append(goodMetrics, map[string]interface{}{
+				"name":        m.Name,
+				"aggregation": m.Aggregation,
+				"field":       m.Field,
+				"filter":      m.Filter,
+			})
+		}
 		good := []map[string]interface{}{{
 			"equation": params.Good.Equation,
-			"metrics": []map[string]interface{}{{
-				"name":        params.Good.Metrics[0].Name, //this is only getting the first one? Does this really need to be an array?
-				"aggregation": params.Good.Metrics[0].Aggregation,
-				"field":       params.Good.Metrics[0].Field,
-				"filter":      params.Good.Metrics[0].Filter,
-			}},
+			"metrics":  goodMetrics,
 		}}
+		totalMetrics := []map[string]interface{}{}
+		for _, m := range params.Total.Metrics {
+			totalMetrics = append(totalMetrics, map[string]interface{}{
+				"name":        m.Name,
+				"aggregation": m.Aggregation,
+				"field":       m.Field,
+				"filter":      m.Filter,
+			})
+		}
 		total := []map[string]interface{}{{
 			"equation": params.Total.Equation,
-			"metrics": []map[string]interface{}{{
-				"name":        params.Total.Metrics[0].Name, //this is only getting the first one? Does this really need to be an array?
-				"aggregation": params.Total.Metrics[0].Aggregation,
-				"field":       params.Total.Metrics[0].Field,
-				"filter":      params.Total.Metrics[0].Filter,
-			}},
+			"metrics":  totalMetrics,
 		}}
 		indicator = append(indicator, map[string]interface{}{
 			"index":           params.Index,
