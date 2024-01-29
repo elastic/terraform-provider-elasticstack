@@ -553,6 +553,17 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 				Filter:      getOrNilString(indicatorType+".0.good.0.metrics."+idx+".filter", d),
 			})
 		}
+		totalMetricsRaw := d.Get(indicatorType + ".0.total.0.metrics").([]interface{})
+		var totalMetrics []slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner
+		for n := range totalMetricsRaw {
+			idx := fmt.Sprint(n)
+			totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{
+				Name:        d.Get(indicatorType + ".0.total.0.metrics.+" + idx + ".name").(string),
+				Field:       d.Get(indicatorType + ".0.total.0.metrics." + idx + ".field").(string),
+				Aggregation: d.Get(indicatorType + ".0.total.0.metrics." + idx + ".aggregation").(string),
+				Filter:      getOrNilString(indicatorType+".0.total.0.metrics."+idx+".filter", d),
+			})
+		}
 		indicator = slo.SloResponseIndicator{
 			IndicatorPropertiesCustomMetric: &slo.IndicatorPropertiesCustomMetric{
 				Type: indicatorAddressToType[indicatorType],
@@ -560,20 +571,13 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 					Filter:         getOrNilString(indicatorType+".0.filter", d),
 					Index:          d.Get(indicatorType + ".0.index").(string),
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
-					Total: slo.IndicatorPropertiesCustomMetricParamsTotal{
-						Equation: d.Get(indicatorType + ".0.total.0.equation").(string),
-						Metrics: []slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{ //are there actually instances where there are more than one 'good' / 'total'? Need to build array if so.
-							{
-								Name:        d.Get(indicatorType + ".0.total.0.metrics.0.name").(string),
-								Field:       d.Get(indicatorType + ".0.total.0.metrics.0.field").(string),
-								Aggregation: d.Get(indicatorType + ".0.total.0.metrics.0.aggregation").(string),
-								Filter:      getOrNilString(indicatorType+".0.total.0.metrics.0.filter", d),
-							},
-						},
-					},
 					Good: slo.IndicatorPropertiesCustomMetricParamsGood{
 						Equation: d.Get(indicatorType + ".0.good.0.equation").(string),
 						Metrics:  goodMetrics,
+					},
+					Total: slo.IndicatorPropertiesCustomMetricParamsTotal{
+						Equation: d.Get(indicatorType + ".0.total.0.equation").(string),
+						Metrics:  totalMetrics,
 					},
 				},
 			},
