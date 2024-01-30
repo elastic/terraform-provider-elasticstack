@@ -130,10 +130,10 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test" {
       max_age = "1d"
     }
 
-		downsample {
-			fixed_interval = "1d"
-			wait_timeout = "1d"
-		}
+    downsample {
+      fixed_interval = "1d"
+      wait_timeout = "1d"
+    }
 
     readonly {}
   }
