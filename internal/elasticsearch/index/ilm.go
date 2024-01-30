@@ -393,7 +393,7 @@ var supportedActions = map[string]*schema.Schema{
 		Description: "Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity.",
 		Type:        schema.TypeList,
 		Optional:    true,
-		MaxItems:    2,
+		MaxItems:    1,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"fixed_interval": {
