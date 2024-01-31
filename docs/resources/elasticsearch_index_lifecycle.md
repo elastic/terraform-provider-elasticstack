@@ -81,7 +81,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 Optional:
 
 - `allocate` (Block List, Max: 1) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--cold--allocate))
-- `downsample` (Block List, Max: 2) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--cold--downsample))
+- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--cold--downsample))
 - `freeze` (Block List, Max: 1) Freeze the index to minimize its memory footprint. (see [below for nested schema](#nestedblock--cold--freeze))
 - `migrate` (Block List, Max: 1) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--cold--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
@@ -236,7 +236,7 @@ Optional:
 
 Optional:
 
-- `downsample` (Block List, Max: 2) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--hot--downsample))
+- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--hot--downsample))
 - `forcemerge` (Block List, Max: 1) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--hot--forcemerge))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
 - `readonly` (Block List, Max: 1) Makes the index read-only. (see [below for nested schema](#nestedblock--hot--readonly))
@@ -335,7 +335,7 @@ Optional:
 Optional:
 
 - `allocate` (Block List, Max: 1) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--warm--allocate))
-- `downsample` (Block List, Max: 2) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--warm--downsample))
+- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--warm--downsample))
 - `forcemerge` (Block List, Max: 1) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--warm--forcemerge))
 - `migrate` (Block List, Max: 1) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--warm--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
