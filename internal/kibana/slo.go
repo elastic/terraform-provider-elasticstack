@@ -2,6 +2,7 @@ package kibana
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -541,6 +542,28 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		}
 
 	case "metric_custom_indicator":
+		goodMetricsRaw := d.Get(indicatorType + ".0.good.0.metrics").([]interface{})
+		var goodMetrics []slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner
+		for n := range goodMetricsRaw {
+			idx := fmt.Sprint(n)
+			goodMetrics = append(goodMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
+				Name:        d.Get(indicatorType + ".0.good.0.metrics." + idx + ".name").(string),
+				Field:       d.Get(indicatorType + ".0.good.0.metrics." + idx + ".field").(string),
+				Aggregation: d.Get(indicatorType + ".0.good.0.metrics." + idx + ".aggregation").(string),
+				Filter:      getOrNilString(indicatorType+".0.good.0.metrics."+idx+".filter", d),
+			})
+		}
+		totalMetricsRaw := d.Get(indicatorType + ".0.total.0.metrics").([]interface{})
+		var totalMetrics []slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner
+		for n := range totalMetricsRaw {
+			idx := fmt.Sprint(n)
+			totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{
+				Name:        d.Get(indicatorType + ".0.total.0.metrics." + idx + ".name").(string),
+				Field:       d.Get(indicatorType + ".0.total.0.metrics." + idx + ".field").(string),
+				Aggregation: d.Get(indicatorType + ".0.total.0.metrics." + idx + ".aggregation").(string),
+				Filter:      getOrNilString(indicatorType+".0.total.0.metrics."+idx+".filter", d),
+			})
+		}
 		indicator = slo.SloResponseIndicator{
 			IndicatorPropertiesCustomMetric: &slo.IndicatorPropertiesCustomMetric{
 				Type: indicatorAddressToType[indicatorType],
@@ -548,27 +571,13 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 					Filter:         getOrNilString(indicatorType+".0.filter", d),
 					Index:          d.Get(indicatorType + ".0.index").(string),
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
-					Total: slo.IndicatorPropertiesCustomMetricParamsTotal{
-						Equation: d.Get(indicatorType + ".0.total.0.equation").(string),
-						Metrics: []slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{ //are there actually instances where there are more than one 'good' / 'total'? Need to build array if so.
-							{
-								Name:        d.Get(indicatorType + ".0.total.0.metrics.0.name").(string),
-								Field:       d.Get(indicatorType + ".0.total.0.metrics.0.field").(string),
-								Aggregation: d.Get(indicatorType + ".0.total.0.metrics.0.aggregation").(string),
-								Filter:      getOrNilString(indicatorType+".0.total.0.metrics.0.filter", d),
-							},
-						},
-					},
 					Good: slo.IndicatorPropertiesCustomMetricParamsGood{
 						Equation: d.Get(indicatorType + ".0.good.0.equation").(string),
-						Metrics: []slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{ //are there actually instances where there are more than one 'good' / 'total'? Need to build array if so.
-							{
-								Name:        d.Get(indicatorType + ".0.good.0.metrics.0.name").(string),
-								Field:       d.Get(indicatorType + ".0.good.0.metrics.0.field").(string),
-								Aggregation: d.Get(indicatorType + ".0.good.0.metrics.0.aggregation").(string),
-								Filter:      getOrNilString(indicatorType+".0.good.0.metrics.0.filter", d),
-							},
-						},
+						Metrics:  goodMetrics,
+					},
+					Total: slo.IndicatorPropertiesCustomMetricParamsTotal{
+						Equation: d.Get(indicatorType + ".0.total.0.equation").(string),
+						Metrics:  totalMetrics,
 					},
 				},
 			},
@@ -757,23 +766,31 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 	case s.Indicator.IndicatorPropertiesCustomMetric != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomMetric.Type]
 		params := s.Indicator.IndicatorPropertiesCustomMetric.Params
+		goodMetrics := []map[string]interface{}{}
+		for _, m := range params.Good.Metrics {
+			goodMetrics = append(goodMetrics, map[string]interface{}{
+				"name":        m.Name,
+				"aggregation": m.Aggregation,
+				"field":       m.Field,
+				"filter":      m.Filter,
+			})
+		}
 		good := []map[string]interface{}{{
 			"equation": params.Good.Equation,
-			"metrics": []map[string]interface{}{{
-				"name":        params.Good.Metrics[0].Name, //this is only getting the first one? Does this really need to be an array?
-				"aggregation": params.Good.Metrics[0].Aggregation,
-				"field":       params.Good.Metrics[0].Field,
-				"filter":      params.Good.Metrics[0].Filter,
-			}},
+			"metrics":  goodMetrics,
 		}}
+		totalMetrics := []map[string]interface{}{}
+		for _, m := range params.Total.Metrics {
+			totalMetrics = append(totalMetrics, map[string]interface{}{
+				"name":        m.Name,
+				"aggregation": m.Aggregation,
+				"field":       m.Field,
+				"filter":      m.Filter,
+			})
+		}
 		total := []map[string]interface{}{{
 			"equation": params.Total.Equation,
-			"metrics": []map[string]interface{}{{
-				"name":        params.Total.Metrics[0].Name, //this is only getting the first one? Does this really need to be an array?
-				"aggregation": params.Total.Metrics[0].Aggregation,
-				"field":       params.Total.Metrics[0].Field,
-				"filter":      params.Total.Metrics[0].Filter,
-			}},
+			"metrics":  totalMetrics,
 		}}
 		indicator = append(indicator, map[string]interface{}{
 			"index":           params.Index,

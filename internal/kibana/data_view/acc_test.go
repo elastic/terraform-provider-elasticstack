@@ -33,6 +33,7 @@ func TestAccResourceDataView(t *testing.T) {
 				Config:   testAccResourceDataViewBasicDV(indexName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
@@ -45,6 +46,7 @@ func TestAccResourceDataView(t *testing.T) {
 				Config:   testAccResourceDataViewBasicDVUpdated(indexName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats"),
@@ -80,6 +82,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 }
 
 resource "elasticstack_kibana_data_view" "dv" {
+	override = true
 	data_view = {
 		title           = "%s*"
 		name            = "%s"
@@ -121,6 +124,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 }
 
 resource "elasticstack_kibana_data_view" "dv" {
+	override = false
 	data_view = {
 		title           = "%s*"
 		name            = "%s"

@@ -1,7 +1,14 @@
 ## [Unreleased]
 
+### Added
+- Add new optional `ca_certs` attribute for Kibana ([#507](https://github.com/elastic/terraform-provider-elasticstack/pull/507))
+- Support API key authentication in `elasticstack_kibana_data_view` resource ([#549](https://github.com/elastic/terraform-provider-elasticstack/pull/549))
+
 ### Fixed
 - Handle nil LastExecutionDate's in Kibana alerting rules. ([#508](https://github.com/elastic/terraform-provider-elasticstack/pull/508))
+- Import all relevant attributes during `elasticstack_fleet_output` import ([#522](https://github.com/elastic/terraform-provider-elasticstack/pull/522))
+- Fix issue when setting `override` in `elasticstack_kibana_data_view` resource ([#550](https://github.com/elastic/terraform-provider-elasticstack/pull/550))
+- Fixup typos in `elasticstack_elasticsearch_transform` and `elasticstack_kibana_security_role` docs ([#551](https://github.com/elastic/terraform-provider-elasticstack/pull/551))
 
 ## [0.11.0] - 2023-12-12
 

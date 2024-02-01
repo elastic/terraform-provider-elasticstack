@@ -30,6 +30,7 @@ type KibanaConnection struct {
 	ApiKey    types.String `tfsdk:"api_key"`
 	Endpoints types.List   `tfsdk:"endpoints"`
 	Insecure  types.Bool   `tfsdk:"insecure"`
+	CACerts   types.List   `tfsdk:"ca_certs"`
 }
 
 type FleetConnection struct {

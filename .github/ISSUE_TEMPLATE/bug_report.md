@@ -20,7 +20,11 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Debug output**
-Run `terraform` command with `TF_LOG=trace` and provide extended information on TF operations.
+Run `terraform` command with `TF_LOG=trace` and provide extended information on TF operations. **Please ensure you redact any base64 encoded credentials from your output**. 
+eg
+```
+[DEBUG] provider.terraform-provider-elasticstack_v0.11.0: Authorization: Basic xxxxx==
+```
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.

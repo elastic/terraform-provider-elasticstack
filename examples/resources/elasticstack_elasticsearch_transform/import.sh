@@ -1,1 +1,1 @@
-terraform import elasticstack_elasticsearch_tranform.my_new_transform <cluster_uuid>/<transform_name>
+terraform import elasticstack_elasticsearch_transform.my_new_transform <cluster_uuid>/<transform_name>
