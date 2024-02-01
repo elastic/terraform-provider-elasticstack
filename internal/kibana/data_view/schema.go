@@ -604,8 +604,8 @@ type apiRuntimeFieldV0 struct {
 }
 
 type fieldAttr struct {
-	CustomLabel *string `tfsdk:"customLabel"`
-	Count       *int64  `tfsdk:"count"`
+	CustomLabel *string `json:"customLabel"`
+	Count       *int64  `json:"count"`
 }
 
 type runtimeField struct {
