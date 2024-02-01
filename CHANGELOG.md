@@ -2,6 +2,7 @@
 
 ### Added
 - Add new optional `ca_certs` attribute for Kibana ([#507](https://github.com/elastic/terraform-provider-elasticstack/pull/507))
+- Support API key authentication in `elasticstack_kibana_data_view` resource ([#549](https://github.com/elastic/terraform-provider-elasticstack/pull/549))
 
 ### Fixed
 - Handle nil LastExecutionDate's in Kibana alerting rules. ([#508](https://github.com/elastic/terraform-provider-elasticstack/pull/508))

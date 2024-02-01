@@ -323,7 +323,7 @@ func (a *DataViewsAPIService) CreateDataViewExecute(r ApiCreateDataViewRequest) 
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -470,7 +470,7 @@ func (a *DataViewsAPIService) CreateRuntimeFieldExecute(r ApiCreateRuntimeFieldR
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -601,7 +601,7 @@ func (a *DataViewsAPIService) CreateUpdateRuntimeFieldExecute(r ApiCreateUpdateR
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -737,7 +737,7 @@ func (a *DataViewsAPIService) DeleteDataViewExecute(r ApiDeleteDataViewRequest) 
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -857,7 +857,7 @@ func (a *DataViewsAPIService) DeleteRuntimeFieldExecute(r ApiDeleteRuntimeFieldR
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -972,7 +972,7 @@ func (a *DataViewsAPIService) GetAllDataViewsExecute(r ApiGetAllDataViewsRequest
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1100,7 +1100,7 @@ func (a *DataViewsAPIService) GetDataViewExecute(r ApiGetDataViewRequest) (*Data
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1224,7 +1224,7 @@ func (a *DataViewsAPIService) GetDefaultDataViewExecute(r ApiGetDefaultDataViewR
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1356,7 +1356,7 @@ func (a *DataViewsAPIService) GetRuntimeFieldExecute(r ApiGetRuntimeFieldRequest
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1502,7 +1502,7 @@ func (a *DataViewsAPIService) SetDefaultDatailViewExecute(r ApiSetDefaultDatailV
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1652,7 +1652,7 @@ func (a *DataViewsAPIService) UpdateDataViewExecute(r ApiUpdateDataViewRequest) 
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1802,7 +1802,7 @@ func (a *DataViewsAPIService) UpdateFieldsMetadataExecute(r ApiUpdateFieldsMetad
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1942,7 +1942,7 @@ func (a *DataViewsAPIService) UpdateRuntimeFieldExecute(r ApiUpdateRuntimeFieldR
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
