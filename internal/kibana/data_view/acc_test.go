@@ -39,6 +39,7 @@ func TestAccResourceDataView(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.machine.ram.params.pattern", "0,0.[000] b"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_attrs.ingest_failure.custom_label", "error.ingest_failure"),
 				),
 			},
 			{
@@ -106,6 +107,9 @@ resource "elasticstack_kibana_data_view" "dv" {
 				type          = "keyword"
 				script_source = "emit(doc['shape_name'].value)"
 			}
+		}
+		field_attrs = {
+		  ingest_failure = { custom_label = "error.ingest_failure", count = 6 },
 		}
 	}
 }`, indexName, indexName, indexName)
