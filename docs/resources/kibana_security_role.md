@@ -18,7 +18,7 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_kibana_role" "example" {
+resource "elasticstack_kibana_security_role" "example" {
   name = "sample_role"
   elasticsearch {
     cluster = ["create_snapshot"]
