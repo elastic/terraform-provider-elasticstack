@@ -135,10 +135,10 @@ r, err := client.Service.Operation(auth, args)
 ### apiKeyAuth
 
 - **Type**: API key
-- **API key parameter name**: ApiKey
+- **API key parameter name**: Authorization
 - **Location**: HTTP header
 
-Note, each API key must be added to a map of `map[string]APIKey` where the key is: ApiKey and passed in as the auth context for each request.
+Note, each API key must be added to a map of `map[string]APIKey` where the key is: Authorization and passed in as the auth context for each request.
 
 Example
 
@@ -147,7 +147,7 @@ auth := context.WithValue(
 		context.Background(),
 		sw.ContextAPIKeys,
 		map[string]sw.APIKey{
-			"ApiKey": {Key: "API_KEY_STRING"},
+			"Authorization": {Key: "API_KEY_STRING"},
 		},
 	)
 r, err := client.Service.Operation(auth, args)

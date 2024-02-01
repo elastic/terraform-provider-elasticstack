@@ -2472,6 +2472,7 @@ components:
       scheme: basic
       type: http
     apiKeyAuth:
+      description: "e.g. Authorization: ApiKey base64AccessApiKey"
       in: header
-      name: ApiKey
+      name: Authorization
       type: apiKey
