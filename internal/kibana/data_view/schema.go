@@ -270,6 +270,7 @@ func (m tfModelV0) FromResponse(ctx context.Context, resp *data_views.DataViewRe
 		ID:       m.ID.ValueString(),
 		SpaceID:  m.SpaceID.ValueString(),
 		DataView: dv,
+		Override: m.Override.ValueBool(),
 	}
 	return model, nil
 }
