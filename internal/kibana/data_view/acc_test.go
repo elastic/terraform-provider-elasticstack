@@ -54,6 +54,13 @@ func TestAccResourceDataView(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map"),
 				),
 			},
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				Config:            testAccResourceDataViewBasicDVUpdated(indexName),
+				ImportState:       true,
+				ImportStateVerify: true,
+				ResourceName:      "elasticstack_kibana_data_view.dv",
+			},
 		},
 	})
 }

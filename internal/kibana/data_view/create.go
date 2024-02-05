@@ -3,6 +3,7 @@ package data_view
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -40,7 +41,12 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	model.ID = types.StringPointerValue(respModel.DataView.Id)
+	resourceID := clients.CompositeId{
+		ClusterId:  model.SpaceID.ValueString(),
+		ResourceId: *respModel.DataView.Id,
+	}
+
+	model.ID = types.StringValue(resourceID.String())
 	readModel, diags := r.read(ctx, model)
 	response.Diagnostics = append(response.Diagnostics, diags...)
 	if response.Diagnostics.HasError() {

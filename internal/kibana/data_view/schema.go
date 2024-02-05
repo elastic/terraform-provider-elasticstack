@@ -23,6 +23,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
+var _ resource.ResourceWithImportState = &Resource{}
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
@@ -255,24 +256,39 @@ func (m tfModelV0) FromResponse(ctx context.Context, resp *data_views.DataViewRe
 	}
 
 	var dataView tfDataViewV0
-	if diags := m.DataView.As(ctx, &dataView, basetypes.ObjectAsOptions{}); diags.HasError() {
-		return apiModelV0{}, diags
+	if !m.DataView.IsNull() && !m.DataView.IsUnknown() {
+		if diags := m.DataView.As(ctx, &dataView, basetypes.ObjectAsOptions{}); diags.HasError() {
+			return apiModelV0{}, diags
+		}
+
+		namespaces, diags := dataView.getNamespaces(ctx)
+		if diags.HasError() {
+			return apiModelV0{}, diags
+		}
+
+		dv.Namespaces = namespaces
 	}
 
-	namespaces, diags := dataView.getNamespaces(ctx)
-	if diags.HasError() {
-		return apiModelV0{}, diags
-	}
-
-	dv.Namespaces = namespaces
-
+	_, spaceID := m.getIDAndSpaceID()
 	model := apiModelV0{
 		ID:       m.ID.ValueString(),
-		SpaceID:  m.SpaceID.ValueString(),
+		SpaceID:  spaceID,
 		DataView: dv,
 		Override: m.Override.ValueBool(),
 	}
 	return model, nil
+}
+
+func (model tfModelV0) getIDAndSpaceID() (string, string) {
+	id := model.ID.ValueString()
+	spaceID := model.SpaceID.ValueString()
+	maybeCompositeID, _ := clients.CompositeIdFromStr(id)
+	if maybeCompositeID != nil {
+		id = maybeCompositeID.ResourceId
+		spaceID = maybeCompositeID.ClusterId
+	}
+
+	return id, spaceID
 }
 
 type tfDataViewV0 struct {
