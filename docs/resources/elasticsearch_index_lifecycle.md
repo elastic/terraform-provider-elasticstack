@@ -81,6 +81,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 Optional:
 
 - `allocate` (Block List, Max: 1) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--cold--allocate))
+- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--cold--downsample))
 - `freeze` (Block List, Max: 1) Freeze the index to minimize its memory footprint. (see [below for nested schema](#nestedblock--cold--freeze))
 - `migrate` (Block List, Max: 1) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--cold--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
@@ -99,6 +100,18 @@ Optional:
 - `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
 - `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
 - `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
+
+
+<a id="nestedblock--cold--downsample"></a>
+### Nested Schema for `cold.downsample`
+
+Required:
+
+- `fixed_interval` (String) Downsampling interval
+
+Optional:
+
+- `wait_timeout` (String) Downsampling interval
 
 
 <a id="nestedblock--cold--freeze"></a>
@@ -226,6 +239,7 @@ Optional:
 
 Optional:
 
+- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--hot--downsample))
 - `forcemerge` (Block List, Max: 1) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--hot--forcemerge))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
 - `readonly` (Block List, Max: 1) Makes the index read-only. (see [below for nested schema](#nestedblock--hot--readonly))
@@ -234,6 +248,18 @@ Optional:
 - `set_priority` (Block List, Max: 1) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--hot--set_priority))
 - `shrink` (Block List, Max: 1) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--hot--shrink))
 - `unfollow` (Block List, Max: 1) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--hot--unfollow))
+
+<a id="nestedblock--hot--downsample"></a>
+### Nested Schema for `hot.downsample`
+
+Required:
+
+- `fixed_interval` (String) Downsampling interval
+
+Optional:
+
+- `wait_timeout` (String) Downsampling interval
+
 
 <a id="nestedblock--hot--forcemerge"></a>
 ### Nested Schema for `hot.forcemerge`
@@ -315,6 +341,7 @@ Optional:
 Optional:
 
 - `allocate` (Block List, Max: 1) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--warm--allocate))
+- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--warm--downsample))
 - `forcemerge` (Block List, Max: 1) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--warm--forcemerge))
 - `migrate` (Block List, Max: 1) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--warm--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
@@ -333,6 +360,18 @@ Optional:
 - `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
 - `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
 - `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
+
+
+<a id="nestedblock--warm--downsample"></a>
+### Nested Schema for `warm.downsample`
+
+Required:
+
+- `fixed_interval` (String) Downsampling interval
+
+Optional:
+
+- `wait_timeout` (String) Downsampling interval
 
 
 <a id="nestedblock--warm--forcemerge"></a>
