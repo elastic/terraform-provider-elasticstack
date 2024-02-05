@@ -28,7 +28,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	apiModel, diags := model.ToCreateRequest(ctx)
 	response.Diagnostics.Append(diags...)
 	authCtx := r.client.SetDataviewAuthContext(ctx)
-	respModel, res, err := dataviewClient.CreateDataView(authCtx).CreateDataViewRequestObject(apiModel).KbnXsrf("true").Execute()
+	respModel, res, err := dataviewClient.CreateDataView(authCtx, model.SpaceID.ValueString()).CreateDataViewRequestObject(apiModel).KbnXsrf("true").Execute()
 	if err != nil && res == nil {
 		response.Diagnostics.AddError("Failed to create data view", err.Error())
 		return

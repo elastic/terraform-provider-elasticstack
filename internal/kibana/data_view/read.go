@@ -42,7 +42,7 @@ func (r *Resource) read(ctx context.Context, model tfModelV0) (*apiModelV0, diag
 	}
 
 	authCtx := r.client.SetDataviewAuthContext(ctx)
-	respModel, res, err := dataviewClient.GetDataView(authCtx, model.ID.ValueString()).Execute()
+	respModel, res, err := dataviewClient.GetDataView(authCtx, model.ID.ValueString(), model.SpaceID.ValueString()).Execute()
 	if err != nil && res == nil {
 		return nil, diag.Diagnostics{
 			diag.NewErrorDiagnostic("failed to read data view", err.Error()),

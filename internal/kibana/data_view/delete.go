@@ -25,7 +25,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	}
 
 	authCtx := r.client.SetDataviewAuthContext(ctx)
-	res, err := dataviewClient.DeleteDataView(authCtx, model.ID.ValueString()).KbnXsrf("true").Execute()
+	res, err := dataviewClient.DeleteDataView(authCtx, model.ID.ValueString(), model.SpaceID.ValueString()).KbnXsrf("true").Execute()
 	if err != nil && res == nil {
 		response.Diagnostics.AddError("Failed to delete data view", err.Error())
 	}
