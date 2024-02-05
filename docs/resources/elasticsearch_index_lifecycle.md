@@ -108,6 +108,9 @@ Optional:
 Required:
 
 - `fixed_interval` (String) Downsampling interval
+
+Optional:
+
 - `wait_timeout` (String) Downsampling interval
 
 
@@ -252,6 +255,9 @@ Optional:
 Required:
 
 - `fixed_interval` (String) Downsampling interval
+
+Optional:
+
 - `wait_timeout` (String) Downsampling interval
 
 
@@ -362,6 +368,9 @@ Optional:
 Required:
 
 - `fixed_interval` (String) Downsampling interval
+
+Optional:
+
 - `wait_timeout` (String) Downsampling interval
 
 

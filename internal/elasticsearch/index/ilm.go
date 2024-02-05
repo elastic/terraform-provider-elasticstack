@@ -404,7 +404,8 @@ var supportedActions = map[string]*schema.Schema{
 				"wait_timeout": {
 					Description: "Downsampling interval",
 					Type:        schema.TypeString,
-					Required:    true,
+					Optional:    true,
+					Computed:    true,
 				},
 			},
 		},
