@@ -223,7 +223,7 @@ func (m tfModelV0) ToCreateRequest(ctx context.Context) (data_views.CreateDataVi
 		return data_views.CreateDataViewRequestObject{}, diags
 	}
 
-	dv, diags := dataView.ToCreateRequest(ctx)
+	dv, diags := dataView.ToCreateRequest(ctx, m.SpaceID.ValueString())
 	if diags.HasError() {
 		return data_views.CreateDataViewRequestObject{}, diags
 	}
@@ -261,7 +261,7 @@ func (m tfModelV0) FromResponse(ctx context.Context, resp *data_views.DataViewRe
 			return apiModelV0{}, diags
 		}
 
-		namespaces, diags := dataView.getNamespaces(ctx)
+		namespaces, diags := dataView.getNamespaces(ctx, nil)
 		if diags.HasError() {
 			return apiModelV0{}, diags
 		}
@@ -402,7 +402,7 @@ func dataViewFromResponse(resp data_views.DataViewResponseObjectDataView) apiDat
 	return dv
 }
 
-func (m tfDataViewV0) ToCreateRequest(ctx context.Context) (data_views.CreateDataViewRequestObjectDataView, diag.Diagnostics) {
+func (m tfDataViewV0) ToCreateRequest(ctx context.Context, spaceID string) (data_views.CreateDataViewRequestObjectDataView, diag.Diagnostics) {
 	apiModel := data_views.CreateDataViewRequestObjectDataView{
 		Title:         m.Title.ValueString(),
 		Name:          m.Name.ValueStringPointer(),
@@ -480,7 +480,7 @@ func (m tfDataViewV0) ToCreateRequest(ctx context.Context) (data_views.CreateDat
 		apiModel.RuntimeFieldMap = apiRuntimeFields
 	}
 
-	namespaces, diags := m.getNamespaces(ctx)
+	namespaces, diags := m.getNamespaces(ctx, &spaceID)
 	if diags.HasError() {
 		return data_views.CreateDataViewRequestObjectDataView{}, diags
 	}
@@ -492,10 +492,25 @@ func (m tfDataViewV0) ToCreateRequest(ctx context.Context) (data_views.CreateDat
 	return apiModel, nil
 }
 
-func (m tfDataViewV0) getNamespaces(ctx context.Context) ([]string, diag.Diagnostics) {
+func (m tfDataViewV0) getNamespaces(ctx context.Context, spaceID *string) ([]string, diag.Diagnostics) {
 	var namespaces []string
 	if diags := m.Namespaces.ElementsAs(ctx, &namespaces, true); diags.HasError() {
 		return nil, diags
+	}
+
+	if len(namespaces) == 0 || spaceID == nil {
+		return namespaces, nil
+	}
+
+	includesSpaceID := false
+	for _, namespace := range namespaces {
+		if namespace == *spaceID {
+			includesSpaceID = true
+		}
+	}
+
+	if !includesSpaceID {
+		namespaces = append(namespaces, *spaceID)
 	}
 
 	return namespaces, nil
