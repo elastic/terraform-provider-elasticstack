@@ -77,19 +77,19 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*DataViewsAPI* | [**CreateDataView**](docs/DataViewsAPI.md#createdataview) | **Post** /api/data_views/data_view | Creates a data view.
-*DataViewsAPI* | [**CreateRuntimeField**](docs/DataViewsAPI.md#createruntimefield) | **Post** /api/data_views/data_view/{viewId}/runtime_field | Creates a runtime field.
-*DataViewsAPI* | [**CreateUpdateRuntimeField**](docs/DataViewsAPI.md#createupdateruntimefield) | **Put** /api/data_views/data_view/{viewId}/runtime_field | Create or update an existing runtime field.
-*DataViewsAPI* | [**DeleteDataView**](docs/DataViewsAPI.md#deletedataview) | **Delete** /api/data_views/data_view/{viewId} | Deletes a data view.
-*DataViewsAPI* | [**DeleteRuntimeField**](docs/DataViewsAPI.md#deleteruntimefield) | **Delete** /api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Delete a runtime field from a data view.
-*DataViewsAPI* | [**GetAllDataViews**](docs/DataViewsAPI.md#getalldataviews) | **Get** /api/data_views | Retrieves a list of all data views.
-*DataViewsAPI* | [**GetDataView**](docs/DataViewsAPI.md#getdataview) | **Get** /api/data_views/data_view/{viewId} | Retrieves a single data view by identifier.
-*DataViewsAPI* | [**GetDefaultDataView**](docs/DataViewsAPI.md#getdefaultdataview) | **Get** /api/data_views/default | Retrieves the default data view identifier.
-*DataViewsAPI* | [**GetRuntimeField**](docs/DataViewsAPI.md#getruntimefield) | **Get** /api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Retrieves a runtime field.
-*DataViewsAPI* | [**SetDefaultDatailView**](docs/DataViewsAPI.md#setdefaultdatailview) | **Post** /api/data_views/default | Sets the default data view identifier.
-*DataViewsAPI* | [**UpdateDataView**](docs/DataViewsAPI.md#updatedataview) | **Post** /api/data_views/data_view/{viewId} | Updates a data view.
-*DataViewsAPI* | [**UpdateFieldsMetadata**](docs/DataViewsAPI.md#updatefieldsmetadata) | **Post** /api/data_views/data_view/{viewId}/fields | Update fields presentation metadata such as count, customLabel and format.
-*DataViewsAPI* | [**UpdateRuntimeField**](docs/DataViewsAPI.md#updateruntimefield) | **Post** /api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Update an existing runtime field.
+*DataViewsAPI* | [**CreateDataView**](docs/DataViewsAPI.md#createdataview) | **Post** /s/{spaceId}/api/data_views/data_view | Creates a data view.
+*DataViewsAPI* | [**CreateRuntimeField**](docs/DataViewsAPI.md#createruntimefield) | **Post** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field | Creates a runtime field.
+*DataViewsAPI* | [**CreateUpdateRuntimeField**](docs/DataViewsAPI.md#createupdateruntimefield) | **Put** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field | Create or update an existing runtime field.
+*DataViewsAPI* | [**DeleteDataView**](docs/DataViewsAPI.md#deletedataview) | **Delete** /s/{spaceId}/api/data_views/data_view/{viewId} | Deletes a data view.
+*DataViewsAPI* | [**DeleteRuntimeField**](docs/DataViewsAPI.md#deleteruntimefield) | **Delete** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Delete a runtime field from a data view.
+*DataViewsAPI* | [**GetAllDataViews**](docs/DataViewsAPI.md#getalldataviews) | **Get** /s/{spaceId}/api/data_views | Retrieves a list of all data views.
+*DataViewsAPI* | [**GetDataView**](docs/DataViewsAPI.md#getdataview) | **Get** /s/{spaceId}/api/data_views/data_view/{viewId} | Retrieves a single data view by identifier.
+*DataViewsAPI* | [**GetDefaultDataView**](docs/DataViewsAPI.md#getdefaultdataview) | **Get** /s/{spaceId}/api/data_views/default | Retrieves the default data view identifier.
+*DataViewsAPI* | [**GetRuntimeField**](docs/DataViewsAPI.md#getruntimefield) | **Get** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Retrieves a runtime field.
+*DataViewsAPI* | [**SetDefaultDatailView**](docs/DataViewsAPI.md#setdefaultdatailview) | **Post** /s/{spaceId}/api/data_views/default | Sets the default data view identifier.
+*DataViewsAPI* | [**UpdateDataView**](docs/DataViewsAPI.md#updatedataview) | **Post** /s/{spaceId}/api/data_views/data_view/{viewId} | Updates a data view.
+*DataViewsAPI* | [**UpdateFieldsMetadata**](docs/DataViewsAPI.md#updatefieldsmetadata) | **Post** /s/{spaceId}/api/data_views/data_view/{viewId}/fields | Update fields presentation metadata such as count, customLabel and format.
+*DataViewsAPI* | [**UpdateRuntimeField**](docs/DataViewsAPI.md#updateruntimefield) | **Post** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Update an existing runtime field.
 
 
 ## Documentation For Models
@@ -105,11 +105,11 @@ Class | Method | HTTP request | Description
  - [GetDefaultDataView200Response](docs/GetDefaultDataView200Response.md)
  - [Model400Response](docs/Model400Response.md)
  - [Model404Response](docs/Model404Response.md)
+ - [SetDefaultDatailView200Response](docs/SetDefaultDatailView200Response.md)
  - [SetDefaultDatailViewRequest](docs/SetDefaultDatailViewRequest.md)
  - [SourcefiltersInner](docs/SourcefiltersInner.md)
  - [UpdateDataViewRequestObject](docs/UpdateDataViewRequestObject.md)
  - [UpdateDataViewRequestObjectDataView](docs/UpdateDataViewRequestObjectDataView.md)
- - [UpdateFieldsMetadata200Response](docs/UpdateFieldsMetadata200Response.md)
  - [UpdateFieldsMetadataRequest](docs/UpdateFieldsMetadataRequest.md)
  - [UpdateRuntimeFieldRequest](docs/UpdateRuntimeFieldRequest.md)
 

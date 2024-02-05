@@ -28,9 +28,10 @@ type DataViewsAPI interface {
 
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiCreateDataViewRequest
 	*/
-	CreateDataView(ctx context.Context) ApiCreateDataViewRequest
+	CreateDataView(ctx context.Context, spaceId string) ApiCreateDataViewRequest
 
 	// CreateDataViewExecute executes the request
 	//  @return DataViewResponseObject
@@ -44,9 +45,10 @@ type DataViewsAPI interface {
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param viewId An identifier for the data view.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiCreateRuntimeFieldRequest
 	*/
-	CreateRuntimeField(ctx context.Context, viewId string) ApiCreateRuntimeFieldRequest
+	CreateRuntimeField(ctx context.Context, viewId string, spaceId string) ApiCreateRuntimeFieldRequest
 
 	// CreateRuntimeFieldExecute executes the request
 	CreateRuntimeFieldExecute(r ApiCreateRuntimeFieldRequest) (*http.Response, error)
@@ -58,10 +60,11 @@ type DataViewsAPI interface {
 
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@param viewId The ID of the data view fields you want to update.
 		@return ApiCreateUpdateRuntimeFieldRequest
 	*/
-	CreateUpdateRuntimeField(ctx context.Context, viewId string) ApiCreateUpdateRuntimeFieldRequest
+	CreateUpdateRuntimeField(ctx context.Context, spaceId string, viewId string) ApiCreateUpdateRuntimeFieldRequest
 
 	// CreateUpdateRuntimeFieldExecute executes the request
 	//  @return CreateUpdateRuntimeField200Response
@@ -75,9 +78,10 @@ type DataViewsAPI interface {
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param viewId An identifier for the data view.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiDeleteDataViewRequest
 	*/
-	DeleteDataView(ctx context.Context, viewId string) ApiDeleteDataViewRequest
+	DeleteDataView(ctx context.Context, viewId string, spaceId string) ApiDeleteDataViewRequest
 
 	// DeleteDataViewExecute executes the request
 	DeleteDataViewExecute(r ApiDeleteDataViewRequest) (*http.Response, error)
@@ -91,9 +95,10 @@ type DataViewsAPI interface {
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param fieldName The name of the runtime field.
 		@param viewId An identifier for the data view.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiDeleteRuntimeFieldRequest
 	*/
-	DeleteRuntimeField(ctx context.Context, fieldName string, viewId string) ApiDeleteRuntimeFieldRequest
+	DeleteRuntimeField(ctx context.Context, fieldName string, viewId string, spaceId string) ApiDeleteRuntimeFieldRequest
 
 	// DeleteRuntimeFieldExecute executes the request
 	DeleteRuntimeFieldExecute(r ApiDeleteRuntimeFieldRequest) (*http.Response, error)
@@ -105,9 +110,10 @@ type DataViewsAPI interface {
 
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiGetAllDataViewsRequest
 	*/
-	GetAllDataViews(ctx context.Context) ApiGetAllDataViewsRequest
+	GetAllDataViews(ctx context.Context, spaceId string) ApiGetAllDataViewsRequest
 
 	// GetAllDataViewsExecute executes the request
 	//  @return GetAllDataViews200Response
@@ -121,9 +127,10 @@ type DataViewsAPI interface {
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param viewId An identifier for the data view.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiGetDataViewRequest
 	*/
-	GetDataView(ctx context.Context, viewId string) ApiGetDataViewRequest
+	GetDataView(ctx context.Context, viewId string, spaceId string) ApiGetDataViewRequest
 
 	// GetDataViewExecute executes the request
 	//  @return DataViewResponseObject
@@ -136,9 +143,10 @@ type DataViewsAPI interface {
 
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiGetDefaultDataViewRequest
 	*/
-	GetDefaultDataView(ctx context.Context) ApiGetDefaultDataViewRequest
+	GetDefaultDataView(ctx context.Context, spaceId string) ApiGetDefaultDataViewRequest
 
 	// GetDefaultDataViewExecute executes the request
 	//  @return GetDefaultDataView200Response
@@ -153,9 +161,10 @@ type DataViewsAPI interface {
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param fieldName The name of the runtime field.
 		@param viewId An identifier for the data view.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiGetRuntimeFieldRequest
 	*/
-	GetRuntimeField(ctx context.Context, fieldName string, viewId string) ApiGetRuntimeFieldRequest
+	GetRuntimeField(ctx context.Context, fieldName string, viewId string, spaceId string) ApiGetRuntimeFieldRequest
 
 	// GetRuntimeFieldExecute executes the request
 	//  @return CreateUpdateRuntimeField200Response
@@ -168,13 +177,14 @@ type DataViewsAPI interface {
 
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiSetDefaultDatailViewRequest
 	*/
-	SetDefaultDatailView(ctx context.Context) ApiSetDefaultDatailViewRequest
+	SetDefaultDatailView(ctx context.Context, spaceId string) ApiSetDefaultDatailViewRequest
 
 	// SetDefaultDatailViewExecute executes the request
-	//  @return UpdateFieldsMetadata200Response
-	SetDefaultDatailViewExecute(r ApiSetDefaultDatailViewRequest) (*UpdateFieldsMetadata200Response, *http.Response, error)
+	//  @return SetDefaultDatailView200Response
+	SetDefaultDatailViewExecute(r ApiSetDefaultDatailViewRequest) (*SetDefaultDatailView200Response, *http.Response, error)
 
 	/*
 		UpdateDataView Updates a data view.
@@ -184,9 +194,10 @@ type DataViewsAPI interface {
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param viewId An identifier for the data view.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiUpdateDataViewRequest
 	*/
-	UpdateDataView(ctx context.Context, viewId string) ApiUpdateDataViewRequest
+	UpdateDataView(ctx context.Context, viewId string, spaceId string) ApiUpdateDataViewRequest
 
 	// UpdateDataViewExecute executes the request
 	//  @return DataViewResponseObject
@@ -200,13 +211,14 @@ type DataViewsAPI interface {
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param viewId An identifier for the data view.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiUpdateFieldsMetadataRequest
 	*/
-	UpdateFieldsMetadata(ctx context.Context, viewId string) ApiUpdateFieldsMetadataRequest
+	UpdateFieldsMetadata(ctx context.Context, viewId string, spaceId string) ApiUpdateFieldsMetadataRequest
 
 	// UpdateFieldsMetadataExecute executes the request
-	//  @return UpdateFieldsMetadata200Response
-	UpdateFieldsMetadataExecute(r ApiUpdateFieldsMetadataRequest) (*UpdateFieldsMetadata200Response, *http.Response, error)
+	//  @return SetDefaultDatailView200Response
+	UpdateFieldsMetadataExecute(r ApiUpdateFieldsMetadataRequest) (*SetDefaultDatailView200Response, *http.Response, error)
 
 	/*
 		UpdateRuntimeField Update an existing runtime field.
@@ -217,9 +229,10 @@ type DataViewsAPI interface {
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param fieldName The name of the runtime field.
 		@param viewId An identifier for the data view.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiUpdateRuntimeFieldRequest
 	*/
-	UpdateRuntimeField(ctx context.Context, fieldName string, viewId string) ApiUpdateRuntimeFieldRequest
+	UpdateRuntimeField(ctx context.Context, fieldName string, viewId string, spaceId string) ApiUpdateRuntimeFieldRequest
 
 	// UpdateRuntimeFieldExecute executes the request
 	UpdateRuntimeFieldExecute(r ApiUpdateRuntimeFieldRequest) (*http.Response, error)
@@ -232,6 +245,7 @@ type ApiCreateDataViewRequest struct {
 	ctx                         context.Context
 	ApiService                  DataViewsAPI
 	kbnXsrf                     *string
+	spaceId                     string
 	createDataViewRequestObject *CreateDataViewRequestObject
 }
 
@@ -256,12 +270,14 @@ CreateDataView Creates a data view.
 This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiCreateDataViewRequest
 */
-func (a *DataViewsAPIService) CreateDataView(ctx context.Context) ApiCreateDataViewRequest {
+func (a *DataViewsAPIService) CreateDataView(ctx context.Context, spaceId string) ApiCreateDataViewRequest {
 	return ApiCreateDataViewRequest{
 		ApiService: a,
 		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
@@ -281,7 +297,8 @@ func (a *DataViewsAPIService) CreateDataViewExecute(r ApiCreateDataViewRequest) 
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view"
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -379,6 +396,7 @@ type ApiCreateRuntimeFieldRequest struct {
 	ApiService                      DataViewsAPI
 	kbnXsrf                         *string
 	viewId                          string
+	spaceId                         string
 	createUpdateRuntimeFieldRequest *CreateUpdateRuntimeFieldRequest
 }
 
@@ -404,13 +422,15 @@ This functionality is in technical preview and may be changed or removed in a fu
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param viewId An identifier for the data view.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiCreateRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) CreateRuntimeField(ctx context.Context, viewId string) ApiCreateRuntimeFieldRequest {
+func (a *DataViewsAPIService) CreateRuntimeField(ctx context.Context, viewId string, spaceId string) ApiCreateRuntimeFieldRequest {
 	return ApiCreateRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,
 		viewId:     viewId,
+		spaceId:    spaceId,
 	}
 }
 
@@ -427,8 +447,9 @@ func (a *DataViewsAPIService) CreateRuntimeFieldExecute(r ApiCreateRuntimeFieldR
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}/runtime_field"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field"
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -506,6 +527,7 @@ type ApiCreateUpdateRuntimeFieldRequest struct {
 	ctx                             context.Context
 	ApiService                      DataViewsAPI
 	kbnXsrf                         *string
+	spaceId                         string
 	viewId                          string
 	createUpdateRuntimeFieldRequest *CreateUpdateRuntimeFieldRequest
 }
@@ -531,13 +553,15 @@ CreateUpdateRuntimeField Create or update an existing runtime field.
 This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@param viewId The ID of the data view fields you want to update.
 	@return ApiCreateUpdateRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) CreateUpdateRuntimeField(ctx context.Context, viewId string) ApiCreateUpdateRuntimeFieldRequest {
+func (a *DataViewsAPIService) CreateUpdateRuntimeField(ctx context.Context, spaceId string, viewId string) ApiCreateUpdateRuntimeFieldRequest {
 	return ApiCreateUpdateRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,
+		spaceId:    spaceId,
 		viewId:     viewId,
 	}
 }
@@ -558,7 +582,8 @@ func (a *DataViewsAPIService) CreateUpdateRuntimeFieldExecute(r ApiCreateUpdateR
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}/runtime_field"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field"
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
@@ -657,6 +682,7 @@ type ApiDeleteDataViewRequest struct {
 	ApiService DataViewsAPI
 	kbnXsrf    *string
 	viewId     string
+	spaceId    string
 }
 
 // Cross-site request forgery protection
@@ -676,13 +702,15 @@ WARNING: When you delete a data view, it cannot be recovered. This functionality
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param viewId An identifier for the data view.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiDeleteDataViewRequest
 */
-func (a *DataViewsAPIService) DeleteDataView(ctx context.Context, viewId string) ApiDeleteDataViewRequest {
+func (a *DataViewsAPIService) DeleteDataView(ctx context.Context, viewId string, spaceId string) ApiDeleteDataViewRequest {
 	return ApiDeleteDataViewRequest{
 		ApiService: a,
 		ctx:        ctx,
 		viewId:     viewId,
+		spaceId:    spaceId,
 	}
 }
 
@@ -699,8 +727,9 @@ func (a *DataViewsAPIService) DeleteDataViewExecute(r ApiDeleteDataViewRequest) 
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -784,6 +813,7 @@ type ApiDeleteRuntimeFieldRequest struct {
 	ApiService DataViewsAPI
 	fieldName  string
 	viewId     string
+	spaceId    string
 }
 
 func (r ApiDeleteRuntimeFieldRequest) Execute() (*http.Response, error) {
@@ -798,14 +828,16 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param fieldName The name of the runtime field.
 	@param viewId An identifier for the data view.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiDeleteRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) DeleteRuntimeField(ctx context.Context, fieldName string, viewId string) ApiDeleteRuntimeFieldRequest {
+func (a *DataViewsAPIService) DeleteRuntimeField(ctx context.Context, fieldName string, viewId string, spaceId string) ApiDeleteRuntimeFieldRequest {
 	return ApiDeleteRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,
 		fieldName:  fieldName,
 		viewId:     viewId,
+		spaceId:    spaceId,
 	}
 }
 
@@ -822,9 +854,10 @@ func (a *DataViewsAPIService) DeleteRuntimeFieldExecute(r ApiDeleteRuntimeFieldR
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}/runtime_field/{fieldName}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName}"
 	localVarPath = strings.Replace(localVarPath, "{"+"fieldName"+"}", url.PathEscape(parameterValueToString(r.fieldName, "fieldName")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -902,6 +935,7 @@ func (a *DataViewsAPIService) DeleteRuntimeFieldExecute(r ApiDeleteRuntimeFieldR
 type ApiGetAllDataViewsRequest struct {
 	ctx        context.Context
 	ApiService DataViewsAPI
+	spaceId    string
 }
 
 func (r ApiGetAllDataViewsRequest) Execute() (*GetAllDataViews200Response, *http.Response, error) {
@@ -914,12 +948,14 @@ GetAllDataViews Retrieves a list of all data views.
 This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiGetAllDataViewsRequest
 */
-func (a *DataViewsAPIService) GetAllDataViews(ctx context.Context) ApiGetAllDataViewsRequest {
+func (a *DataViewsAPIService) GetAllDataViews(ctx context.Context, spaceId string) ApiGetAllDataViewsRequest {
 	return ApiGetAllDataViewsRequest{
 		ApiService: a,
 		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
@@ -939,7 +975,8 @@ func (a *DataViewsAPIService) GetAllDataViewsExecute(r ApiGetAllDataViewsRequest
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views"
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1027,6 +1064,7 @@ type ApiGetDataViewRequest struct {
 	ctx        context.Context
 	ApiService DataViewsAPI
 	viewId     string
+	spaceId    string
 }
 
 func (r ApiGetDataViewRequest) Execute() (*DataViewResponseObject, *http.Response, error) {
@@ -1040,13 +1078,15 @@ This functionality is in technical preview and may be changed or removed in a fu
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param viewId An identifier for the data view.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiGetDataViewRequest
 */
-func (a *DataViewsAPIService) GetDataView(ctx context.Context, viewId string) ApiGetDataViewRequest {
+func (a *DataViewsAPIService) GetDataView(ctx context.Context, viewId string, spaceId string) ApiGetDataViewRequest {
 	return ApiGetDataViewRequest{
 		ApiService: a,
 		ctx:        ctx,
 		viewId:     viewId,
+		spaceId:    spaceId,
 	}
 }
 
@@ -1066,8 +1106,9 @@ func (a *DataViewsAPIService) GetDataViewExecute(r ApiGetDataViewRequest) (*Data
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1154,6 +1195,7 @@ func (a *DataViewsAPIService) GetDataViewExecute(r ApiGetDataViewRequest) (*Data
 type ApiGetDefaultDataViewRequest struct {
 	ctx        context.Context
 	ApiService DataViewsAPI
+	spaceId    string
 }
 
 func (r ApiGetDefaultDataViewRequest) Execute() (*GetDefaultDataView200Response, *http.Response, error) {
@@ -1166,12 +1208,14 @@ GetDefaultDataView Retrieves the default data view identifier.
 This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiGetDefaultDataViewRequest
 */
-func (a *DataViewsAPIService) GetDefaultDataView(ctx context.Context) ApiGetDefaultDataViewRequest {
+func (a *DataViewsAPIService) GetDefaultDataView(ctx context.Context, spaceId string) ApiGetDefaultDataViewRequest {
 	return ApiGetDefaultDataViewRequest{
 		ApiService: a,
 		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
@@ -1191,7 +1235,8 @@ func (a *DataViewsAPIService) GetDefaultDataViewExecute(r ApiGetDefaultDataViewR
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/default"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/default"
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1280,6 +1325,7 @@ type ApiGetRuntimeFieldRequest struct {
 	ApiService DataViewsAPI
 	fieldName  string
 	viewId     string
+	spaceId    string
 }
 
 func (r ApiGetRuntimeFieldRequest) Execute() (*CreateUpdateRuntimeField200Response, *http.Response, error) {
@@ -1294,14 +1340,16 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param fieldName The name of the runtime field.
 	@param viewId An identifier for the data view.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiGetRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) GetRuntimeField(ctx context.Context, fieldName string, viewId string) ApiGetRuntimeFieldRequest {
+func (a *DataViewsAPIService) GetRuntimeField(ctx context.Context, fieldName string, viewId string, spaceId string) ApiGetRuntimeFieldRequest {
 	return ApiGetRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,
 		fieldName:  fieldName,
 		viewId:     viewId,
+		spaceId:    spaceId,
 	}
 }
 
@@ -1321,9 +1369,10 @@ func (a *DataViewsAPIService) GetRuntimeFieldExecute(r ApiGetRuntimeFieldRequest
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}/runtime_field/{fieldName}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName}"
 	localVarPath = strings.Replace(localVarPath, "{"+"fieldName"+"}", url.PathEscape(parameterValueToString(r.fieldName, "fieldName")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1411,6 +1460,7 @@ type ApiSetDefaultDatailViewRequest struct {
 	ctx                         context.Context
 	ApiService                  DataViewsAPI
 	kbnXsrf                     *string
+	spaceId                     string
 	setDefaultDatailViewRequest *SetDefaultDatailViewRequest
 }
 
@@ -1425,7 +1475,7 @@ func (r ApiSetDefaultDatailViewRequest) SetDefaultDatailViewRequest(setDefaultDa
 	return r
 }
 
-func (r ApiSetDefaultDatailViewRequest) Execute() (*UpdateFieldsMetadata200Response, *http.Response, error) {
+func (r ApiSetDefaultDatailViewRequest) Execute() (*SetDefaultDatailView200Response, *http.Response, error) {
 	return r.ApiService.SetDefaultDatailViewExecute(r)
 }
 
@@ -1435,24 +1485,26 @@ SetDefaultDatailView Sets the default data view identifier.
 This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiSetDefaultDatailViewRequest
 */
-func (a *DataViewsAPIService) SetDefaultDatailView(ctx context.Context) ApiSetDefaultDatailViewRequest {
+func (a *DataViewsAPIService) SetDefaultDatailView(ctx context.Context, spaceId string) ApiSetDefaultDatailViewRequest {
 	return ApiSetDefaultDatailViewRequest{
 		ApiService: a,
 		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
 // Execute executes the request
 //
-//	@return UpdateFieldsMetadata200Response
-func (a *DataViewsAPIService) SetDefaultDatailViewExecute(r ApiSetDefaultDatailViewRequest) (*UpdateFieldsMetadata200Response, *http.Response, error) {
+//	@return SetDefaultDatailView200Response
+func (a *DataViewsAPIService) SetDefaultDatailViewExecute(r ApiSetDefaultDatailViewRequest) (*SetDefaultDatailView200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *UpdateFieldsMetadata200Response
+		localVarReturnValue *SetDefaultDatailView200Response
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DataViewsAPIService.SetDefaultDatailView")
@@ -1460,7 +1512,8 @@ func (a *DataViewsAPIService) SetDefaultDatailViewExecute(r ApiSetDefaultDatailV
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/default"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/default"
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1558,6 +1611,7 @@ type ApiUpdateDataViewRequest struct {
 	ApiService                  DataViewsAPI
 	kbnXsrf                     *string
 	viewId                      string
+	spaceId                     string
 	updateDataViewRequestObject *UpdateDataViewRequestObject
 }
 
@@ -1583,13 +1637,15 @@ This functionality is in technical preview and may be changed or removed in a fu
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param viewId An identifier for the data view.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiUpdateDataViewRequest
 */
-func (a *DataViewsAPIService) UpdateDataView(ctx context.Context, viewId string) ApiUpdateDataViewRequest {
+func (a *DataViewsAPIService) UpdateDataView(ctx context.Context, viewId string, spaceId string) ApiUpdateDataViewRequest {
 	return ApiUpdateDataViewRequest{
 		ApiService: a,
 		ctx:        ctx,
 		viewId:     viewId,
+		spaceId:    spaceId,
 	}
 }
 
@@ -1609,8 +1665,9 @@ func (a *DataViewsAPIService) UpdateDataViewExecute(r ApiUpdateDataViewRequest) 
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1708,6 +1765,7 @@ type ApiUpdateFieldsMetadataRequest struct {
 	ApiService                  DataViewsAPI
 	kbnXsrf                     *string
 	viewId                      string
+	spaceId                     string
 	updateFieldsMetadataRequest *UpdateFieldsMetadataRequest
 }
 
@@ -1722,7 +1780,7 @@ func (r ApiUpdateFieldsMetadataRequest) UpdateFieldsMetadataRequest(updateFields
 	return r
 }
 
-func (r ApiUpdateFieldsMetadataRequest) Execute() (*UpdateFieldsMetadata200Response, *http.Response, error) {
+func (r ApiUpdateFieldsMetadataRequest) Execute() (*SetDefaultDatailView200Response, *http.Response, error) {
 	return r.ApiService.UpdateFieldsMetadataExecute(r)
 }
 
@@ -1733,25 +1791,27 @@ This functionality is in technical preview and may be changed or removed in a fu
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param viewId An identifier for the data view.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiUpdateFieldsMetadataRequest
 */
-func (a *DataViewsAPIService) UpdateFieldsMetadata(ctx context.Context, viewId string) ApiUpdateFieldsMetadataRequest {
+func (a *DataViewsAPIService) UpdateFieldsMetadata(ctx context.Context, viewId string, spaceId string) ApiUpdateFieldsMetadataRequest {
 	return ApiUpdateFieldsMetadataRequest{
 		ApiService: a,
 		ctx:        ctx,
 		viewId:     viewId,
+		spaceId:    spaceId,
 	}
 }
 
 // Execute executes the request
 //
-//	@return UpdateFieldsMetadata200Response
-func (a *DataViewsAPIService) UpdateFieldsMetadataExecute(r ApiUpdateFieldsMetadataRequest) (*UpdateFieldsMetadata200Response, *http.Response, error) {
+//	@return SetDefaultDatailView200Response
+func (a *DataViewsAPIService) UpdateFieldsMetadataExecute(r ApiUpdateFieldsMetadataRequest) (*SetDefaultDatailView200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *UpdateFieldsMetadata200Response
+		localVarReturnValue *SetDefaultDatailView200Response
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DataViewsAPIService.UpdateFieldsMetadata")
@@ -1759,8 +1819,9 @@ func (a *DataViewsAPIService) UpdateFieldsMetadataExecute(r ApiUpdateFieldsMetad
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}/fields"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}/fields"
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1858,6 +1919,7 @@ type ApiUpdateRuntimeFieldRequest struct {
 	ApiService                DataViewsAPI
 	fieldName                 string
 	viewId                    string
+	spaceId                   string
 	updateRuntimeFieldRequest *UpdateRuntimeFieldRequest
 }
 
@@ -1878,14 +1940,16 @@ This functionality is in technical preview and may be changed or removed in a fu
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param fieldName The name of the runtime field.
 	@param viewId An identifier for the data view.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiUpdateRuntimeFieldRequest
 */
-func (a *DataViewsAPIService) UpdateRuntimeField(ctx context.Context, fieldName string, viewId string) ApiUpdateRuntimeFieldRequest {
+func (a *DataViewsAPIService) UpdateRuntimeField(ctx context.Context, fieldName string, viewId string, spaceId string) ApiUpdateRuntimeFieldRequest {
 	return ApiUpdateRuntimeFieldRequest{
 		ApiService: a,
 		ctx:        ctx,
 		fieldName:  fieldName,
 		viewId:     viewId,
+		spaceId:    spaceId,
 	}
 }
 
@@ -1902,9 +1966,10 @@ func (a *DataViewsAPIService) UpdateRuntimeFieldExecute(r ApiUpdateRuntimeFieldR
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/data_views/data_view/{viewId}/runtime_field/{fieldName}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName}"
 	localVarPath = strings.Replace(localVarPath, "{"+"fieldName"+"}", url.PathEscape(parameterValueToString(r.fieldName, "fieldName")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"viewId"+"}", url.PathEscape(parameterValueToString(r.viewId, "viewId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
