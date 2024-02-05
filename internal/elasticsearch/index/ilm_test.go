@@ -16,7 +16,7 @@ import (
 
 var totalShardsPerNodeVersionLimit = version.Must(version.NewVersion("7.16.0"))
 var downsampleNoTimeoutVersionLimit = version.Must(version.NewVersion("8.5.0"))
-var downsampleVersionLimit = version.Must(version.NewVersion("8.9.0"))
+var downsampleVersionLimit = version.Must(version.NewVersion("8.10.0"))
 
 func TestAccResourceILM(t *testing.T) {
 	// generate a random policy name
