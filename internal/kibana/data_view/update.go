@@ -30,8 +30,9 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
+	id, spaceID := model.getIDAndSpaceID()
 	authCtx := r.client.SetDataviewAuthContext(ctx)
-	_, res, err := dataviewClient.UpdateDataView(authCtx, model.ID.ValueString()).UpdateDataViewRequestObject(apiModel).KbnXsrf("true").Execute()
+	_, res, err := dataviewClient.UpdateDataView(authCtx, id, spaceID).UpdateDataViewRequestObject(apiModel).KbnXsrf("true").Execute()
 	if err != nil && res == nil {
 		response.Diagnostics.AddError("Failed to update data view", err.Error())
 		return

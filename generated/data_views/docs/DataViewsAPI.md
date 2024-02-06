@@ -4,25 +4,25 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**CreateDataView**](DataViewsAPI.md#CreateDataView) | **Post** /api/data_views/data_view | Creates a data view.
-[**CreateRuntimeField**](DataViewsAPI.md#CreateRuntimeField) | **Post** /api/data_views/data_view/{viewId}/runtime_field | Creates a runtime field.
-[**CreateUpdateRuntimeField**](DataViewsAPI.md#CreateUpdateRuntimeField) | **Put** /api/data_views/data_view/{viewId}/runtime_field | Create or update an existing runtime field.
-[**DeleteDataView**](DataViewsAPI.md#DeleteDataView) | **Delete** /api/data_views/data_view/{viewId} | Deletes a data view.
-[**DeleteRuntimeField**](DataViewsAPI.md#DeleteRuntimeField) | **Delete** /api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Delete a runtime field from a data view.
-[**GetAllDataViews**](DataViewsAPI.md#GetAllDataViews) | **Get** /api/data_views | Retrieves a list of all data views.
-[**GetDataView**](DataViewsAPI.md#GetDataView) | **Get** /api/data_views/data_view/{viewId} | Retrieves a single data view by identifier.
-[**GetDefaultDataView**](DataViewsAPI.md#GetDefaultDataView) | **Get** /api/data_views/default | Retrieves the default data view identifier.
-[**GetRuntimeField**](DataViewsAPI.md#GetRuntimeField) | **Get** /api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Retrieves a runtime field.
-[**SetDefaultDatailView**](DataViewsAPI.md#SetDefaultDatailView) | **Post** /api/data_views/default | Sets the default data view identifier.
-[**UpdateDataView**](DataViewsAPI.md#UpdateDataView) | **Post** /api/data_views/data_view/{viewId} | Updates a data view.
-[**UpdateFieldsMetadata**](DataViewsAPI.md#UpdateFieldsMetadata) | **Post** /api/data_views/data_view/{viewId}/fields | Update fields presentation metadata such as count, customLabel and format.
-[**UpdateRuntimeField**](DataViewsAPI.md#UpdateRuntimeField) | **Post** /api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Update an existing runtime field.
+[**CreateDataView**](DataViewsAPI.md#CreateDataView) | **Post** /s/{spaceId}/api/data_views/data_view | Creates a data view.
+[**CreateRuntimeField**](DataViewsAPI.md#CreateRuntimeField) | **Post** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field | Creates a runtime field.
+[**CreateUpdateRuntimeField**](DataViewsAPI.md#CreateUpdateRuntimeField) | **Put** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field | Create or update an existing runtime field.
+[**DeleteDataView**](DataViewsAPI.md#DeleteDataView) | **Delete** /s/{spaceId}/api/data_views/data_view/{viewId} | Deletes a data view.
+[**DeleteRuntimeField**](DataViewsAPI.md#DeleteRuntimeField) | **Delete** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Delete a runtime field from a data view.
+[**GetAllDataViews**](DataViewsAPI.md#GetAllDataViews) | **Get** /s/{spaceId}/api/data_views | Retrieves a list of all data views.
+[**GetDataView**](DataViewsAPI.md#GetDataView) | **Get** /s/{spaceId}/api/data_views/data_view/{viewId} | Retrieves a single data view by identifier.
+[**GetDefaultDataView**](DataViewsAPI.md#GetDefaultDataView) | **Get** /s/{spaceId}/api/data_views/default | Retrieves the default data view identifier.
+[**GetRuntimeField**](DataViewsAPI.md#GetRuntimeField) | **Get** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Retrieves a runtime field.
+[**SetDefaultDatailView**](DataViewsAPI.md#SetDefaultDatailView) | **Post** /s/{spaceId}/api/data_views/default | Sets the default data view identifier.
+[**UpdateDataView**](DataViewsAPI.md#UpdateDataView) | **Post** /s/{spaceId}/api/data_views/data_view/{viewId} | Updates a data view.
+[**UpdateFieldsMetadata**](DataViewsAPI.md#UpdateFieldsMetadata) | **Post** /s/{spaceId}/api/data_views/data_view/{viewId}/fields | Update fields presentation metadata such as count, customLabel and format.
+[**UpdateRuntimeField**](DataViewsAPI.md#UpdateRuntimeField) | **Post** /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName} | Update an existing runtime field.
 
 
 
 ## CreateDataView
 
-> DataViewResponseObject CreateDataView(ctx).KbnXsrf(kbnXsrf).CreateDataViewRequestObject(createDataViewRequestObject).Execute()
+> DataViewResponseObject CreateDataView(ctx, spaceId).KbnXsrf(kbnXsrf).CreateDataViewRequestObject(createDataViewRequestObject).Execute()
 
 Creates a data view.
 
@@ -42,11 +42,12 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     createDataViewRequestObject := *openapiclient.NewCreateDataViewRequestObject(*openapiclient.NewCreateDataViewRequestObjectDataView("Title_example")) // CreateDataViewRequestObject | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.CreateDataView(context.Background()).KbnXsrf(kbnXsrf).CreateDataViewRequestObject(createDataViewRequestObject).Execute()
+    resp, r, err := apiClient.DataViewsAPI.CreateDataView(context.Background(), spaceId).KbnXsrf(kbnXsrf).CreateDataViewRequestObject(createDataViewRequestObject).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.CreateDataView``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -59,6 +60,10 @@ func main() {
 ### Path Parameters
 
 
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -68,6 +73,7 @@ Other parameters are passed through a pointer to a apiCreateDataViewRequest stru
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
  **createDataViewRequestObject** | [**CreateDataViewRequestObject**](CreateDataViewRequestObject.md) |  | 
 
 ### Return type
@@ -90,7 +96,7 @@ Name | Type | Description  | Notes
 
 ## CreateRuntimeField
 
-> CreateRuntimeField(ctx, viewId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
+> CreateRuntimeField(ctx, viewId, spaceId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
 
 Creates a runtime field.
 
@@ -111,11 +117,12 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     createUpdateRuntimeFieldRequest := *openapiclient.NewCreateUpdateRuntimeFieldRequest("Name_example", map[string]interface{}(123)) // CreateUpdateRuntimeFieldRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.DataViewsAPI.CreateRuntimeField(context.Background(), viewId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
+    r, err := apiClient.DataViewsAPI.CreateRuntimeField(context.Background(), viewId, spaceId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.CreateRuntimeField``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -130,6 +137,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **viewId** | **string** | An identifier for the data view. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -139,6 +147,7 @@ Other parameters are passed through a pointer to a apiCreateRuntimeFieldRequest 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
 
  **createUpdateRuntimeFieldRequest** | [**CreateUpdateRuntimeFieldRequest**](CreateUpdateRuntimeFieldRequest.md) |  | 
 
@@ -162,7 +171,7 @@ Name | Type | Description  | Notes
 
 ## CreateUpdateRuntimeField
 
-> CreateUpdateRuntimeField200Response CreateUpdateRuntimeField(ctx, viewId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
+> CreateUpdateRuntimeField200Response CreateUpdateRuntimeField(ctx, spaceId, viewId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
 
 Create or update an existing runtime field.
 
@@ -182,12 +191,13 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     viewId := "viewId_example" // string | The ID of the data view fields you want to update. 
     createUpdateRuntimeFieldRequest := *openapiclient.NewCreateUpdateRuntimeFieldRequest("Name_example", map[string]interface{}(123)) // CreateUpdateRuntimeFieldRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.CreateUpdateRuntimeField(context.Background(), viewId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
+    resp, r, err := apiClient.DataViewsAPI.CreateUpdateRuntimeField(context.Background(), spaceId, viewId).KbnXsrf(kbnXsrf).CreateUpdateRuntimeFieldRequest(createUpdateRuntimeFieldRequest).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.CreateUpdateRuntimeField``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -203,6 +213,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 **viewId** | **string** | The ID of the data view fields you want to update.  | 
 
 ### Other Parameters
@@ -213,6 +224,7 @@ Other parameters are passed through a pointer to a apiCreateUpdateRuntimeFieldRe
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
 
  **createUpdateRuntimeFieldRequest** | [**CreateUpdateRuntimeFieldRequest**](CreateUpdateRuntimeFieldRequest.md) |  | 
 
@@ -236,7 +248,7 @@ Name | Type | Description  | Notes
 
 ## DeleteDataView
 
-> DeleteDataView(ctx, viewId).KbnXsrf(kbnXsrf).Execute()
+> DeleteDataView(ctx, viewId, spaceId).KbnXsrf(kbnXsrf).Execute()
 
 Deletes a data view.
 
@@ -257,10 +269,11 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.DataViewsAPI.DeleteDataView(context.Background(), viewId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.DataViewsAPI.DeleteDataView(context.Background(), viewId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.DeleteDataView``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -275,6 +288,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **viewId** | **string** | An identifier for the data view. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -284,6 +298,7 @@ Other parameters are passed through a pointer to a apiDeleteDataViewRequest stru
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
 
 
 ### Return type
@@ -306,7 +321,7 @@ Name | Type | Description  | Notes
 
 ## DeleteRuntimeField
 
-> DeleteRuntimeField(ctx, fieldName, viewId).Execute()
+> DeleteRuntimeField(ctx, fieldName, viewId, spaceId).Execute()
 
 Delete a runtime field from a data view.
 
@@ -327,10 +342,11 @@ import (
 func main() {
     fieldName := "hour_of_day" // string | The name of the runtime field.
     viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.DataViewsAPI.DeleteRuntimeField(context.Background(), fieldName, viewId).Execute()
+    r, err := apiClient.DataViewsAPI.DeleteRuntimeField(context.Background(), fieldName, viewId, spaceId).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.DeleteRuntimeField``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -346,6 +362,7 @@ Name | Type | Description  | Notes
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **fieldName** | **string** | The name of the runtime field. | 
 **viewId** | **string** | An identifier for the data view. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -354,6 +371,7 @@ Other parameters are passed through a pointer to a apiDeleteRuntimeFieldRequest 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+
 
 
 
@@ -377,7 +395,7 @@ Name | Type | Description  | Notes
 
 ## GetAllDataViews
 
-> GetAllDataViews200Response GetAllDataViews(ctx).Execute()
+> GetAllDataViews200Response GetAllDataViews(ctx, spaceId).Execute()
 
 Retrieves a list of all data views.
 
@@ -396,10 +414,11 @@ import (
 )
 
 func main() {
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.GetAllDataViews(context.Background()).Execute()
+    resp, r, err := apiClient.DataViewsAPI.GetAllDataViews(context.Background(), spaceId).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.GetAllDataViews``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -411,11 +430,19 @@ func main() {
 
 ### Path Parameters
 
-This endpoint does not need any parameter.
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiGetAllDataViewsRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
 
 
 ### Return type
@@ -438,7 +465,7 @@ Other parameters are passed through a pointer to a apiGetAllDataViewsRequest str
 
 ## GetDataView
 
-> DataViewResponseObject GetDataView(ctx, viewId).Execute()
+> DataViewResponseObject GetDataView(ctx, viewId, spaceId).Execute()
 
 Retrieves a single data view by identifier.
 
@@ -458,10 +485,11 @@ import (
 
 func main() {
     viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.GetDataView(context.Background(), viewId).Execute()
+    resp, r, err := apiClient.DataViewsAPI.GetDataView(context.Background(), viewId, spaceId).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.GetDataView``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -478,6 +506,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **viewId** | **string** | An identifier for the data view. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -486,6 +515,7 @@ Other parameters are passed through a pointer to a apiGetDataViewRequest struct 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+
 
 
 ### Return type
@@ -508,7 +538,7 @@ Name | Type | Description  | Notes
 
 ## GetDefaultDataView
 
-> GetDefaultDataView200Response GetDefaultDataView(ctx).Execute()
+> GetDefaultDataView200Response GetDefaultDataView(ctx, spaceId).Execute()
 
 Retrieves the default data view identifier.
 
@@ -527,10 +557,11 @@ import (
 )
 
 func main() {
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.GetDefaultDataView(context.Background()).Execute()
+    resp, r, err := apiClient.DataViewsAPI.GetDefaultDataView(context.Background(), spaceId).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.GetDefaultDataView``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -542,11 +573,19 @@ func main() {
 
 ### Path Parameters
 
-This endpoint does not need any parameter.
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiGetDefaultDataViewRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
 
 
 ### Return type
@@ -569,7 +608,7 @@ Other parameters are passed through a pointer to a apiGetDefaultDataViewRequest 
 
 ## GetRuntimeField
 
-> CreateUpdateRuntimeField200Response GetRuntimeField(ctx, fieldName, viewId).Execute()
+> CreateUpdateRuntimeField200Response GetRuntimeField(ctx, fieldName, viewId, spaceId).Execute()
 
 Retrieves a runtime field.
 
@@ -590,10 +629,11 @@ import (
 func main() {
     fieldName := "hour_of_day" // string | The name of the runtime field.
     viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.GetRuntimeField(context.Background(), fieldName, viewId).Execute()
+    resp, r, err := apiClient.DataViewsAPI.GetRuntimeField(context.Background(), fieldName, viewId, spaceId).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.GetRuntimeField``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -611,6 +651,7 @@ Name | Type | Description  | Notes
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **fieldName** | **string** | The name of the runtime field. | 
 **viewId** | **string** | An identifier for the data view. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -619,6 +660,7 @@ Other parameters are passed through a pointer to a apiGetRuntimeFieldRequest str
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+
 
 
 
@@ -642,7 +684,7 @@ Name | Type | Description  | Notes
 
 ## SetDefaultDatailView
 
-> UpdateFieldsMetadata200Response SetDefaultDatailView(ctx).KbnXsrf(kbnXsrf).SetDefaultDatailViewRequest(setDefaultDatailViewRequest).Execute()
+> SetDefaultDatailView200Response SetDefaultDatailView(ctx, spaceId).KbnXsrf(kbnXsrf).SetDefaultDatailViewRequest(setDefaultDatailViewRequest).Execute()
 
 Sets the default data view identifier.
 
@@ -662,16 +704,17 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     setDefaultDatailViewRequest := *openapiclient.NewSetDefaultDatailViewRequest(interface{}(123)) // SetDefaultDatailViewRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.SetDefaultDatailView(context.Background()).KbnXsrf(kbnXsrf).SetDefaultDatailViewRequest(setDefaultDatailViewRequest).Execute()
+    resp, r, err := apiClient.DataViewsAPI.SetDefaultDatailView(context.Background(), spaceId).KbnXsrf(kbnXsrf).SetDefaultDatailViewRequest(setDefaultDatailViewRequest).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.SetDefaultDatailView``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `SetDefaultDatailView`: UpdateFieldsMetadata200Response
+    // response from `SetDefaultDatailView`: SetDefaultDatailView200Response
     fmt.Fprintf(os.Stdout, "Response from `DataViewsAPI.SetDefaultDatailView`: %v\n", resp)
 }
 ```
@@ -679,6 +722,10 @@ func main() {
 ### Path Parameters
 
 
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -688,11 +735,12 @@ Other parameters are passed through a pointer to a apiSetDefaultDatailViewReques
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
  **setDefaultDatailViewRequest** | [**SetDefaultDatailViewRequest**](SetDefaultDatailViewRequest.md) |  | 
 
 ### Return type
 
-[**UpdateFieldsMetadata200Response**](UpdateFieldsMetadata200Response.md)
+[**SetDefaultDatailView200Response**](SetDefaultDatailView200Response.md)
 
 ### Authorization
 
@@ -710,7 +758,7 @@ Name | Type | Description  | Notes
 
 ## UpdateDataView
 
-> DataViewResponseObject UpdateDataView(ctx, viewId).KbnXsrf(kbnXsrf).UpdateDataViewRequestObject(updateDataViewRequestObject).Execute()
+> DataViewResponseObject UpdateDataView(ctx, viewId, spaceId).KbnXsrf(kbnXsrf).UpdateDataViewRequestObject(updateDataViewRequestObject).Execute()
 
 Updates a data view.
 
@@ -731,11 +779,12 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     updateDataViewRequestObject := *openapiclient.NewUpdateDataViewRequestObject(*openapiclient.NewUpdateDataViewRequestObjectDataView()) // UpdateDataViewRequestObject | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.UpdateDataView(context.Background(), viewId).KbnXsrf(kbnXsrf).UpdateDataViewRequestObject(updateDataViewRequestObject).Execute()
+    resp, r, err := apiClient.DataViewsAPI.UpdateDataView(context.Background(), viewId, spaceId).KbnXsrf(kbnXsrf).UpdateDataViewRequestObject(updateDataViewRequestObject).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.UpdateDataView``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -752,6 +801,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **viewId** | **string** | An identifier for the data view. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -761,6 +811,7 @@ Other parameters are passed through a pointer to a apiUpdateDataViewRequest stru
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
 
  **updateDataViewRequestObject** | [**UpdateDataViewRequestObject**](UpdateDataViewRequestObject.md) |  | 
 
@@ -784,7 +835,7 @@ Name | Type | Description  | Notes
 
 ## UpdateFieldsMetadata
 
-> UpdateFieldsMetadata200Response UpdateFieldsMetadata(ctx, viewId).KbnXsrf(kbnXsrf).UpdateFieldsMetadataRequest(updateFieldsMetadataRequest).Execute()
+> SetDefaultDatailView200Response UpdateFieldsMetadata(ctx, viewId, spaceId).KbnXsrf(kbnXsrf).UpdateFieldsMetadataRequest(updateFieldsMetadataRequest).Execute()
 
 Update fields presentation metadata such as count, customLabel and format.
 
@@ -805,16 +856,17 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     updateFieldsMetadataRequest := *openapiclient.NewUpdateFieldsMetadataRequest(map[string]interface{}(123)) // UpdateFieldsMetadataRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.DataViewsAPI.UpdateFieldsMetadata(context.Background(), viewId).KbnXsrf(kbnXsrf).UpdateFieldsMetadataRequest(updateFieldsMetadataRequest).Execute()
+    resp, r, err := apiClient.DataViewsAPI.UpdateFieldsMetadata(context.Background(), viewId, spaceId).KbnXsrf(kbnXsrf).UpdateFieldsMetadataRequest(updateFieldsMetadataRequest).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.UpdateFieldsMetadata``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `UpdateFieldsMetadata`: UpdateFieldsMetadata200Response
+    // response from `UpdateFieldsMetadata`: SetDefaultDatailView200Response
     fmt.Fprintf(os.Stdout, "Response from `DataViewsAPI.UpdateFieldsMetadata`: %v\n", resp)
 }
 ```
@@ -826,6 +878,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **viewId** | **string** | An identifier for the data view. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -836,11 +889,12 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
+
  **updateFieldsMetadataRequest** | [**UpdateFieldsMetadataRequest**](UpdateFieldsMetadataRequest.md) |  | 
 
 ### Return type
 
-[**UpdateFieldsMetadata200Response**](UpdateFieldsMetadata200Response.md)
+[**SetDefaultDatailView200Response**](SetDefaultDatailView200Response.md)
 
 ### Authorization
 
@@ -858,7 +912,7 @@ Name | Type | Description  | Notes
 
 ## UpdateRuntimeField
 
-> UpdateRuntimeField(ctx, fieldName, viewId).UpdateRuntimeFieldRequest(updateRuntimeFieldRequest).Execute()
+> UpdateRuntimeField(ctx, fieldName, viewId, spaceId).UpdateRuntimeFieldRequest(updateRuntimeFieldRequest).Execute()
 
 Update an existing runtime field.
 
@@ -879,11 +933,12 @@ import (
 func main() {
     fieldName := "hour_of_day" // string | The name of the runtime field.
     viewId := "ff959d40-b880-11e8-a6d9-e546fe2bba5f" // string | An identifier for the data view.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     updateRuntimeFieldRequest := *openapiclient.NewUpdateRuntimeFieldRequest(map[string]interface{}(123)) // UpdateRuntimeFieldRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.DataViewsAPI.UpdateRuntimeField(context.Background(), fieldName, viewId).UpdateRuntimeFieldRequest(updateRuntimeFieldRequest).Execute()
+    r, err := apiClient.DataViewsAPI.UpdateRuntimeField(context.Background(), fieldName, viewId, spaceId).UpdateRuntimeFieldRequest(updateRuntimeFieldRequest).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `DataViewsAPI.UpdateRuntimeField``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -899,6 +954,7 @@ Name | Type | Description  | Notes
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **fieldName** | **string** | The name of the runtime field. | 
 **viewId** | **string** | An identifier for the data view. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -907,6 +963,7 @@ Other parameters are passed through a pointer to a apiUpdateRuntimeFieldRequest 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+
 
 
  **updateRuntimeFieldRequest** | [**UpdateRuntimeFieldRequest**](UpdateRuntimeFieldRequest.md) |  | 

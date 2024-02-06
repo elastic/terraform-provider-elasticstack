@@ -18,11 +18,21 @@ tags:
     \ Kibana index patterns."
   name: data views
 paths:
-  /api/data_views:
+  /s/{spaceId}/api/data_views:
     get:
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
       operationId: getAllDataViews
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          type: string
+        style: simple
       responses:
         "200":
           content:
@@ -42,7 +52,7 @@ paths:
       summary: Retrieves a list of all data views.
       tags:
       - data views
-  /api/data_views/data_view:
+  /s/{spaceId}/api/data_views/data_view:
     post:
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
@@ -52,6 +62,15 @@ paths:
         explode: false
         in: header
         name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
         required: true
         schema:
           type: string
@@ -81,7 +100,7 @@ paths:
       summary: Creates a data view.
       tags:
       - data views
-  /api/data_views/data_view/{viewId}:
+  /s/{spaceId}/api/data_views/data_view/{viewId}:
     delete:
       description: |
         WARNING: When you delete a data view, it cannot be recovered. This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
@@ -102,6 +121,15 @@ paths:
         required: true
         schema:
           example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
           type: string
         style: simple
       responses:
@@ -128,6 +156,15 @@ paths:
         required: true
         schema:
           example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
           type: string
         style: simple
       responses:
@@ -171,6 +208,15 @@ paths:
           example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
           type: string
         style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          type: string
+        style: simple
       requestBody:
         content:
           application/json:
@@ -196,7 +242,88 @@ paths:
       summary: Updates a data view.
       tags:
       - data views
-  /api/data_views/data_view/{viewId}/fields:
+  /s/{spaceId}/api/data_views/default:
+    get:
+      description: |
+        This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
+      operationId: getDefaultDataView
+      parameters:
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                getDefaultDataViewResponse:
+                  $ref: '#/components/examples/get_default_data_view_response'
+              schema:
+                $ref: '#/components/schemas/getDefaultDataView_200_response'
+          description: Indicates a successful call.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+          description: Bad request
+      summary: Retrieves the default data view identifier.
+      tags:
+      - data views
+    post:
+      description: |
+        This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
+      operationId: setDefaultDatailView
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            examples:
+              setDefaultDataViewRequest:
+                $ref: '#/components/examples/set_default_data_view_request'
+            schema:
+              $ref: '#/components/schemas/setDefaultDatailView_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setDefaultDatailView_200_response'
+          description: Indicates a successful call.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+          description: Bad request
+      summary: Sets the default data view identifier.
+      tags:
+      - data views
+  /s/{spaceId}/api/data_views/data_view/{viewId}/fields:
     post:
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. You can update multiple fields in one request. Updates are merged with persisted metadata. To remove existing metadata, specify null as the value.
@@ -219,6 +346,15 @@ paths:
           example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
           type: string
         style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          type: string
+        style: simple
       requestBody:
         content:
           application/json:
@@ -233,7 +369,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/updateFieldsMetadata_200_response'
+                $ref: '#/components/schemas/setDefaultDatailView_200_response'
           description: Indicates a successful call.
         "400":
           content:
@@ -245,7 +381,7 @@ paths:
         \ format."
       tags:
       - data views
-  /api/data_views/data_view/{viewId}/runtime_field:
+  /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field:
     post:
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
@@ -266,6 +402,15 @@ paths:
         required: true
         schema:
           example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
           type: string
         style: simple
       requestBody:
@@ -289,6 +434,15 @@ paths:
         explode: false
         in: header
         name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
         required: true
         schema:
           type: string
@@ -330,7 +484,7 @@ paths:
       summary: Create or update an existing runtime field.
       tags:
       - data views
-  /api/data_views/data_view/{viewId}/runtime_field/{fieldName}:
+  /s/{spaceId}/api/data_views/data_view/{viewId}/runtime_field/{fieldName}:
     delete:
       description: |
         This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
@@ -352,6 +506,15 @@ paths:
         required: true
         schema:
           example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
           type: string
         style: simple
       responses:
@@ -387,6 +550,15 @@ paths:
         required: true
         schema:
           example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
           type: string
         style: simple
       responses:
@@ -431,6 +603,15 @@ paths:
           example: ff959d40-b880-11e8-a6d9-e546fe2bba5f
           type: string
         style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          type: string
+        style: simple
       requestBody:
         content:
           application/json:
@@ -450,68 +631,6 @@ paths:
                 $ref: '#/components/schemas/400_response'
           description: Bad request
       summary: Update an existing runtime field.
-      tags:
-      - data views
-  /api/data_views/default:
-    get:
-      description: |
-        This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: getDefaultDataView
-      responses:
-        "200":
-          content:
-            application/json:
-              examples:
-                getDefaultDataViewResponse:
-                  $ref: '#/components/examples/get_default_data_view_response'
-              schema:
-                $ref: '#/components/schemas/getDefaultDataView_200_response'
-          description: Indicates a successful call.
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Retrieves the default data view identifier.
-      tags:
-      - data views
-    post:
-      description: |
-        This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-      operationId: setDefaultDatailView
-      parameters:
-      - description: Cross-site request forgery protection
-        explode: false
-        in: header
-        name: kbn-xsrf
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            examples:
-              setDefaultDataViewRequest:
-                $ref: '#/components/examples/set_default_data_view_request'
-            schema:
-              $ref: '#/components/schemas/setDefaultDatailView_request'
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/updateFieldsMetadata_200_response'
-          description: Indicates a successful call.
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/400_response'
-          description: Bad request
-      summary: Sets the default data view identifier.
       tags:
       - data views
 components:
@@ -1484,6 +1603,15 @@ components:
           allowNoIndex: false
           name: Kibana Sample Data eCommerce
         refresh_fields: true
+    get_default_data_view_response:
+      summary: The get default data view API returns the default data view identifier.
+      value:
+        data_view_id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+    set_default_data_view_request:
+      summary: Set the default data view identifier.
+      value:
+        data_view_id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
+        force: true
     update_field_metadata_request:
       summary: Set popularity count for field foo.
       value:
@@ -2012,16 +2140,17 @@ components:
         runtimeField:
           script:
             source: "emit(doc[\"bar\"].value)"
-    get_default_data_view_response:
-      summary: The get default data view API returns the default data view identifier.
-      value:
-        data_view_id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-    set_default_data_view_request:
-      summary: Set the default data view identifier.
-      value:
-        data_view_id: ff959d40-b880-11e8-a6d9-e546fe2bba5f
-        force: true
   parameters:
+    space_id:
+      description: "An identifier for the space. If `/s/` and the identifier are omitted\
+        \ from the path, the default space is used."
+      explode: false
+      in: path
+      name: spaceId
+      required: true
+      schema:
+        type: string
+      style: simple
     kbn_xsrf:
       description: Cross-site request forgery protection
       explode: false
@@ -2219,6 +2348,32 @@ components:
             $ref: '#/components/schemas/getAllDataViews_200_response_data_view_inner'
           type: array
       type: object
+    getDefaultDataView_200_response:
+      example:
+        data_view_id: data_view_id
+      properties:
+        data_view_id:
+          type: string
+      type: object
+    setDefaultDatailView_request:
+      properties:
+        data_view_id:
+          description: |
+            The data view identifier. NOTE: The API does not validate whether it is a valid identifier. Use `null` to unset the default data view.
+        force:
+          default: false
+          description: Update an existing default data view identifier.
+          type: boolean
+      required:
+      - data_view_id
+      type: object
+    setDefaultDatailView_200_response:
+      example:
+        acknowledged: true
+      properties:
+        acknowledged:
+          type: boolean
+      type: object
     updateFieldsMetadata_request:
       properties:
         fields:
@@ -2226,13 +2381,6 @@ components:
           type: object
       required:
       - fields
-      type: object
-    updateFieldsMetadata_200_response:
-      example:
-        acknowledged: true
-      properties:
-        acknowledged:
-          type: boolean
       type: object
     createUpdateRuntimeField_request:
       properties:
@@ -2275,25 +2423,6 @@ components:
           type: object
       required:
       - runtimeField
-      type: object
-    getDefaultDataView_200_response:
-      example:
-        data_view_id: data_view_id
-      properties:
-        data_view_id:
-          type: string
-      type: object
-    setDefaultDatailView_request:
-      properties:
-        data_view_id:
-          description: |
-            The data view identifier. NOTE: The API does not validate whether it is a valid identifier. Use `null` to unset the default data view.
-        force:
-          default: false
-          description: Update an existing default data view identifier.
-          type: boolean
-      required:
-      - data_view_id
       type: object
     sourcefilters_inner:
       example:

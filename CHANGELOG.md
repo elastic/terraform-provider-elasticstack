@@ -13,6 +13,7 @@
 - Fix issue when setting `override` in `elasticstack_kibana_data_view` resource ([#550](https://github.com/elastic/terraform-provider-elasticstack/pull/550))
 - Fixup typos in `elasticstack_elasticsearch_transform` and `elasticstack_kibana_security_role` docs ([#551](https://github.com/elastic/terraform-provider-elasticstack/pull/551))
 - Fix issue when setting `field_attrs` in `elasticstack_kibana_data_view` resource ([#552](https://github.com/elastic/terraform-provider-elasticstack/pull/552))
+- Fixup support for managing `elasticstack_kibana_data_view` resources in non-default spaces ([#559](https://github.com/elastic/terraform-provider-elasticstack/pull/559))
 - Add an example resource and import command to the `elasticstack_kibana_data_view` docs ([#560](https://github.com/elastic/terraform-provider-elasticstack/pull/560))
 
 ## [0.11.0] - 2023-12-12

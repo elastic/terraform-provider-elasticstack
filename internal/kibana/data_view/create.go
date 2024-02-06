@@ -3,6 +3,7 @@ package data_view
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -28,7 +29,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	apiModel, diags := model.ToCreateRequest(ctx)
 	response.Diagnostics.Append(diags...)
 	authCtx := r.client.SetDataviewAuthContext(ctx)
-	respModel, res, err := dataviewClient.CreateDataView(authCtx).CreateDataViewRequestObject(apiModel).KbnXsrf("true").Execute()
+	respModel, res, err := dataviewClient.CreateDataView(authCtx, model.SpaceID.ValueString()).CreateDataViewRequestObject(apiModel).KbnXsrf("true").Execute()
 	if err != nil && res == nil {
 		response.Diagnostics.AddError("Failed to create data view", err.Error())
 		return
@@ -40,7 +41,12 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	model.ID = types.StringPointerValue(respModel.DataView.Id)
+	resourceID := clients.CompositeId{
+		ClusterId:  model.SpaceID.ValueString(),
+		ResourceId: *respModel.DataView.Id,
+	}
+
+	model.ID = types.StringValue(resourceID.String())
 	readModel, diags := r.read(ctx, model)
 	response.Diagnostics = append(response.Diagnostics, diags...)
 	if response.Diagnostics.HasError() {

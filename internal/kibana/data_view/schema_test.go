@@ -21,6 +21,7 @@ func Test_tfModelV0_ToCreateRequest(t *testing.T) {
 		{
 			name: "all fields",
 			model: apiModelV0{
+				SpaceID: "default",
 				DataView: apiDataViewV0{
 					Title:         utils.Pointer("title"),
 					Name:          utils.Pointer("name"),
@@ -48,7 +49,7 @@ func Test_tfModelV0_ToCreateRequest(t *testing.T) {
 						},
 					},
 					AllowNoIndex: true,
-					Namespaces:   []string{"default", "o11y"},
+					Namespaces:   []string{"backend", "o11y"},
 				},
 			},
 			expectedRequest: data_views.CreateDataViewRequestObject{
@@ -71,7 +72,7 @@ func Test_tfModelV0_ToCreateRequest(t *testing.T) {
 					},
 					Id:         utils.Pointer("id"),
 					Name:       utils.Pointer("name"),
-					Namespaces: []string{"default", "o11y"},
+					Namespaces: []string{"backend", "o11y", "default"},
 					RuntimeFieldMap: map[string]interface{}{
 						"runtime_field": runtimeField{
 							Type: "keyword",
@@ -92,6 +93,7 @@ func Test_tfModelV0_ToCreateRequest(t *testing.T) {
 		{
 			name: "nil collections",
 			model: apiModelV0{
+				SpaceID: "default",
 				DataView: apiDataViewV0{
 					Title:         utils.Pointer("title"),
 					Name:          utils.Pointer("name"),

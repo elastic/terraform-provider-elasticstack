@@ -23,6 +23,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
+var _ resource.ResourceWithImportState = &Resource{}
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
@@ -222,7 +223,7 @@ func (m tfModelV0) ToCreateRequest(ctx context.Context) (data_views.CreateDataVi
 		return data_views.CreateDataViewRequestObject{}, diags
 	}
 
-	dv, diags := dataView.ToCreateRequest(ctx)
+	dv, diags := dataView.ToCreateRequest(ctx, m.SpaceID.ValueString())
 	if diags.HasError() {
 		return data_views.CreateDataViewRequestObject{}, diags
 	}
@@ -255,24 +256,39 @@ func (m tfModelV0) FromResponse(ctx context.Context, resp *data_views.DataViewRe
 	}
 
 	var dataView tfDataViewV0
-	if diags := m.DataView.As(ctx, &dataView, basetypes.ObjectAsOptions{}); diags.HasError() {
-		return apiModelV0{}, diags
+	if !m.DataView.IsNull() && !m.DataView.IsUnknown() {
+		if diags := m.DataView.As(ctx, &dataView, basetypes.ObjectAsOptions{}); diags.HasError() {
+			return apiModelV0{}, diags
+		}
+
+		namespaces, diags := dataView.getNamespaces(ctx, nil)
+		if diags.HasError() {
+			return apiModelV0{}, diags
+		}
+
+		dv.Namespaces = namespaces
 	}
 
-	namespaces, diags := dataView.getNamespaces(ctx)
-	if diags.HasError() {
-		return apiModelV0{}, diags
-	}
-
-	dv.Namespaces = namespaces
-
+	_, spaceID := m.getIDAndSpaceID()
 	model := apiModelV0{
 		ID:       m.ID.ValueString(),
-		SpaceID:  m.SpaceID.ValueString(),
+		SpaceID:  spaceID,
 		DataView: dv,
 		Override: m.Override.ValueBool(),
 	}
 	return model, nil
+}
+
+func (model tfModelV0) getIDAndSpaceID() (string, string) {
+	id := model.ID.ValueString()
+	spaceID := model.SpaceID.ValueString()
+	maybeCompositeID, _ := clients.CompositeIdFromStr(id)
+	if maybeCompositeID != nil {
+		id = maybeCompositeID.ResourceId
+		spaceID = maybeCompositeID.ClusterId
+	}
+
+	return id, spaceID
 }
 
 type tfDataViewV0 struct {
@@ -386,7 +402,7 @@ func dataViewFromResponse(resp data_views.DataViewResponseObjectDataView) apiDat
 	return dv
 }
 
-func (m tfDataViewV0) ToCreateRequest(ctx context.Context) (data_views.CreateDataViewRequestObjectDataView, diag.Diagnostics) {
+func (m tfDataViewV0) ToCreateRequest(ctx context.Context, spaceID string) (data_views.CreateDataViewRequestObjectDataView, diag.Diagnostics) {
 	apiModel := data_views.CreateDataViewRequestObjectDataView{
 		Title:         m.Title.ValueString(),
 		Name:          m.Name.ValueStringPointer(),
@@ -464,7 +480,7 @@ func (m tfDataViewV0) ToCreateRequest(ctx context.Context) (data_views.CreateDat
 		apiModel.RuntimeFieldMap = apiRuntimeFields
 	}
 
-	namespaces, diags := m.getNamespaces(ctx)
+	namespaces, diags := m.getNamespaces(ctx, &spaceID)
 	if diags.HasError() {
 		return data_views.CreateDataViewRequestObjectDataView{}, diags
 	}
@@ -476,10 +492,25 @@ func (m tfDataViewV0) ToCreateRequest(ctx context.Context) (data_views.CreateDat
 	return apiModel, nil
 }
 
-func (m tfDataViewV0) getNamespaces(ctx context.Context) ([]string, diag.Diagnostics) {
+func (m tfDataViewV0) getNamespaces(ctx context.Context, spaceID *string) ([]string, diag.Diagnostics) {
 	var namespaces []string
 	if diags := m.Namespaces.ElementsAs(ctx, &namespaces, true); diags.HasError() {
 		return nil, diags
+	}
+
+	if len(namespaces) == 0 || spaceID == nil {
+		return namespaces, nil
+	}
+
+	includesSpaceID := false
+	for _, namespace := range namespaces {
+		if namespace == *spaceID {
+			includesSpaceID = true
+		}
+	}
+
+	if !includesSpaceID {
+		namespaces = append(namespaces, *spaceID)
 	}
 
 	return namespaces, nil
