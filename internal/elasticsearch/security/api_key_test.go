@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccResourceSecuritApiKey(t *testing.T) {
+func TestAccResourceSecurityApiKey(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -28,17 +28,17 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),
-				Config:   testAccResourceSecuritApiKeyCreate(apiKeyName),
+				Config:   testAccResourceSecurityApiKeyCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
-						var testRoleDescriptor map[string]models.Role
+						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
 						}
 
 						allowRestrictedIndices := false
-						expectedRoleDescriptor := map[string]models.Role{
+						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
 							"role-a": {
 								Cluster: []string{"all"},
 								Indices: []models.IndexPerms{{
@@ -64,7 +64,55 @@ func TestAccResourceSecuritApiKey(t *testing.T) {
 	})
 }
 
-func testAccResourceSecuritApiKeyCreate(apiKeyName string) string {
+func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
+	// generate a random name
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),
+				Config:   testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
+						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
+							return err
+						}
+
+						allowRestrictedIndices := false
+						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+							"role-a": {
+								Cluster: []string{"all"},
+								Indices: []models.IndexPerms{{
+									Names:                  []string{"index-a*"},
+									Privileges:             []string{"read"},
+									AllowRestrictedIndices: &allowRestrictedIndices,
+								}},
+								Restriction: &models.Restriction{Workflows: []string{"search_application_query"}},
+							},
+						}
+
+						if !reflect.DeepEqual(testRoleDescriptor, expectedRoleDescriptor) {
+							return fmt.Errorf("%v doesn't match %v", testRoleDescriptor, expectedRoleDescriptor)
+						}
+
+						return nil
+					}),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceSecurityApiKeyCreate(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -81,6 +129,34 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
         privileges = ["read"]
         allow_restricted_indices = false
       }]
+    }
+  })
+
+	expiration = "1d"
+}
+	`, apiKeyName)
+}
+
+func testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+
+  role_descriptors = jsonencode({
+    role-a = {
+      cluster = ["all"]
+      indices = [{
+        names = ["index-a*"]
+        privileges = ["read"]
+        allow_restricted_indices = false
+      }],
+      restriction = { 
+		workflows = [ "search_application_query"] 
+      }
     }
   })
 
