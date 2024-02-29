@@ -74,7 +74,7 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyWithRestrictionMinVersion),
 				Config:   testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),

@@ -16,7 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var APIKeyMinVersion = version.Must(version.NewVersion("8.0.0")) // Enabled in 8.0
+var APIKeyMinVersion = version.Must(version.NewVersion("8.0.0"))                // Enabled in 8.0
+var APIKeyWithRestrictionMinVersion = version.Must(version.NewVersion("8.9.0")) // Enabled in 8.0
 
 func ResourceApiKey() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
