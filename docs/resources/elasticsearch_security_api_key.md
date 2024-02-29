@@ -41,10 +41,10 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key" {
   })
 }
 
+# restriction on a role descriptor for an API key is supported since Elastic 8.9
 resource "elasticstack_elasticsearch_security_api_key" "api_key_with_restriction" {
   # Set the name
   name = "My API key"
-
   # Set the role descriptors
   role_descriptors = jsonencode({
     role-a = {
