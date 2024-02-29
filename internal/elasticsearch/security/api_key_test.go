@@ -139,13 +139,12 @@ func SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(minApiKeySupported
 		if err != nil {
 			return false, err
 		}
-		_, diags := client.ServerVersion(context.Background())
+		serverVersion, diags := client.ServerVersion(context.Background())
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
-		return false, nil
-		// return serverVersion.LessThan(minApiKeySupportedVersion) || serverVersion.GreaterThanOrEqual(minRestrictionSupportedVersion), nil
+		return serverVersion.LessThan(minApiKeySupportedVersion) || serverVersion.GreaterThanOrEqual(minRestrictionSupportedVersion), nil
 	}
 }
 
