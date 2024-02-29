@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.11.2] - 2024-02-29
+
+### Fixed
+
+- Fix authentication for fleet API (using ApiKey instead of Bearer keyword) ([#576](https://github.com/elastic/terraform-provider-elasticstack/pull/576))
+
 ## [0.11.1] - 2024-02-17
 
 ### Added
