@@ -1,9 +1,12 @@
 package security_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/go-version"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -110,6 +113,39 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *testing.T) {
+	// generate a random name
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:    SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(security.APIKeyMinVersion, security.APIKeyWithRestrictionMinVersion),
+				Config:      testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
+				ExpectError: regexp.MustCompile(fmt.Sprintf(`Specifying "restriction" on an API key role description is not supported in this version of Elasticsearch. API keys: %s, role descriptor(s) %s`, apiKeyName, "role-a")),
+			},
+		},
+	})
+}
+
+func SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(minApiKeySupportedVersion *version.Version, minRestrictionSupportedVersion *version.Version) func() (bool, error) {
+	return func() (b bool, err error) {
+		client, err := clients.NewAcceptanceTestingClient()
+		if err != nil {
+			return false, err
+		}
+		serverVersion, diags := client.ServerVersion(context.Background())
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
+		}
+
+		return serverVersion.LessThan(minApiKeySupportedVersion) || serverVersion.GreaterThanOrEqual(minRestrictionSupportedVersion), nil
+	}
 }
 
 func testAccResourceSecurityApiKeyCreate(apiKeyName string) string {

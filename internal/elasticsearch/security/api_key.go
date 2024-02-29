@@ -3,6 +3,7 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"regexp"
 	"strings"
 
@@ -92,6 +93,16 @@ func ResourceApiKey() *schema.Resource {
 	}
 }
 
+type esVersion struct {
+	Number      string `json:"number"`
+	BuildFlavor string `json:"build_flavor"`
+}
+
+type info struct {
+	Version esVersion `json:"version"`
+	Tagline string    `json:"tagline"`
+}
+
 func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
@@ -113,6 +124,45 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 			return diag.FromErr(err)
 		}
 		apikey.RolesDescriptors = role_descriptors
+
+		var hasRestriction = false
+		var keysWithRestrictions = []string{}
+
+		for key, roleDescriptor := range role_descriptors {
+			if roleDescriptor.Restriction != nil {
+				hasRestriction = true
+				keysWithRestrictions = append(keysWithRestrictions, key)
+			}
+		}
+
+		if hasRestriction {
+			if esClient, err := client.GetESClient(); err == nil {
+				req := esapi.InfoRequest{}
+				res, err := req.Do(ctx, esClient.Transport)
+				if err != nil {
+					return diag.FromErr(err)
+				}
+
+				defer res.Body.Close()
+
+				var info info
+				err = json.NewDecoder(res.Body).Decode(&info)
+				if err != nil {
+					return diag.Errorf("error decoding Elasticsearch informations: %s", err)
+				}
+
+				currentVersion, err := version.NewVersion(info.Version.Number)
+				if err != nil {
+					return diag.FromErr(err)
+				}
+
+				supportedVersion, err := version.NewVersion("8.9.0")
+
+				if currentVersion.LessThan(supportedVersion) && hasRestriction {
+					return diag.Errorf(`Specifying "restriction" on an API key role description is not supported in this version of Elasticsearch. API keys: %s, role descriptor(s) %s`, apikey.Name, strings.Join(keysWithRestrictions, ", "))
+				}
+			}
+		}
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
