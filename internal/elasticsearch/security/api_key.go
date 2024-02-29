@@ -156,8 +156,8 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 					return diag.FromErr(err)
 				}
 
-				supportedVersion, err := version.NewVersion("8.9.0")
-
+				supportedVersion, _ := version.NewVersion("8.9.0")
+				
 				if currentVersion.LessThan(supportedVersion) && hasRestriction {
 					return diag.Errorf(`Specifying "restriction" on an API key role description is not supported in this version of Elasticsearch. API keys: %s, role descriptor(s) %s`, apikey.Name, strings.Join(keysWithRestrictions, ", "))
 				}
