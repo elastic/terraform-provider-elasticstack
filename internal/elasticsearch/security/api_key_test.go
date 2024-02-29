@@ -127,7 +127,7 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *te
 			{
 				SkipFunc:    SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(security.APIKeyMinVersion, security.APIKeyWithRestrictionMinVersion),
 				Config:      testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
-				ExpectError: regexp.MustCompile(fmt.Sprintf(`Error: Specifying "restriction" on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s`, "role-a")),
+				ExpectError: regexp.MustCompile(fmt.Sprintf(".*Error: Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor\\(s\\) %s.*", "role-a")),
 			},
 		},
 	})
