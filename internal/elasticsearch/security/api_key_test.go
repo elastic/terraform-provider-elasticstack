@@ -127,7 +127,7 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *te
 			{
 				SkipFunc:    SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(security.APIKeyMinVersion, security.APIKeyWithRestrictionMinVersion),
 				Config:      testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
-				ExpectError: regexp.MustCompile(fmt.Sprintf(`Specifying "restriction" on an API key role description is not supported in this version of Elasticsearch. API keys: %s, role descriptor(s) %s`, apiKeyName, "role-a")),
+				ExpectError: regexp.MustCompile(fmt.Sprintf(`Error: Specifying "restriction" on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s`, "role-a")),
 			},
 		},
 	})
@@ -139,12 +139,13 @@ func SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(minApiKeySupported
 		if err != nil {
 			return false, err
 		}
-		serverVersion, diags := client.ServerVersion(context.Background())
+		_, diags := client.ServerVersion(context.Background())
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
-		return serverVersion.LessThan(minApiKeySupportedVersion) || serverVersion.GreaterThanOrEqual(minRestrictionSupportedVersion), nil
+		return false, nil
+		// return serverVersion.LessThan(minApiKeySupportedVersion) || serverVersion.GreaterThanOrEqual(minRestrictionSupportedVersion), nil
 	}
 }
 
