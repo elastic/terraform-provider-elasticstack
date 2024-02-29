@@ -41,7 +41,7 @@ resource "elasticstack_elasticsearch_security_api_key" "api_key_with_restriction
         }
       ],
       restriction = {
-        workflows = [ "search_application_query" ]
+        workflows = ["search_application_query"]
       }
     }
   })
