@@ -126,7 +126,7 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 		apikey.RolesDescriptors = role_descriptors
 
 		var hasRestriction = false
-		var keysWithRestrictions = []string{}
+		var keysWithRestrictions []string
 
 		for key, roleDescriptor := range role_descriptors {
 			if roleDescriptor.Restriction != nil {
@@ -136,31 +136,12 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 		}
 
 		if hasRestriction {
-			if esClient, err := client.GetESClient(); err == nil {
-				req := esapi.InfoRequest{}
-				res, err := req.Do(ctx, esClient.Transport)
-				if err != nil {
-					return diag.FromErr(err)
-				}
-
-				defer res.Body.Close()
-
-				var info info
-				err = json.NewDecoder(res.Body).Decode(&info)
-				if err != nil {
-					return diag.Errorf("error decoding Elasticsearch informations: %s", err)
-				}
-
-				currentVersion, err := version.NewVersion(info.Version.Number)
-				if err != nil {
-					return diag.FromErr(err)
-				}
-
-				supportedVersion, _ := version.NewVersion("8.9.0")
-				
-				if currentVersion.LessThan(supportedVersion) && hasRestriction {
-					return diag.Errorf(`Specifying "restriction" on an API key role description is not supported in this version of Elasticsearch. API keys: %s, role descriptor(s) %s`, apikey.Name, strings.Join(keysWithRestrictions, ", "))
-				}
+			isSupported, err := doesCurrentVersionSupportRestrictionOnApiKey(ctx, client, keysWithRestrictions)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			if isSupported {
+				return diag.Errorf("Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s", strings.Join(keysWithRestrictions, ", "))
 			}
 		}
 	}
@@ -204,6 +185,36 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 
 	d.SetId(id.String())
 	return resourceSecurityApiKeyRead(ctx, d, meta)
+}
+
+func doesCurrentVersionSupportRestrictionOnApiKey(ctx context.Context, client *clients.ApiClient, keysWithRestrictions []string) (isSupported bool, err error) {
+	if esClient, err := client.GetESClient(); err == nil {
+		req := esapi.InfoRequest{}
+		res, err := req.Do(ctx, esClient.Transport)
+		if err != nil {
+			return false, err
+		}
+
+		defer res.Body.Close()
+
+		var info info
+		err = json.NewDecoder(res.Body).Decode(&info)
+		if err != nil {
+			return false, err
+		}
+
+		currentVersion, err := version.NewVersion(info.Version.Number)
+		if err != nil {
+			return false, err
+		}
+
+		supportedVersion, _ := version.NewVersion("8.9.0") // restriction is supported since 8.9.x
+
+		if currentVersion.LessThan(supportedVersion) {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 func resourceSecurityApiKeyUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
