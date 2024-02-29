@@ -140,7 +140,7 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 			if err != nil {
 				return diag.FromErr(err)
 			}
-			if isSupported {
+			if !isSupported {
 				return diag.Errorf("Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s", strings.Join(keysWithRestrictions, ", "))
 			}
 		}
