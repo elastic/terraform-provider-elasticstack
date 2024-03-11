@@ -95,7 +95,9 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
-	actionConnectors, err := buildConnectorsClient(cfg)
+	kibanaHttpClient := kib.Client.GetClient()
+
+	actionConnectors, err := buildConnectorsClient(cfg, kibanaHttpClient)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create Kibana action connectors client: [%w]", err)
 	}
@@ -108,9 +110,9 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	return &ApiClient{
 			elasticsearch: es,
 			kibana:        kib,
-			alerting:      buildAlertingClient(cfg).AlertingAPI,
-			dataViews:     buildDataViewsClient(cfg).DataViewsAPI,
-			slo:           buildSloClient(cfg).SloAPI,
+			alerting:      buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI,
+			dataViews:     buildDataViewsClient(cfg, kibanaHttpClient).DataViewsAPI,
+			slo:           buildSloClient(cfg, kibanaHttpClient).SloAPI,
 			connectors:    actionConnectors,
 			kibanaConfig:  *cfg.Kibana,
 			fleet:         fleetClient,
@@ -379,13 +381,15 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 	}
 
 	if logging.IsDebugOrHigher() {
-		kib.Client.SetDebug(true)
+		// Don't use kib.Client.SetDebug() here as we re-use the http client within the OpenAPI generated clients
+		kibHttpClient := kib.Client.GetClient()
+		kibHttpClient.Transport = utils.NewDebugTransport("Kibana", kibHttpClient.Transport)
 	}
 
 	return kib, nil
 }
 
-func buildAlertingClient(cfg config.Client) *alerting.APIClient {
+func buildAlertingClient(cfg config.Client, httpClient *http.Client) *alerting.APIClient {
 	alertingConfig := alerting.Configuration{
 		UserAgent: cfg.UserAgent,
 		Servers: alerting.ServerConfigurations{
@@ -393,12 +397,12 @@ func buildAlertingClient(cfg config.Client) *alerting.APIClient {
 				URL: cfg.Kibana.Address,
 			},
 		},
-		Debug: logging.IsDebugOrHigher(),
+		HTTPClient: httpClient,
 	}
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
-func buildDataViewsClient(cfg config.Client) *data_views.APIClient {
+func buildDataViewsClient(cfg config.Client, httpClient *http.Client) *data_views.APIClient {
 	dvConfig := data_views.Configuration{
 		UserAgent: cfg.UserAgent,
 		Servers: data_views.ServerConfigurations{
@@ -406,12 +410,12 @@ func buildDataViewsClient(cfg config.Client) *data_views.APIClient {
 				URL: cfg.Kibana.Address,
 			},
 		},
-		Debug: logging.IsDebugOrHigher(),
+		HTTPClient: httpClient,
 	}
 	return data_views.NewAPIClient(&dvConfig)
 }
 
-func buildConnectorsClient(cfg config.Client) (*connectors.Client, error) {
+func buildConnectorsClient(cfg config.Client, httpClient *http.Client) (*connectors.Client, error) {
 	var authInterceptor connectors.ClientOption
 	if cfg.Kibana.ApiKey != "" {
 		apiKeyProvider, err := securityprovider.NewSecurityProviderApiKey(
@@ -431,14 +435,6 @@ func buildConnectorsClient(cfg config.Client) (*connectors.Client, error) {
 		authInterceptor = connectors.WithRequestEditorFn(basicAuthProvider.Intercept)
 	}
 
-	httpClient := &http.Client{}
-
-	if logging.IsDebugOrHigher() {
-		httpClient = &http.Client{
-			Transport: utils.NewDebugTransport("Kibana Action Connectors", http.DefaultTransport),
-		}
-	}
-
 	return connectors.NewClient(
 		cfg.Kibana.Address,
 		authInterceptor,
@@ -446,7 +442,7 @@ func buildConnectorsClient(cfg config.Client) (*connectors.Client, error) {
 	)
 }
 
-func buildSloClient(cfg config.Client) *slo.APIClient {
+func buildSloClient(cfg config.Client, httpClient *http.Client) *slo.APIClient {
 	sloConfig := slo.Configuration{
 		UserAgent: cfg.UserAgent,
 		Servers: slo.ServerConfigurations{
@@ -454,7 +450,7 @@ func buildSloClient(cfg config.Client) *slo.APIClient {
 				URL: cfg.Kibana.Address,
 			},
 		},
-		Debug: logging.IsDebugOrHigher(),
+		HTTPClient: httpClient,
 	}
 	return slo.NewAPIClient(&sloConfig)
 }
@@ -502,15 +498,16 @@ func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, erro
 			return nil, err
 		}
 
-		connectorsClient, err := buildConnectorsClient(cfg)
+		kibanaHttpClient := kibanaClient.Client.GetClient()
+		connectorsClient, err := buildConnectorsClient(cfg, kibanaHttpClient)
 		if err != nil {
 			return nil, fmt.Errorf("cannot create Kibana connectors client: [%w]", err)
 		}
 
 		client.kibana = kibanaClient
-		client.alerting = buildAlertingClient(cfg).AlertingAPI
-		client.dataViews = buildDataViewsClient(cfg).DataViewsAPI
-		client.slo = buildSloClient(cfg).SloAPI
+		client.alerting = buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI
+		client.dataViews = buildDataViewsClient(cfg, kibanaHttpClient).DataViewsAPI
+		client.slo = buildSloClient(cfg, kibanaHttpClient).SloAPI
 		client.connectors = connectorsClient
 	}
 
