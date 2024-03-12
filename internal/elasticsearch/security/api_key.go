@@ -92,16 +92,6 @@ func ResourceApiKey() *schema.Resource {
 	}
 }
 
-type esVersion struct {
-	Number      string `json:"number"`
-	BuildFlavor string `json:"build_flavor"`
-}
-
-type info struct {
-	Version esVersion `json:"version"`
-	Tagline string    `json:"tagline"`
-}
-
 func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
