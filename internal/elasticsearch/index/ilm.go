@@ -323,7 +323,7 @@ var supportedActions = map[string]*schema.Schema{
 		},
 	},
 	"set_priority": {
-		Description: "Sets a source index to read-only and shrinks it into a new index with fewer primary shards.",
+		Description: "Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1.",
 		Type:        schema.TypeList,
 		Optional:    true,
 		MaxItems:    1,
