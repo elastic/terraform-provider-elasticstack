@@ -3,7 +3,6 @@ package security
 import (
 	"context"
 	"encoding/json"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"regexp"
 	"strings"
 
@@ -136,10 +135,12 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 		}
 
 		if hasRestriction {
-			isSupported, err := doesCurrentVersionSupportRestrictionOnApiKey(ctx, client, keysWithRestrictions)
-			if err != nil {
-				return diag.FromErr(err)
+			isSupported, diags := doesCurrentVersionSupportRestrictionOnApiKey(ctx, client)
+
+			if diags.HasError() {
+				return diags
 			}
+
 			if !isSupported {
 				return diag.Errorf("Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s", strings.Join(keysWithRestrictions, ", "))
 			}
@@ -187,34 +188,14 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceSecurityApiKeyRead(ctx, d, meta)
 }
 
-func doesCurrentVersionSupportRestrictionOnApiKey(ctx context.Context, client *clients.ApiClient, keysWithRestrictions []string) (isSupported bool, err error) {
-	if esClient, err := client.GetESClient(); err == nil {
-		req := esapi.InfoRequest{}
-		res, err := req.Do(ctx, esClient.Transport)
-		if err != nil {
-			return false, err
-		}
+func doesCurrentVersionSupportRestrictionOnApiKey(ctx context.Context, client *clients.ApiClient) (bool, diag.Diagnostics) {
+	currentVersion, diags := client.ServerVersion(ctx)
 
-		defer res.Body.Close()
-
-		var info info
-		err = json.NewDecoder(res.Body).Decode(&info)
-		if err != nil {
-			return false, err
-		}
-
-		currentVersion, err := version.NewVersion(info.Version.Number)
-		if err != nil {
-			return false, err
-		}
-
-		supportedVersion, _ := version.NewVersion("8.9.0") // restriction is supported since 8.9.x
-
-		if currentVersion.LessThan(supportedVersion) {
-			return false, err
-		}
+	if diags.HasError() {
+		return false, diags
 	}
-	return true, nil
+
+	return currentVersion.GreaterThanOrEqual(APIKeyWithRestrictionMinVersion), nil
 }
 
 func resourceSecurityApiKeyUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
