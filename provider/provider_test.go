@@ -3,6 +3,7 @@ package provider_test
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -164,16 +165,27 @@ resource "elasticstack_kibana_space" "acc_test" {
 }
 
 func testFleetConfiguration(cfg config.Client) string {
+	caCerts := ""
+	if len(cfg.Fleet.CACerts) > 0 {
+		quotedCas := []string{}
+		for _, ca := range cfg.Fleet.CACerts {
+			quotedCas = append(quotedCas, fmt.Sprintf(`"%s"`, ca))
+		}
+
+		caCerts = fmt.Sprintf("ca_certs = [%s]", strings.Join(quotedCas, ","))
+	}
+
 	return fmt.Sprintf(`
 provider "elasticstack" {
 	fleet {
 		endpoint = "%s"
 		username = "%s"
 		password = "%s"
+		%s
 	}
 }
 
-data "elasticstack_fleet_enrollment_tokens" "test" {}`, cfg.Fleet.URL, cfg.Fleet.Username, cfg.Fleet.Password)
+data "elasticstack_fleet_enrollment_tokens" "test" {}`, cfg.Fleet.URL, cfg.Fleet.Username, cfg.Fleet.Password, caCerts)
 }
 
 func testElasticsearchConnection(apiKeyName string) string {
