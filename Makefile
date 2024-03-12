@@ -137,6 +137,32 @@ docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start 
 		docker.elastic.co/kibana/kibana:$(STACK_VERSION); \
 		fi)
 
+.PHONY: docker-kibana-with-tls
+docker-kibana-with-tls: docker-network docker-elasticsearch set-kibana-password
+	@ docker rm -f $(KIBANA_NAME)  &> /dev/null || true
+	@ mkdir -p certs
+	@ CAROOT=certs mkcert localhost $(KIBANA_NAME)
+	@ mv localhost*.pem certs/
+
+	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(KIBANA_NAME) > /dev/null 2>&1 ; then \
+		docker run -d \
+		-p 5601:5601 \
+		-v $(shell pwd)/certs:/certs \
+		-e SERVER_NAME=kibana \
+		-e ELASTICSEARCH_HOSTS=$(ELASTICSEARCH_ENDPOINTS) \
+		-e ELASTICSEARCH_USERNAME=$(KIBANA_SYSTEM_USERNAME) \
+		-e ELASTICSEARCH_PASSWORD=$(KIBANA_SYSTEM_PASSWORD) \
+		-e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d \
+		-e SERVER_SSL_CERTIFICATE=/certs/localhost+1.pem \
+		-e SERVER_SSL_KEY=/certs/localhost+1-key.pem \
+		-e SERVER_SSL_ENABLED=true \
+		-e "logging.root.level=debug" \
+		--name $(KIBANA_NAME) \
+		--network $(ELASTICSEARCH_NETWORK) \
+		docker.elastic.co/kibana/kibana:$(STACK_VERSION); \
+		fi)
+
+
 .PHONY: docker-network
 docker-network: ## Create a dedicated network for ES and test runs
 	@ if ! docker network ls --format '{{.Name}}' | grep -w $(ELASTICSEARCH_NETWORK) > /dev/null 2>&1 ; then \

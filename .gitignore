@@ -38,6 +38,7 @@ website/vendor
 
 terraform-provider-elasticstack
 dist
+certs
 .ci/.gpg_*
 .ci/.github_*
 .terraform.lock.hcl
