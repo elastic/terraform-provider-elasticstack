@@ -18,10 +18,6 @@ resource "elasticstack_kibana_security_role" "example" {
     }
   }
   kibana {
-    base   = ["all"]
-    spaces = ["default"]
-  }
-  kibana {
     feature {
       name       = "actions"
       privileges = ["read"]
@@ -47,6 +43,6 @@ resource "elasticstack_kibana_security_role" "example" {
       privileges = ["minimal_read", "cases_delete"]
     }
 
-    spaces = ["Default"]
+    spaces = ["default"]
   }
 }
