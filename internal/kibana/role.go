@@ -113,7 +113,7 @@ func ResourceRole() *schema.Resource {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"base": {
-						Description: "A base privilege. When specified, the base must be [\"all\"] or [\"read\"].",
+						Description: "A base privilege. When specified, the base must be [\"all\"] or [\"read\"]. When the base privileges are specified, you are unable to use the \"feature\" section.",
 						Type:        schema.TypeSet,
 						Optional:    true,
 						MaxItems:    1,
