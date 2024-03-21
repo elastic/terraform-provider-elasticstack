@@ -12,6 +12,8 @@ Creates or updates a Kibana role. See https://www.elastic.co/guide/en/kibana/mas
 
 ## Example Usage
 
+### Using base privileges
+
 ```terraform
 provider "elasticstack" {
   elasticsearch {}
@@ -34,6 +36,30 @@ resource "elasticstack_kibana_security_role" "example" {
   kibana {
     base   = ["all"]
     spaces = ["default"]
+  }
+}
+```
+
+### Using feature privileges
+
+```terraform
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_role" "example" {
+  name = "sample_role"
+  elasticsearch {
+    cluster = ["create_snapshot"]
+    indices {
+      field_security {
+        grant  = ["test"]
+        except = []
+      }
+      names      = ["test"]
+      privileges = ["create", "read", "write"]
+    }
   }
   kibana {
     feature {
@@ -61,7 +87,7 @@ resource "elasticstack_kibana_security_role" "example" {
       privileges = ["minimal_read", "cases_delete"]
     }
 
-    spaces = ["Default"]
+    spaces = ["default"]
   }
 }
 ```
@@ -125,7 +151,7 @@ Required:
 
 Optional:
 
-- `base` (Set of String) A base privilege. When specified, the base must be ["all"] or ["read"].
+- `base` (Set of String) A base privilege. When specified, the base must be ["all"] or ["read"]. When the base privileges are specified, you are unable to use the "feature" section.
 - `feature` (Block Set) List of privileges for specific features. When the feature privileges are specified, you are unable to use the "base" section. (see [below for nested schema](#nestedblock--kibana--feature))
 
 <a id="nestedblock--kibana--feature"></a>

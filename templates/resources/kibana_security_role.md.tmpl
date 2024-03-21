@@ -12,7 +12,13 @@ Creates or updates a Kibana role. See https://www.elastic.co/guide/en/kibana/mas
 
 ## Example Usage
 
-{{ tffile "examples/resources/elasticstack_kibana_security_role/resource.tf" }}
+### Using base privileges
+
+{{ tffile "examples/resources/elasticstack_kibana_security_role/resource-with-base.tf" }}
+
+### Using feature privileges
+
+{{ tffile "examples/resources/elasticstack_kibana_security_role/resource-with-feature.tf" }}
 
 {{ .SchemaMarkdown | trimspace }}
 
