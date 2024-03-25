@@ -257,37 +257,14 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 
 	if v, ok := d.GetOk("template"); ok {
-		templ := models.Template{}
-		// only one template block allowed to be declared
-		definedTempl := v.([]interface{})[0].(map[string]interface{})
-
-		aliases, diags := ExpandIndexAliases(definedTempl["alias"].(*schema.Set))
-		if diags.HasError() {
+		templ, ok, diags := expandTemplate(v)
+		if diags != nil {
 			return diags
 		}
-		templ.Aliases = aliases
 
-		if mappings, ok := definedTempl["mappings"]; ok {
-			if mappings.(string) != "" {
-				maps := make(map[string]interface{})
-				if err := json.Unmarshal([]byte(mappings.(string)), &maps); err != nil {
-					return diag.FromErr(err)
-				}
-				templ.Mappings = maps
-			}
+		if ok {
+			indexTemplate.Template = &templ
 		}
-
-		if settings, ok := definedTempl["settings"]; ok {
-			if settings.(string) != "" {
-				sets := make(map[string]interface{})
-				if err := json.Unmarshal([]byte(settings.(string)), &sets); err != nil {
-					return diag.FromErr(err)
-				}
-				templ.Settings = sets
-			}
-		}
-
-		indexTemplate.Template = &templ
 	}
 
 	if v, ok := d.GetOk("version"); ok {
@@ -301,6 +278,43 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 
 	d.SetId(id.String())
 	return resourceIndexTemplateRead(ctx, d, meta)
+}
+
+func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics) {
+	templ := models.Template{}
+	// only one template block allowed to be declared
+	definedTempl, ok := config.([]interface{})[0].(map[string]interface{})
+	if !ok {
+		return templ, false, nil
+	}
+
+	aliases, diags := ExpandIndexAliases(definedTempl["alias"].(*schema.Set))
+	if diags.HasError() {
+		return templ, false, diags
+	}
+	templ.Aliases = aliases
+
+	if mappings, ok := definedTempl["mappings"]; ok {
+		if mappings.(string) != "" {
+			maps := make(map[string]interface{})
+			if err := json.Unmarshal([]byte(mappings.(string)), &maps); err != nil {
+				return templ, false, diag.FromErr(err)
+			}
+			templ.Mappings = maps
+		}
+	}
+
+	if settings, ok := definedTempl["settings"]; ok {
+		if settings.(string) != "" {
+			sets := make(map[string]interface{})
+			if err := json.Unmarshal([]byte(settings.(string)), &sets); err != nil {
+				return templ, false, diag.FromErr(err)
+			}
+			templ.Settings = sets
+		}
+	}
+
+	return templ, true, nil
 }
 
 func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
