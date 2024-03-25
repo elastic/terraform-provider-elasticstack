@@ -57,7 +57,7 @@ func TestAccResourceSnapRepoUrl(t *testing.T) {
 				Config: testAccRepoUrlCreate(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.url", "https://example.com/repo"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.url", "file:/tmp"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.compress", "true"),
 				),
 			},
@@ -93,7 +93,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
   name = "%s"
 
   url {
-    url = "https://example.com/repo"
+    url = "file:/tmp"
   }
 }
 	`, name)
