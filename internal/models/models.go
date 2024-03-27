@@ -1,6 +1,9 @@
 package models
 
 import (
+	"encoding/json"
+	"errors"
+	"strings"
 	"time"
 )
 
@@ -194,10 +197,36 @@ type SnapshotPolicyConfig struct {
 	ExpandWildcards    *string                `json:"expand_wildcards,omitempty"`
 	IgnoreUnavailable  *bool                  `json:"ignore_unavailable,omitempty"`
 	IncludeGlobalState *bool                  `json:"include_global_state,omitempty"`
-	Indices            []string               `json:"indices,omitempty"`
+	Indices            StringSliceOrCSV       `json:"indices,omitempty"`
 	FeatureStates      []string               `json:"feature_states,omitempty"`
 	Metadata           map[string]interface{} `json:"metadata,omitempty"`
 	Partial            *bool                  `json:"partial,omitempty"`
+}
+
+type StringSliceOrCSV []string
+
+var ErrInvalidStringSliceOrCSV = errors.New("expected array of strings, or a csv string")
+
+func (i *StringSliceOrCSV) UnmarshalJSON(data []byte) error {
+	// Ignore null, like in the main JSON package.
+	if string(data) == "null" || string(data) == `""` {
+		return nil
+	}
+
+	// First try to parse as an array
+	var sliceResult []string
+	if err := json.Unmarshal(data, &sliceResult); err == nil {
+		*i = StringSliceOrCSV(sliceResult)
+		return nil
+	}
+
+	var stringResult string
+	if err := json.Unmarshal(data, &stringResult); err == nil {
+		*i = StringSliceOrCSV(strings.Split(stringResult, ","))
+		return nil
+	}
+
+	return ErrInvalidStringSliceOrCSV
 }
 
 type Index struct {
