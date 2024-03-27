@@ -68,7 +68,7 @@ func TestAccDataSourceSnapRepoUrl(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "s3.#", "0"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "fs.#", "0"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.url", "https://example.com/repo"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.url", "file:/tmp"),
 				),
 			},
 		},
@@ -85,7 +85,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
   name = "%s"
 
   url {
-    url = "https://example.com/repo"
+    url = "file:/tmp"
   }
 }
 
