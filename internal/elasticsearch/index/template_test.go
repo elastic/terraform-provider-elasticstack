@@ -111,6 +111,8 @@ resource "elasticstack_elasticsearch_index_template" "test2" {
   data_stream {
     hidden = false
   }
+
+  template {}
 }
 	`, name, name, name)
 }

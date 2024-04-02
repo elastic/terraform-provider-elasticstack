@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+- Prevent a provider panic when an `elasticstack_elasticsearch_template` or `elasticstack_elasticsearch_component_template` includes an empty `template` (`template {}`) block. ([#598](https://github.com/elastic/terraform-provider-elasticstack/pull/598))
+
 ## [0.11.2] - 2024-03-13
 
 ### Fixed
