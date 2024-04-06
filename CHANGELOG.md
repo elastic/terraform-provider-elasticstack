@@ -6,6 +6,7 @@
 
 - Fix authentication for fleet API (using ApiKey instead of Bearer keyword) ([#576](https://github.com/elastic/terraform-provider-elasticstack/pull/576))
 - Ensure all Kibana resources use the supplied `ca_certs` value. ([#585](https://github.com/elastic/terraform-provider-elasticstack/pull/585))
+- Don't panic when SLM indices are specified as a CSV string rather than an array ([#593](https://github.com/elastic/terraform-provider-elasticstack/pull/593))
 
 ## [0.11.1] - 2024-02-17
 
