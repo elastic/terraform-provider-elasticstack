@@ -3,6 +3,7 @@
 ### Fixed
 
 - Prevent a provider panic when an `elasticstack_elasticsearch_template` or `elasticstack_elasticsearch_component_template` includes an empty `template` (`template {}`) block. ([#598](https://github.com/elastic/terraform-provider-elasticstack/pull/598))
+- Prevent `elasticstack_kibana_space` to attempt the space recreation if `initials` and `color` are not provided. ([TODO](TODO))
 
 ## [0.11.2] - 2024-03-13
 
@@ -115,6 +116,7 @@
 - Add support for Kibana connections ([#226](https://github.com/elastic/terraform-provider-elasticstack/pull/226))
 - **[Breaking Change] Add 'deletion_protection' field to index resource** to avoid unintentional deletion. ([#167](https://github.com/elastic/terraform-provider-elasticstack/pull/167))
   - To delete index resource, you'll need to explicitly set `deletion_protection = false` as follows.
+
   ```terraform
   resource "elasticstack_elasticsearch_index" "example" {
     name = "example"
@@ -126,6 +128,7 @@
     deletion_protection = false
   }
   ```
+
 - Add `elasticstack_kibana_space` for managing Kibana spaces ([#272](https://github.com/elastic/terraform-provider-elasticstack/pull/272))
 - Add `elasticstack_elasticsearch_transform` for managing Elasticsearch transforms ([#284](https://github.com/elastic/terraform-provider-elasticstack/pull/284))
 - Add `elasticstack_elasticsearch_watch` for managing Elasticsearch Watches ([#155](https://github.com/elastic/terraform-provider-elasticstack/pull/155))
@@ -147,6 +150,7 @@
 - Fix error when logging API requests in debug mode ([#259](https://github.com/elastic/terraform-provider-elasticstack/pull/259))
 - **[Breaking Change] Change `pipeline_metadata` type from schema.TypeMap to schema.TypeString**. This is to fix an error caused by updates to Logstash Pipelines outside of TF ([#278](https://github.com/elastic/terraform-provider-elasticstack/issues/278))
   - To use the updated `pipeline_metadata` field, you'll need to encapsulate any Terraform configuration with **jsonencode{}** as follows:
+
     ```terraform
     resource "elasticstack_elasticsearch_logstash_pipeline" "example" {
       name = "example"
@@ -161,14 +165,15 @@
       })
     }
     ```
+
   - If migrating existing resources in state from a previous version of the provider, then you will need to remove the reference to the resources in state before reapplying / reimporting:
-    - Run `terraform state rm` against your logstash pipelines (https://developer.hashicorp.com/terraform/cli/commands/state/rm)
+    - Run `terraform state rm` against your logstash pipelines (<https://developer.hashicorp.com/terraform/cli/commands/state/rm>)
     - Ensure any definitions of the `pipeline_metadata` field in your resource definitions have been encapsulated with `jsonencode()` as mentioned above.
     - EITHER
       - run `terraform plan`
       - run `terraform apply`
     - OR
-      - reimport the resources into state using `terraform import` (https://developer.hashicorp.com/terraform/cli/import)
+      - reimport the resources into state using `terraform import` (<https://developer.hashicorp.com/terraform/cli/import>)
 - Fix order of `indices` field in SLM ([#326](https://github.com/elastic/terraform-provider-elasticstack/pull/326))
 
 ## [0.5.0] - 2022-12-07
