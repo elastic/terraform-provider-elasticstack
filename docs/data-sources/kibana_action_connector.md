@@ -3,12 +3,12 @@
 page_title: "elasticstack_kibana_action_connector Data Source - terraform-provider-elasticstack"
 subcategory: ""
 description: |-
-  Retrieve a specific connector.
+  Search for a connector by name, space id, and type. Note, that this data source will fail if more than one connector shares the same name.
 ---
 
 # elasticstack_kibana_action_connector (Data Source)
 
-Retrieve a specific connector.
+Search for a connector by name, space id, and type. Note, that this data source will fail if more than one connector shares the same name.
 
 ## Example Usage
 

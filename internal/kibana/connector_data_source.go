@@ -9,7 +9,7 @@ import (
 
 func DataSourceConnector() *schema.Resource {
 	return &schema.Resource{
-		Description: "Retrieve a specific connector.",
+		Description: "Search for a connector by name, space id, and type. Note, that this data source will fail if more than one connector shares the same name.",
 		ReadContext: dataSourceConnectorRead,
 		Schema:      connectorSchema,
 	}
