@@ -1,11 +1,16 @@
 package kibana
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/stretchr/testify/require"
 )
@@ -129,4 +134,95 @@ func Test_connectorResponseToModel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetConnectorByName(t *testing.T) {
+	const getConnectorsResponse = `[
+		{
+		  "id": "c55b6eb0-6bad-11eb-9f3b-611eebc6c3ad",
+		  "connector_type_id": ".index",
+		  "name": "my-connector",
+		  "config": {
+			"index": "test-index",
+			"refresh": false,
+			"executionTimeField": null
+		  },
+		  "is_preconfigured": false,
+		  "is_deprecated": false,
+		  "is_missing_secrets": false,
+		  "referenced_by_count": 3
+		},
+		{
+			"id": "d55b6eb0-6bad-11eb-9f3b-611eebc6c3ad",
+			"connector_type_id": ".index",
+			"name": "doubledup-connector",
+			"config": {
+			  "index": "test-index",
+			  "refresh": false,
+			  "executionTimeField": null
+			},
+			"is_preconfigured": false,
+			"is_deprecated": false,
+			"is_missing_secrets": false,
+			"referenced_by_count": 3
+		  },
+		  {
+			"id": "855b6eb0-6bad-11eb-9f3b-611eebc6c3ad",
+			"connector_type_id": ".index",
+			"name": "doubledup-connector",
+			"config": {
+			  "index": "test-index",
+			  "refresh": false,
+			  "executionTimeField": null
+			},
+			"is_preconfigured": false,
+			"is_deprecated": false,
+			"is_missing_secrets": false,
+			"referenced_by_count": 0
+		  }
+	  ]`
+
+	var requests []*http.Request
+	var mockResponses []string
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		requests = append(requests, req)
+
+		if len(mockResponses) > 0 {
+			r := []byte(mockResponses[0])
+			// t.Logf("Responding with %s", r)
+			rw.Header().Add("X-Elastic-Product", "Elasticsearch")
+			rw.Header().Add("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusOK)
+			rw.Write(r)
+			mockResponses = mockResponses[1:]
+		} else {
+			t.Fatalf("Unexpected request: %s %s", req.Method, req.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	mockResponses = append(mockResponses, getConnectorsResponse)
+
+	err := os.Setenv("ELASTICSEARCH_URL", server.URL)
+	require.NoError(t, err)
+	err = os.Setenv("KIBANA_ENDPOINT", server.URL)
+	require.NoError(t, err)
+
+	apiClient, err := clients.NewAcceptanceTestingClient()
+	require.NoError(t, err)
+
+	connector, diags := GetConnectorByName(context.Background(), apiClient, "my-connector", "default")
+	require.Nil(t, diags)
+	require.NotNil(t, connector)
+
+	mockResponses = append(mockResponses, getConnectorsResponse)
+	failConnector, diags := GetConnectorByName(context.Background(), apiClient, "failwhale", "default")
+	require.NotNil(t, diags)
+	require.Nil(t, failConnector)
+
+	mockResponses = append(mockResponses, getConnectorsResponse)
+	dupConnector, diags := GetConnectorByName(context.Background(), apiClient, "doubledup-connector", "default")
+	require.NotNil(t, diags)
+	require.Nil(t, dupConnector)
+
 }

@@ -12,63 +12,64 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+var connectorSchema = map[string]*schema.Schema{
+	"connector_id": {
+		Description: "A UUID v1 or v4 to use instead of a randomly generated ID.",
+		Type:        schema.TypeString,
+		Computed:    true,
+		Optional:    true,
+		ForceNew:    true,
+	},
+	"space_id": {
+		Description: "An identifier for the space. If space_id is not provided, the default space is used.",
+		Type:        schema.TypeString,
+		Optional:    true,
+		Default:     "default",
+		ForceNew:    true,
+	},
+	"name": {
+		Description: "The name of the connector. While this name does not have to be unique, a distinctive name can help you identify a connector.",
+		Type:        schema.TypeString,
+		Required:    true,
+	},
+	"connector_type_id": {
+		Description: "The ID of the connector type, e.g. `.index`.",
+		Type:        schema.TypeString,
+		Required:    true,
+		ForceNew:    true,
+	},
+	"config": {
+		Description:  "The configuration for the connector. Configuration properties vary depending on the connector type.",
+		Type:         schema.TypeString,
+		Optional:     true,
+		Computed:     true,
+		ValidateFunc: validation.StringIsJSON,
+	},
+	"secrets": {
+		Description:      "The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.",
+		Type:             schema.TypeString,
+		Optional:         true,
+		DiffSuppressFunc: utils.DiffJsonSuppress,
+		ValidateFunc:     validation.StringIsJSON,
+	},
+	"is_deprecated": {
+		Description: "Indicates whether the connector type is deprecated.",
+		Type:        schema.TypeBool,
+		Computed:    true,
+	},
+	"is_missing_secrets": {
+		Description: "Indicates whether secrets are missing for the connector.",
+		Type:        schema.TypeBool,
+		Computed:    true,
+	},
+	"is_preconfigured": {
+		Description: "Indicates whether it is a preconfigured connector.",
+		Type:        schema.TypeBool,
+		Computed:    true,
+	},
+}
+
 func ResourceActionConnector() *schema.Resource {
-	apikeySchema := map[string]*schema.Schema{
-		"connector_id": {
-			Description: "A UUID v1 or v4 to use instead of a randomly generated ID.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Optional:    true,
-			ForceNew:    true,
-		},
-		"space_id": {
-			Description: "An identifier for the space. If space_id is not provided, the default space is used.",
-			Type:        schema.TypeString,
-			Optional:    true,
-			Default:     "default",
-			ForceNew:    true,
-		},
-		"name": {
-			Description: "The name of the connector. While this name does not have to be unique, a distinctive name can help you identify a connector.",
-			Type:        schema.TypeString,
-			Required:    true,
-		},
-		"connector_type_id": {
-			Description: "The ID of the connector type, e.g. `.index`.",
-			Type:        schema.TypeString,
-			Required:    true,
-			ForceNew:    true,
-		},
-		"config": {
-			Description:  "The configuration for the connector. Configuration properties vary depending on the connector type.",
-			Type:         schema.TypeString,
-			Optional:     true,
-			Computed:     true,
-			ValidateFunc: validation.StringIsJSON,
-		},
-		"secrets": {
-			Description:      "The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.",
-			Type:             schema.TypeString,
-			Optional:         true,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
-			ValidateFunc:     validation.StringIsJSON,
-		},
-		"is_deprecated": {
-			Description: "Indicates whether the connector type is deprecated.",
-			Type:        schema.TypeBool,
-			Computed:    true,
-		},
-		"is_missing_secrets": {
-			Description: "Indicates whether secrets are missing for the connector.",
-			Type:        schema.TypeBool,
-			Computed:    true,
-		},
-		"is_preconfigured": {
-			Description: "Indicates whether it is a preconfigured connector.",
-			Type:        schema.TypeBool,
-			Computed:    true,
-		},
-	}
 
 	return &schema.Resource{
 		Description: "Creates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html",
@@ -83,7 +84,7 @@ func ResourceActionConnector() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
-		Schema: apikeySchema,
+		Schema: connectorSchema,
 	}
 }
 
@@ -191,6 +192,22 @@ func resourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta int
 		d.SetId("")
 		return diags
 	}
+	if diags.HasError() {
+		return diags
+	}
+
+	return flattenActionConnector(connector, d)
+}
+
+func resourceConnectorsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+	name := d.Get("name").(string)
+	spaceId := d.Get("space_id").(string)
+
+	connector, diags := kibana.GetConnectorByName(ctx, client, name, spaceId)
 	if diags.HasError() {
 		return diags
 	}

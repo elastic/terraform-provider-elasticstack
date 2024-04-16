@@ -141,6 +141,67 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 	return connector, nil
 }
 
+func GetConnectorByName(ctx context.Context, apiClient *clients.ApiClient, connectorName, spaceID string) (*models.KibanaActionConnector, diag.Diagnostics) {
+	client, err := apiClient.GetKibanaConnectorsClient(ctx)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	httpResp, err := client.GetConnectors(ctx, spaceID)
+
+	if err != nil {
+		return nil, diag.Errorf("unable to get connectors: [%v]", err)
+	}
+
+	defer httpResp.Body.Close()
+
+	resp, err := connectors.ParseGetConnectorsResponse(httpResp)
+	if err != nil {
+		return nil, diag.Errorf("unable to parse connectors get response: [%v]", err)
+	}
+
+	if resp.JSON401 != nil {
+		return nil, diag.Errorf("%s: %s", *resp.JSON401.Error, *resp.JSON401.Message)
+	}
+
+	if resp.JSON200 == nil {
+		return nil, diag.Errorf("%s: %s", resp.Status(), string(resp.Body))
+	}
+
+	foundConnectors := []*models.KibanaActionConnector{}
+	for _, connector := range *resp.JSON200 {
+		//this marshaling and unmarshaling business allows us to create a type with unexported fields.
+		bytes, err := json.Marshal(connector)
+		if err != nil {
+			return nil, diag.Errorf("cannot marshal connector: %v", err)
+		}
+
+		var respProps connectors.ConnectorResponseProperties
+		err = json.Unmarshal(bytes, &respProps)
+		if err != nil {
+			return nil, diag.Errorf("cannot unmarshal connector: %v", err)
+		}
+
+		c, err := connectorResponseToModel(spaceID, respProps)
+		if err != nil {
+			return nil, diag.Errorf("unable to convert response to model: %v", err)
+		}
+		if c.Name == connectorName {
+			foundConnectors = append(foundConnectors, c)
+		}
+	}
+
+	if len(foundConnectors) == 1 {
+		return foundConnectors[0], nil
+	}
+
+	if len(foundConnectors) > 1 {
+		return nil, diag.Errorf("multiple connectors with name [%s/%s] found while creating elasticstack_kibana_action_connector datasource", spaceID, connectorName)
+	}
+
+	return nil, diag.Errorf("connector [%s/%s] not found in elasticstack_kibana_action_connector datasource", spaceID, connectorName)
+}
+
 func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID string, spaceID string) diag.Diagnostics {
 	client, err := apiClient.GetKibanaConnectorsClient(ctx)
 	if err != nil {
