@@ -189,7 +189,6 @@ func TestGetConnectorByName(t *testing.T) {
 
 		if len(mockResponses) > 0 {
 			r := []byte(mockResponses[0])
-			// t.Logf("Responding with %s", r)
 			rw.Header().Add("X-Elastic-Product", "Elasticsearch")
 			rw.Header().Add("Content-Type", "application/json")
 			rw.WriteHeader(http.StatusOK)
