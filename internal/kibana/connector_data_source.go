@@ -17,9 +17,14 @@ func DataSourceConnector() *schema.Resource {
 
 func dataSourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	connectorName := d.Get("name").(string)
-	d.Set("name", connectorName)
+	if err := d.Set("name", connectorName); err != nil {
+		return diag.FromErr(err)
+	}
+
 	spaceId := d.Get("space_id").(string)
-	d.SetId(spaceId)
+	if err := d.Set("space_id", spaceId); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return resourceConnectorsRead(ctx, d, meta)
 }

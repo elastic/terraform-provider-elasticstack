@@ -193,7 +193,8 @@ func TestGetConnectorByName(t *testing.T) {
 			rw.Header().Add("X-Elastic-Product", "Elasticsearch")
 			rw.Header().Add("Content-Type", "application/json")
 			rw.WriteHeader(http.StatusOK)
-			rw.Write(r)
+			_, err := rw.Write(r)
+			require.NoError(t, err)
 			mockResponses = mockResponses[1:]
 		} else {
 			t.Fatalf("Unexpected request: %s %s", req.Method, req.URL.Path)
