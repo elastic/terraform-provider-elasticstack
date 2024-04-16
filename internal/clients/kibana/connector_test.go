@@ -139,27 +139,27 @@ func Test_connectorResponseToModel(t *testing.T) {
 func TestGetConnectorByName(t *testing.T) {
 	const getConnectorsResponse = `[
 		{
-		  "id": "c55b6eb0-6bad-11eb-9f3b-611eebc6c3ad",
-		  "connector_type_id": ".index",
-		  "name": "my-connector",
-		  "config": {
+			"id": "c55b6eb0-6bad-11eb-9f3b-611eebc6c3ad",
+			"connector_type_id": ".index",
+			"name": "my-connector",
+			"config": {
 			"index": "test-index",
 			"refresh": false,
 			"executionTimeField": null
-		  },
-		  "is_preconfigured": false,
-		  "is_deprecated": false,
-		  "is_missing_secrets": false,
-		  "referenced_by_count": 3
+			},
+			"is_preconfigured": false,
+			"is_deprecated": false,
+			"is_missing_secrets": false,
+			"referenced_by_count": 3
 		},
 		{
 			"id": "d55b6eb0-6bad-11eb-9f3b-611eebc6c3ad",
 			"connector_type_id": ".index",
 			"name": "doubledup-connector",
 			"config": {
-			  "index": "test-index",
-			  "refresh": false,
-			  "executionTimeField": null
+				"index": "test-index",
+				"refresh": false,
+				"executionTimeField": null
 			},
 			"is_preconfigured": false,
 			"is_deprecated": false,
