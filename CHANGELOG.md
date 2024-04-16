@@ -5,6 +5,10 @@
 - Prevent a provider panic when an `elasticstack_elasticsearch_template` or `elasticstack_elasticsearch_component_template` includes an empty `template` (`template {}`) block. ([#598](https://github.com/elastic/terraform-provider-elasticstack/pull/598))
 - Prevent `elasticstack_kibana_space` to attempt the space recreation if `initials` and `color` are not provided. ([#606](https://github.com/elastic/terraform-provider-elasticstack/pull/606))
 
+### Added
+
+- Added datasource for alerting connectors.  ([#607](https://github.com/elastic/terraform-provider-elasticstack/pull/607))
+
 ## [0.11.2] - 2024-03-13
 
 ### Fixed
