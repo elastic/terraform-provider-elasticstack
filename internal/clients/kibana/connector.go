@@ -170,6 +170,9 @@ func GetConnectorByName(ctx context.Context, apiClient *clients.ApiClient, conne
 
 	foundConnectors := []*models.KibanaActionConnector{}
 	for _, connector := range *resp.JSON200 {
+		if connector.Name != connectorName {
+			continue
+		}
 		//this marshaling and unmarshaling business allows us to create a type with unexported fields.
 		bytes, err := json.Marshal(connector)
 		if err != nil {
@@ -186,9 +189,8 @@ func GetConnectorByName(ctx context.Context, apiClient *clients.ApiClient, conne
 		if err != nil {
 			return nil, diag.Errorf("unable to convert response to model: %v", err)
 		}
-		if c.Name == connectorName {
-			foundConnectors = append(foundConnectors, c)
-		}
+
+		foundConnectors = append(foundConnectors, c)
 	}
 
 	if len(foundConnectors) == 1 {
