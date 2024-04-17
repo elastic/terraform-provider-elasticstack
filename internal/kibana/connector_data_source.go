@@ -1,15 +1,13 @@
 package kibana
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func DataSourceConnector() *schema.Resource {
 	var connectorSchema = map[string]*schema.Schema{
 		"connector_id": {
-			Description: "A UUID v1 or v4 to use instead of a randomly generated ID.",
+			Description: "A UUID v1 or v4 randomly generated ID.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
@@ -18,7 +16,6 @@ func DataSourceConnector() *schema.Resource {
 			Type:        schema.TypeString,
 			Optional:    true,
 			Default:     "default",
-			ForceNew:    true,
 		},
 		"name": {
 			Description: "The name of the connector. While this name does not have to be unique, a distinctive name can help you identify a connector.",
@@ -29,21 +26,11 @@ func DataSourceConnector() *schema.Resource {
 			Description: "The ID of the connector type, e.g. `.index`.",
 			Type:        schema.TypeString,
 			Optional:    true,
-			ForceNew:    true,
 		},
 		"config": {
-			Description:  "The configuration for the connector. Configuration properties vary depending on the connector type.",
-			Type:         schema.TypeString,
-			Optional:     true,
-			Computed:     true,
-			ValidateFunc: validation.StringIsJSON,
-		},
-		"secrets": {
-			Description:      "The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.",
-			Type:             schema.TypeString,
-			Optional:         true,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
-			ValidateFunc:     validation.StringIsJSON,
+			Description: "The configuration for the connector. Configuration properties vary depending on the connector type.",
+			Type:        schema.TypeString,
+			Computed:    true,
 		},
 		"is_deprecated": {
 			Description: "Indicates whether the connector type is deprecated.",
