@@ -16,8 +16,9 @@ func TestAccDataSourceKibanaConnector(t *testing.T) {
 				Config: testAccDataSourceConnector,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "name", "myconnector"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "space_id", "supdawg"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "space_id", "default"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "connector_type_id", ".slack"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_action_connector.myconnector", "connector_id"),
 				),
 			},
 		},
@@ -30,10 +31,8 @@ provider "elasticstack" {
   kibana {}
 }
 
-
 resource "elasticstack_kibana_action_connector" "slack" {
 	name              = "myconnector"
-	space_id		  = "supdawg"
 	connector_type_id = ".slack"
 	secrets = jsonencode({
 	  webhookUrl = "https://internet.com"
@@ -41,8 +40,6 @@ resource "elasticstack_kibana_action_connector" "slack" {
   }
 
 data "elasticstack_kibana_action_connector" "myconnector" {
-	name    = "myconnector"
-	space_id = "supdawg"
+	name    = elasticstack_kibana_action_connector.slack.name
 }
-
 `
