@@ -16,13 +16,12 @@ Search for a connector by name, space id, and type. Note, that this data source 
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
-
 }
 
 data "elasticstack_kibana_action_connector" "example" {
-  name           = "myslackconnector"
-  space_id       = "default"
-  connector_type = ".slack"
+  name              = "myslackconnector"
+  space_id          = "default"
+  connector_type_id = ".slack"
 }
 
 output "connector_id" {
@@ -35,18 +34,17 @@ output "connector_id" {
 
 ### Required
 
-- `connector_type_id` (String) The ID of the connector type, e.g. `.index`.
 - `name` (String) The name of the connector. While this name does not have to be unique, a distinctive name can help you identify a connector.
 
 ### Optional
 
-- `config` (String) The configuration for the connector. Configuration properties vary depending on the connector type.
-- `connector_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
-- `secrets` (String) The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.
+- `connector_type_id` (String) The ID of the connector type, e.g. `.index`.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
 
+- `config` (String) The configuration for the connector. Configuration properties vary depending on the connector type.
+- `connector_id` (String) A UUID v1 or v4 randomly generated ID.
 - `id` (String) The ID of this resource.
 - `is_deprecated` (Boolean) Indicates whether the connector type is deprecated.
 - `is_missing_secrets` (Boolean) Indicates whether secrets are missing for the connector.
