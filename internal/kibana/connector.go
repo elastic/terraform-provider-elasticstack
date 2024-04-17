@@ -209,7 +209,11 @@ func resourceConnectorsRead(ctx context.Context, d *schema.ResourceData, meta in
 	if diags.HasError() {
 		return diags
 	}
-
+	id, diags := client.ID(ctx, connector.ConnectorID)
+	if diags.HasError() {
+		return diags
+	}
+	d.SetId(id.String())
 	return flattenActionConnector(connector, d)
 }
 
