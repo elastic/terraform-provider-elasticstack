@@ -196,10 +196,10 @@ func GetConnectorByName(ctx context.Context, apiClient *clients.ApiClient, conne
 	}
 
 	if len(foundConnectors) > 1 {
-		return nil, diag.Errorf("multiple connectors with name [%s/%s] found while creating elasticstack_kibana_action_connector datasource", spaceID, connectorName)
+		return nil, diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: multiple connectors with name [%s/%s] found", spaceID, connectorName)
 	}
 
-	return nil, diag.Errorf("connector [%s/%s] not found in elasticstack_kibana_action_connector datasource", spaceID, connectorName)
+	return nil, diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: connector [%s/%s] not found", spaceID, connectorName)
 }
 
 func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID string, spaceID string) diag.Diagnostics {
