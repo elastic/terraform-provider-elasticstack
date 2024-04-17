@@ -35,6 +35,16 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Updated space description"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "ingestManager"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "enterpriseSearch"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
+				),
+			},
+			{
+				Config: testAccResourceSpaceCreate(spaceId),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceId),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Name %s", spaceId)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
 				),
 			},
 		},
@@ -66,6 +76,7 @@ resource "elasticstack_kibana_space" "test_space" {
   name              = "%s"
   description       = "Updated space description"
   disabled_features = ["ingestManager", "enterpriseSearch"]
+  color             = "#FFFFFF"
 }
 	`, id, fmt.Sprintf("Updated %s", id))
 }
