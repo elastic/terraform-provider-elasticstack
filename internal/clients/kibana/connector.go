@@ -141,7 +141,7 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 	return connector, nil
 }
 
-func GetConnectorByName(ctx context.Context, apiClient *clients.ApiClient, connectorName, spaceID string) (*models.KibanaActionConnector, diag.Diagnostics) {
+func SearchConnector(ctx context.Context, apiClient *clients.ApiClient, connectorName, spaceID, connectorTypeID string) (*models.KibanaActionConnector, diag.Diagnostics) {
 	client, err := apiClient.GetKibanaConnectorsClient(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -173,6 +173,11 @@ func GetConnectorByName(ctx context.Context, apiClient *clients.ApiClient, conne
 		if connector.Name != connectorName {
 			continue
 		}
+
+		if connectorTypeID != "" && string(connector.ConnectorTypeId) != connectorTypeID {
+			continue
+		}
+
 		//this marshaling and unmarshaling business allows us to create a type with unexported fields.
 		bytes, err := json.Marshal(connector)
 		if err != nil {

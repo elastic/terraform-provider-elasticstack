@@ -211,18 +211,28 @@ func TestGetConnectorByName(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingClient()
 	require.NoError(t, err)
 
-	connector, diags := GetConnectorByName(context.Background(), apiClient, "my-connector", "default")
+	connector, diags := SearchConnector(context.Background(), apiClient, "my-connector", "default", "")
 	require.Nil(t, diags)
 	require.NotNil(t, connector)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
-	failConnector, diags := GetConnectorByName(context.Background(), apiClient, "failwhale", "default")
+	failConnector, diags := SearchConnector(context.Background(), apiClient, "failwhale", "default", "")
 	require.NotNil(t, diags)
 	require.Nil(t, failConnector)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
-	dupConnector, diags := GetConnectorByName(context.Background(), apiClient, "doubledup-connector", "default")
+	dupConnector, diags := SearchConnector(context.Background(), apiClient, "doubledup-connector", "default", "")
 	require.NotNil(t, diags)
 	require.Nil(t, dupConnector)
+
+	mockResponses = append(mockResponses, getConnectorsResponse)
+	wrongConnectorType, diags := SearchConnector(context.Background(), apiClient, "my-connector", "default", ".slack")
+	require.NotNil(t, diags)
+	require.Nil(t, wrongConnectorType)
+
+	mockResponses = append(mockResponses, getConnectorsResponse)
+	successConnector, diags := SearchConnector(context.Background(), apiClient, "my-connecctor", "default", ".index")
+	require.NotNil(t, diags)
+	require.Nil(t, successConnector)
 
 }
