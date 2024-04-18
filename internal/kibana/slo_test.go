@@ -13,14 +13,21 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/stretchr/testify/require"
 
-	// sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccResourceSlo(t *testing.T) {
+	// This test exposes a bug in Kibana present in 8.11.x
+	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	require.NoError(t, err)
+
+	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	require.NoError(t, err)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -28,7 +35,7 @@ func TestAccResourceSlo(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
 				Config:   getSLOConfig(sloName, "apm_latency_indicator", false, []string{}, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
@@ -51,14 +58,14 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{ //check that name can be updated
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
 				Config:   getSLOConfig(fmt.Sprintf("Updated %s", sloName), "apm_latency_indicator", false, []string{}, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("Updated %s", sloName)),
 				),
 			},
 			{ //check that settings can be updated from api-computed defaults
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
 				Config:   getSLOConfig(sloName, "apm_latency_indicator", true, []string{}, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
@@ -66,7 +73,7 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
 				Config:   getSLOConfig(sloName, "apm_availability_indicator", true, []string{}, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.environment", "production"),
@@ -77,7 +84,7 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
 				Config:   getSLOConfig(sloName, "kql_custom_indicator", true, []string{}, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index"),
@@ -88,7 +95,7 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints),
 				Config:   getSLOConfig(sloName, "histogram_custom_indicator", true, []string{}, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.index", "my-index"),
@@ -102,7 +109,7 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints),
 				Config:   getSLOConfig(sloName, "metric_custom_indicator", true, []string{}, "some.field"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index"),
@@ -125,7 +132,7 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0"))),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints),
 				Config:   getSLOConfig(sloName, "metric_custom_indicator", true, []string{"tag-1", "another_tag"}, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.0", "tag-1"),
