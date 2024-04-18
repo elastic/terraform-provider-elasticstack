@@ -197,26 +197,6 @@ func resourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta int
 	return flattenActionConnector(connector, d)
 }
 
-func resourceConnectorsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
-	if diags.HasError() {
-		return diags
-	}
-	name := d.Get("name").(string)
-	spaceId := d.Get("space_id").(string)
-
-	connector, diags := kibana.GetConnectorByName(ctx, client, name, spaceId)
-	if diags.HasError() {
-		return diags
-	}
-	id, diags := client.ID(ctx, connector.ConnectorID)
-	if diags.HasError() {
-		return diags
-	}
-	d.SetId(id.String())
-	return flattenActionConnector(connector, d)
-}
-
 func resourceConnectorDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {

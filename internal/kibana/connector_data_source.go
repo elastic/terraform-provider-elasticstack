@@ -1,6 +1,11 @@
 package kibana
 
 import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -51,7 +56,27 @@ func DataSourceConnector() *schema.Resource {
 
 	return &schema.Resource{
 		Description: "Search for a connector by name, space id, and type. Note, that this data source will fail if more than one connector shares the same name.",
-		ReadContext: resourceConnectorsRead,
+		ReadContext: datasourceConnectorRead,
 		Schema:      connectorSchema,
 	}
+}
+
+func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+	name := d.Get("name").(string)
+	spaceId := d.Get("space_id").(string)
+	connectorType := d.Get("connector_type_id").(string)
+
+	connector, diags := kibana.SearchConnector(ctx, client, name, spaceId, connectorType)
+	if diags.HasError() {
+		return diags
+	}
+
+	compositeID := &clients.CompositeId{ClusterId: spaceId, ResourceId: connector.ConnectorID}
+	d.SetId(compositeID.String())
+
+	return flattenActionConnector(connector, d)
 }
