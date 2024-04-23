@@ -79,7 +79,8 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_info":                               cluster.DataSourceClusterInfo(),
 			"elasticstack_elasticsearch_enrich_policy":                      enrich.DataSourceEnrichPolicy(),
 
-			"elasticstack_kibana_security_role": kibana.DataSourceRole(),
+			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
+			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
 
 			"elasticstack_fleet_enrollment_tokens": fleet.DataSourceEnrollmentTokens(),
 			"elasticstack_fleet_integration":       fleet.DataSourceIntegration(),

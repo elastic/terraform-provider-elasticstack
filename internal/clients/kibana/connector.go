@@ -11,6 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -139,6 +140,69 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 	}
 
 	return connector, nil
+}
+
+func SearchConnectors(ctx context.Context, apiClient *clients.ApiClient, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, diag.Diagnostics) {
+	client, err := apiClient.GetKibanaConnectorsClient(ctx)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	httpResp, err := client.GetConnectors(ctx, spaceID)
+
+	if err != nil {
+		return nil, diag.Errorf("unable to get connectors: [%v]", err)
+	}
+
+	defer httpResp.Body.Close()
+
+	resp, err := connectors.ParseGetConnectorsResponse(httpResp)
+	if err != nil {
+		return nil, diag.Errorf("unable to parse connectors get response: [%v]", err)
+	}
+
+	if resp.JSON401 != nil {
+		return nil, diag.Errorf("%s: %s", *resp.JSON401.Error, *resp.JSON401.Message)
+	}
+
+	if resp.JSON200 == nil {
+		return nil, diag.Errorf("%s: %s", resp.Status(), string(resp.Body))
+	}
+
+	foundConnectors := []*models.KibanaActionConnector{}
+	for _, connector := range *resp.JSON200 {
+		if connector.Name != connectorName {
+			continue
+		}
+
+		if connectorTypeID != "" && string(connector.ConnectorTypeId) != connectorTypeID {
+			continue
+		}
+
+		//this marshaling and unmarshaling business allows us to create a type with unexported fields.
+		bytes, err := json.Marshal(connector)
+		if err != nil {
+			return nil, diag.Errorf("cannot marshal connector: %v", err)
+		}
+
+		var respProps connectors.ConnectorResponseProperties
+		err = json.Unmarshal(bytes, &respProps)
+		if err != nil {
+			return nil, diag.Errorf("cannot unmarshal connector: %v", err)
+		}
+
+		c, err := connectorResponseToModel(spaceID, respProps)
+		if err != nil {
+			return nil, diag.Errorf("unable to convert response to model: %v", err)
+		}
+
+		foundConnectors = append(foundConnectors, c)
+	}
+	if len(foundConnectors) == 0 {
+		tflog.Debug(ctx, fmt.Sprintf("no connectors found with name [%s/%s] and type [%s]", spaceID, connectorName, connectorTypeID))
+	}
+
+	return foundConnectors, nil
 }
 
 func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID string, spaceID string) diag.Diagnostics {

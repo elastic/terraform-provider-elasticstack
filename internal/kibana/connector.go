@@ -13,7 +13,7 @@ import (
 )
 
 func ResourceActionConnector() *schema.Resource {
-	apikeySchema := map[string]*schema.Schema{
+	var connectorSchema = map[string]*schema.Schema{
 		"connector_id": {
 			Description: "A UUID v1 or v4 to use instead of a randomly generated ID.",
 			Type:        schema.TypeString,
@@ -69,7 +69,6 @@ func ResourceActionConnector() *schema.Resource {
 			Computed:    true,
 		},
 	}
-
 	return &schema.Resource{
 		Description: "Creates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html",
 
@@ -83,7 +82,7 @@ func ResourceActionConnector() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
-		Schema: apikeySchema,
+		Schema: connectorSchema,
 	}
 }
 
