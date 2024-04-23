@@ -182,8 +182,11 @@ func TestGetConnectorByName(t *testing.T) {
 		  }
 	  ]`
 
+	const emptyConnectorsResponse = `[]`
+
 	var requests []*http.Request
 	var mockResponses []string
+	var httpStatus int
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requests = append(requests, req)
 
@@ -191,7 +194,7 @@ func TestGetConnectorByName(t *testing.T) {
 			r := []byte(mockResponses[0])
 			rw.Header().Add("X-Elastic-Product", "Elasticsearch")
 			rw.Header().Add("Content-Type", "application/json")
-			rw.WriteHeader(http.StatusOK)
+			rw.WriteHeader(httpStatus)
 			_, err := rw.Write(r)
 			require.NoError(t, err)
 			mockResponses = mockResponses[1:]
@@ -201,6 +204,7 @@ func TestGetConnectorByName(t *testing.T) {
 	}))
 	defer server.Close()
 
+	httpStatus = http.StatusOK
 	mockResponses = append(mockResponses, getConnectorsResponse)
 
 	err := os.Setenv("ELASTICSEARCH_URL", server.URL)
@@ -211,28 +215,39 @@ func TestGetConnectorByName(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingClient()
 	require.NoError(t, err)
 
-	connector, diags := SearchConnector(context.Background(), apiClient, "my-connector", "default", "")
+	connector, diags := SearchConnectors(context.Background(), apiClient, "my-connector", "default", "")
 	require.Nil(t, diags)
 	require.NotNil(t, connector)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
-	failConnector, diags := SearchConnector(context.Background(), apiClient, "failwhale", "default", "")
-	require.NotNil(t, diags)
-	require.Nil(t, failConnector)
+	failConnector, diags := SearchConnectors(context.Background(), apiClient, "failwhale", "default", "")
+	require.Nil(t, diags)
+	require.Empty(t, failConnector)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
-	dupConnector, diags := SearchConnector(context.Background(), apiClient, "doubledup-connector", "default", "")
-	require.NotNil(t, diags)
-	require.Nil(t, dupConnector)
+	dupConnector, diags := SearchConnectors(context.Background(), apiClient, "doubledup-connector", "default", "")
+	require.Nil(t, diags)
+	require.Len(t, dupConnector, 2)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
-	wrongConnectorType, diags := SearchConnector(context.Background(), apiClient, "my-connector", "default", ".slack")
-	require.NotNil(t, diags)
-	require.Nil(t, wrongConnectorType)
+	wrongConnectorType, diags := SearchConnectors(context.Background(), apiClient, "my-connector", "default", ".slack")
+	require.Nil(t, diags)
+	require.Empty(t, wrongConnectorType)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
-	successConnector, diags := SearchConnector(context.Background(), apiClient, "my-connecctor", "default", ".index")
+	successConnector, diags := SearchConnectors(context.Background(), apiClient, "my-connector", "default", ".index")
+	require.Nil(t, diags)
+	require.Len(t, successConnector, 1)
+
+	mockResponses = append(mockResponses, emptyConnectorsResponse)
+	emptyConnector, diags := SearchConnectors(context.Background(), apiClient, "my-connector", "default", "")
+	require.Nil(t, diags)
+	require.Empty(t, emptyConnector)
+
+	httpStatus = http.StatusBadGateway
+	mockResponses = append(mockResponses, emptyConnectorsResponse)
+	fail, diags := SearchConnectors(context.Background(), apiClient, "my-connector", "default", "")
 	require.NotNil(t, diags)
-	require.Nil(t, successConnector)
+	require.Nil(t, fail)
 
 }

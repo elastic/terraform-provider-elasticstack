@@ -11,6 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -141,7 +142,7 @@ func GetConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID
 	return connector, nil
 }
 
-func SearchConnector(ctx context.Context, apiClient *clients.ApiClient, connectorName, spaceID, connectorTypeID string) (*models.KibanaActionConnector, diag.Diagnostics) {
+func SearchConnectors(ctx context.Context, apiClient *clients.ApiClient, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, diag.Diagnostics) {
 	client, err := apiClient.GetKibanaConnectorsClient(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -197,16 +198,11 @@ func SearchConnector(ctx context.Context, apiClient *clients.ApiClient, connecto
 
 		foundConnectors = append(foundConnectors, c)
 	}
-
-	if len(foundConnectors) == 1 {
-		return foundConnectors[0], nil
+	if len(foundConnectors) == 0 {
+		tflog.Debug(ctx, fmt.Sprintf("no connectors found with name [%s/%s] and type [%s]", spaceID, connectorName, connectorTypeID))
 	}
 
-	if len(foundConnectors) > 1 {
-		return nil, diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: multiple connectors with name [%s/%s] found", spaceID, connectorName)
-	}
-
-	return nil, diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: connector [%s/%s] not found", spaceID, connectorName)
+	return foundConnectors, nil
 }
 
 func DeleteConnector(ctx context.Context, apiClient *clients.ApiClient, connectorID string, spaceID string) diag.Diagnostics {

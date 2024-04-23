@@ -66,17 +66,25 @@ func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta i
 	if diags.HasError() {
 		return diags
 	}
-	name := d.Get("name").(string)
+	connectorName := d.Get("name").(string)
 	spaceId := d.Get("space_id").(string)
 	connectorType := d.Get("connector_type_id").(string)
 
-	connector, diags := kibana.SearchConnector(ctx, client, name, spaceId, connectorType)
+	foundConnectors, diags := kibana.SearchConnectors(ctx, client, connectorName, spaceId, connectorType)
 	if diags.HasError() {
 		return diags
 	}
 
-	compositeID := &clients.CompositeId{ClusterId: spaceId, ResourceId: connector.ConnectorID}
+	if len(foundConnectors) == 0 {
+		diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: connector with name [%s/%s] and type [%s] not found", spaceId, connectorName, connectorType)
+	}
+
+	if len(foundConnectors) > 1 {
+		return diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: multiple connectors found with name [%s/%s] and type [%s]", spaceId, connectorName, connectorType)
+	}
+
+	compositeID := &clients.CompositeId{ClusterId: spaceId, ResourceId: foundConnectors[0].ConnectorID}
 	d.SetId(compositeID.String())
 
-	return flattenActionConnector(connector, d)
+	return flattenActionConnector(foundConnectors[0], d)
 }
