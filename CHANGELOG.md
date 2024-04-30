@@ -4,6 +4,7 @@
 
 - Prevent a provider panic when an `elasticstack_elasticsearch_template` or `elasticstack_elasticsearch_component_template` includes an empty `template` (`template {}`) block. ([#598](https://github.com/elastic/terraform-provider-elasticstack/pull/598))
 - Prevent `elasticstack_kibana_space` to attempt the space recreation if `initials` and `color` are not provided. ([#606](https://github.com/elastic/terraform-provider-elasticstack/pull/606))
+- Prevent a provider panic in `elasticstack_kibana_data_view` when a `field_format` does not include a `pattern`. ([#619](https://github.com/elastic/terraform-provider-elasticstack/pull/619/files))
 
 ### Added
 
