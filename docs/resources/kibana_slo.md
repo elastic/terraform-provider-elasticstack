@@ -210,12 +210,16 @@ resource "elasticstack_kibana_slo" "custom_metric" {
 - `apm_latency_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--apm_latency_indicator))
 - `group_by` (String) Optional group by field to use to generate an SLO per distinct value.
 - `histogram_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--histogram_custom_indicator))
-- `id` (String) An ID (8 and 36 characters). If omitted, a UUIDv1 will be generated server-side.
 - `kql_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--kql_custom_indicator))
 - `metric_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator))
 - `settings` (Block List, Max: 1) The default settings should be sufficient for most users, but if needed, these properties can be overwritten. (see [below for nested schema](#nestedblock--settings))
+- `slo_id` (String) An ID (8 and 36 characters). If omitted, a UUIDv1 will be generated server-side.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) The tags for the SLO.
+
+### Read-Only
+
+- `id` (String) The ID of this resource.
 
 <a id="nestedblock--objective"></a>
 ### Nested Schema for `objective`
