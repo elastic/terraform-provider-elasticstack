@@ -293,7 +293,7 @@ func getSLOConfig(name string, indicatorType string, settingsEnabled bool, tags 
 
 		resource "elasticstack_kibana_slo" "test_slo" {
 			name        = "%s"
-			slo_id 		= "fully-sick-slo"
+			slo_id      = "fully-sick-slo"
 			description = "fully sick SLO"
 
 		%s
