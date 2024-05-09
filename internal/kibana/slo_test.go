@@ -39,6 +39,7 @@ func TestAccResourceSlo(t *testing.T) {
 				Config:   getSLOConfig(sloName, "apm_latency_indicator", false, []string{}, ""),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "slo_id", "fully-sick-slo"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "description", "fully sick SLO"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.environment", "production"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.service", "my-service"),
@@ -292,6 +293,7 @@ func getSLOConfig(name string, indicatorType string, settingsEnabled bool, tags 
 
 		resource "elasticstack_kibana_slo" "test_slo" {
 			name        = "%s"
+			slo_id      = "fully-sick-slo"
 			description = "fully sick SLO"
 
 		%s

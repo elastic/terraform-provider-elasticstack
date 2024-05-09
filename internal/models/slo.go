@@ -5,7 +5,7 @@ import (
 )
 
 type Slo struct {
-	ID              string
+	SloID           string
 	Name            string
 	Description     string
 	Indicator       slo.SloResponseIndicator
