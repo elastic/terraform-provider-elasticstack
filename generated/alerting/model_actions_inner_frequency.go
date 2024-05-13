@@ -12,7 +12,6 @@ package alerting
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 // checks if the ActionsInnerFrequency type satisfies the MappedNullable interface at compile time
@@ -26,8 +25,6 @@ type ActionsInnerFrequency struct {
 	// The throttle interval, which defines how often an alert generates repeated actions. It is applicable only if `notify_when` is set to `onThrottleInterval`. It is specified in seconds, minutes, hours, or days.
 	Throttle NullableString `json:"throttle,omitempty"`
 }
-
-type _ActionsInnerFrequency ActionsInnerFrequency
 
 // NewActionsInnerFrequency instantiates a new ActionsInnerFrequency object
 // This constructor will assign default values to properties that have it defined,
@@ -155,42 +152,6 @@ func (o ActionsInnerFrequency) ToMap() (map[string]interface{}, error) {
 		toSerialize["throttle"] = o.Throttle.Get()
 	}
 	return toSerialize, nil
-}
-
-func (o *ActionsInnerFrequency) UnmarshalJSON(bytes []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"notify_when",
-		"summary",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(bytes, &allProperties)
-
-	if err != nil {
-		return err
-	}
-
-	for _, requiredProperty := range requiredProperties {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varActionsInnerFrequency := _ActionsInnerFrequency{}
-
-	err = json.Unmarshal(bytes, &varActionsInnerFrequency)
-
-	if err != nil {
-		return err
-	}
-
-	*o = ActionsInnerFrequency(varActionsInnerFrequency)
-
-	return err
 }
 
 type NullableActionsInnerFrequency struct {

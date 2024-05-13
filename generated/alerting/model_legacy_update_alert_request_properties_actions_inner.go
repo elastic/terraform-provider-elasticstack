@@ -12,7 +12,6 @@ package alerting
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 // checks if the LegacyUpdateAlertRequestPropertiesActionsInner type satisfies the MappedNullable interface at compile time
@@ -29,8 +28,6 @@ type LegacyUpdateAlertRequestPropertiesActionsInner struct {
 	// The map to the `params` that the action type will receive. `params` are handled as Mustache templates and passed a default set of context.
 	Params map[string]interface{} `json:"params"`
 }
-
-type _LegacyUpdateAlertRequestPropertiesActionsInner LegacyUpdateAlertRequestPropertiesActionsInner
 
 // NewLegacyUpdateAlertRequestPropertiesActionsInner instantiates a new LegacyUpdateAlertRequestPropertiesActionsInner object
 // This constructor will assign default values to properties that have it defined,
@@ -164,44 +161,6 @@ func (o LegacyUpdateAlertRequestPropertiesActionsInner) ToMap() (map[string]inte
 	toSerialize["id"] = o.Id
 	toSerialize["params"] = o.Params
 	return toSerialize, nil
-}
-
-func (o *LegacyUpdateAlertRequestPropertiesActionsInner) UnmarshalJSON(bytes []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"actionTypeId",
-		"group",
-		"id",
-		"params",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(bytes, &allProperties)
-
-	if err != nil {
-		return err
-	}
-
-	for _, requiredProperty := range requiredProperties {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varLegacyUpdateAlertRequestPropertiesActionsInner := _LegacyUpdateAlertRequestPropertiesActionsInner{}
-
-	err = json.Unmarshal(bytes, &varLegacyUpdateAlertRequestPropertiesActionsInner)
-
-	if err != nil {
-		return err
-	}
-
-	*o = LegacyUpdateAlertRequestPropertiesActionsInner(varLegacyUpdateAlertRequestPropertiesActionsInner)
-
-	return err
 }
 
 type NullableLegacyUpdateAlertRequestPropertiesActionsInner struct {
