@@ -6,6 +6,7 @@
 - Prevent `elasticstack_kibana_space` to attempt the space recreation if `initials` and `color` are not provided. ([#606](https://github.com/elastic/terraform-provider-elasticstack/pull/606))
 - Prevent a provider panic in `elasticstack_kibana_data_view` when a `field_format` does not include a `pattern`. ([#619](https://github.com/elastic/terraform-provider-elasticstack/pull/619/files))
 - Fixed a bug where the `id` attribute for `elasticstack_kibana_slo` resources was ignored by renaming the attribute to `slo_id`. ([#622](https://github.com/elastic/terraform-provider-elasticstack/pull/622))
+- Fixed a bug where the `rule_id` attribute for `elasticstack_kibana_alerting_rule` was ignored. ([#626](https://github.com/elastic/terraform-provider-elasticstack/pull/626))
 
 ### Added
 
