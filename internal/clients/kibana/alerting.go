@@ -92,6 +92,11 @@ func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		return nil, diag.FromErr(err)
 	}
 
+	// TODO: Remove this manual check once OpenAPI spec is updated: https://github.com/elastic/kibana/issues/183223
+	if res.StatusCode == http.StatusConflict {
+		return nil, diag.Errorf("Status code [%d], Saved object [%s/%s] conflict (Rule ID already exists in this Space)", res.StatusCode, rule.SpaceID, rule.RuleID)
+	}
+
 	rule.RuleID = ruleRes.Id
 
 	defer res.Body.Close()
