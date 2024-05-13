@@ -32,6 +32,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				Config:   testAccResourceAlertingRuleCreate(ruleName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624b"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
@@ -44,6 +45,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				Config:   testAccResourceAlertingRuleUpdate(ruleName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", fmt.Sprintf("Updated %s", ruleName)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624b"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
@@ -66,6 +68,7 @@ provider "elasticstack" {
 
 resource "elasticstack_kibana_alerting_rule" "test_rule" {
   name         = "%s"
+  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac5471624b"
   consumer     = "alerts"
   notify_when  = "onActiveAlert"
   params       = jsonencode({
@@ -97,6 +100,7 @@ provider "elasticstack" {
 
 resource "elasticstack_kibana_alerting_rule" "test_rule" {
   name         = "Updated %s"
+  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac5471624b"
   consumer     = "alerts"
   notify_when  = "onActiveAlert"
   params       = jsonencode({
