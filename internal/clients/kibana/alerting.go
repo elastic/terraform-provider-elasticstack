@@ -26,7 +26,7 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 	}
 
 	return &models.AlertingRule{
-		ID:         res.Id,
+		RuleID:     res.Id,
 		SpaceID:    spaceID,
 		Name:       res.Name,
 		Consumer:   res.Consumer,
@@ -84,11 +84,20 @@ func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		Tags:     rule.Tags,
 		Throttle: *alerting.NewNullableString(rule.Throttle),
 	}
-	req := client.CreateRule(ctxWithAuth, rule.SpaceID, "").KbnXsrf("true").CreateRuleRequest(reqModel)
+
+	req := client.CreateRule(ctxWithAuth, rule.SpaceID, rule.RuleID).KbnXsrf("true").CreateRuleRequest(reqModel)
+
 	ruleRes, res, err := req.Execute()
 	if err != nil && res == nil {
 		return nil, diag.FromErr(err)
 	}
+
+	// TODO: Remove this manual check once OpenAPI spec is updated: https://github.com/elastic/kibana/issues/183223
+	if res.StatusCode == http.StatusConflict {
+		return nil, diag.Errorf("Status code [%d], Saved object [%s/%s] conflict (Rule ID already exists in this Space)", res.StatusCode, rule.SpaceID, rule.RuleID)
+	}
+
+	rule.RuleID = ruleRes.Id
 
 	defer res.Body.Close()
 	return ruleResponseToModel(rule.SpaceID, ruleRes), utils.CheckHttpError(res, "Unabled to create alerting rule")
@@ -113,12 +122,12 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		Tags:     rule.Tags,
 		Throttle: *alerting.NewNullableString(rule.Throttle),
 	}
-	req := client.UpdateRule(ctxWithAuth, rule.ID, rule.SpaceID).KbnXsrf("true").UpdateRuleRequest(reqModel)
+	req := client.UpdateRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").UpdateRuleRequest(reqModel)
 	ruleRes, res, err := req.Execute()
 	if err != nil && res == nil {
 		return nil, diag.FromErr(err)
 	}
-
+	rule.RuleID = ruleRes.Id
 	defer res.Body.Close()
 	if diags := utils.CheckHttpError(res, "Unable to update alerting rule"); diags.HasError() {
 		return nil, diags
@@ -126,7 +135,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 
 	shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
 	if shouldBeEnabled && !ruleRes.Enabled {
-		res, err := client.EnableRule(ctxWithAuth, rule.ID, rule.SpaceID).KbnXsrf("true").Execute()
+		res, err := client.EnableRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").Execute()
 		if err != nil && res == nil {
 			return nil, diag.FromErr(err)
 		}
@@ -137,7 +146,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 	}
 
 	if !shouldBeEnabled && ruleRes.Enabled {
-		res, err := client.DisableRule(ctxWithAuth, rule.ID, rule.SpaceID).KbnXsrf("true").Execute()
+		res, err := client.DisableRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").Execute()
 		if err != nil && res == nil {
 			return nil, diag.FromErr(err)
 		}

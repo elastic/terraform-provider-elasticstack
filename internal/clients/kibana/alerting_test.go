@@ -36,7 +36,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 				Tags:       []string{"hello"},
 			},
 			expectedModel: &models.AlertingRule{
-				ID:         "id",
+				RuleID:     "id",
 				SpaceID:    "space-id",
 				Name:       "name",
 				Consumer:   "consumer",
@@ -82,7 +82,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 				Throttle: *alerting.NewNullableString(makePtr("throttle")),
 			},
 			expectedModel: &models.AlertingRule{
-				ID:              "id",
+				RuleID:          "id",
 				SpaceID:         "space-id",
 				Name:            "name",
 				Consumer:        "consumer",

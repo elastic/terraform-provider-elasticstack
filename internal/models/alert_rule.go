@@ -3,7 +3,7 @@ package models
 import "time"
 
 type AlertingRule struct {
-	ID         string
+	RuleID     string
 	SpaceID    string
 	Name       string
 	Consumer   string

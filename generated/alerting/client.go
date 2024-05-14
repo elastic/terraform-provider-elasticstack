@@ -34,8 +34,8 @@ import (
 )
 
 var (
-	JsonCheck       = regexp.MustCompile(`(?i:(?:application|text)/(?:[^;]+\+)?json)`)
-	XmlCheck        = regexp.MustCompile(`(?i:(?:application|text)/(?:[^;]+\+)?xml)`)
+	jsonCheck       = regexp.MustCompile(`(?i:(?:application|text)/(?:vnd\.[^;]+\+)?json)`)
+	xmlCheck        = regexp.MustCompile(`(?i:(?:application|text)/xml)`)
 	queryParamSplit = regexp.MustCompile(`(^|&)([^&]+)`)
 	queryDescape    = strings.NewReplacer("%5B", "[", "%5D", "]")
 )
@@ -414,11 +414,6 @@ func (c *APIClient) prepareRequest(
 			localVarRequest.SetBasicAuth(auth.UserName, auth.Password)
 		}
 
-		// APIKey Authentication
-		if auth, ok := ctx.Value(ContextAPIKeys).(APIKey); ok {
-			localVarRequest.Header.Add("Authorization", "ApiKey "+auth.Key)
-		}
-
 	}
 
 	for header, value := range c.cfg.DefaultHeader {
@@ -445,6 +440,7 @@ func (c *APIClient) decode(v interface{}, b []byte, contentType string) (err err
 			return
 		}
 		_, err = f.Seek(0, io.SeekStart)
+		err = os.Remove(f.Name())
 		return
 	}
 	if f, ok := v.(**os.File); ok {
@@ -457,15 +453,16 @@ func (c *APIClient) decode(v interface{}, b []byte, contentType string) (err err
 			return
 		}
 		_, err = (*f).Seek(0, io.SeekStart)
+		err = os.Remove((*f).Name())
 		return
 	}
-	if XmlCheck.MatchString(contentType) {
+	if xmlCheck.MatchString(contentType) {
 		if err = xml.Unmarshal(b, v); err != nil {
 			return err
 		}
 		return nil
 	}
-	if JsonCheck.MatchString(contentType) {
+	if jsonCheck.MatchString(contentType) {
 		if actualObj, ok := v.(interface{ GetActualInstance() interface{} }); ok { // oneOf, anyOf schemas
 			if unmarshalObj, ok := actualObj.(interface{ UnmarshalJSON([]byte) error }); ok { // make sure it has UnmarshalJSON defined
 				if err = unmarshalObj.UnmarshalJSON(b); err != nil {
@@ -530,9 +527,9 @@ func setBody(body interface{}, contentType string) (bodyBuf *bytes.Buffer, err e
 		_, err = bodyBuf.WriteString(s)
 	} else if s, ok := body.(*string); ok {
 		_, err = bodyBuf.WriteString(*s)
-	} else if JsonCheck.MatchString(contentType) {
+	} else if jsonCheck.MatchString(contentType) {
 		err = json.NewEncoder(bodyBuf).Encode(body)
-	} else if XmlCheck.MatchString(contentType) {
+	} else if xmlCheck.MatchString(contentType) {
 		var bs []byte
 		bs, err = xml.Marshal(body)
 		if err == nil {
