@@ -7,6 +7,29 @@ import (
 	"time"
 )
 
+type BuildDate struct {
+	time.Time
+}
+
+func (b *BuildDate) UnmarshalJSON(dateBytes []byte) error {
+	dateStr := strings.Trim(string(dateBytes), "\"")
+	if dateStr == "null" {
+		b.Time = time.Time{}
+		return nil
+	}
+
+	t, err := time.Parse("2006-01-02T15:04:05Z07:00", dateStr)
+	if err != nil {
+		t, err = time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			return err
+		}
+	}
+
+	b.Time = t
+	return nil
+}
+
 type ClusterInfo struct {
 	Name        string `json:"name"`
 	ClusterName string `json:"cluster_name"`
@@ -16,7 +39,7 @@ type ClusterInfo struct {
 		BuildType                        string    `json:"build_type"`
 		BuildHash                        string    `json:"build_hash"`
 		BuildFlavor                      string    `json:"build_flavor"`
-		BuildDate                        time.Time `json:"build_date"`
+		BuildDate                        BuildDate `json:"build_date"`
 		BuildSnapshot                    bool      `json:"build_snapshot"`
 		LuceneVersion                    string    `json:"lucene_version"`
 		MinimumWireCompatibilityVersion  string    `json:"minimum_wire_compatibility_version"`
