@@ -336,6 +336,15 @@ func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.D
 	return serverVersion, nil
 }
 
+func (a *ApiClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics) {
+	info, diags := a.serverInfo(ctx)
+	if diags.HasError() {
+		return "", diags
+	}
+
+	return info.Version.BuildFlavor, nil
+}
+
 func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 	info, diags := a.serverInfo(ctx)
 	if diags.HasError() {
