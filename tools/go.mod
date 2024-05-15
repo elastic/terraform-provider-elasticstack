@@ -6,7 +6,7 @@ toolchain go1.22.2
 
 require (
 	github.com/client9/misspell v0.3.4
-	github.com/deepmap/oapi-codegen/v2 v2.0.0
+	github.com/deepmap/oapi-codegen/v2 v2.1.0
 	github.com/golangci/golangci-lint v1.57.2
 	github.com/goreleaser/goreleaser v1.26.0
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
@@ -163,7 +163,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
-	github.com/getkin/kin-openapi v0.118.0 // indirect
+	github.com/getkin/kin-openapi v0.122.0 // indirect
 	github.com/ghostiam/protogetter v0.3.5 // indirect
 	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-critic/go-critic v0.11.2 // indirect
@@ -246,7 +246,7 @@ require (
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/jsonschema v0.12.0 // indirect
-	github.com/invopop/yaml v0.1.0 // indirect
+	github.com/invopop/yaml v0.2.0 // indirect
 	github.com/ipfs/bbloom v0.0.4 // indirect
 	github.com/ipfs/go-block-format v0.2.0 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
@@ -329,7 +329,7 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.0 // indirect
-	github.com/perimeterx/marshmallow v1.1.4 // indirect
+	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
