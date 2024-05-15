@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.11.2
+VERSION ?= 0.11.3
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -13,9 +13,9 @@ ACCTEST_COUNT = 1
 TEST ?= ./...
 SWAGGER_VERSION ?= 8.7
 
-GOVERSION ?= 1.22
+GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 8.12.2
+STACK_VERSION ?= 8.13.4
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
