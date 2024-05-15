@@ -97,7 +97,9 @@ func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		return nil, diag.Errorf("Status code [%d], Saved object [%s/%s] conflict (Rule ID already exists in this Space)", res.StatusCode, rule.SpaceID, rule.RuleID)
 	}
 
-	rule.RuleID = ruleRes.Id
+	if ruleRes != nil {
+		rule.RuleID = ruleRes.Id
+	}
 
 	defer res.Body.Close()
 	return ruleResponseToModel(rule.SpaceID, ruleRes), utils.CheckHttpError(res, "Unabled to create alerting rule")

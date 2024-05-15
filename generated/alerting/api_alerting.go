@@ -583,7 +583,7 @@ func (a *AlertingAPIService) CreateRuleExecute(r ApiCreateRuleRequest) (*RuleRes
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -734,7 +734,7 @@ func (a *AlertingAPIService) DeleteRuleExecute(r ApiDeleteRuleRequest) (*http.Re
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -876,7 +876,7 @@ func (a *AlertingAPIService) DisableRuleExecute(r ApiDisableRuleRequest) (*http.
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1018,7 +1018,7 @@ func (a *AlertingAPIService) EnableRuleExecute(r ApiEnableRuleRequest) (*http.Re
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1268,7 +1268,7 @@ func (a *AlertingAPIService) FindRulesExecute(r ApiFindRulesRequest) (*FindRules
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1396,7 +1396,7 @@ func (a *AlertingAPIService) GetAlertingHealthExecute(r ApiGetAlertingHealthRequ
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1528,7 +1528,7 @@ func (a *AlertingAPIService) GetRuleExecute(r ApiGetRuleRequest) (*RuleResponseP
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1667,7 +1667,7 @@ func (a *AlertingAPIService) GetRuleTypesExecute(r ApiGetRuleTypesRequest) ([]Ge
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1825,7 +1825,7 @@ func (a *AlertingAPIService) LegacyCreateAlertExecute(r ApiLegacyCreateAlertRequ
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -1968,7 +1968,7 @@ func (a *AlertingAPIService) LegacyDisableAlertExecute(r ApiLegacyDisableAlertRe
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -2102,7 +2102,7 @@ func (a *AlertingAPIService) LegacyEnableAlertExecute(r ApiLegacyEnableAlertRequ
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -2345,7 +2345,7 @@ func (a *AlertingAPIService) LegacyFindAlertsExecute(r ApiLegacyFindAlertsReques
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -2481,7 +2481,7 @@ func (a *AlertingAPIService) LegacyGetAlertExecute(r ApiLegacyGetAlertRequest) (
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -2613,7 +2613,7 @@ func (a *AlertingAPIService) LegacyGetAlertTypesExecute(r ApiLegacyGetAlertTypes
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -2745,7 +2745,7 @@ func (a *AlertingAPIService) LegacyGetAlertingHealthExecute(r ApiLegacyGetAlerti
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -2892,7 +2892,7 @@ func (a *AlertingAPIService) LegacyMuteAlertInstanceExecute(r ApiLegacyMuteAlert
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -3026,7 +3026,7 @@ func (a *AlertingAPIService) LegacyMuteAllAlertInstancesExecute(r ApiLegacyMuteA
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -3164,7 +3164,7 @@ func (a *AlertingAPIService) LegacyUnmuteAlertInstanceExecute(r ApiLegacyUnmuteA
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -3298,7 +3298,7 @@ func (a *AlertingAPIService) LegacyUnmuteAllAlertInstancesExecute(r ApiLegacyUnm
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -3447,7 +3447,7 @@ func (a *AlertingAPIService) LegacyUpdateAlertExecute(r ApiLegacyUpdateAlertRequ
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -3590,7 +3590,7 @@ func (a *AlertingAPIService) LegaryDeleteAlertExecute(r ApiLegaryDeleteAlertRequ
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -3725,7 +3725,7 @@ func (a *AlertingAPIService) MuteAlertExecute(r ApiMuteAlertRequest) (*http.Resp
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -3856,7 +3856,7 @@ func (a *AlertingAPIService) MuteAllAlertsExecute(r ApiMuteAllAlertsRequest) (*h
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -3991,7 +3991,7 @@ func (a *AlertingAPIService) UnmuteAlertExecute(r ApiUnmuteAlertRequest) (*http.
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -4122,7 +4122,7 @@ func (a *AlertingAPIService) UnmuteAllAlertsExecute(r ApiUnmuteAllAlertsRequest)
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}
@@ -4267,7 +4267,7 @@ func (a *AlertingAPIService) UpdateRuleExecute(r ApiUpdateRuleRequest) (*RuleRes
 				} else {
 					key = apiKey.Key
 				}
-				localVarHeaderParams["ApiKey"] = key
+				localVarHeaderParams["Authorization"] = key
 			}
 		}
 	}

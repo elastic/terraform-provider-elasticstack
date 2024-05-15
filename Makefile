@@ -293,7 +293,7 @@ help: ## this help
 .PHONY: generate-alerting-client
 generate-alerting-client: ## generate Kibana alerting client
 	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
-		-i https://raw.githubusercontent.com/elastic/kibana/$(SWAGGER_VERSION)/x-pack/plugins/alerting/docs/openapi/bundled.json \
+		-i /local/generated/alerting/bundled.yaml \
 		--skip-validate-spec \
 		--git-repo-id terraform-provider-elasticstack \
 		--git-user-id elastic \
