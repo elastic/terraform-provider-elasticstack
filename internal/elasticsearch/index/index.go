@@ -544,13 +544,13 @@ If specified, this mapping can include: field names, [field data types](https://
 		},
 		"wait_for_active_shards": {
 			Type:        schema.TypeString,
-			Description: "The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard.",
+			Description: "The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard. This value is ignored when running against Serverless projects.",
 			Optional:    true,
 			Default:     "1",
 		},
 		"master_timeout": {
 			Type:         schema.TypeString,
-			Description:  "Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Description:  "Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`. This value is ignored when running against Serverless projects.",
 			Optional:     true,
 			Default:      "30s",
 			ValidateFunc: utils.StringIsDuration,
@@ -759,25 +759,35 @@ func resourceIndexCreate(ctx context.Context, d *schema.ResourceData, meta inter
 		}
 	}
 
-	params := models.PutIndexParams{
-		WaitForActiveShards: d.Get("wait_for_active_shards").(string),
-		IncludeTypeName:     d.Get("include_type_name").(bool),
-	}
 	serverVersion, diags := client.ServerVersion(ctx)
 	if diags.HasError() {
 		return diags
 	}
+
+	serverFlavor, diags := client.ServerFlavor(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	params := models.PutIndexParams{
+		IncludeTypeName: d.Get("include_type_name").(bool),
+	}
+
 	if includeTypeName := d.Get("include_type_name").(bool); includeTypeName {
 		if serverVersion.GreaterThanOrEqual(includeTypeNameMinUnsupportedVersion) {
 			return diag.FromErr(fmt.Errorf("'include_type_name' field is supported only for elasticsearch v7.x"))
 		}
 		params.IncludeTypeName = includeTypeName
 	}
-	masterTimeout, err := time.ParseDuration(d.Get("master_timeout").(string))
-	if err != nil {
-		return diag.FromErr(err)
+
+	if serverFlavor != "serverless" {
+		params.WaitForActiveShards = d.Get("wait_for_active_shards").(string)
+		masterTimeout, err := time.ParseDuration(d.Get("master_timeout").(string))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		params.MasterTimeout = masterTimeout
 	}
-	params.MasterTimeout = masterTimeout
 
 	timeout, err := time.ParseDuration(d.Get("timeout").(string))
 	if err != nil {
