@@ -18,6 +18,8 @@ import (
 func TestAccResourceAlertingRule(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
+	t.Setenv("KIBANA_API_KEY", "")
+
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
