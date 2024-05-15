@@ -5,7 +5,7 @@ go 1.22
 toolchain go1.22.2
 
 require (
-	github.com/deepmap/oapi-codegen/v2 v2.0.0
+	github.com/deepmap/oapi-codegen/v2 v2.1.0
 	github.com/disaster37/go-kibana-rest/v8 v8.5.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/google/uuid v1.6.0
