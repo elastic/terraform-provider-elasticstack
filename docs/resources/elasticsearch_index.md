@@ -94,7 +94,7 @@ If specified, this mapping can include: field names, [field data types](https://
 **NOTE:**
 - Changing datatypes in the existing _mappings_ will force index to be re-created.
 - Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
-- `master_timeout` (String) Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
+- `master_timeout` (String) Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`. This value is ignored when running against Serverless projects.
 - `max_docvalue_fields_search` (Number) The maximum number of `docvalue_fields` that are allowed in a query.
 - `max_inner_result_window` (Number) The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.
 - `max_ngram_diff` (Number) The maximum allowed difference between min_gram and max_gram for NGramTokenizer and NGramTokenFilter.
@@ -130,7 +130,7 @@ If specified, this mapping can include: field names, [field data types](https://
 - `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
 - `timeout` (String) Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
-- `wait_for_active_shards` (String) The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard.
+- `wait_for_active_shards` (String) The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard. This value is ignored when running against Serverless projects.
 
 ### Read-Only
 
