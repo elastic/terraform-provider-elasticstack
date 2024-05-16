@@ -3,7 +3,7 @@
 set -euo pipefail
 
 echo "--- Golang version:"
-export GO_VERSION=$(grep -e '^go' "${BUILDKITE_BUILD_PATH}/go.mod" | cut -f 2 -d ' ')
+export GO_VERSION=$(grep -e '^go' "../go.mod" | cut -f 2 -d ' ')
 echo "${GO_VERSION}"
 
 RELEASE_VAULT_PATH=kv/ci-shared/terraform-providers
