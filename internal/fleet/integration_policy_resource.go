@@ -305,6 +305,9 @@ func resourceIntegrationPolicyRead(ctx context.Context, d *schema.ResourceData, 
 	if err := d.Set("namespace", pkgPolicy.Namespace); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("policy_id", pkgPolicy.Id); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("integration_name", pkgPolicy.Package.Name); err != nil {
 		return diag.FromErr(err)
 	}

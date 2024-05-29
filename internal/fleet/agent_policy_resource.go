@@ -220,6 +220,9 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 	if err := d.Set("namespace", agentPolicy.Namespace); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("policy_id", agentPolicy.Id); err != nil {
+		return diag.FromErr(err)
+	}
 	if agentPolicy.Description != nil {
 		if err := d.Set("description", *agentPolicy.Description); err != nil {
 			return diag.FromErr(err)
