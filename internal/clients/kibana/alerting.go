@@ -31,6 +31,7 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 		Name:       res.Name,
 		Consumer:   res.Consumer,
 		NotifyWhen: string(unwrapOptionalField(res.NotifyWhen)),
+
 		Params:     res.Params,
 		RuleTypeID: res.RuleTypeId,
 		Schedule: models.AlertingRuleSchedule{
@@ -124,18 +125,26 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		Tags:     rule.Tags,
 		Throttle: *alerting.NewNullableString(rule.Throttle),
 	}
+
 	req := client.UpdateRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").UpdateRuleRequest(reqModel)
+
 	ruleRes, res, err := req.Execute()
 	if err != nil && res == nil {
 		return nil, diag.FromErr(err)
 	}
-	rule.RuleID = ruleRes.Id
+
+	if ruleRes != nil {
+		rule.RuleID = ruleRes.Id
+	}
+
 	defer res.Body.Close()
+
 	if diags := utils.CheckHttpError(res, "Unable to update alerting rule"); diags.HasError() {
 		return nil, diags
 	}
 
 	shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
+
 	if shouldBeEnabled && !ruleRes.Enabled {
 		res, err := client.EnableRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").Execute()
 		if err != nil && res == nil {
