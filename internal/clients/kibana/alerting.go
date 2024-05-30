@@ -63,7 +63,12 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 	return actions
 }
 
-func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
+type ApiClient interface {
+	GetAlertingClient() (alerting.AlertingAPI, error)
+	SetAlertingAuthContext(context.Context) context.Context
+}
+
+func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -106,7 +111,7 @@ func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 	return ruleResponseToModel(rule.SpaceID, ruleRes), utils.CheckHttpError(res, "Unabled to create alerting rule")
 }
 
-func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
+func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
 		return nil, diag.FromErr(err)

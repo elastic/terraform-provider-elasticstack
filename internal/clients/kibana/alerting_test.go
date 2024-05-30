@@ -1,11 +1,17 @@
 package kibana
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -121,4 +127,73 @@ func Test_ruleResponseToModel(t *testing.T) {
 			require.Equal(t, tt.expectedModel, model)
 		})
 	}
+}
+
+func Test_CreateUpdateAlertingRule(t *testing.T) {
+	getApiClient := func() ApiClient {
+		return &FakeApiClient{
+			&FakeAlertingAPI{
+				RuleResponseProperties: nil,
+				HttpResponse: &http.Response{
+					StatusCode: 401,
+					Body:       io.NopCloser(strings.NewReader("some error")),
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name        string
+		testFunc    func(ctx context.Context, apiClient ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics)
+		client      ApiClient
+		rule        models.AlertingRule
+		expectedRes *models.AlertingRule
+		expectedErr string
+	}{
+		{
+			name:        "CreateAlertingRule should not crash when client returns 4xx",
+			testFunc:    CreateAlertingRule,
+			client:      getApiClient(),
+			rule:        models.AlertingRule{},
+			expectedRes: nil,
+			expectedErr: "some error",
+		},
+		{
+			name:        "UpdateAlertingRule should not crash when client returns 4xx",
+			testFunc:    UpdateAlertingRule,
+			client:      getApiClient(),
+			rule:        models.AlertingRule{},
+			expectedRes: nil,
+			expectedErr: "some error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rule, diags := tt.testFunc(context.Background(), tt.client, tt.rule)
+
+			if tt.expectedRes == nil {
+				require.Nil(t, rule)
+			} else {
+				require.Equal(t, tt.expectedRes, rule)
+			}
+
+			if tt.expectedErr != "" {
+				require.NotEmpty(t, diags)
+				if !strings.Contains(diags[0].Detail, tt.expectedErr) {
+					require.Fail(t, fmt.Sprintf("Diags ['%s'] should contain message ['%s']", diags[0].Detail, tt.expectedErr))
+				}
+			}
+		})
+	}
+}
+
+type FakeApiClient struct {
+	Alerting alerting.AlertingAPI
+}
+
+func (f *FakeApiClient) SetAlertingAuthContext(ctx context.Context) context.Context { return ctx }
+
+func (f *FakeApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
+	return f.Alerting, nil
 }
