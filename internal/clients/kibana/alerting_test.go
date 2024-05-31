@@ -13,6 +13,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func Test_ruleResponseToModel(t *testing.T) {
@@ -130,16 +131,14 @@ func Test_ruleResponseToModel(t *testing.T) {
 }
 
 func Test_CreateUpdateAlertingRule(t *testing.T) {
-	getApiClient := func() ApiClient {
-		return &FakeApiClient{
-			&FakeAlertingAPI{
-				RuleResponseProperties: nil,
-				HttpResponse: &http.Response{
-					StatusCode: 401,
-					Body:       io.NopCloser(strings.NewReader("some error")),
-				},
-			},
-		}
+  ctrl := gomock.NewController(t)
+
+	getApiClient := func() (ApiClient, *alerting.MockAlertingAPI) {
+		apiClient := NewMockApiClient(ctrl)
+		apiClient.EXPECT().SetAlertingAuthContext(gomock.Any()).DoAndReturn(func(ctx context.Context) context.Context {return ctx})
+		alertingClient := alerting.NewMockAlertingAPI(ctrl)
+		apiClient.EXPECT().GetAlertingClient().DoAndReturn(func() (alerting.AlertingAPI, error) { return alertingClient, nil})
+		return apiClient, alertingClient
 	}
 
 	tests := []struct {
@@ -151,20 +150,68 @@ func Test_CreateUpdateAlertingRule(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name:        "CreateAlertingRule should not crash when client returns 4xx",
+			name:        "CreateAlertingRule should not crash when backend returns 4xx",
 			testFunc:    CreateAlertingRule,
-			client:      getApiClient(),
+			client:      func() ApiClient { 
+				apiClient, alertingClient := getApiClient()
+				alertingClient.EXPECT().CreateRule(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func (ctx context.Context, spaceId string, ruleId string) alerting.ApiCreateRuleRequest { return alerting.ApiCreateRuleRequest{ApiService: alertingClient} })
+				alertingClient.EXPECT().CreateRuleExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiCreateRuleRequest)  (*alerting.RuleResponseProperties, *http.Response, error) {return nil, &http.Response{
+					StatusCode: 401,
+					Body:       io.NopCloser(strings.NewReader("some error")),
+				}, nil})
+				return apiClient
+			}(),
 			rule:        models.AlertingRule{},
 			expectedRes: nil,
 			expectedErr: "some error",
 		},
 		{
-			name:        "UpdateAlertingRule should not crash when client returns 4xx",
+			name:        "UpdateAlertingRule should not crash when backend returns 4xx",
 			testFunc:    UpdateAlertingRule,
-			client:      getApiClient(),
+			client:      func() ApiClient { 
+				apiClient, alertingClient := getApiClient()
+				alertingClient.EXPECT().UpdateRule(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func (ctx context.Context, spaceId string, ruleId string) alerting.ApiUpdateRuleRequest { return alerting.ApiUpdateRuleRequest{ApiService: alertingClient} })
+				alertingClient.EXPECT().UpdateRuleExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiUpdateRuleRequest)  (*alerting.RuleResponseProperties, *http.Response, error) {return nil, &http.Response{
+					StatusCode: 401,
+					Body:       io.NopCloser(strings.NewReader("some error")),
+				}, nil})
+				return apiClient
+			}(),
 			rule:        models.AlertingRule{},
 			expectedRes: nil,
 			expectedErr: "some error",
+		},
+		{
+			name:        "CreateAlertingRule should not crash when backend returns an empty response and HTTP 200",
+			testFunc:    CreateAlertingRule,
+			client:      func() ApiClient { 
+				apiClient, alertingClient := getApiClient()
+				alertingClient.EXPECT().CreateRule(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func (ctx context.Context, spaceId string, ruleId string) alerting.ApiCreateRuleRequest { return alerting.ApiCreateRuleRequest{ApiService: alertingClient} })
+				alertingClient.EXPECT().CreateRuleExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiCreateRuleRequest)  (*alerting.RuleResponseProperties, *http.Response, error) {return nil, &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader("everything seems fine")),
+				}, nil})
+				return apiClient
+			}(),
+			rule:        models.AlertingRule{},
+			expectedRes: nil,
+			expectedErr: "empty response",
+		},
+		{
+			name:        "UpdateAlertingRule should not crash when backend returns an empty response and HTTP 200",
+			testFunc:    UpdateAlertingRule,
+			client:      func() ApiClient { 
+				apiClient, alertingClient := getApiClient()
+				alertingClient.EXPECT().UpdateRule(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func (ctx context.Context, spaceId string, ruleId string) alerting.ApiUpdateRuleRequest { return alerting.ApiUpdateRuleRequest{ApiService: alertingClient} })
+				alertingClient.EXPECT().UpdateRuleExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiUpdateRuleRequest)  (*alerting.RuleResponseProperties, *http.Response, error) {return nil, &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader("everything seems fine")),
+				}, nil})
+				return apiClient
+			}(),
+			rule:        models.AlertingRule{},
+			expectedRes: nil,
+			expectedErr: "empty response",
 		},
 	}
 
@@ -186,14 +233,4 @@ func Test_CreateUpdateAlertingRule(t *testing.T) {
 			}
 		})
 	}
-}
-
-type FakeApiClient struct {
-	Alerting alerting.AlertingAPI
-}
-
-func (f *FakeApiClient) SetAlertingAuthContext(ctx context.Context) context.Context { return ctx }
-
-func (f *FakeApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
-	return f.Alerting, nil
 }
