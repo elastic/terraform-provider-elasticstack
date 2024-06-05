@@ -2,12 +2,14 @@ package kibana
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -31,6 +33,7 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 		Name:       res.Name,
 		Consumer:   res.Consumer,
 		NotifyWhen: string(unwrapOptionalField(res.NotifyWhen)),
+
 		Params:     res.Params,
 		RuleTypeID: res.RuleTypeId,
 		Schedule: models.AlertingRuleSchedule{
@@ -62,7 +65,12 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 	return actions
 }
 
-func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
+type ApiClient interface {
+	GetAlertingClient() (alerting.AlertingAPI, error)
+	SetAlertingAuthContext(context.Context) context.Context
+}
+
+func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -97,15 +105,27 @@ func CreateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		return nil, diag.Errorf("Status code [%d], Saved object [%s/%s] conflict (Rule ID already exists in this Space)", res.StatusCode, rule.SpaceID, rule.RuleID)
 	}
 
-	if ruleRes != nil {
-		rule.RuleID = ruleRes.Id
+	defer res.Body.Close()
+
+	diags := utils.CheckHttpError(res, "Unabled to create alerting rule")
+	if diags.HasError() {
+		return nil, diags
 	}
 
-	defer res.Body.Close()
-	return ruleResponseToModel(rule.SpaceID, ruleRes), utils.CheckHttpError(res, "Unabled to create alerting rule")
+	if ruleRes == nil {
+		return nil, diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Create rule returned an empty response",
+			Detail:   fmt.Sprintf("Create rule returned an empty response with HTTP status code [%d].", res.StatusCode),
+		}}
+	}
+
+	rule.RuleID = ruleRes.Id
+
+	return ruleResponseToModel(rule.SpaceID, ruleRes), nil
 }
 
-func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
+func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -124,18 +144,32 @@ func UpdateAlertingRule(ctx context.Context, apiClient *clients.ApiClient, rule 
 		Tags:     rule.Tags,
 		Throttle: *alerting.NewNullableString(rule.Throttle),
 	}
+
 	req := client.UpdateRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").UpdateRuleRequest(reqModel)
+
 	ruleRes, res, err := req.Execute()
 	if err != nil && res == nil {
 		return nil, diag.FromErr(err)
 	}
-	rule.RuleID = ruleRes.Id
+
 	defer res.Body.Close()
+
 	if diags := utils.CheckHttpError(res, "Unable to update alerting rule"); diags.HasError() {
 		return nil, diags
 	}
 
+	if ruleRes == nil {
+		return nil, diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Update rule returned an empty response",
+			Detail:   fmt.Sprintf("Update rule returned an empty response with HTTP status code [%d].", res.StatusCode),
+		}}
+	}
+
+	rule.RuleID = ruleRes.Id
+
 	shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
+
 	if shouldBeEnabled && !ruleRes.Enabled {
 		res, err := client.EnableRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").Execute()
 		if err != nil && res == nil {

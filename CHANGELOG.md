@@ -3,6 +3,7 @@
 ### Fixed
 
 - Populate policy_id when importing fleet policies and integrations ([#646](https://github.com/elastic/terraform-provider-elasticstack/pull/646))
+- Fix alerting rule update crash when backend responds with HTTP 4xx. ([#649](https://github.com/elastic/terraform-provider-elasticstack/pull/649))
 
 ## [0.11.3] - 2024-05-16
 
