@@ -28,7 +28,7 @@ resource "ec_deployment" "cluster" {
 
   observability = {
     deployment_id = ec_deployment.monitoring.id
-    ref_id        = ec_deployment.monitoring.elasticsearch[0].ref_id
+    ref_id        = ec_deployment.monitoring.elasticsearch.ref_id
   }
 
   elasticsearch = {
@@ -44,7 +44,7 @@ provider "elasticstack" {
   # Use our Elastic Cloud deployment outputs for connection details.
   # This also allows the provider to create the proper relationships between the two resources.
   elasticsearch {
-    endpoints = ["${ec_deployment.cluster.elasticsearch[0].https_endpoint}"]
+    endpoints = ["${ec_deployment.cluster.elasticsearch.https_endpoint}"]
     username  = ec_deployment.cluster.elasticsearch_username
     password  = ec_deployment.cluster.elasticsearch_password
   }
@@ -54,7 +54,7 @@ provider "elasticstack" {
   # Use our Elastic Cloud deployment outputs for connection details.
   # This also allows the provider to create the proper relationships between the two resources.
   elasticsearch {
-    endpoints = ["${ec_deployment.monitoring.elasticsearch[0].https_endpoint}"]
+    endpoints = ["${ec_deployment.monitoring.elasticsearch.https_endpoint}"]
     username  = ec_deployment.monitoring.elasticsearch_username
     password  = ec_deployment.monitoring.elasticsearch_password
   }

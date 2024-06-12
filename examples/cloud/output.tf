@@ -1,10 +1,10 @@
 //monitoring cluster
 output "monitoring_kibana_https_endpoint" {
-  value = ec_deployment.monitoring.kibana[0].https_endpoint
+  value = ec_deployment.monitoring.kibana.https_endpoint
 }
 
 output "monitoring_elasticsearch_https_endpoint" {
-  value = ec_deployment.monitoring.elasticsearch[0].https_endpoint
+  value = ec_deployment.monitoring.elasticsearch.https_endpoint
 }
 
 output "monitoring_elasticsearch_username" {
@@ -16,7 +16,7 @@ output "monitoring_elasticsearch_password" {
 }
 
 output "monitoring_elasticsearch_id" {
-  value = ec_deployment.monitoring.elasticsearch[0].resource_id
+  value = ec_deployment.monitoring.elasticsearch.resource_id
 }
 
 output "monitoring_deployment_id" {
@@ -25,11 +25,11 @@ output "monitoring_deployment_id" {
 
 //data cluster
 output "data_kibana_https_endpoint" {
-  value = ec_deployment.cluster.kibana[0].https_endpoint
+  value = ec_deployment.cluster.kibana.https_endpoint
 }
 
 output "data_elasticsearch_https_endpoint" {
-  value = ec_deployment.cluster.elasticsearch[0].https_endpoint
+  value = ec_deployment.cluster.elasticsearch.https_endpoint
 }
 
 output "data_elasticsearch_username" {
@@ -41,7 +41,7 @@ output "data_elasticsearch_password" {
 }
 
 output "data_elasticsearch_id" {
-  value = ec_deployment.cluster.elasticsearch[0].resource_id
+  value = ec_deployment.cluster.elasticsearch.resource_id
 }
 
 output "data_deployment_id" {
