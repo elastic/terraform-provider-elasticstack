@@ -322,6 +322,7 @@ Required:
 
 Optional:
 
+- `allow_write_after_shrink` (Boolean) If true, the shrunken index is made writable by removing the write block.
 - `max_primary_shard_size` (String) The max primary shard size for the target index.
 - `number_of_shards` (Number) Number of shards to shrink to.
 
@@ -415,6 +416,7 @@ Required:
 
 Optional:
 
+- `allow_write_after_shrink` (Boolean) If true, the shrunken index is made writable by removing the write block.
 - `max_primary_shard_size` (String) The max primary shard size for the target index.
 - `number_of_shards` (Number) Number of shards to shrink to.
 
