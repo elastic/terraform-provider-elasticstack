@@ -1,9 +1,13 @@
 ## [Unreleased]
 
+### Breaking changes
+- The `title` attribute is now required in the elasticstack_kibana_data_view resource. In practice the resource didn't work without this set, the schema now enforces it's correctly configured.
+
 ### Fixed
 
 - Populate policy_id when importing fleet policies and integrations ([#646](https://github.com/elastic/terraform-provider-elasticstack/pull/646))
 - Fix alerting rule update crash when backend responds with HTTP 4xx. ([#649](https://github.com/elastic/terraform-provider-elasticstack/pull/649))
+- Fix the elasticstack_kibana_data_view resource when not specifying an `id` and running against Kibana 8.14 ([#663](https://github.com/elastic/terraform-provider-elasticstack/pull/663))
 
 ## [0.11.3] - 2024-05-16
 
