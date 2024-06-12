@@ -9,6 +9,7 @@
 - Fix alerting rule update crash when backend responds with HTTP 4xx. ([#649](https://github.com/elastic/terraform-provider-elasticstack/pull/649))
 - Fix the elasticstack_kibana_data_view resource when not specifying an `id` and running against Kibana 8.14 ([#663](https://github.com/elastic/terraform-provider-elasticstack/pull/663))
 - Support allow_write_after_shrink when managing ILM policies ([#662](https://github.com/elastic/terraform-provider-elasticstack/pull/662))
+- Support managing image_url in Kibana spaces ([#664](https://github.com/elastic/terraform-provider-elasticstack/pull/664))
 
 ## [0.11.3] - 2024-05-16
 
