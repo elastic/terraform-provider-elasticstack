@@ -22,6 +22,7 @@ type KibanaSpace struct {
 	Reserved         bool     `json:"_reserved,omitempty"`
 	Initials         string   `json:"initials,omitempty"`
 	Color            string   `json:"color,omitempty"`
+	ImageURL         string   `json:"imageUrl,omitempty"`
 }
 
 // KibanaSpaces is the list of KibanaSpace object
