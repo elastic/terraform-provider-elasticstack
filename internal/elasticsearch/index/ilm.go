@@ -568,14 +568,15 @@ var ilmActionSettingOptions = map[string]struct {
 	def            interface{}
 	minVersion     *version.Version
 }{
-	"number_of_replicas":     {skipEmptyCheck: true},
-	"total_shards_per_node":  {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
-	"priority":               {skipEmptyCheck: true},
-	"min_age":                {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_docs":               {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_size":               {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_primary_shard_size": {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_primary_shard_docs": {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
+	"number_of_replicas":       {skipEmptyCheck: true},
+	"total_shards_per_node":    {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
+	"priority":                 {skipEmptyCheck: true},
+	"min_age":                  {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	"min_docs":                 {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
+	"min_size":                 {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	"min_primary_shard_size":   {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	"min_primary_shard_docs":   {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
+	"allow_write_after_shrink": {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
 }
 
 func expandAction(a []interface{}, serverVersion *version.Version, settings ...string) (map[string]interface{}, diag.Diagnostics) {
