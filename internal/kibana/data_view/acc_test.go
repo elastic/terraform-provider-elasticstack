@@ -66,15 +66,22 @@ func TestAccResourceDataView(t *testing.T) {
 }
 
 func testAccResourceDataViewPre8_8DV(indexName string) string {
-	return `
+	return fmt.Sprintf(`
 provider "elasticstack" {
 	elasticsearch {}
 	kibana {}
 }
 
+resource "elasticstack_elasticsearch_index" "my_index" {
+	name                = "%s"
+	deletion_protection = false
+}
+
 resource "elasticstack_kibana_data_view" "dv" {
-	data_view = {}
-}`
+	data_view = {
+	  title = "%s*"
+	}
+}`, indexName, indexName)
 }
 
 func testAccResourceDataViewBasicDV(indexName string) string {

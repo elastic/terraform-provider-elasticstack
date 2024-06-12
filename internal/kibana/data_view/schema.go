@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/data_views"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -60,11 +61,7 @@ func getSchema() schema.Schema {
 				Attributes: map[string]schema.Attribute{
 					"title": schema.StringAttribute{
 						Description: "Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (*).",
-						Optional:    true,
-						Computed:    true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
+						Required:    true,
 					},
 					"name": schema.StringAttribute{
 						Description: "The Data view name.",
@@ -406,16 +403,23 @@ func dataViewFromResponse(resp data_views.DataViewResponseObjectDataView) apiDat
 
 func (m tfDataViewV0) ToCreateRequest(ctx context.Context, spaceID string) (data_views.CreateDataViewRequestObjectDataView, diag.Diagnostics) {
 	apiModel := data_views.CreateDataViewRequestObjectDataView{
-		Title:         m.Title.ValueString(),
-		Name:          m.Name.ValueStringPointer(),
-		Id:            m.ID.ValueStringPointer(),
-		TimeFieldName: m.TimeFieldName.ValueStringPointer(),
-		AllowNoIndex:  m.AllowNoIndex.ValueBoolPointer(),
+		Title: m.Title.ValueString(),
 	}
 
-	// ES versions not supporting name (8.1-8.3) reject requests with this field supplied
-	if m.Name.IsUnknown() {
-		apiModel.Name = nil
+	if utils.IsKnown(m.ID) {
+		apiModel.Id = m.ID.ValueStringPointer()
+	}
+
+	if utils.IsKnown(m.Name) {
+		apiModel.Name = m.Name.ValueStringPointer()
+	}
+
+	if utils.IsKnown(m.TimeFieldName) {
+		apiModel.TimeFieldName = m.TimeFieldName.ValueStringPointer()
+	}
+
+	if utils.IsKnown(m.AllowNoIndex) {
+		apiModel.AllowNoIndex = m.AllowNoIndex.ValueBoolPointer()
 	}
 
 	var sourceFilters []string
