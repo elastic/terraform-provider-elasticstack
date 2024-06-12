@@ -535,7 +535,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 			case "set_priority":
 				actions[actionName], diags = expandAction(a, serverVersion, "priority")
 			case "shrink":
-				actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", "max_primary_shard_size")
+				actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", "max_primary_shard_size", "allow_write_after_shrink")
 			case "unfollow":
 				if a[0] != nil {
 					ac := a[0].(map[string]interface{})
