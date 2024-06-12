@@ -47,6 +47,10 @@ resource "elasticstack_kibana_data_view" "my_data_view" {
 <a id="nestedatt--data_view"></a>
 ### Nested Schema for `data_view`
 
+Required:
+
+- `title` (String) Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (*).
+
 Optional:
 
 - `allow_no_index` (Boolean) Allows the Data view saved object to exist before the data is available.
@@ -58,7 +62,6 @@ Optional:
 - `runtime_field_map` (Attributes Map) Map of runtime field definitions by field name. (see [below for nested schema](#nestedatt--data_view--runtime_field_map))
 - `source_filters` (List of String) List of field names you want to filter out in Discover.
 - `time_field_name` (String) Timestamp field name, which you use for time-based Data views.
-- `title` (String) Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (*).
 
 <a id="nestedatt--data_view--field_attrs"></a>
 ### Nested Schema for `data_view.field_attrs`
