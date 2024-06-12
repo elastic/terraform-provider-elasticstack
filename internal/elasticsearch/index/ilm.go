@@ -355,6 +355,11 @@ var supportedActions = map[string]*schema.Schema{
 					Type:        schema.TypeString,
 					Optional:    true,
 				},
+				"allow_write_after_shrink": {
+					Description: "If true, the shrunken index is made writable by removing the write block.",
+					Type:        schema.TypeBool,
+					Optional:    true,
+				},
 			},
 		},
 	},

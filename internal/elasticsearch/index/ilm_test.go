@@ -210,6 +210,9 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test" {
       })
       number_of_replicas = 1
     }
+    shrink {
+      max_primary_shard_size = "50gb"
+    }
   }
 
 }
