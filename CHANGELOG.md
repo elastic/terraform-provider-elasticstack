@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.4] - 2024-06-13
+
 ### Breaking changes
 - The `title` attribute is now required in the elasticstack_kibana_data_view resource. In practice the resource didn't work without this set, the schema now enforces it's correctly configured.
 
@@ -305,7 +307,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...HEAD
+[0.11.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.0...v0.11.1

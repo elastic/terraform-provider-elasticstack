@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.11.3
+VERSION ?= 0.11.4
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
