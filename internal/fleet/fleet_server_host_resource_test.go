@@ -30,6 +30,7 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				Config:   testAccResourceFleetServerHostCreate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
 				),
@@ -39,6 +40,7 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				Config:   testAccResourceFleetServerHostUpdate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("Updated FleetServerHost %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
 				),
@@ -56,6 +58,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_server_host" "test_host" {
   name               = "%s"
+  host_id            = "fleet-server-host-id"
   default            =  false
   hosts              = [
     "https://fleet-server:8220"
@@ -73,6 +76,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_server_host" "test_host" {
   name               = "%s"
+  host_id            = "fleet-server-host-id"
   default            =  false
   hosts              = [
     "https://fleet-server:8220"

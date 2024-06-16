@@ -133,6 +133,9 @@ func resourceOutputCreateElasticsearch(ctx context.Context, d *schema.ResourceDa
 	if hosts != nil {
 		reqData.Hosts = &hosts
 	}
+	if value, ok := d.Get("output_id").(string); ok && value != "" {
+		reqData.Id = &value
+	}
 	if value := d.Get("default_integrations").(bool); value {
 		reqData.IsDefault = &value
 	}
@@ -192,6 +195,9 @@ func resourceOutputCreateLogstash(ctx context.Context, d *schema.ResourceData, m
 		}
 	}
 	reqData.Hosts = hosts
+	if value, ok := d.Get("output_id").(string); ok && value != "" {
+		reqData.Id = &value
+	}
 	if value := d.Get("default_integrations").(bool); value {
 		reqData.IsDefault = &value
 	}

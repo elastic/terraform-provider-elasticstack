@@ -60,12 +60,13 @@ func resourceFleetServerHostCreate(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
-	if id := d.Get("host_id").(string); id != "" {
-		d.SetId(id)
-	}
-
 	req := fleetapi.PostFleetServerHostsJSONRequestBody{
 		Name: d.Get("name").(string),
+	}
+
+	if id := d.Get("host_id").(string); id != "" {
+		d.SetId(id)
+		req.Id = &id
 	}
 
 	if value := d.Get("hosts").([]interface{}); len(value) > 0 {
