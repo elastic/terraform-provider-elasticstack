@@ -30,6 +30,7 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 				Config:   testAccResourceOutputCreateElasticsearch(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Elasticsearch Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", "elasticsearch-output"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
@@ -42,6 +43,7 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 				Config:   testAccResourceOutputUpdateElasticsearch(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Elasticsearch Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", "elasticsearch-output"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
@@ -72,6 +74,7 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 				Config:   testAccResourceOutputCreateLogstash(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", "logstash-output"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
@@ -87,6 +90,7 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 				Config:   testAccResourceOutputLogstashUpdate(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Logstash Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", "logstash-output"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
@@ -110,6 +114,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_output" "test_output" {
   name                 = "%s"
+  output_id            = "elasticsearch-output"
   type                 = "elasticsearch"
   config_yaml = yamlencode({
     "ssl.verification_mode" : "none"
@@ -132,6 +137,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_output" "test_output" {
   name                 = "%s"
+  output_id            = "elasticsearch-output"
   type                 = "elasticsearch"
   config_yaml = yamlencode({
     "ssl.verification_mode" : "none"
@@ -156,6 +162,7 @@ provider "elasticstack" {
 resource "elasticstack_fleet_output" "test_output" {
   name                 = "%s"
   type                 = "logstash"
+  output_id            = "logstash-output"
   config_yaml = yamlencode({
     "ssl.verification_mode" : "none"
   })
@@ -183,6 +190,7 @@ provider "elasticstack" {
 resource "elasticstack_fleet_output" "test_output" {
   name                 = "%s"
   type                 = "logstash"
+  output_id            = "logstash-output"
   config_yaml = yamlencode({
     "ssl.verification_mode" : "none"
   })
