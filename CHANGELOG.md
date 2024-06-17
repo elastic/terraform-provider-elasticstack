@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Fix setting `id` for Fleet outputs and servers ([#666](https://github.com/elastic/terraform-provider-elasticstack/pull/666))
+
 ## [0.11.4] - 2024-06-13
 
 ### Breaking changes
