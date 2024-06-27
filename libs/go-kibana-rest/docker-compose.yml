@@ -1,21 +1,38 @@
 version: '2.3'
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
     environment:
       cluster.name: test
       discovery.type: single-node
       ELASTIC_PASSWORD: changeme
       xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: false
+      xpack.license.self_generated.type: trial
     ports:
       - "9200:9200/tcp"
+  set-kibana-password:
+    image: docker.elastic.co/kibana/kibana:8.14.1
+    restart: on-failure
+    links:
+      - elasticsearch
+    # From https://www.elastic.co/guide/en/elasticsearch/reference/current/run-elasticsearch-locally.html
+    command: |
+      curl -u "elastic:changeme" "http://elasticsearch:9200/_security/user/kibana_system/_password" -d '{"password":"changeme"}' -H 'Content-Type: application/json'
+    depends_on:
+      elasticsearch:
+        condition: service_started
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.5.0
+    image: docker.elastic.co/kibana/kibana:8.14.1
     environment:
       ELASTICSEARCH_HOSTS: http://es:9200
       ELASTICSEARCH_USERNAME: kibana_system
       ELASTICSEARCH_PASSWORD: changeme
+      xpack.license.self_generated.type: trial
     links:
       - elasticsearch:es
     ports:
       - "5601:5601/tcp"
+    depends_on:
+      set-kibana-password:
+        condition: service_completed_successfully
