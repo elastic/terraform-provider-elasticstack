@@ -82,6 +82,21 @@ type Role struct {
 	RusAs        []string               `json:"run_as,omitempty"`
 }
 
+type ApiKeyRoleDescriptor struct {
+	Name         string                 `json:"-"`
+	Applications []Application          `json:"applications,omitempty"`
+	Global       map[string]interface{} `json:"global,omitempty"`
+	Cluster      []string               `json:"cluster,omitempty"`
+	Indices      []IndexPerms           `json:"indices,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	RusAs        []string               `json:"run_as,omitempty"`
+	Restriction  *Restriction           `json:"restriction,omitempty"`
+}
+
+type Restriction struct {
+	Workflows []string `json:"workflows,omitempty"`
+}
+
 type RoleMapping struct {
 	Name          string                   `json:"-"`
 	Enabled       bool                     `json:"enabled"`
@@ -92,20 +107,20 @@ type RoleMapping struct {
 }
 
 type ApiKey struct {
-	Name             string                 `json:"name"`
-	RolesDescriptors map[string]Role        `json:"role_descriptors,omitempty"`
-	Expiration       string                 `json:"expiration,omitempty"`
-	Metadata         map[string]interface{} `json:"metadata,omitempty"`
+	Name             string                          `json:"name"`
+	RolesDescriptors map[string]ApiKeyRoleDescriptor `json:"role_descriptors,omitempty"`
+	Expiration       string                          `json:"expiration,omitempty"`
+	Metadata         map[string]interface{}          `json:"metadata,omitempty"`
 }
 
 type ApiKeyResponse struct {
 	ApiKey
-	RolesDescriptors map[string]Role `json:"role_descriptors,omitempty"`
-	Expiration       int64           `json:"expiration,omitempty"`
-	Id               string          `json:"id,omitempty"`
-	Key              string          `json:"api_key,omitempty"`
-	EncodedKey       string          `json:"encoded,omitempty"`
-	Invalidated      bool            `json:"invalidated,omitempty"`
+	RolesDescriptors map[string]ApiKeyRoleDescriptor `json:"role_descriptors,omitempty"`
+	Expiration       int64                           `json:"expiration,omitempty"`
+	Id               string                          `json:"id,omitempty"`
+	Key              string                          `json:"api_key,omitempty"`
+	EncodedKey       string                          `json:"encoded,omitempty"`
+	Invalidated      bool                            `json:"invalidated,omitempty"`
 }
 
 type IndexPerms struct {
