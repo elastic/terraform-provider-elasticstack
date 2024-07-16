@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func DataSourceSpace() *schema.Resource {
+func DataSourceSpaces() *schema.Resource {
 	var spacesSchema = map[string]*schema.Schema{
 		"search": {
 			Description: "Search spaces by name.",
