@@ -104,7 +104,9 @@ func datasourceSpacesRead(ctx context.Context, d *schema.ResourceData, meta inte
 	}
 
 	d.SetId(fmt.Sprintf("%d", schema.HashString(spaceName)))
-	d.Set("spaces", flattenSpaces(foundSpaces))
+	if err := d.Set("spaces", flattenSpaces(foundSpaces)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return nil
 }
