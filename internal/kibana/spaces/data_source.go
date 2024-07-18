@@ -43,7 +43,7 @@ func (d *dataSource) Configure(_ context.Context, req datasource.ConfigureReques
 
 	kibanaClient, err := client.GetKibanaClient()
 	if err != nil {
-		resp.Diagnostics.AddError("unable to get spaces client", err.Error())
+		resp.Diagnostics.AddError("unable to get Kibana client", err.Error())
 		return
 	}
 
