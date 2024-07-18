@@ -8,7 +8,7 @@ type dataSourceModel struct {
 	Spaces []model      `tfsdk:"spaces"`
 }
 
-// model maps coffees schema data.
+// model maps spaces schema data.
 type model struct {
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
