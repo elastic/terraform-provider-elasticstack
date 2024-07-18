@@ -28,6 +28,25 @@ func AllEnrollmentTokens(ctx context.Context, client *Client) ([]fleetapi.Enroll
 	return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 }
 
+// SearchEnrollmentTokens Get enrollment tokens by given policy ID
+func SearchEnrollmentTokens(ctx context.Context, client *Client, policyID string) ([]fleetapi.EnrollmentApiKey, diag.Diagnostics) {
+	resp, err := client.API.GetEnrollmentApiKeysWithResponse(ctx, func(ctx context.Context, req *http.Request) error {
+		q := req.URL.Query()
+		q.Set("kuery", "policy_id:"+policyID)
+		req.URL.RawQuery = q.Encode()
+
+		return nil
+	})
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	if resp.StatusCode() == http.StatusOK {
+		return resp.JSON200.Items, nil
+	}
+	return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+}
+
 // ReadAgentPolicy reads a specific agent policy from the API.
 func ReadAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.AgentPolicy, diag.Diagnostics) {
 	resp, err := client.API.AgentPolicyInfoWithResponse(ctx, id)
