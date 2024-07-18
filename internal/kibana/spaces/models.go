@@ -2,13 +2,13 @@ package spaces
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// spacesDataSourceModel maps the data source schema data.
+// dataSourceModel maps the data source schema data.
 type dataSourceModel struct {
 	ID     types.String `tfsdk:"id"`
 	Spaces []model      `tfsdk:"spaces"`
 }
 
-// spacesModel maps coffees schema data.
+// model maps coffees schema data.
 type model struct {
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
