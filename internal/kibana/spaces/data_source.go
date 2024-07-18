@@ -40,6 +40,9 @@ func (d *dataSource) Configure(_ context.Context, req datasource.ConfigureReques
 
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	kibanaClient, err := client.GetKibanaClient()
 	if err != nil {
