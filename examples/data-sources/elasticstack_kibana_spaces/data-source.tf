@@ -5,5 +5,5 @@ provider "elasticstack" {
 }
 
 data "elasticstack_kibana_spaces" "all_spaces" {
-  
+
 }
