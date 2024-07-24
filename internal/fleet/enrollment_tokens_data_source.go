@@ -89,7 +89,7 @@ func dataSourceEnrollmentTokensRead(ctx context.Context, d *schema.ResourceData,
 	if policyID == "" {
 		allTokens, diags = fleet.AllEnrollmentTokens(ctx, fleetClient)
 	} else {
-		allTokens, diags = fleet.SearchEnrollmentTokens(ctx, fleetClient, policyID)
+		allTokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, fleetClient, policyID)
 	}
 
 	if diags.HasError() {
