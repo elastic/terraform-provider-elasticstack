@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Fix setting `id` for Fleet outputs and servers ([#666](https://github.com/elastic/terraform-provider-elasticstack/pull/666))
+- Fix `elasticstack_fleet_enrollment_tokens` returning empty tokens in some case ([#683](https://github.com/elastic/terraform-provider-elasticstack/pull/683))
 
 ## [0.11.4] - 2024-06-13
 
@@ -160,7 +161,7 @@
 - Add `elasticstack_elasticsearch_watch` for managing Elasticsearch Watches ([#155](https://github.com/elastic/terraform-provider-elasticstack/pull/155))
 - Add `elasticstack_kibana_alerting_rule` for managing Kibana alerting rules ([#292](https://github.com/elastic/terraform-provider-elasticstack/pull/292))
 - Add client for communicating with the Fleet APIs ([#311](https://github.com/elastic/terraform-provider-elasticstack/pull/311)])
-- Add `elasticstack_fleet_enrollment_tokens` and `elasticstack_fleet_agent_policy` for managing Fleet enrollment tokens and agent policies ([#322](https://github.com/elastic/terraform-provider-elasticstack/pull/322)])
+- Add `elasticstack_fleet_enrollment_tokens` and `elasticstack_fleet_agent_policy` for managing Fleet enrollment tokens and agent policies ([#322](https://github.com/elastic/terraform-provider-elasticstack/pull/322))
 - Add `elasticstack_fleet_output` and `elasticstack_fleet_server_host` for managing Fleet outputs and server hosts ([#327](https://github.com/elastic/terraform-provider-elasticstack/pull/327)])
 - Add `elasticstack_kibana_action_connector` for managing Kibana action connectors ([#306](https://github.com/elastic/terraform-provider-elasticstack/pull/306))
 

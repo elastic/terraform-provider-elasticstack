@@ -3,6 +3,7 @@ package fleet
 import (
 	"context"
 
+	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -83,7 +84,14 @@ func dataSourceEnrollmentTokensRead(ctx context.Context, d *schema.ResourceData,
 	}
 	policyID := d.Id()
 
-	allTokens, diags := fleet.AllEnrollmentTokens(ctx, fleetClient)
+	var allTokens []fleetapi.EnrollmentApiKey
+
+	if policyID == "" {
+		allTokens, diags = fleet.AllEnrollmentTokens(ctx, fleetClient)
+	} else {
+		allTokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, fleetClient, policyID)
+	}
+
 	if diags.HasError() {
 		return diags
 	}
