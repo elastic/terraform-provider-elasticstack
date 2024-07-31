@@ -12,7 +12,7 @@ services:
     ports:
       - "9200:9200/tcp"
   set-kibana-password:
-    image: docker.elastic.co/kibana/kibana:8.14.1
+    image: docker.elastic.co/kibana/kibana:8.14.3
     restart: on-failure
     links:
       - elasticsearch

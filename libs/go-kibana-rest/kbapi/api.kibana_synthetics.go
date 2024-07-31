@@ -320,4 +320,4 @@ func namespaceBasesPath(namespace, basePath, suffix string) string {
 	return fmt.Sprintf("/s/%s%s%s", namespace, basePath, suffix)
 }
 
-//TODO: Monitor - Update, Get https://www.elastic.co/guide/en/kibana/current/synthetics-apis.html
+//TODO: Monitor - Update https://www.elastic.co/guide/en/kibana/current/synthetics-apis.html
