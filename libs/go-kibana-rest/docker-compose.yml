@@ -1,7 +1,7 @@
 version: '2.3'
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
     environment:
       cluster.name: test
       discovery.type: single-node
@@ -23,11 +23,14 @@ services:
       elasticsearch:
         condition: service_started
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.14.1
+    image: docker.elastic.co/kibana/kibana:8.14.3
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
     environment:
       ELASTICSEARCH_HOSTS: http://es:9200
       ELASTICSEARCH_USERNAME: kibana_system
       ELASTICSEARCH_PASSWORD: changeme
+      xpack.security.http.ssl.enabled: false
       xpack.license.self_generated.type: trial
     links:
       - elasticsearch:es
