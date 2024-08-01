@@ -123,7 +123,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 					Label:         fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI %s", testUuid),
 					AgentPolicyId: policyId,
 					Tags:          []string{"a", "b"},
-					Geo: Geo{
+					Geo: &SyntheticGeoConfig{
 						Lat: 12.12,
 						Lon: -42.42,
 					},

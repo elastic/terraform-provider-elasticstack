@@ -24,14 +24,13 @@ services:
         condition: service_started
   kibana:
     image: docker.elastic.co/kibana/kibana:8.14.3
-    volumes:
-      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
     environment:
       ELASTICSEARCH_HOSTS: http://es:9200
       ELASTICSEARCH_USERNAME: kibana_system
       ELASTICSEARCH_PASSWORD: changeme
       xpack.security.http.ssl.enabled: false
       xpack.license.self_generated.type: trial
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: min-32-byte-long-strong-encryption-key
     links:
       - elasticsearch:es
     ports:

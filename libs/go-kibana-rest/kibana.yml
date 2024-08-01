@@ -1,8 +1,0 @@
-server.host: "0.0.0.0"
-server.shutdownTimeout: "5s"
-elasticsearch.hosts: [ "http://es:9200" ]
-
-xpack.encryptedSavedObjects:
-  encryptionKey: "min-32-byte-long-strong-encryption-key"
-
-server.oas.enabled: true

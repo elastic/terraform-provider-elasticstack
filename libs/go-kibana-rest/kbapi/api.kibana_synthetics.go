@@ -73,13 +73,13 @@ type KibanaSyntheticsPrivateLocationAPI struct {
 	Get    KibanaSyntheticsPrivateLocationGet
 }
 
+type SyntheticsStatusConfig struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
 type MonitorAlertConfig struct {
-	Status struct {
-		Enabled *bool `json:"enabled,omitempty"`
-	} `json:"status,omitempty"`
-	Tls struct {
-		Enabled *bool `json:"enabled,omitempty"`
-	} `json:"tls,omitempty"`
+	Status SyntheticsStatusConfig `json:"status,omitempty"`
+	Tls    SyntheticsStatusConfig `json:"tls,omitempty"`
 }
 
 type HTTPMonitorFields struct {
@@ -119,14 +119,16 @@ type MonitorScheduleConfig struct {
 	Unit   string `json:"unit"`
 }
 
+type SyntheticGeoConfig struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
+}
+
 type MonitorLocationConfig struct {
-	Id    string `json:"id"`
-	Label string `json:"label"`
-	Geo   struct {
-		Lat float64 `json:"lat"`
-		Lon float64 `json:"lon"`
-	} `json:"geo"`
-	IsServiceManaged bool `json:"isServiceManaged"`
+	Id               string              `json:"id"`
+	Label            string              `json:"label"`
+	Geo              *SyntheticGeoConfig `json:"geo,omitempty"`
+	IsServiceManaged bool                `json:"isServiceManaged"`
 }
 
 type SyntheticsMonitor struct {
@@ -161,16 +163,11 @@ type SyntheticsMonitor struct {
 	} `json:"__ui,omitempty"`
 }
 
-type Geo struct {
-	Lat float32 `json:"lat"`
-	Lon float32 `json:"lon"`
-}
-
 type PrivateLocationConfig struct {
-	Label         string   `json:"label"`
-	AgentPolicyId string   `json:"agentPolicyId"`
-	Tags          []string `json:"tags,omitempty"`
-	Geo           Geo      `json:"geo,omitempty"`
+	Label         string              `json:"label"`
+	AgentPolicyId string              `json:"agentPolicyId"`
+	Tags          []string            `json:"tags,omitempty"`
+	Geo           *SyntheticGeoConfig `json:"geo,omitempty"`
 }
 
 type PrivateLocation struct {
