@@ -75,7 +75,7 @@ func (s *KBAPITestSuite) SetupSuite() {
 
 func (s *KBAPITestSuite) SetupTest() {
 
-	// Do somethink before each test
+	// Do something before each test
 
 }
 
