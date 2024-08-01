@@ -23,6 +23,7 @@ func (s *KBAPITestSuite) SetupSuite() {
 	// Init logger
 	logrus.SetFormatter(new(prefixed.TextFormatter))
 	logrus.SetLevel(logrus.DebugLevel)
+	restyDebug := os.Getenv("DEBUG") != ""
 
 	address := os.Getenv("KIBANA_URL")
 	username := os.Getenv("KIBANA_USERNAME")
@@ -36,7 +37,8 @@ func (s *KBAPITestSuite) SetupSuite() {
 		SetBaseURL(address).
 		SetBasicAuth(username, password).
 		SetHeader("kbn-xsrf", "true").
-		SetHeader("Content-Type", "application/json")
+		SetHeader("Content-Type", "application/json").
+		SetDebug(restyDebug)
 
 	s.client = restyClient
 	s.API = New(restyClient)
@@ -73,7 +75,7 @@ func (s *KBAPITestSuite) SetupSuite() {
 
 func (s *KBAPITestSuite) SetupTest() {
 
-	// Do somethink before each test
+	// Do something before each test
 
 }
 
