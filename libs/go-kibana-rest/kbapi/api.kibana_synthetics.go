@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	basePathKibanaSynthetics = "/api/synthetics" // Base URL to access on Kibana save objects
+	basePathKibanaSynthetics = "/api/synthetics"
 	privateLocationsSuffix   = "/private_locations"
 	monitorsSuffix           = "/monitors"
 )
@@ -219,7 +219,7 @@ func newKibanaSyntheticsPrivateLocationDeleteFunc(c *resty.Client) KibanaSynthet
 func newKibanaSyntheticsMonitorGetFunc(c *resty.Client) KibanaSyntheticsMonitorGet {
 	return func(id MonitorID, namespace string) (*SyntheticsMonitor, error) {
 		path := basePathWithId(namespace, monitorsSuffix, id)
-		log.Debugf("URL to create monitor: %s", path)
+		log.Debugf("URL to get monitor: %s", path)
 
 		resp, err := c.R().Get(path)
 		if err := handleKibanaError(err, resp); err != nil {
@@ -263,7 +263,7 @@ func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonit
 	return func(id MonitorID, config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error) {
 
 		path := basePathWithId(namespace, monitorsSuffix, id)
-		log.Debugf("URL to create monitor: %s", path)
+		log.Debugf("URL to update monitor: %s", path)
 		data := buildMonitorJson(config, fields)
 		resp, err := c.R().SetBody(data).Put(path)
 		if err := handleKibanaError(err, resp); err != nil {
