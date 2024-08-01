@@ -121,6 +121,7 @@ func New(c *resty.Client) *API {
 				Add:    newKibanaSyntheticsMonitorAddFunc(c),
 				Delete: newKibanaSyntheticsMonitorDeleteFunc(c),
 				Get:    newKibanaSyntheticsMonitorGetFunc(c),
+				Update: newKibanaSyntheticsMonitorUpdateFunc(c),
 			},
 			PrivateLocation: &KibanaSyntheticsPrivateLocationAPI{
 				Create: newKibanaSyntheticsPrivateLocationCreateFunc(c),

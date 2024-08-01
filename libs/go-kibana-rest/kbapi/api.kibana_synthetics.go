@@ -65,6 +65,7 @@ type KibanaSyntheticsMonitorAPI struct {
 	Add    KibanaSyntheticsMonitorAdd
 	Delete KibanaSyntheticsMonitorDelete
 	Get    KibanaSyntheticsMonitorGet
+	Update KibanaSyntheticsMonitorUpdate
 }
 
 type KibanaSyntheticsPrivateLocationAPI struct {
@@ -78,29 +79,27 @@ type SyntheticsStatusConfig struct {
 }
 
 type MonitorAlertConfig struct {
-	Status SyntheticsStatusConfig `json:"status,omitempty"`
-	Tls    SyntheticsStatusConfig `json:"tls,omitempty"`
+	Status *SyntheticsStatusConfig `json:"status,omitempty"`
+	Tls    *SyntheticsStatusConfig `json:"tls,omitempty"`
 }
 
 type HTTPMonitorFields struct {
-	Url                 string          `json:"url"`
-	SslSetting          JsonObject      `json:"ssl,omitempty"` //https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html
-	MaxRedirects        int             `json:"max_redirects,omitempty"`
-	Mode                HttpMonitorMode `json:"mode,omitempty"`
-	Ipv4                *bool           `json:"ipv4,omitempty"`
-	Ipv6                *bool           `json:"ipv6,omitempty"`
-	Username            string          `json:"username,omitempty"`
-	Password            string          `json:"password,omitempty"`
-	ProxyHeader         JsonObject      `json:"proxy_headers,omitempty"`
-	ProxyUrl            string          `json:"proxy_url,omitempty"`
-	Response            JsonObject      `json:"response,omitempty"`
-	ResponseIncludeBody *bool           `json:"response.include_body,omitempty"` //TODO: test with Response
-	Check               JsonObject      `json:"check,omitempty"`
+	Url          string          `json:"url"`
+	SslSetting   JsonObject      `json:"ssl,omitempty"` //https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html
+	MaxRedirects string          `json:"max_redirects,omitempty"`
+	Mode         HttpMonitorMode `json:"mode,omitempty"`
+	Ipv4         *bool           `json:"ipv4,omitempty"`
+	Ipv6         *bool           `json:"ipv6,omitempty"`
+	Username     string          `json:"username,omitempty"`
+	Password     string          `json:"password,omitempty"`
+	ProxyHeader  JsonObject      `json:"proxy_headers,omitempty"`
+	ProxyUrl     string          `json:"proxy_url,omitempty"`
+	Response     JsonObject      `json:"response,omitempty"`
+	Check        JsonObject      `json:"check,omitempty"`
 }
 
 type SyntheticsMonitorConfig struct {
 	Name             string              `json:"name"`
-	Type             MonitorType         `json:"type"`
 	Schedule         MonitorSchedule     `json:"schedule,omitempty"`
 	Locations        []MonitorLocation   `json:"locations,omitempty"`
 	PrivateLocations []string            `json:"private_locations,omitempty"`
@@ -110,7 +109,7 @@ type SyntheticsMonitorConfig struct {
 	APMServiceName   string              `json:"service.name,omitempty"`
 	TimeoutSeconds   int                 `json:"timeout,omitempty"`
 	Namespace        string              `json:"namespace,omitempty"`
-	Params           string              `json:"params,omitempty"`
+	Params           JsonObject          `json:"params,omitempty"`
 	RetestOnFailure  *bool               `json:"retest_on_failure,omitempty"`
 }
 
@@ -143,7 +142,7 @@ type SyntheticsMonitor struct {
 	Enabled                     *bool                   `json:"enabled,omitempty"`
 	Alert                       *MonitorAlertConfig     `json:"alert,omitempty"`
 	Schedule                    *MonitorScheduleConfig  `json:"schedule,omitempty"`
-	Timeout                     string                  `json:"timeout,omitempty"`
+	Timeout                     json.Number             `json:"timeout,omitempty"`
 	Locations                   []MonitorLocationConfig `json:"locations,omitempty"`
 	Origin                      string                  `json:"origin,omitempty"`
 	MaxAttempts                 int                     `json:"max_attempts"`
@@ -182,6 +181,8 @@ type MonitorDeleteStatus struct {
 
 type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)
 
+type KibanaSyntheticsMonitorUpdate func(id MonitorID, config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)
+
 type KibanaSyntheticsMonitorGet func(id MonitorID, namespace string) (*SyntheticsMonitor, error)
 
 type KibanaSyntheticsMonitorDelete func(namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
@@ -195,7 +196,7 @@ type KibanaSyntheticsPrivateLocationDelete func(id string, namespace string) err
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
 	return func(idOrLabel string, namespace string) (*PrivateLocation, error) {
 
-		path := fmt.Sprintf("%s/%s", basePath(namespace, privateLocationsSuffix), idOrLabel)
+		path := basePathWithId(namespace, privateLocationsSuffix, idOrLabel)
 		log.Debugf("URL to get private locations: %s", path)
 		resp, err := c.R().Get(path)
 		if err = handleKibanaError(err, resp); err != nil {
@@ -207,7 +208,7 @@ func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSynthetics
 
 func newKibanaSyntheticsPrivateLocationDeleteFunc(c *resty.Client) KibanaSyntheticsPrivateLocationDelete {
 	return func(id string, namespace string) error {
-		path := fmt.Sprintf("%s/%s", basePath(namespace, privateLocationsSuffix), id)
+		path := basePathWithId(namespace, privateLocationsSuffix, id)
 		log.Debugf("URL to delete private locations: %s", path)
 		resp, err := c.R().Delete(path)
 		err = handleKibanaError(err, resp)
@@ -217,7 +218,7 @@ func newKibanaSyntheticsPrivateLocationDeleteFunc(c *resty.Client) KibanaSynthet
 
 func newKibanaSyntheticsMonitorGetFunc(c *resty.Client) KibanaSyntheticsMonitorGet {
 	return func(id MonitorID, namespace string) (*SyntheticsMonitor, error) {
-		path := fmt.Sprintf("%s/%s", basePath(namespace, monitorsSuffix), id)
+		path := basePathWithId(namespace, monitorsSuffix, id)
 		log.Debugf("URL to create monitor: %s", path)
 
 		resp, err := c.R().Get(path)
@@ -258,25 +259,52 @@ func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSynthet
 	}
 }
 
+func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonitorUpdate {
+	return func(id MonitorID, config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error) {
+
+		path := basePathWithId(namespace, monitorsSuffix, id)
+		log.Debugf("URL to create monitor: %s", path)
+		data := buildMonitorJson(config, fields)
+		resp, err := c.R().SetBody(data).Put(path)
+		if err := handleKibanaError(err, resp); err != nil {
+			return nil, err
+		}
+		return unmarshal(resp, SyntheticsMonitor{})
+	}
+}
+
 func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorAdd {
 	return func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error) {
 
 		path := basePath(namespace, monitorsSuffix)
 		log.Debugf("URL to create monitor: %s", path)
-
-		data := struct {
-			SyntheticsMonitorConfig
-			HTTPMonitorFields
-		}{
-			config,
-			fields,
-		}
-
+		data := buildMonitorJson(config, fields)
 		resp, err := c.R().SetBody(data).Post(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
 		return unmarshal(resp, SyntheticsMonitor{})
+	}
+}
+
+// current idea here is to switch fields HTTPMonitorFields to interface{} and to
+// type switch in the function for future monitor types
+func buildMonitorJson(config SyntheticsMonitorConfig, fields HTTPMonitorFields) interface{} {
+
+	type MonitorTypeConfig struct {
+		Type MonitorType `json:"type"`
+	}
+
+	mType := MonitorTypeConfig{Type: Http}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		HTTPMonitorFields
+	}{
+		config,
+		mType,
+		fields,
 	}
 }
 
@@ -305,6 +333,10 @@ func handleKibanaError(err error, resp *resty.Response) error {
 	return nil
 }
 
+func basePathWithId(namespace, suffix string, id any) string {
+	return fmt.Sprintf("%s/%s", basePath(namespace, suffix), id)
+}
+
 func basePath(namespace, suffix string) string {
 	return namespaceBasesPath(namespace, basePathKibanaSynthetics, suffix)
 }
@@ -316,5 +348,3 @@ func namespaceBasesPath(namespace, basePath, suffix string) string {
 
 	return fmt.Sprintf("/s/%s%s%s", namespace, basePath, suffix)
 }
-
-//TODO: Monitor - Update https://www.elastic.co/guide/en/kibana/current/synthetics-apis.html
