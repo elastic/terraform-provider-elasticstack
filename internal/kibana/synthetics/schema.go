@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+//TODO: monitor support is from 8.14.0
+
 const (
 	MetadataPrefix = "_kibana_synthetics_"
 )
