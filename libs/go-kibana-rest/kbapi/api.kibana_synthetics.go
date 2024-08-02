@@ -12,23 +12,7 @@ const (
 	basePathKibanaSynthetics = "/api/synthetics"
 	privateLocationsSuffix   = "/private_locations"
 	monitorsSuffix           = "/monitors"
-)
 
-type MonitorID string
-type MonitorType string
-type MonitorLocation string
-type MonitorSchedule int
-type HttpMonitorMode string
-
-type KibanaError struct {
-	Code    int    `json:"statusCode,omitempty"`
-	Error   string `json:"error,omitempty"`
-	Message string `json:"message,omitempty"`
-}
-
-type JsonObject map[string]interface{}
-
-const (
 	Http    MonitorType = "http"
 	Tcp     MonitorType = "tcp"
 	Icmp    MonitorType = "icmp"
@@ -60,6 +44,20 @@ const (
 	ModeAll HttpMonitorMode = "all"
 	ModeAny                 = "any"
 )
+
+type KibanaError struct {
+	Code    int    `json:"statusCode,omitempty"`
+	Error   string `json:"error,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+type MonitorID string
+type MonitorType string
+type MonitorLocation string
+type MonitorSchedule int
+type HttpMonitorMode string
+
+type JsonObject map[string]interface{}
 
 type KibanaSyntheticsMonitorAPI struct {
 	Add    KibanaSyntheticsMonitorAdd
@@ -130,38 +128,6 @@ type MonitorLocationConfig struct {
 	IsServiceManaged bool                `json:"isServiceManaged"`
 }
 
-type SyntheticsMonitor struct {
-	Name                        string                  `json:"name"`
-	Type                        MonitorType             `json:"type"`
-	ConfigId                    MonitorID               `json:"config_id"`
-	Id                          MonitorID               `json:"id"`
-	Mode                        HttpMonitorMode         `json:"mode"`
-	CreatedAt                   time.Time               `json:"created_at"`
-	UpdatedAt                   time.Time               `json:"updated_at"`
-	Namespace                   string                  `json:"namespace"`
-	Enabled                     *bool                   `json:"enabled,omitempty"`
-	Alert                       *MonitorAlertConfig     `json:"alert,omitempty"`
-	Schedule                    *MonitorScheduleConfig  `json:"schedule,omitempty"`
-	Timeout                     json.Number             `json:"timeout,omitempty"`
-	Locations                   []MonitorLocationConfig `json:"locations,omitempty"`
-	Origin                      string                  `json:"origin,omitempty"`
-	MaxAttempts                 int                     `json:"max_attempts"`
-	MaxRedirects                string                  `json:"max_redirects"`
-	ResponseIncludeBody         string                  `json:"response.include_body"`
-	ResponseIncludeHeaders      bool                    `json:"response.include_headers"`
-	CheckRequestMethod          string                  `json:"check.request.method"`
-	ResponseIncludeBodyMaxBytes string                  `json:"response.include_body_max_bytes,omitempty"`
-	Ipv4                        bool                    `json:"ipv4,omitempty"`
-	Ipv6                        bool                    `json:"ipv6,omitempty"`
-	SslVerificationMode         string                  `json:"ssl.verification_mode,omitempty"`
-	SslSupportedProtocols       []string                `json:"ssl.supported_protocols,omitempty"`
-	Revision                    int                     `json:"revision,omitempty"`
-	Url                         string                  `json:"url,omitempty"`
-	Ui                          struct {
-		IsTlsEnabled bool `json:"is_tls_enabled"`
-	} `json:"__ui,omitempty"`
-}
-
 type PrivateLocationConfig struct {
 	Label         string              `json:"label"`
 	AgentPolicyId string              `json:"agentPolicyId"`
@@ -177,6 +143,52 @@ type PrivateLocation struct {
 type MonitorDeleteStatus struct {
 	Id      MonitorID `json:"id"`
 	Deleted bool      `json:"deleted"`
+}
+
+type SyntheticsMonitor struct {
+	Name                        string                  `json:"name"`
+	Type                        MonitorType             `json:"type"`
+	ConfigId                    MonitorID               `json:"config_id"`
+	Id                          MonitorID               `json:"id"`
+	Mode                        HttpMonitorMode         `json:"mode"`
+	CreatedAt                   time.Time               `json:"created_at"`
+	UpdatedAt                   time.Time               `json:"updated_at"`
+	Namespace                   string                  `json:"namespace"`
+	Enabled                     *bool                   `json:"enabled,omitempty"`
+	Alert                       *MonitorAlertConfig     `json:"alert,omitempty"`
+	Schedule                    *MonitorScheduleConfig  `json:"schedule,omitempty"`
+	Tags                        []string                `json:"tags,omitempty"`
+	APMServiceName              string                  `json:"service.name,omitempty"`
+	Timeout                     json.Number             `json:"timeout,omitempty"`
+	Locations                   []MonitorLocationConfig `json:"locations,omitempty"`
+	Origin                      string                  `json:"origin,omitempty"`
+	Params                      JsonObject              `json:"params,omitempty"`
+	MaxAttempts                 int                     `json:"max_attempts"`
+	MaxRedirects                string                  `json:"max_redirects"`
+	ResponseIncludeBody         string                  `json:"response.include_body"`
+	ResponseIncludeHeaders      bool                    `json:"response.include_headers"`
+	CheckRequestMethod          string                  `json:"check.request.method"`
+	ResponseIncludeBodyMaxBytes string                  `json:"response.include_body_max_bytes,omitempty"`
+	Ipv4                        bool                    `json:"ipv4,omitempty"`
+	Ipv6                        bool                    `json:"ipv6,omitempty"`
+	SslVerificationMode         string                  `json:"ssl.verification_mode,omitempty"`
+	SslSupportedProtocols       []string                `json:"ssl.supported_protocols,omitempty"`
+	Revision                    int                     `json:"revision,omitempty"`
+	Url                         string                  `json:"url,omitempty"`
+	Ui                          struct {
+		IsTlsEnabled bool `json:"is_tls_enabled"`
+	} `json:"__ui,omitempty"` //TODO: JsonObject
+	//TODO: - add following http monitor fields
+	//check.response.body.positive - array of strings
+	//check.response.status - array of strings
+	//check.request.body - object
+	//check.request.headers - object
+	//revision - int
+	//username - string
+	//password - string
+	//proxy_url - string
+	//proxy_headers - object
+
 }
 
 type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)

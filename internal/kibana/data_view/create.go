@@ -16,7 +16,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 
 	dataviewClient, err := r.client.GetDataViewsClient()
 	if err != nil {
-		response.Diagnostics.AddError("unable to get data view client", err.Error())
+		response.Diagnostics.AddError("unable to get kibana client", err.Error())
 		return
 	}
 

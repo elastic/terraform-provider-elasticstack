@@ -119,6 +119,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							Namespace:      space,
 							Params: map[string]interface{}{
 								"param1": "some-params",
+								"my_url": "http://localhost:8080",
 							},
 							RetestOnFailure: f,
 						},
@@ -179,6 +180,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					monitor, err := syntheticsAPI.Monitor.Add(config, fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), monitor)
+					monitor.Params = nil //kibana API doesn't return params for GET request
 
 					get, err := syntheticsAPI.Monitor.Get(monitor.Id, space)
 					assert.NoError(s.T(), err)
@@ -190,6 +192,8 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 
 					update, err := syntheticsAPI.Monitor.Update(monitor.Id, tc.update.config, tc.update.fields, space)
 					assert.NoError(s.T(), err)
+					assert.NotNil(s.T(), update)
+					update.Params = nil //kibana API doesn't return params for GET request
 
 					get, err = syntheticsAPI.Monitor.Get(monitor.ConfigId, space)
 					assert.NoError(s.T(), err)
