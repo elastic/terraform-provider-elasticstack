@@ -216,6 +216,9 @@ func getSchema() schema.Schema {
 				Description: "Number of shard replicas.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"auto_expand_replicas": schema.StringAttribute{
 				Description: "Set the number of replicas to the node count in the cluster. Set to a dash delimited lower and upper bound (e.g. 0-5) or use all for the upper bound (e.g. 0-all)",
@@ -436,11 +439,15 @@ func getSchema() schema.Schema {
 				Computed:   true,
 				CustomType: jsontypes.NormalizedType{},
 				Default:    stringdefault.StaticString("{}"),
+				PlanModifiers: []planmodifier.String{
+					mappingsPlanModifier{},
+				},
 			},
 			"settings_raw": schema.StringAttribute{
 				Description: "All raw settings fetched from the cluster.",
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				// TODO: Plan modifier. Use state if no other settings have been modified
 			},
 			"deletion_protection": schema.BoolAttribute{
 				Optional:    true,
