@@ -1,14 +1,12 @@
 package index_test
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -26,10 +24,13 @@ func TestAccResourceIndex(t *testing.T) {
 				Config: testAccResourceIndexCreate(indexName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.0.name", "test_alias_1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.1.name", "test_alias_2"),
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("test_alias_1"),
+					}),
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("test_alias_2"),
+					}),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "settings.0.setting.#", "3"),
 				),
 			},
 			{
@@ -42,10 +43,118 @@ func TestAccResourceIndex(t *testing.T) {
 				Config: testAccResourceIndexUpdate(indexName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.0.name", "test_alias_1"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test", "alias.1"),
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("test_alias_1"),
+					}),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "settings.#", "0"),
+				),
+			},
+			{
+				Config: testAccResourceIndexZeroReplicas(indexName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("test_alias_1"),
+					}),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "number_of_replicas", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexFromSDK(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create the index with the last provider version where the index resource was built on the SDK
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.11.3",
+					},
+				},
+				Config: testAccResourceIndexSettingsCreate(indexName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "number_of_shards", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "number_of_routing_shards", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "codec", "best_compression"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_partition_size", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "shard_check_on_startup", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "sort_field.0", "sort_key"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "sort_order.0", "asc"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "mapping_coerce", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "auto_expand_replicas", "0-5"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "search_idle_after", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "refresh_interval", "10s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_result_window", "5000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_inner_result_window", "2000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_rescore_window", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_docvalue_fields_search", "1500"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_script_fields", "500"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_ngram_diff", "100"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_shingle_diff", "200"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_refresh_listeners", "10"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analyze_max_token_count", "500000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "highlight_max_analyzed_offset", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_terms_count", "10000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_regex_length", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "query_default_field.0", "field1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_allocation_enable", "primaries"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_rebalance_enable", "primaries"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "gc_deletes", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "unassigned_node_left_delayed_timeout", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_analyzer", `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],"tokenizer":"standard","type":"custom"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_char_filter", `{"zero_width_spaces":{"mappings":["\\u200C=\u003e\\u0020"],"type":"mapping"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.value", "2"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccResourceIndexSettingsCreate(indexName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "number_of_shards", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "number_of_routing_shards", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "codec", "best_compression"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_partition_size", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "shard_check_on_startup", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "sort_field.0", "sort_key"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "sort_order.0", "asc"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "mapping_coerce", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "auto_expand_replicas", "0-5"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "search_idle_after", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "refresh_interval", "10s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_result_window", "5000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_inner_result_window", "2000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_rescore_window", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_docvalue_fields_search", "1500"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_script_fields", "500"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_ngram_diff", "100"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_shingle_diff", "200"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_refresh_listeners", "10"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analyze_max_token_count", "500000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "highlight_max_analyzed_offset", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_terms_count", "10000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "max_regex_length", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "query_default_field.0", "field1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_allocation_enable", "primaries"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_rebalance_enable", "primaries"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "gc_deletes", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "unassigned_node_left_delayed_timeout", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_analyzer", `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],"tokenizer":"standard","type":"custom"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_char_filter", `{"zero_width_spaces":{"mappings":["\\u200C=\u003e\\u0020"],"type":"mapping"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.value", "2"),
 				),
 			},
 		},
@@ -103,51 +212,6 @@ func TestAccResourceIndexSettings(t *testing.T) {
 	})
 }
 
-func TestAccResourceIndexSettingsMigration(t *testing.T) {
-	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccResourceIndexSettingsMigrationCreate(indexName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings_migration", "name", indexName),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test_settings_migration", "number_of_replicas"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings_migration", "settings.0.setting.0.name", "number_of_replicas"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings_migration", "settings.0.setting.0.value", "2"),
-				),
-			},
-			{
-				Config: testAccResourceIndexSettingsMigrationUpdate(indexName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings_migration", "name", indexName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings_migration", "number_of_replicas", "1"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test_settings_migration", "settings.#"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccResourceIndexSettingsConflict(t *testing.T) {
-	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				Config:      testAccResourceIndexSettingsConflict(indexName),
-				ExpectError: regexp.MustCompile("setting 'number_of_shards' is already defined by the other field, please remove it from `settings` to avoid unexpected settings"),
-			},
-		},
-	})
-}
-
 func TestAccResourceIndexRemovingField(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -176,6 +240,7 @@ resource "elasticstack_elasticsearch_index" "test" {
   alias {
     name = "test_alias_1"
   }
+
   alias {
     name = "test_alias_2"
     filter = jsonencode({
@@ -188,21 +253,6 @@ resource "elasticstack_elasticsearch_index" "test" {
       field1 = { type = "text" }
     }
   })
-
-  settings {
-    setting {
-      name  = "index.number_of_replicas"
-      value = "2"
-    }
-    setting {
-        name  = "index.routing.allocation.total_shards_per_node"
-        value = "200"
-    }
-    setting {
-      name  = "index.search.idle.after"
-      value = "20s"
-    }
-  }
 
 	wait_for_active_shards = "all"
 	master_timeout = "1m"
@@ -219,6 +269,31 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_index" "test" {
   name = "%s"
+
+  alias {
+    name = "test_alias_1"
+  }
+
+  mappings = jsonencode({
+    properties = {
+      field1 = { type = "text" }
+    }
+  })
+
+  deletion_protection = false
+}
+	`, name)
+}
+
+func testAccResourceIndexZeroReplicas(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "test" {
+  name = "%s"
+  number_of_replicas = 0
 
   alias {
     name = "test_alias_1"
@@ -305,72 +380,6 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
     setting {
       name  = "number_of_replicas"
       value = "2"
-    }
-  }
-
-  deletion_protection = false
-}
-	`, name)
-}
-
-func testAccResourceIndexSettingsMigrationCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_settings_migration" {
-  name = "%s"
-
-  settings {
-    setting {
-      name  = "number_of_replicas"
-      value = "2"
-    }
-  }
-
-  deletion_protection = false
-}
-	`, name)
-}
-
-func testAccResourceIndexSettingsMigrationUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_settings_migration" {
-  name = "%s"
-
-  number_of_replicas = 1
-
-  deletion_protection = false
-}
-	`, name)
-}
-
-func testAccResourceIndexSettingsConflict(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_settings_conflict" {
-  name = "%s"
-
-  mappings = jsonencode({
-    properties = {
-      field1    = { type = "text" }
-    }
-  })
-
-  number_of_shards = 2
-
-  settings {
-    setting {
-      name  = "number_of_shards"
-      value = "3"
     }
   }
 
@@ -467,104 +476,4 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func Test_IsMappingForceNewRequired(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name string
-		old  map[string]interface{}
-		new  map[string]interface{}
-		want bool
-	}{
-		{
-			name: "return false only when new field is added",
-			old: map[string]interface{}{
-				"field1": map[string]interface{}{
-					"type": "text",
-				},
-			},
-			new: map[string]interface{}{
-				"field1": map[string]interface{}{
-					"type": "text",
-				},
-				"field2": map[string]interface{}{
-					"type": "keyword",
-				},
-			},
-			want: false,
-		},
-		{
-			name: "return true when type is changed",
-			old: map[string]interface{}{
-				"field1": map[string]interface{}{
-					"type": "text",
-				},
-			},
-			new: map[string]interface{}{
-				"field1": map[string]interface{}{
-					"type": "integer",
-				},
-			},
-			want: true,
-		},
-		{
-			name: "return false when field is removed",
-			old: map[string]interface{}{
-				"field1": map[string]interface{}{
-					"type": "text",
-				},
-			},
-			new:  map[string]interface{}{},
-			want: false,
-		},
-		{
-			name: "return false when dynamically added child property is removed",
-			old: map[string]interface{}{
-				"parent": map[string]interface{}{
-					"properties": map[string]interface{}{
-						"child": map[string]interface{}{
-							"type": "keyword",
-						},
-					},
-				},
-			},
-			new: map[string]interface{}{
-				"parent": map[string]interface{}{
-					"type": "object",
-				},
-			},
-			want: false,
-		},
-		{
-			name: "return true when child property's type changes",
-			old: map[string]interface{}{
-				"parent": map[string]interface{}{
-					"properties": map[string]interface{}{
-						"child": map[string]interface{}{
-							"type": "keyword",
-						},
-					},
-				},
-			},
-			new: map[string]interface{}{
-				"parent": map[string]interface{}{
-					"properties": map[string]interface{}{
-						"child": map[string]interface{}{
-							"type": "integer",
-						},
-					},
-				},
-			},
-			want: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := index.IsMappingForceNewRequired(context.Background(), tt.old, tt.new); got != tt.want {
-				t.Errorf("IsMappingForceNewRequired() = %v, want %v", got, tt.want)
-			}
-		})
-	}
 }

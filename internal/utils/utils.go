@@ -70,6 +70,24 @@ func CheckHttpErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics 
 	return diags
 }
 
+func FrameworkDiagsFromSDK(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	for _, sdkDiag := range sdkDiags {
+		var fwDiag fwdiag.Diagnostic
+
+		if sdkDiag.Severity == sdkdiag.Error {
+			fwDiag = fwdiag.NewErrorDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
+		} else {
+			fwDiag = fwdiag.NewWarningDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
+		}
+
+		diags.Append(fwDiag)
+	}
+
+	return diags
+}
+
 // Compares the JSON in two byte slices
 func JSONBytesEqual(a, b []byte) (bool, error) {
 	var j, j2 interface{}
