@@ -2,7 +2,6 @@ package monitor_http
 
 import (
 	"context"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -12,7 +11,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces
 
 type Resource struct {
-	client *clients.ApiClient
+	//client *clients.ApiClient
 }
 
 func HttpMonitorModeSchema() schema.Attribute {
