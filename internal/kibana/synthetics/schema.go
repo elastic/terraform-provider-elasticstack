@@ -156,11 +156,13 @@ func GeoConfigSchema() schema.Attribute {
 		Attributes: map[string]schema.Attribute{
 			"lat": schema.Float64Attribute{
 				Optional:            false,
-				MarkdownDescription: "",
+				Computed:            true,
+				MarkdownDescription: "", //TODO add description
 			},
 			"lon": schema.Float64Attribute{
 				Optional:            false,
-				MarkdownDescription: "",
+				Computed:            true,
+				MarkdownDescription: "", //TODO add description
 			},
 		},
 	}
