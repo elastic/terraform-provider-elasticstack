@@ -37,7 +37,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 	space_id = "testacc"
 	agent_policy_id = "agent-policy-id-test"
 	tags = ["a", "b"]
-	geo {
+	geo = {
 		lat = 42.42
 		lon = -42.42
 	}
@@ -66,7 +66,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 	space_id = "testacc"
 	agent_policy_id = "agent-policy-id-test-import"
 	tags = ["a-import", "b-import"]
-	geo {
+	geo = {
 		lat = 33
 		lon = -55
 	}
@@ -82,7 +82,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 	space_id = "default"
 	agent_policy_id = "agent-policy-id-test-2"
 	tags = ["c", "d", "e"]
-	geo {
+	geo = {
 		lat = -33.21
 		lon = 42.42
 	}
