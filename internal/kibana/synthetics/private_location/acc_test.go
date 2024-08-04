@@ -6,7 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 const (
@@ -25,6 +25,7 @@ var (
 func TestPrivateLocationResource(t *testing.T) {
 	resourceId := "elasticstack_kibana_synthetics_private_location.test"
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read testing
@@ -55,11 +56,22 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// ImportState testing
 			{
-				//TODO: Config
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+				Config: providerConfig + `
+resource "elasticstack_kibana_synthetics_private_location" "test" {
+	label = "test label import"
+	space_id = "testacc"
+	agent_policy_id = "agent-policy-id-test-import"
+	tags = ["a-import", "b-import"]
+	geo {
+		lat = 33
+		lon = -55
+	}
+}
+`,
 			},
 			// Update and Read testing
 			{
