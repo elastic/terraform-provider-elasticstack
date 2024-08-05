@@ -2,8 +2,10 @@ package private_location
 
 import (
 	"context"
+	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -45,4 +47,17 @@ func (r *Resource) Update(ctx context.Context, _ resource.UpdateRequest, respons
 		"synthetics private location update not supported",
 		"Synthetics private location could only be replaced. Please, note, that only unused locations could be deleted.",
 	)
+}
+
+func (r *Resource) getKibanaClient(dg diag.Diagnostics) *kibana.Client {
+	if !r.resourceReady(&dg) {
+		return nil
+	}
+
+	kibanaClient, err := r.client.GetKibanaClient()
+	if err != nil {
+		dg.AddError("unable to get kibana client", err.Error())
+		return nil
+	}
+	return kibanaClient
 }

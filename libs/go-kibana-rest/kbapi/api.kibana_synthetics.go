@@ -198,6 +198,13 @@ type KibanaSyntheticsPrivateLocationDelete func(id string, namespace string) err
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
 	return func(idOrLabel string, namespace string) (*PrivateLocation, error) {
 
+		if idOrLabel == "" {
+			return nil, APIError{
+				Code:    404,
+				Message: "Private location id or label is empty",
+			}
+		}
+
 		path := basePathWithId(namespace, privateLocationsSuffix, idOrLabel)
 		log.Debugf("URL to get private locations: %s", path)
 		resp, err := c.R().Get(path)

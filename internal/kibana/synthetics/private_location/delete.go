@@ -11,13 +11,8 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 
 	tflog.Info(ctx, "Delete private location")
 
-	if !r.resourceReady(&response.Diagnostics) {
-		return
-	}
-
-	kibanaClient, err := r.client.GetKibanaClient()
-	if err != nil {
-		response.Diagnostics.AddError("unable to get kibana client", err.Error())
+	kibanaClient := r.getKibanaClient(response.Diagnostics)
+	if kibanaClient == nil {
 		return
 	}
 
@@ -30,7 +25,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 
 	id := plan.ID.ValueString()
 	namespace := plan.SpaceID.ValueString()
-	err = kibanaClient.KibanaSynthetics.PrivateLocation.Delete(id, namespace)
+	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(id, namespace)
 
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", id, namespace), err.Error())

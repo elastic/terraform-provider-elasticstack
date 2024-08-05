@@ -11,13 +11,8 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 
 	tflog.Info(ctx, "Create private location")
 
-	if !r.resourceReady(&response.Diagnostics) {
-		return
-	}
-
-	kibanaClient, err := r.client.GetKibanaClient()
-	if err != nil {
-		response.Diagnostics.AddError("unable to get kibana client", err.Error())
+	kibanaClient := r.getKibanaClient(response.Diagnostics)
+	if kibanaClient == nil {
 		return
 	}
 
