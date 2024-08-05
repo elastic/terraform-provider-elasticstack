@@ -19,8 +19,6 @@ import (
 
 const resourceName = synthetics.MetadataPrefix + "private_location"
 
-// TODO: tests
-
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
@@ -130,7 +128,6 @@ func (r *Resource) resourceReady(dg *diag.Diagnostics) bool {
 	return true
 }
 
-// TODO: tests
 func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {
 	var geoConfig *kbapi.SyntheticGeoConfig
 	if m.Geo != nil {

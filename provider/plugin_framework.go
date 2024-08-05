@@ -15,6 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ fwprovider.Provider = &Provider{}
+)
+
 type Provider struct {
 	version string
 }
@@ -42,14 +47,14 @@ func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res
 }
 
 func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureRequest, res *fwprovider.ConfigureResponse) {
-	var config config.ProviderConfiguration
+	var cfg config.ProviderConfiguration
 
-	res.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	res.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	client, diags := clients.NewApiClientFromFramework(ctx, config, p.version)
+	client, diags := clients.NewApiClientFromFramework(ctx, cfg, p.version)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

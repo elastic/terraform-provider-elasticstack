@@ -1,6 +1,7 @@
 package private_location_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -15,25 +16,6 @@ provider "elasticstack" {
   	elasticsearch {}
 	kibana {}
 }
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-	name            = "Private location Agent Policy"
-	namespace       = "testacc"
-	description     = "TestPrivateLocationResource Agent Policy"
-	monitor_logs    = true
-	monitor_metrics = true
-	skip_destroy    = false
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy_default" {
-	name            = "Default namespace Private location Agent Policy"
-	namespace       = "default"
-	description     = "TestPrivateLocationResource Agent Policy"
-	monitor_logs    = true
-	monitor_metrics = true
-	skip_destroy    = false
-}
-
 `
 )
 
@@ -50,18 +32,7 @@ func TestPrivateLocationResource(t *testing.T) {
 			// Create and Read testing
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config: providerConfig + `
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "test label"
-	space_id = "testacc"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-	tags = ["a", "b"]
-	geo = {
-		lat = 42.42
-		lon = -42.42
-	}
-}
-`,
+				Config:   testConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "test label"),
 					resource.TestCheckResourceAttr(resourceId, "space_id", "testacc"),
@@ -79,34 +50,12 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config: providerConfig + `
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "test label"
-	space_id = "testacc"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-	tags = ["a", "b"]
-	geo = {
-		lat = 42.42
-		lon = -42.42
-	}
-}
-`,
+				Config:            testConfig(),
 			},
 			// Update and Read testing
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config: providerConfig + `
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "test label 2"
-	space_id = "default"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
-	tags = ["c", "d", "e"]
-	geo = {
-		lat = -33.21
-		lon = 42.42
-	}
-}
-`,
+				Config:   updateConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "test label 2"),
 					resource.TestCheckResourceAttr(resourceId, "space_id", "default"),
@@ -116,10 +65,57 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 					resource.TestCheckResourceAttr(resourceId, "tags.1", "d"),
 					resource.TestCheckResourceAttr(resourceId, "tags.2", "e"),
 					resource.TestCheckResourceAttr(resourceId, "geo.lat", "-33.21"),
-					resource.TestCheckResourceAttr(resourceId, "geo.lon", "42.42"),
+					resource.TestCheckResourceAttr(resourceId, "geo.lon", "-33.21"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
+}
+
+func agentPolicyResource(namespace, name string) string {
+	return fmt.Sprintf(`
+resource "elasticstack_fleet_agent_policy" "%s" {
+	name            = "Private Location Agent Policy - %s"
+	namespace       = "%s"
+	description     = "TestPrivateLocationResource Agent Policy"
+	monitor_logs    = true
+	monitor_metrics = true
+	skip_destroy    = false
+}
+`, name, name, namespace)
+}
+
+func testConfig() string {
+	namespace := "testacc"
+	return providerConfig + agentPolicyResource(namespace, "test_policy") +
+		fmt.Sprintf(`
+resource "elasticstack_kibana_synthetics_private_location" "%s" {
+	label = "test label"
+	space_id = "%s"
+	agent_policy_id = %s
+	tags = ["a", "b"]
+	geo = {
+		lat = 42.42
+		lon = -42.42
+	}
+}
+`, "test", namespace, "elasticstack_fleet_agent_policy.test_policy.policy_id")
+}
+
+func updateConfig() string {
+	namespace := "default"
+	return providerConfig + agentPolicyResource(namespace, "test_policy_default") +
+		fmt.Sprintf(`
+resource "elasticstack_kibana_synthetics_private_location" "%s" {
+	label = "test label 2"
+	space_id = "%s"
+	agent_policy_id = %s
+	tags = ["c", "d", "e"]
+	geo = {
+		lat = -33.21
+		lon = -33.21
+	}
+}
+`, "test", namespace, "elasticstack_fleet_agent_policy.test_policy_default.policy_id")
 }
