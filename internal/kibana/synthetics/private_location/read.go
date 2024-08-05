@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
+
+	tflog.Info(ctx, "Read private location")
 
 	// TODO: dry
 	if !r.resourceReady(&response.Diagnostics) {
@@ -18,6 +21,8 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		response.Diagnostics.AddError("unable to get kibana client", err.Error())
 		return
 	}
+
+	//TODO: handle 404 error / remove resource
 
 	var state tfModelV0
 	diags := request.State.Get(ctx, &state)
@@ -34,7 +39,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	state = toModelV0(namespace, result.PrivateLocationConfig)
+	state = toModelV0(*result)
 
 	// Set refreshed state
 	diags = response.State.Set(ctx, &state)

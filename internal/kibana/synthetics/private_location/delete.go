@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
+
+	tflog.Info(ctx, "Delete private location")
 
 	if !r.resourceReady(&response.Diagnostics) {
 		return
@@ -25,12 +28,12 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	label := plan.Label.ValueString()
+	id := plan.ID.ValueString()
 	namespace := plan.SpaceID.ValueString()
-	err = kibanaClient.KibanaSynthetics.PrivateLocation.Delete(label, namespace)
+	err = kibanaClient.KibanaSynthetics.PrivateLocation.Delete(id, namespace)
 
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", label, namespace), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", id, namespace), err.Error())
 		return
 	}
 

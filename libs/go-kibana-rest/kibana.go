@@ -35,6 +35,7 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	restyClient := resty.New().
+		SetDebug(true).
 		SetBaseURL(cfg.Address).
 		SetHeader("kbn-xsrf", "true").
 		SetHeader("Content-Type", "application/json")

@@ -31,11 +31,12 @@ type Resource struct {
 }
 
 type tfModelV0 struct {
-	Label         types.String             `tfsdk:"label"`
-	SpaceID       types.String             `tfsdk:"space_id"`
-	AgentPolicyId types.String             `tfsdk:"agent_policy_id"`
-	Tags          []types.String           `tfsdk:"tags"` //> string
-	Geo           synthetics.TFGeoConfigV0 `tfsdk:"geo"`
+	ID            types.String              `tfsdk:"id"`
+	Label         types.String              `tfsdk:"label"`
+	SpaceID       types.String              `tfsdk:"space_id"`
+	AgentPolicyId types.String              `tfsdk:"agent_policy_id"`
+	Tags          []types.String            `tfsdk:"tags"` //> string
+	Geo           *synthetics.TFGeoConfigV0 `tfsdk:"geo"`
 }
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -43,6 +44,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Import private location")
 	resource.ImportStatePassthroughID(ctx, path.Root("label"), request, response)
 }
 
@@ -68,10 +70,17 @@ func privateLocationSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Synthetics private location config, see https://www.elastic.co/guide/en/kibana/current/create-private-location-api.html for more details",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "Generated id for the private location. For monitor setup please use private location label.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
 			"space_id": schema.StringAttribute{
 				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:            true,
-				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
@@ -79,7 +88,7 @@ func privateLocationSchema() schema.Schema {
 			},
 			"label": schema.StringAttribute{
 				Optional:            false,
-				Computed:            true,
+				Required:            true,
 				MarkdownDescription: "A label for the private location, used as unique identifier",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -88,7 +97,7 @@ func privateLocationSchema() schema.Schema {
 			},
 			"agent_policy_id": schema.StringAttribute{
 				Optional:            false,
-				Computed:            true,
+				Required:            true,
 				MarkdownDescription: "The ID of the agent policy associated with the private location. To create a private location for synthetics monitor you need to create an agent policy in fleet and use its agentPolicyId",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -98,7 +107,6 @@ func privateLocationSchema() schema.Schema {
 			"tags": schema.ListAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				Computed:            true,
 				MarkdownDescription: "An array of tags to categorize the private location.",
 				PlanModifiers: []planmodifier.List{
 					listplanmodifier.UseStateForUnknown(),
@@ -123,8 +131,11 @@ func (r *Resource) resourceReady(dg *diag.Diagnostics) bool {
 }
 
 // TODO: tests
-func (m *tfModelV0) toPrivateLocationConfig() kbapi.PrivateLocationConfig {
-	geoConfig := m.Geo.ToSyntheticGeoConfig()
+func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {
+	var geoConfig *kbapi.SyntheticGeoConfig
+	if m.Geo != nil {
+		geoConfig = m.Geo.ToSyntheticGeoConfig()
+	}
 
 	var tags []string
 	for _, tag := range m.Tags {
@@ -132,24 +143,29 @@ func (m *tfModelV0) toPrivateLocationConfig() kbapi.PrivateLocationConfig {
 	}
 	pLoc := kbapi.PrivateLocationConfig{
 		Label:         m.Label.ValueString(),
-		AgentPolicyId: m.AgentPolicyId.String(),
+		AgentPolicyId: m.AgentPolicyId.ValueString(),
 		Tags:          tags,
-		Geo:           &geoConfig,
+		Geo:           geoConfig,
 	}
 
-	return pLoc
+	return kbapi.PrivateLocation{
+		Id:                    m.ID.ValueString(),
+		Namespace:             m.SpaceID.ValueString(),
+		PrivateLocationConfig: pLoc,
+	}
 }
 
-func toModelV0(namespace string, pLoc kbapi.PrivateLocationConfig) tfModelV0 {
+func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
 	var tags []types.String
 	for _, tag := range pLoc.Tags {
 		tags = append(tags, types.StringValue(tag))
 	}
 	return tfModelV0{
+		ID:            types.StringValue(pLoc.Id),
 		Label:         types.StringValue(pLoc.Label),
-		SpaceID:       types.StringValue(namespace),
+		SpaceID:       types.StringValue(pLoc.Namespace),
 		AgentPolicyId: types.StringValue(pLoc.AgentPolicyId),
 		Tags:          tags,
-		Geo:           synthetics.FromSyntheticGeoConfig(*pLoc.Geo),
+		Geo:           synthetics.FromSyntheticGeoConfig(pLoc.Geo),
 	}
 }

@@ -136,7 +136,8 @@ type PrivateLocationConfig struct {
 }
 
 type PrivateLocation struct {
-	Id string `json:"id"`
+	Id        string `json:"id"`
+	Namespace string `json:"namespace,omitempty"`
 	PrivateLocationConfig
 }
 

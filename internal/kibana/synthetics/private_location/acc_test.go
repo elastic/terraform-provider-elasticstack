@@ -15,6 +15,25 @@ provider "elasticstack" {
   	elasticsearch {}
 	kibana {}
 }
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+	name            = "Private location Agent Policy"
+	namespace       = "testacc"
+	description     = "TestPrivateLocationResource Agent Policy"
+	monitor_logs    = true
+	monitor_metrics = true
+	skip_destroy    = false
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy_default" {
+	name            = "Default namespace Private location Agent Policy"
+	namespace       = "default"
+	description     = "TestPrivateLocationResource Agent Policy"
+	monitor_logs    = true
+	monitor_metrics = true
+	skip_destroy    = false
+}
+
 `
 )
 
@@ -35,7 +54,7 @@ func TestPrivateLocationResource(t *testing.T) {
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "test label"
 	space_id = "testacc"
-	agent_policy_id = "agent-policy-id-test"
+	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
 	tags = ["a", "b"]
 	geo = {
 		lat = 42.42
@@ -46,7 +65,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "test label"),
 					resource.TestCheckResourceAttr(resourceId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(resourceId, "agent_policy_id", "agent-policy-id-test"),
+					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceId, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "tags.0", "a"),
 					resource.TestCheckResourceAttr(resourceId, "tags.1", "b"),
@@ -62,13 +81,13 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				ImportStateVerify: true,
 				Config: providerConfig + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "test label import"
+	label = "test label"
 	space_id = "testacc"
-	agent_policy_id = "agent-policy-id-test-import"
-	tags = ["a-import", "b-import"]
+	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+	tags = ["a", "b"]
 	geo = {
-		lat = 33
-		lon = -55
+		lat = 42.42
+		lon = -42.42
 	}
 }
 `,
@@ -80,7 +99,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "test label 2"
 	space_id = "default"
-	agent_policy_id = "agent-policy-id-test-2"
+	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 	tags = ["c", "d", "e"]
 	geo = {
 		lat = -33.21
@@ -91,11 +110,11 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "test label 2"),
 					resource.TestCheckResourceAttr(resourceId, "space_id", "default"),
-					resource.TestCheckResourceAttr(resourceId, "agent_policy_id", "agent-policy-id-test-2"),
+					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceId, "tags.#", "3"),
 					resource.TestCheckResourceAttr(resourceId, "tags.0", "c"),
 					resource.TestCheckResourceAttr(resourceId, "tags.1", "d"),
-					resource.TestCheckResourceAttr(resourceId, "tags.3", "e"),
+					resource.TestCheckResourceAttr(resourceId, "tags.2", "e"),
 					resource.TestCheckResourceAttr(resourceId, "geo.lat", "-33.21"),
 					resource.TestCheckResourceAttr(resourceId, "geo.lon", "42.42"),
 				),

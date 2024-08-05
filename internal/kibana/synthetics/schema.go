@@ -156,12 +156,12 @@ func GeoConfigSchema() schema.Attribute {
 		Attributes: map[string]schema.Attribute{
 			"lat": schema.Float64Attribute{
 				Optional:            false,
-				Computed:            true,
+				Required:            true,
 				MarkdownDescription: "", //TODO add description
 			},
 			"lon": schema.Float64Attribute{
 				Optional:            false,
-				Computed:            true,
+				Required:            true,
 				MarkdownDescription: "", //TODO add description
 			},
 		},
@@ -195,15 +195,19 @@ type TFGeoConfigV0 struct {
 	Lon types.Float64 `tfsdk:"lon"`
 }
 
-func (m *TFGeoConfigV0) ToSyntheticGeoConfig() kbapi.SyntheticGeoConfig {
-	return kbapi.SyntheticGeoConfig{
+func (m *TFGeoConfigV0) ToSyntheticGeoConfig() *kbapi.SyntheticGeoConfig {
+	return &kbapi.SyntheticGeoConfig{
 		Lat: m.Lat.ValueFloat64(),
 		Lon: m.Lon.ValueFloat64(),
 	}
 }
 
-func FromSyntheticGeoConfig(v kbapi.SyntheticGeoConfig) TFGeoConfigV0 {
-	return TFGeoConfigV0{
+// TODO: test
+func FromSyntheticGeoConfig(v *kbapi.SyntheticGeoConfig) *TFGeoConfigV0 {
+	if v == nil {
+		return nil
+	}
+	return &TFGeoConfigV0{
 		Lat: types.Float64Value(v.Lat),
 		Lon: types.Float64Value(v.Lon),
 	}
