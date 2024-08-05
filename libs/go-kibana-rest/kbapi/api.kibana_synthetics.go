@@ -178,18 +178,7 @@ type SyntheticsMonitor struct {
 	Url                         string                  `json:"url,omitempty"`
 	Ui                          struct {
 		IsTlsEnabled bool `json:"is_tls_enabled"`
-	} `json:"__ui,omitempty"` //TODO: JsonObject
-	//TODO: - add following http monitor fields
-	//check.response.body.positive - array of strings
-	//check.response.status - array of strings
-	//check.request.body - object
-	//check.request.headers - object
-	//revision - int
-	//username - string
-	//password - string
-	//proxy_url - string
-	//proxy_headers - object
-
+	} `json:"__ui,omitempty"`
 }
 
 type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)

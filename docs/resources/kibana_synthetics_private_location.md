@@ -35,5 +35,5 @@ Synthetics private location config, see https://www.elastic.co/guide/en/kibana/c
 
 Required:
 
-- `lat` (Number)
-- `lon` (Number)
+- `lat` (Number) The latitude of the location.
+- `lon` (Number) The longitude of the location.

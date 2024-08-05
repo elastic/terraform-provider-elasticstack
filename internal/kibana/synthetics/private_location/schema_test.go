@@ -66,9 +66,9 @@ func Test_roundtrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			plc := tt.plc
 			input := kbapi.PrivateLocation{
-				tt.id,
-				tt.ns,
-				plc,
+				Id:                    tt.id,
+				Namespace:             tt.ns,
+				PrivateLocationConfig: plc,
 			}
 			modelV0 := toModelV0(input)
 			actual := modelV0.toPrivateLocation()

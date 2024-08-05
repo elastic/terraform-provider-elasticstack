@@ -1,32 +1,15 @@
 package private_location
 
 import (
-	"context"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-const resourceName = synthetics.MetadataPrefix + "private_location"
-
-// Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
-
-type Resource struct {
-	client *clients.ApiClient
-}
 
 type tfModelV0 struct {
 	ID            types.String              `tfsdk:"id"`
@@ -35,33 +18,6 @@ type tfModelV0 struct {
 	AgentPolicyId types.String              `tfsdk:"agent_policy_id"`
 	Tags          []types.String            `tfsdk:"tags"` //> string
 	Geo           *synthetics.TFGeoConfigV0 `tfsdk:"geo"`
-}
-
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = privateLocationSchema()
-}
-
-func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
-	tflog.Info(ctx, "Import private location")
-	resource.ImportStatePassthroughID(ctx, path.Root("label"), request, response)
-}
-
-func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(request.ProviderData)
-	response.Diagnostics.Append(diags...)
-	r.client = client
-}
-
-func (r *Resource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + resourceName
-}
-
-func (r *Resource) Update(ctx context.Context, _ resource.UpdateRequest, response *resource.UpdateResponse) {
-	tflog.Warn(ctx, "Update isn't supported for elasticstack_"+resourceName)
-	response.Diagnostics.AddError(
-		"synthetics private location update not supported",
-		"Synthetics private location could only be replaced. Please, note, that only unused locations could be deleted.",
-	)
 }
 
 func privateLocationSchema() schema.Schema {
