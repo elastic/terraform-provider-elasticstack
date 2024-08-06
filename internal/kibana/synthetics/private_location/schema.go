@@ -3,7 +3,6 @@ package private_location
 import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -70,18 +69,6 @@ func privateLocationSchema() schema.Schema {
 			"geo": synthetics.GeoConfigSchema(),
 		},
 	}
-}
-
-func (r *Resource) resourceReady(dg *diag.Diagnostics) bool {
-	if r.client == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
-
-		return false
-	}
-	return true
 }
 
 func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {

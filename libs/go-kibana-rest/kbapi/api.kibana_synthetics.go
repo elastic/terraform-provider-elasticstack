@@ -3,9 +3,10 @@ package kbapi
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 const (
@@ -45,6 +46,10 @@ const (
 	ModeAny                 = "any"
 )
 
+type MonitorFields interface {
+	Type() MonitorType
+}
+
 type KibanaError struct {
 	Code    int    `json:"statusCode,omitempty"`
 	Error   string `json:"error,omitempty"`
@@ -81,6 +86,8 @@ type MonitorAlertConfig struct {
 	Tls    *SyntheticsStatusConfig `json:"tls,omitempty"`
 }
 
+// TODO: TCPMonitorFields
+
 type HTTPMonitorFields struct {
 	Url          string          `json:"url"`
 	SslSetting   JsonObject      `json:"ssl,omitempty"` //https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html
@@ -94,6 +101,10 @@ type HTTPMonitorFields struct {
 	ProxyUrl     string          `json:"proxy_url,omitempty"`
 	Response     JsonObject      `json:"response,omitempty"`
 	Check        JsonObject      `json:"check,omitempty"`
+}
+
+func (f HTTPMonitorFields) Type() MonitorType {
+	return Http
 }
 
 type SyntheticsMonitorConfig struct {
@@ -178,12 +189,23 @@ type SyntheticsMonitor struct {
 	Url                         string                  `json:"url,omitempty"`
 	Ui                          struct {
 		IsTlsEnabled bool `json:"is_tls_enabled"`
-	} `json:"__ui,omitempty"`
+	} `json:"__ui,omitempty"` //TODO: JsonObject
+	//TODO: - add following http monitor fields
+	//check.response.body.positive - array of strings
+	//check.response.status - array of strings
+	//check.request.body - object
+	//check.request.headers - object
+	//revision - int
+	//username - string
+	//password - string
+	//proxy_url - string
+	//proxy_headers - object
+
 }
 
-type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)
+type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
 
-type KibanaSyntheticsMonitorUpdate func(id MonitorID, config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)
+type KibanaSyntheticsMonitorUpdate func(id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
 
 type KibanaSyntheticsMonitorGet func(id MonitorID, namespace string) (*SyntheticsMonitor, error)
 
@@ -269,7 +291,7 @@ func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSynthet
 }
 
 func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonitorUpdate {
-	return func(id MonitorID, config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error) {
+	return func(id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
 
 		path := basePathWithId(namespace, monitorsSuffix, id)
 		log.Debugf("URL to update monitor: %s", path)
@@ -283,7 +305,7 @@ func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonit
 }
 
 func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorAdd {
-	return func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error) {
+	return func(config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
 
 		path := basePath(namespace, monitorsSuffix)
 		log.Debugf("URL to create monitor: %s", path)
@@ -298,13 +320,13 @@ func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorA
 
 // current idea here is to switch fields HTTPMonitorFields to interface{} and to
 // type switch in the function for future monitor types
-func buildMonitorJson(config SyntheticsMonitorConfig, fields HTTPMonitorFields) interface{} {
+func buildMonitorJson(config SyntheticsMonitorConfig, fields MonitorFields) interface{} {
 
 	type MonitorTypeConfig struct {
 		Type MonitorType `json:"type"`
 	}
 
-	mType := MonitorTypeConfig{Type: Http}
+	mType := MonitorTypeConfig{Type: fields.Type()}
 
 	return struct {
 		SyntheticsMonitorConfig
@@ -313,7 +335,7 @@ func buildMonitorJson(config SyntheticsMonitorConfig, fields HTTPMonitorFields) 
 	}{
 		config,
 		mType,
-		fields,
+		fields.(HTTPMonitorFields), // TODO: is there a better way to do this?
 	}
 }
 

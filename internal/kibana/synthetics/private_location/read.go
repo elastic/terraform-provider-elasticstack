@@ -5,15 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
 
-	tflog.Info(ctx, "Read private location")
-
-	kibanaClient := r.getKibanaClient(response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
