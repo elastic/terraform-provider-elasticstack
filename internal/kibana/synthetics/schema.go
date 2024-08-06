@@ -1,11 +1,12 @@
 package synthetics
 
 import (
+	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -18,59 +19,9 @@ const (
 	MetadataPrefix = "_kibana_synthetics_"
 )
 
-func MonitorScheduleSchema() schema.Attribute {
-	return schema.Int64Attribute{
-		Optional:            true,
-		Computed:            true,
-		MarkdownDescription: "(Optional, number): The monitor’s schedule in minutes. Supported values are 1, 3, 5, 10, 15, 30, 60, 120 and 240.",
-		Validators: []validator.Int64{
-			int64validator.OneOf(1, 3, 5, 10, 15, 30, 60, 120, 240),
-		},
-		PlanModifiers: []planmodifier.Int64{
-			int64planmodifier.UseStateForUnknown(),
-		},
-	}
-}
-
-func JsonObjectSchema() schema.Attribute {
-	return schema.StringAttribute{
-		Computed: true,
-		Optional: true,
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.UseStateForUnknown(),
-		},
-		MarkdownDescription: "Raw JSON object, use `jsonencode` function to represent JSON",
-		CustomType:          jsontypes.NormalizedType{},
-	}
-}
-
-func StatusConfigSchema() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		Optional:    true,
-		Description: "",
-		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
-				Optional:    true,
-				Description: "",
-			},
-		},
-	}
-}
-
-func MonitorAlertConfigSchema() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		Optional:    true,
-		Description: "",
-		Attributes: map[string]schema.Attribute{
-			"status": StatusConfigSchema(),
-			"tls":    StatusConfigSchema(),
-		},
-	}
-}
-
 func monitorConfigSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Synthetics monitor config, see https://www.elastic.co/guide/en/kibana/current/add-monitor-api.html for more details",
+		MarkdownDescription: "Synthetics monitor config, see https://www.elastic.co/guide/en/kibana/current/add-monitor-api.html for more details. The monitor must have one of the following: http, tcp, icmp or browser.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -80,163 +31,161 @@ func monitorConfigSchema() schema.Schema {
 				},
 			},
 			"name": schema.StringAttribute{
-				Optional:    false,
-				Description: "",
+				Optional:            false,
+				MarkdownDescription: "The monitor’s name.",
 			},
 			"space_id": schema.StringAttribute{
-				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used.",
+				MarkdownDescription: "The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
 				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
-			"schedule": MonitorScheduleSchema(),
+			"schedule": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "The monitor’s schedule in minutes. Supported values are 1, 3, 5, 10, 15, 30, 60, 120 and 240.",
+				Validators: []validator.Int64{
+					int64validator.OneOf(1, 3, 5, 10, 15, 30, 60, 120, 240),
+				},
+			},
 			"locations": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-				Description: "",
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.",
 			},
 			"private_locations": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-				Description: "",
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "These Private Locations refer to locations hosted and managed by you, whereas locations are hosted by Elastic. You can specify a Private Location using the location’s name.",
 			},
 			"enabled": schema.BoolAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "Whether the monitor is enabled. Default: `true`",
 			},
 			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-				Description: "",
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "An array of tags.",
 			},
-			"alert": MonitorAlertConfigSchema(),
+			"alert": monitorAlertConfigSchema(),
 			"service_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "The APM service name.",
 			},
 			"timeout": schema.Int64Attribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "The monitor timeout in seconds, monitor will fail if it doesn’t complete within this time. Default: `16`",
 			},
-			"namespace": schema.StringAttribute{
-				Optional:    true,
-				Description: "",
-			},
-			"params": JsonObjectSchema(),
+			"params": jsonObjectSchema("Monitor parameters"),
 			"retest_on_failure": schema.BoolAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from \"up\" to \"down\". If the result of the retest is also \"down\", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.",
 			},
-			"http": HTTPMonitorFieldsSchema(),
-			"tcp":  TCPPMonitorFieldsSchema(),
+			"http": httpMonitorFieldsSchema(),
+			"tcp":  tcpMonitorFieldsSchema(),
 		},
 	}
 }
 
-func MonitorScheduleConfigSchema() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		Optional:    false,
-		Description: "",
-		Attributes: map[string]schema.Attribute{
-			"number": schema.StringAttribute{
-				Optional:    false,
-				Description: "",
-			},
-			"unit": schema.StringAttribute{
-				Optional:    false,
-				Description: "",
-			},
-		},
-	}
-}
-
-func MonitorLocationConfigSchema() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		Optional:    false,
-		Description: "",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Optional:    false,
-				Description: "",
-			},
-			"label": schema.StringAttribute{
-				Optional:    false,
-				Description: "",
-			},
-			"geo": GeoConfigSchema(),
-			"is_service_managed": schema.BoolAttribute{
-				Optional:    false,
-				Description: "",
-			},
-		},
-	}
-}
-
-func HttpMonitorModeSchema() schema.Attribute {
+func jsonObjectSchema(doc string) schema.Attribute {
 	return schema.StringAttribute{
-		Optional:    true,
-		Description: "",
+		Optional:            true,
+		MarkdownDescription: fmt.Sprintf("%s. Raw JSON object, use `jsonencode` function to represent JSON", doc),
+		CustomType:          jsontypes.NormalizedType{},
 	}
 }
 
-func HTTPMonitorFieldsSchema() schema.Attribute {
+func statusConfigSchema() schema.Attribute {
 	return schema.SingleNestedAttribute{
-		Optional:    false,
-		Description: "",
+		Optional: true,
+		Attributes: map[string]schema.Attribute{
+			"enabled": schema.BoolAttribute{
+				Optional: true,
+			},
+		},
+	}
+}
+
+func monitorAlertConfigSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Alert configuration. Default: `{ status: { enabled: true }, tls: { enabled: true } }`.",
+		Attributes: map[string]schema.Attribute{
+			"status": statusConfigSchema(),
+			"tls":    statusConfigSchema(),
+		},
+	}
+}
+
+func httpMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "",
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
-				Optional:    false,
-				Description: "",
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "URL to monitor.",
 			},
-			"ssl_setting": JsonObjectSchema(),
+			"ssl_setting": jsonObjectSchema("The TLS/SSL connection settings for use with the HTTPS endpoint. If you don’t specify settings, the system defaults are used. See https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html for full SSL Options."),
 			"max_redirects": schema.StringAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
 			},
-			"mode": HttpMonitorModeSchema(),
+			"mode": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The mode of the monitor. Can be \"all\" or \"any\". If you’re using a DNS-load balancer and want to ping every IP address for the specified hostname, you should use all.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("any", "all"),
+				},
+			},
 			"ipv4": schema.BoolAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "Whether to ping using the ipv4 protocol.",
 			},
 			"ipv6": schema.BoolAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "Whether to ping using the ipv6 protocol.",
 			},
 			"username": schema.StringAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "The username for authenticating with the server. The credentials are passed with the request.",
 			},
 			"password": schema.StringAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "The password for authenticating with the server. The credentials are passed with the request.",
 			},
-			"proxy_header": JsonObjectSchema(),
+			"proxy_header": jsonObjectSchema("Additional headers to send to proxies during CONNECT requests."),
 			"proxy_url": schema.StringAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "The URL of the proxy to use for this monitor.",
 			},
-			"response": JsonObjectSchema(),
-			"check":    JsonObjectSchema(),
+			"response": jsonObjectSchema("Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field."),
+			"check":    jsonObjectSchema("The check request settings."),
 		},
 	}
 }
 
-func TCPPMonitorFieldsSchema() schema.Attribute {
+func tcpMonitorFieldsSchema() schema.Attribute {
 	return schema.SingleNestedAttribute{
-		Optional:    false,
-		Description: "",
+		Optional:            true,
+		MarkdownDescription: "",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Optional:    false,
-				Description: "",
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "The host to monitor; it can be an IP address or a hostname. The host can include the port using a colon (e.g., \"example.com:9200\").",
 			},
-			"ssh":   JsonObjectSchema(),
-			"check": JsonObjectSchema(),
+			"ssl":   jsonObjectSchema(" The TLS/SSL connection settings for use with the HTTPS endpoint. If you don’t specify settings, the system defaults are used. See https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html for full SSL Options."),
+			"check": jsonObjectSchema("An optional payload string to send to the remote host and the expected answer. If no payload is specified, the endpoint is assumed to be available if the connection attempt was successful. If send is specified without receive, any response is accepted as OK. If receive is specified without send, no payload is sent, but the client expects to receive a payload in the form of a \"hello message\" or \"banner\" on connect."),
 			"proxy_url": schema.StringAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: "The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.",
 			},
 			"proxy_use_local_resolver": schema.BoolAttribute{
-				Optional:    true,
-				Description: "",
+				Optional:            true,
+				MarkdownDescription: " A Boolean value that determines whether hostnames are resolved locally instead of being resolved on the proxy server. The default value is false, which means that name resolution occurs on the proxy server.",
 			},
 		},
 	}

@@ -17,6 +17,7 @@ var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
 var _ resource.ResourceWithImportState = &Resource{}
 var _ resource.ResourceWithConfigValidators = &Resource{}
+var _ ESApiClient = &Resource{}
 
 type ESApiClient interface {
 	GetClient() *clients.ApiClient
@@ -55,6 +56,10 @@ func (r *Resource) ConfigValidators(ctx context.Context) []resource.ConfigValida
 			path.MatchRoot("http"),
 			path.MatchRoot("tcp"),
 			// other monitor config types: icmp, browser
+		),
+		resourcevalidator.AtLeastOneOf(
+			path.MatchRoot("locations"),
+			path.MatchRoot("private_locations"),
 		),
 	}
 }
