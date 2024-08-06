@@ -1,0 +1,1 @@
+terraform import elasticstack_kibana_synthetics_private_location.my_location <private_location_id>

@@ -12,23 +12,7 @@ const (
 	basePathKibanaSynthetics = "/api/synthetics"
 	privateLocationsSuffix   = "/private_locations"
 	monitorsSuffix           = "/monitors"
-)
 
-type MonitorID string
-type MonitorType string
-type MonitorLocation string
-type MonitorSchedule int
-type HttpMonitorMode string
-
-type KibanaError struct {
-	Code    int    `json:"statusCode,omitempty"`
-	Error   string `json:"error,omitempty"`
-	Message string `json:"message,omitempty"`
-}
-
-type JsonObject map[string]interface{}
-
-const (
 	Http    MonitorType = "http"
 	Tcp     MonitorType = "tcp"
 	Icmp    MonitorType = "icmp"
@@ -60,6 +44,20 @@ const (
 	ModeAll HttpMonitorMode = "all"
 	ModeAny                 = "any"
 )
+
+type KibanaError struct {
+	Code    int    `json:"statusCode,omitempty"`
+	Error   string `json:"error,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+type MonitorID string
+type MonitorType string
+type MonitorLocation string
+type MonitorSchedule int
+type HttpMonitorMode string
+
+type JsonObject map[string]interface{}
 
 type KibanaSyntheticsMonitorAPI struct {
 	Add    KibanaSyntheticsMonitorAdd
@@ -130,6 +128,24 @@ type MonitorLocationConfig struct {
 	IsServiceManaged bool                `json:"isServiceManaged"`
 }
 
+type PrivateLocationConfig struct {
+	Label         string              `json:"label"`
+	AgentPolicyId string              `json:"agentPolicyId"`
+	Tags          []string            `json:"tags,omitempty"`
+	Geo           *SyntheticGeoConfig `json:"geo,omitempty"`
+}
+
+type PrivateLocation struct {
+	Id        string `json:"id"`
+	Namespace string `json:"namespace,omitempty"`
+	PrivateLocationConfig
+}
+
+type MonitorDeleteStatus struct {
+	Id      MonitorID `json:"id"`
+	Deleted bool      `json:"deleted"`
+}
+
 type SyntheticsMonitor struct {
 	Name                        string                  `json:"name"`
 	Type                        MonitorType             `json:"type"`
@@ -142,9 +158,12 @@ type SyntheticsMonitor struct {
 	Enabled                     *bool                   `json:"enabled,omitempty"`
 	Alert                       *MonitorAlertConfig     `json:"alert,omitempty"`
 	Schedule                    *MonitorScheduleConfig  `json:"schedule,omitempty"`
+	Tags                        []string                `json:"tags,omitempty"`
+	APMServiceName              string                  `json:"service.name,omitempty"`
 	Timeout                     json.Number             `json:"timeout,omitempty"`
 	Locations                   []MonitorLocationConfig `json:"locations,omitempty"`
 	Origin                      string                  `json:"origin,omitempty"`
+	Params                      JsonObject              `json:"params,omitempty"`
 	MaxAttempts                 int                     `json:"max_attempts"`
 	MaxRedirects                string                  `json:"max_redirects"`
 	ResponseIncludeBody         string                  `json:"response.include_body"`
@@ -160,23 +179,6 @@ type SyntheticsMonitor struct {
 	Ui                          struct {
 		IsTlsEnabled bool `json:"is_tls_enabled"`
 	} `json:"__ui,omitempty"`
-}
-
-type PrivateLocationConfig struct {
-	Label         string              `json:"label"`
-	AgentPolicyId string              `json:"agentPolicyId"`
-	Tags          []string            `json:"tags,omitempty"`
-	Geo           *SyntheticGeoConfig `json:"geo,omitempty"`
-}
-
-type PrivateLocation struct {
-	Id string `json:"id"`
-	PrivateLocationConfig
-}
-
-type MonitorDeleteStatus struct {
-	Id      MonitorID `json:"id"`
-	Deleted bool      `json:"deleted"`
 }
 
 type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)
@@ -195,6 +197,13 @@ type KibanaSyntheticsPrivateLocationDelete func(id string, namespace string) err
 
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
 	return func(idOrLabel string, namespace string) (*PrivateLocation, error) {
+
+		if idOrLabel == "" {
+			return nil, APIError{
+				Code:    404,
+				Message: "Private location id or label is empty",
+			}
+		}
 
 		path := basePathWithId(namespace, privateLocationsSuffix, idOrLabel)
 		log.Debugf("URL to get private locations: %s", path)

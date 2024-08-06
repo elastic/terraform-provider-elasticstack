@@ -33,6 +33,7 @@ func NewDebugTransport(name string, transport http.RoundTripper) *debugRoundTrip
 }
 
 func (d *debugRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+
 	ctx := r.Context()
 	reqData, err := httputil.DumpRequestOut(r, true)
 	if err == nil {
