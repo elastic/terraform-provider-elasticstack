@@ -19,6 +19,61 @@ const (
 	MetadataPrefix = "_kibana_synthetics_"
 )
 
+type kibanaAPIRequest struct {
+	fields kbapi.MonitorFields
+	config kbapi.SyntheticsMonitorConfig
+}
+
+type tfStatusConfigV0 struct {
+	Enabled types.Bool `tfsdk:"enabled"`
+}
+
+type tfAlertConfigV0 struct {
+	Status *tfStatusConfigV0 `tfsdk:"status"`
+	TLS    *tfStatusConfigV0 `tfsdk:"tls"`
+}
+
+type tfHTTPMonitorFieldsV0 struct {
+	URL          types.String         `tfsdk:"url"`
+	SSLSetting   jsontypes.Normalized `tfsdk:"ssl_setting"`
+	MaxRedirects types.String         `tfsdk:"max_redirects"`
+	Mode         types.String         `tfsdk:"mode"`
+	IPv4         types.Bool           `tfsdk:"ipv4"`
+	IPv6         types.Bool           `tfsdk:"ipv6"`
+	Username     types.String         `tfsdk:"username"`
+	Password     types.String         `tfsdk:"password"`
+	ProxyHeader  jsontypes.Normalized `tfsdk:"proxy_header"`
+	ProxyURL     types.String         `tfsdk:"proxy_url"`
+	Response     jsontypes.Normalized `tfsdk:"response"`
+	Check        jsontypes.Normalized `tfsdk:"check"`
+}
+
+type tfTCPMonitorFieldsV0 struct {
+	Host                  types.String         `tfsdk:"host"`
+	SSL                   jsontypes.Normalized `tfsdk:"ssl"`
+	Check                 jsontypes.Normalized `tfsdk:"check"`
+	ProxyURL              types.String         `tfsdk:"proxy_url"`
+	ProxyUseLocalResolver types.Bool           `tfsdk:"proxy_use_local_resolver"`
+}
+
+type tfModelV0 struct {
+	ID               types.String           `tfsdk:"id"`
+	Name             types.String           `tfsdk:"name"`
+	SpaceID          types.String           `tfsdk:"space_id"`
+	Schedule         types.Int64            `tfsdk:"schedule"`
+	Locations        []types.String         `tfsdk:"locations"`
+	PrivateLocations []types.String         `tfsdk:"private_locations"`
+	Enabled          types.Bool             `tfsdk:"enabled"`
+	Tags             []types.String         `tfsdk:"tags"`
+	Alert            *tfAlertConfigV0       `tfsdk:"alert"`
+	ServiceName      types.String           `tfsdk:"service_name"`
+	Timeout          types.Int64            `tfsdk:"timeout"`
+	Params           jsontypes.Normalized   `tfsdk:"params"`
+	RetestOnFailure  types.Bool             `tfsdk:"retest_on_failure"`
+	HTTP             *tfHTTPMonitorFieldsV0 `tfsdk:"http"`
+	TCP              *tfTCPMonitorFieldsV0  `tfsdk:"tcp"`
+}
+
 func monitorConfigSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Synthetics monitor config, see https://www.elastic.co/guide/en/kibana/current/add-monitor-api.html for more details. The monitor must have one of the following: http, tcp, icmp or browser.",
@@ -230,4 +285,15 @@ func FromSyntheticGeoConfig(v *kbapi.SyntheticGeoConfig) *TFGeoConfigV0 {
 		Lat: types.Float64Value(v.Lat),
 		Lon: types.Float64Value(v.Lon),
 	}
+}
+
+func (m *tfModelV0) toPrivateLocation() kibanaAPIRequest {
+	return kibanaAPIRequest{
+		fields: kbapi.HTTPMonitorFields{},
+		config: kbapi.SyntheticsMonitorConfig{},
+	}
+}
+
+func toModelV0(api kbapi.SyntheticsMonitor) tfModelV0 {
+	return tfModelV0{}
 }
