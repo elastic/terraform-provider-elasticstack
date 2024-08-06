@@ -15,6 +15,7 @@ const (
 provider "elasticstack" {
   	elasticsearch {}
 	kibana {}
+	fleet{}
 }
 `
 )
