@@ -47,7 +47,7 @@ const (
 )
 
 type MonitorFields interface {
-	Type() MonitorType
+	APIRequest(cfg SyntheticsMonitorConfig) interface{}
 }
 
 type KibanaError struct {
@@ -86,7 +86,13 @@ type MonitorAlertConfig struct {
 	Tls    *SyntheticsStatusConfig `json:"tls,omitempty"`
 }
 
-// TODO: TCPMonitorFields
+type TCPMonitorFields struct {
+	Host                  string     `json:"host"`
+	SslSetting            JsonObject `json:"ssl,omitempty"` //https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html
+	Check                 JsonObject `json:"check,omitempty"`
+	ProxyUrl              string     `json:"proxy_url,omitempty"`
+	ProxyUseLocalResolver *bool      `json:"proxy_use_local_resolver,omitempty"`
+}
 
 type HTTPMonitorFields struct {
 	Url          string          `json:"url"`
@@ -103,8 +109,38 @@ type HTTPMonitorFields struct {
 	Check        JsonObject      `json:"check,omitempty"`
 }
 
-func (f HTTPMonitorFields) Type() MonitorType {
-	return Http
+type MonitorTypeConfig struct {
+	Type MonitorType `json:"type"`
+}
+
+func (f HTTPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
+
+	mType := MonitorTypeConfig{Type: Http}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		HTTPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
+}
+
+func (f TCPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
+
+	mType := MonitorTypeConfig{Type: Tcp}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		TCPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
 }
 
 type SyntheticsMonitorConfig struct {
@@ -179,7 +215,6 @@ type SyntheticsMonitor struct {
 	MaxRedirects                string                  `json:"max_redirects"`
 	ResponseIncludeBody         string                  `json:"response.include_body"`
 	ResponseIncludeHeaders      bool                    `json:"response.include_headers"`
-	CheckRequestMethod          string                  `json:"check.request.method"`
 	ResponseIncludeBodyMaxBytes string                  `json:"response.include_body_max_bytes,omitempty"`
 	Ipv4                        bool                    `json:"ipv4,omitempty"`
 	Ipv6                        bool                    `json:"ipv6,omitempty"`
@@ -189,18 +224,14 @@ type SyntheticsMonitor struct {
 	Url                         string                  `json:"url,omitempty"`
 	Ui                          struct {
 		IsTlsEnabled bool `json:"is_tls_enabled"`
-	} `json:"__ui,omitempty"` //TODO: JsonObject
-	//TODO: - add following http monitor fields
-	//check.response.body.positive - array of strings
-	//check.response.status - array of strings
-	//check.request.body - object
-	//check.request.headers - object
-	//revision - int
-	//username - string
-	//password - string
-	//proxy_url - string
-	//proxy_headers - object
-
+	} `json:"__ui,omitempty"`
+	ProxyUrl              string     `json:"proxy_url,omitempty"`
+	ProxyUseLocalResolver bool       `json:"proxy_use_local_resolver,omitempty"`
+	Host                  string     `json:"host,omitempty"`
+	Username              string     `json:"username,omitempty"`
+	Password              string     `json:"password,omitempty"`
+	ProxyHeaders          JsonObject `json:"proxy_headers,omitempty"`
+	Check                 JsonObject `json:"check,omitempty"`
 }
 
 type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
@@ -295,7 +326,7 @@ func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonit
 
 		path := basePathWithId(namespace, monitorsSuffix, id)
 		log.Debugf("URL to update monitor: %s", path)
-		data := buildMonitorJson(config, fields)
+		data := fields.APIRequest(config)
 		resp, err := c.R().SetBody(data).Put(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
@@ -309,33 +340,12 @@ func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorA
 
 		path := basePath(namespace, monitorsSuffix)
 		log.Debugf("URL to create monitor: %s", path)
-		data := buildMonitorJson(config, fields)
+		data := fields.APIRequest(config)
 		resp, err := c.R().SetBody(data).Post(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
 		return unmarshal(resp, SyntheticsMonitor{})
-	}
-}
-
-// current idea here is to switch fields HTTPMonitorFields to interface{} and to
-// type switch in the function for future monitor types
-func buildMonitorJson(config SyntheticsMonitorConfig, fields MonitorFields) interface{} {
-
-	type MonitorTypeConfig struct {
-		Type MonitorType `json:"type"`
-	}
-
-	mType := MonitorTypeConfig{Type: fields.Type()}
-
-	return struct {
-		SyntheticsMonitorConfig
-		MonitorTypeConfig
-		HTTPMonitorFields
-	}{
-		config,
-		mType,
-		fields.(HTTPMonitorFields), // TODO: is there a better way to do this?
 	}
 }
 
