@@ -325,13 +325,6 @@ func StringSliceValue(v []string) []types.String {
 	return res
 }
 
-func (m *tfModelV0) toPrivateLocation() kibanaAPIRequest {
-	return kibanaAPIRequest{
-		fields: kbapi.HTTPMonitorFields{},
-		config: kbapi.SyntheticsMonitorConfig{},
-	}
-}
-
 func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
 	res, err := json.Marshal(jsObj)
 	if err != nil {
@@ -340,7 +333,7 @@ func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
 	return jsontypes.NewNormalizedValue(string(res)), nil
 }
 
-func toModelV0(api kbapi.SyntheticsMonitor) (*tfModelV0, error) {
+func toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) {
 	schedule, err := strconv.ParseInt(api.Schedule.Number, 10, 34)
 	if err != nil {
 		return nil, err
@@ -398,7 +391,7 @@ func toModelV0(api kbapi.SyntheticsMonitor) (*tfModelV0, error) {
 	}, nil
 }
 
-func toTfTCPMonitorFieldsV0(api kbapi.SyntheticsMonitor) (*tfTCPMonitorFieldsV0, error) {
+func toTfTCPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfTCPMonitorFieldsV0, error) {
 	return &tfTCPMonitorFieldsV0{
 		Host:                  types.StringValue(api.Host),
 		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
@@ -410,7 +403,7 @@ func toTfTCPMonitorFieldsV0(api kbapi.SyntheticsMonitor) (*tfTCPMonitorFieldsV0,
 	}, nil
 }
 
-func toTfHTTPMonitorFieldsV0(api kbapi.SyntheticsMonitor) (*tfHTTPMonitorFieldsV0, error) {
+func toTfHTTPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfHTTPMonitorFieldsV0, error) {
 
 	proxyHeaders, err := toNormalizedValue(api.ProxyHeaders)
 	if err != nil {

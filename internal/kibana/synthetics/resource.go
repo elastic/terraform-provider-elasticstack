@@ -88,11 +88,6 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	panic("implement me")
 }
 
-func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
 	//TODO implement me
 	panic("implement me")
