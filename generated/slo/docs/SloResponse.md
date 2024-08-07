@@ -15,7 +15,7 @@ Name | Type | Description | Notes
 **Revision** | **float64** | The SLO revision | 
 **Summary** | [**Summary**](Summary.md) |  | 
 **Enabled** | **bool** | Indicate if the SLO is enabled | 
-**GroupBy** | **string** | optional group by field to use to generate an SLO per distinct value | 
+**GroupBy** | [**SloResponseGroupBy**](SloResponseGroupBy.md) |  | 
 **InstanceId** | **string** | the value derived from the groupBy field, if present, otherwise &#39;*&#39; | 
 **Tags** | **[]string** | List of tags | 
 **CreatedAt** | **string** | The creation date | 
@@ -25,7 +25,7 @@ Name | Type | Description | Notes
 
 ### NewSloResponse
 
-`func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, tags []string, createdAt string, updatedAt string, ) *SloResponse`
+`func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy SloResponseGroupBy, instanceId string, tags []string, createdAt string, updatedAt string, ) *SloResponse`
 
 NewSloResponse instantiates a new SloResponse object
 This constructor will assign default values to properties that have it defined,
@@ -262,20 +262,20 @@ SetEnabled sets Enabled field to given value.
 
 ### GetGroupBy
 
-`func (o *SloResponse) GetGroupBy() string`
+`func (o *SloResponse) GetGroupBy() SloResponseGroupBy`
 
 GetGroupBy returns the GroupBy field if non-nil, zero value otherwise.
 
 ### GetGroupByOk
 
-`func (o *SloResponse) GetGroupByOk() (*string, bool)`
+`func (o *SloResponse) GetGroupByOk() (*SloResponseGroupBy, bool)`
 
 GetGroupByOk returns a tuple with the GroupBy field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetGroupBy
 
-`func (o *SloResponse) SetGroupBy(v string)`
+`func (o *SloResponse) SetGroupBy(v SloResponseGroupBy)`
 
 SetGroupBy sets GroupBy field to given value.
 

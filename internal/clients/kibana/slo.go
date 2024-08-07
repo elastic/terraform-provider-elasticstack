@@ -109,7 +109,7 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		BudgetingMethod: slo.BudgetingMethod(s.BudgetingMethod),
 		Objective:       s.Objective,
 		Settings:        s.Settings,
-		GroupBy:         s.GroupBy,
+		GroupBy:         &slo.SloResponseGroupBy{String: s.GroupBy},
 		Tags:            s.Tags,
 	}
 

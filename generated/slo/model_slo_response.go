@@ -34,9 +34,8 @@ type SloResponse struct {
 	Revision float64 `json:"revision"`
 	Summary  Summary `json:"summary"`
 	// Indicate if the SLO is enabled
-	Enabled bool `json:"enabled"`
-	// optional group by field to use to generate an SLO per distinct value
-	GroupBy string `json:"groupBy"`
+	Enabled bool               `json:"enabled"`
+	GroupBy SloResponseGroupBy `json:"groupBy"`
 	// the value derived from the groupBy field, if present, otherwise '*'
 	InstanceId string `json:"instanceId"`
 	// List of tags
@@ -51,7 +50,7 @@ type SloResponse struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy string, instanceId string, tags []string, createdAt string, updatedAt string) *SloResponse {
+func NewSloResponse(id string, name string, description string, indicator SloResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy SloResponseGroupBy, instanceId string, tags []string, createdAt string, updatedAt string) *SloResponse {
 	this := SloResponse{}
 	this.Id = id
 	this.Name = name
@@ -345,9 +344,9 @@ func (o *SloResponse) SetEnabled(v bool) {
 }
 
 // GetGroupBy returns the GroupBy field value
-func (o *SloResponse) GetGroupBy() string {
+func (o *SloResponse) GetGroupBy() SloResponseGroupBy {
 	if o == nil {
-		var ret string
+		var ret SloResponseGroupBy
 		return ret
 	}
 
@@ -356,7 +355,7 @@ func (o *SloResponse) GetGroupBy() string {
 
 // GetGroupByOk returns a tuple with the GroupBy field value
 // and a boolean to check if the value has been set.
-func (o *SloResponse) GetGroupByOk() (*string, bool) {
+func (o *SloResponse) GetGroupByOk() (*SloResponseGroupBy, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -364,7 +363,7 @@ func (o *SloResponse) GetGroupByOk() (*string, bool) {
 }
 
 // SetGroupBy sets field value
-func (o *SloResponse) SetGroupBy(v string) {
+func (o *SloResponse) SetGroupBy(v SloResponseGroupBy) {
 	o.GroupBy = v
 }
 
