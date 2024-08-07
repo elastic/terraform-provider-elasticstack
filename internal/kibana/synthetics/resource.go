@@ -82,18 +82,3 @@ func (r *Resource) Schema(ctx context.Context, request resource.SchemaRequest, r
 	response.Schema = monitorConfigSchema()
 
 }
-
-func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
-	//TODO implement me
-	panic("implement me")
-}

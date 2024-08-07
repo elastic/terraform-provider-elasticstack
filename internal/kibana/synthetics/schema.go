@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -333,6 +334,15 @@ func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
 	return jsontypes.NewNormalizedValue(string(res)), nil
 }
 
+func toJsonObject(v jsontypes.Normalized) (kbapi.JsonObject, diag.Diagnostics) {
+	var res kbapi.JsonObject
+	dg := v.Unmarshal(res)
+	if dg.HasError() {
+		return nil, dg
+	}
+	return res, diag.Diagnostics{}
+}
+
 func toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) {
 	schedule, err := strconv.ParseInt(api.Schedule.Number, 10, 34)
 	if err != nil {
@@ -441,5 +451,119 @@ func toTfStatusConfigV0(status *kbapi.SyntheticsStatusConfig) *tfStatusConfigV0 
 	}
 	return &tfStatusConfigV0{
 		Enabled: types.BoolPointerValue(status.Enabled),
+	}
+}
+
+func (v *tfModelV0) toKibanaAPIRequest() (*kibanaAPIRequest, diag.Diagnostics) {
+
+	fields, dg := v.toMonitorFields()
+	if dg.HasError() {
+		return nil, dg
+	}
+	config, dg := v.toSyntheticsMonitorConfig()
+	if dg.HasError() {
+		return nil, dg
+	}
+	return &kibanaAPIRequest{
+		fields: fields,
+		config: *config,
+	}, dg
+}
+
+func (v *tfModelV0) toMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
+	var dg diag.Diagnostics
+
+	if v.HTTP != nil {
+		return v.toHttpMonitorFields()
+	} else if v.TCP != nil {
+		return v.toTCPMonitorFields(), dg
+	}
+
+	dg.Append(diag.NewErrorDiagnostic("Unsupported monitor type config", "one of http,tcp monitor fields is required"))
+	return nil, dg
+}
+
+func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
+	locations := Map[types.String, kbapi.MonitorLocation](v.Locations, func(s types.String) kbapi.MonitorLocation { return kbapi.MonitorLocation(s.ValueString()) })
+	params, dg := toJsonObject(v.Params)
+	if dg.HasError() {
+		return nil, dg
+	}
+	return &kbapi.SyntheticsMonitorConfig{
+		Name:             v.Name.ValueString(),
+		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueInt64()),
+		Locations:        locations,
+		PrivateLocations: ValueStringSlice(v.PrivateLocations),
+		Enabled:          v.Enabled.ValueBoolPointer(),
+		Tags:             ValueStringSlice(v.Tags),
+		Alert:            v.Alert.toTfAlertConfigV0(),
+		APMServiceName:   v.APMServiceName.ValueString(),
+		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
+		Namespace:        v.SpaceID.ValueString(),
+		Params:           params,
+		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
+	}, dg
+}
+
+func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
+	proxyHeaders, dg := toJsonObject(v.HTTP.ProxyHeader)
+	if dg.HasError() {
+		return nil, dg
+	}
+	response, dg := toJsonObject(v.HTTP.Response)
+	if dg.HasError() {
+		return nil, dg
+	}
+	check, dg := toJsonObject(v.HTTP.Check)
+	if dg.HasError() {
+		return nil, dg
+	}
+	return kbapi.HTTPMonitorFields{
+		Url:                   v.HTTP.URL.ValueString(),
+		SslVerificationMode:   v.HTTP.SslVerificationMode.ValueString(),
+		SslSupportedProtocols: ValueStringSlice(v.HTTP.SslSupportedProtocols),
+		MaxRedirects:          v.HTTP.MaxRedirects.ValueString(),
+		Mode:                  kbapi.HttpMonitorMode(v.HTTP.Mode.ValueString()),
+		Ipv4:                  v.HTTP.IPv4.ValueBoolPointer(),
+		Ipv6:                  v.HTTP.IPv6.ValueBoolPointer(),
+		Username:              v.HTTP.Username.ValueString(),
+		Password:              v.HTTP.Password.ValueString(),
+		ProxyHeader:           proxyHeaders,
+		ProxyUrl:              v.HTTP.ProxyURL.ValueString(),
+		Response:              response,
+		Check:                 check,
+	}, dg
+}
+
+func (v *tfModelV0) toTCPMonitorFields() kbapi.MonitorFields {
+	return kbapi.TCPMonitorFields{
+		Host:                  v.TCP.Host.ValueString(),
+		SslVerificationMode:   v.TCP.SslVerificationMode.ValueString(),
+		SslSupportedProtocols: ValueStringSlice(v.TCP.SslSupportedProtocols),
+		CheckSend:             v.TCP.CheckSend.ValueString(),
+		CheckReceive:          v.TCP.CheckReceive.ValueString(),
+		ProxyUrl:              v.TCP.ProxyURL.ValueString(),
+		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
+	}
+}
+
+func Map[T, U any](ts []T, f func(T) U) []U {
+	us := make([]U, len(ts))
+	for i := range ts {
+		us[i] = f(ts[i])
+	}
+	return us
+}
+
+func (v tfAlertConfigV0) toTfAlertConfigV0() *kbapi.MonitorAlertConfig {
+	return &kbapi.MonitorAlertConfig{
+		Status: v.Status.toTfStatusConfigV0(),
+		Tls:    v.TLS.toTfStatusConfigV0(),
+	}
+}
+
+func (v tfStatusConfigV0) toTfStatusConfigV0() *kbapi.SyntheticsStatusConfig {
+	return &kbapi.SyntheticsStatusConfig{
+		Enabled: v.Enabled.ValueBoolPointer(),
 	}
 }

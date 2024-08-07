@@ -1,0 +1,31 @@
+package synthetics
+
+import (
+	"context"
+	"fmt"
+	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+)
+
+func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
+	kibanaClient := GetKibanaClient(r, response.Diagnostics)
+	if kibanaClient == nil {
+		return
+	}
+
+	var plan tfModelV0
+	diags := request.State.Get(ctx, &plan)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	monitorId := kbapi.MonitorID(plan.ID.ValueString())
+	namespace := plan.SpaceID.ValueString()
+	_, err := kibanaClient.KibanaSynthetics.Monitor.Delete(namespace, monitorId)
+
+	if err != nil {
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", monitorId, namespace), err.Error())
+		return
+	}
+}

@@ -23,8 +23,8 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 	}
 
 	namespace := state.SpaceID.ValueString()
-	monitorId := state.ID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Get(kbapi.MonitorID(monitorId), namespace)
+	monitorId := kbapi.MonitorID(state.ID.ValueString())
+	result, err := kibanaClient.KibanaSynthetics.Monitor.Get(monitorId, namespace)
 	if err != nil {
 		var apiError *kbapi.APIError
 		if errors.As(err, &apiError) && apiError.Code == 404 {
