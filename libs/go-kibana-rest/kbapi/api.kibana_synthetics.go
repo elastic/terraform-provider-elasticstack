@@ -87,60 +87,29 @@ type MonitorAlertConfig struct {
 }
 
 type TCPMonitorFields struct {
-	Host                  string     `json:"host"`
-	SslSetting            JsonObject `json:"ssl,omitempty"` //https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html
-	Check                 JsonObject `json:"check,omitempty"`
-	ProxyUrl              string     `json:"proxy_url,omitempty"`
-	ProxyUseLocalResolver *bool      `json:"proxy_use_local_resolver,omitempty"`
+	Host                  string   `json:"host"`
+	SslVerificationMode   string   `json:"ssl.verification_mode,omitempty"`
+	SslSupportedProtocols []string `json:"ssl.supported_protocols,omitempty"`
+	CheckSend             string   `json:"check.send,omitempty"`
+	CheckReceive          string   `json:"check.receive,omitempty"`
+	ProxyUrl              string   `json:"proxy_url,omitempty"`
+	ProxyUseLocalResolver *bool    `json:"proxy_use_local_resolver,omitempty"`
 }
 
 type HTTPMonitorFields struct {
-	Url          string          `json:"url"`
-	SslSetting   JsonObject      `json:"ssl,omitempty"` //https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html
-	MaxRedirects string          `json:"max_redirects,omitempty"`
-	Mode         HttpMonitorMode `json:"mode,omitempty"`
-	Ipv4         *bool           `json:"ipv4,omitempty"`
-	Ipv6         *bool           `json:"ipv6,omitempty"`
-	Username     string          `json:"username,omitempty"`
-	Password     string          `json:"password,omitempty"`
-	ProxyHeader  JsonObject      `json:"proxy_headers,omitempty"`
-	ProxyUrl     string          `json:"proxy_url,omitempty"`
-	Response     JsonObject      `json:"response,omitempty"`
-	Check        JsonObject      `json:"check,omitempty"`
-}
-
-type MonitorTypeConfig struct {
-	Type MonitorType `json:"type"`
-}
-
-func (f HTTPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
-
-	mType := MonitorTypeConfig{Type: Http}
-
-	return struct {
-		SyntheticsMonitorConfig
-		MonitorTypeConfig
-		HTTPMonitorFields
-	}{
-		config,
-		mType,
-		f,
-	}
-}
-
-func (f TCPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
-
-	mType := MonitorTypeConfig{Type: Tcp}
-
-	return struct {
-		SyntheticsMonitorConfig
-		MonitorTypeConfig
-		TCPMonitorFields
-	}{
-		config,
-		mType,
-		f,
-	}
+	Url                   string          `json:"url"`
+	SslVerificationMode   string          `json:"ssl.verification_mode,omitempty"`
+	SslSupportedProtocols []string        `json:"ssl.supported_protocols,omitempty"`
+	MaxRedirects          string          `json:"max_redirects,omitempty"`
+	Mode                  HttpMonitorMode `json:"mode,omitempty"`
+	Ipv4                  *bool           `json:"ipv4,omitempty"`
+	Ipv6                  *bool           `json:"ipv6,omitempty"`
+	Username              string          `json:"username,omitempty"`
+	Password              string          `json:"password,omitempty"`
+	ProxyHeader           JsonObject      `json:"proxy_headers,omitempty"`
+	ProxyUrl              string          `json:"proxy_url,omitempty"`
+	Response              JsonObject      `json:"response,omitempty"`
+	Check                 JsonObject      `json:"check,omitempty"`
 }
 
 type SyntheticsMonitorConfig struct {
@@ -213,25 +182,63 @@ type SyntheticsMonitor struct {
 	Params                      JsonObject              `json:"params,omitempty"`
 	MaxAttempts                 int                     `json:"max_attempts"`
 	MaxRedirects                string                  `json:"max_redirects"`
-	ResponseIncludeBody         string                  `json:"response.include_body"`
-	ResponseIncludeHeaders      bool                    `json:"response.include_headers"`
-	ResponseIncludeBodyMaxBytes string                  `json:"response.include_body_max_bytes,omitempty"`
-	Ipv4                        bool                    `json:"ipv4,omitempty"`
-	Ipv6                        bool                    `json:"ipv6,omitempty"`
-	SslVerificationMode         string                  `json:"ssl.verification_mode,omitempty"`
-	SslSupportedProtocols       []string                `json:"ssl.supported_protocols,omitempty"`
+	Ipv4                        *bool                   `json:"ipv4,omitempty"`
+	Ipv6                        *bool                   `json:"ipv6,omitempty"`
+	SslVerificationMode         string                  `json:"ssl.verification_mode"`
+	SslSupportedProtocols       []string                `json:"ssl.supported_protocols"`
 	Revision                    int                     `json:"revision,omitempty"`
 	Url                         string                  `json:"url,omitempty"`
-	Ui                          struct {
-		IsTlsEnabled bool `json:"is_tls_enabled"`
-	} `json:"__ui,omitempty"`
-	ProxyUrl              string     `json:"proxy_url,omitempty"`
-	ProxyUseLocalResolver bool       `json:"proxy_use_local_resolver,omitempty"`
-	Host                  string     `json:"host,omitempty"`
-	Username              string     `json:"username,omitempty"`
-	Password              string     `json:"password,omitempty"`
-	ProxyHeaders          JsonObject `json:"proxy_headers,omitempty"`
-	Check                 JsonObject `json:"check,omitempty"`
+	Ui                          JsonObject              `json:"__ui,omitempty"`
+	ProxyUrl                    string                  `json:"proxy_url,omitempty"`
+	ProxyUseLocalResolver       *bool                   `json:"proxy_use_local_resolver,omitempty"`
+	Host                        string                  `json:"host,omitempty"`
+	Username                    string                  `json:"username,omitempty"`
+	Password                    string                  `json:"password,omitempty"`
+	ProxyHeaders                JsonObject              `json:"proxy_headers,omitempty"`
+	CheckSend                   string                  `json:"check.send,omitempty"`
+	CheckReceive                string                  `json:"check.receive,omitempty"`
+	CheckResponseBodyPositive   []string                `json:"check.response.body.positive,omitempty"`
+	CheckResponseStatus         []string                `json:"check.response.status,omitempty"`
+	ResponseIncludeBody         string                  `json:"response.include_body,omitempty"`
+	ResponseIncludeHeaders      bool                    `json:"response.include_headers,omitempty"`
+	ResponseIncludeBodyMaxBytes string                  `json:"response.include_body_max_bytes,omitempty"`
+	CheckRequestBody            JsonObject              `json:"check.request.body,omitempty"`
+	CheckRequestHeaders         JsonObject              `json:"check.request.headers,omitempty"`
+	CheckRequestMethod          string                  `json:"check.request.method,omitempty"`
+}
+
+type MonitorTypeConfig struct {
+	Type MonitorType `json:"type"`
+}
+
+func (f HTTPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
+
+	mType := MonitorTypeConfig{Type: Http}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		HTTPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
+}
+
+func (f TCPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
+
+	mType := MonitorTypeConfig{Type: Tcp}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		TCPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
 }
 
 type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)

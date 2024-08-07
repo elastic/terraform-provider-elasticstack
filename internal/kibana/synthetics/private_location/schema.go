@@ -77,14 +77,10 @@ func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {
 		geoConfig = m.Geo.ToSyntheticGeoConfig()
 	}
 
-	var tags []string
-	for _, tag := range m.Tags {
-		tags = append(tags, tag.ValueString())
-	}
 	pLoc := kbapi.PrivateLocationConfig{
 		Label:         m.Label.ValueString(),
 		AgentPolicyId: m.AgentPolicyId.ValueString(),
-		Tags:          tags,
+		Tags:          synthetics.ValueStringSlice(m.Tags),
 		Geo:           geoConfig,
 	}
 
@@ -96,16 +92,12 @@ func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {
 }
 
 func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
-	var tags []types.String
-	for _, tag := range pLoc.Tags {
-		tags = append(tags, types.StringValue(tag))
-	}
 	return tfModelV0{
 		ID:            types.StringValue(pLoc.Id),
 		Label:         types.StringValue(pLoc.Label),
 		SpaceID:       types.StringValue(pLoc.Namespace),
 		AgentPolicyId: types.StringValue(pLoc.AgentPolicyId),
-		Tags:          tags,
+		Tags:          synthetics.StringSliceValue(pLoc.Tags),
 		Geo:           synthetics.FromSyntheticGeoConfig(pLoc.Geo),
 	}
 }

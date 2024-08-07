@@ -1,16 +1,19 @@
 package synthetics
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"strconv"
 )
 
 //TODO: monitor support is from 8.14.0
@@ -34,26 +37,29 @@ type tfAlertConfigV0 struct {
 }
 
 type tfHTTPMonitorFieldsV0 struct {
-	URL          types.String         `tfsdk:"url"`
-	SSLSetting   jsontypes.Normalized `tfsdk:"ssl_setting"`
-	MaxRedirects types.String         `tfsdk:"max_redirects"`
-	Mode         types.String         `tfsdk:"mode"`
-	IPv4         types.Bool           `tfsdk:"ipv4"`
-	IPv6         types.Bool           `tfsdk:"ipv6"`
-	Username     types.String         `tfsdk:"username"`
-	Password     types.String         `tfsdk:"password"`
-	ProxyHeader  jsontypes.Normalized `tfsdk:"proxy_header"`
-	ProxyURL     types.String         `tfsdk:"proxy_url"`
-	Response     jsontypes.Normalized `tfsdk:"response"`
-	Check        jsontypes.Normalized `tfsdk:"check"`
+	URL                   types.String         `tfsdk:"url"`
+	SslVerificationMode   types.String         `tfsdk:"ssl.verification_mode"`
+	SslSupportedProtocols []types.String       `tfsdk:"ssl.supported_protocols"`
+	MaxRedirects          types.String         `tfsdk:"max_redirects"`
+	Mode                  types.String         `tfsdk:"mode"`
+	IPv4                  types.Bool           `tfsdk:"ipv4"`
+	IPv6                  types.Bool           `tfsdk:"ipv6"`
+	Username              types.String         `tfsdk:"username"`
+	Password              types.String         `tfsdk:"password"`
+	ProxyHeader           jsontypes.Normalized `tfsdk:"proxy_header"`
+	ProxyURL              types.String         `tfsdk:"proxy_url"`
+	Response              jsontypes.Normalized `tfsdk:"response"`
+	Check                 jsontypes.Normalized `tfsdk:"check"`
 }
 
 type tfTCPMonitorFieldsV0 struct {
-	Host                  types.String         `tfsdk:"host"`
-	SSL                   jsontypes.Normalized `tfsdk:"ssl"`
-	Check                 jsontypes.Normalized `tfsdk:"check"`
-	ProxyURL              types.String         `tfsdk:"proxy_url"`
-	ProxyUseLocalResolver types.Bool           `tfsdk:"proxy_use_local_resolver"`
+	Host                  types.String   `tfsdk:"host"`
+	SslVerificationMode   types.String   `tfsdk:"ssl.verification_mode"`
+	SslSupportedProtocols []types.String `tfsdk:"ssl.supported_protocols"`
+	CheckSend             types.String   `tfsdk:"check.send"`
+	CheckReceive          types.String   `tfsdk:"check.receive"`
+	ProxyURL              types.String   `tfsdk:"proxy_url"`
+	ProxyUseLocalResolver types.Bool     `tfsdk:"proxy_use_local_resolver"`
 }
 
 type tfModelV0 struct {
@@ -66,12 +72,12 @@ type tfModelV0 struct {
 	Enabled          types.Bool             `tfsdk:"enabled"`
 	Tags             []types.String         `tfsdk:"tags"`
 	Alert            *tfAlertConfigV0       `tfsdk:"alert"`
-	ServiceName      types.String           `tfsdk:"service_name"`
-	Timeout          types.Int64            `tfsdk:"timeout"`
+	APMServiceName   types.String           `tfsdk:"service_name"`
+	TimeoutSeconds   types.Int64            `tfsdk:"timeout"`
 	Params           jsontypes.Normalized   `tfsdk:"params"`
-	RetestOnFailure  types.Bool             `tfsdk:"retest_on_failure"`
 	HTTP             *tfHTTPMonitorFieldsV0 `tfsdk:"http"`
 	TCP              *tfTCPMonitorFieldsV0  `tfsdk:"tcp"`
+	RetestOnFailure  types.Bool             `tfsdk:"retest_on_failure"`
 }
 
 func monitorConfigSchema() schema.Schema {
@@ -108,6 +114,22 @@ func monitorConfigSchema() schema.Schema {
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.",
+				Validators: []validator.List{
+					listvalidator.ValueStringsAre(
+						stringvalidator.OneOf(
+							"japan",
+							"india",
+							"singapore",
+							"australia_east",
+							"united_kingdom",
+							"germany",
+							"canada_east",
+							"brazil",
+							"us_east",
+							"us_west",
+						),
+					),
+				},
 			},
 			"private_locations": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -287,6 +309,22 @@ func FromSyntheticGeoConfig(v *kbapi.SyntheticGeoConfig) *TFGeoConfigV0 {
 	}
 }
 
+func ValueStringSlice(v []types.String) []string {
+	var res []string
+	for _, s := range v {
+		res = append(res, s.ValueString())
+	}
+	return res
+}
+
+func StringSliceValue(v []string) []types.String {
+	var res []types.String
+	for _, s := range v {
+		res = append(res, types.StringValue(s))
+	}
+	return res
+}
+
 func (m *tfModelV0) toPrivateLocation() kibanaAPIRequest {
 	return kibanaAPIRequest{
 		fields: kbapi.HTTPMonitorFields{},
@@ -294,6 +332,121 @@ func (m *tfModelV0) toPrivateLocation() kibanaAPIRequest {
 	}
 }
 
-func toModelV0(api kbapi.SyntheticsMonitor) tfModelV0 {
-	return tfModelV0{}
+func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
+	res, err := json.Marshal(jsObj)
+	if err != nil {
+		return jsontypes.NewNormalizedUnknown(), err
+	}
+	return jsontypes.NewNormalizedValue(string(res)), nil
+}
+
+func toModelV0(api kbapi.SyntheticsMonitor) (*tfModelV0, error) {
+	schedule, err := strconv.ParseInt(api.Schedule.Number, 10, 34)
+	if err != nil {
+		return nil, err
+	}
+	var locLabels []string
+	var privateLocLabels []string
+	for _, l := range api.Locations {
+		if l.IsServiceManaged {
+			locLabels = append(locLabels, l.Label)
+		} else {
+			privateLocLabels = append(privateLocLabels, l.Label)
+		}
+	}
+
+	timeout, err := api.Timeout.Int64()
+	if err != nil {
+		return nil, err
+	}
+
+	var http *tfHTTPMonitorFieldsV0
+	var tcp *tfTCPMonitorFieldsV0
+	switch mType := api.Type; mType {
+	case kbapi.Http:
+		http, err = toTfHTTPMonitorFieldsV0(api)
+	case kbapi.Tcp:
+		tcp, err = toTfTCPMonitorFieldsV0(api)
+	default:
+		err = fmt.Errorf("unsupported monitor type: %s", mType)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	params, err := toNormalizedValue(api.Params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tfModelV0{
+		ID:               types.StringValue(string(api.Id)),
+		Name:             types.StringValue(api.Name),
+		SpaceID:          types.StringValue(api.Namespace),
+		Schedule:         types.Int64Value(schedule),
+		Locations:        StringSliceValue(locLabels),
+		PrivateLocations: StringSliceValue(privateLocLabels),
+		Enabled:          types.BoolPointerValue(api.Enabled),
+		Tags:             StringSliceValue(api.Tags),
+		Alert:            toTfAlertConfigV0(api.Alert),
+		APMServiceName:   types.StringValue(api.APMServiceName),
+		TimeoutSeconds:   types.Int64Value(timeout),
+		Params:           params,
+		HTTP:             http,
+		TCP:              tcp,
+	}, nil
+}
+
+func toTfTCPMonitorFieldsV0(api kbapi.SyntheticsMonitor) (*tfTCPMonitorFieldsV0, error) {
+	return &tfTCPMonitorFieldsV0{
+		Host:                  types.StringValue(api.Host),
+		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
+		SslSupportedProtocols: StringSliceValue(api.SslSupportedProtocols),
+		CheckSend:             types.StringValue(api.CheckSend),
+		CheckReceive:          types.StringValue(api.CheckReceive),
+		ProxyURL:              types.StringValue(api.ProxyUrl),
+		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
+	}, nil
+}
+
+func toTfHTTPMonitorFieldsV0(api kbapi.SyntheticsMonitor) (*tfHTTPMonitorFieldsV0, error) {
+
+	proxyHeaders, err := toNormalizedValue(api.ProxyHeaders)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tfHTTPMonitorFieldsV0{
+		URL:                   types.StringValue(api.Url),
+		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
+		SslSupportedProtocols: StringSliceValue(api.SslSupportedProtocols),
+		MaxRedirects:          types.StringValue(api.MaxRedirects),
+		Mode:                  types.StringValue(string(api.Mode)),
+		IPv4:                  types.BoolPointerValue(api.Ipv4),
+		IPv6:                  types.BoolPointerValue(api.Ipv6),
+		Username:              types.StringValue(api.Username),
+		Password:              types.StringValue(api.Password),
+		ProxyHeader:           proxyHeaders,
+		ProxyURL:              types.StringValue(api.ProxyUrl),
+	}, nil
+}
+
+func toTfAlertConfigV0(alert *kbapi.MonitorAlertConfig) *tfAlertConfigV0 {
+	if alert == nil {
+		return nil
+	}
+	return &tfAlertConfigV0{
+		Status: toTfStatusConfigV0(alert.Status),
+		TLS:    toTfStatusConfigV0(alert.Tls),
+	}
+}
+
+func toTfStatusConfigV0(status *kbapi.SyntheticsStatusConfig) *tfStatusConfigV0 {
+	if status == nil {
+		return nil
+	}
+	return &tfStatusConfigV0{
+		Enabled: types.BoolPointerValue(status.Enabled),
+	}
 }

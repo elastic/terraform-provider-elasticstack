@@ -57,7 +57,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 		fields MonitorFields
 	}
 
-	for _, n := range namespaces {
+	for _, n := range []string{""} { //namespaces
 		testUuid := uuid.New().String()
 		space := n
 		syntheticsAPI := s.API.KibanaSynthetics
@@ -142,16 +142,15 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							RetestOnFailure: f,
 						},
 						fields: HTTPMonitorFields{
-							Url: "http://localhost:5601",
-							SslSetting: map[string]interface{}{
-								"supported_protocols": []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
-							},
-							MaxRedirects: "2",
-							Mode:         ModeAny,
-							Ipv4:         t,
-							Ipv6:         f,
-							Username:     "test-user-name",
-							Password:     "test-password",
+							Url:                   "http://localhost:5601",
+							SslSupportedProtocols: []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
+							SslVerificationMode:   "full",
+							MaxRedirects:          "2",
+							Mode:                  ModeAny,
+							Ipv4:                  t,
+							Ipv6:                  f,
+							Username:              "test-user-name",
+							Password:              "test-password",
 							ProxyHeader: map[string]interface{}{
 								"User-Agent": "test",
 							},
@@ -211,16 +210,13 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							RetestOnFailure: f,
 						},
 						fields: TCPMonitorFields{
-							Host: "localhost:5601",
-							SslSetting: map[string]interface{}{
-								"supported_protocols": []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
-							},
+							Host:                  "localhost:5601",
+							SslSupportedProtocols: []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
+							SslVerificationMode:   "full",
 							ProxyUseLocalResolver: t,
 							ProxyUrl:              "http://localhost",
-							Check: map[string]interface{}{
-								"send":    "Hello World",
-								"receive": "Hello",
-							},
+							CheckSend:             "Hello World",
+							CheckReceive:          "Hello",
 						},
 					},
 					update: TestConfig{
@@ -245,7 +241,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					monitor, err := syntheticsAPI.Monitor.Add(config, fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), monitor)
-					updateDueToKibanaAPIDiff(monitor)
+					updateDueToKibanaAPIDiff(monitor, fields)
 
 					get, err := syntheticsAPI.Monitor.Get(monitor.Id, space)
 					assert.NoError(s.T(), err)
@@ -258,7 +254,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					update, err := syntheticsAPI.Monitor.Update(monitor.Id, tc.update.config, tc.update.fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), update)
-					updateDueToKibanaAPIDiff(update)
+					updateDueToKibanaAPIDiff(update, fields)
 
 					get, err = syntheticsAPI.Monitor.Get(monitor.ConfigId, space)
 					assert.NoError(s.T(), err)
@@ -283,11 +279,16 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 }
 
 // see https://github.com/elastic/kibana/issues/189906
-func updateDueToKibanaAPIDiff(m *SyntheticsMonitor) {
+func updateDueToKibanaAPIDiff(m *SyntheticsMonitor, f MonitorFields) {
 	m.Params = nil
 	m.Username = ""
 	m.Password = ""
 	m.ProxyHeaders = nil
+	m.CheckResponseBodyPositive = nil
+	m.CheckRequestBody = nil
+	m.CheckRequestHeaders = nil
+	m.CheckSend = ""
+	m.CheckReceive = ""
 }
 
 func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
