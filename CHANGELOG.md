@@ -3,6 +3,7 @@
 - Fix setting `id` for Fleet outputs and servers ([#666](https://github.com/elastic/terraform-provider-elasticstack/pull/666))
 - Fix `elasticstack_fleet_enrollment_tokens` returning empty tokens in some case ([#683](https://github.com/elastic/terraform-provider-elasticstack/pull/683))
 - Add support for Kibana synthetics private locations ([#696](https://github.com/elastic/terraform-provider-elasticstack/pull/696))
+- Support setting `restriction` in `elasticstack_elasticsearch_security_api_key` role definitions ([#577](https://github.com/elastic/terraform-provider-elasticstack/pull/577))
 
 ## [0.11.4] - 2024-06-13
 
