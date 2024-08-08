@@ -17,8 +17,6 @@ import (
 	"strconv"
 )
 
-//TODO: monitor support is from 8.14.0
-
 const (
 	MetadataPrefix = "_kibana_synthetics_"
 )
@@ -38,47 +36,47 @@ type tfAlertConfigV0 struct {
 }
 
 type tfHTTPMonitorFieldsV0 struct {
-	URL                   types.String         `tfsdk:"url"`
-	SslVerificationMode   types.String         `tfsdk:"ssl.verification_mode"`
-	SslSupportedProtocols []types.String       `tfsdk:"ssl.supported_protocols"`
-	MaxRedirects          types.String         `tfsdk:"max_redirects"`
-	Mode                  types.String         `tfsdk:"mode"`
-	IPv4                  types.Bool           `tfsdk:"ipv4"`
-	IPv6                  types.Bool           `tfsdk:"ipv6"`
-	Username              types.String         `tfsdk:"username"`
-	Password              types.String         `tfsdk:"password"`
-	ProxyHeader           jsontypes.Normalized `tfsdk:"proxy_header"`
-	ProxyURL              types.String         `tfsdk:"proxy_url"`
-	Response              jsontypes.Normalized `tfsdk:"response"`
-	Check                 jsontypes.Normalized `tfsdk:"check"`
+	URL                   types.String   `tfsdk:"url"`
+	SslVerificationMode   types.String   `tfsdk:"ssl_verification_mode"`
+	SslSupportedProtocols []types.String `tfsdk:"ssl_supported_protocols"`
+	MaxRedirects          types.String   `tfsdk:"max_redirects"`
+	Mode                  types.String   `tfsdk:"mode"`
+	IPv4                  types.Bool     `tfsdk:"ipv4"`
+	IPv6                  types.Bool     `tfsdk:"ipv6"`
+	Username              types.String   `tfsdk:"username"`
+	Password              types.String   `tfsdk:"password"`
+	//ProxyHeader           jsontypes.Normalized `tfsdk:"proxy_header"`
+	ProxyURL types.String `tfsdk:"proxy_url"`
+	//Response              jsontypes.Normalized `tfsdk:"response"`
+	//Check                 jsontypes.Normalized `tfsdk:"check"`
 }
 
 type tfTCPMonitorFieldsV0 struct {
 	Host                  types.String   `tfsdk:"host"`
-	SslVerificationMode   types.String   `tfsdk:"ssl.verification_mode"`
-	SslSupportedProtocols []types.String `tfsdk:"ssl.supported_protocols"`
-	CheckSend             types.String   `tfsdk:"check.send"`
-	CheckReceive          types.String   `tfsdk:"check.receive"`
+	SslVerificationMode   types.String   `tfsdk:"ssl_verification_mode"`
+	SslSupportedProtocols []types.String `tfsdk:"ssl_supported_protocols"`
+	CheckSend             types.String   `tfsdk:"check_send"`
+	CheckReceive          types.String   `tfsdk:"check_receive"`
 	ProxyURL              types.String   `tfsdk:"proxy_url"`
 	ProxyUseLocalResolver types.Bool     `tfsdk:"proxy_use_local_resolver"`
 }
 
 type tfModelV0 struct {
-	ID               types.String           `tfsdk:"id"`
-	Name             types.String           `tfsdk:"name"`
-	SpaceID          types.String           `tfsdk:"space_id"`
-	Schedule         types.Int64            `tfsdk:"schedule"`
-	Locations        []types.String         `tfsdk:"locations"`
-	PrivateLocations []types.String         `tfsdk:"private_locations"`
-	Enabled          types.Bool             `tfsdk:"enabled"`
-	Tags             []types.String         `tfsdk:"tags"`
-	Alert            *tfAlertConfigV0       `tfsdk:"alert"`
-	APMServiceName   types.String           `tfsdk:"service_name"`
-	TimeoutSeconds   types.Int64            `tfsdk:"timeout"`
-	Params           jsontypes.Normalized   `tfsdk:"params"`
-	HTTP             *tfHTTPMonitorFieldsV0 `tfsdk:"http"`
-	TCP              *tfTCPMonitorFieldsV0  `tfsdk:"tcp"`
-	RetestOnFailure  types.Bool             `tfsdk:"retest_on_failure"`
+	ID               types.String     `tfsdk:"id"`
+	Name             types.String     `tfsdk:"name"`
+	SpaceID          types.String     `tfsdk:"space_id"`
+	Schedule         types.Int64      `tfsdk:"schedule"`
+	Locations        []types.String   `tfsdk:"locations"`
+	PrivateLocations []types.String   `tfsdk:"private_locations"`
+	Enabled          types.Bool       `tfsdk:"enabled"`
+	Tags             []types.String   `tfsdk:"tags"`
+	Alert            *tfAlertConfigV0 `tfsdk:"alert"`
+	APMServiceName   types.String     `tfsdk:"service_name"`
+	TimeoutSeconds   types.Int64      `tfsdk:"timeout"`
+	//Params           jsontypes.Normalized   `tfsdk:"params"`
+	HTTP            *tfHTTPMonitorFieldsV0 `tfsdk:"http"`
+	TCP             *tfTCPMonitorFieldsV0  `tfsdk:"tcp"`
+	RetestOnFailure types.Bool             `tfsdk:"retest_on_failure"`
 }
 
 func monitorConfigSchema() schema.Schema {
@@ -90,10 +88,12 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: "Generated identifier for the monitor",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"name": schema.StringAttribute{
 				Optional:            false,
+				Required:            true,
 				MarkdownDescription: "The monitor’s name.",
 			},
 			"space_id": schema.StringAttribute{
@@ -105,7 +105,6 @@ func monitorConfigSchema() schema.Schema {
 			},
 			"schedule": schema.Int64Attribute{
 				Optional:            true,
-				Computed:            true,
 				MarkdownDescription: "The monitor’s schedule in minutes. Supported values are 1, 3, 5, 10, 15, 30, 60, 120 and 240.",
 				Validators: []validator.Int64{
 					int64validator.OneOf(1, 3, 5, 10, 15, 30, 60, 120, 240),
@@ -155,7 +154,7 @@ func monitorConfigSchema() schema.Schema {
 				Optional:            true,
 				MarkdownDescription: "The monitor timeout in seconds, monitor will fail if it doesn’t complete within this time. Default: `16`",
 			},
-			"params": jsonObjectSchema("Monitor parameters"),
+			//"params": jsonObjectSchema("Monitor parameters"),
 			"retest_on_failure": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from \"up\" to \"down\". If the result of the retest is also \"down\", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.",
@@ -198,16 +197,23 @@ func monitorAlertConfigSchema() schema.Attribute {
 
 func httpMonitorFieldsSchema() schema.Attribute {
 	return schema.SingleNestedAttribute{
-		Optional:            true,
-		MarkdownDescription: "",
+		Optional: true,
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
 				Optional:            false,
 				Required:            true,
 				MarkdownDescription: "URL to monitor.",
 			},
-			"ssl_setting": jsonObjectSchema("The TLS/SSL connection settings for use with the HTTPS endpoint. If you don’t specify settings, the system defaults are used. See https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html for full SSL Options."),
-			"max_redirects": schema.StringAttribute{
+			"ssl_verification_mode": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Controls the verification of server certificates. ",
+			},
+			"ssl_supported_protocols": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "List of allowed SSL/TLS versions.",
+			},
+			"max_redirects": schema.StringAttribute{ //TODO: make int64??
 				Optional:            true,
 				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
 			},
@@ -234,13 +240,13 @@ func httpMonitorFieldsSchema() schema.Attribute {
 				Optional:            true,
 				MarkdownDescription: "The password for authenticating with the server. The credentials are passed with the request.",
 			},
-			"proxy_header": jsonObjectSchema("Additional headers to send to proxies during CONNECT requests."),
+			//"proxy_header": jsonObjectSchema("Additional headers to send to proxies during CONNECT requests."),
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The URL of the proxy to use for this monitor.",
 			},
-			"response": jsonObjectSchema("Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field."),
-			"check":    jsonObjectSchema("The check request settings."),
+			//"response": jsonObjectSchema("Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field."),
+			//"check":    jsonObjectSchema("The check request settings."),
 		},
 	}
 }
@@ -255,8 +261,23 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 				Required:            true,
 				MarkdownDescription: "The host to monitor; it can be an IP address or a hostname. The host can include the port using a colon (e.g., \"example.com:9200\").",
 			},
-			"ssl":   jsonObjectSchema(" The TLS/SSL connection settings for use with the HTTPS endpoint. If you don’t specify settings, the system defaults are used. See https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html for full SSL Options."),
-			"check": jsonObjectSchema("An optional payload string to send to the remote host and the expected answer. If no payload is specified, the endpoint is assumed to be available if the connection attempt was successful. If send is specified without receive, any response is accepted as OK. If receive is specified without send, no payload is sent, but the client expects to receive a payload in the form of a \"hello message\" or \"banner\" on connect."),
+			"ssl_verification_mode": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Controls the verification of server certificates. ",
+			},
+			"ssl_supported_protocols": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "List of allowed SSL/TLS versions.",
+			},
+			"check_send": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "An optional payload string to send to the remote host.",
+			},
+			"check_receive": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The expected answer. ",
+			},
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.",
@@ -394,7 +415,7 @@ func toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) {
 		return nil, err
 	}
 
-	params, err := toNormalizedValue(api.Params)
+	//params, err := toNormalizedValue(api.Params)
 	if err != nil {
 		return nil, err
 	}
@@ -411,9 +432,9 @@ func toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) {
 		Alert:            toTfAlertConfigV0(api.Alert),
 		APMServiceName:   types.StringValue(api.APMServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
-		Params:           params,
-		HTTP:             http,
-		TCP:              tcp,
+		//Params:           params,
+		HTTP: http,
+		TCP:  tcp,
 	}, nil
 }
 
@@ -431,10 +452,10 @@ func toTfTCPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfTCPMonitorFieldsV0
 
 func toTfHTTPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfHTTPMonitorFieldsV0, error) {
 
-	proxyHeaders, err := toNormalizedValue(api.ProxyHeaders)
-	if err != nil {
-		return nil, err
-	}
+	//proxyHeaders, err := toNormalizedValue(api.ProxyHeaders)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return &tfHTTPMonitorFieldsV0{
 		URL:                   types.StringValue(api.Url),
@@ -446,8 +467,8 @@ func toTfHTTPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfHTTPMonitorFields
 		IPv6:                  types.BoolPointerValue(api.Ipv6),
 		Username:              types.StringValue(api.Username),
 		Password:              types.StringValue(api.Password),
-		ProxyHeader:           proxyHeaders,
-		ProxyURL:              types.StringValue(api.ProxyUrl),
+		//ProxyHeader:           proxyHeaders,
+		ProxyURL: types.StringValue(api.ProxyUrl),
 	}, nil
 }
 
@@ -501,10 +522,10 @@ func (v *tfModelV0) toMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
 
 func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
 	locations := Map[types.String, kbapi.MonitorLocation](v.Locations, func(s types.String) kbapi.MonitorLocation { return kbapi.MonitorLocation(s.ValueString()) })
-	params, dg := toJsonObject(v.Params)
-	if dg.HasError() {
-		return nil, dg
-	}
+	//params, dg := toJsonObject(v.Params)
+	//if dg.HasError() {
+	//	return nil, dg
+	//}
 
 	var alert *kbapi.MonitorAlertConfig
 	if v.Alert != nil {
@@ -522,25 +543,25 @@ func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig,
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
 		Namespace:        v.SpaceID.ValueString(),
-		Params:           params,
-		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
-	}, dg
+		//Params:           params,
+		RetestOnFailure: v.RetestOnFailure.ValueBoolPointer(),
+	}, diag.Diagnostics{} //dg
 }
 
 func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
-	proxyHeaders, dg := toJsonObject(v.HTTP.ProxyHeader)
-	if dg.HasError() {
-		return nil, dg
-	}
-	response, dg := toJsonObject(v.HTTP.Response)
-	if dg.HasError() {
-		return nil, dg
-	}
-	check, dg := toJsonObject(v.HTTP.Check)
-	if dg.HasError() {
-		return nil, dg
-	}
-	return kbapi.HTTPMonitorFields{
+	/*	proxyHeaders, dg := toJsonObject(v.HTTP.ProxyHeader)
+		if dg.HasError() {
+			return nil, dg
+		}
+		response, dg := toJsonObject(v.HTTP.Response)
+		if dg.HasError() {
+			return nil, dg
+		}
+		check, dg := toJsonObject(v.HTTP.Check)
+		if dg.HasError() {
+			return nil, dg
+		}
+	*/return kbapi.HTTPMonitorFields{
 		Url:                   v.HTTP.URL.ValueString(),
 		SslVerificationMode:   v.HTTP.SslVerificationMode.ValueString(),
 		SslSupportedProtocols: ValueStringSlice(v.HTTP.SslSupportedProtocols),
@@ -550,11 +571,11 @@ func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics
 		Ipv6:                  v.HTTP.IPv6.ValueBoolPointer(),
 		Username:              v.HTTP.Username.ValueString(),
 		Password:              v.HTTP.Password.ValueString(),
-		ProxyHeader:           proxyHeaders,
-		ProxyUrl:              v.HTTP.ProxyURL.ValueString(),
-		Response:              response,
-		Check:                 check,
-	}, dg
+		//ProxyHeader:           proxyHeaders,
+		ProxyUrl: v.HTTP.ProxyURL.ValueString(),
+		//Response:              response,
+		//Check:                 check,
+	}, diag.Diagnostics{} //dg
 }
 
 func (v *tfModelV0) toTCPMonitorFields() kbapi.MonitorFields {

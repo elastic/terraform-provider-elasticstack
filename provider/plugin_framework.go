@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
@@ -73,5 +74,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &import_saved_objects.Resource{} },
 		func() resource.Resource { return &data_view.Resource{} },
 		func() resource.Resource { return &private_location.Resource{} },
+		func() resource.Resource { return &synthetics.Resource{} },
 	}
 }
