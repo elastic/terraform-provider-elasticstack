@@ -335,18 +335,34 @@ func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
 }
 
 func toJsonObject(v jsontypes.Normalized) (kbapi.JsonObject, diag.Diagnostics) {
+	if v.IsNull() {
+		return nil, diag.Diagnostics{}
+	}
 	var res kbapi.JsonObject
-	dg := v.Unmarshal(res)
+	dg := v.Unmarshal(&res)
 	if dg.HasError() {
 		return nil, dg
 	}
 	return res, diag.Diagnostics{}
 }
 
+func stringToInt64(v string) (int64, error) {
+	var res int64
+	var err error
+	if v != "" {
+		res, err = strconv.ParseInt(v, 10, 64)
+	}
+	return res, err
+}
+
 func toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) {
-	schedule, err := strconv.ParseInt(api.Schedule.Number, 10, 34)
-	if err != nil {
-		return nil, err
+	var schedule int64
+	var err error
+	if api.Schedule != nil {
+		schedule, err = stringToInt64(api.Schedule.Number)
+		if err != nil {
+			return nil, err
+		}
 	}
 	var locLabels []string
 	var privateLocLabels []string
@@ -358,7 +374,7 @@ func toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) {
 		}
 	}
 
-	timeout, err := api.Timeout.Int64()
+	timeout, err := stringToInt64(string(api.Timeout))
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +495,7 @@ func (v *tfModelV0) toMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
 		return v.toTCPMonitorFields(), dg
 	}
 
-	dg.Append(diag.NewErrorDiagnostic("Unsupported monitor type config", "one of http,tcp monitor fields is required"))
+	dg.AddError("Unsupported monitor type config", "one of http,tcp monitor fields is required")
 	return nil, dg
 }
 
@@ -489,6 +505,12 @@ func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig,
 	if dg.HasError() {
 		return nil, dg
 	}
+
+	var alert *kbapi.MonitorAlertConfig
+	if v.Alert != nil {
+		alert = v.Alert.toTfAlertConfigV0()
+	}
+
 	return &kbapi.SyntheticsMonitorConfig{
 		Name:             v.Name.ValueString(),
 		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueInt64()),
@@ -496,7 +518,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig,
 		PrivateLocations: ValueStringSlice(v.PrivateLocations),
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Tags:             ValueStringSlice(v.Tags),
-		Alert:            v.Alert.toTfAlertConfigV0(),
+		Alert:            alert,
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
 		Namespace:        v.SpaceID.ValueString(),
@@ -548,17 +570,25 @@ func (v *tfModelV0) toTCPMonitorFields() kbapi.MonitorFields {
 }
 
 func Map[T, U any](ts []T, f func(T) U) []U {
-	us := make([]U, len(ts))
-	for i := range ts {
-		us[i] = f(ts[i])
+	var us []U
+	for _, v := range ts {
+		us = append(us, f(v))
 	}
 	return us
 }
 
 func (v tfAlertConfigV0) toTfAlertConfigV0() *kbapi.MonitorAlertConfig {
+	var status *kbapi.SyntheticsStatusConfig
+	if v.Status != nil {
+		status = v.Status.toTfStatusConfigV0()
+	}
+	var tls *kbapi.SyntheticsStatusConfig
+	if v.TLS != nil {
+		tls = v.TLS.toTfStatusConfigV0()
+	}
 	return &kbapi.MonitorAlertConfig{
-		Status: v.Status.toTfStatusConfigV0(),
-		Tls:    v.TLS.toTfStatusConfigV0(),
+		Status: status,
+		Tls:    tls,
 	}
 }
 
