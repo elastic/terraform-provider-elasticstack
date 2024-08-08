@@ -16,7 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var APIKeyMinVersion = version.Must(version.NewVersion("8.0.0")) // Enabled in 8.0
+var APIKeyMinVersion = version.Must(version.NewVersion("8.0.0"))                // Enabled in 8.0
+var APIKeyWithRestrictionMinVersion = version.Must(version.NewVersion("8.9.0")) // Enabled in 8.0
 
 func ResourceApiKey() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -107,11 +108,33 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if v, ok := d.GetOk("role_descriptors"); ok {
-		role_descriptors := map[string]models.Role{}
+		role_descriptors := map[string]models.ApiKeyRoleDescriptor{}
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&role_descriptors); err != nil {
 			return diag.FromErr(err)
 		}
 		apikey.RolesDescriptors = role_descriptors
+
+		var hasRestriction = false
+		var keysWithRestrictions []string
+
+		for key, roleDescriptor := range role_descriptors {
+			if roleDescriptor.Restriction != nil {
+				hasRestriction = true
+				keysWithRestrictions = append(keysWithRestrictions, key)
+			}
+		}
+
+		if hasRestriction {
+			isSupported, diags := doesCurrentVersionSupportRestrictionOnApiKey(ctx, client)
+
+			if diags.HasError() {
+				return diags
+			}
+
+			if !isSupported {
+				return diag.Errorf("Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s", strings.Join(keysWithRestrictions, ", "))
+			}
+		}
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
@@ -153,6 +176,16 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 
 	d.SetId(id.String())
 	return resourceSecurityApiKeyRead(ctx, d, meta)
+}
+
+func doesCurrentVersionSupportRestrictionOnApiKey(ctx context.Context, client *clients.ApiClient) (bool, diag.Diagnostics) {
+	currentVersion, diags := client.ServerVersion(ctx)
+
+	if diags.HasError() {
+		return false, diags
+	}
+
+	return currentVersion.GreaterThanOrEqual(APIKeyWithRestrictionMinVersion), nil
 }
 
 func resourceSecurityApiKeyUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
