@@ -109,7 +109,7 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		BudgetingMethod: slo.BudgetingMethod(s.BudgetingMethod),
 		Objective:       s.Objective,
 		Settings:        s.Settings,
-		GroupBy:         &slo.SloResponseGroupBy{String: s.GroupBy},
+		GroupBy:         transformGroupBy(s.GroupBy),
 		Tags:            s.Tags,
 	}
 
@@ -179,4 +179,12 @@ func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
 		Settings:        &res.Settings,
 		Tags:            res.Tags,
 	}
+}
+
+func transformGroupBy(groupBy *string) *slo.SloResponseGroupBy {
+	if groupBy == nil {
+		return nil
+	}
+
+	return &slo.SloResponseGroupBy{String: groupBy}
 }
