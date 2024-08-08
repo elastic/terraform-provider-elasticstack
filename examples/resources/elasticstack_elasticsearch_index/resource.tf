@@ -29,8 +29,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
     }
   })
 
-  number_of_shards      = 1
-  number_of_replicas    = 2
-  search_idle_after     = "20s"
-  total_shards_per_node = 200
+  number_of_shards   = 1
+  number_of_replicas = 2
+  search_idle_after  = "20s"
 }

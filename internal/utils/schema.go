@@ -13,6 +13,6 @@ func ExpandStringSet(set *schema.Set) []string {
 	return strs
 }
 
-func IsKnown(val attr.Value) bool {
-	return !(val.IsNull() || val.IsUnknown())
+func IsKnown[T attr.Value](value T) bool {
+	return !value.IsNull() && !value.IsUnknown()
 }

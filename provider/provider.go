@@ -89,7 +89,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_cluster_settings":      cluster.ResourceSettings(),
 			"elasticstack_elasticsearch_component_template":    index.ResourceComponentTemplate(),
 			"elasticstack_elasticsearch_data_stream":           index.ResourceDataStream(),
-			"elasticstack_elasticsearch_index":                 index.ResourceIndex(),
 			"elasticstack_elasticsearch_index_lifecycle":       index.ResourceIlm(),
 			"elasticstack_elasticsearch_index_template":        index.ResourceTemplate(),
 			"elasticstack_elasticsearch_ingest_pipeline":       ingest.ResourceIngestPipeline(),
