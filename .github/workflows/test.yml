@@ -60,16 +60,17 @@ jobs:
         image: docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.version }}
         env:
           discovery.type: single-node
-          xpack.license.self_generated.type: trial
           xpack.security.enabled: true
           xpack.security.authc.api_key.enabled: true
+          xpack.security.authc.token.enabled: true
           xpack.watcher.enabled: true
+          xpack.license.self_generated.type: trial
           repositories.url.allowed_urls: https://example.com/*
           path.repo: /tmp
           ELASTIC_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
         ports:
           - 9200:9200
-        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10 --memory=2048m
+        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
       kibana:
         image: docker.elastic.co/kibana/kibana:${{ matrix.version }}
         env:
