@@ -3,15 +3,13 @@ package private_location
 import (
 	"context"
 	"fmt"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
 
-	tflog.Info(ctx, "Create private location")
-
-	kibanaClient := r.getKibanaClient(response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}

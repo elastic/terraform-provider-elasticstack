@@ -3,7 +3,6 @@ package private_location
 import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -72,32 +71,16 @@ func privateLocationSchema() schema.Schema {
 	}
 }
 
-func (r *Resource) resourceReady(dg *diag.Diagnostics) bool {
-	if r.client == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
-
-		return false
-	}
-	return true
-}
-
 func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {
 	var geoConfig *kbapi.SyntheticGeoConfig
 	if m.Geo != nil {
 		geoConfig = m.Geo.ToSyntheticGeoConfig()
 	}
 
-	var tags []string
-	for _, tag := range m.Tags {
-		tags = append(tags, tag.ValueString())
-	}
 	pLoc := kbapi.PrivateLocationConfig{
 		Label:         m.Label.ValueString(),
 		AgentPolicyId: m.AgentPolicyId.ValueString(),
-		Tags:          tags,
+		Tags:          synthetics.ValueStringSlice(m.Tags),
 		Geo:           geoConfig,
 	}
 
@@ -109,16 +92,12 @@ func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {
 }
 
 func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
-	var tags []types.String
-	for _, tag := range pLoc.Tags {
-		tags = append(tags, types.StringValue(tag))
-	}
 	return tfModelV0{
 		ID:            types.StringValue(pLoc.Id),
 		Label:         types.StringValue(pLoc.Label),
 		SpaceID:       types.StringValue(pLoc.Namespace),
 		AgentPolicyId: types.StringValue(pLoc.AgentPolicyId),
-		Tags:          tags,
+		Tags:          synthetics.StringSliceValue(pLoc.Tags),
 		Geo:           synthetics.FromSyntheticGeoConfig(pLoc.Geo),
 	}
 }
