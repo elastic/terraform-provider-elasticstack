@@ -2,12 +2,12 @@ package provider
 
 import (
 	"context"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/private_location"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"

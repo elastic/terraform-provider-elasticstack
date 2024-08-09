@@ -4,15 +4,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
+
+	tflog.Info(ctx, "### Create monitor")
+
 	kibanaClient := GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
 
-	var plan *tfModelV0
+	var plan *tfModelV0 = new(tfModelV0)
 	diags := request.Plan.Get(ctx, plan)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
