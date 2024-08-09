@@ -14,7 +14,7 @@ var (
 )
 
 const (
-	resourceId = "elasticstack_kibana_synthetics_monitor.test-monitor"
+	resourceId = "elasticstack_kibana_synthetics_monitor.http-monitor"
 
 	providerConfig = `
 provider "elasticstack" {
@@ -38,8 +38,8 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 	agent_policy_id = elasticstack_fleet_agent_policy.test.policy_id
 }
 
-resource "elasticstack_kibana_synthetics_monitor" "test-monitor" {
-	name = "TestMonitorResource"
+resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
+	name = "TestHttpMonitorResource"
 	space_id = "default"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
@@ -55,10 +55,6 @@ resource "elasticstack_kibana_synthetics_monitor" "test-monitor" {
 	}
 	service_name = "test apm service"
 	timeout = 30
-	retest_on_failure = true
-    params = jsonencode({
-		"param-name" = "param-value"
-	})
 	http = {
 		url = "http://localhost:5601"
 		ssl_verification_mode = "full"
@@ -67,29 +63,7 @@ resource "elasticstack_kibana_synthetics_monitor" "test-monitor" {
 		mode = "any"
 		ipv4 = true
 		ipv6 = false
-		username = "test"
-		password = "test"
-		proxy_header = jsonencode({"header-name" = "header-value"})
 		proxy_url = "http://localhost:8080"
-		response = jsonencode({
-			"include_body":           "always",
-			"include_body_max_bytes": "1024",
-		})
-		check = jsonencode({
-			"request": {
-				"method": "POST",
-				"headers": {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				"body": "name=first&email=someemail%40someemailprovider.com",
-			},
-			"response": {
-				"status": [200, 201],
-				"body": {
-					"positive": ["foo", "bar"],
-				},
-			},
-		})
 	}
 }
 `
