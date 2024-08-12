@@ -81,7 +81,7 @@ jobs:
       kibana:
         image: docker.elastic.co/kibana/kibana:${{ matrix.version }}
         volumes:
-          - ${{ github.workspace }}/kibana-config/:/usr/share/kibana/config/
+          - ${{ github.workspace }}/kibana-config/kibana.yml:/usr/share/kibana/config/kibana.yml
         env:
           SERVER_NAME: kibana
           ELASTICSEARCH_HOSTS: http://elasticsearch:9200
@@ -91,6 +91,7 @@ jobs:
           xpack.fleet.enabled: true
         ports:
           - 5601:5601
+        options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
 
     timeout-minutes: 15
     strategy:
