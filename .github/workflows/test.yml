@@ -81,7 +81,7 @@ jobs:
       kibana:
         image: docker.elastic.co/kibana/kibana:${{ matrix.version }}
         volumes:
-          - ${{ github.workspace }}/kibana-config/:/usr/share/kibana/config/
+          - ${{ github.workspace }}/kibana-config:/usr/share/kibana/config
         env:
           SERVER_NAME: kibana
           ELASTICSEARCH_HOSTS: http://elasticsearch:9200
