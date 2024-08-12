@@ -14,7 +14,7 @@ var (
 )
 
 const (
-	resourceId = "elasticstack_kibana_synthetics_monitor.http-monitor"
+	httpMonitorId = "elasticstack_kibana_synthetics_monitor.http-monitor"
 
 	providerConfig = `
 provider "elasticstack" {
@@ -86,14 +86,27 @@ func TestSyntheticMonitorResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   providerConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(resourceId, "id"),
-					//resource.TestCheckResourceAttrSet(resourceId, "id"),
+					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
+					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource"),
+					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "5"),
+					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(httpMonitorId, "private_locations.0"),
+					resource.TestCheckResourceAttr(httpMonitorId, "enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorId, "tags.#", "2"),
+					resource.TestCheckResourceAttr(httpMonitorId, "tags.0", "a"),
+					resource.TestCheckResourceAttr(httpMonitorId, "tags.1", "b"),
+					resource.TestCheckResourceAttr(httpMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorId, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorId, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(httpMonitorId, "timeout", "30"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:5601"),
 				),
 			},
 			// ImportState testing
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName:      resourceId,
+				ResourceName:      httpMonitorId,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config:            providerConfig,

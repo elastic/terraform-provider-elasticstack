@@ -15,7 +15,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 8.14.3
+STACK_VERSION ?= 8.15.0
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -132,7 +132,6 @@ docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start 
 		-e ELASTICSEARCH_PASSWORD=$(KIBANA_SYSTEM_PASSWORD) \
 		-e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d \
 		-e "xpack.fleet.enabled=true" \
-		-e "xpack.fleet.isAirGapped=true" \
 		-e "logging.root.level=debug" \
 		--name $(KIBANA_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
