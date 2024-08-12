@@ -63,6 +63,7 @@ jobs:
           xpack.security.enabled: true
           xpack.security.authc.api_key.enabled: true
           xpack.security.authc.token.enabled: true
+          xpack.security.http.ssl.enabled: false
           xpack.watcher.enabled: true
           xpack.license.self_generated.type: trial
           repositories.url.allowed_urls: https://example.com/*
@@ -80,8 +81,7 @@ jobs:
           ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
           XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
           xpack.fleet.enabled: true
-          xpack.task_manager.max_attempts: 10
-          logging.root.level: debug
+          xpack.fleet.isAirGapped: true
         ports:
           - 5601:5601
 

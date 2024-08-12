@@ -5,10 +5,10 @@ services:
     environment:
       cluster.name: test
       discovery.type: single-node
-      ELASTIC_PASSWORD: changeme
-      xpack.security.enabled: "true"
+      xpack.security.enabled: true
       xpack.security.http.ssl.enabled: false
       xpack.license.self_generated.type: trial
+      ELASTIC_PASSWORD: changeme
     ports:
       - "9200:9200/tcp"
   set-kibana-password:
@@ -25,12 +25,13 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.14.3
     environment:
+      SERVER_NAME: kibana
       ELASTICSEARCH_HOSTS: http://es:9200
       ELASTICSEARCH_USERNAME: kibana_system
       ELASTICSEARCH_PASSWORD: changeme
-      xpack.security.http.ssl.enabled: false
-      xpack.license.self_generated.type: trial
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: min-32-byte-long-strong-encryption-key
+      xpack.fleet.enabled: true
+      xpack.fleet.isAirGapped: true
     links:
       - elasticsearch:es
     ports:
