@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ActionGroups** | Pointer to [**[]GetRuleTypes200ResponseInnerActionGroupsInner**](GetRuleTypes200ResponseInnerActionGroupsInner.md) | An explicit list of groups for which the alert type can schedule actions, each with the action group&#39;s unique ID and human readable name. Alert actions validation uses this configuration to ensure that groups are valid.  | [optional] 
+**ActionGroups** | Pointer to [**[]GetRuleTypes200ResponseInnerActionGroupsInner**](GetRuleTypes200ResponseInnerActionGroupsInner.md) |  | [optional] 
 **ActionVariables** | Pointer to [**LegacyGetAlertTypes200ResponseInnerActionVariables**](LegacyGetAlertTypes200ResponseInnerActionVariables.md) |  | [optional] 
 **AuthorizedConsumers** | Pointer to **map[string]interface{}** | The list of the plugins IDs that have access to the alert type. | [optional] 
 **DefaultActionGroupId** | Pointer to **string** | The default identifier for the alert type group. | [optional] 

@@ -11,15 +11,15 @@ Name | Type | Description | Notes
 **Name** | **string** | A name to reference and search. | 
 **NotifyWhen** | **string** | The condition for throttling the notification. | 
 **Params** | **map[string]interface{}** | The parameters to pass to the alert type executor &#x60;params&#x60; value. This will also validate against the alert type params validator, if defined. | 
-**Schedule** | [**LegacyCreateAlertRequestPropertiesSchedule**](LegacyCreateAlertRequestPropertiesSchedule.md) |  | 
-**Tags** | Pointer to **[]string** | A list of keywords to reference and search. | [optional] 
+**Schedule** | [**LegacyUpdateAlertRequestPropertiesSchedule**](LegacyUpdateAlertRequestPropertiesSchedule.md) |  | 
+**Tags** | Pointer to **[]string** |  | [optional] 
 **Throttle** | Pointer to **string** | How often this alert should fire the same actions. This will prevent the alert from sending out the same notification over and over. For example, if an alert with a schedule of 1 minute stays in a triggered state for 90 minutes, setting a throttle of &#x60;10m&#x60; or &#x60;1h&#x60; will prevent it from sending 90 notifications during this period.  | [optional] 
 
 ## Methods
 
 ### NewLegacyCreateAlertRequestProperties
 
-`func NewLegacyCreateAlertRequestProperties(alertTypeId string, consumer string, name string, notifyWhen string, params map[string]interface{}, schedule LegacyCreateAlertRequestPropertiesSchedule, ) *LegacyCreateAlertRequestProperties`
+`func NewLegacyCreateAlertRequestProperties(alertTypeId string, consumer string, name string, notifyWhen string, params map[string]interface{}, schedule LegacyUpdateAlertRequestPropertiesSchedule, ) *LegacyCreateAlertRequestProperties`
 
 NewLegacyCreateAlertRequestProperties instantiates a new LegacyCreateAlertRequestProperties object
 This constructor will assign default values to properties that have it defined,
@@ -186,20 +186,20 @@ SetParams sets Params field to given value.
 
 ### GetSchedule
 
-`func (o *LegacyCreateAlertRequestProperties) GetSchedule() LegacyCreateAlertRequestPropertiesSchedule`
+`func (o *LegacyCreateAlertRequestProperties) GetSchedule() LegacyUpdateAlertRequestPropertiesSchedule`
 
 GetSchedule returns the Schedule field if non-nil, zero value otherwise.
 
 ### GetScheduleOk
 
-`func (o *LegacyCreateAlertRequestProperties) GetScheduleOk() (*LegacyCreateAlertRequestPropertiesSchedule, bool)`
+`func (o *LegacyCreateAlertRequestProperties) GetScheduleOk() (*LegacyUpdateAlertRequestPropertiesSchedule, bool)`
 
 GetScheduleOk returns a tuple with the Schedule field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetSchedule
 
-`func (o *LegacyCreateAlertRequestProperties) SetSchedule(v LegacyCreateAlertRequestPropertiesSchedule)`
+`func (o *LegacyCreateAlertRequestProperties) SetSchedule(v LegacyUpdateAlertRequestPropertiesSchedule)`
 
 SetSchedule sets Schedule field to given value.
 
