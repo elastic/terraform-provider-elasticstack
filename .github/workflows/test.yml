@@ -47,6 +47,9 @@ jobs:
       - name: Lint
         run: make lint
 
+      - name: Test conection
+        run: curl https://epr.elastic.co/
+
   test:
     name: Matrix Acceptance Test
     needs: build
