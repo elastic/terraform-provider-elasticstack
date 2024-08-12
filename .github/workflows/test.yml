@@ -127,16 +127,15 @@ jobs:
         run: make vendor
 
       - name: Start kibana with mounted volume
-        run: docker run -d -p 5601:5601 \
-            -e SERVER_NAME=kibana \
-            -e ELASTICSEARCH_HOSTS="http://elasticsearch:9200" \
-            -e ELASTICSEARCH_USERNAME=${{ env.KIBANA_SYSTEM_USERNAME }} \
-            -e ELASTICSEARCH_PASSWORD=${{ env.KIBANA_SYSTEM_PASSWORD }} \
-            -e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d \
-            -e SERVER_SSL_ENABLED=true \
-            -e "logging.root.level=debug" \
-            -v ${{ github.workspace }}/kibana-config:/usr/share/kibana/config \
-            --name kibana \
+        run: docker run -d -p 5601:5601 
+            -e SERVER_NAME=kibana
+            -e ELASTICSEARCH_HOSTS="http://elasticsearch:9200"
+            -e ELASTICSEARCH_USERNAME=${{ env.KIBANA_SYSTEM_USERNAME }}
+            -e ELASTICSEARCH_PASSWORD=${{ env.KIBANA_SYSTEM_PASSWORD }}
+            -e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
+            -e "xpack.fleet.enabled=true"
+            -v ${{ github.workspace }}/kibana-config:/usr/share/kibana/config
+            --name kibana
             docker.elastic.co/kibana/kibana:${{ matrix.version }}
 
       - name: Setup Kibana user
