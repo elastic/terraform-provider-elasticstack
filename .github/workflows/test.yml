@@ -91,7 +91,6 @@ jobs:
           xpack.fleet.enabled: true
         ports:
           - 5601:5601
-        options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
 
     timeout-minutes: 15
     strategy:
@@ -126,6 +125,11 @@ jobs:
 
       - name: Get dependencies
         run: make vendor
+
+      - name: restart kibana with mounted volume
+        uses: docker://docker
+        with:
+          args: docker restart kibana
 
       - name: Setup Kibana user
         run: make set-kibana-password
