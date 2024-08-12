@@ -50,7 +50,7 @@ jobs:
       - name: Check env
         run: |-
           pwd
-          ls -la
+          ls -la ${{ github.workspace }}/kibana-config
           echo "${{ github.workspace }}"
 
   test:
