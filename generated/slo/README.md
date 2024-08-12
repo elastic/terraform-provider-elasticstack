@@ -128,6 +128,7 @@ Class | Method | HTTP request | Description
  - [Objective](docs/Objective.md)
  - [Settings](docs/Settings.md)
  - [SloResponse](docs/SloResponse.md)
+ - [SloResponseGroupBy](docs/SloResponseGroupBy.md)
  - [SloResponseIndicator](docs/SloResponseIndicator.md)
  - [Summary](docs/Summary.md)
  - [SummaryStatus](docs/SummaryStatus.md)

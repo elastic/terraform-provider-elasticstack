@@ -45,6 +45,7 @@ docs/Objective.md
 docs/Settings.md
 docs/SloAPI.md
 docs/SloResponse.md
+docs/SloResponseGroupBy.md
 docs/SloResponseIndicator.md
 docs/Summary.md
 docs/SummaryStatus.md
@@ -94,6 +95,7 @@ model_indicator_properties_timeslice_metric_params_metric_metrics_inner.go
 model_objective.go
 model_settings.go
 model_slo_response.go
+model_slo_response_group_by.go
 model_slo_response_indicator.go
 model_summary.go
 model_summary_status.go

@@ -1062,10 +1062,7 @@ components:
           example: true
           type: boolean
         groupBy:
-          description: optional group by field to use to generate an SLO per distinct
-            value
-          example: some.field
-          type: string
+          $ref: '#/components/schemas/slo_response_groupBy'
         instanceId:
           description: "the value derived from the groupBy field, if present, otherwise\
             \ '*'"
@@ -1289,10 +1286,7 @@ components:
         settings:
           $ref: '#/components/schemas/settings'
         groupBy:
-          description: optional group by field to use to generate an SLO per distinct
-            value
-          example: some.field
-          type: string
+          $ref: '#/components/schemas/slo_response_groupBy'
         tags:
           description: List of tags
           items:
@@ -1783,6 +1777,15 @@ components:
       - $ref: '#/components/schemas/indicator_properties_custom_metric'
       - $ref: '#/components/schemas/indicator_properties_histogram'
       - $ref: '#/components/schemas/indicator_properties_timeslice_metric'
+    slo_response_groupBy:
+      description: optional group by field to use to generate an SLO per distinct
+        value
+      example: some.field
+      oneOf:
+      - type: string
+      - items:
+          type: string
+        type: array
     create_slo_request_indicator:
       oneOf:
       - $ref: '#/components/schemas/indicator_properties_custom_kql'
