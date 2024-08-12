@@ -80,16 +80,9 @@ jobs:
           ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
           XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
           xpack.fleet.enabled: true
-          xpack.fleet.registryUrl: https://package-registry:8080
+          xpack.task_manager.max_attempts: 10
         ports:
           - 5601:5601
-      package-registry:
-        image: docker.elastic.co/package-registry/package-registry:v1.24.0
-        env:
-          EPR_FEATURE_PROXY_MODE: true
-          EPR_PROXY_TO: https://epr.elastic.co
-        ports:
-          - 8080:8080
 
     timeout-minutes: 15
     strategy:

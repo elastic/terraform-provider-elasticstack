@@ -31,7 +31,6 @@ services:
       xpack.security.http.ssl.enabled: false
       xpack.license.self_generated.type: trial
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: min-32-byte-long-strong-encryption-key
-      xpack.fleet.registryUrl: https://package-registry:8080
     links:
       - elasticsearch:es
     ports:
@@ -39,12 +38,3 @@ services:
     depends_on:
       set-kibana-password:
         condition: service_completed_successfully
-      package-registry:
-        condition: service_healthy
-  package-registry:
-    image: docker.elastic.co/package-registry/package-registry:v1.24.0
-    environment:
-      EPR_FEATURE_PROXY_MODE: true
-      EPR_PROXY_TO: https://epr.elastic.co
-    ports:
-      - "8080:8080/tcp"
