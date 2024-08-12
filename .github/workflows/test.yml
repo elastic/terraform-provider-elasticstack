@@ -81,14 +81,16 @@ jobs:
           ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
           XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
           xpack.fleet.enabled: true
-          xpack.fleet.registryUrl: http://package-registry:8080
+#          xpack.fleet.registryUrl: http://package-registry:8080
+          logging.loggers[0].name: plugins.fleet
+          logging.loggers[0].level: debug
         ports:
           - 5601:5601
-      package-registry:
-        image: docker.elastic.co/package-registry/distribution:lite
-        ports:
-          - 8080:8080
-        options: --health-cmd="curl -f -L http://127.0.0.1:8080/health" --health-interval=10s --health-timeout=5s --health-retries=10
+#      package-registry:
+#        image: docker.elastic.co/package-registry/distribution:lite
+#        ports:
+#          - 8080:8080
+#        options: --health-cmd="curl -f -L http://127.0.0.1:8080/health" --health-interval=10s --health-timeout=5s --health-retries=10
 
     timeout-minutes: 15
     strategy:
