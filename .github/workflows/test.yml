@@ -129,7 +129,7 @@ jobs:
       - name: restart kibana with mounted volume
         uses: docker://docker
         with:
-          args: docker restart kibana
+          args: docker start kibana
 
       - name: Setup Kibana user
         run: make set-kibana-password
