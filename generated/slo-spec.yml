@@ -1173,7 +1173,11 @@ components:
           example: true
         groupBy:
           description: optional group by field to use to generate an SLO per distinct value
-          type: string
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
           example: some.field
         instanceId:
           description: the value derived from the groupBy field, if present, otherwise '*'
@@ -1320,7 +1324,11 @@ components:
           $ref: '#/components/schemas/settings'
         groupBy:
           description: optional group by field to use to generate an SLO per distinct value
-          type: string
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
           example: some.field
         tags:
           description: List of tags

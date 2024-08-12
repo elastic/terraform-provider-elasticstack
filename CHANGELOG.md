@@ -4,6 +4,7 @@
 - Fix `elasticstack_fleet_enrollment_tokens` returning empty tokens in some case ([#683](https://github.com/elastic/terraform-provider-elasticstack/pull/683))
 - Add support for Kibana synthetics private locations ([#696](https://github.com/elastic/terraform-provider-elasticstack/pull/696))
 - Support setting `restriction` in `elasticstack_elasticsearch_security_api_key` role definitions ([#577](https://github.com/elastic/terraform-provider-elasticstack/pull/577))
+- Fix type of `group_by` attribute in the `kibana_slo` resource to be compatible with versions 8.14+ ([#701](https://github.com/elastic/terraform-provider-elasticstack/pull/701))
 
 ## [0.11.4] - 2024-06-13
 
