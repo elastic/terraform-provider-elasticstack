@@ -1,6 +1,6 @@
 server.host: "0.0.0.0"
 server.shutdownTimeout: "5s"
-elasticsearch.hosts: [ "http://terraform-elasticstack-es:9200" ]
+elasticsearch.hosts: [ "http://elasticsearch:9200" ]
 
 server.oas.enabled: true
 
