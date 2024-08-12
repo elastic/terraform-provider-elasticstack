@@ -50,6 +50,8 @@ func testWithPolicy(t *testing.T, client *resty.Client, namespace string, f func
 	f(policy.Item.Id)
 }
 
+// TODO: test update method when set an optional parameter to `null`
+
 func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 
 	type TestConfig struct {

@@ -22,6 +22,9 @@ provider "elasticstack" {
 	kibana {}
 	fleet{}
 }
+`
+
+	privateLocationConfig = `
 
 resource "elasticstack_fleet_agent_policy" "test" {
 	name            = "TestMonitorResource Agent Policy - test"
@@ -37,6 +40,10 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 	space_id = "default"
 	agent_policy_id = elasticstack_fleet_agent_policy.test.policy_id
 }
+
+`
+
+	httpMonitorConfig = `
 
 resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 	name = "TestHttpMonitorResource"
@@ -68,6 +75,38 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 }
 `
 
+	httpMonitorUpdated = `
+resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
+	name = "TestHttpMonitorResource Updated"
+	space_id = "default"
+	schedule = 10
+	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
+	enabled = false
+	tags = ["c", "d", "e"]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = false
+		}
+	}
+	service_name = "test apm service"
+	timeout = 30
+	http = {
+		url = "http://localhost:8080"
+		ssl_verification_mode = "full"
+		ssl_supported_protocols = ["TLSv1.2"]
+		max_redirects = "10"
+		mode = "all"
+		ipv4 = true
+		ipv6 = true
+		proxy_url = ""
+	}
+}
+
+`
+
 	/*
 		check.send = "Hello"
 		check.receive = "World"
@@ -84,7 +123,7 @@ func TestSyntheticMonitorResource(t *testing.T) {
 			// Create and Read testing
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   providerConfig,
+				Config:   providerConfig + privateLocationConfig + httpMonitorConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
 					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource"),
@@ -119,18 +158,40 @@ func TestSyntheticMonitorResource(t *testing.T) {
 				ResourceName:      httpMonitorId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            providerConfig,
+				Config:            providerConfig + privateLocationConfig + httpMonitorConfig,
 			},
 			// Update and Read testing
-			/*
-				{
-					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-					Config:   "", // TODO
-					Check:    resource.ComposeAggregateTestCheckFunc(
-					// TODO
-					),
-				},
-			*/
+			{
+				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName: httpMonitorId,
+				Config:       providerConfig + privateLocationConfig + httpMonitorUpdated,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
+					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource Updated"),
+					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "10"),
+					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(httpMonitorId, "private_locations.0"),
+					resource.TestCheckResourceAttr(httpMonitorId, "enabled", "false"),
+					resource.TestCheckResourceAttr(httpMonitorId, "tags.#", "3"),
+					resource.TestCheckResourceAttr(httpMonitorId, "tags.0", "c"),
+					resource.TestCheckResourceAttr(httpMonitorId, "tags.1", "d"),
+					resource.TestCheckResourceAttr(httpMonitorId, "tags.1", "e"),
+					resource.TestCheckResourceAttr(httpMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorId, "alert.tls.enabled", "false"),
+					resource.TestCheckResourceAttr(httpMonitorId, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(httpMonitorId, "timeout", "30"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:8080"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.#", "1"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.2", "TLSv1.2"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.max_redirects", "10"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.mode", "all"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv4", "true"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv6", "true"),
+					resource.TestCheckNoResourceAttr(httpMonitorId, "http.proxy_url"),
+				),
+			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
