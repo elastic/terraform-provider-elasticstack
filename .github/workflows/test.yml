@@ -127,9 +127,7 @@ jobs:
         run: make vendor
 
       - name: Start kibana with mounted volume
-        uses: docker://docker
-        with:
-          args: docker run -d -p 5601:5601 \
+        run: docker run -d -p 5601:5601 \
             -e SERVER_NAME=kibana \
             -e ELASTICSEARCH_HOSTS="http://elasticsearch:9200" \
             -e ELASTICSEARCH_USERNAME=${{ env.KIBANA_SYSTEM_USERNAME }} \
