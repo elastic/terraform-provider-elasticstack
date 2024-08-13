@@ -15,6 +15,7 @@ var (
 
 const (
 	httpMonitorId = "elasticstack_kibana_synthetics_monitor.http-monitor"
+	tcpMonitorId  = "elasticstack_kibana_synthetics_monitor.tcp-monitor"
 
 	providerConfig = `
 provider "elasticstack" {
@@ -101,18 +102,69 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 		mode = "all"
 		ipv4 = true
 		ipv6 = true
-		proxy_url = ""
+		proxy_url = "http://localhost"
 	}
 }
 
 `
 
-	/*
-		check.send = "Hello"
-		check.receive = "World"
-		proxy_use_local_resolver = true
+	tcpMonitorConfig = `
 
-	*/
+resource "elasticstack_kibana_synthetics_monitor" "tcp-monitor" {
+	name = "TestTcpMonitorResource"
+	space_id = "default"
+	schedule = 5
+	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
+	enabled = true
+	tags = ["a", "b"]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = true
+		}
+	}
+	service_name = "test apm service"
+	timeout = 30
+	tcp = {
+		host = "http://localhost:5601"
+		ssl_verification_mode = "full"
+		ssl_supported_protocols = ["TLSv1.0", "TLSv1.1", "TLSv1.2"]
+		proxy_url = "http://localhost:8080"
+		proxy_use_local_resolver = true
+	}
+}
+`
+
+	tcpMonitorUpdated = `
+resource "elasticstack_kibana_synthetics_monitor" "tcp-monitor" {
+	name = "TestTcpMonitorResource Updated"
+	space_id = "default"
+	schedule = 10
+	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
+	enabled = false
+	tags = ["c", "d", "e"]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = false
+		}
+	}
+	service_name = "test apm service"
+	timeout = 30
+	tcp = {
+		host = "http://localhost:8080"
+		ssl_verification_mode = "full"
+		ssl_supported_protocols = ["TLSv1.2"]
+		proxy_url = "http://localhost"
+		proxy_use_local_resolver = false
+	}
+}
+
+`
 )
 
 func TestSyntheticMonitorResource(t *testing.T) {
@@ -120,7 +172,7 @@ func TestSyntheticMonitorResource(t *testing.T) {
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
-			// Create and Read testing
+			// Create and Read http monitor
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   providerConfig + privateLocationConfig + httpMonitorConfig,
@@ -160,7 +212,7 @@ func TestSyntheticMonitorResource(t *testing.T) {
 				ImportStateVerify: true,
 				Config:            providerConfig + privateLocationConfig + httpMonitorConfig,
 			},
-			// Update and Read testing
+			// Update and Read testing http monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName: httpMonitorId,
@@ -176,7 +228,7 @@ func TestSyntheticMonitorResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorId, "tags.#", "3"),
 					resource.TestCheckResourceAttr(httpMonitorId, "tags.0", "c"),
 					resource.TestCheckResourceAttr(httpMonitorId, "tags.1", "d"),
-					resource.TestCheckResourceAttr(httpMonitorId, "tags.1", "e"),
+					resource.TestCheckResourceAttr(httpMonitorId, "tags.2", "e"),
 					resource.TestCheckResourceAttr(httpMonitorId, "alert.status.enabled", "true"),
 					resource.TestCheckResourceAttr(httpMonitorId, "alert.tls.enabled", "false"),
 					resource.TestCheckResourceAttr(httpMonitorId, "service_name", "test apm service"),
@@ -184,12 +236,80 @@ func TestSyntheticMonitorResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:8080"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_verification_mode", "full"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.#", "1"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.2", "TLSv1.2"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.0", "TLSv1.2"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.max_redirects", "10"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.mode", "all"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv4", "true"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv6", "true"),
-					resource.TestCheckNoResourceAttr(httpMonitorId, "http.proxy_url"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_url", "http://localhost"),
+					resource.TestCheckNoResourceAttr(httpMonitorId, "tcp"),
+				),
+			},
+			// Create and Read tcp monitor
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   providerConfig + privateLocationConfig + tcpMonitorConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "5"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(tcpMonitorId, "private_locations.0"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "enabled", "true"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tags.#", "2"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tags.0", "a"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tags.1", "b"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "timeout", "30"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.host", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.#", "3"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.0", "TLSv1.0"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.1", "TLSv1.1"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.2", "TLSv1.2"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_url", "http://localhost:8080"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_use_local_resolver", "true"),
+				),
+			},
+			// ImportState testing
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:      tcpMonitorId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            providerConfig + privateLocationConfig + tcpMonitorConfig,
+			},
+			// Update and Read tcp monitor
+			{
+				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName: tcpMonitorId,
+				Config:       providerConfig + privateLocationConfig + tcpMonitorUpdated,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource Updated"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "10"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(tcpMonitorId, "private_locations.0"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "enabled", "false"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tags.#", "3"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tags.0", "c"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tags.1", "d"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tags.2", "e"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "alert.tls.enabled", "false"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "timeout", "30"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.host", "http://localhost:8080"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.#", "1"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.0", "TLSv1.2"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_url", "http://localhost"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_use_local_resolver", "false"),
+					resource.TestCheckNoResourceAttr(tcpMonitorId, "http"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

@@ -1,0 +1,516 @@
+{
+  "epm-packages": {
+    "installed_kibana": [],
+    "installed_kibana_space_id": "default",
+    "installed_es": [
+      {
+        "id": "logs-elastic_agent.apm_server-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.apm_server-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.auditbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.auditbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.cloud_defend-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.cloudbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.cloudbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.elastic_agent-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.endpoint_security-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.endpoint_security-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.filebeat_input-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.filebeat_input-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.filebeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.filebeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.fleet_server-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.fleet_server-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.heartbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.heartbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.metricbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.metricbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.osquerybeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.osquerybeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.packetbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "metrics-elastic_agent.packetbeat-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.pf_elastic_collector-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.pf_elastic_symbolizer-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.pf_host_agent-2.0.2",
+        "type": "ingest_pipeline"
+      },
+      {
+        "id": "logs-elastic_agent.apm_server",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.apm_server@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.apm_server@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.apm_server",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.apm_server@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.apm_server@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.auditbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.auditbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.auditbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.auditbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.auditbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.auditbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.cloud_defend",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.cloud_defend@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.cloud_defend@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.cloudbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.cloudbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.cloudbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.cloudbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.cloudbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.cloudbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.elastic_agent",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.elastic_agent@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.elastic_agent@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.endpoint_security",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.endpoint_security@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.endpoint_security@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.endpoint_security",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.endpoint_security@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.endpoint_security@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.filebeat_input",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.filebeat_input@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.filebeat_input@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.filebeat_input",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.filebeat_input@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.filebeat_input@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.filebeat",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.filebeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.filebeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.filebeat",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.filebeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.filebeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.fleet_server",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.fleet_server@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.fleet_server@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.fleet_server",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.fleet_server@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.fleet_server@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.heartbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.heartbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.heartbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.heartbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.heartbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.heartbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.metricbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.metricbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.metricbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.metricbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.metricbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.metricbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.osquerybeat",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.osquerybeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.osquerybeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.osquerybeat",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.osquerybeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.osquerybeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.packetbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.packetbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.packetbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.packetbeat",
+        "type": "index_template"
+      },
+      {
+        "id": "metrics-elastic_agent.packetbeat@package",
+        "type": "component_template"
+      },
+      {
+        "id": "metrics-elastic_agent.packetbeat@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_elastic_collector",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_elastic_collector@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_elastic_collector@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_elastic_symbolizer",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_elastic_symbolizer@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_elastic_symbolizer@custom",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_host_agent",
+        "type": "index_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_host_agent@package",
+        "type": "component_template"
+      },
+      {
+        "id": "logs-elastic_agent.pf_host_agent@custom",
+        "type": "component_template"
+      }
+    ],
+    "package_assets": [],
+    "es_index_patterns": {
+      "apm_server_logs": "logs-elastic_agent.apm_server-*",
+      "apm_server_metrics": "metrics-elastic_agent.apm_server-*",
+      "auditbeat_logs": "logs-elastic_agent.auditbeat-*",
+      "auditbeat_metrics": "metrics-elastic_agent.auditbeat-*",
+      "cloud_defend_logs": "logs-elastic_agent.cloud_defend-*",
+      "cloudbeat_logs": "logs-elastic_agent.cloudbeat-*",
+      "cloudbeat_metrics": "metrics-elastic_agent.cloudbeat-*",
+      "elastic_agent_logs": "logs-elastic_agent-*",
+      "elastic_agent_metrics": "metrics-elastic_agent.elastic_agent-*",
+      "endpoint_security_metrics": "metrics-elastic_agent.endpoint_security-*",
+      "endpoint_sercurity_logs": "logs-elastic_agent.endpoint_security-*",
+      "filebeat_input_logs": "logs-elastic_agent.filebeat_input-*",
+      "filebeat_input_metrics": "metrics-elastic_agent.filebeat_input-*",
+      "filebeat_logs": "logs-elastic_agent.filebeat-*",
+      "filebeat_metrics": "metrics-elastic_agent.filebeat-*",
+      "fleet_server_logs": "logs-elastic_agent.fleet_server-*",
+      "fleet_server_metrics": "metrics-elastic_agent.fleet_server-*",
+      "heartbeat_logs": "logs-elastic_agent.heartbeat-*",
+      "heartbeat_metrics": "metrics-elastic_agent.heartbeat-*",
+      "metricbeat_logs": "logs-elastic_agent.metricbeat-*",
+      "metricbeat_metrics": "metrics-elastic_agent.metricbeat-*",
+      "osquerybeat_logs": "logs-elastic_agent.osquerybeat-*",
+      "osquerybeat_metrics": "metrics-elastic_agent.osquerybeat-*",
+      "packetbeat_logs": "logs-elastic_agent.packetbeat-*",
+      "packetbeat_metrics": "metrics-elastic_agent.packetbeat-*",
+      "pf_elastic_collector": "logs-elastic_agent.pf_elastic_collector-*",
+      "pf_elastic_symbolizer": "logs-elastic_agent.pf_elastic_symbolizer-*",
+      "pf_host_agent_logs": "logs-elastic_agent.pf_host_agent-*"
+    },
+    "name": "elastic_agent",
+    "version": "2.0.2",
+    "install_version": "2.0.2",
+    "install_status": "installing",
+    "install_started_at": "2024-08-13T06:48:27.724Z",
+    "install_source": "registry",
+    "install_format_schema_version": "1.2.0",
+    "verification_status": "verified",
+    "verification_key_id": "d27d666cd88e42b4"
+  },
+  "type": "epm-packages",
+  "references": [],
+  "managed": false,
+  "coreMigrationVersion": "8.8.0",
+  "typeMig
+  rationVersion
+  ":"
+  10.2.0
+  ","
+  updated_at
+  ":"
+  2024-08-13T06: 48
+  :
+  28.748Z
+  ","
+  created_at
+  ":"
+  2024-08-13T06: 48
+  :
+  27.725Z
+  "}

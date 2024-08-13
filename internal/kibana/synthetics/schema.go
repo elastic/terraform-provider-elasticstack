@@ -55,10 +55,11 @@ type tfTCPMonitorFieldsV0 struct {
 	Host                  types.String   `tfsdk:"host"`
 	SslVerificationMode   types.String   `tfsdk:"ssl_verification_mode"`
 	SslSupportedProtocols []types.String `tfsdk:"ssl_supported_protocols"`
-	CheckSend             types.String   `tfsdk:"check_send"`
-	CheckReceive          types.String   `tfsdk:"check_receive"`
-	ProxyURL              types.String   `tfsdk:"proxy_url"`
-	ProxyUseLocalResolver types.Bool     `tfsdk:"proxy_use_local_resolver"`
+	// commented out due-to https://github.com/elastic/kibana/issues/189906
+	//CheckSend             types.String   `tfsdk:"check_send"`
+	//CheckReceive          types.String   `tfsdk:"check_receive"`
+	ProxyURL              types.String `tfsdk:"proxy_url"`
+	ProxyUseLocalResolver types.Bool   `tfsdk:"proxy_use_local_resolver"`
 }
 
 type tfModelV0 struct {
@@ -273,14 +274,14 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 				Optional:            true,
 				MarkdownDescription: "List of allowed SSL/TLS versions.",
 			},
-			"check_send": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "An optional payload string to send to the remote host.",
-			},
-			"check_receive": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The expected answer. ",
-			},
+			//"check_send": schema.StringAttribute{
+			//	Optional:            true,
+			//	MarkdownDescription: "An optional payload string to send to the remote host.",
+			//},
+			//"check_receive": schema.StringAttribute{
+			//	Optional:            true,
+			//	MarkdownDescription: "The expected answer. ",
+			//},
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.",
@@ -446,8 +447,8 @@ func toTfTCPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfTCPMonitorFieldsV0
 		Host:                  types.StringValue(api.Host),
 		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
 		SslSupportedProtocols: StringSliceValue(api.SslSupportedProtocols),
-		CheckSend:             types.StringValue(api.CheckSend),
-		CheckReceive:          types.StringValue(api.CheckReceive),
+		//CheckSend:             types.StringValue(api.CheckSend),
+		//CheckReceive:          types.StringValue(api.CheckReceive),
 		ProxyURL:              types.StringValue(api.ProxyUrl),
 		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
 	}, nil
@@ -586,8 +587,8 @@ func (v *tfModelV0) toTCPMonitorFields() kbapi.MonitorFields {
 		Host:                  v.TCP.Host.ValueString(),
 		SslVerificationMode:   v.TCP.SslVerificationMode.ValueString(),
 		SslSupportedProtocols: ValueStringSlice(v.TCP.SslSupportedProtocols),
-		CheckSend:             v.TCP.CheckSend.ValueString(),
-		CheckReceive:          v.TCP.CheckReceive.ValueString(),
+		//CheckSend:             v.TCP.CheckSend.ValueString(),
+		//CheckReceive:          v.TCP.CheckReceive.ValueString(),
 		ProxyUrl:              v.TCP.ProxyURL.ValueString(),
 		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
 	}
