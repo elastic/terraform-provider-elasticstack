@@ -141,7 +141,7 @@ jobs:
         name: Force install synthetics
         if: matrix.version == '8.14.3'
         run: |-
-          for i in {1..5}; do synthstatus=$(curl -v --header "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "kbn-xsrf: true"  http://localhost:5601/api/status | jq .status.plugins.synthetics.level); [ "$synthstatus" = '"available"' ] && break || sleep 15; done
+          for i in {1..5}; do synthstatus=$(curl -v --header "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "kbn-xsrf: true"  http://localhost:5601/api/status | jq .status.plugins.synthetics.level); echo "STATUS: $synthstatus"; [ "$synthstatus" = '"available"' ] && break || sleep 15; done
 #          for i in {1..5}; do curl -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
