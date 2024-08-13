@@ -80,7 +80,7 @@ jobs:
           ELASTICSEARCH_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
           ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
           XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
-          LOGGING_ROOT_LEVEL: debug
+#          LOGGING_ROOT_LEVEL: debug
         ports:
           - 5601:5601
         options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
@@ -90,21 +90,21 @@ jobs:
       fail-fast: false
       matrix:
         version:
-#          - '7.17.13'
-#          - '8.0.1'
-#          - '8.1.3'
-#          - '8.2.3'
-#          - '8.3.3'
-#          - '8.4.3'
-#          - '8.5.3'
-#          - '8.6.2'
-#          - '8.7.1'
-#          - '8.8.2'
-#          - '8.9.2'
-#          - '8.10.3'
-#          - '8.11.4'
-#          - '8.12.2'
-#          - '8.13.4'
+          - '7.17.13'
+          - '8.0.1'
+          - '8.1.3'
+          - '8.2.3'
+          - '8.3.3'
+          - '8.4.3'
+          - '8.5.3'
+          - '8.6.2'
+          - '8.7.1'
+          - '8.8.2'
+          - '8.9.2'
+          - '8.10.3'
+          - '8.11.4'
+          - '8.12.2'
+          - '8.13.4'
           - '8.14.3'
     steps:
       - uses: actions/checkout@v4
@@ -118,20 +118,6 @@ jobs:
 
       - name: Get dependencies
         run: make vendor
-
-#      - name: Start kibana with mounted volume
-#        run: docker run -d -p 5601:5601
-#            -e SERVER_NAME=kibana
-#            -e ELASTICSEARCH_HOSTS="http://elasticsearch:9200"
-#            -e ELASTICSEARCH_USERNAME=${{ env.KIBANA_SYSTEM_USERNAME }}
-#            -e ELASTICSEARCH_PASSWORD=${{ env.KIBANA_SYSTEM_PASSWORD }}
-#            -e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
-#            -e "xpack.fleet.enabled=true"
-#            -v ${{ github.workspace }}/kibana-config:/usr/share/kibana/config
-#            --name kibana
-#            --network ${{ job.container.network }}
-#            --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
-#            docker.elastic.co/kibana/kibana:${{ matrix.version }}
 
       - name: Setup Kibana user
         run: make set-kibana-password
