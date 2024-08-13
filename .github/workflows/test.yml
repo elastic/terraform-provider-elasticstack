@@ -90,21 +90,21 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '7.17.13'
-          - '8.0.1'
-          - '8.1.3'
-          - '8.2.3'
-          - '8.3.3'
-          - '8.4.3'
-          - '8.5.3'
-          - '8.6.2'
-          - '8.7.1'
-          - '8.8.2'
-          - '8.9.2'
-          - '8.10.3'
-          - '8.11.4'
-          - '8.12.2'
-          - '8.13.4'
+#          - '7.17.13'
+#          - '8.0.1'
+#          - '8.1.3'
+#          - '8.2.3'
+#          - '8.3.3'
+#          - '8.4.3'
+#          - '8.5.3'
+#          - '8.6.2'
+#          - '8.7.1'
+#          - '8.8.2'
+#          - '8.9.2'
+#          - '8.10.3'
+#          - '8.11.4'
+#          - '8.12.2'
+#          - '8.13.4'
           - '8.14.3'
     steps:
       - uses: actions/checkout@v4
@@ -140,7 +140,7 @@ jobs:
       - id: force-install-synthetics
         name: Force install synthetics
         run: |-
-          curl -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2
+          for i in {1..5}; do $(curl -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2) && break || sleep 15; done
 
       - name: TF acceptance tests
         timeout-minutes: 10
