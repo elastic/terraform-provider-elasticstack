@@ -30,9 +30,14 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
+	monitorId, dg := plan.getCompositeId()
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
 	namespace := plan.SpaceID.ValueString()
-	monitorId := kbapi.MonitorID(plan.ID.ValueString())
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Update(ctx, monitorId, input.config, input.fields, namespace)
+	result, err := kibanaClient.KibanaSynthetics.Monitor.Update(ctx, kbapi.MonitorID(monitorId.ResourceId), input.config, input.fields, namespace)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to update Kibana monitor `%s`, namespace %s", input.config.Name, namespace), err.Error())
 		return

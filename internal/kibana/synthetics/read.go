@@ -25,8 +25,14 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	namespace := state.SpaceID.ValueString()
-	monitorId := kbapi.MonitorID(state.ID.ValueString())
+	compositeId, dg := state.getCompositeId()
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	namespace := compositeId.ClusterId
+	monitorId := kbapi.MonitorID(compositeId.ResourceId)
 	result, err := kibanaClient.KibanaSynthetics.Monitor.Get(ctx, monitorId, namespace)
 	if err != nil {
 		var apiError *kbapi.APIError

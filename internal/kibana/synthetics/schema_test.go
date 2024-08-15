@@ -32,7 +32,7 @@ func TestToModelV0(t *testing.T) {
 				Type: kbapi.Http,
 			},
 			expected: tfModelV0{
-				ID:             types.StringValue(""),
+				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
 				Schedule:       types.Int64Value(0),
@@ -57,7 +57,7 @@ func TestToModelV0(t *testing.T) {
 				Type: kbapi.Tcp,
 			},
 			expected: tfModelV0{
-				ID:             types.StringValue(""),
+				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
 				Schedule:       types.Int64Value(0),
@@ -116,7 +116,7 @@ func TestToModelV0(t *testing.T) {
 				SslSupportedProtocols:       []string{"TLSv1.2", "TLSv1.3"},
 			},
 			expected: tfModelV0{
-				ID:               types.StringValue("test-id-http"),
+				ID:               types.StringValue("default/test-id-http"),
 				Name:             types.StringValue("test-name-http"),
 				SpaceID:          types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
@@ -173,7 +173,7 @@ func TestToModelV0(t *testing.T) {
 				ProxyUseLocalResolver: tBool,
 			},
 			expected: tfModelV0{
-				ID:               types.StringValue("test-id-tcp"),
+				ID:               types.StringValue("default/test-id-tcp"),
 				Name:             types.StringValue("test-name-tcp"),
 				SpaceID:          types.StringValue("default"),
 				Schedule:         types.Int64Value(5),

@@ -3,6 +3,7 @@ package synthetics
 import (
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -424,8 +425,13 @@ func toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) {
 	//	return nil, err
 	//}
 
+	resourceID := clients.CompositeId{
+		ClusterId:  api.Namespace,
+		ResourceId: string(api.Id),
+	}
+
 	return &tfModelV0{
-		ID:               types.StringValue(string(api.Id)),
+		ID:               types.StringValue(resourceID.String()),
 		Name:             types.StringValue(api.Name),
 		SpaceID:          types.StringValue(api.Namespace),
 		Schedule:         types.Int64Value(schedule),
@@ -602,6 +608,17 @@ func (v *tfModelV0) toTCPMonitorFields() kbapi.MonitorFields {
 		ProxyUrl:              v.TCP.ProxyURL.ValueString(),
 		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
 	}
+}
+
+func (v *tfModelV0) getCompositeId() (*clients.CompositeId, diag.Diagnostics) {
+	idStr := v.ID.ValueString()
+	compositeID, sdkDiag := clients.CompositeIdFromStr(idStr)
+	dg := diag.Diagnostics{}
+	if sdkDiag.HasError() {
+		dg.AddError(fmt.Sprintf("Failed to parse monitor ID %s", idStr), fmt.Sprintf("Resource ID must have following format: <cluster_uuid>/<resource identifier>. Current value: %s", idStr))
+		return nil, dg
+	}
+	return compositeID, dg
 }
 
 func Map[T, U any](ts []T, f func(T) U) []U {
