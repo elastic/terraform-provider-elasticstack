@@ -79,13 +79,13 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 	req := client.UpdateSloOp(ctxWithAuth, s.SpaceID, s.SloID).KbnXsrf("true").UpdateSloRequest(reqModel)
 	slo, res, err := req.Execute()
 
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
 	defer res.Body.Close()
 	if diags := utils.CheckHttpError(res, "unable to update slo with id "+s.SloID); diags.HasError() {
 		return nil, diags
+	}
+
+	if err != nil {
+		return nil, diag.FromErr(err)
 	}
 
 	return sloResponseToModel(s.SpaceID, slo), diag.Diagnostics{}

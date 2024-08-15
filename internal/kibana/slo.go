@@ -409,7 +409,7 @@ func ResourceSlo() *schema.Resource {
 			ForceNew:    true,
 		},
 		"group_by": {
-			Description: "Optional group by field to use to generate an SLO per distinct value.",
+			Description: "Optional group-by fields to use to generate an SLO per distinct value. (Versions before 8.14 only support one groupBy value)",
 			Type:        schema.TypeList,
 			Optional:    true,
 			ForceNew:    false,
