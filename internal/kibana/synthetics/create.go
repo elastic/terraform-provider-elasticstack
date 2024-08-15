@@ -30,7 +30,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	namespace := plan.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Add(input.config, input.fields, namespace)
+	result, err := kibanaClient.KibanaSynthetics.Monitor.Add(ctx, input.config, input.fields, namespace)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, namespace %s", input.config.Name, namespace), err.Error())
 		return

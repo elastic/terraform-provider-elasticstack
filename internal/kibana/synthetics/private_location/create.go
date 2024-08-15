@@ -24,7 +24,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	input := plan.toPrivateLocation()
 
 	namespace := plan.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(input.PrivateLocationConfig, namespace)
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(ctx, input.PrivateLocationConfig, namespace)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to create private location `%s`, namespace %s", input.Label, namespace), err.Error())
 		return

@@ -25,7 +25,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 
 	label := state.Label.ValueString()
 	namespace := state.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(label, namespace)
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, label, namespace)
 	if err != nil {
 		var apiError *kbapi.APIError
 		if errors.As(err, &apiError) && apiError.Code == 404 {

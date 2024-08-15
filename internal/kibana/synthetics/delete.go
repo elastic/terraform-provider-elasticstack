@@ -26,7 +26,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 
 	monitorId := kbapi.MonitorID(plan.ID.ValueString())
 	namespace := plan.SpaceID.ValueString()
-	_, err := kibanaClient.KibanaSynthetics.Monitor.Delete(namespace, monitorId)
+	_, err := kibanaClient.KibanaSynthetics.Monitor.Delete(ctx, namespace, monitorId)
 
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", monitorId, namespace), err.Error())

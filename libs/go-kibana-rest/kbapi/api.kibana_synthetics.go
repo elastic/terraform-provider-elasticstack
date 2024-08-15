@@ -1,6 +1,7 @@
 package kbapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -244,22 +245,22 @@ func (f TCPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{}
 	}
 }
 
-type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
+type KibanaSyntheticsMonitorAdd func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
 
-type KibanaSyntheticsMonitorUpdate func(id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
+type KibanaSyntheticsMonitorUpdate func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
 
-type KibanaSyntheticsMonitorGet func(id MonitorID, namespace string) (*SyntheticsMonitor, error)
+type KibanaSyntheticsMonitorGet func(ctx context.Context, id MonitorID, namespace string) (*SyntheticsMonitor, error)
 
-type KibanaSyntheticsMonitorDelete func(namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
+type KibanaSyntheticsMonitorDelete func(ctx context.Context, namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
 
-type KibanaSyntheticsPrivateLocationCreate func(pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error)
+type KibanaSyntheticsPrivateLocationCreate func(ctx context.Context, pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error)
 
-type KibanaSyntheticsPrivateLocationGet func(idOrLabel string, namespace string) (*PrivateLocation, error)
+type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel string, namespace string) (*PrivateLocation, error)
 
-type KibanaSyntheticsPrivateLocationDelete func(id string, namespace string) error
+type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string, namespace string) error
 
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
-	return func(idOrLabel string, namespace string) (*PrivateLocation, error) {
+	return func(ctx context.Context, idOrLabel string, namespace string) (*PrivateLocation, error) {
 
 		if idOrLabel == "" {
 			return nil, APIError{
@@ -270,7 +271,7 @@ func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSynthetics
 
 		path := basePathWithId(namespace, privateLocationsSuffix, idOrLabel)
 		log.Debugf("URL to get private locations: %s", path)
-		resp, err := c.R().Get(path)
+		resp, err := c.R().SetContext(ctx).Get(path)
 		if err = handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
@@ -279,21 +280,21 @@ func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSynthetics
 }
 
 func newKibanaSyntheticsPrivateLocationDeleteFunc(c *resty.Client) KibanaSyntheticsPrivateLocationDelete {
-	return func(id string, namespace string) error {
+	return func(ctx context.Context, id string, namespace string) error {
 		path := basePathWithId(namespace, privateLocationsSuffix, id)
 		log.Debugf("URL to delete private locations: %s", path)
-		resp, err := c.R().Delete(path)
+		resp, err := c.R().SetContext(ctx).Delete(path)
 		err = handleKibanaError(err, resp)
 		return err
 	}
 }
 
 func newKibanaSyntheticsMonitorGetFunc(c *resty.Client) KibanaSyntheticsMonitorGet {
-	return func(id MonitorID, namespace string) (*SyntheticsMonitor, error) {
+	return func(ctx context.Context, id MonitorID, namespace string) (*SyntheticsMonitor, error) {
 		path := basePathWithId(namespace, monitorsSuffix, id)
 		log.Debugf("URL to get monitor: %s", path)
 
-		resp, err := c.R().Get(path)
+		resp, err := c.R().SetContext(ctx).Get(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
@@ -302,11 +303,11 @@ func newKibanaSyntheticsMonitorGetFunc(c *resty.Client) KibanaSyntheticsMonitorG
 }
 
 func newKibanaSyntheticsMonitorDeleteFunc(c *resty.Client) KibanaSyntheticsMonitorDelete {
-	return func(namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error) {
+	return func(ctx context.Context, namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error) {
 		path := basePath(namespace, monitorsSuffix)
 		log.Debugf("URL to delete monitors: %s", path)
 
-		resp, err := c.R().SetBody(map[string]interface{}{
+		resp, err := c.R().SetContext(ctx).SetBody(map[string]interface{}{
 			"ids": ids,
 		}).Delete(path)
 		if err = handleKibanaError(err, resp); err != nil {
@@ -319,11 +320,11 @@ func newKibanaSyntheticsMonitorDeleteFunc(c *resty.Client) KibanaSyntheticsMonit
 }
 
 func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSyntheticsPrivateLocationCreate {
-	return func(pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error) {
+	return func(ctx context.Context, pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error) {
 
 		path := basePath(namespace, privateLocationsSuffix)
 		log.Debugf("URL to create private locations: %s", path)
-		resp, err := c.R().SetBody(pLoc).Post(path)
+		resp, err := c.R().SetContext(ctx).SetBody(pLoc).Post(path)
 		if err = handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
@@ -332,12 +333,12 @@ func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSynthet
 }
 
 func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonitorUpdate {
-	return func(id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
+	return func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
 
 		path := basePathWithId(namespace, monitorsSuffix, id)
 		log.Debugf("URL to update monitor: %s", path)
 		data := fields.APIRequest(config)
-		resp, err := c.R().SetBody(data).Put(path)
+		resp, err := c.R().SetContext(ctx).SetBody(data).Put(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
@@ -346,12 +347,12 @@ func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonit
 }
 
 func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorAdd {
-	return func(config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
+	return func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
 
 		path := basePath(namespace, monitorsSuffix)
 		log.Debugf("URL to create monitor: %s", path)
 		data := fields.APIRequest(config)
-		resp, err := c.R().SetBody(data).Post(path)
+		resp, err := c.R().SetContext(ctx).SetBody(data).Post(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
