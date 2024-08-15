@@ -29,7 +29,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_agent_policy" "test" {
 	name            = "TestMonitorResource Agent Policy - test"
-	namespace       = "default"
+	namespace       = "testacc"
 	description     = "TestMonitorResource Agent Policy"
 	monitor_logs    = true
 	monitor_metrics = true
@@ -38,7 +38,7 @@ resource "elasticstack_fleet_agent_policy" "test" {
 
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "TestMonitorResource-label"
-	space_id = "default"
+	space_id = "testacc"
 	agent_policy_id = elasticstack_fleet_agent_policy.test.policy_id
 }
 
@@ -48,7 +48,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 
 resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 	name = "TestHttpMonitorResource"
-	space_id = "default"
+	space_id = "testacc"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
 	enabled = true
@@ -79,7 +79,7 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 	httpMonitorUpdated = `
 resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 	name = "TestHttpMonitorResource Updated"
-	space_id = "default"
+	space_id = "testacc"
 	schedule = 10
 	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
 	enabled = false
@@ -179,7 +179,7 @@ func TestSyntheticMonitorResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
 					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource"),
-					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
 					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(httpMonitorId, "private_locations.0"),
@@ -220,7 +220,7 @@ func TestSyntheticMonitorResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
 					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource Updated"),
-					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
 					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "10"),
 					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(httpMonitorId, "private_locations.0"),
