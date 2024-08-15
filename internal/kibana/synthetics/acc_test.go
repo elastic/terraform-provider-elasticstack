@@ -67,7 +67,7 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 		url = "http://localhost:5601"
 		ssl_verification_mode = "full"
 		ssl_supported_protocols = ["TLSv1.0", "TLSv1.1", "TLSv1.2"]
-		max_redirects = "10"
+		max_redirects = 10
 		mode = "any"
 		ipv4 = true
 		ipv6 = false
@@ -98,7 +98,7 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 		url = "http://localhost:8080"
 		ssl_verification_mode = "full"
 		ssl_supported_protocols = ["TLSv1.2"]
-		max_redirects = "10"
+		max_redirects = 10
 		mode = "all"
 		ipv4 = true
 		ipv6 = true

@@ -120,7 +120,7 @@ Optional:
 
 - `ipv4` (Boolean) Whether to ping using the ipv4 protocol.
 - `ipv6` (Boolean) Whether to ping using the ipv6 protocol.
-- `max_redirects` (String) The maximum number of redirects to follow. Default: `0`
+- `max_redirects` (Number) The maximum number of redirects to follow. Default: `0`
 - `mode` (String) The mode of the monitor. Can be "all" or "any". If you’re using a DNS-load balancer and want to ping every IP address for the specified hostname, you should use all.
 - `proxy_url` (String) The URL of the proxy to use for this monitor.
 - `ssl_supported_protocols` (List of String) List of allowed SSL/TLS versions.

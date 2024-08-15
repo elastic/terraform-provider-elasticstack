@@ -37,7 +37,7 @@ type tfHTTPMonitorFieldsV0 struct {
 	URL                   types.String   `tfsdk:"url"`
 	SslVerificationMode   types.String   `tfsdk:"ssl_verification_mode"`
 	SslSupportedProtocols []types.String `tfsdk:"ssl_supported_protocols"`
-	MaxRedirects          types.String   `tfsdk:"max_redirects"`
+	MaxRedirects          types.Int64    `tfsdk:"max_redirects"`
 	Mode                  types.String   `tfsdk:"mode"`
 	IPv4                  types.Bool     `tfsdk:"ipv4"`
 	IPv6                  types.Bool     `tfsdk:"ipv6"`
@@ -217,7 +217,7 @@ func httpMonitorFieldsSchema() schema.Attribute {
 				Optional:            true,
 				MarkdownDescription: "List of allowed SSL/TLS versions.",
 			},
-			"max_redirects": schema.StringAttribute{ //TODO: make int64??
+			"max_redirects": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
 			},
@@ -461,11 +461,16 @@ func toTfHTTPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfHTTPMonitorFields
 	//	return nil, err
 	//}
 
+	maxRedirects, err := stringToInt64(api.MaxRedirects)
+	if err != nil {
+		return nil, err
+	}
+
 	return &tfHTTPMonitorFieldsV0{
 		URL:                   types.StringValue(api.Url),
 		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
 		SslSupportedProtocols: StringSliceValue(api.SslSupportedProtocols),
-		MaxRedirects:          types.StringValue(api.MaxRedirects),
+		MaxRedirects:          types.Int64Value(maxRedirects),
 		Mode:                  types.StringValue(string(api.Mode)),
 		IPv4:                  types.BoolPointerValue(api.Ipv4),
 		IPv6:                  types.BoolPointerValue(api.Ipv6),
@@ -565,11 +570,16 @@ func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics
 	//if dg.HasError() {
 	//	return nil, dg
 	//}
+	maxRedirects := ""
+	if !v.HTTP.MaxRedirects.IsUnknown() && !v.HTTP.MaxRedirects.IsNull() { // handle omitempty case
+		maxRedirects = strconv.FormatInt(v.HTTP.MaxRedirects.ValueInt64(), 10)
+
+	}
 	return kbapi.HTTPMonitorFields{
 		Url:                   v.HTTP.URL.ValueString(),
 		SslVerificationMode:   v.HTTP.SslVerificationMode.ValueString(),
 		SslSupportedProtocols: ValueStringSlice(v.HTTP.SslSupportedProtocols),
-		MaxRedirects:          v.HTTP.MaxRedirects.ValueString(),
+		MaxRedirects:          maxRedirects,
 		Mode:                  kbapi.HttpMonitorMode(v.HTTP.Mode.ValueString()),
 		Ipv4:                  v.HTTP.IPv4.ValueBoolPointer(),
 		Ipv6:                  v.HTTP.IPv6.ValueBoolPointer(),
