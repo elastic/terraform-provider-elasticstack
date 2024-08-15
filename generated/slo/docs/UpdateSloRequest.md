@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **Objective** | Pointer to [**Objective**](Objective.md) |  | [optional] 
 **Settings** | Pointer to [**Settings**](Settings.md) |  | [optional] 
 **Tags** | Pointer to **[]string** | List of tags | [optional] 
+**GroupBy** | Pointer to [**SloResponseGroupBy**](SloResponseGroupBy.md) |  | [optional] 
 
 ## Methods
 
@@ -231,6 +232,31 @@ SetTags sets Tags field to given value.
 `func (o *UpdateSloRequest) HasTags() bool`
 
 HasTags returns a boolean if a field has been set.
+
+### GetGroupBy
+
+`func (o *UpdateSloRequest) GetGroupBy() SloResponseGroupBy`
+
+GetGroupBy returns the GroupBy field if non-nil, zero value otherwise.
+
+### GetGroupByOk
+
+`func (o *UpdateSloRequest) GetGroupByOk() (*SloResponseGroupBy, bool)`
+
+GetGroupByOk returns a tuple with the GroupBy field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetGroupBy
+
+`func (o *UpdateSloRequest) SetGroupBy(v SloResponseGroupBy)`
+
+SetGroupBy sets GroupBy field to given value.
+
+### HasGroupBy
+
+`func (o *UpdateSloRequest) HasGroupBy() bool`
+
+HasGroupBy returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

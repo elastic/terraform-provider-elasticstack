@@ -73,6 +73,7 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		Objective:       &s.Objective,
 		Settings:        s.Settings,
 		Tags:            s.Tags,
+		GroupBy:         groupByModelToRequest(s.GroupBy),
 	}
 
 	req := client.UpdateSloOp(ctxWithAuth, s.SpaceID, s.SloID).KbnXsrf("true").UpdateSloRequest(reqModel)
@@ -109,7 +110,7 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		BudgetingMethod: slo.BudgetingMethod(s.BudgetingMethod),
 		Objective:       s.Objective,
 		Settings:        s.Settings,
-		GroupBy:         transformGroupBy(s.GroupBy),
+		GroupBy:         groupByModelToRequest(s.GroupBy),
 		Tags:            s.Tags,
 	}
 
@@ -178,13 +179,30 @@ func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
 		Objective:       res.Objective,
 		Settings:        &res.Settings,
 		Tags:            res.Tags,
+		GroupBy:         groupByResponseToModel(res.GroupBy),
 	}
 }
 
-func transformGroupBy(groupBy *string) *slo.SloResponseGroupBy {
+func groupByModelToRequest(groupBy []string) *slo.SloResponseGroupBy {
 	if groupBy == nil {
 		return nil
 	}
 
-	return &slo.SloResponseGroupBy{String: groupBy}
+	if len(groupBy) == 1 {
+		return &slo.SloResponseGroupBy{String: &groupBy[0]}
+	}
+
+	return &slo.SloResponseGroupBy{ArrayOfString: &groupBy}
+}
+
+func groupByResponseToModel(groupBy slo.SloResponseGroupBy) []string {
+	if groupBy.ArrayOfString != nil {
+		return *groupBy.ArrayOfString
+	}
+
+	if groupBy.String != nil {
+		return []string{*groupBy.String}
+	}
+
+	return nil
 }

@@ -1354,6 +1354,8 @@ components:
           items:
             type: string
           type: array
+        groupBy:
+          $ref: '#/components/schemas/slo_response_groupBy'
       title: Update SLO request
       type: object
     historical_summary_request:
