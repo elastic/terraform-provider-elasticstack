@@ -12,4 +12,5 @@ echo "--- Caching GPG passphrase"
 echo "$GPG_PASSPHRASE_SECRET" | gpg --armor --detach-sign --passphrase-fd 0 --pinentry-mode loopback
 
 echo "--- Release the binaries"
+export GITHUB_TOKEN="${VAULT_GITHUB_TOKEN}"
 make release
