@@ -2,6 +2,7 @@ package private_location
 
 import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
@@ -71,29 +72,29 @@ func privateLocationSchema() schema.Schema {
 	}
 }
 
-func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {
+func (m *tfModelV0) toPrivateLocationConfig() kbapi.PrivateLocationConfig {
 	var geoConfig *kbapi.SyntheticGeoConfig
 	if m.Geo != nil {
 		geoConfig = m.Geo.ToSyntheticGeoConfig()
 	}
 
-	pLoc := kbapi.PrivateLocationConfig{
+	return kbapi.PrivateLocationConfig{
 		Label:         m.Label.ValueString(),
 		AgentPolicyId: m.AgentPolicyId.ValueString(),
 		Tags:          synthetics.ValueStringSlice(m.Tags),
 		Geo:           geoConfig,
 	}
-
-	return kbapi.PrivateLocation{
-		Id:                    m.ID.ValueString(),
-		Namespace:             m.SpaceID.ValueString(),
-		PrivateLocationConfig: pLoc,
-	}
 }
 
 func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
+
+	resourceID := clients.CompositeId{
+		ClusterId:  pLoc.Namespace,
+		ResourceId: pLoc.Id,
+	}
+
 	return tfModelV0{
-		ID:            types.StringValue(pLoc.Id),
+		ID:            types.StringValue(resourceID.String()),
 		Label:         types.StringValue(pLoc.Label),
 		SpaceID:       types.StringValue(pLoc.Namespace),
 		AgentPolicyId: types.StringValue(pLoc.AgentPolicyId),

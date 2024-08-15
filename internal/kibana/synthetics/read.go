@@ -25,7 +25,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	compositeId, dg := state.getCompositeId()
+	compositeId, dg := GetCompositeId(state.ID.ValueString())
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return

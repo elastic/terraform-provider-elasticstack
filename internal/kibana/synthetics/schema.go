@@ -83,6 +83,16 @@ type tfModelV0 struct {
 	//RetestOnFailure  types.Bool             `tfsdk:"retest_on_failure"`
 }
 
+func GetCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
+	compositeID, sdkDiag := clients.CompositeIdFromStr(id)
+	dg := diag.Diagnostics{}
+	if sdkDiag.HasError() {
+		dg.AddError(fmt.Sprintf("Failed to parse monitor ID %s", id), fmt.Sprintf("Resource ID must have following format: <cluster_uuid>/<resource identifier>. Current value: %s", id))
+		return nil, dg
+	}
+	return compositeID, dg
+}
+
 func monitorConfigSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Synthetics monitor config, see https://www.elastic.co/guide/en/kibana/current/add-monitor-api.html for more details. The monitor must have one of the following: http, tcp, icmp or browser.",
@@ -608,17 +618,6 @@ func (v *tfModelV0) toTCPMonitorFields() kbapi.MonitorFields {
 		ProxyUrl:              v.TCP.ProxyURL.ValueString(),
 		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
 	}
-}
-
-func (v *tfModelV0) getCompositeId() (*clients.CompositeId, diag.Diagnostics) {
-	idStr := v.ID.ValueString()
-	compositeID, sdkDiag := clients.CompositeIdFromStr(idStr)
-	dg := diag.Diagnostics{}
-	if sdkDiag.HasError() {
-		dg.AddError(fmt.Sprintf("Failed to parse monitor ID %s", idStr), fmt.Sprintf("Resource ID must have following format: <cluster_uuid>/<resource identifier>. Current value: %s", idStr))
-		return nil, dg
-	}
-	return compositeID, dg
 }
 
 func Map[T, U any](ts []T, f func(T) U) []U {

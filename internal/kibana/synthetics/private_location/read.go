@@ -23,9 +23,14 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	label := state.Label.ValueString()
-	namespace := state.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, label, namespace)
+	compositeId, dg := synthetics.GetCompositeId(state.ID.ValueString())
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	namespace := compositeId.ClusterId
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, compositeId.ResourceId, namespace)
 	if err != nil {
 		var apiError *kbapi.APIError
 		if errors.As(err, &apiError) && apiError.Code == 404 {
@@ -33,7 +38,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 			return
 		}
 
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to get private location `%s`, namespace %s", label, namespace), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to get private location `%s`, namespace %s", compositeId, namespace), err.Error())
 		return
 	}
 

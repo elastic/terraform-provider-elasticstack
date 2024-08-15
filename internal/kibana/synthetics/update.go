@@ -30,7 +30,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	monitorId, dg := plan.getCompositeId()
+	monitorId, dg := GetCompositeId(plan.ID.ValueString())
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return

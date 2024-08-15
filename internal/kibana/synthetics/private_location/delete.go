@@ -21,12 +21,17 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	id := plan.ID.ValueString()
+	monitorId, dg := synthetics.GetCompositeId(plan.ID.ValueString())
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
 	namespace := plan.SpaceID.ValueString()
-	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, id, namespace)
+	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, monitorId.ResourceId, namespace)
 
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", id, namespace), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", monitorId, namespace), err.Error())
 		return
 	}
 
