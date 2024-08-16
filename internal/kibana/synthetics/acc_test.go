@@ -1,6 +1,8 @@
 package synthetics_test
 
 import (
+	"fmt"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -14,40 +16,10 @@ var (
 )
 
 const (
-	httpMonitorId = "elasticstack_kibana_synthetics_monitor.http-monitor"
-	tcpMonitorId  = "elasticstack_kibana_synthetics_monitor.tcp-monitor"
-
-	providerConfig = `
-provider "elasticstack" {
-  	elasticsearch {}
-	kibana {}
-	fleet{}
-}
-`
-
-	privateLocationConfig = `
-
-resource "elasticstack_fleet_agent_policy" "test" {
-	name            = "TestMonitorResource Agent Policy - test"
-	namespace       = "testacc"
-	description     = "TestMonitorResource Agent Policy"
-	monitor_logs    = true
-	monitor_metrics = true
-	skip_destroy    = false
-}
-
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "TestMonitorResource-label"
-	space_id = "testacc"
-	agent_policy_id = elasticstack_fleet_agent_policy.test.policy_id
-}
-
-`
-
 	httpMonitorConfig = `
 
-resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
-	name = "TestHttpMonitorResource"
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorResource - %s"
 	space_id = "testacc"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
@@ -77,8 +49,8 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 `
 
 	httpMonitorUpdated = `
-resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
-	name = "TestHttpMonitorResource Updated"
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorResource Updated - %s"
 	space_id = "testacc"
 	schedule = 10
 	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
@@ -114,7 +86,7 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 				"headers": {
 					"Content-Type": "application/x-www-form-urlencoded",
 				},
-				"body": "name=first&email=someemail%40someemailprovider.com",
+				"body": "name=first&email=someemail@someemailprovider.com",
 			},
 			"response": {
 				"status": [200, 201, 301],
@@ -138,8 +110,8 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 
 	tcpMonitorConfig = `
 
-resource "elasticstack_kibana_synthetics_monitor" "tcp-monitor" {
-	name = "TestTcpMonitorResource"
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestTcpMonitorResource - %s"
 	space_id = "default"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
@@ -166,8 +138,8 @@ resource "elasticstack_kibana_synthetics_monitor" "tcp-monitor" {
 `
 
 	tcpMonitorUpdated = `
-resource "elasticstack_kibana_synthetics_monitor" "tcp-monitor" {
-	name = "TestTcpMonitorResource Updated"
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestTcpMonitorResource Updated - %s"
 	space_id = "default"
 	schedule = 10
 	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
@@ -197,7 +169,13 @@ resource "elasticstack_kibana_synthetics_monitor" "tcp-monitor" {
 `
 )
 
-func TestSyntheticMonitorResource(t *testing.T) {
+func TestSyntheticMonitorHTTPResource(t *testing.T) {
+
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	id := "http-monitor"
+	httpMonitorId, config := testHttpMonitorConfig(id, httpMonitorConfig, name)
+	_, configUpdated := testHttpMonitorConfig(id, httpMonitorUpdated, name)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -205,10 +183,10 @@ func TestSyntheticMonitorResource(t *testing.T) {
 			// Create and Read http monitor
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   providerConfig + privateLocationConfig + httpMonitorConfig,
+				Config:   config,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
-					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource"),
+					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource - "+name),
 					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
 					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
@@ -240,16 +218,16 @@ func TestSyntheticMonitorResource(t *testing.T) {
 				ResourceName:      httpMonitorId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            providerConfig + privateLocationConfig + httpMonitorConfig,
+				Config:            config,
 			},
 			// Update and Read testing http monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName: httpMonitorId,
-				Config:       providerConfig + privateLocationConfig + httpMonitorUpdated,
+				Config:       configUpdated,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
-					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource Updated"),
+					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource Updated - "+name),
 					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
 					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "10"),
 					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
@@ -277,19 +255,36 @@ func TestSyntheticMonitorResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_header", `{"header-name":"header-value-updated"}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.username", "testupdated"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.password", "testpassword-updated"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.check", `{"request":{"body":"name=first\u0026email=someemail%40someemailprovider.com","headers":{"Content-Type":"application/x-www-form-urlencoded"},"method":"POST"},"response":{"body":{"positive":["foo","bar"]},"status":[200,201,301]}}`),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.check", `{"request":{"body":"name=first\u0026email=someemail@someemailprovider.com","headers":{"Content-Type":"application/x-www-form-urlencoded"},"method":"POST"},"response":{"body":{"positive":["foo","bar"]},"status":[200,201,301]}}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.response", `{"include_body":"never","include_body_max_bytes":"1024"}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "params", `{"param-name":"param-value-updated"}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "retest_on_failure", "false"),
 				),
 			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestSyntheticMonitorTCPResource(t *testing.T) {
+
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	id := "tcp-monitor"
+	tcpMonitorId, config := testHttpMonitorConfig(id, tcpMonitorConfig, name)
+	_, configUpdated := testHttpMonitorConfig(id, tcpMonitorUpdated, name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+
 			// Create and Read tcp monitor
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   providerConfig + privateLocationConfig + tcpMonitorConfig,
+				Config:   config,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource - "+name),
 					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "default"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
@@ -318,16 +313,16 @@ func TestSyntheticMonitorResource(t *testing.T) {
 				ResourceName:      tcpMonitorId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            providerConfig + privateLocationConfig + tcpMonitorConfig,
+				Config:            config,
 			},
 			// Update and Read tcp monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName: tcpMonitorId,
-				Config:       providerConfig + privateLocationConfig + tcpMonitorUpdated,
+				Config:       configUpdated,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource Updated"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource Updated - "+name),
 					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "default"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "10"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
@@ -354,6 +349,39 @@ func TestSyntheticMonitorResource(t *testing.T) {
 				),
 			},
 			// Delete testing automatically occurs in TestCase
+
 		},
 	})
+}
+
+func testHttpMonitorConfig(id, cfg, name string) (string, string) {
+
+	resourceId := "elasticstack_kibana_synthetics_monitor." + id
+
+	provider := fmt.Sprintf(`
+provider "elasticstack" {
+  	elasticsearch {}
+	kibana {}
+	fleet{}
+}
+
+resource "elasticstack_fleet_agent_policy" "test" {
+	name            = "TestMonitorResource Agent Policy - %s"
+	namespace       = "testacc"
+	description     = "TestMonitorResource Agent Policy"
+	monitor_logs    = true
+	monitor_metrics = true
+	skip_destroy    = false
+}
+
+resource "elasticstack_kibana_synthetics_private_location" "test" {
+	label = "TestMonitorResource-label-%s"
+	space_id = "testacc"
+	agent_policy_id = elasticstack_fleet_agent_policy.test.policy_id
+}
+`, name, name)
+
+	config := fmt.Sprintf(cfg, id, name)
+
+	return resourceId, provider + config
 }
