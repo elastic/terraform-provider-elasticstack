@@ -1,7 +1,8 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.11.4
+
+VERSION ?= 0.11.5
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -58,8 +59,8 @@ testacc: ## Run acceptance tests
 test: ## Run unit tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
 
-# Retry command - first argumment is how many attempts are required, second argument is the command to run
-# Backoff starts with 1 second and double with next itteration
+# Retry command - first argument is how many attempts are required, second argument is the command to run
+# Backoff starts with 1 second and double with next iteration
 retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$attempt"; fi) -ge $(1) ]; do \
 		backoff=$$(if [ -z "$$backoff" ]; then echo "1"; else echo "$$backoff"; fi); \
 		sleep $$backoff; \

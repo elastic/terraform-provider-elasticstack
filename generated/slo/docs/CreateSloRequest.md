@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **BudgetingMethod** | [**BudgetingMethod**](BudgetingMethod.md) |  | 
 **Objective** | [**Objective**](Objective.md) |  | 
 **Settings** | Pointer to [**Settings**](Settings.md) |  | [optional] 
-**GroupBy** | Pointer to **string** | optional group by field to use to generate an SLO per distinct value | [optional] 
+**GroupBy** | Pointer to [**SloResponseGroupBy**](SloResponseGroupBy.md) |  | [optional] 
 **Tags** | Pointer to **[]string** | List of tags | [optional] 
 
 ## Methods
@@ -206,20 +206,20 @@ HasSettings returns a boolean if a field has been set.
 
 ### GetGroupBy
 
-`func (o *CreateSloRequest) GetGroupBy() string`
+`func (o *CreateSloRequest) GetGroupBy() SloResponseGroupBy`
 
 GetGroupBy returns the GroupBy field if non-nil, zero value otherwise.
 
 ### GetGroupByOk
 
-`func (o *CreateSloRequest) GetGroupByOk() (*string, bool)`
+`func (o *CreateSloRequest) GetGroupByOk() (*SloResponseGroupBy, bool)`
 
 GetGroupByOk returns a tuple with the GroupBy field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetGroupBy
 
-`func (o *CreateSloRequest) SetGroupBy(v string)`
+`func (o *CreateSloRequest) SetGroupBy(v SloResponseGroupBy)`
 
 SetGroupBy sets GroupBy field to given value.
 

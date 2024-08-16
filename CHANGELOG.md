@@ -1,6 +1,12 @@
 ## [Unreleased]
 
+## [0.11.5] - 2024-08-12
+
 - Fix setting `id` for Fleet outputs and servers ([#666](https://github.com/elastic/terraform-provider-elasticstack/pull/666))
+- Fix `elasticstack_fleet_enrollment_tokens` returning empty tokens in some case ([#683](https://github.com/elastic/terraform-provider-elasticstack/pull/683))
+- Add support for Kibana synthetics private locations ([#696](https://github.com/elastic/terraform-provider-elasticstack/pull/696))
+- Support setting `restriction` in `elasticstack_elasticsearch_security_api_key` role definitions ([#577](https://github.com/elastic/terraform-provider-elasticstack/pull/577))
+- Fix type of `group_by` attribute in the `kibana_slo` resource to be compatible with versions 8.14+ ([#701](https://github.com/elastic/terraform-provider-elasticstack/pull/701))
 
 ## [0.11.4] - 2024-06-13
 
@@ -160,7 +166,7 @@
 - Add `elasticstack_elasticsearch_watch` for managing Elasticsearch Watches ([#155](https://github.com/elastic/terraform-provider-elasticstack/pull/155))
 - Add `elasticstack_kibana_alerting_rule` for managing Kibana alerting rules ([#292](https://github.com/elastic/terraform-provider-elasticstack/pull/292))
 - Add client for communicating with the Fleet APIs ([#311](https://github.com/elastic/terraform-provider-elasticstack/pull/311)])
-- Add `elasticstack_fleet_enrollment_tokens` and `elasticstack_fleet_agent_policy` for managing Fleet enrollment tokens and agent policies ([#322](https://github.com/elastic/terraform-provider-elasticstack/pull/322)])
+- Add `elasticstack_fleet_enrollment_tokens` and `elasticstack_fleet_agent_policy` for managing Fleet enrollment tokens and agent policies ([#322](https://github.com/elastic/terraform-provider-elasticstack/pull/322))
 - Add `elasticstack_fleet_output` and `elasticstack_fleet_server_host` for managing Fleet outputs and server hosts ([#327](https://github.com/elastic/terraform-provider-elasticstack/pull/327)])
 - Add `elasticstack_kibana_action_connector` for managing Kibana action connectors ([#306](https://github.com/elastic/terraform-provider-elasticstack/pull/306))
 
@@ -309,7 +315,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...HEAD
+[0.11.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.1...v0.11.2

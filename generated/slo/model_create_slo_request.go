@@ -30,8 +30,7 @@ type CreateSloRequest struct {
 	BudgetingMethod BudgetingMethod           `json:"budgetingMethod"`
 	Objective       Objective                 `json:"objective"`
 	Settings        *Settings                 `json:"settings,omitempty"`
-	// optional group by field to use to generate an SLO per distinct value
-	GroupBy *string `json:"groupBy,omitempty"`
+	GroupBy         *SloResponseGroupBy       `json:"groupBy,omitempty"`
 	// List of tags
 	Tags []string `json:"tags,omitempty"`
 }
@@ -268,9 +267,9 @@ func (o *CreateSloRequest) SetSettings(v Settings) {
 }
 
 // GetGroupBy returns the GroupBy field value if set, zero value otherwise.
-func (o *CreateSloRequest) GetGroupBy() string {
+func (o *CreateSloRequest) GetGroupBy() SloResponseGroupBy {
 	if o == nil || IsNil(o.GroupBy) {
-		var ret string
+		var ret SloResponseGroupBy
 		return ret
 	}
 	return *o.GroupBy
@@ -278,7 +277,7 @@ func (o *CreateSloRequest) GetGroupBy() string {
 
 // GetGroupByOk returns a tuple with the GroupBy field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *CreateSloRequest) GetGroupByOk() (*string, bool) {
+func (o *CreateSloRequest) GetGroupByOk() (*SloResponseGroupBy, bool) {
 	if o == nil || IsNil(o.GroupBy) {
 		return nil, false
 	}
@@ -294,8 +293,8 @@ func (o *CreateSloRequest) HasGroupBy() bool {
 	return false
 }
 
-// SetGroupBy gets a reference to the given string and assigns it to the GroupBy field.
-func (o *CreateSloRequest) SetGroupBy(v string) {
+// SetGroupBy gets a reference to the given SloResponseGroupBy and assigns it to the GroupBy field.
+func (o *CreateSloRequest) SetGroupBy(v SloResponseGroupBy) {
 	o.GroupBy = &v
 }
 

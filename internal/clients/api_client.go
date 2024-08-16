@@ -391,8 +391,12 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 
 	if logging.IsDebugOrHigher() {
 		// Don't use kib.Client.SetDebug() here as we re-use the http client within the OpenAPI generated clients
-		kibHttpClient := kib.Client.GetClient()
-		kibHttpClient.Transport = utils.NewDebugTransport("Kibana", kibHttpClient.Transport)
+		transport, err := kib.Client.Transport()
+		if err != nil {
+			return nil, err
+		}
+		var roundTripper http.RoundTripper = utils.NewDebugTransport("Kibana", transport)
+		kib.Client.SetTransport(roundTripper)
 	}
 
 	return kib, nil
