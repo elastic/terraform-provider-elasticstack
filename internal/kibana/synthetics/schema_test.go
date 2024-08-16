@@ -360,17 +360,87 @@ func TestToKibanaAPIRequest(t *testing.T) {
 }
 
 func TestToModelV0MergeAttributes(t *testing.T) {
-	state := &tfModelV0{
-		HTTP: &tfHTTPMonitorFieldsV0{},
+
+	testcases := []struct {
+		name     string
+		input    kbapi.SyntheticsMonitor
+		state    tfModelV0
+		expected tfModelV0
+	}{
+		{
+			name: "HTTP monitor",
+			state: tfModelV0{
+				HTTP: &tfHTTPMonitorFieldsV0{
+					ProxyHeader: jsontypes.NewNormalizedValue(`{"header1":"value1"}`),
+					Username:    types.StringValue("test"),
+					Password:    types.StringValue("password"),
+					Check:       jsontypes.NewNormalizedValue(`{"check1":"value1"}`),
+					Response:    jsontypes.NewNormalizedValue(`{"response1":"value1"}`),
+				},
+				Params:          jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
+				RetestOnFailure: types.BoolValue(true),
+			},
+			input: kbapi.SyntheticsMonitor{
+				Type: kbapi.Http,
+			},
+			expected: tfModelV0{
+				ID:              types.StringValue("/"),
+				Name:            types.StringValue(""),
+				SpaceID:         types.StringValue(""),
+				Schedule:        types.Int64Value(0),
+				APMServiceName:  types.StringValue(""),
+				TimeoutSeconds:  types.Int64Value(0),
+				Params:          jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
+				RetestOnFailure: types.BoolValue(true),
+				HTTP: &tfHTTPMonitorFieldsV0{
+					URL:                 types.StringValue(""),
+					SslVerificationMode: types.StringValue(""),
+					MaxRedirects:        types.Int64Value(0),
+					Mode:                types.StringValue(""),
+					ProxyURL:            types.StringValue(""),
+					ProxyHeader:         jsontypes.NewNormalizedValue(`{"header1":"value1"}`),
+					Username:            types.StringValue("test"),
+					Password:            types.StringValue("password"),
+					Check:               jsontypes.NewNormalizedValue(`{"check1":"value1"}`),
+					Response:            jsontypes.NewNormalizedValue(`{"response1":"value1"}`),
+				},
+			},
+		},
+		{
+			name: "TCP monitor",
+			state: tfModelV0{
+				TCP: &tfTCPMonitorFieldsV0{
+					CheckSend:    types.StringValue("hello"),
+					CheckReceive: types.StringValue("world"),
+				},
+			},
+			input: kbapi.SyntheticsMonitor{
+				Type: kbapi.Tcp,
+			},
+			expected: tfModelV0{
+				ID:             types.StringValue("/"),
+				Name:           types.StringValue(""),
+				SpaceID:        types.StringValue(""),
+				Schedule:       types.Int64Value(0),
+				APMServiceName: types.StringValue(""),
+				TimeoutSeconds: types.Int64Value(0),
+				TCP: &tfTCPMonitorFieldsV0{
+					Host:                types.StringValue(""),
+					SslVerificationMode: types.StringValue(""),
+					CheckSend:           types.StringValue("hello"),
+					CheckReceive:        types.StringValue("world"),
+					ProxyURL:            types.StringValue(""),
+				},
+			},
+		},
 	}
 
-	//TODO: tcp send and receive
-
-	input := &kbapi.SyntheticsMonitor{
-		Type: kbapi.Http,
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := tt.state.toModelV0(&tt.input)
+			assert.NoError(t, err)
+			assert.NotNil(t, actual)
+			assert.Equal(t, &tt.expected, actual)
+		})
 	}
-
-	actual, err := state.toModelV0(input)
-	assert.NoError(t, err)
-	assert.NotNil(t, actual)
 }
