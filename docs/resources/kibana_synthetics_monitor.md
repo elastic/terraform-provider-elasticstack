@@ -151,7 +151,7 @@ Optional:
 Import is supported using the following syntax:
 
 ```shell
-terraform import elasticstack_kibana_synthetics_monitor.my_monitor <monitor_id>
+terraform import elasticstack_kibana_synthetics_monitor.my_monitor <space id>/<monitor_id>
 ```
 
 **NOTE:** Not all monitor fields are supported during the import due-to API limitation.

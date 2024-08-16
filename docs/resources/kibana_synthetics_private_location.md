@@ -72,5 +72,5 @@ Required:
 Import is supported using the following syntax:
 
 ```shell
-terraform import elasticstack_kibana_synthetics_private_location.my_location <private_location_id>
+terraform import elasticstack_kibana_synthetics_private_location.my_location <space id>/<private_location_id>
 ```
