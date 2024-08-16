@@ -70,14 +70,16 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
 
 - `alert` (Attributes) Alert configuration. Default: `{ status: { enabled: true }, tls: { enabled: true } }`. (see [below for nested schema](#nestedatt--alert))
 - `enabled` (Boolean) Whether the monitor is enabled. Default: `true`
-- `http` (Attributes) TODO (see [below for nested schema](#nestedatt--http))
+- `http` (Attributes) HTTP Monitor specific fields (see [below for nested schema](#nestedatt--http))
 - `locations` (List of String) Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
+- `params` (String) Monitor parameters. Raw JSON object, use `jsonencode` function to represent JSON
 - `private_locations` (List of String) These Private Locations refer to locations hosted and managed by you, whereas locations are hosted by Elastic. You can specify a Private Location using the location’s name.
+- `retest_on_failure` (Boolean) Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.
 - `schedule` (Number) The monitor’s schedule in minutes. Supported values are 1, 3, 5, 10, 15, 30, 60, 120 and 240.
 - `service_name` (String) The APM service name.
 - `space_id` (String) The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \, /, ?, ", <, >, |, whitespace, ,, #, :, or -. Default: `default`
 - `tags` (List of String) An array of tags.
-- `tcp` (Attributes) TODO (see [below for nested schema](#nestedatt--tcp))
+- `tcp` (Attributes) TCP Monitor specific fields (see [below for nested schema](#nestedatt--tcp))
 - `timeout` (Number) The monitor timeout in seconds, monitor will fail if it doesn’t complete within this time. Default: `16`
 
 ### Read-Only
@@ -118,13 +120,18 @@ Required:
 
 Optional:
 
+- `check` (String) The check request settings.. Raw JSON object, use `jsonencode` function to represent JSON
 - `ipv4` (Boolean) Whether to ping using the ipv4 protocol.
 - `ipv6` (Boolean) Whether to ping using the ipv6 protocol.
 - `max_redirects` (Number) The maximum number of redirects to follow. Default: `0`
 - `mode` (String) The mode of the monitor. Can be "all" or "any". If you’re using a DNS-load balancer and want to ping every IP address for the specified hostname, you should use all.
+- `password` (String) The password for authenticating with the server. The credentials are passed with the request.
+- `proxy_header` (String) Additional headers to send to proxies during CONNECT requests.. Raw JSON object, use `jsonencode` function to represent JSON
 - `proxy_url` (String) The URL of the proxy to use for this monitor.
+- `response` (String) Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field.. Raw JSON object, use `jsonencode` function to represent JSON
 - `ssl_supported_protocols` (List of String) List of allowed SSL/TLS versions.
 - `ssl_verification_mode` (String) Controls the verification of server certificates.
+- `username` (String) The username for authenticating with the server. The credentials are passed with the request.
 
 
 <a id="nestedatt--tcp"></a>
@@ -136,6 +143,8 @@ Required:
 
 Optional:
 
+- `check_receive` (String) The expected answer.
+- `check_send` (String) An optional payload string to send to the remote host.
 - `proxy_url` (String) The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.
 - `proxy_use_local_resolver` (Boolean) A Boolean value that determines whether hostnames are resolved locally instead of being resolved on the proxy server. The default value is false, which means that name resolution occurs on the proxy server.
 - `ssl_supported_protocols` (List of String) List of allowed SSL/TLS versions.

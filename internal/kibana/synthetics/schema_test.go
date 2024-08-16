@@ -2,6 +2,7 @@ package synthetics
 
 import (
 	"encoding/json"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"testing"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
@@ -38,16 +39,18 @@ func TestToModelV0(t *testing.T) {
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
-				//Params:         jsontypes.NewNormalizedValue("null"),
+				Params:         jsontypes.NewNormalizedValue("null"),
 				HTTP: &tfHTTPMonitorFieldsV0{
 					URL:                 types.StringValue(""),
 					SslVerificationMode: types.StringValue(""),
 					MaxRedirects:        types.Int64Value(0),
 					Mode:                types.StringValue(""),
-					//Username:            types.StringValue(""),
-					//Password:            types.StringValue(""),
-					//ProxyHeader: jsontypes.NewNormalizedValue("null"),
-					ProxyURL: types.StringValue(""),
+					Username:            types.StringValue(""),
+					Password:            types.StringValue(""),
+					ProxyHeader:         jsontypes.NewNormalizedValue("null"),
+					ProxyURL:            types.StringValue(""),
+					Response:            jsontypes.NewNormalizedValue("null"),
+					Check:               jsontypes.NewNormalizedValue("null"),
 				},
 			},
 		},
@@ -63,13 +66,13 @@ func TestToModelV0(t *testing.T) {
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
-				//Params:         jsontypes.NewNormalizedValue("null"),
+				Params:         jsontypes.NewNormalizedValue("null"),
 				TCP: &tfTCPMonitorFieldsV0{
 					Host:                types.StringValue(""),
 					SslVerificationMode: types.StringValue(""),
-					//CheckSend:           types.StringValue(""),
-					//CheckReceive:        types.StringValue(""),
-					ProxyURL: types.StringValue(""),
+					CheckSend:           types.StringValue(""),
+					CheckReceive:        types.StringValue(""),
+					ProxyURL:            types.StringValue(""),
 				},
 			},
 		},
@@ -127,7 +130,7 @@ func TestToModelV0(t *testing.T) {
 				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}, TLS: &tfStatusConfigV0{Enabled: types.BoolPointerValue(fBool)}},
 				APMServiceName:   types.StringValue("test-service-http"),
 				TimeoutSeconds:   types.Int64Value(30),
-				//Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
+				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
 				HTTP: &tfHTTPMonitorFieldsV0{
 					URL:                   types.StringValue("https://example.com"),
 					SslVerificationMode:   types.StringValue("full"),
@@ -136,10 +139,10 @@ func TestToModelV0(t *testing.T) {
 					Mode:                  types.StringValue("all"),
 					IPv4:                  types.BoolPointerValue(tBool),
 					IPv6:                  types.BoolPointerValue(fBool),
-					//Username:              types.StringValue("user"),
-					//Password:              types.StringValue("pass"),
-					//ProxyHeader: jsontypes.NewNormalizedValue(`{"header1":"value1"}`),
-					ProxyURL: types.StringValue("https://proxy.com"),
+					Username:              types.StringValue("user"),
+					Password:              types.StringValue("pass"),
+					ProxyHeader:           jsontypes.NewNormalizedValue(`{"header1":"value1"}`),
+					ProxyURL:              types.StringValue("https://proxy.com"),
 				},
 			},
 		},
@@ -184,13 +187,13 @@ func TestToModelV0(t *testing.T) {
 				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}},
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
-				//Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
+				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
 				TCP: &tfTCPMonitorFieldsV0{
 					Host:                  types.StringValue("example.com:9200"),
 					SslVerificationMode:   types.StringValue("full"),
 					SslSupportedProtocols: []types.String{types.StringValue("TLSv1.2"), types.StringValue("TLSv1.3")},
-					//CheckSend:             types.StringValue("hello"),
-					//CheckReceive:          types.StringValue("world"),
+					CheckSend:             types.StringValue("hello"),
+					CheckReceive:          types.StringValue("world"),
 					ProxyURL:              types.StringValue("http://proxy.com"),
 					ProxyUseLocalResolver: types.BoolPointerValue(tBool),
 				},
@@ -200,7 +203,7 @@ func TestToModelV0(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			model, err := toModelV0(&tt.input)
+			model, err := tt.expected.toModelV0(&tt.input)
 			assert.NoError(t, err)
 			assert.Equal(t, &tt.expected, model)
 		})
@@ -247,7 +250,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}, TLS: &tfStatusConfigV0{Enabled: types.BoolPointerValue(fBool)}},
 				APMServiceName:   types.StringValue("test-service-http"),
 				TimeoutSeconds:   types.Int64Value(30),
-				//Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
+				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
 				HTTP: &tfHTTPMonitorFieldsV0{
 					URL:                   types.StringValue("https://example.com"),
 					SslVerificationMode:   types.StringValue("full"),
@@ -256,12 +259,12 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					Mode:                  types.StringValue("all"),
 					IPv4:                  types.BoolPointerValue(tBool),
 					IPv6:                  types.BoolPointerValue(fBool),
-					//Username:              types.StringValue("user"),
-					//Password:              types.StringValue("pass"),
-					//ProxyHeader: jsontypes.NewNormalizedValue(`{"header1":"value1"}`),
-					ProxyURL: types.StringValue("https://proxy.com"),
-					//Response:              jsontypes.NewNormalizedValue(`{"response1":"value1"}`),
-					//Check:                 jsontypes.NewNormalizedValue(`{"check1":"value1"}`),
+					Username:              types.StringValue("user"),
+					Password:              types.StringValue("pass"),
+					ProxyHeader:           jsontypes.NewNormalizedValue(`{"header1":"value1"}`),
+					ProxyURL:              types.StringValue("https://proxy.com"),
+					Response:              jsontypes.NewNormalizedValue(`{"response1":"value1"}`),
+					Check:                 jsontypes.NewNormalizedValue(`{"check1":"value1"}`),
 				},
 			},
 			expected: kibanaAPIRequest{
@@ -276,7 +279,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					APMServiceName:   "test-service-http",
 					Namespace:        "default",
 					TimeoutSeconds:   30,
-					//Params:           kbapi.JsonObject{"param1": "value1"},
+					Params:           kbapi.JsonObject{"param1": "value1"},
 				},
 				fields: kbapi.HTTPMonitorFields{
 					Url:                   "https://example.com",
@@ -286,12 +289,12 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					Mode:                  "all",
 					Ipv4:                  tBool,
 					Ipv6:                  fBool,
-					//Username:              "user",
-					//Password:              "pass",
-					//ProxyHeader:           kbapi.JsonObject{"header1": "value1"},
-					ProxyUrl: "https://proxy.com",
-					//Response:              kbapi.JsonObject{"response1": "value1"},
-					//Check:                 kbapi.JsonObject{"check1": "value1"},
+					Username:              "user",
+					Password:              "pass",
+					ProxyHeader:           kbapi.JsonObject{"header1": "value1"},
+					ProxyUrl:              "https://proxy.com",
+					Response:              kbapi.JsonObject{"response1": "value1"},
+					Check:                 kbapi.JsonObject{"check1": "value1"},
 				},
 			},
 		},
@@ -309,13 +312,13 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}},
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
-				//Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
+				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
 				TCP: &tfTCPMonitorFieldsV0{
 					Host:                  types.StringValue("example.com:9200"),
 					SslVerificationMode:   types.StringValue("full"),
 					SslSupportedProtocols: []types.String{types.StringValue("TLSv1.2"), types.StringValue("TLSv1.3")},
-					//CheckSend:             types.StringValue("hello"),
-					//CheckReceive:          types.StringValue("world"),
+					CheckSend:             types.StringValue("hello"),
+					CheckReceive:          types.StringValue("world"),
 					ProxyURL:              types.StringValue("http://proxy.com"),
 					ProxyUseLocalResolver: types.BoolPointerValue(tBool),
 				},
@@ -332,14 +335,14 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					APMServiceName:   "test-service-tcp",
 					Namespace:        "default",
 					TimeoutSeconds:   30,
-					//Params:           kbapi.JsonObject{"param1": "value1"},
+					Params:           kbapi.JsonObject{"param1": "value1"},
 				},
 				fields: kbapi.TCPMonitorFields{
 					Host:                  "example.com:9200",
 					SslVerificationMode:   "full",
 					SslSupportedProtocols: []string{"TLSv1.2", "TLSv1.3"},
-					//CheckSend:             "hello",
-					//CheckReceive:          "world",
+					CheckSend:             "hello",
+					CheckReceive:          "world",
 					ProxyUrl:              "http://proxy.com",
 					ProxyUseLocalResolver: tBool,
 				},
@@ -354,4 +357,20 @@ func TestToKibanaAPIRequest(t *testing.T) {
 			assert.Equal(t, &tt.expected, apiRequest)
 		})
 	}
+}
+
+func TestToModelV0MergeAttributes(t *testing.T) {
+	state := &tfModelV0{
+		HTTP: &tfHTTPMonitorFieldsV0{},
+	}
+
+	//TODO: tcp send and receive
+
+	input := &kbapi.SyntheticsMonitor{
+		Type: kbapi.Http,
+	}
+
+	actual, err := state.toModelV0(input)
+	assert.NoError(t, err)
+	assert.NotNil(t, actual)
 }

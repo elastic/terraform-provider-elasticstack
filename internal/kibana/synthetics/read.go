@@ -6,19 +6,16 @@ import (
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-
-	tflog.Info(ctx, "### Read monitor")
 
 	kibanaClient := GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
 
-	var state *tfModelV0 = new(tfModelV0)
+	state := new(tfModelV0)
 	diags := request.State.Get(ctx, state)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
@@ -45,7 +42,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	state, err = toModelV0(result)
+	state, err = state.toModelV0(result)
 	if err != nil {
 		response.Diagnostics.AddError("Failed to convert Kibana monitor API to TF state", err.Error())
 		return

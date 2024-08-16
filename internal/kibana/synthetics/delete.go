@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
-
-	tflog.Info(ctx, "### Delete monitor")
 
 	kibanaClient := GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {

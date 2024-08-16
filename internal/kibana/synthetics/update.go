@@ -5,19 +5,16 @@ import (
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-
-	tflog.Info(ctx, "### Update monitor")
 
 	kibanaClient := GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
 
-	var plan *tfModelV0 = new(tfModelV0)
+	plan := new(tfModelV0)
 	diags := request.Plan.Get(ctx, plan)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
@@ -43,7 +40,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	plan, err = toModelV0(result)
+	plan, err = plan.toModelV0(result)
 	if err != nil {
 		response.Diagnostics.AddError("Failed to convert Kibana monitor API to TF state", err.Error())
 		return

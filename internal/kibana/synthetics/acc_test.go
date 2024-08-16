@@ -103,7 +103,35 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
 		ipv4 = true
 		ipv6 = true
 		proxy_url = "http://localhost"
+		proxy_header = jsonencode({
+			"header-name" = "header-value-updated"
+		})
+		username = "testupdated"
+		password = "testpassword-updated"
+		check = jsonencode({
+			"request": {
+				"method": "POST",
+				"headers": {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
+				"body": "name=first&email=someemail%40someemailprovider.com",
+			},
+			"response": {
+				"status": [200, 201, 301],
+				"body": {
+					"positive": ["foo", "bar"]
+				}
+			}
+		})
+		response = jsonencode({
+			"include_body":           "never",
+			"include_body_max_bytes": "1024",
+		})
 	}
+	params = jsonencode({
+		"param-name" = "param-value-updated"
+  	})
+	retest_on_failure = false
 }
 
 `
@@ -161,6 +189,8 @@ resource "elasticstack_kibana_synthetics_monitor" "tcp-monitor" {
 		ssl_supported_protocols = ["TLSv1.2"]
 		proxy_url = "http://localhost"
 		proxy_use_local_resolver = false
+		check_send = "Hello Updated"
+		check_receive = "World Updated"
 	}
 }
 
@@ -243,6 +273,14 @@ func TestSyntheticMonitorResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv6", "true"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_url", "http://localhost"),
 					resource.TestCheckNoResourceAttr(httpMonitorId, "tcp"),
+					//check for merge attributes
+					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_header", `{"header-name":"header-value-updated"}`),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.username", "testupdated"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.password", "testpassword-updated"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.check", `{"request":{"body":"name=first\u0026email=someemail%40someemailprovider.com","headers":{"Content-Type":"application/x-www-form-urlencoded"},"method":"POST"},"response":{"body":{"positive":["foo","bar"]},"status":[200,201,301]}}`),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.response", `{"include_body":"never","include_body_max_bytes":"1024"}`),
+					resource.TestCheckResourceAttr(httpMonitorId, "params", `{"param-name":"param-value-updated"}`),
+					resource.TestCheckResourceAttr(httpMonitorId, "retest_on_failure", "false"),
 				),
 			},
 			// Create and Read tcp monitor
@@ -310,6 +348,9 @@ func TestSyntheticMonitorResource(t *testing.T) {
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_url", "http://localhost"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_use_local_resolver", "false"),
 					resource.TestCheckNoResourceAttr(tcpMonitorId, "http"),
+					//check for merge attributes
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.check_send", "Hello Updated"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.check_receive", "World Updated"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
