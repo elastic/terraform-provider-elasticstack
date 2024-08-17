@@ -16,14 +16,14 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 8.13.4
+STACK_VERSION ?= 8.15.0
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
 ELASTICSEARCH_USERNAME ?= elastic
 ELASTICSEARCH_PASSWORD ?= password
 ELASTICSEARCH_NETWORK ?= elasticstack-network
-ELASTICSEARCH_MEM ?= 1024m
+ELASTICSEARCH_MEM ?= 2048m
 
 KIBANA_NAME ?= terraform-elasticstack-kb
 KIBANA_ENDPOINT ?= http://$(KIBANA_NAME):5601
