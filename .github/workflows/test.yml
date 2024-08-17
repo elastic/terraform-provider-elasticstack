@@ -106,6 +106,7 @@ jobs:
           - '8.12.2'
           - '8.13.4'
           - '8.14.3'
+          - '8.15.0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
