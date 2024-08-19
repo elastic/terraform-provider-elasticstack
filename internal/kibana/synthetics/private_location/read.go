@@ -26,7 +26,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 	resourceId := state.ID.ValueString()
 	namespace := state.SpaceID.ValueString()
 
-	compositeId, dg := readCompositeIdOrConfigId(resourceId)
+	compositeId, dg := tryReadCompositeId(resourceId)
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return

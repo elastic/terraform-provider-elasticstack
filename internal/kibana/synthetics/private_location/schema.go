@@ -88,7 +88,7 @@ func (m *tfModelV0) toPrivateLocationConfig() kbapi.PrivateLocationConfig {
 	}
 }
 
-func readCompositeIdOrConfigId(id string) (*clients.CompositeId, diag.Diagnostics) {
+func tryReadCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
 	if strings.Contains(id, "/") {
 		compositeId, diagnostics := synthetics.GetCompositeId(id)
 		return compositeId, diagnostics
