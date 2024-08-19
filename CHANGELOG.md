@@ -1,6 +1,8 @@
 ## [Unreleased]
 - Add support for Kibana synthetics http and tcp monitors ([#699](https://github.com/elastic/terraform-provider-elasticstack/pull/699))
 
+- Add `elasticstack_kibana_spaces` data source ([#682](https://github.com/elastic/terraform-provider-elasticstack/pull/682))
+
 ## [0.11.5] - 2024-08-12
 
 - Fix setting `id` for Fleet outputs and servers ([#666](https://github.com/elastic/terraform-provider-elasticstack/pull/666))
