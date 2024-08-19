@@ -131,6 +131,7 @@ func ResourceAlertingRule() *schema.Resource {
 		"alert_delay": {
 			Description: "A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.",
 			Type:        schema.TypeFloat,
+			Optional:    true,
 		},
 	}
 
