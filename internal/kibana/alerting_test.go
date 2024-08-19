@@ -87,6 +87,7 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   rule_type_id = ".index-threshold"
   interval     = "1m"
   enabled      = true
+  alert_delay  = 4
 }
 	`, name)
 }
@@ -120,6 +121,7 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   interval     = "10m"
   enabled      = false
   tags         = ["first", "second"]
+  alert_delay  = 4
 }
 	`, name)
 }

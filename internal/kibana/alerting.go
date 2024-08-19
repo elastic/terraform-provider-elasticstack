@@ -9,10 +9,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.4"))
 
 func ResourceAlertingRule() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -151,7 +154,7 @@ func ResourceAlertingRule() *schema.Resource {
 	}
 }
 
-func getAlertingRuleFromResourceData(d *schema.ResourceData) (models.AlertingRule, diag.Diagnostics) {
+func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *version.Version) (models.AlertingRule, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	rule := models.AlertingRule{
 		SpaceID:    d.Get("space_id").(string),
@@ -190,7 +193,7 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData) (models.AlertingRul
 		rule.NotifyWhen = &t
 	}
 
-	if v, ok := d.GetOk("alert_delay"); ok {
+	if v, ok := d.GetOk("alert_delay"); ok && serverVersion.GreaterThanOrEqual(alertDelayMinSupportedVersion) {
 		t := v.(float32)
 		rule.AlertDelay = models.AlertingRuleAlertDelay{
 			Active: t,
@@ -242,7 +245,12 @@ func resourceRuleCreate(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
-	rule, diags := getAlertingRuleFromResourceData(d)
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	rule, diags := getAlertingRuleFromResourceData(d, serverVersion)
 	if diags.HasError() {
 		return diags
 	}
@@ -265,7 +273,12 @@ func resourceRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
-	rule, diags := getAlertingRuleFromResourceData(d)
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	rule, diags := getAlertingRuleFromResourceData(d, serverVersion)
 	if diags.HasError() {
 		return diags
 	}
