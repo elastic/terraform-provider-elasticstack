@@ -1,4 +1,5 @@
 ## [Unreleased]
+- - Add support for Kibana synthetics http and tcp monitors ([#699](https://github.com/elastic/terraform-provider-elasticstack/pull/699))
 
 ## [0.11.5] - 2024-08-12
 
