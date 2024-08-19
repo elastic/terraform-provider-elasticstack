@@ -35,7 +35,10 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 
 		resourceId = compositeId.ResourceId
 		namespace = compositeId.ClusterId
+	} else {
+		resourceId = state.Label.ValueString()
 	}
+
 	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, resourceId, namespace)
 	if err != nil {
 		var apiError *kbapi.APIError
