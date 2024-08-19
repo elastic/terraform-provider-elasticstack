@@ -4,11 +4,13 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"strings"
 )
 
 type tfModelV0 struct {
@@ -84,6 +86,14 @@ func (m *tfModelV0) toPrivateLocationConfig() kbapi.PrivateLocationConfig {
 		Tags:          synthetics.ValueStringSlice(m.Tags),
 		Geo:           geoConfig,
 	}
+}
+
+func readCompositeIdOrConfigId(id string) (*clients.CompositeId, diag.Diagnostics) {
+	if strings.Contains(id, "/") {
+		compositeId, diagnostics := synthetics.GetCompositeId(id)
+		return compositeId, diagnostics
+	}
+	return nil, diag.Diagnostics{}
 }
 
 func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {

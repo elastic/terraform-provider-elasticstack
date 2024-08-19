@@ -7,7 +7,6 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"strings"
 )
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
@@ -26,17 +25,16 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 
 	resourceId := state.ID.ValueString()
 	namespace := state.SpaceID.ValueString()
-	if strings.Contains(resourceId, "/") {
-		compositeId, dg := synthetics.GetCompositeId(state.ID.ValueString())
-		response.Diagnostics.Append(dg...)
-		if response.Diagnostics.HasError() {
-			return
-		}
 
+	compositeId, dg := readCompositeIdOrConfigId(resourceId)
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	if compositeId != nil {
 		resourceId = compositeId.ResourceId
 		namespace = compositeId.ClusterId
-	} else {
-		resourceId = state.Label.ValueString()
 	}
 
 	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, resourceId, namespace)
