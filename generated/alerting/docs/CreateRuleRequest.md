@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Actions** | Pointer to [**[]ActionsInner**](ActionsInner.md) |  | [optional] [default to []]
+**Actions** | Pointer to [**[]ActionsInner**](ActionsInner.md) |  | [optional] 
 **Consumer** | **string** | The name of the application or feature that owns the rule. For example: &#x60;alerts&#x60;, &#x60;apm&#x60;, &#x60;discover&#x60;, &#x60;infrastructure&#x60;, &#x60;logs&#x60;, &#x60;metrics&#x60;, &#x60;ml&#x60;, &#x60;monitoring&#x60;, &#x60;securitySolution&#x60;, &#x60;siem&#x60;, &#x60;stackAlerts&#x60;, or &#x60;uptime&#x60;.  | 
 **Enabled** | Pointer to **bool** | Indicates whether you want to run the rule on an interval basis after it is created. | [optional] 
 **Name** | **string** | The name of the rule. While this name does not have to be unique, a distinctive name can help you identify a rule. | 
@@ -12,8 +12,9 @@ Name | Type | Description | Notes
 **Params** | **map[string]interface{}** | The parameters for the rule. | 
 **RuleTypeId** | **string** | The ID of the rule type that you want to call when the rule is scheduled to run. For example, &#x60;.es-query&#x60;, &#x60;.index-threshold&#x60;, &#x60;logs.alert.document.count&#x60;, &#x60;monitoring_alert_cluster_health&#x60;, &#x60;siem.thresholdRule&#x60;, or &#x60;xpack.ml.anomaly_detection_alert&#x60;.  | 
 **Schedule** | [**Schedule**](Schedule.md) |  | 
-**Tags** | Pointer to **[]string** | The tags for the rule. | [optional] [default to []]
-**Throttle** | Pointer to **NullableString** | The throttle interval, which defines how often an alert generates repeated actions. It is applicable only if &#x60;notify_when&#x60; is set to &#x60;onThrottleInterval&#x60;. It is specified in seconds, minutes, hours, or days. | [optional] 
+**Tags** | Pointer to **[]string** |  | [optional] 
+**Throttle** | Pointer to **NullableString** | Deprecated in 8.13.0. Use the &#x60;throttle&#x60; property in the action &#x60;frequency&#x60; object instead. The throttle interval, which defines how often an alert generates repeated actions. NOTE: You cannot specify the throttle interval at both the rule and action level. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.  | [optional] 
+**AlertDelay** | Pointer to [**AlertDelay**](AlertDelay.md) |  | [optional] 
 
 ## Methods
 
@@ -59,16 +60,6 @@ SetActions sets Actions field to given value.
 
 HasActions returns a boolean if a field has been set.
 
-### SetActionsNil
-
-`func (o *CreateRuleRequest) SetActionsNil(b bool)`
-
- SetActionsNil sets the value for Actions to be an explicit nil
-
-### UnsetActions
-`func (o *CreateRuleRequest) UnsetActions()`
-
-UnsetActions ensures that no value is present for Actions, not even an explicit nil
 ### GetConsumer
 
 `func (o *CreateRuleRequest) GetConsumer() string`
@@ -279,6 +270,31 @@ HasThrottle returns a boolean if a field has been set.
 `func (o *CreateRuleRequest) UnsetThrottle()`
 
 UnsetThrottle ensures that no value is present for Throttle, not even an explicit nil
+### GetAlertDelay
+
+`func (o *CreateRuleRequest) GetAlertDelay() AlertDelay`
+
+GetAlertDelay returns the AlertDelay field if non-nil, zero value otherwise.
+
+### GetAlertDelayOk
+
+`func (o *CreateRuleRequest) GetAlertDelayOk() (*AlertDelay, bool)`
+
+GetAlertDelayOk returns a tuple with the AlertDelay field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetAlertDelay
+
+`func (o *CreateRuleRequest) SetAlertDelay(v AlertDelay)`
+
+SetAlertDelay sets AlertDelay field to given value.
+
+### HasAlertDelay
+
+`func (o *CreateRuleRequest) HasAlertDelay() bool`
+
+HasAlertDelay returns a boolean if a field has been set.
+
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

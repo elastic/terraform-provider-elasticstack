@@ -4,7 +4,6 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AlertingFrameworkHeath** | Pointer to [**GetAlertingHealth200ResponseAlertingFrameworkHeath**](GetAlertingHealth200ResponseAlertingFrameworkHeath.md) |  | [optional] 
 **AlertingFrameworkHealth** | Pointer to [**GetAlertingHealth200ResponseAlertingFrameworkHealth**](GetAlertingHealth200ResponseAlertingFrameworkHealth.md) |  | [optional] 
 **HasPermanentEncryptionKey** | Pointer to **bool** | If &#x60;false&#x60;, the encrypted saved object plugin does not have a permanent encryption key. | [optional] 
 **IsSufficientlySecure** | Pointer to **bool** | If &#x60;false&#x60;, security is enabled but TLS is not. | [optional] 
@@ -27,31 +26,6 @@ will change when the set of required properties is changed
 NewGetAlertingHealth200ResponseWithDefaults instantiates a new GetAlertingHealth200Response object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
-
-### GetAlertingFrameworkHeath
-
-`func (o *GetAlertingHealth200Response) GetAlertingFrameworkHeath() GetAlertingHealth200ResponseAlertingFrameworkHeath`
-
-GetAlertingFrameworkHeath returns the AlertingFrameworkHeath field if non-nil, zero value otherwise.
-
-### GetAlertingFrameworkHeathOk
-
-`func (o *GetAlertingHealth200Response) GetAlertingFrameworkHeathOk() (*GetAlertingHealth200ResponseAlertingFrameworkHeath, bool)`
-
-GetAlertingFrameworkHeathOk returns a tuple with the AlertingFrameworkHeath field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetAlertingFrameworkHeath
-
-`func (o *GetAlertingHealth200Response) SetAlertingFrameworkHeath(v GetAlertingHealth200ResponseAlertingFrameworkHeath)`
-
-SetAlertingFrameworkHeath sets AlertingFrameworkHeath field to given value.
-
-### HasAlertingFrameworkHeath
-
-`func (o *GetAlertingHealth200Response) HasAlertingFrameworkHeath() bool`
-
-HasAlertingFrameworkHeath returns a boolean if a field has been set.
 
 ### GetAlertingFrameworkHealth
 

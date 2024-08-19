@@ -65,16 +65,16 @@ func Test_ruleResponseToModel(t *testing.T) {
 				RuleTypeId: "rule-type-id",
 				Enabled:    true,
 				Tags:       []string{"hello"},
-				NotifyWhen: makePtr(alerting.NotifyWhen("broken")),
+				NotifyWhen: *alerting.NewNullableString(makePtr("broken")),
 				Actions: []alerting.ActionsInner{
 					{
-						Group:  makePtr("group-1"),
-						Id:     makePtr("id"),
+						Group:  "group-1",
+						Id:     "id",
 						Params: map[string]interface{}{},
 					},
 					{
-						Group:  makePtr("group-2"),
-						Id:     makePtr("id"),
+						Group:  "group-2",
+						Id:     "id",
 						Params: map[string]interface{}{},
 					},
 				},
@@ -87,6 +87,9 @@ func Test_ruleResponseToModel(t *testing.T) {
 					Interval: makePtr("1m"),
 				},
 				Throttle: *alerting.NewNullableString(makePtr("throttle")),
+				AlertDelay: &alerting.AlertDelay{
+					Active: 4,
+				},
 			},
 			expectedModel: &models.AlertingRule{
 				RuleID:          "id",
@@ -97,7 +100,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 				RuleTypeID:      "rule-type-id",
 				Enabled:         makePtr(true),
 				Tags:            []string{"hello"},
-				NotifyWhen:      "broken",
+				NotifyWhen:      makePtr("broken"),
 				Schedule:        models.AlertingRuleSchedule{Interval: "1m"},
 				Throttle:        makePtr("throttle"),
 				ScheduledTaskID: makePtr("scheduled-task-id"),
@@ -116,6 +119,9 @@ func Test_ruleResponseToModel(t *testing.T) {
 						ID:     "id",
 						Params: map[string]interface{}{},
 					},
+				},
+				AlertDelay: models.AlertingRuleAlertDelay{
+					Active: 4,
 				},
 			},
 		},
@@ -154,10 +160,10 @@ func Test_CreateUpdateAlertingRule(t *testing.T) {
 			testFunc: CreateAlertingRule,
 			client: func() ApiClient {
 				apiClient, alertingClient := getApiClient()
-				alertingClient.EXPECT().CreateRule(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, spaceId string, ruleId string) alerting.ApiCreateRuleRequest {
-					return alerting.ApiCreateRuleRequest{ApiService: alertingClient}
+				alertingClient.EXPECT().CreateRuleId(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, spaceId string, ruleId string) alerting.ApiCreateRuleIdRequest {
+					return alerting.ApiCreateRuleIdRequest{ApiService: alertingClient}
 				})
-				alertingClient.EXPECT().CreateRuleExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiCreateRuleRequest) (*alerting.RuleResponseProperties, *http.Response, error) {
+				alertingClient.EXPECT().CreateRuleIdExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiCreateRuleIdRequest) (*alerting.RuleResponseProperties, *http.Response, error) {
 					return nil, &http.Response{
 						StatusCode: 401,
 						Body:       io.NopCloser(strings.NewReader("some error")),
@@ -194,10 +200,10 @@ func Test_CreateUpdateAlertingRule(t *testing.T) {
 			testFunc: CreateAlertingRule,
 			client: func() ApiClient {
 				apiClient, alertingClient := getApiClient()
-				alertingClient.EXPECT().CreateRule(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, spaceId string, ruleId string) alerting.ApiCreateRuleRequest {
-					return alerting.ApiCreateRuleRequest{ApiService: alertingClient}
+				alertingClient.EXPECT().CreateRuleId(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, spaceId string, ruleId string) alerting.ApiCreateRuleIdRequest {
+					return alerting.ApiCreateRuleIdRequest{ApiService: alertingClient}
 				})
-				alertingClient.EXPECT().CreateRuleExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiCreateRuleRequest) (*alerting.RuleResponseProperties, *http.Response, error) {
+				alertingClient.EXPECT().CreateRuleIdExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiCreateRuleIdRequest) (*alerting.RuleResponseProperties, *http.Response, error) {
 					return nil, &http.Response{
 						StatusCode: 200,
 						Body:       io.NopCloser(strings.NewReader("everything seems fine")),

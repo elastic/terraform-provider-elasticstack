@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **NotifyWhen** | **string** | The condition for throttling the notification. | 
 **Params** | **map[string]interface{}** | The parameters to pass to the alert type executor &#x60;params&#x60; value. This will also validate against the alert type params validator, if defined. | 
 **Schedule** | [**LegacyUpdateAlertRequestPropertiesSchedule**](LegacyUpdateAlertRequestPropertiesSchedule.md) |  | 
-**Tags** | Pointer to **[]string** | A list of keywords to reference and search. | [optional] 
+**Tags** | Pointer to **[]string** |  | [optional] 
 **Throttle** | Pointer to **string** | How often this alert should fire the same actions. This will prevent the alert from sending out the same notification over and over. For example, if an alert with a schedule of 1 minute stays in a triggered state for 90 minutes, setting a throttle of &#x60;10m&#x60; or &#x60;1h&#x60; will prevent it from sending 90 notifications during this period.  | [optional] 
 
 ## Methods
@@ -138,20 +138,20 @@ SetSchedule sets Schedule field to given value.
 
 ### GetTags
 
-`func (o *LegacyUpdateAlertRequestProperties) GetTags() []string`
+`func (o *LegacyUpdateAlertRequestProperties) GetTags() []*string`
 
 GetTags returns the Tags field if non-nil, zero value otherwise.
 
 ### GetTagsOk
 
-`func (o *LegacyUpdateAlertRequestProperties) GetTagsOk() (*[]string, bool)`
+`func (o *LegacyUpdateAlertRequestProperties) GetTagsOk() (*[]*string, bool)`
 
 GetTagsOk returns a tuple with the Tags field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTags
 
-`func (o *LegacyUpdateAlertRequestProperties) SetTags(v []string)`
+`func (o *LegacyUpdateAlertRequestProperties) SetTags(v []*string)`
 
 SetTags sets Tags field to given value.
 

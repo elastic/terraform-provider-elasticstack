@@ -152,7 +152,6 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData) (models.AlertingRul
 		SpaceID:    d.Get("space_id").(string),
 		Name:       d.Get("name").(string),
 		Consumer:   d.Get("consumer").(string),
-		NotifyWhen: d.Get("notify_when").(string),
 		RuleTypeID: d.Get("rule_type_id").(string),
 		Schedule: models.AlertingRuleSchedule{
 			Interval: d.Get("interval").(string),
@@ -179,6 +178,18 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData) (models.AlertingRul
 	if v, ok := d.GetOk("throttle"); ok {
 		t := v.(string)
 		rule.Throttle = &t
+	}
+
+	if v, ok := d.GetOk("notify_when"); ok {
+		t := v.(string)
+		rule.NotifyWhen = &t
+	}
+
+	if v, ok := d.GetOk("alert_delay"); ok {
+		t := v.(float32)
+		rule.AlertDelay = models.AlertingRuleAlertDelay{
+			Active: t,
+		}
 	}
 
 	actions, diags := getActionsFromResourceData(d)

@@ -303,16 +303,6 @@ SetMutedInstanceIds sets MutedInstanceIds field to given value.
 
 HasMutedInstanceIds returns a boolean if a field has been set.
 
-### SetMutedInstanceIdsNil
-
-`func (o *AlertResponseProperties) SetMutedInstanceIdsNil(b bool)`
-
- SetMutedInstanceIdsNil sets the value for MutedInstanceIds to be an explicit nil
-
-### UnsetMutedInstanceIds
-`func (o *AlertResponseProperties) UnsetMutedInstanceIds()`
-
-UnsetMutedInstanceIds ensures that no value is present for MutedInstanceIds, not even an explicit nil
 ### GetName
 
 `func (o *AlertResponseProperties) GetName() string`
