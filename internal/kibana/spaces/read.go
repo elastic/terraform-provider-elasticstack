@@ -29,12 +29,13 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 			ImageUrl:    types.StringValue(space.ImageURL),
 		}
 
-		if disabledFeatures, diags := types.ListValueFrom(ctx, types.StringType, space.DisabledFeatures); diags.HasError() {
+		disabledFeatures, diags := types.ListValueFrom(ctx, types.StringType, space.DisabledFeatures)
+		if diags.HasError() {
 			resp.Diagnostics.Append(diags...)
 			return
-		} else {
-			spaceState.DisabledFeatures = disabledFeatures
 		}
+
+		spaceState.DisabledFeatures = disabledFeatures
 
 		state.Spaces = append(state.Spaces, spaceState)
 	}

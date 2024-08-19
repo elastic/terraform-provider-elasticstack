@@ -11,7 +11,6 @@ import (
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ datasource.DataSource              = &dataSource{}
-	_ datasource.DataSource              = &dataSource{}
 	_ datasource.DataSourceWithConfigure = &dataSource{}
 )
 
