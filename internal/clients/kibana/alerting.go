@@ -97,7 +97,7 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 		Tags:     rule.Tags,
 		Throttle: *alerting.NewNullableString(rule.Throttle),
 		AlertDelay: &alerting.AlertDelay{
-			Active: rule.AlertDelay.Active,
+			Active: (float32)(rule.AlertDelay.Active),
 		},
 	}
 

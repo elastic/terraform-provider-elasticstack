@@ -194,9 +194,9 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 	}
 
 	if v, ok := d.GetOk("alert_delay"); ok && serverVersion.GreaterThanOrEqual(alertDelayMinSupportedVersion) {
-		t := v.(float32)
+		t := v.(float64)
 		rule.AlertDelay = models.AlertingRuleAlertDelay{
-			Active: t,
+			Active: (float32)(t),
 		}
 	}
 
