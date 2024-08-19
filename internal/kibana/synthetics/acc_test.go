@@ -22,7 +22,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource - %s"
 	space_id = "testacc"
 	schedule = 5
-	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
 	tags = ["a", "b"]
 	alert = {
@@ -53,7 +53,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource Updated - %s"
 	space_id = "testacc"
 	schedule = 10
-	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = false
 	tags = ["c", "d", "e"]
 	alert = {
@@ -114,7 +114,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestTcpMonitorResource - %s"
 	space_id = "default"
 	schedule = 5
-	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
 	tags = ["a", "b"]
 	alert = {
@@ -142,7 +142,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestTcpMonitorResource Updated - %s"
 	space_id = "default"
 	schedule = 10
-	private_locations = [elasticstack_kibana_synthetics_private_location.test.label]
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = false
 	tags = ["c", "d", "e"]
 	alert = {
@@ -173,8 +173,8 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "http-monitor"
-	httpMonitorId, config := testHttpMonitorConfig(id, httpMonitorConfig, name)
-	_, configUpdated := testHttpMonitorConfig(id, httpMonitorUpdated, name)
+	httpMonitorId, config := testMonitorConfig(id, httpMonitorConfig, name)
+	_, configUpdated := testMonitorConfig(id, httpMonitorUpdated, name)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -270,8 +270,8 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "tcp-monitor"
-	tcpMonitorId, config := testHttpMonitorConfig(id, tcpMonitorConfig, name)
-	_, configUpdated := testHttpMonitorConfig(id, tcpMonitorUpdated, name)
+	tcpMonitorId, config := testMonitorConfig(id, tcpMonitorConfig, name)
+	_, configUpdated := testMonitorConfig(id, tcpMonitorUpdated, name)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -354,9 +354,11 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 	})
 }
 
-func testHttpMonitorConfig(id, cfg, name string) (string, string) {
+func testMonitorConfig(id, cfg, name string) (string, string) {
 
 	resourceId := "elasticstack_kibana_synthetics_monitor." + id
+	privateLocationId := "pl-" + id
+	agentPolicyId := "apl-" + id
 
 	provider := fmt.Sprintf(`
 provider "elasticstack" {
@@ -365,7 +367,7 @@ provider "elasticstack" {
 	fleet{}
 }
 
-resource "elasticstack_fleet_agent_policy" "test" {
+resource "elasticstack_fleet_agent_policy" "%s" {
 	name            = "TestMonitorResource Agent Policy - %s"
 	namespace       = "testacc"
 	description     = "TestMonitorResource Agent Policy"
@@ -374,14 +376,14 @@ resource "elasticstack_fleet_agent_policy" "test" {
 	skip_destroy    = false
 }
 
-resource "elasticstack_kibana_synthetics_private_location" "test" {
+resource "elasticstack_kibana_synthetics_private_location" "%s" {
 	label = "TestMonitorResource-label-%s"
 	space_id = "testacc"
-	agent_policy_id = elasticstack_fleet_agent_policy.test.policy_id
+	agent_policy_id = elasticstack_fleet_agent_policy.%s.policy_id
 }
-`, name, name)
+`, agentPolicyId, name, privateLocationId, name, agentPolicyId)
 
-	config := fmt.Sprintf(cfg, id, name)
+	config := fmt.Sprintf(cfg, id, name, privateLocationId)
 
 	return resourceId, provider + config
 }
