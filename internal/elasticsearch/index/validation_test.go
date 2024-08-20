@@ -17,6 +17,11 @@ func Test_stringIsJSONObject(t *testing.T) {
 			fieldVal: "{}",
 		},
 		{
+			name:     "should not return an error for a null",
+			fieldVal: "null",
+		},
+
+		{
 			name:     "should return an error if the field is not a string",
 			fieldVal: true,
 			expectedErrsToContain: []string{
