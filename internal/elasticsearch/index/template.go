@@ -140,18 +140,22 @@ func ResourceTemplate() *schema.Resource {
 						},
 					},
 					"mappings": {
-						Description:      "Mapping for fields in the index.",
+						Description:      "Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details",
 						Type:             schema.TypeString,
 						Optional:         true,
 						DiffSuppressFunc: utils.DiffJsonSuppress,
-						ValidateFunc:     validation.StringIsJSON,
+						ValidateFunc: validation.All(
+							validation.StringIsJSON, stringIsJSONObject,
+						),
 					},
 					"settings": {
 						Description:      "Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings",
 						Type:             schema.TypeString,
 						Optional:         true,
 						DiffSuppressFunc: utils.DiffIndexSettingSuppress,
-						ValidateFunc:     validation.StringIsJSON,
+						ValidateFunc: validation.All(
+							validation.StringIsJSON, stringIsJSONObject,
+						),
 					},
 				},
 			},
