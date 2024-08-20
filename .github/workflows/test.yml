@@ -104,7 +104,7 @@ jobs:
 #          - '8.10.3'
 #          - '8.11.4'
 #          - '8.12.2'
-#          - '8.13.4'
+          - '8.13.4'
           - '8.14.3'
           - '8.15.0'
     steps:
@@ -146,7 +146,7 @@ jobs:
 
       - name: TF acceptance tests
         timeout-minutes: 10
-        run: make testacc TF_LOG=DEBUG
+        run: make testacc
         env:
           TF_ACC: "1"
           STACK_VERSION: ${{ matrix.version }}
