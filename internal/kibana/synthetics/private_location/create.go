@@ -3,15 +3,13 @@ package private_location
 import (
 	"context"
 	"fmt"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
 
-	tflog.Info(ctx, "Create private location")
-
-	kibanaClient := r.getKibanaClient(response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
@@ -23,10 +21,10 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	input := plan.toPrivateLocation()
+	input := plan.toPrivateLocationConfig()
 
 	namespace := plan.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(input.PrivateLocationConfig, namespace)
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(ctx, input, namespace)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to create private location `%s`, namespace %s", input.Label, namespace), err.Error())
 		return

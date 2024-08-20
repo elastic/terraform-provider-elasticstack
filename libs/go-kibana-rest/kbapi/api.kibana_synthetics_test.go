@@ -1,6 +1,7 @@
 package kbapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -50,12 +51,16 @@ func testWithPolicy(t *testing.T, client *resty.Client, namespace string, f func
 	f(policy.Item.Id)
 }
 
+// TODO: test update method when set an optional parameter to `null`
+
 func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 
 	type TestConfig struct {
 		config SyntheticsMonitorConfig
-		fields HTTPMonitorFields
+		fields MonitorFields
 	}
+
+	ctx := context.Background()
 
 	for _, n := range namespaces {
 		testUuid := uuid.New().String()
@@ -67,10 +72,10 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 				Label:         fmt.Sprintf("TestKibanaSyntheticsMonitorAdd %s", testUuid),
 				AgentPolicyId: policyId,
 			}
-			location, err := syntheticsAPI.PrivateLocation.Create(locationConfig, space)
+			location, err := syntheticsAPI.PrivateLocation.Create(ctx, locationConfig, space)
 			assert.NoError(s.T(), err)
 			defer func(id string) {
-				syntheticsAPI.PrivateLocation.Delete(id, space)
+				syntheticsAPI.PrivateLocation.Delete(ctx, id, space)
 			}(location.Id)
 
 			f := new(bool)
@@ -102,6 +107,24 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					},
 				},
 				{
+					name: "bare minimum tcp monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test synthetics tcp monitor %s", testUuid),
+							PrivateLocations: []string{location.Label},
+						},
+						fields: TCPMonitorFields{
+							Host: "localhost:5601",
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{},
+						fields: TCPMonitorFields{
+							Host: "localhost:9200",
+						},
+					},
+				},
+				{
 					name: "all fields http monitor",
 					input: TestConfig{
 						config: SyntheticsMonitorConfig{
@@ -124,16 +147,15 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							RetestOnFailure: f,
 						},
 						fields: HTTPMonitorFields{
-							Url: "http://localhost:5601",
-							SslSetting: map[string]interface{}{
-								"supported_protocols": []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
-							},
-							MaxRedirects: "2",
-							Mode:         ModeAny,
-							Ipv4:         t,
-							Ipv6:         f,
-							Username:     "test-user-name",
-							Password:     "test-password",
+							Url:                   "http://localhost:5601",
+							SslSupportedProtocols: []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
+							SslVerificationMode:   "full",
+							MaxRedirects:          "2",
+							Mode:                  ModeAny,
+							Ipv4:                  t,
+							Ipv6:                  f,
+							Username:              "test-user-name",
+							Password:              "test-password",
 							ProxyHeader: map[string]interface{}{
 								"User-Agent": "test",
 							},
@@ -170,6 +192,50 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 						},
 					},
 				},
+				{
+					name: "all fields tcp monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test all fields tcp monitor %s", testUuid),
+							Schedule:         Every10Minutes,
+							PrivateLocations: []string{location.Label},
+							Enabled:          f,
+							Tags:             []string{"aaa", "bbb"},
+							Alert: &MonitorAlertConfig{
+								Status: &SyntheticsStatusConfig{Enabled: t},
+								Tls:    &SyntheticsStatusConfig{Enabled: f},
+							},
+							APMServiceName: "APMServiceName",
+							TimeoutSeconds: 42,
+							Namespace:      space,
+							Params: map[string]interface{}{
+								"param1": "some-params",
+								"my_url": "http://localhost:8080",
+							},
+							RetestOnFailure: f,
+						},
+						fields: TCPMonitorFields{
+							Host:                  "localhost:5601",
+							SslSupportedProtocols: []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
+							SslVerificationMode:   "full",
+							ProxyUseLocalResolver: t,
+							ProxyUrl:              "http://localhost",
+							CheckSend:             "Hello World",
+							CheckReceive:          "Hello",
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:     fmt.Sprintf("update all fields tcp monitor %s", testUuid),
+							Schedule: Every30Minutes,
+						},
+						fields: TCPMonitorFields{
+							Host:                  "localhost:9200",
+							ProxyUrl:              "http://127.0.0.1",
+							ProxyUseLocalResolver: f,
+						},
+					},
+				},
 			}
 
 			for _, tc := range testCases {
@@ -177,47 +243,66 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					config := tc.input.config
 					fields := tc.input.fields
 
-					monitor, err := syntheticsAPI.Monitor.Add(config, fields, space)
+					monitor, err := syntheticsAPI.Monitor.Add(ctx, config, fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), monitor)
-					monitor.Params = nil //kibana API doesn't return params for GET request
+					updateDueToKibanaAPIDiff(monitor)
 
-					get, err := syntheticsAPI.Monitor.Get(monitor.Id, space)
+					get, err := syntheticsAPI.Monitor.Get(ctx, monitor.Id, space)
 					assert.NoError(s.T(), err)
 					assert.Equal(s.T(), monitor, get)
 
-					get, err = syntheticsAPI.Monitor.Get(monitor.ConfigId, space)
+					get, err = syntheticsAPI.Monitor.Get(ctx, monitor.ConfigId, space)
 					assert.NoError(s.T(), err)
 					assert.Equal(s.T(), monitor, get)
 
-					update, err := syntheticsAPI.Monitor.Update(monitor.Id, tc.update.config, tc.update.fields, space)
+					update, err := syntheticsAPI.Monitor.Update(ctx, monitor.Id, tc.update.config, tc.update.fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), update)
-					update.Params = nil //kibana API doesn't return params for GET request
+					updateDueToKibanaAPIDiff(update)
 
-					get, err = syntheticsAPI.Monitor.Get(monitor.ConfigId, space)
+					get, err = syntheticsAPI.Monitor.Get(ctx, monitor.ConfigId, space)
 					assert.NoError(s.T(), err)
 					get.CreatedAt = time.Time{} // update response doesn't have created_at field
 					assert.Equal(s.T(), update, get)
 
-					deleted, err := syntheticsAPI.Monitor.Delete(space, monitor.ConfigId)
+					deleted, err := syntheticsAPI.Monitor.Delete(ctx, space, monitor.ConfigId)
 					assert.NoError(s.T(), err)
 					for _, d := range deleted {
 						assert.True(s.T(), d.Deleted)
 					}
 
-					deleted, err = syntheticsAPI.Monitor.Delete(space, monitor.Id)
+					deleted, err = syntheticsAPI.Monitor.Delete(ctx, space, monitor.Id)
 					assert.NoError(s.T(), err)
 					for _, d := range deleted {
 						assert.False(s.T(), d.Deleted)
 					}
+					_, err = syntheticsAPI.Monitor.Get(ctx, monitor.Id, space)
+					assert.Error(s.T(), err)
+					assert.IsType(s.T(), APIError{}, err)
+					assert.Equal(s.T(), 404, err.(APIError).Code)
 				})
 			}
 		})
 	}
 }
 
+// see https://github.com/elastic/kibana/issues/189906
+func updateDueToKibanaAPIDiff(m *SyntheticsMonitor) {
+	m.Params = nil
+	m.Username = ""
+	m.Password = ""
+	m.ProxyHeaders = nil
+	m.CheckResponseBodyPositive = nil
+	m.CheckRequestBody = nil
+	m.CheckRequestHeaders = nil
+	m.CheckSend = ""
+	m.CheckReceive = ""
+}
+
 func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
+
+	ctx := context.Background()
 
 	for _, n := range namespaces {
 		testUuid := uuid.New().String()
@@ -236,23 +321,23 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 						Lon: -42.42,
 					},
 				}
-				created, err := pAPI.Create(cfg, space)
+				created, err := pAPI.Create(ctx, cfg, space)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created.Label, cfg.Label)
 				assert.Equal(s.T(), created.AgentPolicyId, cfg.AgentPolicyId)
 
-				get, err := pAPI.Get(created.Id, space)
+				get, err := pAPI.Get(ctx, created.Id, space)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created, get)
 
-				get, err = pAPI.Get(created.Label, space)
+				get, err = pAPI.Get(ctx, created.Label, space)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created, get)
 
-				err = pAPI.Delete(created.Id, space)
+				err = pAPI.Delete(ctx, created.Id, space)
 				assert.NoError(s.T(), err)
 
-				_, err = pAPI.Get(created.Id, space)
+				_, err = pAPI.Get(ctx, created.Id, space)
 				assert.Error(s.T(), err)
 			})
 		})
@@ -266,10 +351,11 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationNotFound() {
 		pAPI := s.API.KibanaSynthetics.PrivateLocation
 
 		ids := []string{"", "not-found", testUuid}
+		ctx := context.Background()
 
 		for _, id := range ids {
 			s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationNotFound - %s - %s", n, id), func() {
-				_, err := pAPI.Get(id, space)
+				_, err := pAPI.Get(ctx, id, space)
 				assert.Error(s.T(), err)
 				assert.IsType(s.T(), APIError{}, err)
 				assert.Equal(s.T(), 404, err.(APIError).Code)

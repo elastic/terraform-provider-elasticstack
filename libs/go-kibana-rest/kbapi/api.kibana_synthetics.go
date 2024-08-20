@@ -1,11 +1,13 @@
 package kbapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 const (
@@ -45,6 +47,10 @@ const (
 	ModeAny                 = "any"
 )
 
+type MonitorFields interface {
+	APIRequest(cfg SyntheticsMonitorConfig) interface{}
+}
+
 type KibanaError struct {
 	Code    int    `json:"statusCode,omitempty"`
 	Error   string `json:"error,omitempty"`
@@ -81,19 +87,30 @@ type MonitorAlertConfig struct {
 	Tls    *SyntheticsStatusConfig `json:"tls,omitempty"`
 }
 
+type TCPMonitorFields struct {
+	Host                  string   `json:"host"`
+	SslVerificationMode   string   `json:"ssl.verification_mode,omitempty"`
+	SslSupportedProtocols []string `json:"ssl.supported_protocols,omitempty"`
+	CheckSend             string   `json:"check.send,omitempty"`
+	CheckReceive          string   `json:"check.receive,omitempty"`
+	ProxyUrl              string   `json:"proxy_url,omitempty"`
+	ProxyUseLocalResolver *bool    `json:"proxy_use_local_resolver,omitempty"`
+}
+
 type HTTPMonitorFields struct {
-	Url          string          `json:"url"`
-	SslSetting   JsonObject      `json:"ssl,omitempty"` //https://www.elastic.co/guide/en/beats/heartbeat/current/configuration-ssl.html
-	MaxRedirects string          `json:"max_redirects,omitempty"`
-	Mode         HttpMonitorMode `json:"mode,omitempty"`
-	Ipv4         *bool           `json:"ipv4,omitempty"`
-	Ipv6         *bool           `json:"ipv6,omitempty"`
-	Username     string          `json:"username,omitempty"`
-	Password     string          `json:"password,omitempty"`
-	ProxyHeader  JsonObject      `json:"proxy_headers,omitempty"`
-	ProxyUrl     string          `json:"proxy_url,omitempty"`
-	Response     JsonObject      `json:"response,omitempty"`
-	Check        JsonObject      `json:"check,omitempty"`
+	Url                   string          `json:"url"`
+	SslVerificationMode   string          `json:"ssl.verification_mode,omitempty"`
+	SslSupportedProtocols []string        `json:"ssl.supported_protocols,omitempty"`
+	MaxRedirects          string          `json:"max_redirects,omitempty"`
+	Mode                  HttpMonitorMode `json:"mode,omitempty"`
+	Ipv4                  *bool           `json:"ipv4,omitempty"`
+	Ipv6                  *bool           `json:"ipv6,omitempty"`
+	Username              string          `json:"username,omitempty"`
+	Password              string          `json:"password,omitempty"`
+	ProxyHeader           JsonObject      `json:"proxy_headers,omitempty"`
+	ProxyUrl              string          `json:"proxy_url,omitempty"`
+	Response              JsonObject      `json:"response,omitempty"`
+	Check                 JsonObject      `json:"check,omitempty"`
 }
 
 type SyntheticsMonitorConfig struct {
@@ -147,56 +164,103 @@ type MonitorDeleteStatus struct {
 }
 
 type SyntheticsMonitor struct {
-	Name                        string                  `json:"name"`
-	Type                        MonitorType             `json:"type"`
-	ConfigId                    MonitorID               `json:"config_id"`
-	Id                          MonitorID               `json:"id"`
-	Mode                        HttpMonitorMode         `json:"mode"`
-	CreatedAt                   time.Time               `json:"created_at"`
-	UpdatedAt                   time.Time               `json:"updated_at"`
-	Namespace                   string                  `json:"namespace"`
-	Enabled                     *bool                   `json:"enabled,omitempty"`
-	Alert                       *MonitorAlertConfig     `json:"alert,omitempty"`
-	Schedule                    *MonitorScheduleConfig  `json:"schedule,omitempty"`
-	Tags                        []string                `json:"tags,omitempty"`
-	APMServiceName              string                  `json:"service.name,omitempty"`
-	Timeout                     json.Number             `json:"timeout,omitempty"`
-	Locations                   []MonitorLocationConfig `json:"locations,omitempty"`
-	Origin                      string                  `json:"origin,omitempty"`
-	Params                      JsonObject              `json:"params,omitempty"`
-	MaxAttempts                 int                     `json:"max_attempts"`
-	MaxRedirects                string                  `json:"max_redirects"`
-	ResponseIncludeBody         string                  `json:"response.include_body"`
-	ResponseIncludeHeaders      bool                    `json:"response.include_headers"`
-	CheckRequestMethod          string                  `json:"check.request.method"`
-	ResponseIncludeBodyMaxBytes string                  `json:"response.include_body_max_bytes,omitempty"`
-	Ipv4                        bool                    `json:"ipv4,omitempty"`
-	Ipv6                        bool                    `json:"ipv6,omitempty"`
-	SslVerificationMode         string                  `json:"ssl.verification_mode,omitempty"`
-	SslSupportedProtocols       []string                `json:"ssl.supported_protocols,omitempty"`
-	Revision                    int                     `json:"revision,omitempty"`
-	Url                         string                  `json:"url,omitempty"`
-	Ui                          struct {
-		IsTlsEnabled bool `json:"is_tls_enabled"`
-	} `json:"__ui,omitempty"`
+	Name           string                  `json:"name"`
+	Type           MonitorType             `json:"type"`
+	ConfigId       MonitorID               `json:"config_id"`
+	Id             MonitorID               `json:"id"`
+	CreatedAt      time.Time               `json:"created_at"`
+	UpdatedAt      time.Time               `json:"updated_at"`
+	Namespace      string                  `json:"namespace"`
+	Enabled        *bool                   `json:"enabled,omitempty"`
+	Alert          *MonitorAlertConfig     `json:"alert,omitempty"`
+	Schedule       *MonitorScheduleConfig  `json:"schedule,omitempty"`
+	Tags           []string                `json:"tags,omitempty"`
+	APMServiceName string                  `json:"service.name,omitempty"`
+	Timeout        json.Number             `json:"timeout,omitempty"`
+	Locations      []MonitorLocationConfig `json:"locations,omitempty"`
+	Origin         string                  `json:"origin,omitempty"`
+	Params         JsonObject              `json:"params,omitempty"`
+	MaxAttempts    int                     `json:"max_attempts"`
+	Revision       int                     `json:"revision,omitempty"`
+	Ui             JsonObject              `json:"__ui,omitempty"`
+	//http
+	Url                         string          `json:"url,omitempty"`
+	Mode                        HttpMonitorMode `json:"mode"`
+	MaxRedirects                string          `json:"max_redirects"`
+	Ipv4                        *bool           `json:"ipv4,omitempty"`
+	Ipv6                        *bool           `json:"ipv6,omitempty"`
+	Username                    string          `json:"username,omitempty"`
+	Password                    string          `json:"password,omitempty"`
+	ProxyHeaders                JsonObject      `json:"proxy_headers,omitempty"`
+	CheckResponseBodyPositive   []string        `json:"check.response.body.positive,omitempty"`
+	CheckResponseStatus         []string        `json:"check.response.status,omitempty"`
+	ResponseIncludeBody         string          `json:"response.include_body,omitempty"`
+	ResponseIncludeHeaders      bool            `json:"response.include_headers,omitempty"`
+	ResponseIncludeBodyMaxBytes string          `json:"response.include_body_max_bytes,omitempty"`
+	CheckRequestBody            JsonObject      `json:"check.request.body,omitempty"`
+	CheckRequestHeaders         JsonObject      `json:"check.request.headers,omitempty"`
+	CheckRequestMethod          string          `json:"check.request.method,omitempty"`
+	//http and tcp
+	ProxyUrl              string   `json:"proxy_url,omitempty"`
+	SslVerificationMode   string   `json:"ssl.verification_mode"`
+	SslSupportedProtocols []string `json:"ssl.supported_protocols"`
+	//tcp
+	Host                  string `json:"host,omitempty"`
+	ProxyUseLocalResolver *bool  `json:"proxy_use_local_resolver,omitempty"`
+	CheckSend             string `json:"check.send,omitempty"`
+	CheckReceive          string `json:"check.receive,omitempty"`
 }
 
-type KibanaSyntheticsMonitorAdd func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)
+type MonitorTypeConfig struct {
+	Type MonitorType `json:"type"`
+}
 
-type KibanaSyntheticsMonitorUpdate func(id MonitorID, config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error)
+func (f HTTPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
 
-type KibanaSyntheticsMonitorGet func(id MonitorID, namespace string) (*SyntheticsMonitor, error)
+	mType := MonitorTypeConfig{Type: Http}
 
-type KibanaSyntheticsMonitorDelete func(namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		HTTPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
+}
 
-type KibanaSyntheticsPrivateLocationCreate func(pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error)
+func (f TCPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
 
-type KibanaSyntheticsPrivateLocationGet func(idOrLabel string, namespace string) (*PrivateLocation, error)
+	mType := MonitorTypeConfig{Type: Tcp}
 
-type KibanaSyntheticsPrivateLocationDelete func(id string, namespace string) error
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		TCPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
+}
+
+type KibanaSyntheticsMonitorAdd func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
+
+type KibanaSyntheticsMonitorUpdate func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
+
+type KibanaSyntheticsMonitorGet func(ctx context.Context, id MonitorID, namespace string) (*SyntheticsMonitor, error)
+
+type KibanaSyntheticsMonitorDelete func(ctx context.Context, namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
+
+type KibanaSyntheticsPrivateLocationCreate func(ctx context.Context, pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error)
+
+type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel string, namespace string) (*PrivateLocation, error)
+
+type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string, namespace string) error
 
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
-	return func(idOrLabel string, namespace string) (*PrivateLocation, error) {
+	return func(ctx context.Context, idOrLabel string, namespace string) (*PrivateLocation, error) {
 
 		if idOrLabel == "" {
 			return nil, APIError{
@@ -207,7 +271,7 @@ func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSynthetics
 
 		path := basePathWithId(namespace, privateLocationsSuffix, idOrLabel)
 		log.Debugf("URL to get private locations: %s", path)
-		resp, err := c.R().Get(path)
+		resp, err := c.R().SetContext(ctx).Get(path)
 		if err = handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
@@ -216,21 +280,21 @@ func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSynthetics
 }
 
 func newKibanaSyntheticsPrivateLocationDeleteFunc(c *resty.Client) KibanaSyntheticsPrivateLocationDelete {
-	return func(id string, namespace string) error {
+	return func(ctx context.Context, id string, namespace string) error {
 		path := basePathWithId(namespace, privateLocationsSuffix, id)
 		log.Debugf("URL to delete private locations: %s", path)
-		resp, err := c.R().Delete(path)
+		resp, err := c.R().SetContext(ctx).Delete(path)
 		err = handleKibanaError(err, resp)
 		return err
 	}
 }
 
 func newKibanaSyntheticsMonitorGetFunc(c *resty.Client) KibanaSyntheticsMonitorGet {
-	return func(id MonitorID, namespace string) (*SyntheticsMonitor, error) {
+	return func(ctx context.Context, id MonitorID, namespace string) (*SyntheticsMonitor, error) {
 		path := basePathWithId(namespace, monitorsSuffix, id)
 		log.Debugf("URL to get monitor: %s", path)
 
-		resp, err := c.R().Get(path)
+		resp, err := c.R().SetContext(ctx).Get(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
@@ -239,11 +303,11 @@ func newKibanaSyntheticsMonitorGetFunc(c *resty.Client) KibanaSyntheticsMonitorG
 }
 
 func newKibanaSyntheticsMonitorDeleteFunc(c *resty.Client) KibanaSyntheticsMonitorDelete {
-	return func(namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error) {
+	return func(ctx context.Context, namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error) {
 		path := basePath(namespace, monitorsSuffix)
 		log.Debugf("URL to delete monitors: %s", path)
 
-		resp, err := c.R().SetBody(map[string]interface{}{
+		resp, err := c.R().SetContext(ctx).SetBody(map[string]interface{}{
 			"ids": ids,
 		}).Delete(path)
 		if err = handleKibanaError(err, resp); err != nil {
@@ -256,11 +320,11 @@ func newKibanaSyntheticsMonitorDeleteFunc(c *resty.Client) KibanaSyntheticsMonit
 }
 
 func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSyntheticsPrivateLocationCreate {
-	return func(pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error) {
+	return func(ctx context.Context, pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error) {
 
 		path := basePath(namespace, privateLocationsSuffix)
 		log.Debugf("URL to create private locations: %s", path)
-		resp, err := c.R().SetBody(pLoc).Post(path)
+		resp, err := c.R().SetContext(ctx).SetBody(pLoc).Post(path)
 		if err = handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
@@ -269,12 +333,12 @@ func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSynthet
 }
 
 func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonitorUpdate {
-	return func(id MonitorID, config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error) {
+	return func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
 
 		path := basePathWithId(namespace, monitorsSuffix, id)
 		log.Debugf("URL to update monitor: %s", path)
-		data := buildMonitorJson(config, fields)
-		resp, err := c.R().SetBody(data).Put(path)
+		data := fields.APIRequest(config)
+		resp, err := c.R().SetContext(ctx).SetBody(data).Put(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
@@ -283,37 +347,16 @@ func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonit
 }
 
 func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorAdd {
-	return func(config SyntheticsMonitorConfig, fields HTTPMonitorFields, namespace string) (*SyntheticsMonitor, error) {
+	return func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
 
 		path := basePath(namespace, monitorsSuffix)
 		log.Debugf("URL to create monitor: %s", path)
-		data := buildMonitorJson(config, fields)
-		resp, err := c.R().SetBody(data).Post(path)
+		data := fields.APIRequest(config)
+		resp, err := c.R().SetContext(ctx).SetBody(data).Post(path)
 		if err := handleKibanaError(err, resp); err != nil {
 			return nil, err
 		}
 		return unmarshal(resp, SyntheticsMonitor{})
-	}
-}
-
-// current idea here is to switch fields HTTPMonitorFields to interface{} and to
-// type switch in the function for future monitor types
-func buildMonitorJson(config SyntheticsMonitorConfig, fields HTTPMonitorFields) interface{} {
-
-	type MonitorTypeConfig struct {
-		Type MonitorType `json:"type"`
-	}
-
-	mType := MonitorTypeConfig{Type: Http}
-
-	return struct {
-		SyntheticsMonitorConfig
-		MonitorTypeConfig
-		HTTPMonitorFields
-	}{
-		config,
-		mType,
-		fields,
 	}
 }
 

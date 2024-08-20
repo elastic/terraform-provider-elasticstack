@@ -1,6 +1,7 @@
 package private_location
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"testing"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
@@ -71,7 +72,14 @@ func Test_roundtrip(t *testing.T) {
 				PrivateLocationConfig: plc,
 			}
 			modelV0 := toModelV0(input)
-			actual := modelV0.toPrivateLocation()
+
+			compositeId, _ := synthetics.GetCompositeId(modelV0.ID.ValueString())
+
+			actual := kbapi.PrivateLocation{
+				Id:                    compositeId.ResourceId,
+				Namespace:             modelV0.SpaceID.ValueString(),
+				PrivateLocationConfig: modelV0.toPrivateLocationConfig(),
+			}
 			assert.Equal(t, input, actual)
 		})
 	}

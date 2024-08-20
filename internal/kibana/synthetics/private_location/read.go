@@ -5,15 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
 
-	tflog.Info(ctx, "Read private location")
-
-	kibanaClient := r.getKibanaClient(response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
@@ -25,9 +23,21 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	label := state.Label.ValueString()
+	resourceId := state.ID.ValueString()
 	namespace := state.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(label, namespace)
+
+	compositeId, dg := tryReadCompositeId(resourceId)
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	if compositeId != nil {
+		resourceId = compositeId.ResourceId
+		namespace = compositeId.ClusterId
+	}
+
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, resourceId, namespace)
 	if err != nil {
 		var apiError *kbapi.APIError
 		if errors.As(err, &apiError) && apiError.Code == 404 {
@@ -35,7 +45,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 			return
 		}
 
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to get private location `%s`, namespace %s", label, namespace), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to get private location `%s`, namespace %s", resourceId, namespace), err.Error())
 		return
 	}
 
