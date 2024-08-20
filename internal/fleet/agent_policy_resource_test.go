@@ -2,6 +2,7 @@ package fleet_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -139,7 +140,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 		}
 		packagePolicy, diag := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 		if diag.HasError() {
-			return fmt.Errorf(diag[0].Summary)
+			return errors.New(diag[0].Summary)
 		}
 		if packagePolicy != nil {
 			return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)
@@ -165,14 +166,14 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		}
 		packagePolicy, diag := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 		if diag.HasError() {
-			return fmt.Errorf(diag[0].Summary)
+			return errors.New(diag[0].Summary)
 		}
 		if packagePolicy == nil {
 			return fmt.Errorf("agent policy id=%v does not exist, but should still exist when skip_destroy is true", rs.Primary.ID)
 		}
 
 		if diag = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID); diag.HasError() {
-			return fmt.Errorf(diag[0].Summary)
+			return errors.New(diag[0].Summary)
 		}
 	}
 	return nil
