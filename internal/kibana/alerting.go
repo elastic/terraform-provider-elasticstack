@@ -3,6 +3,7 @@ package kibana
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -15,7 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.4"))
+var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
 
 func ResourceAlertingRule() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -193,9 +194,13 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 		rule.NotifyWhen = &t
 	}
 
-	if v, ok := d.GetOk("alert_delay"); ok && serverVersion.GreaterThanOrEqual(alertDelayMinSupportedVersion) {
+	if v, ok := d.GetOk("alert_delay"); ok {
+		if serverVersion.LessThanOrEqual(alertDelayMinSupportedVersion) {
+			return models.AlertingRule{}, diag.FromErr(fmt.Errorf("'alert_delay' field is supported only for elasticsearch v8.13.x"))
+
+		}
 		t := v.(float64)
-		rule.AlertDelay = models.AlertingRuleAlertDelay{
+		rule.AlertDelay = &models.AlertingRuleAlertDelay{
 			Active: (float32)(t),
 		}
 	}

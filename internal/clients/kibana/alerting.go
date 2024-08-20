@@ -27,6 +27,16 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 		})
 	}
 
+	var alertDelay *models.AlertingRuleAlertDelay
+
+	if alerting.IsNil(res.AlertDelay) {
+		alertDelay = nil
+	} else {
+		alertDelay = &models.AlertingRuleAlertDelay{
+			Active: unwrapOptionalField(res.AlertDelay).Active,
+		}
+	}
+
 	return &models.AlertingRule{
 		RuleID:   res.Id,
 		SpaceID:  spaceID,
@@ -49,10 +59,8 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 			LastExecutionDate: res.ExecutionStatus.LastExecutionDate,
 			Status:            res.ExecutionStatus.Status,
 		},
-		Actions: actions,
-		AlertDelay: models.AlertingRuleAlertDelay{
-			Active: unwrapOptionalField(res.AlertDelay).Active,
-		},
+		Actions:    actions,
+		AlertDelay: alertDelay,
 	}
 }
 
@@ -83,6 +91,16 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 
 	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
+	var alertDelay *alerting.AlertDelay
+
+	if alerting.IsNil(rule.AlertDelay) {
+		alertDelay = nil
+	} else {
+		alertDelay = &alerting.AlertDelay{
+			Active: (float32)((*rule.AlertDelay).Active),
+		}
+	}
+
 	reqModel := alerting.CreateRuleRequest{
 		Consumer:   rule.Consumer,
 		Actions:    ruleActionsToActionsInner(rule.Actions),
@@ -94,11 +112,9 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 		Schedule: alerting.Schedule{
 			Interval: &rule.Schedule.Interval,
 		},
-		Tags:     rule.Tags,
-		Throttle: *alerting.NewNullableString(rule.Throttle),
-		AlertDelay: &alerting.AlertDelay{
-			Active: (float32)(rule.AlertDelay.Active),
-		},
+		Tags:       rule.Tags,
+		Throttle:   *alerting.NewNullableString(rule.Throttle),
+		AlertDelay: alertDelay,
 	}
 
 	req := client.CreateRuleId(ctxWithAuth, rule.SpaceID, rule.RuleID).KbnXsrf("true").CreateRuleRequest(reqModel)

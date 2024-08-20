@@ -18,7 +18,7 @@ type AlertingRule struct {
 
 	ScheduledTaskID *string
 	ExecutionStatus AlertingRuleExecutionStatus
-	AlertDelay      AlertingRuleAlertDelay
+	AlertDelay      *AlertingRuleAlertDelay
 }
 
 type AlertingRuleSchedule struct {

@@ -120,7 +120,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 						Params: map[string]interface{}{},
 					},
 				},
-				AlertDelay: models.AlertingRuleAlertDelay{
+				AlertDelay: &models.AlertingRuleAlertDelay{
 					Active: 4,
 				},
 			},
