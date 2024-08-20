@@ -112,7 +112,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestTcpMonitorResource - %s"
-	space_id = "default"
+	space_id = "testacc"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
@@ -140,7 +140,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	tcpMonitorUpdated = `
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestTcpMonitorResource Updated - %s"
-	space_id = "default"
+	space_id = "testacc"
 	schedule = 10
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = false
@@ -285,7 +285,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource - "+name),
-					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "testacc"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "private_locations.0"),
@@ -323,7 +323,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "testacc"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "10"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "private_locations.0"),
