@@ -31,6 +31,10 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.0.grant", []string{"sample"}),
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.2.privileges", []string{"minimal_read", "store_search_session", "url_create"}),
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.clusters", []string{"test-cluster"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.field_security.0.grant", []string{"sample"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.names", []string{"sample"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.privileges", []string{"create", "read", "write"}),
 				),
 			},
 			{
@@ -42,6 +46,10 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as", []string{"elastic", "kibana"}),
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.clusters", []string{"test-cluster2"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.field_security.0.grant", []string{"sample2"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.names", []string{"sample2"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.privileges", []string{"create", "read", "write"}),
 				),
 			},
 		},
@@ -60,6 +68,15 @@ resource "elasticstack_kibana_security_role" "test" {
   elasticsearch {
     cluster = [ "create_snapshot" ]
     indices {
+      field_security {
+        grant = ["sample"]
+        except = []
+      }
+      names = ["sample"]
+      privileges = ["create", "read", "write"]
+    }
+    remote_indices {
+	  clusters = ["test-cluster"]
       field_security {
         grant = ["sample"]
         except = []
@@ -127,6 +144,15 @@ resource "elasticstack_kibana_security_role" "test" {
 		names = ["sample"]
 		privileges = ["create", "read", "write"]
 	  }
+      remote_indices {
+	    clusters = ["test-cluster2"]
+        field_security {
+          grant = ["sample2"]
+          except = []
+        }
+        names = ["sample2"]
+        privileges = ["create", "read", "write"]
+      }
 	  run_as = ["kibana", "elastic"]
 	}
 	kibana {
