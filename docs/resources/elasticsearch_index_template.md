@@ -60,7 +60,7 @@ resource "elasticstack_elasticsearch_index_template" "my_data_stream" {
 - `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `metadata` (String) Optional user metadata about the index template.
 - `priority` (Number) Priority to determine index template precedence when a new data stream or index is created.
-- `template` (Block List, Max: 1) Template to be applied. It may optionally include an aliases, mappings, or settings configuration. (see [below for nested schema](#nestedblock--template))
+- `template` (Block List, Max: 1) Template to be applied. It may optionally include an aliases, mappings, lifecycle, or settings configuration. (see [below for nested schema](#nestedblock--template))
 - `version` (Number) Version number used to manage index templates externally.
 
 ### Read-Only
@@ -102,6 +102,7 @@ Optional:
 Optional:
 
 - `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
+- `lifecycle` (Block Set, Max: 1) Lifecycle of data stream. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-lifecycle.html (see [below for nested schema](#nestedblock--template--lifecycle))
 - `mappings` (String) Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details
 - `settings` (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
 
@@ -120,6 +121,14 @@ Optional:
 - `is_write_index` (Boolean) If true, the index is the write index for the alias.
 - `routing` (String) Value used to route indexing and search operations to a specific shard.
 - `search_routing` (String) Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.
+
+
+<a id="nestedblock--template--lifecycle"></a>
+### Nested Schema for `template.lifecycle`
+
+Required:
+
+- `data_retention` (String) The retention period of the data indexed in this data stream.
 
 ## Import
 

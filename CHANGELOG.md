@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Add the `alert_delay` field to the Create Rule API ([#715](https://github.com/elastic/terraform-provider-elasticstack/pull/715))
+- Add support for data_stream `lifecycle` template settings ([#724](https://github.com/elastic/terraform-provider-elasticstack/pull/724))
 
 ## [0.11.6] - 2024-08-20
 
