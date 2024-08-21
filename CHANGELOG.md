@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add the `alert_delay` field to the Create Rule API ([#715](https://github.com/elastic/terraform-provider-elasticstack/pull/715))
+
 ## [0.11.5] - 2024-08-12
 
 - Fix setting `id` for Fleet outputs and servers ([#666](https://github.com/elastic/terraform-provider-elasticstack/pull/666))
@@ -11,6 +13,7 @@
 ## [0.11.4] - 2024-06-13
 
 ### Breaking changes
+
 - The `title` attribute is now required in the elasticstack_kibana_data_view resource. In practice the resource didn't work without this set, the schema now enforces it's correctly configured.
 
 ### Fixed
@@ -35,7 +38,7 @@
 
 ### Added
 
-- Added datasource for alerting connectors.  ([#607](https://github.com/elastic/terraform-provider-elasticstack/pull/607))
+- Added datasource for alerting connectors. ([#607](https://github.com/elastic/terraform-provider-elasticstack/pull/607))
 
 ## [0.11.2] - 2024-03-13
 
@@ -147,6 +150,7 @@
 - Add 'min\_\*' conditions to ILM rollover ([#250](https://github.com/elastic/terraform-provider-elasticstack/pull/250))
 - Add support for Kibana connections ([#226](https://github.com/elastic/terraform-provider-elasticstack/pull/226))
 - **[Breaking Change] Add 'deletion_protection' field to index resource** to avoid unintentional deletion. ([#167](https://github.com/elastic/terraform-provider-elasticstack/pull/167))
+
   - To delete index resource, you'll need to explicitly set `deletion_protection = false` as follows.
 
   ```terraform
@@ -181,6 +185,7 @@
 - Correctly handle empty logstash pipeline metadata in plan diffs ([#256](https://github.com/elastic/terraform-provider-elasticstack/pull/256))
 - Fix error when logging API requests in debug mode ([#259](https://github.com/elastic/terraform-provider-elasticstack/pull/259))
 - **[Breaking Change] Change `pipeline_metadata` type from schema.TypeMap to schema.TypeString**. This is to fix an error caused by updates to Logstash Pipelines outside of TF ([#278](https://github.com/elastic/terraform-provider-elasticstack/issues/278))
+
   - To use the updated `pipeline_metadata` field, you'll need to encapsulate any Terraform configuration with **jsonencode{}** as follows:
 
     ```terraform
@@ -206,6 +211,7 @@
       - run `terraform apply`
     - OR
       - reimport the resources into state using `terraform import` (<https://developer.hashicorp.com/terraform/cli/import>)
+
 - Fix order of `indices` field in SLM ([#326](https://github.com/elastic/terraform-provider-elasticstack/pull/326))
 
 ## [0.5.0] - 2022-12-07
