@@ -38,7 +38,7 @@ resource "elasticstack_kibana_security_role" "example" {
         except = []
       }
       names      = ["test"]
-	    clusters = ["test-cluster"]
+      clusters   = ["test-cluster"]
       privileges = ["create", "read", "write"]
     }
   }
@@ -75,7 +75,7 @@ resource "elasticstack_kibana_security_role" "example" {
         except = []
       }
       names      = ["test"]
-	    clusters = ["test-cluster"]
+      clusters   = ["test-cluster"]
       privileges = ["create", "read", "write"]
     }
   }
