@@ -2,6 +2,7 @@ package fleet_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -103,7 +104,7 @@ func checkResourceFleetServerHostDestroy(s *terraform.State) error {
 		}
 		packagePolicy, diag := fleet.ReadFleetServerHost(context.Background(), fleetClient, rs.Primary.ID)
 		if diag.HasError() {
-			return fmt.Errorf(diag[0].Summary)
+			return errors.New(diag[0].Summary)
 		}
 		if packagePolicy != nil {
 			return fmt.Errorf("FleetServerHost id=%v still exists, but it should have been removed", rs.Primary.ID)

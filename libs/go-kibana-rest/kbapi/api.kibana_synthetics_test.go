@@ -313,7 +313,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 			testWithPolicy(s.T(), s.client, space, func(policyId string) {
 
 				cfg := PrivateLocationConfig{
-					Label:         fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI %s", testUuid),
+					Label:         fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI-%s", testUuid),
 					AgentPolicyId: policyId,
 					Tags:          []string{"a", "b"},
 					Geo: &SyntheticGeoConfig{
@@ -322,6 +322,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 					},
 				}
 				created, err := pAPI.Create(ctx, cfg, space)
+
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created.Label, cfg.Label)
 				assert.Equal(s.T(), created.AgentPolicyId, cfg.AgentPolicyId)
