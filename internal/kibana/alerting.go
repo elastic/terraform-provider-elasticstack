@@ -195,7 +195,7 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 	}
 
 	if v, ok := d.GetOk("alert_delay"); ok {
-		if serverVersion.LessThanOrEqual(alertDelayMinSupportedVersion) {
+		if serverVersion.LessThan(alertDelayMinSupportedVersion) {
 			return models.AlertingRule{}, diag.Diagnostics{
 				diag.Diagnostic{
 					Severity:      diag.Error,
