@@ -16,14 +16,14 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 8.13.4
+STACK_VERSION ?= 8.15.0
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
 ELASTICSEARCH_USERNAME ?= elastic
 ELASTICSEARCH_PASSWORD ?= password
 ELASTICSEARCH_NETWORK ?= elasticstack-network
-ELASTICSEARCH_MEM ?= 1024m
+ELASTICSEARCH_MEM ?= 2048m
 
 KIBANA_NAME ?= terraform-elasticstack-kb
 KIBANA_ENDPOINT ?= http://$(KIBANA_NAME):5601
@@ -132,7 +132,7 @@ docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start 
 		-e ELASTICSEARCH_USERNAME=$(KIBANA_SYSTEM_USERNAME) \
 		-e ELASTICSEARCH_PASSWORD=$(KIBANA_SYSTEM_PASSWORD) \
 		-e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d \
-		-e "logging.root.level=debug" \
+		-e LOGGING_ROOT_LEVEL=debug \
 		--name $(KIBANA_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
 		docker.elastic.co/kibana/kibana:$(STACK_VERSION); \
@@ -157,7 +157,7 @@ docker-kibana-with-tls: docker-network docker-elasticsearch set-kibana-password
 		-e SERVER_SSL_CERTIFICATE=/certs/localhost+1.pem \
 		-e SERVER_SSL_KEY=/certs/localhost+1-key.pem \
 		-e SERVER_SSL_ENABLED=true \
-		-e "logging.root.level=debug" \
+		-e LOGGING_ROOT_LEVEL=debug \
 		--name $(KIBANA_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
 		docker.elastic.co/kibana/kibana:$(STACK_VERSION); \

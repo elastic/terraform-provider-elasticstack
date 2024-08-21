@@ -60,10 +60,12 @@ jobs:
         image: docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.version }}
         env:
           discovery.type: single-node
-          xpack.license.self_generated.type: trial
           xpack.security.enabled: true
           xpack.security.authc.api_key.enabled: true
+          xpack.security.authc.token.enabled: true
+          xpack.security.http.ssl.enabled: false
           xpack.watcher.enabled: true
+          xpack.license.self_generated.type: trial
           repositories.url.allowed_urls: https://example.com/*
           path.repo: /tmp
           ELASTIC_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
@@ -78,9 +80,10 @@ jobs:
           ELASTICSEARCH_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
           ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
           XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
-          xpack.fleet.enabled: true
+#          LOGGING_ROOT_LEVEL: debug
         ports:
           - 5601:5601
+        options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
 
     timeout-minutes: 15
     strategy:
@@ -103,6 +106,7 @@ jobs:
           - '8.12.2'
           - '8.13.4'
           - '8.14.3'
+          - '8.15.0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -133,6 +137,12 @@ jobs:
           ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
           ELASTICSEARCH_USERNAME: "elastic"
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+
+      - id: force-install-synthetics
+        name: Force install synthetics
+        if: matrix.version == '8.14.3' || matrix.version == '8.15.0'
+        run: |-
+          for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
         timeout-minutes: 10

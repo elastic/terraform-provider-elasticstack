@@ -1,6 +1,9 @@
 ## [Unreleased]
 
 - Add the `alert_delay` field to the Create Rule API ([#715](https://github.com/elastic/terraform-provider-elasticstack/pull/715))
+- Improve validation for index settings and mappings ([#719](https://github.com/elastic/terraform-provider-elasticstack/pull/719))
+- Add support for Kibana synthetics http and tcp monitors ([#699](https://github.com/elastic/terraform-provider-elasticstack/pull/699))
+- Add `elasticstack_kibana_spaces` data source ([#682](https://github.com/elastic/terraform-provider-elasticstack/pull/682))
 
 ## [0.11.5] - 2024-08-12
 
@@ -321,7 +324,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...HEAD
+[0.11.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.1...v0.11.2

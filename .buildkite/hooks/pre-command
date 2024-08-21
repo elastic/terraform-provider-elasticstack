@@ -12,5 +12,5 @@ if [[ "$BUILDKITE_PIPELINE_SLUG" == "terraform-provider-elasticstack-release" ]]
   export GPG_PRIVATE_SECRET=$(scripts/retry.sh 5 vault kv get -field gpg_private ${RELEASE_VAULT_PATH})
   export GPG_PASSPHRASE_SECRET=$(scripts/retry.sh 5 vault kv get -field gpg_passphrase ${RELEASE_VAULT_PATH})
   export GPG_FINGERPRINT_SECRET=$(scripts/retry.sh 5 vault kv get -field gpg_fingerprint ${RELEASE_VAULT_PATH})
-  export GITHUB_TOKEN=$(scripts/retry.sh 5 vault kv get -field gh_personal_access_token ${RELEASE_VAULT_PATH})
+  export GITHUB_TOKEN="${VAULT_GITHUB_TOKEN}"
 fi

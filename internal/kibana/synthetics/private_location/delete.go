@@ -3,15 +3,13 @@ package private_location
 import (
 	"context"
 	"fmt"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
 
-	tflog.Info(ctx, "Delete private location")
-
-	kibanaClient := r.getKibanaClient(response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
@@ -23,12 +21,24 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	id := plan.ID.ValueString()
+	resourceId := plan.ID.ValueString()
 	namespace := plan.SpaceID.ValueString()
-	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(id, namespace)
+
+	compositeId, dg := tryReadCompositeId(resourceId)
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	if compositeId != nil {
+		resourceId = compositeId.ResourceId
+		namespace = compositeId.ClusterId
+	}
+
+	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, resourceId, namespace)
 
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", id, namespace), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", resourceId, namespace), err.Error())
 		return
 	}
 
