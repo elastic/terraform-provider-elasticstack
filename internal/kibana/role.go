@@ -9,10 +9,13 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var minSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
 
 func ResourceRole() *schema.Resource {
 	roleSchema := map[string]*schema.Schema{
@@ -253,6 +256,11 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
 	kibana, err := client.GetKibanaClient()
 	if err != nil {
 		return diag.FromErr(err)
@@ -275,7 +283,10 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 	}
 
 	if v, ok := d.GetOk("elasticsearch"); ok {
-		kibanaRole.Elasticsearch = expandKibanaRoleElasticsearch(v)
+		kibanaRole.Elasticsearch, diags = expandKibanaRoleElasticsearch(v, serverVersion)
+		if diags != nil {
+			return diags
+		}
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
@@ -369,8 +380,9 @@ func expandKibanaRoleMetadata(v interface{}) (map[string]interface{}, diag.Diagn
 	return metadata, nil
 }
 
-func expandKibanaRoleElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch {
+func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version) (*kbapi.KibanaRoleElasticsearch, diag.Diagnostics) {
 	elasticConfig := &kbapi.KibanaRoleElasticsearch{}
+	var diags diag.Diagnostics
 
 	if definedElasticConfigs := v.(*schema.Set); definedElasticConfigs.Len() > 0 {
 		userElasticConfig := definedElasticConfigs.List()[0].(map[string]interface{})
@@ -438,6 +450,11 @@ func expandKibanaRoleElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch
 
 			if v, ok := userElasticConfig["remote_indices"]; ok {
 				definedRemoteIndices := v.(*schema.Set)
+				if definedRemoteIndices.Len() > 0 {
+					if serverVersion.LessThan(minSupportedRemoteIndicesVersion) {
+						return nil, diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Kibana v%s and above", minSupportedRemoteIndicesVersion.String()))
+					}
+				}
 				remote_indices := make([]kbapi.KibanaRoleElasticsearchRemoteIndice, definedRemoteIndices.Len())
 				for i, idx := range definedRemoteIndices.List() {
 					index := idx.(map[string]interface{})
@@ -506,7 +523,7 @@ func expandKibanaRoleElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch
 			}
 		}
 	}
-	return elasticConfig
+	return elasticConfig, diags
 }
 
 func expandKibanaRoleKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagnostics) {
