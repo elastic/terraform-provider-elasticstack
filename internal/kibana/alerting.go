@@ -196,7 +196,14 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 
 	if v, ok := d.GetOk("alert_delay"); ok {
 		if serverVersion.LessThanOrEqual(alertDelayMinSupportedVersion) {
-			return models.AlertingRule{}, diag.FromErr(fmt.Errorf("'alert_delay' field is supported only for elasticsearch v8.13.x"))
+			return models.AlertingRule{}, diag.Diagnostics{
+				diag.Diagnostic{
+					Severity:      diag.Error,
+					Summary:       "alert_delay is only supported for Elasticsearch v8.13 or higher",
+					Detail:        "alert_delay is only supported for Elasticsearch v8.13 or higher",
+					AttributePath: cty.GetAttrPath("alert_delay"),
+				},
+			}
 
 		}
 		t := v.(float64)
