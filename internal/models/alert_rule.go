@@ -18,15 +18,11 @@ type AlertingRule struct {
 
 	ScheduledTaskID *string
 	ExecutionStatus AlertingRuleExecutionStatus
-	AlertDelay      *AlertingRuleAlertDelay
+	AlertDelay      *float32
 }
 
 type AlertingRuleSchedule struct {
 	Interval string
-}
-
-type AlertingRuleAlertDelay struct {
-	Active float32
 }
 
 type AlertingRuleAction struct {

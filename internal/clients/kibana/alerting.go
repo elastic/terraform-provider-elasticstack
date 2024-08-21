@@ -27,14 +27,13 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 		})
 	}
 
-	var alertDelay *models.AlertingRuleAlertDelay
+	var alertDelay *float32
+	alertDelayActive := unwrapOptionalField(res.AlertDelay).Active
 
 	if alerting.IsNil(res.AlertDelay) {
 		alertDelay = nil
 	} else {
-		alertDelay = &models.AlertingRuleAlertDelay{
-			Active: unwrapOptionalField(res.AlertDelay).Active,
-		}
+		alertDelay = &alertDelayActive
 	}
 
 	return &models.AlertingRule{
@@ -97,7 +96,7 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 		alertDelay = nil
 	} else {
 		alertDelay = &alerting.AlertDelay{
-			Active: (float32)((*rule.AlertDelay).Active),
+			Active: *rule.AlertDelay,
 		}
 	}
 

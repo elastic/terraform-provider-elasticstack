@@ -204,9 +204,7 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 
 		}
 
-		rule.AlertDelay = &models.AlertingRuleAlertDelay{
-			Active: v.(float32),
-		}
+		rule.AlertDelay = utils.Pointer(float32(v.(float64)))
 	}
 
 	actions, diags := getActionsFromResourceData(d)

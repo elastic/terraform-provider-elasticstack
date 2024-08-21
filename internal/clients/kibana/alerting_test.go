@@ -88,7 +88,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 				},
 				Throttle: *alerting.NewNullableString(makePtr("throttle")),
 				AlertDelay: &alerting.AlertDelay{
-					Active: 4,
+					Active: float32(4),
 				},
 			},
 			expectedModel: &models.AlertingRule{
@@ -120,9 +120,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 						Params: map[string]interface{}{},
 					},
 				},
-				AlertDelay: &models.AlertingRuleAlertDelay{
-					Active: 4,
-				},
+				AlertDelay: makePtr(float32(4)),
 			},
 		},
 	}
