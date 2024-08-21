@@ -1,5 +1,6 @@
 ## [Unreleased]
 
+## [0.11.6] - 2024-08-20
 - Improve validation for index settings and mappings ([#719](https://github.com/elastic/terraform-provider-elasticstack/pull/719))
 - Add support for Kibana synthetics http and tcp monitors ([#699](https://github.com/elastic/terraform-provider-elasticstack/pull/699))
 - Add `elasticstack_kibana_spaces` data source ([#682](https://github.com/elastic/terraform-provider-elasticstack/pull/682))
@@ -319,7 +320,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...HEAD
+[0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.2...v0.11.3
