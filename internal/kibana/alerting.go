@@ -3,7 +3,6 @@ package kibana
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -190,25 +189,23 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 	}
 
 	if v, ok := d.GetOk("notify_when"); ok {
-		t := v.(string)
-		rule.NotifyWhen = &t
+		rule.NotifyWhen = utils.Pointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("alert_delay"); ok {
 		if serverVersion.LessThan(alertDelayMinSupportedVersion) {
 			return models.AlertingRule{}, diag.Diagnostics{
 				diag.Diagnostic{
-					Severity:      diag.Error,
-					Summary:       "alert_delay is only supported for Elasticsearch v8.13 or higher",
-					Detail:        "alert_delay is only supported for Elasticsearch v8.13 or higher",
-					AttributePath: cty.GetAttrPath("alert_delay"),
+					Severity: diag.Error,
+					Summary:  "alert_delay is only supported for Elasticsearch v8.13 or higher",
+					Detail:   "alert_delay is only supported for Elasticsearch v8.13 or higher",
 				},
 			}
 
 		}
-		t := v.(float64)
+
 		rule.AlertDelay = &models.AlertingRuleAlertDelay{
-			Active: (float32)(t),
+			Active: v.(float32),
 		}
 	}
 

@@ -30,19 +30,12 @@ type AlertingRuleAlertDelay struct {
 }
 
 type AlertingRuleAction struct {
-	Group     string
-	ID        string
-	Params    map[string]interface{}
-	Frequency AlertingRuleActionFrequency
+	Group  string
+	ID     string
+	Params map[string]interface{}
 }
 
 type AlertingRuleExecutionStatus struct {
 	LastExecutionDate *time.Time
 	Status            *string
-}
-
-type AlertingRuleActionFrequency struct {
-	NotifyWhen string
-	Summary    bool
-	Throttle   *string
 }
