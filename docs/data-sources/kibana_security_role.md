@@ -47,6 +47,7 @@ Read-Only:
 
 - `cluster` (Set of String)
 - `indices` (Set of Object) (see [below for nested schema](#nestedobjatt--elasticsearch--indices))
+- `remote_indices` (Set of Object) (see [below for nested schema](#nestedobjatt--elasticsearch--remote_indices))
 - `run_as` (Set of String)
 
 <a id="nestedobjatt--elasticsearch--indices"></a>
@@ -61,6 +62,27 @@ Read-Only:
 
 <a id="nestedobjatt--elasticsearch--indices--field_security"></a>
 ### Nested Schema for `elasticsearch.indices.field_security`
+
+Read-Only:
+
+- `except` (Set of String)
+- `grant` (Set of String)
+
+
+
+<a id="nestedobjatt--elasticsearch--remote_indices"></a>
+### Nested Schema for `elasticsearch.remote_indices`
+
+Read-Only:
+
+- `clusters` (Set of String)
+- `field_security` (List of Object) (see [below for nested schema](#nestedobjatt--elasticsearch--remote_indices--field_security))
+- `names` (Set of String)
+- `privileges` (Set of String)
+- `query` (String)
+
+<a id="nestedobjatt--elasticsearch--remote_indices--field_security"></a>
+### Nested Schema for `elasticsearch.remote_indices.field_security`
 
 Read-Only:
 
