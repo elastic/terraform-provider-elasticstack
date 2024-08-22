@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 
 
-VERSION ?= 0.11.5
+VERSION ?= 0.11.6
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -216,6 +216,7 @@ tools: $(GOBIN) ## Install useful tools for linting, docs generation and develop
 	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@ cd tools && go install github.com/goreleaser/goreleaser
 	@ cd tools && go install github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen
+	@ cd tools && go install go.uber.org/mock/mockgen
 
 .PHONY: misspell
 misspell:

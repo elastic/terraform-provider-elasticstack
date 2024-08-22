@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Name** | Pointer to **string** |  | [optional] 
-**Description** | Pointer to **string** |  | [optional] 
+**Name** | Pointer to **NullableString** |  | [optional] 
+**Description** | Pointer to **NullableString** |  | [optional] 
 **UseWithTripleBracesInTemplates** | Pointer to **bool** |  | [optional] 
 
 ## Methods
@@ -52,6 +52,16 @@ SetName sets Name field to given value.
 
 HasName returns a boolean if a field has been set.
 
+### SetNameNil
+
+`func (o *GetRuleTypes200ResponseInnerActionVariablesContextInner) SetNameNil(b bool)`
+
+ SetNameNil sets the value for Name to be an explicit nil
+
+### UnsetName
+`func (o *GetRuleTypes200ResponseInnerActionVariablesContextInner) UnsetName()`
+
+UnsetName ensures that no value is present for Name, not even an explicit nil
 ### GetDescription
 
 `func (o *GetRuleTypes200ResponseInnerActionVariablesContextInner) GetDescription() string`
@@ -77,6 +87,16 @@ SetDescription sets Description field to given value.
 
 HasDescription returns a boolean if a field has been set.
 
+### SetDescriptionNil
+
+`func (o *GetRuleTypes200ResponseInnerActionVariablesContextInner) SetDescriptionNil(b bool)`
+
+ SetDescriptionNil sets the value for Description to be an explicit nil
+
+### UnsetDescription
+`func (o *GetRuleTypes200ResponseInnerActionVariablesContextInner) UnsetDescription()`
+
+UnsetDescription ensures that no value is present for Description, not even an explicit nil
 ### GetUseWithTripleBracesInTemplates
 
 `func (o *GetRuleTypes200ResponseInnerActionVariablesContextInner) GetUseWithTripleBracesInTemplates() bool`

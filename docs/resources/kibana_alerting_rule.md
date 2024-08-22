@@ -62,6 +62,7 @@ Could not create API key - Unsupported scheme "ApiKey" for granting API Key
 ### Optional
 
 - `actions` (Block List) An action that runs under defined conditions. (see [below for nested schema](#nestedblock--actions))
+- `alert_delay` (Number) A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.
 - `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
 - `rule_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.

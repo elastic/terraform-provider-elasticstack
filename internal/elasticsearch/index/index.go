@@ -489,8 +489,10 @@ If specified, this mapping can include: field names, [field data types](https://
 			Type:             schema.TypeString,
 			Optional:         true,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
-			ValidateFunc:     validation.StringIsJSON,
-			Default:          "{}",
+			ValidateFunc: validation.All(
+				validation.StringIsJSON, stringIsJSONObject,
+			),
+			Default: "{}",
 		},
 		// Deprecated: individual setting field should be used instead
 		"settings": {
