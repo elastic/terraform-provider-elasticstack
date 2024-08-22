@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ActionGroups** | Pointer to [**[]GetRuleTypes200ResponseInnerActionGroupsInner**](GetRuleTypes200ResponseInnerActionGroupsInner.md) | An explicit list of groups for which the alert type can schedule actions, each with the action group&#39;s unique ID and human readable name. Alert actions validation uses this configuration to ensure that groups are valid.  | [optional] 
+**ActionGroups** | Pointer to [**[]LegacyGetAlertTypes200ResponseInnerActionGroupsInner**](LegacyGetAlertTypes200ResponseInnerActionGroupsInner.md) |  | [optional] 
 **ActionVariables** | Pointer to [**LegacyGetAlertTypes200ResponseInnerActionVariables**](LegacyGetAlertTypes200ResponseInnerActionVariables.md) |  | [optional] 
 **AuthorizedConsumers** | Pointer to **map[string]interface{}** | The list of the plugins IDs that have access to the alert type. | [optional] 
 **DefaultActionGroupId** | Pointer to **string** | The default identifier for the alert type group. | [optional] 
@@ -37,20 +37,20 @@ but it doesn't guarantee that properties required by API are set
 
 ### GetActionGroups
 
-`func (o *LegacyGetAlertTypes200ResponseInner) GetActionGroups() []GetRuleTypes200ResponseInnerActionGroupsInner`
+`func (o *LegacyGetAlertTypes200ResponseInner) GetActionGroups() []LegacyGetAlertTypes200ResponseInnerActionGroupsInner`
 
 GetActionGroups returns the ActionGroups field if non-nil, zero value otherwise.
 
 ### GetActionGroupsOk
 
-`func (o *LegacyGetAlertTypes200ResponseInner) GetActionGroupsOk() (*[]GetRuleTypes200ResponseInnerActionGroupsInner, bool)`
+`func (o *LegacyGetAlertTypes200ResponseInner) GetActionGroupsOk() (*[]LegacyGetAlertTypes200ResponseInnerActionGroupsInner, bool)`
 
 GetActionGroupsOk returns a tuple with the ActionGroups field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetActionGroups
 
-`func (o *LegacyGetAlertTypes200ResponseInner) SetActionGroups(v []GetRuleTypes200ResponseInnerActionGroupsInner)`
+`func (o *LegacyGetAlertTypes200ResponseInner) SetActionGroups(v []LegacyGetAlertTypes200ResponseInnerActionGroupsInner)`
 
 SetActionGroups sets ActionGroups field to given value.
 

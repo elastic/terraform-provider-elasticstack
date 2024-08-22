@@ -17,6 +17,7 @@ import (
 
 func TestAccResourceAlertingRule(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+	minSupportedAlertDelayVersion := version.Must(version.NewSemver("8.13.0"))
 
 	t.Setenv("KIBANA_API_KEY", "")
 
@@ -53,6 +54,36 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "tags.0", "first"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "tags.1", "second"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
+				Config:   testAccResourceAlertingRuleWithAlertDelayCreate(ruleName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624b"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "alert_delay", "4"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
+				Config:   testAccResourceAlertingRuleWithAlertDelayUpdate(ruleName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", fmt.Sprintf("Updated %s", ruleName)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624b"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "10m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "tags.0", "first"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "tags.1", "second"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "alert_delay", "4"),
 				),
 			},
 		},
@@ -120,6 +151,73 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   interval     = "10m"
   enabled      = false
   tags         = ["first", "second"]
+}
+	`, name)
+}
+
+func testAccResourceAlertingRuleWithAlertDelayCreate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_alerting_rule" "test_rule" {
+  name         = "%s"
+  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac5471624b"
+  consumer     = "alerts"
+  notify_when  = "onActiveAlert"
+  params       = jsonencode({
+	aggType             = "avg"
+	groupBy             = "top"
+	termSize            = 10
+	timeWindowSize      = 10
+	timeWindowUnit      = "s"
+	threshold           = [10]
+	thresholdComparator = ">"
+	index               = ["test-index"]
+	timeField           = "@timestamp"
+	aggField            = "version"
+	termField           = "name"
+  })
+  rule_type_id = ".index-threshold"
+  interval     = "1m"
+  enabled      = true
+  alert_delay  = 4
+}
+	`, name)
+}
+
+func testAccResourceAlertingRuleWithAlertDelayUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_alerting_rule" "test_rule" {
+  name         = "Updated %s"
+  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac5471624b"
+  consumer     = "alerts"
+  notify_when  = "onActiveAlert"
+  params       = jsonencode({
+	aggType             = "avg"
+	groupBy             = "top"
+	termSize            = 10
+	timeWindowSize      = 10
+	timeWindowUnit      = "s"
+	threshold           = [10]
+	thresholdComparator = ">"
+	index               = ["test-index"]
+	timeField           = "@timestamp"
+	aggField            = "version"
+	termField           = "name"
+  })
+  rule_type_id = ".index-threshold"
+  interval     = "10m"
+  enabled      = false
+  tags         = ["first", "second"]
+  alert_delay  = 4
 }
 	`, name)
 }

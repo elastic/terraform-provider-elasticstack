@@ -7,7 +7,7 @@ type AlertingRule struct {
 	SpaceID    string
 	Name       string
 	Consumer   string
-	NotifyWhen string
+	NotifyWhen *string
 	Params     map[string]interface{}
 	RuleTypeID string
 	Schedule   AlertingRuleSchedule
@@ -18,6 +18,7 @@ type AlertingRule struct {
 
 	ScheduledTaskID *string
 	ExecutionStatus AlertingRuleExecutionStatus
+	AlertDelay      *float32
 }
 
 type AlertingRuleSchedule struct {

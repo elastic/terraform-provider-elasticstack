@@ -4,12 +4,16 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ActionGroups** | Pointer to [**[]GetRuleTypes200ResponseInnerActionGroupsInner**](GetRuleTypes200ResponseInnerActionGroupsInner.md) | An explicit list of groups for which the rule type can schedule actions, each with the action group&#39;s unique ID and human readable name. Rule actions validation uses this configuration to ensure that groups are valid.  | [optional] 
+**ActionGroups** | Pointer to [**[]GetRuleTypes200ResponseInnerActionGroupsInner**](GetRuleTypes200ResponseInnerActionGroupsInner.md) |  | [optional] 
 **ActionVariables** | Pointer to [**GetRuleTypes200ResponseInnerActionVariables**](GetRuleTypes200ResponseInnerActionVariables.md) |  | [optional] 
+**Alerts** | Pointer to [**GetRuleTypes200ResponseInnerAlerts**](GetRuleTypes200ResponseInnerAlerts.md) |  | [optional] 
 **AuthorizedConsumers** | Pointer to [**GetRuleTypes200ResponseInnerAuthorizedConsumers**](GetRuleTypes200ResponseInnerAuthorizedConsumers.md) |  | [optional] 
+**Category** | Pointer to **string** | The rule category, which is used by features such as category-specific maintenance windows. | [optional] 
 **DefaultActionGroupId** | Pointer to **string** | The default identifier for the rule type group. | [optional] 
 **DoesSetRecoveryContext** | Pointer to **bool** | Indicates whether the rule passes context variables to its recovery action. | [optional] 
 **EnabledInLicense** | Pointer to **bool** | Indicates whether the rule type is enabled or disabled based on the subscription. | [optional] 
+**HasAlertsMappings** | Pointer to **bool** | Indicates whether the rule type has custom mappings for the alert data. | [optional] 
+**HasFieldsForAAD** | Pointer to **bool** |  | [optional] 
 **Id** | Pointer to **string** | The unique identifier for the rule type. | [optional] 
 **IsExportable** | Pointer to **bool** | Indicates whether the rule type is exportable in **Stack Management &gt; Saved Objects**. | [optional] 
 **MinimumLicenseRequired** | Pointer to **string** | The subscriptions required to use the rule type. | [optional] 
@@ -87,6 +91,31 @@ SetActionVariables sets ActionVariables field to given value.
 
 HasActionVariables returns a boolean if a field has been set.
 
+### GetAlerts
+
+`func (o *GetRuleTypes200ResponseInner) GetAlerts() GetRuleTypes200ResponseInnerAlerts`
+
+GetAlerts returns the Alerts field if non-nil, zero value otherwise.
+
+### GetAlertsOk
+
+`func (o *GetRuleTypes200ResponseInner) GetAlertsOk() (*GetRuleTypes200ResponseInnerAlerts, bool)`
+
+GetAlertsOk returns a tuple with the Alerts field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetAlerts
+
+`func (o *GetRuleTypes200ResponseInner) SetAlerts(v GetRuleTypes200ResponseInnerAlerts)`
+
+SetAlerts sets Alerts field to given value.
+
+### HasAlerts
+
+`func (o *GetRuleTypes200ResponseInner) HasAlerts() bool`
+
+HasAlerts returns a boolean if a field has been set.
+
 ### GetAuthorizedConsumers
 
 `func (o *GetRuleTypes200ResponseInner) GetAuthorizedConsumers() GetRuleTypes200ResponseInnerAuthorizedConsumers`
@@ -111,6 +140,31 @@ SetAuthorizedConsumers sets AuthorizedConsumers field to given value.
 `func (o *GetRuleTypes200ResponseInner) HasAuthorizedConsumers() bool`
 
 HasAuthorizedConsumers returns a boolean if a field has been set.
+
+### GetCategory
+
+`func (o *GetRuleTypes200ResponseInner) GetCategory() string`
+
+GetCategory returns the Category field if non-nil, zero value otherwise.
+
+### GetCategoryOk
+
+`func (o *GetRuleTypes200ResponseInner) GetCategoryOk() (*string, bool)`
+
+GetCategoryOk returns a tuple with the Category field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetCategory
+
+`func (o *GetRuleTypes200ResponseInner) SetCategory(v string)`
+
+SetCategory sets Category field to given value.
+
+### HasCategory
+
+`func (o *GetRuleTypes200ResponseInner) HasCategory() bool`
+
+HasCategory returns a boolean if a field has been set.
 
 ### GetDefaultActionGroupId
 
@@ -186,6 +240,56 @@ SetEnabledInLicense sets EnabledInLicense field to given value.
 `func (o *GetRuleTypes200ResponseInner) HasEnabledInLicense() bool`
 
 HasEnabledInLicense returns a boolean if a field has been set.
+
+### GetHasAlertsMappings
+
+`func (o *GetRuleTypes200ResponseInner) GetHasAlertsMappings() bool`
+
+GetHasAlertsMappings returns the HasAlertsMappings field if non-nil, zero value otherwise.
+
+### GetHasAlertsMappingsOk
+
+`func (o *GetRuleTypes200ResponseInner) GetHasAlertsMappingsOk() (*bool, bool)`
+
+GetHasAlertsMappingsOk returns a tuple with the HasAlertsMappings field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetHasAlertsMappings
+
+`func (o *GetRuleTypes200ResponseInner) SetHasAlertsMappings(v bool)`
+
+SetHasAlertsMappings sets HasAlertsMappings field to given value.
+
+### HasHasAlertsMappings
+
+`func (o *GetRuleTypes200ResponseInner) HasHasAlertsMappings() bool`
+
+HasHasAlertsMappings returns a boolean if a field has been set.
+
+### GetHasFieldsForAAD
+
+`func (o *GetRuleTypes200ResponseInner) GetHasFieldsForAAD() bool`
+
+GetHasFieldsForAAD returns the HasFieldsForAAD field if non-nil, zero value otherwise.
+
+### GetHasFieldsForAADOk
+
+`func (o *GetRuleTypes200ResponseInner) GetHasFieldsForAADOk() (*bool, bool)`
+
+GetHasFieldsForAADOk returns a tuple with the HasFieldsForAAD field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetHasFieldsForAAD
+
+`func (o *GetRuleTypes200ResponseInner) SetHasFieldsForAAD(v bool)`
+
+SetHasFieldsForAAD sets HasFieldsForAAD field to given value.
+
+### HasHasFieldsForAAD
+
+`func (o *GetRuleTypes200ResponseInner) HasHasFieldsForAAD() bool`
+
+HasHasFieldsForAAD returns a boolean if a field has been set.
 
 ### GetId
 

@@ -9,10 +9,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
 
 func ResourceAlertingRule() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -128,6 +131,11 @@ func ResourceAlertingRule() *schema.Resource {
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
+		"alert_delay": {
+			Description: "A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.",
+			Type:        schema.TypeFloat,
+			Optional:    true,
+		},
 	}
 
 	return &schema.Resource{
@@ -146,13 +154,12 @@ func ResourceAlertingRule() *schema.Resource {
 	}
 }
 
-func getAlertingRuleFromResourceData(d *schema.ResourceData) (models.AlertingRule, diag.Diagnostics) {
+func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *version.Version) (models.AlertingRule, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	rule := models.AlertingRule{
 		SpaceID:    d.Get("space_id").(string),
 		Name:       d.Get("name").(string),
 		Consumer:   d.Get("consumer").(string),
-		NotifyWhen: d.Get("notify_when").(string),
 		RuleTypeID: d.Get("rule_type_id").(string),
 		Schedule: models.AlertingRuleSchedule{
 			Interval: d.Get("interval").(string),
@@ -179,6 +186,25 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData) (models.AlertingRul
 	if v, ok := d.GetOk("throttle"); ok {
 		t := v.(string)
 		rule.Throttle = &t
+	}
+
+	if v, ok := d.GetOk("notify_when"); ok {
+		rule.NotifyWhen = utils.Pointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("alert_delay"); ok {
+		if serverVersion.LessThan(alertDelayMinSupportedVersion) {
+			return models.AlertingRule{}, diag.Diagnostics{
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "alert_delay is only supported for Elasticsearch v8.13 or higher",
+					Detail:   "alert_delay is only supported for Elasticsearch v8.13 or higher",
+				},
+			}
+
+		}
+
+		rule.AlertDelay = utils.Pointer(float32(v.(float64)))
 	}
 
 	actions, diags := getActionsFromResourceData(d)
@@ -226,7 +252,12 @@ func resourceRuleCreate(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
-	rule, diags := getAlertingRuleFromResourceData(d)
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	rule, diags := getAlertingRuleFromResourceData(d, serverVersion)
 	if diags.HasError() {
 		return diags
 	}
@@ -249,7 +280,12 @@ func resourceRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
-	rule, diags := getAlertingRuleFromResourceData(d)
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	rule, diags := getAlertingRuleFromResourceData(d, serverVersion)
 	if diags.HasError() {
 		return diags
 	}
