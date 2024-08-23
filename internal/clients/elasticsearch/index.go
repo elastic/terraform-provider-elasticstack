@@ -301,6 +301,16 @@ func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string)
 }
 
 func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.Index, diag.Diagnostics) {
+	indices, diags := GetIndices(ctx, apiClient, name)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	index := indices[name]
+	return &index, diags
+}
+
+func GetIndices(ctx context.Context, apiClient *clients.ApiClient, name string) (map[string]models.Index, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -326,8 +336,8 @@ func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*
 	if err := json.NewDecoder(res.Body).Decode(&indices); err != nil {
 		return nil, diag.FromErr(err)
 	}
-	index := indices[name]
-	return &index, diags
+
+	return indices, diags
 }
 
 func DeleteIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index string, aliases []string) diag.Diagnostics {
