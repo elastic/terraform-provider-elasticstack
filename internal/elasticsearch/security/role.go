@@ -361,10 +361,8 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 
 	if v, ok := d.GetOk("remote_indices"); ok {
 		definedRemoteIndices := v.(*schema.Set)
-		if definedRemoteIndices.Len() > 0 {
-			if serverVersion.LessThan(minSupportedRemoteIndicesVersion) {
-				return diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Kibana v%s and above", minSupportedRemoteIndicesVersion.String()))
-			}
+		if definedRemoteIndices.Len() > 0 && serverVersion.LessThan(minSupportedRemoteIndicesVersion) {
+			return diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Elasticsearch v%s and above", minSupportedRemoteIndicesVersion.String()))
 		}
 		remote_indices := make([]models.RemoteIndexPerms, definedRemoteIndices.Len())
 		for i, idx := range definedRemoteIndices.List() {
