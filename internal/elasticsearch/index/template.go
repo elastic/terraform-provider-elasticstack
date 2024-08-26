@@ -81,7 +81,7 @@ func ResourceTemplate() *schema.Resource {
 			Optional:     true,
 		},
 		"template": {
-			Description: "Template to be applied. It may optionally include an aliases, mappings, or settings configuration.",
+			Description: "Template to be applied. It may optionally include an aliases, mappings, lifecycle, or settings configuration.",
 			Type:        schema.TypeList,
 			Optional:    true,
 			MaxItems:    1,
@@ -156,6 +156,21 @@ func ResourceTemplate() *schema.Resource {
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
+					},
+					"lifecycle": {
+						Description: "Lifecycle of data stream. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-lifecycle.html",
+						Type:        schema.TypeSet,
+						Optional:    true,
+						MaxItems:    1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"data_retention": {
+									Description: "The retention period of the data indexed in this data stream.",
+									Type:        schema.TypeString,
+									Required:    true,
+								},
+							},
+						},
 					},
 				},
 			},
@@ -298,6 +313,13 @@ func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics
 	}
 	templ.Aliases = aliases
 
+	if lc, ok := definedTempl["lifecycle"]; ok {
+		lifecycle := ExpandLifecycle(lc.(*schema.Set))
+		if lifecycle != nil {
+			templ.Lifecycle = lifecycle
+		}
+	}
+
 	if mappings, ok := definedTempl["mappings"]; ok {
 		if mappings.(string) != "" {
 			maps := make(map[string]interface{})
@@ -420,6 +442,11 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 			return nil, diags
 		}
 		tmpl["alias"] = aliases
+	}
+
+	if template.Lifecycle != nil {
+		lifecycle := FlattenLifecycle(template.Lifecycle)
+		tmpl["lifecycle"] = lifecycle
 	}
 
 	return []interface{}{tmpl}, diags
