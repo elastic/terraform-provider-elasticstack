@@ -76,7 +76,7 @@ func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	if len(foundConnectors) == 0 {
-		diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: connector with name [%s/%s] and type [%s] not found", spaceId, connectorName, connectorType)
+		return diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: connector with name [%s/%s] and type [%s] not found", spaceId, connectorName, connectorType)
 	}
 
 	if len(foundConnectors) > 1 {
