@@ -84,15 +84,14 @@ type Role struct {
 }
 
 type ApiKeyRoleDescriptor struct {
-	Name          string                 `json:"-"`
-	Applications  []Application          `json:"applications,omitempty"`
-	Global        map[string]interface{} `json:"global,omitempty"`
-	Cluster       []string               `json:"cluster,omitempty"`
-	Indices       []IndexPerms           `json:"indices,omitempty"`
-	RemoteIndices []RemoteIndexPerms     `json:"remote_indices,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	RusAs         []string               `json:"run_as,omitempty"`
-	Restriction   *Restriction           `json:"restriction,omitempty"`
+	Name         string                 `json:"-"`
+	Applications []Application          `json:"applications,omitempty"`
+	Global       map[string]interface{} `json:"global,omitempty"`
+	Cluster      []string               `json:"cluster,omitempty"`
+	Indices      []IndexPerms           `json:"indices,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	RusAs        []string               `json:"run_as,omitempty"`
+	Restriction  *Restriction           `json:"restriction,omitempty"`
 }
 
 type Restriction struct {

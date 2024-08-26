@@ -493,13 +493,11 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 		}
 	}
 
-	indexes := role.Indices
-	indices := flattenIndicesData(&indexes)
+	indices := flattenIndicesData(role.Indices)
 	if err := d.Set("indices", indices); err != nil {
 		return diag.FromErr(err)
 	}
-	remoteIndexes := role.RemoteIndices
-	remoteIndices := flattenRemoteIndicesData(&remoteIndexes)
+	remoteIndices := flattenRemoteIndicesData(role.RemoteIndices)
 	if err := d.Set("remote_indices", remoteIndices); err != nil {
 		return diag.FromErr(err)
 	}
@@ -536,51 +534,46 @@ func flattenApplicationsData(apps *[]models.Application) []interface{} {
 	return make([]interface{}, 0)
 }
 
-func flattenIndicesData(indices *[]models.IndexPerms) []interface{} {
-	if indices != nil {
-		oindx := make([]interface{}, len(*indices))
+func flattenIndicesData(indices []models.IndexPerms) []interface{} {
+	oindx := make([]interface{}, len(indices))
 
-		for i, index := range *indices {
-			oi := make(map[string]interface{})
-			oi["names"] = index.Names
-			oi["privileges"] = index.Privileges
-			oi["query"] = index.Query
-			oi["allow_restricted_indices"] = index.AllowRestrictedIndices
+	for i, index := range indices {
+		oi := make(map[string]interface{})
+		oi["names"] = index.Names
+		oi["privileges"] = index.Privileges
+		oi["query"] = index.Query
+		oi["allow_restricted_indices"] = index.AllowRestrictedIndices
 
-			if index.FieldSecurity != nil {
-				fsec := make(map[string]interface{})
-				fsec["grant"] = index.FieldSecurity.Grant
-				fsec["except"] = index.FieldSecurity.Except
-				oi["field_security"] = []interface{}{fsec}
-			}
-			oindx[i] = oi
+		if index.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			fsec["grant"] = index.FieldSecurity.Grant
+			fsec["except"] = index.FieldSecurity.Except
+			oi["field_security"] = []interface{}{fsec}
 		}
-		return oindx
+		oindx[i] = oi
 	}
-	return make([]interface{}, 0)
+	return oindx
 }
-func flattenRemoteIndicesData(remoteIndices *[]models.RemoteIndexPerms) []interface{} {
-	if remoteIndices != nil {
-		oRemoteIndx := make([]interface{}, len(*remoteIndices))
 
-		for i, remoteIndex := range *remoteIndices {
-			oi := make(map[string]interface{})
-			oi["names"] = remoteIndex.Names
-			oi["clusters"] = remoteIndex.Clusters
-			oi["privileges"] = remoteIndex.Privileges
-			oi["query"] = remoteIndex.Query
+func flattenRemoteIndicesData(remoteIndices []models.RemoteIndexPerms) []interface{} {
+	oRemoteIndx := make([]interface{}, len(remoteIndices))
 
-			if remoteIndex.FieldSecurity != nil {
-				fsec := make(map[string]interface{})
-				fsec["grant"] = remoteIndex.FieldSecurity.Grant
-				fsec["except"] = remoteIndex.FieldSecurity.Except
-				oi["field_security"] = []interface{}{fsec}
-			}
-			oRemoteIndx[i] = oi
+	for i, remoteIndex := range remoteIndices {
+		oi := make(map[string]interface{})
+		oi["names"] = remoteIndex.Names
+		oi["clusters"] = remoteIndex.Clusters
+		oi["privileges"] = remoteIndex.Privileges
+		oi["query"] = remoteIndex.Query
+
+		if remoteIndex.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			fsec["grant"] = remoteIndex.FieldSecurity.Grant
+			fsec["except"] = remoteIndex.FieldSecurity.Except
+			oi["field_security"] = []interface{}{fsec}
 		}
-		return oRemoteIndx
+		oRemoteIndx[i] = oi
 	}
-	return make([]interface{}, 0)
+	return oRemoteIndx
 }
 
 func resourceSecurityRoleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

@@ -570,59 +570,53 @@ func expandKibanaRoleKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagn
 	return kibanaConfigs, nil
 }
 
-func flattenKibanaRoleIndicesData(indices *[]kbapi.KibanaRoleElasticsearchIndice) []interface{} {
-	if indices != nil {
-		oindx := make([]interface{}, len(*indices))
+func flattenKibanaRoleIndicesData(indices []kbapi.KibanaRoleElasticsearchIndice) []interface{} {
+	oindx := make([]interface{}, len(indices))
 
-		for i, index := range *indices {
-			oi := make(map[string]interface{})
-			oi["names"] = index.Names
-			oi["privileges"] = index.Privileges
-			oi["query"] = index.Query
+	for i, index := range indices {
+		oi := make(map[string]interface{})
+		oi["names"] = index.Names
+		oi["privileges"] = index.Privileges
+		oi["query"] = index.Query
 
-			if index.FieldSecurity != nil {
-				fsec := make(map[string]interface{})
-				if grant_v, ok := index.FieldSecurity["grant"]; ok {
-					fsec["grant"] = grant_v
-				}
-				if except_v, ok := index.FieldSecurity["except"]; ok {
-					fsec["except"] = except_v
-				}
-				oi["field_security"] = []interface{}{fsec}
+		if index.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			if grant_v, ok := index.FieldSecurity["grant"]; ok {
+				fsec["grant"] = grant_v
 			}
-			oindx[i] = oi
+			if except_v, ok := index.FieldSecurity["except"]; ok {
+				fsec["except"] = except_v
+			}
+			oi["field_security"] = []interface{}{fsec}
 		}
-		return oindx
+		oindx[i] = oi
 	}
-	return make([]interface{}, 0)
+	return oindx
 }
 
-func flattenKibanaRoleRemoteIndicesData(indices *[]kbapi.KibanaRoleElasticsearchRemoteIndice) []interface{} {
-	if indices != nil {
-		oindx := make([]interface{}, len(*indices))
+func flattenKibanaRoleRemoteIndicesData(indices []kbapi.KibanaRoleElasticsearchRemoteIndice) []interface{} {
+	oindx := make([]interface{}, len(indices))
 
-		for i, index := range *indices {
-			oi := make(map[string]interface{})
-			oi["clusters"] = index.Clusters
-			oi["names"] = index.Names
-			oi["privileges"] = index.Privileges
-			oi["query"] = index.Query
+	for i, index := range indices {
+		oi := make(map[string]interface{})
+		oi["clusters"] = index.Clusters
+		oi["names"] = index.Names
+		oi["privileges"] = index.Privileges
+		oi["query"] = index.Query
 
-			if index.FieldSecurity != nil {
-				fsec := make(map[string]interface{})
-				if grant_v, ok := index.FieldSecurity["grant"]; ok {
-					fsec["grant"] = grant_v
-				}
-				if except_v, ok := index.FieldSecurity["except"]; ok {
-					fsec["except"] = except_v
-				}
-				oi["field_security"] = []interface{}{fsec}
+		if index.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			if grant_v, ok := index.FieldSecurity["grant"]; ok {
+				fsec["grant"] = grant_v
 			}
-			oindx[i] = oi
+			if except_v, ok := index.FieldSecurity["except"]; ok {
+				fsec["except"] = except_v
+			}
+			oi["field_security"] = []interface{}{fsec}
 		}
-		return oindx
+		oindx[i] = oi
 	}
-	return make([]interface{}, 0)
+	return oindx
 }
 
 func flattenKibanaRoleElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) []interface{} {
@@ -631,8 +625,8 @@ func flattenKibanaRoleElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) 
 		if len(elastic.Cluster) > 0 {
 			result["cluster"] = elastic.Cluster
 		}
-		result["indices"] = flattenKibanaRoleIndicesData(&elastic.Indices)
-		result["remote_indices"] = flattenKibanaRoleRemoteIndicesData(&elastic.RemoteIndices)
+		result["indices"] = flattenKibanaRoleIndicesData(elastic.Indices)
+		result["remote_indices"] = flattenKibanaRoleRemoteIndicesData(elastic.RemoteIndices)
 		if len(elastic.RunAs) > 0 {
 			result["run_as"] = elastic.RunAs
 		}
