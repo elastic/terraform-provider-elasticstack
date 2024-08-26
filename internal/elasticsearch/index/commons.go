@@ -80,3 +80,28 @@ func FlattenIndexAlias(name string, alias models.IndexAlias) (interface{}, diag.
 
 	return a, diags
 }
+
+func ExpandLifecycle(definedLifecycle *schema.Set) *models.LifecycleSettings {
+	if definedLifecycle.Len() == 0 {
+		return nil
+	}
+	lifecycleMap := definedLifecycle.List()[0].(map[string]interface{})
+	if lifecycleMap != nil {
+		lifecycle := &models.LifecycleSettings{}
+		if s, ok := lifecycleMap["data_retention"]; ok {
+			lifecycle.DataRetention = s.(string)
+		}
+		return lifecycle
+	}
+	return nil
+}
+
+func FlattenLifecycle(lifecycle *models.LifecycleSettings) interface{} {
+	lf := make([]interface{}, 1)
+	lfSettings := make(map[string]interface{})
+	lfSettings["data_retention"] = lifecycle.DataRetention
+
+	lf[0] = lfSettings
+
+	return lf
+}

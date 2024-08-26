@@ -170,9 +170,10 @@ type DataStreamSettings struct {
 }
 
 type Template struct {
-	Aliases  map[string]IndexAlias  `json:"aliases,omitempty"`
-	Mappings map[string]interface{} `json:"mappings,omitempty"`
-	Settings map[string]interface{} `json:"settings,omitempty"`
+	Aliases   map[string]IndexAlias  `json:"aliases,omitempty"`
+	Mappings  map[string]interface{} `json:"mappings,omitempty"`
+	Settings  map[string]interface{} `json:"settings,omitempty"`
+	Lifecycle *LifecycleSettings     `json:"lifecycle,omitempty"`
 }
 
 type IndexTemplatesResponse struct {
@@ -298,6 +299,10 @@ type IndexAlias struct {
 	IsWriteIndex  bool                   `json:"is_write_index,omitempty"`
 	Routing       string                 `json:"routing,omitempty"`
 	SearchRouting string                 `json:"search_routing,omitempty"`
+}
+
+type LifecycleSettings struct {
+	DataRetention string `json:"data_retention,omitempty"`
 }
 
 type DataStream struct {
