@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **Ml** | Pointer to [**GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts**](GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts.md) |  | [optional] 
 **Monitoring** | Pointer to [**GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts**](GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts.md) |  | [optional] 
 **Siem** | Pointer to [**GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts**](GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts.md) |  | [optional] 
+**Slo** | Pointer to [**GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts**](GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts.md) |  | [optional] 
 **StackAlerts** | Pointer to [**GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts**](GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts.md) |  | [optional] 
 **Uptime** | Pointer to [**GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts**](GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts.md) |  | [optional] 
 
@@ -233,6 +234,31 @@ SetSiem sets Siem field to given value.
 `func (o *GetRuleTypes200ResponseInnerAuthorizedConsumers) HasSiem() bool`
 
 HasSiem returns a boolean if a field has been set.
+
+### GetSlo
+
+`func (o *GetRuleTypes200ResponseInnerAuthorizedConsumers) GetSlo() GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts`
+
+GetSlo returns the Slo field if non-nil, zero value otherwise.
+
+### GetSloOk
+
+`func (o *GetRuleTypes200ResponseInnerAuthorizedConsumers) GetSloOk() (*GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts, bool)`
+
+GetSloOk returns a tuple with the Slo field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetSlo
+
+`func (o *GetRuleTypes200ResponseInnerAuthorizedConsumers) SetSlo(v GetRuleTypes200ResponseInnerAuthorizedConsumersAlerts)`
+
+SetSlo sets Slo field to given value.
+
+### HasSlo
+
+`func (o *GetRuleTypes200ResponseInnerAuthorizedConsumers) HasSlo() bool`
+
+HasSlo returns a boolean if a field has been set.
 
 ### GetStackAlerts
 

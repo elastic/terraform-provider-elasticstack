@@ -63,7 +63,7 @@ resource "elasticstack_elasticsearch_index_template" "my_template" {
 Optional:
 
 - `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
-- `mappings` (String) Mapping for fields in the index.
+- `mappings` (String) Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details
 - `settings` (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
 
 <a id="nestedblock--template--alias"></a>

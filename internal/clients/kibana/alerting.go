@@ -21,18 +21,29 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 	actions := []models.AlertingRuleAction{}
 	for _, action := range res.Actions {
 		actions = append(actions, models.AlertingRuleAction{
-			Group:  *action.Group,
-			ID:     *action.Id,
+			Group:  action.Group,
+			ID:     action.Id,
 			Params: action.Params,
 		})
 	}
 
+	var alertDelay *float32
+	alertDelayActive := unwrapOptionalField(res.AlertDelay).Active
+
+	if alerting.IsNil(res.AlertDelay) {
+		alertDelay = nil
+	} else {
+		alertDelay = &alertDelayActive
+	}
+
 	return &models.AlertingRule{
-		RuleID:     res.Id,
-		SpaceID:    spaceID,
-		Name:       res.Name,
-		Consumer:   res.Consumer,
-		NotifyWhen: string(unwrapOptionalField(res.NotifyWhen)),
+		RuleID:   res.Id,
+		SpaceID:  spaceID,
+		Name:     res.Name,
+		Consumer: res.Consumer,
+
+		// DEPRECATED
+		NotifyWhen: res.NotifyWhen.Get(),
 
 		Params:     res.Params,
 		RuleTypeID: res.RuleTypeId,
@@ -47,7 +58,8 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 			LastExecutionDate: res.ExecutionStatus.LastExecutionDate,
 			Status:            res.ExecutionStatus.Status,
 		},
-		Actions: actions,
+		Actions:    actions,
+		AlertDelay: alertDelay,
 	}
 }
 
@@ -57,8 +69,8 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 	for index := range ruleActions {
 		action := ruleActions[index]
 		actions = append(actions, alerting.ActionsInner{
-			Group:  &action.Group,
-			Id:     &action.ID,
+			Group:  action.Group,
+			Id:     action.ID,
 			Params: action.Params,
 		})
 	}
@@ -78,23 +90,33 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 
 	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
+	var alertDelay *alerting.AlertDelay
+
+	if alerting.IsNil(rule.AlertDelay) {
+		alertDelay = nil
+	} else {
+		alertDelay = &alerting.AlertDelay{
+			Active: *rule.AlertDelay,
+		}
+	}
+
 	reqModel := alerting.CreateRuleRequest{
 		Consumer:   rule.Consumer,
 		Actions:    ruleActionsToActionsInner(rule.Actions),
 		Enabled:    rule.Enabled,
 		Name:       rule.Name,
-		NotifyWhen: (*alerting.NotifyWhen)(&rule.NotifyWhen),
+		NotifyWhen: (*alerting.NotifyWhen)(rule.NotifyWhen),
 		Params:     rule.Params,
 		RuleTypeId: rule.RuleTypeID,
 		Schedule: alerting.Schedule{
 			Interval: &rule.Schedule.Interval,
 		},
-		Tags:     rule.Tags,
-		Throttle: *alerting.NewNullableString(rule.Throttle),
+		Tags:       rule.Tags,
+		Throttle:   *alerting.NewNullableString(rule.Throttle),
+		AlertDelay: alertDelay,
 	}
 
-	req := client.CreateRule(ctxWithAuth, rule.SpaceID, rule.RuleID).KbnXsrf("true").CreateRuleRequest(reqModel)
-
+	req := client.CreateRuleId(ctxWithAuth, rule.SpaceID, rule.RuleID).KbnXsrf("true").CreateRuleRequest(reqModel)
 	ruleRes, res, err := req.Execute()
 	if err != nil && res == nil {
 		return nil, diag.FromErr(err)
@@ -136,7 +158,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 	reqModel := alerting.UpdateRuleRequest{
 		Actions:    ruleActionsToActionsInner((rule.Actions)),
 		Name:       rule.Name,
-		NotifyWhen: (*alerting.NotifyWhen)(&rule.NotifyWhen),
+		NotifyWhen: (*alerting.NotifyWhen)(rule.NotifyWhen),
 		Params:     rule.Params,
 		Schedule: alerting.Schedule{
 			Interval: &rule.Schedule.Interval,

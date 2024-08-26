@@ -2,10 +2,8 @@ package private_location
 
 import (
 	"context"
-	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -17,9 +15,15 @@ const resourceName = synthetics.MetadataPrefix + "private_location"
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
 var _ resource.ResourceWithImportState = &Resource{}
+var _ synthetics.ESApiClient = &Resource{}
 
 type Resource struct {
 	client *clients.ApiClient
+	synthetics.ESApiClient
+}
+
+func (r *Resource) GetClient() *clients.ApiClient {
+	return r.client
 }
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -27,8 +31,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
-	tflog.Info(ctx, "Import private location")
-	resource.ImportStatePassthroughID(ctx, path.Root("label"), request, response)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
 }
 
 func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
@@ -47,17 +50,4 @@ func (r *Resource) Update(ctx context.Context, _ resource.UpdateRequest, respons
 		"synthetics private location update not supported",
 		"Synthetics private location could only be replaced. Please, note, that only unused locations could be deleted.",
 	)
-}
-
-func (r *Resource) getKibanaClient(dg diag.Diagnostics) *kibana.Client {
-	if !r.resourceReady(&dg) {
-		return nil
-	}
-
-	kibanaClient, err := r.client.GetKibanaClient()
-	if err != nil {
-		dg.AddError("unable to get kibana client", err.Error())
-		return nil
-	}
-	return kibanaClient
 }

@@ -1,4 +1,7 @@
-package private_location_test
+package synthetics_test
+
+// this test is in synthetics_test package, because of https://github.com/elastic/kibana/issues/190801
+// having both tests in same package allows to use mutex in kibana API client and workaround the issue
 
 import (
 	"fmt"
@@ -21,10 +24,10 @@ provider "elasticstack" {
 )
 
 var (
-	minKibanaVersion = version.Must(version.NewVersion("8.12.0"))
+	minKibanaPrivateLocationAPIVersion = version.Must(version.NewVersion("8.12.0"))
 )
 
-func TestPrivateLocationResource(t *testing.T) {
+func TestSyntheticPrivateLocationResource(t *testing.T) {
 	resourceId := "elasticstack_kibana_synthetics_private_location.test"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -32,7 +35,7 @@ func TestPrivateLocationResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				Config: testConfig("testacc", "test_policy") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label"
@@ -58,7 +61,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// ImportState testing
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -77,7 +80,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				Config: testConfig("default", "test_policy_default") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label-2"
@@ -104,7 +107,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				Config: testConfig("default", "test_policy_default") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label-2"
@@ -122,7 +125,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				Config: testConfig("default", "test_policy_default") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label-2"
@@ -144,7 +147,7 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				Config: testConfig("default", "test_policy_default") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label-2"

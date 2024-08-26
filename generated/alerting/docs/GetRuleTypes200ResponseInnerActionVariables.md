@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Context** | Pointer to [**[]GetRuleTypes200ResponseInnerActionVariablesContextInner**](GetRuleTypes200ResponseInnerActionVariablesContextInner.md) |  | [optional] 
 **Params** | Pointer to [**[]GetRuleTypes200ResponseInnerActionVariablesParamsInner**](GetRuleTypes200ResponseInnerActionVariablesParamsInner.md) |  | [optional] 
-**State** | Pointer to [**[]GetRuleTypes200ResponseInnerActionVariablesParamsInner**](GetRuleTypes200ResponseInnerActionVariablesParamsInner.md) |  | [optional] 
+**State** | Pointer to [**[]GetRuleTypes200ResponseInnerActionVariablesStateInner**](GetRuleTypes200ResponseInnerActionVariablesStateInner.md) |  | [optional] 
 
 ## Methods
 
@@ -79,20 +79,20 @@ HasParams returns a boolean if a field has been set.
 
 ### GetState
 
-`func (o *GetRuleTypes200ResponseInnerActionVariables) GetState() []GetRuleTypes200ResponseInnerActionVariablesParamsInner`
+`func (o *GetRuleTypes200ResponseInnerActionVariables) GetState() []GetRuleTypes200ResponseInnerActionVariablesStateInner`
 
 GetState returns the State field if non-nil, zero value otherwise.
 
 ### GetStateOk
 
-`func (o *GetRuleTypes200ResponseInnerActionVariables) GetStateOk() (*[]GetRuleTypes200ResponseInnerActionVariablesParamsInner, bool)`
+`func (o *GetRuleTypes200ResponseInnerActionVariables) GetStateOk() (*[]GetRuleTypes200ResponseInnerActionVariablesStateInner, bool)`
 
 GetStateOk returns a tuple with the State field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetState
 
-`func (o *GetRuleTypes200ResponseInnerActionVariables) SetState(v []GetRuleTypes200ResponseInnerActionVariablesParamsInner)`
+`func (o *GetRuleTypes200ResponseInnerActionVariables) SetState(v []GetRuleTypes200ResponseInnerActionVariablesStateInner)`
 
 SetState sets State field to given value.
 

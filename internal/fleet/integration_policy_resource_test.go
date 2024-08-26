@@ -2,6 +2,7 @@ package fleet_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -72,7 +73,7 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 		case "elasticstack_fleet_integration_policy":
 			integrationPolicy, diag := fleet.ReadPackagePolicy(context.Background(), fleetClient, rs.Primary.ID)
 			if diag.HasError() {
-				return fmt.Errorf(diag[0].Summary)
+				return errors.New(diag[0].Summary)
 			}
 			if integrationPolicy != nil {
 				return fmt.Errorf("integration policy id=%v still exists, but it should have been removed", rs.Primary.ID)
@@ -80,7 +81,7 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 		case "elasticstack_fleet_agent_policy":
 			agentPolicy, diag := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 			if diag.HasError() {
-				return fmt.Errorf(diag[0].Summary)
+				return errors.New(diag[0].Summary)
 			}
 			if agentPolicy != nil {
 				return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)
@@ -134,7 +135,7 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
 	    "enabled": true,
 	    "vars": {
 	  	  "listen_address": "localhost",
-  		  "listen_port": 8080, 
+  		  "listen_port": 8080,
 		  "data_stream.dataset": "tcp.generic",
 		  "tags": [],
 		  "syslog_options": "field: message\n#format: auto\n#timezone: Local\n",
@@ -189,7 +190,7 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
 	    "enabled": true,
 	    "vars": {
 	  	  "listen_address": "localhost",
-  		  "listen_port": 8085, 
+  		  "listen_port": 8085,
 		  "data_stream.dataset": "tcp.generic",
 		  "tags": [],
 		  "syslog_options": "field: message\n#format: auto\n#timezone: Local\n",

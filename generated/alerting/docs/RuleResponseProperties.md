@@ -4,8 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Actions** | [**[]ActionsInner**](ActionsInner.md) |  | [default to []]
-**ApiKeyOwner** | **NullableString** |  | 
+**Actions** | [**[]ActionsInner**](ActionsInner.md) |  | 
+**AlertDelay** | Pointer to [**AlertDelay**](AlertDelay.md) |  | [optional] 
+**ApiKeyCreatedByUser** | Pointer to **bool** | Indicates whether the API key that is associated with the rule was created by the user. | [optional] 
+**ApiKeyOwner** | **NullableString** | The owner of the API key that is associated with the rule and used to run background tasks.  | 
 **Consumer** | **string** | The application or feature that owns the rule. For example, &#x60;alerts&#x60;, &#x60;apm&#x60;, &#x60;discover&#x60;, &#x60;infrastructure&#x60;, &#x60;logs&#x60;, &#x60;metrics&#x60;, &#x60;ml&#x60;, &#x60;monitoring&#x60;, &#x60;securitySolution&#x60;, &#x60;siem&#x60;, &#x60;stackAlerts&#x60;, or &#x60;uptime&#x60;. | 
 **CreatedAt** | **time.Time** | The date and time that the rule was created. | 
 **CreatedBy** | **NullableString** | The identifier for the user that created the rule. | 
@@ -17,14 +19,15 @@ Name | Type | Description | Notes
 **MuteAll** | **bool** |  | 
 **Name** | **string** | The name of the rule. | 
 **NextRun** | Pointer to **NullableTime** |  | [optional] 
-**NotifyWhen** | Pointer to [**NotifyWhen**](NotifyWhen.md) |  | [optional] 
+**NotifyWhen** | Pointer to **NullableString** | Indicates how often alerts generate actions. | [optional] 
 **Params** | **map[string]interface{}** | The parameters for the rule. | 
+**Revision** | Pointer to **int32** | The rule revision number. | [optional] 
 **RuleTypeId** | **string** | The identifier for the type of rule. For example, &#x60;.es-query&#x60;, &#x60;.index-threshold&#x60;, &#x60;logs.alert.document.count&#x60;, &#x60;monitoring_alert_cluster_health&#x60;, &#x60;siem.thresholdRule&#x60;, or &#x60;xpack.ml.anomaly_detection_alert&#x60;.  | 
 **Running** | Pointer to **bool** | Indicates whether the rule is running. | [optional] 
 **Schedule** | [**Schedule**](Schedule.md) |  | 
 **ScheduledTaskId** | Pointer to **string** |  | [optional] 
-**Tags** | **[]string** | The tags for the rule. | [default to []]
-**Throttle** | **NullableString** | The throttle interval, which defines how often an alert generates repeated actions. It is applicable only if &#x60;notify_when&#x60; is set to &#x60;onThrottleInterval&#x60;. It is specified in seconds, minutes, hours, or days. | 
+**Tags** | **[]string** |  | 
+**Throttle** | **NullableString** | Deprecated in 8.13.0. Use the &#x60;throttle&#x60; property in the action &#x60;frequency&#x60; object instead. The throttle interval, which defines how often an alert generates repeated actions. NOTE: You cannot specify the throttle interval at both the rule and action level. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.  | 
 **UpdatedAt** | **string** | The date and time that the rule was updated most recently. | 
 **UpdatedBy** | **NullableString** | The identifier for the user that updated this rule most recently. | 
 
@@ -67,16 +70,56 @@ and a boolean to check if the value has been set.
 SetActions sets Actions field to given value.
 
 
-### SetActionsNil
+### GetAlertDelay
 
-`func (o *RuleResponseProperties) SetActionsNil(b bool)`
+`func (o *RuleResponseProperties) GetAlertDelay() AlertDelay`
 
- SetActionsNil sets the value for Actions to be an explicit nil
+GetAlertDelay returns the AlertDelay field if non-nil, zero value otherwise.
 
-### UnsetActions
-`func (o *RuleResponseProperties) UnsetActions()`
+### GetAlertDelayOk
 
-UnsetActions ensures that no value is present for Actions, not even an explicit nil
+`func (o *RuleResponseProperties) GetAlertDelayOk() (*AlertDelay, bool)`
+
+GetAlertDelayOk returns a tuple with the AlertDelay field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetAlertDelay
+
+`func (o *RuleResponseProperties) SetAlertDelay(v AlertDelay)`
+
+SetAlertDelay sets AlertDelay field to given value.
+
+### HasAlertDelay
+
+`func (o *RuleResponseProperties) HasAlertDelay() bool`
+
+HasAlertDelay returns a boolean if a field has been set.
+
+### GetApiKeyCreatedByUser
+
+`func (o *RuleResponseProperties) GetApiKeyCreatedByUser() bool`
+
+GetApiKeyCreatedByUser returns the ApiKeyCreatedByUser field if non-nil, zero value otherwise.
+
+### GetApiKeyCreatedByUserOk
+
+`func (o *RuleResponseProperties) GetApiKeyCreatedByUserOk() (*bool, bool)`
+
+GetApiKeyCreatedByUserOk returns a tuple with the ApiKeyCreatedByUser field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetApiKeyCreatedByUser
+
+`func (o *RuleResponseProperties) SetApiKeyCreatedByUser(v bool)`
+
+SetApiKeyCreatedByUser sets ApiKeyCreatedByUser field to given value.
+
+### HasApiKeyCreatedByUser
+
+`func (o *RuleResponseProperties) HasApiKeyCreatedByUser() bool`
+
+HasApiKeyCreatedByUser returns a boolean if a field has been set.
+
 ### GetApiKeyOwner
 
 `func (o *RuleResponseProperties) GetApiKeyOwner() string`
@@ -282,16 +325,6 @@ and a boolean to check if the value has been set.
 SetMutedAlertIds sets MutedAlertIds field to given value.
 
 
-### SetMutedAlertIdsNil
-
-`func (o *RuleResponseProperties) SetMutedAlertIdsNil(b bool)`
-
- SetMutedAlertIdsNil sets the value for MutedAlertIds to be an explicit nil
-
-### UnsetMutedAlertIds
-`func (o *RuleResponseProperties) UnsetMutedAlertIds()`
-
-UnsetMutedAlertIds ensures that no value is present for MutedAlertIds, not even an explicit nil
 ### GetMuteAll
 
 `func (o *RuleResponseProperties) GetMuteAll() bool`
@@ -369,20 +402,20 @@ HasNextRun returns a boolean if a field has been set.
 UnsetNextRun ensures that no value is present for NextRun, not even an explicit nil
 ### GetNotifyWhen
 
-`func (o *RuleResponseProperties) GetNotifyWhen() NotifyWhen`
+`func (o *RuleResponseProperties) GetNotifyWhen() string`
 
 GetNotifyWhen returns the NotifyWhen field if non-nil, zero value otherwise.
 
 ### GetNotifyWhenOk
 
-`func (o *RuleResponseProperties) GetNotifyWhenOk() (*NotifyWhen, bool)`
+`func (o *RuleResponseProperties) GetNotifyWhenOk() (*string, bool)`
 
 GetNotifyWhenOk returns a tuple with the NotifyWhen field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetNotifyWhen
 
-`func (o *RuleResponseProperties) SetNotifyWhen(v NotifyWhen)`
+`func (o *RuleResponseProperties) SetNotifyWhen(v string)`
 
 SetNotifyWhen sets NotifyWhen field to given value.
 
@@ -392,6 +425,16 @@ SetNotifyWhen sets NotifyWhen field to given value.
 
 HasNotifyWhen returns a boolean if a field has been set.
 
+### SetNotifyWhenNil
+
+`func (o *RuleResponseProperties) SetNotifyWhenNil(b bool)`
+
+ SetNotifyWhenNil sets the value for NotifyWhen to be an explicit nil
+
+### UnsetNotifyWhen
+`func (o *RuleResponseProperties) UnsetNotifyWhen()`
+
+UnsetNotifyWhen ensures that no value is present for NotifyWhen, not even an explicit nil
 ### GetParams
 
 `func (o *RuleResponseProperties) GetParams() map[string]interface{}`
@@ -411,6 +454,31 @@ and a boolean to check if the value has been set.
 
 SetParams sets Params field to given value.
 
+
+### GetRevision
+
+`func (o *RuleResponseProperties) GetRevision() int32`
+
+GetRevision returns the Revision field if non-nil, zero value otherwise.
+
+### GetRevisionOk
+
+`func (o *RuleResponseProperties) GetRevisionOk() (*int32, bool)`
+
+GetRevisionOk returns a tuple with the Revision field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetRevision
+
+`func (o *RuleResponseProperties) SetRevision(v int32)`
+
+SetRevision sets Revision field to given value.
+
+### HasRevision
+
+`func (o *RuleResponseProperties) HasRevision() bool`
+
+HasRevision returns a boolean if a field has been set.
 
 ### GetRuleTypeId
 

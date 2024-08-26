@@ -2,6 +2,7 @@ package private_location
 
 import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -9,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"strings"
 )
 
 type tfModelV0 struct {
@@ -72,53 +74,41 @@ func privateLocationSchema() schema.Schema {
 	}
 }
 
-func (r *Resource) resourceReady(dg *diag.Diagnostics) bool {
-	if r.client == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
-
-		return false
-	}
-	return true
-}
-
-func (m *tfModelV0) toPrivateLocation() kbapi.PrivateLocation {
+func (m *tfModelV0) toPrivateLocationConfig() kbapi.PrivateLocationConfig {
 	var geoConfig *kbapi.SyntheticGeoConfig
 	if m.Geo != nil {
 		geoConfig = m.Geo.ToSyntheticGeoConfig()
 	}
 
-	var tags []string
-	for _, tag := range m.Tags {
-		tags = append(tags, tag.ValueString())
-	}
-	pLoc := kbapi.PrivateLocationConfig{
+	return kbapi.PrivateLocationConfig{
 		Label:         m.Label.ValueString(),
 		AgentPolicyId: m.AgentPolicyId.ValueString(),
-		Tags:          tags,
+		Tags:          synthetics.ValueStringSlice(m.Tags),
 		Geo:           geoConfig,
-	}
-
-	return kbapi.PrivateLocation{
-		Id:                    m.ID.ValueString(),
-		Namespace:             m.SpaceID.ValueString(),
-		PrivateLocationConfig: pLoc,
 	}
 }
 
-func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
-	var tags []types.String
-	for _, tag := range pLoc.Tags {
-		tags = append(tags, types.StringValue(tag))
+func tryReadCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
+	if strings.Contains(id, "/") {
+		compositeId, diagnostics := synthetics.GetCompositeId(id)
+		return compositeId, diagnostics
 	}
+	return nil, diag.Diagnostics{}
+}
+
+func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
+
+	resourceID := clients.CompositeId{
+		ClusterId:  pLoc.Namespace,
+		ResourceId: pLoc.Id,
+	}
+
 	return tfModelV0{
-		ID:            types.StringValue(pLoc.Id),
+		ID:            types.StringValue(resourceID.String()),
 		Label:         types.StringValue(pLoc.Label),
 		SpaceID:       types.StringValue(pLoc.Namespace),
 		AgentPolicyId: types.StringValue(pLoc.AgentPolicyId),
-		Tags:          tags,
+		Tags:          synthetics.StringSliceValue(pLoc.Tags),
 		Geo:           synthetics.FromSyntheticGeoConfig(pLoc.Geo),
 	}
 }

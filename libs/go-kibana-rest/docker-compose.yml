@@ -1,18 +1,17 @@
-version: '2.3'
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     environment:
       cluster.name: test
       discovery.type: single-node
-      ELASTIC_PASSWORD: changeme
-      xpack.security.enabled: "true"
+      xpack.security.enabled: true
       xpack.security.http.ssl.enabled: false
       xpack.license.self_generated.type: trial
+      ELASTIC_PASSWORD: changeme
     ports:
       - "9200:9200/tcp"
   set-kibana-password:
-    image: docker.elastic.co/kibana/kibana:8.14.3
+    image: docker.elastic.co/kibana/kibana:8.15.0
     restart: on-failure
     links:
       - elasticsearch
@@ -23,14 +22,14 @@ services:
       elasticsearch:
         condition: service_started
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.14.3
+    image: docker.elastic.co/kibana/kibana:8.15.0
     environment:
+      SERVER_NAME: kibana
       ELASTICSEARCH_HOSTS: http://es:9200
       ELASTICSEARCH_USERNAME: kibana_system
       ELASTICSEARCH_PASSWORD: changeme
-      xpack.security.http.ssl.enabled: false
-      xpack.license.self_generated.type: trial
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: min-32-byte-long-strong-encryption-key
+#      LOGGING_ROOT_LEVEL: debug
     links:
       - elasticsearch:es
     ports:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -407,26 +408,41 @@ func getSchema() schema.Schema {
 				Description: "A JSON string describing the analyzers applied to the index.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Validators: []validator.String{
+					index.StringIsJSONObject{},
+				},
 			},
 			"analysis_tokenizer": schema.StringAttribute{
 				Description: "A JSON string describing the tokenizers applied to the index.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Validators: []validator.String{
+					index.StringIsJSONObject{},
+				},
 			},
 			"analysis_char_filter": schema.StringAttribute{
 				Description: "A JSON string describing the char_filters applied to the index.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Validators: []validator.String{
+					index.StringIsJSONObject{},
+				},
 			},
 			"analysis_filter": schema.StringAttribute{
 				Description: "A JSON string describing the filters applied to the index.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Validators: []validator.String{
+					index.StringIsJSONObject{},
+				},
 			},
 			"analysis_normalizer": schema.StringAttribute{
 				Description: "A JSON string describing the normalizers applied to the index.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Validators: []validator.String{
+					index.StringIsJSONObject{},
+				},
 			},
 			"mappings": schema.StringAttribute{
 				Description: `Mapping for fields in the index.
@@ -438,7 +454,10 @@ func getSchema() schema.Schema {
 				Optional:   true,
 				Computed:   true,
 				CustomType: jsontypes.NormalizedType{},
-				Default:    stringdefault.StaticString("{}"),
+				Validators: []validator.String{
+					index.StringIsJSONObject{},
+				},
+				Default: stringdefault.StaticString("{}"),
 				PlanModifiers: []planmodifier.String{
 					mappingsPlanModifier{},
 				},
