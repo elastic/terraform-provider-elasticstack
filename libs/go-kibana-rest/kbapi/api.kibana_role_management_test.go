@@ -20,6 +20,19 @@ func (s *KBAPITestSuite) TestKibanaRoleManagement() {
 					},
 				},
 			},
+			RemoteIndices: []KibanaRoleElasticsearchRemoteIndice{
+				{
+					Clusters: []string{
+						"*",
+					},
+					Names: []string{
+						"*",
+					},
+					Privileges: []string{
+						"read",
+					},
+				},
+			},
 		},
 		Kibana: []KibanaRoleKibana{
 			{

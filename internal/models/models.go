@@ -73,13 +73,14 @@ type UserPassword struct {
 }
 
 type Role struct {
-	Name         string                 `json:"-"`
-	Applications []Application          `json:"applications,omitempty"`
-	Global       map[string]interface{} `json:"global,omitempty"`
-	Cluster      []string               `json:"cluster,omitempty"`
-	Indices      []IndexPerms           `json:"indices,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
-	RusAs        []string               `json:"run_as,omitempty"`
+	Name          string                 `json:"-"`
+	Applications  []Application          `json:"applications,omitempty"`
+	Global        map[string]interface{} `json:"global,omitempty"`
+	Cluster       []string               `json:"cluster,omitempty"`
+	Indices       []IndexPerms           `json:"indices,omitempty"`
+	RemoteIndices []RemoteIndexPerms     `json:"remote_indices,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	RusAs         []string               `json:"run_as,omitempty"`
 }
 
 type ApiKeyRoleDescriptor struct {
@@ -129,6 +130,14 @@ type IndexPerms struct {
 	Privileges             []string       `json:"privileges"`
 	Query                  *string        `json:"query,omitempty"`
 	AllowRestrictedIndices *bool          `json:"allow_restricted_indices,omitempty"`
+}
+
+type RemoteIndexPerms struct {
+	FieldSecurity *FieldSecurity `json:"field_security,omitempty"`
+	Names         []string       `json:"names"`
+	Clusters      []string       `json:"clusters"`
+	Privileges    []string       `json:"privileges"`
+	Query         *string        `json:"query,omitempty"`
 }
 
 type FieldSecurity struct {

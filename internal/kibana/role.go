@@ -9,10 +9,13 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var minSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
 
 func ResourceRole() *schema.Resource {
 	roleSchema := map[string]*schema.Schema{
@@ -43,6 +46,72 @@ func ResourceRole() *schema.Resource {
 						Optional:    true,
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
+								"field_security": {
+									Description: "The document fields that the owners of the role have read access to.",
+									Type:        schema.TypeList,
+									Optional:    true,
+									MaxItems:    1,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"grant": {
+												Description: "List of the fields to grant the access to.",
+												Type:        schema.TypeSet,
+												Optional:    true,
+												Elem: &schema.Schema{
+													Type: schema.TypeString,
+												},
+											},
+											"except": {
+												Description: "List of the fields to which the grants will not be applied.",
+												Type:        schema.TypeSet,
+												Optional:    true,
+												Elem: &schema.Schema{
+													Type: schema.TypeString,
+												},
+											},
+										},
+									},
+								},
+								"query": {
+									Description:      "A search query that defines the documents the owners of the role have read access to.",
+									Type:             schema.TypeString,
+									ValidateFunc:     validation.StringIsJSON,
+									DiffSuppressFunc: utils.DiffJsonSuppress,
+									Optional:         true,
+								},
+								"names": {
+									Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+									Type:        schema.TypeSet,
+									Required:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+									},
+								},
+								"privileges": {
+									Description: "The index level privileges that the owners of the role have on the specified indices.",
+									Type:        schema.TypeSet,
+									Required:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+									},
+								},
+							},
+						},
+					},
+					"remote_indices": {
+						Description: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+						Type:        schema.TypeSet,
+						Optional:    true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"clusters": {
+									Description: "A list of cluster aliases to which the permissions in this entry apply.",
+									Type:        schema.TypeSet,
+									Required:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+									},
+								},
 								"field_security": {
 									Description: "The document fields that the owners of the role have read access to.",
 									Type:        schema.TypeList,
@@ -187,6 +256,11 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
 	kibana, err := client.GetKibanaClient()
 	if err != nil {
 		return diag.FromErr(err)
@@ -209,7 +283,10 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 	}
 
 	if v, ok := d.GetOk("elasticsearch"); ok {
-		kibanaRole.Elasticsearch = expandKibanaRoleElasticsearch(v)
+		kibanaRole.Elasticsearch, diags = expandKibanaRoleElasticsearch(v, serverVersion)
+		if diags != nil {
+			return diags
+		}
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
@@ -303,8 +380,9 @@ func expandKibanaRoleMetadata(v interface{}) (map[string]interface{}, diag.Diagn
 	return metadata, nil
 }
 
-func expandKibanaRoleElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch {
+func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version) (*kbapi.KibanaRoleElasticsearch, diag.Diagnostics) {
 	elasticConfig := &kbapi.KibanaRoleElasticsearch{}
+	var diags diag.Diagnostics
 
 	if definedElasticConfigs := v.(*schema.Set); definedElasticConfigs.Len() > 0 {
 		userElasticConfig := definedElasticConfigs.List()[0].(map[string]interface{})
@@ -370,6 +448,71 @@ func expandKibanaRoleElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch
 				elasticConfig.Indices = indices
 			}
 
+			if v, ok := userElasticConfig["remote_indices"]; ok {
+				definedRemoteIndices := v.(*schema.Set)
+				if definedRemoteIndices.Len() > 0 {
+					if serverVersion.LessThan(minSupportedRemoteIndicesVersion) {
+						return nil, diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Kibana v%s and above", minSupportedRemoteIndicesVersion.String()))
+					}
+				}
+				remote_indices := make([]kbapi.KibanaRoleElasticsearchRemoteIndice, definedRemoteIndices.Len())
+				for i, idx := range definedRemoteIndices.List() {
+					index := idx.(map[string]interface{})
+
+					definedNames := index["names"].(*schema.Set)
+					names := make([]string, definedNames.Len())
+					for i, name := range definedNames.List() {
+						names[i] = name.(string)
+					}
+					definedClusters := index["clusters"].(*schema.Set)
+					clusters := make([]string, definedClusters.Len())
+					for i, cluster := range definedClusters.List() {
+						clusters[i] = cluster.(string)
+					}
+					definedPrivileges := index["privileges"].(*schema.Set)
+					privileges := make([]string, definedPrivileges.Len())
+					for i, pr := range definedPrivileges.List() {
+						privileges[i] = pr.(string)
+					}
+
+					newRemoteIndex := kbapi.KibanaRoleElasticsearchRemoteIndice{
+						Names:      names,
+						Clusters:   clusters,
+						Privileges: privileges,
+					}
+
+					if query := index["query"].(string); query != "" {
+						newRemoteIndex.Query = &query
+					}
+					if fieldSec := index["field_security"].([]interface{}); len(fieldSec) > 0 {
+						fieldSecurity := map[string]interface{}{}
+						// there must be only 1 entry
+						definedFieldSec := fieldSec[0].(map[string]interface{})
+
+						// grants
+						if gr := definedFieldSec["grant"].(*schema.Set); gr != nil {
+							grants := make([]string, gr.Len())
+							for i, grant := range gr.List() {
+								grants[i] = grant.(string)
+							}
+							fieldSecurity["grant"] = grants
+						}
+						// except
+						if exp := definedFieldSec["except"].(*schema.Set); exp != nil {
+							excepts := make([]string, exp.Len())
+							for i, except := range exp.List() {
+								excepts[i] = except.(string)
+							}
+							fieldSecurity["except"] = excepts
+						}
+						newRemoteIndex.FieldSecurity = fieldSecurity
+					}
+
+					remote_indices[i] = newRemoteIndex
+				}
+				elasticConfig.RemoteIndices = remote_indices
+			}
+
 			if v, ok := userElasticConfig["run_as"]; ok {
 				definedRuns := v.(*schema.Set)
 				runs := make([]string, definedRuns.Len())
@@ -380,7 +523,7 @@ func expandKibanaRoleElasticsearch(v interface{}) *kbapi.KibanaRoleElasticsearch
 			}
 		}
 	}
-	return elasticConfig
+	return elasticConfig, diags
 }
 
 func expandKibanaRoleKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagnostics) {
@@ -427,31 +570,53 @@ func expandKibanaRoleKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagn
 	return kibanaConfigs, nil
 }
 
-func flattenKibanaRoleIndicesData(indices *[]kbapi.KibanaRoleElasticsearchIndice) []interface{} {
-	if indices != nil {
-		oindx := make([]interface{}, len(*indices))
+func flattenKibanaRoleIndicesData(indices []kbapi.KibanaRoleElasticsearchIndice) []interface{} {
+	oindx := make([]interface{}, len(indices))
 
-		for i, index := range *indices {
-			oi := make(map[string]interface{})
-			oi["names"] = index.Names
-			oi["privileges"] = index.Privileges
-			oi["query"] = index.Query
+	for i, index := range indices {
+		oi := make(map[string]interface{})
+		oi["names"] = index.Names
+		oi["privileges"] = index.Privileges
+		oi["query"] = index.Query
 
-			if index.FieldSecurity != nil {
-				fsec := make(map[string]interface{})
-				if grant_v, ok := index.FieldSecurity["grant"]; ok {
-					fsec["grant"] = grant_v
-				}
-				if except_v, ok := index.FieldSecurity["except"]; ok {
-					fsec["except"] = except_v
-				}
-				oi["field_security"] = []interface{}{fsec}
+		if index.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			if grant_v, ok := index.FieldSecurity["grant"]; ok {
+				fsec["grant"] = grant_v
 			}
-			oindx[i] = oi
+			if except_v, ok := index.FieldSecurity["except"]; ok {
+				fsec["except"] = except_v
+			}
+			oi["field_security"] = []interface{}{fsec}
 		}
-		return oindx
+		oindx[i] = oi
 	}
-	return make([]interface{}, 0)
+	return oindx
+}
+
+func flattenKibanaRoleRemoteIndicesData(indices []kbapi.KibanaRoleElasticsearchRemoteIndice) []interface{} {
+	oindx := make([]interface{}, len(indices))
+
+	for i, index := range indices {
+		oi := make(map[string]interface{})
+		oi["clusters"] = index.Clusters
+		oi["names"] = index.Names
+		oi["privileges"] = index.Privileges
+		oi["query"] = index.Query
+
+		if index.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			if grant_v, ok := index.FieldSecurity["grant"]; ok {
+				fsec["grant"] = grant_v
+			}
+			if except_v, ok := index.FieldSecurity["except"]; ok {
+				fsec["except"] = except_v
+			}
+			oi["field_security"] = []interface{}{fsec}
+		}
+		oindx[i] = oi
+	}
+	return oindx
 }
 
 func flattenKibanaRoleElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) []interface{} {
@@ -460,7 +625,8 @@ func flattenKibanaRoleElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) 
 		if len(elastic.Cluster) > 0 {
 			result["cluster"] = elastic.Cluster
 		}
-		result["indices"] = flattenKibanaRoleIndicesData(&elastic.Indices)
+		result["indices"] = flattenKibanaRoleIndicesData(elastic.Indices)
+		result["remote_indices"] = flattenKibanaRoleRemoteIndicesData(elastic.RemoteIndices)
 		if len(elastic.RunAs) > 0 {
 			result["run_as"] = elastic.RunAs
 		}

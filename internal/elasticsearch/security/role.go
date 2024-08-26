@@ -10,11 +10,14 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var minSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
 
 func ResourceRole() *schema.Resource {
 	roleSchema := map[string]*schema.Schema{
@@ -137,6 +140,72 @@ func ResourceRole() *schema.Resource {
 				},
 			},
 		},
+		"remote_indices": {
+			Description: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+			Type:        schema.TypeSet,
+			Optional:    true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"clusters": {
+						Description: "A list of cluster aliases to which the permissions in this entry apply.",
+						Type:        schema.TypeSet,
+						Required:    true,
+						Elem: &schema.Schema{
+							Type: schema.TypeString,
+						},
+					},
+					"field_security": {
+						Description: "The document fields that the owners of the role have read access to.",
+						Type:        schema.TypeList,
+						Optional:    true,
+						MaxItems:    1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"grant": {
+									Description: "List of the fields to grant the access to.",
+									Type:        schema.TypeSet,
+									Optional:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+									},
+								},
+								"except": {
+									Description: "List of the fields to which the grants will not be applied.",
+									Type:        schema.TypeSet,
+									Optional:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+									},
+								},
+							},
+						},
+					},
+					"query": {
+						Description:      "A search query that defines the documents the owners of the role have read access to.",
+						Type:             schema.TypeString,
+						ValidateFunc:     validation.StringIsJSON,
+						DiffSuppressFunc: utils.DiffJsonSuppress,
+						Optional:         true,
+					},
+					"names": {
+						Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+						Type:        schema.TypeSet,
+						Required:    true,
+						Elem: &schema.Schema{
+							Type: schema.TypeString,
+						},
+					},
+					"privileges": {
+						Description: "The index level privileges that the owners of the role have on the specified indices.",
+						Type:        schema.TypeSet,
+						Required:    true,
+						Elem: &schema.Schema{
+							Type: schema.TypeString,
+						},
+					},
+				},
+			},
+		},
 		"metadata": {
 			Description:      "Optional meta-data.",
 			Type:             schema.TypeString,
@@ -175,6 +244,10 @@ func ResourceRole() *schema.Resource {
 
 func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+	serverVersion, diags := client.ServerVersion(ctx)
 	if diags.HasError() {
 		return diags
 	}
@@ -286,6 +359,69 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 		role.Indices = indices
 	}
 
+	if v, ok := d.GetOk("remote_indices"); ok {
+		definedRemoteIndices := v.(*schema.Set)
+		if definedRemoteIndices.Len() > 0 && serverVersion.LessThan(minSupportedRemoteIndicesVersion) {
+			return diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Elasticsearch v%s and above", minSupportedRemoteIndicesVersion.String()))
+		}
+		remote_indices := make([]models.RemoteIndexPerms, definedRemoteIndices.Len())
+		for i, idx := range definedRemoteIndices.List() {
+			remote_index := idx.(map[string]interface{})
+
+			definedRemoteNames := remote_index["names"].(*schema.Set)
+			remote_names := make([]string, definedRemoteNames.Len())
+			for i, name := range definedRemoteNames.List() {
+				remote_names[i] = name.(string)
+			}
+			definedRemoteClusters := remote_index["clusters"].(*schema.Set)
+			remote_clusters := make([]string, definedRemoteClusters.Len())
+			for i, cluster := range definedRemoteClusters.List() {
+				remote_clusters[i] = cluster.(string)
+			}
+			definedRemotePrivs := remote_index["privileges"].(*schema.Set)
+			remote_privs := make([]string, definedRemotePrivs.Len())
+			for i, pr := range definedRemotePrivs.List() {
+				remote_privs[i] = pr.(string)
+			}
+
+			newRemoteIndex := models.RemoteIndexPerms{
+				Names:      remote_names,
+				Clusters:   remote_clusters,
+				Privileges: remote_privs,
+			}
+
+			if query := remote_index["query"].(string); query != "" {
+				newRemoteIndex.Query = &query
+			}
+			if fieldSec := remote_index["field_security"].([]interface{}); len(fieldSec) > 0 {
+				remote_fieldSecurity := models.FieldSecurity{}
+				// there must be only 1 entry
+				definedRemoteFieldSec := fieldSec[0].(map[string]interface{})
+
+				// grants
+				if gr := definedRemoteFieldSec["grant"].(*schema.Set); gr != nil {
+					grants := make([]string, gr.Len())
+					for i, grant := range gr.List() {
+						grants[i] = grant.(string)
+					}
+					remote_fieldSecurity.Grant = grants
+				}
+				// except
+				if exp := definedRemoteFieldSec["except"].(*schema.Set); exp != nil {
+					excepts := make([]string, exp.Len())
+					for i, except := range exp.List() {
+						excepts[i] = except.(string)
+					}
+					remote_fieldSecurity.Except = excepts
+				}
+				newRemoteIndex.FieldSecurity = &remote_fieldSecurity
+			}
+
+			remote_indices[i] = newRemoteIndex
+		}
+		role.RemoteIndices = remote_indices
+	}
+
 	if v, ok := d.GetOk("metadata"); ok {
 		metadata := make(map[string]interface{})
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
@@ -357,9 +493,12 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 		}
 	}
 
-	indexes := role.Indices
-	indices := flattenIndicesData(&indexes)
+	indices := flattenIndicesData(role.Indices)
 	if err := d.Set("indices", indices); err != nil {
+		return diag.FromErr(err)
+	}
+	remoteIndices := flattenRemoteIndicesData(role.RemoteIndices)
+	if err := d.Set("remote_indices", remoteIndices); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -395,28 +534,46 @@ func flattenApplicationsData(apps *[]models.Application) []interface{} {
 	return make([]interface{}, 0)
 }
 
-func flattenIndicesData(indices *[]models.IndexPerms) []interface{} {
-	if indices != nil {
-		oindx := make([]interface{}, len(*indices))
+func flattenIndicesData(indices []models.IndexPerms) []interface{} {
+	oindx := make([]interface{}, len(indices))
 
-		for i, index := range *indices {
-			oi := make(map[string]interface{})
-			oi["names"] = index.Names
-			oi["privileges"] = index.Privileges
-			oi["query"] = index.Query
-			oi["allow_restricted_indices"] = index.AllowRestrictedIndices
+	for i, index := range indices {
+		oi := make(map[string]interface{})
+		oi["names"] = index.Names
+		oi["privileges"] = index.Privileges
+		oi["query"] = index.Query
+		oi["allow_restricted_indices"] = index.AllowRestrictedIndices
 
-			if index.FieldSecurity != nil {
-				fsec := make(map[string]interface{})
-				fsec["grant"] = index.FieldSecurity.Grant
-				fsec["except"] = index.FieldSecurity.Except
-				oi["field_security"] = []interface{}{fsec}
-			}
-			oindx[i] = oi
+		if index.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			fsec["grant"] = index.FieldSecurity.Grant
+			fsec["except"] = index.FieldSecurity.Except
+			oi["field_security"] = []interface{}{fsec}
 		}
-		return oindx
+		oindx[i] = oi
 	}
-	return make([]interface{}, 0)
+	return oindx
+}
+
+func flattenRemoteIndicesData(remoteIndices []models.RemoteIndexPerms) []interface{} {
+	oRemoteIndx := make([]interface{}, len(remoteIndices))
+
+	for i, remoteIndex := range remoteIndices {
+		oi := make(map[string]interface{})
+		oi["names"] = remoteIndex.Names
+		oi["clusters"] = remoteIndex.Clusters
+		oi["privileges"] = remoteIndex.Privileges
+		oi["query"] = remoteIndex.Query
+
+		if remoteIndex.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			fsec["grant"] = remoteIndex.FieldSecurity.Grant
+			fsec["except"] = remoteIndex.FieldSecurity.Except
+			oi["field_security"] = []interface{}{fsec}
+		}
+		oRemoteIndx[i] = oi
+	}
+	return oRemoteIndx
 }
 
 func resourceSecurityRoleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
