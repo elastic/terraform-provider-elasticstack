@@ -2,6 +2,7 @@
 
 - Add the `alert_delay` field to the Create Rule API ([#715](https://github.com/elastic/terraform-provider-elasticstack/pull/715))
 - Add support for data_stream `lifecycle` template settings ([#724](https://github.com/elastic/terraform-provider-elasticstack/pull/724))
+- Fix a provider panic when `elasticstack_kibana_action_connector` reads a non-existant connector ([#729](https://github.com/elastic/terraform-provider-elasticstack/pull/729))
 
 ## [0.11.6] - 2024-08-20
 
