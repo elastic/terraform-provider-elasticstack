@@ -165,21 +165,21 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 
 	if tags, ok := d.GetOk("global_data_tags"); ok {
 		tagMap := tags.(map[string]interface{})
+
 		if len(tagMap) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
 			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
 		}
 
-		var globalDataTags []fleetapi.GlobalDataTag
+		globalDataTags := make([]fleetapi.GlobalDataTag, 0, len(tagMap))
 		for key, value := range tagMap {
 			globalDataTags = append(globalDataTags, fleetapi.GlobalDataTag{
 				Name:  key,
 				Value: value.(string),
 			})
 		}
-
 		req.GlobalDataTags = globalDataTags
 	} else {
-		req.GlobalDataTags = []fleetapi.GlobalDataTag{}
+		req.GlobalDataTags = make([]fleetapi.GlobalDataTag, 0) // Ensure it's an empty array
 	}
 
 	policy, diags := fleet.CreateAgentPolicy(ctx, fleetClient, req)
@@ -257,7 +257,7 @@ func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta
 		}
 		req.GlobalDataTags = globalDataTags
 	} else {
-		req.GlobalDataTags = []fleetapi.GlobalDataTag{}
+		req.GlobalDataTags = make([]fleetapi.GlobalDataTag, 0) // Ensure it's an empty array
 	}
 
 	_, diags = fleet.UpdateAgentPolicy(ctx, fleetClient, d.Id(), req)

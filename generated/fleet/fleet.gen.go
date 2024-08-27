@@ -200,7 +200,7 @@ type AgentPolicy struct {
 	FleetServerHostId *string         `json:"fleet_server_host_id"`
 	Id                string          `json:"id"`
 	InactivityTimeout *float32        `json:"inactivity_timeout,omitempty"`
-	GlobalDataTags    []GlobalDataTag `json:"global_data_tags,omitempty"`
+	GlobalDataTags    []GlobalDataTag `json:"global_data_tags"`
 
 	// IsProtected Indicates whether the agent policy has tamper protection enabled. Default false.
 	IsProtected        *bool                           `json:"is_protected,omitempty"`
@@ -232,7 +232,7 @@ type AgentPolicyCreateRequest struct {
 	FleetServerHostId  *string                                      `json:"fleet_server_host_id"`
 	Id                 *string                                      `json:"id,omitempty"`
 	InactivityTimeout  *float32                                     `json:"inactivity_timeout,omitempty"`
-	GlobalDataTags     []GlobalDataTag                              `json:"global_data_tags,omitempty"`
+	GlobalDataTags     []GlobalDataTag                              `json:"global_data_tags"`
 	MonitoringOutputId *string                                      `json:"monitoring_output_id"`
 	IsProtected        *bool                                        `json:"is_protected,omitempty"`
 	MonitoringEnabled  *[]AgentPolicyCreateRequestMonitoringEnabled `json:"monitoring_enabled,omitempty"`
@@ -255,7 +255,7 @@ type AgentPolicyUpdateRequest struct {
 	DownloadSourceId   *string                                      `json:"download_source_id"`
 	FleetServerHostId  *string                                      `json:"fleet_server_host_id"`
 	InactivityTimeout  *float32                                     `json:"inactivity_timeout,omitempty"`
-	GlobalDataTags     []GlobalDataTag                              `json:"global_data_tags,omitempty"`
+	GlobalDataTags     []GlobalDataTag                              `json:"global_data_tags"`
 	IsProtected        *bool                                        `json:"is_protected,omitempty"`
 	MonitoringEnabled  *[]AgentPolicyUpdateRequestMonitoringEnabled `json:"monitoring_enabled,omitempty"`
 	MonitoringOutputId *string                                      `json:"monitoring_output_id"`
