@@ -2,9 +2,12 @@ package fleet
 
 import (
 	"context"
+	"fmt"
 
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -14,6 +17,8 @@ const (
 	monitorLogs    = "logs"
 	monitorMetrics = "metrics"
 )
+
+var minVersionGlobalDataTags = version.Must(version.NewVersion("8.15.0"))
 
 func ResourceAgentPolicy() *schema.Resource {
 	agentPolicySchema := map[string]*schema.Schema{
@@ -79,6 +84,14 @@ func ResourceAgentPolicy() *schema.Resource {
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
+		"global_data_tags": {
+			Description: "User-defined data tags that are added to all inputs.",
+			Type:        schema.TypeMap,
+			Optional:    true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
 	}
 
 	return &schema.Resource{
@@ -99,6 +112,16 @@ func ResourceAgentPolicy() *schema.Resource {
 
 func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	apiClient, diags := clients.NewApiClientFromSDKResource(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	serverVersion, diags := apiClient.ServerVersion(ctx)
 	if diags.HasError() {
 		return diags
 	}
@@ -140,6 +163,31 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 	}
 	req.MonitoringEnabled = &monitoringValues
 
+	// Add GlobalDataTags
+	if tags, ok := d.GetOk("global_data_tags"); ok {
+		tagMap := tags.(map[string]interface{})
+		globalDataTags := make([]fleetapi.GlobalDataTag, 0, len(tagMap))
+
+		if len(tagMap) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
+			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
+		}
+
+		for key, value := range tagMap {
+			globalDataTags = append(globalDataTags, fleetapi.GlobalDataTag{
+				Name:  key,
+				Value: value.(string),
+			})
+		}
+
+		if len(globalDataTags) == 0 {
+			req.GlobalDataTags = nil
+		} else {
+			req.GlobalDataTags = globalDataTags
+		}
+	} else {
+		req.GlobalDataTags = nil
+	}
+
 	policy, diags := fleet.CreateAgentPolicy(ctx, fleetClient, req)
 	if diags.HasError() {
 		return diags
@@ -155,6 +203,16 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 
 func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	apiClient, diags := clients.NewApiClientFromSDKResource(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	serverVersion, diags := apiClient.ServerVersion(ctx)
 	if diags.HasError() {
 		return diags
 	}
@@ -189,6 +247,29 @@ func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta
 	}
 	req.MonitoringEnabled = &monitoringValues
 
+	// Add GlobalDataTags
+	if tags, ok := d.GetOk("global_data_tags"); ok {
+		tagMap := tags.(map[string]interface{})
+
+		if len(tagMap) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
+			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
+		}
+		if len(tagMap) != 0 {
+			globalDataTags := make([]fleetapi.GlobalDataTag, 0, len(tagMap))
+			for key, value := range tagMap {
+				globalDataTags = append(globalDataTags, fleetapi.GlobalDataTag{
+					Name:  key,
+					Value: value.(string),
+				})
+			}
+			req.GlobalDataTags = globalDataTags
+		} else {
+			req.GlobalDataTags = nil
+		}
+	} else {
+		req.GlobalDataTags = nil
+	}
+
 	_, diags = fleet.UpdateAgentPolicy(ctx, fleetClient, d.Id(), req)
 	if diags.HasError() {
 		return diags
@@ -199,6 +280,16 @@ func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta
 
 func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	fleetClient, diags := getFleetClient(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	apiClient, diags := clients.NewApiClientFromSDKResource(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	serverVersion, diags := apiClient.ServerVersion(ctx)
 	if diags.HasError() {
 		return diags
 	}
@@ -261,6 +352,24 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 
 				}
 			}
+		}
+	}
+
+	// Add GlobalDataTags
+	if agentPolicy.GlobalDataTags != nil {
+		globalDataTags := make(map[string]string, len(agentPolicy.GlobalDataTags))
+		if len(globalDataTags) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
+			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
+		}
+		for _, tag := range agentPolicy.GlobalDataTags {
+			globalDataTags[tag.Name] = tag.Value.(string) // Type assertion to string
+		}
+		if err := d.Set("global_data_tags", globalDataTags); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		if err := d.Set("global_data_tags", nil); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 

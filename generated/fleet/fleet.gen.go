@@ -181,19 +181,26 @@ const (
 	UpdatePackagePolicyParamsFormatSimplified UpdatePackagePolicyParamsFormat = "simplified"
 )
 
+// GlobalDataTag defines the structure for each tag in GlobalDataTags.
+type GlobalDataTag struct {
+	Name  string      `json:"name"`
+	Value interface{} `json:"value"` // Value can be either string or number
+}
+
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
-	Agents            *float32 `json:"agents,omitempty"`
-	DataOutputId      *string  `json:"data_output_id"`
-	Description       *string  `json:"description,omitempty"`
-	DownloadSourceId  *string  `json:"download_source_id"`
-	FleetServerHostId *string  `json:"fleet_server_host_id"`
-	Id                string   `json:"id"`
-	InactivityTimeout *float32 `json:"inactivity_timeout,omitempty"`
+	Agents            *float32        `json:"agents,omitempty"`
+	DataOutputId      *string         `json:"data_output_id"`
+	Description       *string         `json:"description,omitempty"`
+	DownloadSourceId  *string         `json:"download_source_id"`
+	FleetServerHostId *string         `json:"fleet_server_host_id"`
+	Id                string          `json:"id"`
+	InactivityTimeout *float32        `json:"inactivity_timeout,omitempty"`
+	GlobalDataTags    []GlobalDataTag `json:"global_data_tags,omitempty"`
 
 	// IsProtected Indicates whether the agent policy has tamper protection enabled. Default false.
 	IsProtected        *bool                           `json:"is_protected,omitempty"`
@@ -225,9 +232,10 @@ type AgentPolicyCreateRequest struct {
 	FleetServerHostId  *string                                      `json:"fleet_server_host_id"`
 	Id                 *string                                      `json:"id,omitempty"`
 	InactivityTimeout  *float32                                     `json:"inactivity_timeout,omitempty"`
+	GlobalDataTags     []GlobalDataTag                              `json:"global_data_tags,omitempty"`
+	MonitoringOutputId *string                                      `json:"monitoring_output_id"`
 	IsProtected        *bool                                        `json:"is_protected,omitempty"`
 	MonitoringEnabled  *[]AgentPolicyCreateRequestMonitoringEnabled `json:"monitoring_enabled,omitempty"`
-	MonitoringOutputId *string                                      `json:"monitoring_output_id"`
 	Name               string                                       `json:"name"`
 	Namespace          string                                       `json:"namespace"`
 	UnenrollTimeout    *float32                                     `json:"unenroll_timeout,omitempty"`
@@ -247,6 +255,7 @@ type AgentPolicyUpdateRequest struct {
 	DownloadSourceId   *string                                      `json:"download_source_id"`
 	FleetServerHostId  *string                                      `json:"fleet_server_host_id"`
 	InactivityTimeout  *float32                                     `json:"inactivity_timeout,omitempty"`
+	GlobalDataTags     []GlobalDataTag                              `json:"global_data_tags"`
 	IsProtected        *bool                                        `json:"is_protected,omitempty"`
 	MonitoringEnabled  *[]AgentPolicyUpdateRequestMonitoringEnabled `json:"monitoring_enabled,omitempty"`
 	MonitoringOutputId *string                                      `json:"monitoring_output_id"`
