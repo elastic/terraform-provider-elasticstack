@@ -263,7 +263,7 @@ type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel stri
 type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string, namespace string) error
 
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
-	return func(ctx context.Context, idOrLabel string, _ string) (*PrivateLocation, error) {
+	return func(ctx context.Context, idOrLabel string, namespace string) (*PrivateLocation, error) {
 		if idOrLabel == "" {
 			return nil, APIError{
 				Code:    404,
@@ -271,7 +271,7 @@ func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSynthetics
 			}
 		}
 
-		path := basePathWithId("", privateLocationsSuffix, idOrLabel)
+		path := basePathWithId(namespace, privateLocationsSuffix, idOrLabel)
 		log.Debugf("URL to get private locations: %s", path)
 		resp, err := c.R().SetContext(ctx).Get(path)
 		if err = handleKibanaError(err, resp); err != nil {

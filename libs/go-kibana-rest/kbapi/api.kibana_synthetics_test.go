@@ -345,6 +345,27 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 	}
 }
 
+func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationNamespace() {
+	space := "testacc"
+	ctx := context.Background()
+	testUuid := uuid.New().String()
+	pAPI := s.API.KibanaSynthetics.PrivateLocation
+	testWithPolicy(s.T(), s.client, space, func(policyId string) {
+		cfg := PrivateLocationConfig{
+			Label:         fmt.Sprintf("TestKibanaSyntheticsPrivateLocationNamespace-%s", testUuid),
+			AgentPolicyId: policyId,
+			Tags:          []string{"a", "b"},
+			Geo: &SyntheticGeoConfig{
+				Lat: 12.12,
+				Lon: -42.42,
+			},
+		}
+		created, err := pAPI.Create(ctx, cfg, "default")
+		assert.NoError(s.T(), err)
+		assert.Equal(s.T(), "default", created.Namespace)
+	})
+}
+
 func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationNotFound() {
 	for _, n := range namespaces {
 		testUuid := uuid.New().String()
