@@ -255,7 +255,7 @@ type AgentPolicyUpdateRequest struct {
 	DownloadSourceId   *string                                      `json:"download_source_id"`
 	FleetServerHostId  *string                                      `json:"fleet_server_host_id"`
 	InactivityTimeout  *float32                                     `json:"inactivity_timeout,omitempty"`
-	GlobalDataTags     []GlobalDataTag                              `json:"global_data_tags"`
+	GlobalDataTags     []GlobalDataTag                              `json:"global_data_tags,omitempty"`
 	IsProtected        *bool                                        `json:"is_protected,omitempty"`
 	MonitoringEnabled  *[]AgentPolicyUpdateRequestMonitoringEnabled `json:"monitoring_enabled,omitempty"`
 	MonitoringOutputId *string                                      `json:"monitoring_output_id"`

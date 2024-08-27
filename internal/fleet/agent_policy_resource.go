@@ -163,15 +163,13 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 	}
 	req.MonitoringEnabled = &monitoringValues
 
-	// Add GlobalDataTags
 	if tags, ok := d.GetOk("global_data_tags"); ok {
 		tagMap := tags.(map[string]interface{})
-		globalDataTags := make([]fleetapi.GlobalDataTag, 0, len(tagMap))
-
 		if len(tagMap) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
 			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
 		}
 
+		var globalDataTags []fleetapi.GlobalDataTag
 		for key, value := range tagMap {
 			globalDataTags = append(globalDataTags, fleetapi.GlobalDataTag{
 				Name:  key,
@@ -179,13 +177,9 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 			})
 		}
 
-		if len(globalDataTags) == 0 {
-			req.GlobalDataTags = nil
-		} else {
-			req.GlobalDataTags = globalDataTags
-		}
+		req.GlobalDataTags = globalDataTags
 	} else {
-		req.GlobalDataTags = nil
+		req.GlobalDataTags = []fleetapi.GlobalDataTag{}
 	}
 
 	policy, diags := fleet.CreateAgentPolicy(ctx, fleetClient, req)
@@ -247,27 +241,23 @@ func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta
 	}
 	req.MonitoringEnabled = &monitoringValues
 
-	// Add GlobalDataTags
 	if tags, ok := d.GetOk("global_data_tags"); ok {
 		tagMap := tags.(map[string]interface{})
 
 		if len(tagMap) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
 			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
 		}
-		if len(tagMap) != 0 {
-			globalDataTags := make([]fleetapi.GlobalDataTag, 0, len(tagMap))
-			for key, value := range tagMap {
-				globalDataTags = append(globalDataTags, fleetapi.GlobalDataTag{
-					Name:  key,
-					Value: value.(string),
-				})
-			}
-			req.GlobalDataTags = globalDataTags
-		} else {
-			req.GlobalDataTags = nil
+
+		globalDataTags := make([]fleetapi.GlobalDataTag, 0, len(tagMap))
+		for key, value := range tagMap {
+			globalDataTags = append(globalDataTags, fleetapi.GlobalDataTag{
+				Name:  key,
+				Value: value.(string),
+			})
 		}
+		req.GlobalDataTags = globalDataTags
 	} else {
-		req.GlobalDataTags = nil
+		req.GlobalDataTags = []fleetapi.GlobalDataTag{}
 	}
 
 	_, diags = fleet.UpdateAgentPolicy(ctx, fleetClient, d.Id(), req)
@@ -355,15 +345,16 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 		}
 	}
 
-	// Add GlobalDataTags
 	if agentPolicy.GlobalDataTags != nil {
-		globalDataTags := make(map[string]string, len(agentPolicy.GlobalDataTags))
-		if len(globalDataTags) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
+		if len(agentPolicy.GlobalDataTags) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
 			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
 		}
+
+		globalDataTags := make(map[string]string, len(agentPolicy.GlobalDataTags))
 		for _, tag := range agentPolicy.GlobalDataTags {
-			globalDataTags[tag.Name] = tag.Value.(string) // Type assertion to string
+			globalDataTags[tag.Name] = tag.Value.(string)
 		}
+
 		if err := d.Set("global_data_tags", globalDataTags); err != nil {
 			return diag.FromErr(err)
 		}
