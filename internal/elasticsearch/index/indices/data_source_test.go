@@ -15,9 +15,9 @@ func TestAccIndicesDataSource(t *testing.T) {
 			{
 				Config: testAccIndicesDataSourceConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_indices", "indices.0.name", ".internal.alerts-default.alerts-default-000001"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_indices", "indices.0.number_of_shards", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_indices", "indices.0.alias.0.name", ".alerts-default.alerts-default"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.security_indices", "indices.0.name", ".security-7"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.security_indices", "indices.0.number_of_shards", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.security_indices", "indices.0.alias.0.name", ".security"),
 				),
 			},
 		},
@@ -30,7 +30,7 @@ provider "elasticstack" {
 	kibana {}
 }
 
-data "elasticstack_elasticsearch_indices" "all_indices" {
-	search = ".internal.alerts-default.alerts-default-0*"
+data "elasticstack_elasticsearch_indices" "security_indices" {
+	search = ".security-*"
 }
 `
