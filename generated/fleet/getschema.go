@@ -157,6 +157,7 @@ func transformOutputTypeRequired(schema *Schema) {
 		"schemas.output_update_request_elasticsearch.required",
 		"schemas.output_update_request_kafka.required",
 		"schemas.output_update_request_logstash.required",
+		"schemas.output_create_request_remote_elasticsearch.required",
 	}
 
 	for _, v := range path {
