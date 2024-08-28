@@ -346,9 +346,6 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	if agentPolicy.GlobalDataTags != nil {
-		if len(agentPolicy.GlobalDataTags) > 0 && serverVersion.LessThan(minVersionGlobalDataTags) {
-			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
-		}
 
 		globalDataTags := make(map[string]string, len(agentPolicy.GlobalDataTags))
 		for _, tag := range agentPolicy.GlobalDataTags {
