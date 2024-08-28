@@ -73,13 +73,14 @@ type UserPassword struct {
 }
 
 type Role struct {
-	Name         string                 `json:"-"`
-	Applications []Application          `json:"applications,omitempty"`
-	Global       map[string]interface{} `json:"global,omitempty"`
-	Cluster      []string               `json:"cluster,omitempty"`
-	Indices      []IndexPerms           `json:"indices,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
-	RusAs        []string               `json:"run_as,omitempty"`
+	Name          string                 `json:"-"`
+	Applications  []Application          `json:"applications,omitempty"`
+	Global        map[string]interface{} `json:"global,omitempty"`
+	Cluster       []string               `json:"cluster,omitempty"`
+	Indices       []IndexPerms           `json:"indices,omitempty"`
+	RemoteIndices []RemoteIndexPerms     `json:"remote_indices,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	RusAs         []string               `json:"run_as,omitempty"`
 }
 
 type ApiKeyRoleDescriptor struct {
@@ -131,6 +132,14 @@ type IndexPerms struct {
 	AllowRestrictedIndices *bool          `json:"allow_restricted_indices,omitempty"`
 }
 
+type RemoteIndexPerms struct {
+	FieldSecurity *FieldSecurity `json:"field_security,omitempty"`
+	Names         []string       `json:"names"`
+	Clusters      []string       `json:"clusters"`
+	Privileges    []string       `json:"privileges"`
+	Query         *string        `json:"query,omitempty"`
+}
+
 type FieldSecurity struct {
 	Grant  []string `json:"grant,omitempty"`
 	Except []string `json:"except,omitempty"`
@@ -161,9 +170,10 @@ type DataStreamSettings struct {
 }
 
 type Template struct {
-	Aliases  map[string]IndexAlias  `json:"aliases,omitempty"`
-	Mappings map[string]interface{} `json:"mappings,omitempty"`
-	Settings map[string]interface{} `json:"settings,omitempty"`
+	Aliases   map[string]IndexAlias  `json:"aliases,omitempty"`
+	Mappings  map[string]interface{} `json:"mappings,omitempty"`
+	Settings  map[string]interface{} `json:"settings,omitempty"`
+	Lifecycle *LifecycleSettings     `json:"lifecycle,omitempty"`
 }
 
 type IndexTemplatesResponse struct {
@@ -289,6 +299,10 @@ type IndexAlias struct {
 	IsWriteIndex  bool                   `json:"is_write_index,omitempty"`
 	Routing       string                 `json:"routing,omitempty"`
 	SearchRouting string                 `json:"search_routing,omitempty"`
+}
+
+type LifecycleSettings struct {
+	DataRetention string `json:"data_retention,omitempty"`
 }
 
 type DataStream struct {

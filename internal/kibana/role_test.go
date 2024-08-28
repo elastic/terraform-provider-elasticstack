@@ -7,6 +7,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -15,6 +17,8 @@ import (
 func TestAccResourceKibanaSecurityRole(t *testing.T) {
 	// generate a random role name
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	roleNameRemoteIndices := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -42,6 +46,39 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as", []string{"elastic", "kibana"}),
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
 					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				Config:   testAccResourceSecurityRoleRemoteIndicesCreate(roleNameRemoteIndices),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.base.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as.#"),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.names", []string{"sample"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.0.grant", []string{"sample"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.2.privileges", []string{"minimal_read", "store_search_session", "url_create"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.clusters", []string{"test-cluster"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.field_security.0.grant", []string{"sample"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.names", []string{"sample"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.privileges", []string{"create", "read", "write"}),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				Config:   testAccResourceSecurityRoleRemoteIndicesUpdate(roleNameRemoteIndices),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.#"),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as", []string{"elastic", "kibana"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.clusters", []string{"test-cluster2"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.field_security.0.grant", []string{"sample2"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.names", []string{"sample2"}),
+					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.privileges", []string{"create", "read", "write"}),
 				),
 			},
 		},
@@ -127,6 +164,113 @@ resource "elasticstack_kibana_security_role" "test" {
 		names = ["sample"]
 		privileges = ["create", "read", "write"]
 	  }
+	  run_as = ["kibana", "elastic"]
+	}
+	kibana {
+	  base = [ "all" ]
+	  spaces = ["default"]
+	}
+}
+	`, roleName)
+}
+
+func testAccResourceSecurityRoleRemoteIndicesCreate(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_role" "test" {
+  name    = "%s"
+  elasticsearch {
+    cluster = [ "create_snapshot" ]
+    indices {
+      field_security {
+        grant = ["sample"]
+        except = []
+      }
+      names = ["sample"]
+      privileges = ["create", "read", "write"]
+    }
+    remote_indices {
+	  clusters = ["test-cluster"]
+      field_security {
+        grant = ["sample"]
+        except = []
+      }
+      names = ["sample"]
+      privileges = ["create", "read", "write"]
+    }
+  }
+  kibana {
+    feature {
+      name = "actions"
+      privileges = ["read"]
+    }
+    feature {
+      name = "advancedSettings"
+      privileges = ["read"]
+    }
+    feature {
+      name = "discover"
+      privileges = ["minimal_read", "url_create", "store_search_session"]
+    }
+    feature {
+      name = "generalCases"
+      privileges = ["minimal_read", "cases_delete"]
+    }
+    feature {
+      name = "observabilityCases"
+      privileges = ["minimal_read", "cases_delete"]
+    }
+    feature {
+      name = "osquery"
+      privileges = ["minimal_read", "live_queries_all", "run_saved_queries", "saved_queries_read", "packs_all"]
+    }
+    feature {
+      name = "rulesSettings"
+      privileges = ["minimal_read", "readFlappingSettings"]
+    }
+    feature {
+      name = "securitySolutionCases"
+      privileges = ["minimal_read", "cases_delete"]
+    }
+    feature {
+      name = "visualize"
+      privileges = ["minimal_read", "url_create"]
+    }
+
+    spaces = ["default"]
+  }
+}
+	`, roleName)
+}
+
+func testAccResourceSecurityRoleRemoteIndicesUpdate(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_role" "test" {
+	name    = "%s"
+	elasticsearch {
+	  cluster = [ "create_snapshot" ]
+	  indices {
+		names = ["sample"]
+		privileges = ["create", "read", "write"]
+	  }
+      remote_indices {
+	    clusters = ["test-cluster2"]
+        field_security {
+          grant = ["sample2"]
+          except = []
+        }
+        names = ["sample2"]
+        privileges = ["create", "read", "write"]
+      }
 	  run_as = ["kibana", "elastic"]
 	}
 	kibana {

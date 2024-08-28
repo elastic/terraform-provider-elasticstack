@@ -6,6 +6,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -14,6 +16,8 @@ import (
 func TestAccResourceSecurityRole(t *testing.T) {
 	// generate a random username
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	roleNameRemoteIndices := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -43,6 +47,37 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "applications.#"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				Config:   testAccResourceSecurityRoleRemoteIndicesCreate(roleNameRemoteIndices),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameRemoteIndices),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "run_as.*", "other_user"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.clusters.*", "test-cluster"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				Config:   testAccResourceSecurityRoleRemoteIndicesUpdate(roleNameRemoteIndices),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameRemoteIndices),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "applications.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.clusters.*", "test-cluster2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample2"),
 				),
 			},
 		},
@@ -95,6 +130,79 @@ resource "elasticstack_elasticsearch_security_role" "test" {
     privileges = ["all"]
   }
 
+  metadata = jsonencode({
+    version = 1
+  })
+}
+	`, roleName)
+}
+
+func testAccResourceSecurityRoleRemoteIndicesCreate(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role" "test" {
+  name    = "%s"
+  cluster = ["all"]
+
+  indices {
+    names                    = ["index1", "index2"]
+    privileges               = ["all"]
+    allow_restricted_indices = true
+  }
+
+  remote_indices {
+	clusters = ["test-cluster"]
+	field_security {
+	  grant = ["sample"]
+	  except = []
+	}
+	names = ["sample"]
+	privileges = ["create", "read", "write"]
+  }
+
+  applications {
+    application = "myapp"
+    privileges  = ["admin", "read"]
+    resources   = ["*"]
+  }
+
+  run_as = ["other_user"]
+
+  metadata = jsonencode({
+    version = 1
+  })
+}
+	`, roleName)
+}
+
+func testAccResourceSecurityRoleRemoteIndicesUpdate(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role" "test" {
+  name    = "%s"
+  cluster = ["all"]
+
+  indices {
+    names      = ["index1", "index2"]
+    privileges = ["all"]
+  }
+
+  remote_indices {
+	clusters = ["test-cluster2"]
+	field_security {
+	  grant = ["sample"]
+	  except = []
+	}
+	names = ["sample2"]
+	privileges = ["create", "read", "write"]
+  }
+	
   metadata = jsonencode({
     version = 1
   })

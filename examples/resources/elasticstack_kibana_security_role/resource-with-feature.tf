@@ -16,6 +16,15 @@ resource "elasticstack_kibana_security_role" "example" {
       names      = ["test"]
       privileges = ["create", "read", "write"]
     }
+    remote_indices {
+      field_security {
+        grant  = ["test"]
+        except = []
+      }
+      names      = ["test"]
+      clusters   = ["test-cluster"]
+      privileges = ["create", "read", "write"]
+    }
   }
   kibana {
     feature {

@@ -59,6 +59,7 @@ output "role" {
 - `global` (String) An object defining global privileges.
 - `indices` (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
 - `metadata` (String) Optional meta-data.
+- `remote_indices` (Block Set) A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedblock--remote_indices))
 - `run_as` (Set of String) A list of users that the owners of this role can impersonate.
 
 ### Read-Only
@@ -111,6 +112,30 @@ Optional:
 
 <a id="nestedblock--indices--field_security"></a>
 ### Nested Schema for `indices.field_security`
+
+Optional:
+
+- `except` (Set of String) List of the fields to which the grants will not be applied.
+- `grant` (Set of String) List of the fields to grant the access to.
+
+
+
+<a id="nestedblock--remote_indices"></a>
+### Nested Schema for `remote_indices`
+
+Required:
+
+- `clusters` (Set of String) A list of cluster aliases to which the permissions in this entry apply.
+- `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
+- `privileges` (Set of String) The index level privileges that the owners of the role have on the specified indices.
+
+Optional:
+
+- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--remote_indices--field_security))
+- `query` (String) A search query that defines the documents the owners of the role have read access to.
+
+<a id="nestedblock--remote_indices--field_security"></a>
+### Nested Schema for `remote_indices.field_security`
 
 Optional:
 

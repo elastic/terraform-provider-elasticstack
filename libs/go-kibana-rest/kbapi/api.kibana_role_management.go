@@ -28,9 +28,10 @@ type KibanaRoleTransientMetadata struct {
 
 // KibanaRoleElasticsearch is the API Elasticsearch object
 type KibanaRoleElasticsearch struct {
-	Indices []KibanaRoleElasticsearchIndice `json:"indices,omitempty"`
-	Cluster []string                        `json:"cluster,omitempty"`
-	RunAs   []string                        `json:"run_as,omitempty"`
+	Indices       []KibanaRoleElasticsearchIndice       `json:"indices,omitempty"`
+	RemoteIndices []KibanaRoleElasticsearchRemoteIndice `json:"remote_indices,omitempty"`
+	Cluster       []string                              `json:"cluster,omitempty"`
+	RunAs         []string                              `json:"run_as,omitempty"`
 }
 
 // KibanaRoleKibana is the API Kibana object
@@ -42,6 +43,15 @@ type KibanaRoleKibana struct {
 
 // KibanaRoleElasticsearchIndice is the API indice object
 type KibanaRoleElasticsearchIndice struct {
+	Names         []string               `json:"names,omitempty"`
+	Privileges    []string               `json:"privileges,omitempty"`
+	FieldSecurity map[string]interface{} `json:"field_security,omitempty"`
+	Query         interface{}            `json:"query,omitempty"`
+}
+
+// KibanaRoleElasticsearchRemoteIndice is the API remote_indice object
+type KibanaRoleElasticsearchRemoteIndice struct {
+	Clusters      []string               `json:"clusters,omitempty"`
 	Names         []string               `json:"names,omitempty"`
 	Privileges    []string               `json:"privileges,omitempty"`
 	FieldSecurity map[string]interface{} `json:"field_security,omitempty"`

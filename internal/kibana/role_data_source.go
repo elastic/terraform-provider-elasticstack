@@ -85,6 +85,72 @@ func DataSourceRole() *schema.Resource {
 							},
 						},
 					},
+					"remote_indices": {
+						Description: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+						Type:        schema.TypeSet,
+						Optional:    true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"clusters": {
+									Description: "A list of cluster aliases to which the permissions in this entry apply.",
+									Type:        schema.TypeSet,
+									Required:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+									},
+								},
+								"field_security": {
+									Description: "The document fields that the owners of the role have read access to.",
+									Type:        schema.TypeList,
+									Optional:    true,
+									MaxItems:    1,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"grant": {
+												Description: "List of the fields to grant the access to.",
+												Type:        schema.TypeSet,
+												Optional:    true,
+												Elem: &schema.Schema{
+													Type: schema.TypeString,
+												},
+											},
+											"except": {
+												Description: "List of the fields to which the grants will not be applied.",
+												Type:        schema.TypeSet,
+												Optional:    true,
+												Elem: &schema.Schema{
+													Type: schema.TypeString,
+												},
+											},
+										},
+									},
+								},
+								"query": {
+									Description:      "A search query that defines the documents the owners of the role have read access to.",
+									Type:             schema.TypeString,
+									ValidateFunc:     validation.StringIsJSON,
+									DiffSuppressFunc: utils.DiffJsonSuppress,
+									Optional:         true,
+								},
+								"names": {
+									Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+									Type:        schema.TypeSet,
+									Required:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+									},
+								},
+								"privileges": {
+									Description: "The index level privileges that the owners of the role have on the specified indices.",
+									Type:        schema.TypeSet,
+									Required:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+									},
+								},
+							},
+						},
+					},
 					"run_as": {
 						Description: "A list of usernames the owners of this role can impersonate.",
 						Type:        schema.TypeSet,

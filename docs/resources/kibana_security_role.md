@@ -32,6 +32,15 @@ resource "elasticstack_kibana_security_role" "example" {
       names      = ["test"]
       privileges = ["create", "read", "write"]
     }
+    remote_indices {
+      field_security {
+        grant  = ["test"]
+        except = []
+      }
+      names      = ["test"]
+      clusters   = ["test-cluster"]
+      privileges = ["create", "read", "write"]
+    }
   }
   kibana {
     base   = ["all"]
@@ -58,6 +67,15 @@ resource "elasticstack_kibana_security_role" "example" {
         except = []
       }
       names      = ["test"]
+      privileges = ["create", "read", "write"]
+    }
+    remote_indices {
+      field_security {
+        grant  = ["test"]
+        except = []
+      }
+      names      = ["test"]
+      clusters   = ["test-cluster"]
       privileges = ["create", "read", "write"]
     }
   }
@@ -116,6 +134,7 @@ Optional:
 
 - `cluster` (Set of String) List of the cluster privileges.
 - `indices` (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--elasticsearch--indices))
+- `remote_indices` (Block Set) A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedblock--elasticsearch--remote_indices))
 - `run_as` (Set of String) A list of usernames the owners of this role can impersonate.
 
 <a id="nestedblock--elasticsearch--indices"></a>
@@ -133,6 +152,30 @@ Optional:
 
 <a id="nestedblock--elasticsearch--indices--field_security"></a>
 ### Nested Schema for `elasticsearch.indices.field_security`
+
+Optional:
+
+- `except` (Set of String) List of the fields to which the grants will not be applied.
+- `grant` (Set of String) List of the fields to grant the access to.
+
+
+
+<a id="nestedblock--elasticsearch--remote_indices"></a>
+### Nested Schema for `elasticsearch.remote_indices`
+
+Required:
+
+- `clusters` (Set of String) A list of cluster aliases to which the permissions in this entry apply.
+- `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
+- `privileges` (Set of String) The index level privileges that the owners of the role have on the specified indices.
+
+Optional:
+
+- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--elasticsearch--remote_indices--field_security))
+- `query` (String) A search query that defines the documents the owners of the role have read access to.
+
+<a id="nestedblock--elasticsearch--remote_indices--field_security"></a>
+### Nested Schema for `elasticsearch.remote_indices.field_security`
 
 Optional:
 
