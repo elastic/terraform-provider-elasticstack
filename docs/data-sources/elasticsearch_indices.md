@@ -51,13 +51,13 @@ Optional:
 - `analysis_normalizer` (String) A JSON string describing the normalizers applied to the index.
 - `analysis_tokenizer` (String) A JSON string describing the tokenizers applied to the index.
 - `analyze_max_token_count` (Number) The maximum number of tokens that can be produced using _analyze API.
-- `auto_expand_replicas` (String) The number of replicas to the node count in the cluster. Set to a dash delimited lower and upper bound (e.g. 0-5) or use all for the upper bound (e.g. 0-all)
+- `auto_expand_replicas` (String) Set the number of replicas to the node count in the cluster. Set to a dash delimited lower and upper bound (e.g. 0-5) or use all for the upper bound (e.g. 0-all)
 - `blocks_metadata` (Boolean) Set to `true` to disable index metadata reads and writes.
 - `blocks_read` (Boolean) Set to `true` to disable read operations against the index.
 - `blocks_read_only` (Boolean) Set to `true` to make the index and index metadata read only, `false` to allow writes and metadata changes.
 - `blocks_read_only_allow_delete` (Boolean) Identical to `index.blocks.read_only` but allows deleting the index to free up resources.
 - `blocks_write` (Boolean) Set to `true` to disable data write operations against the index. This setting does not affect metadata.
-- `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio.
+- `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
 - `default_pipeline` (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
 - `deletion_protection` (Boolean) Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
@@ -70,13 +70,13 @@ Optional:
 - `indexing_slowlog_threshold_index_info` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `5s`
 - `indexing_slowlog_threshold_index_trace` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `500ms`
 - `indexing_slowlog_threshold_index_warn` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `10s`
-- `load_fixed_bitset_filters_eagerly` (Boolean) Indicates whether cached filters are pre-loaded for nested queries.
-- `mapping_coerce` (Boolean) The index level coercion setting that is applied to all mapping types.
+- `load_fixed_bitset_filters_eagerly` (Boolean) Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.
+- `mapping_coerce` (Boolean) Set index level coercion setting that is applied to all mapping types.
 - `mappings` (String) Mapping for fields in the index.
-If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:**
-- Changing datatypes in the existing _mappings_ will force index to be re-created.
-- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
+							If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
+							**NOTE:**
+							- Changing datatypes in the existing _mappings_ will force index to be re-created.
+							- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
 - `master_timeout` (String) Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`. This value is ignored when running against Serverless projects.
 - `max_docvalue_fields_search` (Number) The maximum number of `docvalue_fields` that are allowed in a query.
 - `max_inner_result_window` (Number) The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.
@@ -88,12 +88,13 @@ If specified, this mapping can include: field names, [field data types](https://
 - `max_script_fields` (Number) The maximum number of `script_fields` that are allowed in a query.
 - `max_shingle_diff` (Number) The maximum allowed difference between max_shingle_size and min_shingle_size for ShingleTokenFilter.
 - `max_terms_count` (Number) The maximum number of terms that can be used in Terms Query.
-- `number_of_routing_shards` (Number) Value used with number_of_shards to route documents to a primary shard.
-- `number_of_shards` (Number) Number of shards for the index.
+- `number_of_replicas` (Number) Number of shard replicas.
+- `number_of_routing_shards` (Number) Value used with number_of_shards to route documents to a primary shard. This can be set only on creation.
+- `number_of_shards` (Number) Number of shards for the index. This can be set only on creation.
 - `query_default_field` (Set of String) Wildcard (*) patterns matching one or more fields. Defaults to '*', which matches all fields eligible for term-level queries, excluding metadata fields.
 - `refresh_interval` (String) How often to perform a refresh operation, which makes recent changes to the index visible to search. Can be set to `-1` to disable refresh.
 - `routing_allocation_enable` (String) Controls shard allocation for this index. It can be set to: `all` , `primaries` , `new_primaries` , `none`.
-- `routing_partition_size` (Number) The number of shards a custom routing value can go to.
+- `routing_partition_size` (Number) The number of shards a custom routing value can go to. This can be set only on creation.
 - `routing_rebalance_enable` (String) Enables shard rebalancing for this index. It can be set to: `all`, `primaries` , `replicas` , `none`.
 - `search_idle_after` (String) How long a shard can not receive a search or get request until it’s considered search idle.
 - `search_slowlog_level` (String) Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`
@@ -115,7 +116,6 @@ If specified, this mapping can include: field names, [field data types](https://
 Read-Only:
 
 - `id` (String) Internal identifier of the resource.
-- `number_of_replicas` (Number) Number of shard replicas.
 - `settings_raw` (String) All raw settings fetched from the cluster.
 
 <a id="nestedatt--indices--alias"></a>
