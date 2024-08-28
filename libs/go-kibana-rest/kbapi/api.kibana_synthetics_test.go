@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	namespaces = []string{"", "default", "testacc"}
+	spaces = []string{"", "default", "testacc"}
 )
 
 func testWithPolicy(t *testing.T, client *resty.Client, namespace string, f func(policyId string)) {
@@ -62,7 +62,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 
 	ctx := context.Background()
 
-	for _, n := range namespaces {
+	for _, n := range spaces {
 		testUuid := uuid.New().String()
 		space := n
 		syntheticsAPI := s.API.KibanaSynthetics
@@ -72,10 +72,10 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 				Label:         fmt.Sprintf("TestKibanaSyntheticsMonitorAdd %s", testUuid),
 				AgentPolicyId: policyId,
 			}
-			location, err := syntheticsAPI.PrivateLocation.Create(ctx, locationConfig, space)
+			location, err := syntheticsAPI.PrivateLocation.Create(ctx, locationConfig)
 			assert.NoError(s.T(), err)
 			defer func(id string) {
-				syntheticsAPI.PrivateLocation.Delete(ctx, id, space)
+				syntheticsAPI.PrivateLocation.Delete(ctx, id)
 			}(location.Id)
 
 			f := new(bool)
@@ -304,13 +304,13 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 
 	ctx := context.Background()
 
-	for _, n := range namespaces {
+	for _, n := range spaces {
 		testUuid := uuid.New().String()
-		space := n
+		namespace := n
 		pAPI := s.API.KibanaSynthetics.PrivateLocation
 
 		s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI - %s", n), func() {
-			testWithPolicy(s.T(), s.client, space, func(policyId string) {
+			testWithPolicy(s.T(), s.client, namespace, func(policyId string) {
 
 				cfg := PrivateLocationConfig{
 					Label:         fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI-%s", testUuid),
@@ -321,67 +321,43 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 						Lon: -42.42,
 					},
 				}
-				created, err := pAPI.Create(ctx, cfg, space)
+				created, err := pAPI.Create(ctx, cfg)
 
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created.Label, cfg.Label)
 				assert.Equal(s.T(), created.AgentPolicyId, cfg.AgentPolicyId)
 
-				get, err := pAPI.Get(ctx, created.Id, space)
+				get, err := pAPI.Get(ctx, created.Id)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created, get)
 
-				get, err = pAPI.Get(ctx, created.Label, space)
+				get, err = pAPI.Get(ctx, created.Label)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created, get)
 
-				err = pAPI.Delete(ctx, created.Id, space)
+				err = pAPI.Delete(ctx, created.Id)
 				assert.NoError(s.T(), err)
 
-				_, err = pAPI.Get(ctx, created.Id, space)
+				_, err = pAPI.Get(ctx, created.Id)
 				assert.Error(s.T(), err)
 			})
 		})
 	}
 }
 
-func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationNamespace() {
-	space := "testacc"
-	ctx := context.Background()
+func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationNotFound() {
 	testUuid := uuid.New().String()
 	pAPI := s.API.KibanaSynthetics.PrivateLocation
-	testWithPolicy(s.T(), s.client, space, func(policyId string) {
-		cfg := PrivateLocationConfig{
-			Label:         fmt.Sprintf("TestKibanaSyntheticsPrivateLocationNamespace-%s", testUuid),
-			AgentPolicyId: policyId,
-			Tags:          []string{"a", "b"},
-			Geo: &SyntheticGeoConfig{
-				Lat: 12.12,
-				Lon: -42.42,
-			},
-		}
-		created, err := pAPI.Create(ctx, cfg, "default")
-		assert.NoError(s.T(), err)
-		assert.Equal(s.T(), "default", created.Namespace)
-	})
-}
 
-func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationNotFound() {
-	for _, n := range namespaces {
-		testUuid := uuid.New().String()
-		space := n
-		pAPI := s.API.KibanaSynthetics.PrivateLocation
+	ids := []string{"", "not-found", testUuid}
+	ctx := context.Background()
 
-		ids := []string{"", "not-found", testUuid}
-		ctx := context.Background()
-
-		for _, id := range ids {
-			s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationNotFound - %s - %s", n, id), func() {
-				_, err := pAPI.Get(ctx, id, space)
-				assert.Error(s.T(), err)
-				assert.IsType(s.T(), APIError{}, err)
-				assert.Equal(s.T(), 404, err.(APIError).Code)
-			})
-		}
+	for _, id := range ids {
+		s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationNotFound - %s", id), func() {
+			_, err := pAPI.Get(ctx, id)
+			assert.Error(s.T(), err)
+			assert.IsType(s.T(), APIError{}, err)
+			assert.Equal(s.T(), 404, err.(APIError).Code)
+		})
 	}
 }
