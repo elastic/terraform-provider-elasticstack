@@ -28,7 +28,7 @@ data "elasticstack_elasticsearch_indices" "logs" {
 
 ### Optional
 
-- `search` (String) Comma-separated list of indices to resolve by their name. Supports wildcards `*`.
+- `target` (String) Comma-separated list of data streams, indices, and aliases used to limit the request. Supports wildcards (*). To target all data streams and indices, omit this attribute or use * or _all.
 
 ### Read-Only
 

@@ -84,7 +84,7 @@ func init() {
 
 type tfModel struct {
 	ID      types.String `tfsdk:"id"`
-	Search  types.String `tfsdk:"search"`
+	Target  types.String `tfsdk:"target"`
 	Indices types.List   `tfsdk:"indices"`
 }
 

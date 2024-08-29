@@ -31,6 +31,6 @@ provider "elasticstack" {
 }
 
 data "elasticstack_elasticsearch_indices" "security_indices" {
-	search = ".security-*"
+	target = ".security-*"
 }
 `

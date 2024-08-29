@@ -27,8 +27,8 @@ func getSchema() schema.Schema {
 				Description: "Generated ID for the indices.",
 				Computed:    true,
 			},
-			"search": schema.StringAttribute{
-				Description: "Comma-separated list of indices to resolve by their name. Supports wildcards `*`.",
+			"target": schema.StringAttribute{
+				Description: "Comma-separated list of data streams, indices, and aliases used to limit the request. Supports wildcards (*). To target all data streams and indices, omit this attribute or use * or _all. ",
 				Optional:    true,
 			},
 			"indices": schema.ListNestedAttribute{

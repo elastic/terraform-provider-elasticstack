@@ -14,16 +14,16 @@ import (
 func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var stateModel tfModel
 
-	// Resolve search attribute
-	var search string
-	diags := req.Config.GetAttribute(ctx, path.Root("search"), &search)
+	// Resolve target attribute
+	var target string
+	diags := req.Config.GetAttribute(ctx, path.Root("target"), &target)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Call client API
-	indexApiModels, sdkDiags := elasticsearch.GetIndices(ctx, &d.client, search)
+	indexApiModels, sdkDiags := elasticsearch.GetIndices(ctx, &d.client, target)
 	resp.Diagnostics.Append(utils.ConvertSDKDiagnosticsToFramework(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -49,7 +49,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
-	stateModel.ID = types.StringValue(search)
+	stateModel.ID = types.StringValue(target)
 	stateModel.Indices = indicesList
 
 	// Set state
