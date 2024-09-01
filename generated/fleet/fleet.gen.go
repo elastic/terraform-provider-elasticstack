@@ -307,14 +307,26 @@ type AgentPolicyUpdateRequest struct {
 	FleetServerHostId *string `json:"fleet_server_host_id"`
 
 	// Force Force agent policy creation even if packages are not verified.
-	Force              *bool                                        `json:"force,omitempty"`
-	InactivityTimeout  *int                                         `json:"inactivity_timeout,omitempty"`
-	IsProtected        *bool                                        `json:"is_protected,omitempty"`
-	MonitoringEnabled  *[]AgentPolicyUpdateRequestMonitoringEnabled `json:"monitoring_enabled,omitempty"`
-	MonitoringOutputId *string                                      `json:"monitoring_output_id"`
-	Name               string                                       `json:"name"`
-	Namespace          string                                       `json:"namespace"`
-	UnenrollTimeout    *int                                         `json:"unenroll_timeout,omitempty"`
+	Force              *bool                                                                      `json:"force,omitempty"`
+	GlobalDataTags     *[]map[string]AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties `json:"global_data_tags,omitempty"`
+	InactivityTimeout  *int                                                                       `json:"inactivity_timeout,omitempty"`
+	IsProtected        *bool                                                                      `json:"is_protected,omitempty"`
+	MonitoringEnabled  *[]AgentPolicyUpdateRequestMonitoringEnabled                               `json:"monitoring_enabled,omitempty"`
+	MonitoringOutputId *string                                                                    `json:"monitoring_output_id"`
+	Name               string                                                                     `json:"name"`
+	Namespace          string                                                                     `json:"namespace"`
+	UnenrollTimeout    *int                                                                       `json:"unenroll_timeout,omitempty"`
+}
+
+// AgentPolicyUpdateRequestGlobalDataTags0 defines model for .
+type AgentPolicyUpdateRequestGlobalDataTags0 = string
+
+// AgentPolicyUpdateRequestGlobalDataTags1 defines model for .
+type AgentPolicyUpdateRequestGlobalDataTags1 = float32
+
+// AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties defines model for agent_policy_update_request.global_data_tags.AdditionalProperties.
+type AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties struct {
+	union json.RawMessage
 }
 
 // AgentPolicyUpdateRequestMonitoringEnabled defines model for AgentPolicyUpdateRequest.MonitoringEnabled.
@@ -1215,6 +1227,68 @@ func (t AgentPolicyCreateRequest_GlobalDataTags_AdditionalProperties) MarshalJSO
 }
 
 func (t *AgentPolicyCreateRequest_GlobalDataTags_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyUpdateRequestGlobalDataTags0 returns the union data inside the AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties as a AgentPolicyUpdateRequestGlobalDataTags0
+func (t AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties) AsAgentPolicyUpdateRequestGlobalDataTags0() (AgentPolicyUpdateRequestGlobalDataTags0, error) {
+	var body AgentPolicyUpdateRequestGlobalDataTags0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyUpdateRequestGlobalDataTags0 overwrites any union data inside the AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties as the provided AgentPolicyUpdateRequestGlobalDataTags0
+func (t *AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties) FromAgentPolicyUpdateRequestGlobalDataTags0(v AgentPolicyUpdateRequestGlobalDataTags0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyUpdateRequestGlobalDataTags0 performs a merge with any union data inside the AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties, using the provided AgentPolicyUpdateRequestGlobalDataTags0
+func (t *AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties) MergeAgentPolicyUpdateRequestGlobalDataTags0(v AgentPolicyUpdateRequestGlobalDataTags0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyUpdateRequestGlobalDataTags1 returns the union data inside the AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties as a AgentPolicyUpdateRequestGlobalDataTags1
+func (t AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties) AsAgentPolicyUpdateRequestGlobalDataTags1() (AgentPolicyUpdateRequestGlobalDataTags1, error) {
+	var body AgentPolicyUpdateRequestGlobalDataTags1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyUpdateRequestGlobalDataTags1 overwrites any union data inside the AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties as the provided AgentPolicyUpdateRequestGlobalDataTags1
+func (t *AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties) FromAgentPolicyUpdateRequestGlobalDataTags1(v AgentPolicyUpdateRequestGlobalDataTags1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyUpdateRequestGlobalDataTags1 performs a merge with any union data inside the AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties, using the provided AgentPolicyUpdateRequestGlobalDataTags1
+func (t *AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties) MergeAgentPolicyUpdateRequestGlobalDataTags1(v AgentPolicyUpdateRequestGlobalDataTags1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

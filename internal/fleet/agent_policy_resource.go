@@ -252,16 +252,27 @@ func resourceAgentPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta
 			return diag.FromErr(fmt.Errorf("'global_data_tags' is supported only for Elasticsearch v%s and above", minVersionGlobalDataTags.String()))
 		}
 
-		globalDataTags := make([]fleetapi.GlobalDataTag, 0, len(tagMap))
-		for key, value := range tagMap {
-			globalDataTags = append(globalDataTags, fleetapi.GlobalDataTag{
-				Name:  key,
-				Value: value.(string),
+		globalDataTags := []map[string]fleetapi.AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties{}
+		for key, val := range tagMap {
+			var name, value fleetapi.AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties
+			err := name.FromAgentPolicyUpdateRequestGlobalDataTags0(key)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+
+			err = value.FromAgentPolicyUpdateRequestGlobalDataTags0(val.(string))
+			if err != nil {
+				return diag.FromErr(err)
+			}
+
+			globalDataTags = append(globalDataTags, map[string]fleetapi.AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties{
+				"name":  name,
+				"value": value,
 			})
 		}
-		req.GlobalDataTags = globalDataTags
+		req.GlobalDataTags = &globalDataTags
 	} else {
-		req.GlobalDataTags = make([]fleetapi.GlobalDataTag, 0) // Ensure it's an empty array
+		req.GlobalDataTags = &[]map[string]fleetapi.AgentPolicyUpdateRequest_GlobalDataTags_AdditionalProperties{} // Ensure it's an empty array
 	}
 
 	_, diags = fleet.UpdateAgentPolicy(ctx, fleetClient, d.Id(), req)
@@ -351,9 +362,18 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 
 	if agentPolicy.GlobalDataTags != nil {
 
-		globalDataTags := make(map[string]string, len(agentPolicy.GlobalDataTags))
-		for _, tag := range agentPolicy.GlobalDataTags {
-			globalDataTags[tag.Name] = tag.Value.(string)
+		globalDataTags := make(map[string]string, len(*agentPolicy.GlobalDataTags))
+		for _, tag := range *agentPolicy.GlobalDataTags {
+			name, err := tag["name"].AsAgentPolicyGlobalDataTags0()
+			if err != nil {
+				return diag.FromErr(err)
+			}
+
+			value, err := tag["value"].AsAgentPolicyGlobalDataTags0()
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			globalDataTags[name] = value
 		}
 
 		if err := d.Set("global_data_tags", globalDataTags); err != nil {
