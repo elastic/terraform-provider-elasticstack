@@ -44,7 +44,7 @@ jobs:
         run: go build
       - name: Run test
         run: make test
-      - uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b # v2
+      - uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4
         with:
           files: coverage.out
           flags: unittests
