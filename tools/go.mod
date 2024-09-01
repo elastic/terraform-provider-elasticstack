@@ -6,10 +6,10 @@ toolchain go1.22.5
 
 require (
 	github.com/client9/misspell v0.3.4
-	github.com/deepmap/oapi-codegen/v2 v2.3.0
 	github.com/golangci/golangci-lint v1.60.3
 	github.com/goreleaser/goreleaser v1.26.2
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
+	github.com/oapi-codegen/oapi-codegen/v2 v2.3.0
 	go.uber.org/mock v0.4.0
 )
 
@@ -167,7 +167,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
-	github.com/getkin/kin-openapi v0.122.0 // indirect
+	github.com/getkin/kin-openapi v0.124.0 // indirect
 	github.com/ghostiam/protogetter v0.3.6 // indirect
 	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-critic/go-critic v0.11.4 // indirect
