@@ -2,7 +2,7 @@ module github.com/elastic/terraform-provider-elasticstack
 
 go 1.22
 
-toolchain go1.22.2
+toolchain go1.23.0
 
 require (
 	github.com/deepmap/oapi-codegen/v2 v2.2.0
