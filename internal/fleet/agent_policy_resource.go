@@ -289,16 +289,6 @@ func resourceAgentPolicyRead(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
-	apiClient, diags := clients.NewApiClientFromSDKResource(d, meta)
-	if diags.HasError() {
-		return diags
-	}
-
-	serverVersion, diags := apiClient.ServerVersion(ctx)
-	if diags.HasError() {
-		return diags
-	}
-
 	agentPolicy, diags := fleet.ReadAgentPolicy(ctx, fleetClient, d.Id())
 	if diags.HasError() {
 		return diags
