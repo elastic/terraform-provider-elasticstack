@@ -173,10 +173,16 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 		gdt := []map[string]fleetapi.AgentPolicyCreateRequest_GlobalDataTags_AdditionalProperties{}
 		for key, value := range tagMap {
 			name := fleetapi.AgentPolicyCreateRequest_GlobalDataTags_AdditionalProperties{}
-			name.FromAgentPolicyCreateRequestGlobalDataTags0(key)
+			err := name.FromAgentPolicyCreateRequestGlobalDataTags0(key)
+			if err != nil {
+				return diag.FromErr(fmt.Errorf("failed to parse global_data_tags key [%s]: %w", key, err))
+			}
 
 			val := fleetapi.AgentPolicyCreateRequest_GlobalDataTags_AdditionalProperties{}
-			val.FromAgentPolicyCreateRequestGlobalDataTags0(value.(string))
+			err = val.FromAgentPolicyCreateRequestGlobalDataTags0(value.(string))
+			if err != nil {
+				return diag.FromErr(fmt.Errorf("failed to parse global_data_tags value [%s]: %w", value.(string), err))
+			}
 
 			gdt = append(gdt, map[string]fleetapi.AgentPolicyCreateRequest_GlobalDataTags_AdditionalProperties{
 				"name":  name,
