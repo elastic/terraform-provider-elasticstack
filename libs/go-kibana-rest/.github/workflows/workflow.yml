@@ -36,7 +36,7 @@ jobs:
           until $(curl --output /dev/null --silent --head --fail -u elastic:changeme http://localhost:5601); do sleep 5; done
           sleep 10
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3
+        uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6
         with:
           version: latest
           args: --timeout 600s
@@ -44,7 +44,7 @@ jobs:
         run: go build
       - name: Run test
         run: make test
-      - uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b # v2
+      - uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4
         with:
           files: coverage.out
           flags: unittests
