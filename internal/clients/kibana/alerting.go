@@ -20,11 +20,26 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 
 	actions := []models.AlertingRuleAction{}
 	for _, action := range res.Actions {
-		actions = append(actions, models.AlertingRuleAction{
+
+		a := models.AlertingRuleAction{
 			Group:  action.Group,
 			ID:     action.Id,
 			Params: action.Params,
-		})
+		}
+
+		if alerting.IsNil(action.Frequency) {
+			a.Frequency = nil
+		} else {
+			frequency := unwrapOptionalField(action.Frequency)
+
+			a.Frequency = &models.AlertingRuleActionFrequency{
+				Summary:    frequency.Summary,
+				NotifyWhen: (string)(frequency.NotifyWhen),
+				Throttle:   *frequency.Throttle.Get(),
+			}
+		}
+
+		actions = append(actions, a)
 	}
 
 	var alertDelay *float32
@@ -68,11 +83,23 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 	actions := []alerting.ActionsInner{}
 	for index := range ruleActions {
 		action := ruleActions[index]
-		actions = append(actions, alerting.ActionsInner{
+		actionToAppend := alerting.ActionsInner{
 			Group:  action.Group,
 			Id:     action.ID,
 			Params: action.Params,
-		})
+		}
+
+		if alerting.IsNil(action.Frequency) {
+			actionToAppend.Frequency = nil
+		} else {
+			actionToAppend.Frequency = &alerting.ActionsInnerFrequency{
+				Summary:    action.Frequency.Summary,
+				NotifyWhen: (alerting.NotifyWhen)(action.Frequency.NotifyWhen),
+				Throttle:   *alerting.NewNullableString(&action.Frequency.Throttle),
+			}
+		}
+
+		actions = append(actions, actionToAppend)
 	}
 	return actions
 }

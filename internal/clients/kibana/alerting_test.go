@@ -71,6 +71,11 @@ func Test_ruleResponseToModel(t *testing.T) {
 						Group:  "group-1",
 						Id:     "id",
 						Params: map[string]interface{}{},
+						Frequency: makePtr(alerting.ActionsInnerFrequency{
+							Summary:    true,
+							NotifyWhen: "onThrottleInterval",
+							Throttle:   *alerting.NewNullableString(makePtr("10s")),
+						}),
 					},
 					{
 						Group:  "group-2",
@@ -113,6 +118,11 @@ func Test_ruleResponseToModel(t *testing.T) {
 						Group:  "group-1",
 						ID:     "id",
 						Params: map[string]interface{}{},
+						Frequency: &models.AlertingRuleActionFrequency{
+							Summary:    true,
+							NotifyWhen: "onThrottleInterval",
+							Throttle:   "10s",
+						},
 					},
 					{
 						Group:  "group-2",
