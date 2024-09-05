@@ -282,11 +282,16 @@ func getActionsFromResourceData(d *schema.ResourceData, serverVersion *version.V
 					}
 				}
 
-				a.Frequency = &models.AlertingRuleActionFrequency{
+				frequency := models.AlertingRuleActionFrequency{
 					Summary:    d.Get(currentAction + ".frequency.0.summary").(bool),
 					NotifyWhen: d.Get(currentAction + ".frequency.0.notify_when").(string),
-					Throttle:   d.Get(currentAction + ".frequency.0.throttle").(string),
 				}
+
+				if throttle := getOrNilString(currentAction+".frequency.0.throttle", d); throttle != nil && *throttle != "" {
+					frequency.Throttle = throttle
+				}
+
+				a.Frequency = &frequency
 			}
 
 			actions = append(actions, a)

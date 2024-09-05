@@ -42,5 +42,5 @@ type AlertingRuleExecutionStatus struct {
 type AlertingRuleActionFrequency struct {
 	Summary    bool
 	NotifyWhen string
-	Throttle   string
+	Throttle   *string
 }

@@ -35,7 +35,7 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 			a.Frequency = &models.AlertingRuleActionFrequency{
 				Summary:    frequency.Summary,
 				NotifyWhen: (string)(frequency.NotifyWhen),
-				Throttle:   *frequency.Throttle.Get(),
+				Throttle:   frequency.Throttle.Get(),
 			}
 		}
 
@@ -92,11 +92,16 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 		if alerting.IsNil(action.Frequency) {
 			actionToAppend.Frequency = nil
 		} else {
-			actionToAppend.Frequency = &alerting.ActionsInnerFrequency{
+			frequency := alerting.ActionsInnerFrequency{
 				Summary:    action.Frequency.Summary,
 				NotifyWhen: (alerting.NotifyWhen)(action.Frequency.NotifyWhen),
-				Throttle:   *alerting.NewNullableString(&action.Frequency.Throttle),
 			}
+
+			if action.Frequency.Throttle != nil {
+				frequency.Throttle = *alerting.NewNullableString(action.Frequency.Throttle)
+			}
+
+			actionToAppend.Frequency = &frequency
 		}
 
 		actions = append(actions, actionToAppend)
