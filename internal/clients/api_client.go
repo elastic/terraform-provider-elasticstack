@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/deepmap/oapi-codegen/v2/pkg/securityprovider"
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
@@ -25,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/oapi-codegen/oapi-codegen/v2/pkg/securityprovider"
 )
 
 type CompositeId struct {
