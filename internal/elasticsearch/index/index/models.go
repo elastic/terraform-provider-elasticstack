@@ -271,7 +271,7 @@ func setSettingsFromAPI(ctx context.Context, model *tfModel, apiModel models.Ind
 					return diag.Diagnostics{
 						diag.NewErrorDiagnostic(
 							"failed to convert setting to int",
-							fmt.Sprintf("expected setting to be an in but it was a string. Attempted to parse it but got %s", err.Error()),
+							fmt.Sprintf("expected setting to be an int but it was a string. Attempted to parse it but got %s", err.Error()),
 						),
 					}
 				}
