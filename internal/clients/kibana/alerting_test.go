@@ -11,6 +11,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
@@ -49,7 +50,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 				Consumer:   "consumer",
 				Params:     map[string]interface{}{},
 				RuleTypeID: "rule-type-id",
-				Enabled:    makePtr(true),
+				Enabled:    utils.Pointer(true),
 				Tags:       []string{"hello"},
 				Actions:    []models.AlertingRuleAction{},
 			},
@@ -65,23 +66,23 @@ func Test_ruleResponseToModel(t *testing.T) {
 				RuleTypeId: "rule-type-id",
 				Enabled:    true,
 				Tags:       []string{"hello"},
-				NotifyWhen: *alerting.NewNullableString(makePtr("broken")),
+				NotifyWhen: *alerting.NewNullableString(utils.Pointer("broken")),
 				Actions: []alerting.ActionsInner{
 					{
 						Group:  "group-1",
 						Id:     "id",
 						Params: map[string]interface{}{},
-						Frequency: makePtr(alerting.ActionsInnerFrequency{
+						Frequency: utils.Pointer(alerting.ActionsInnerFrequency{
 							Summary:    true,
 							NotifyWhen: "onThrottleInterval",
-							Throttle:   *alerting.NewNullableString(makePtr("10s")),
+							Throttle:   *alerting.NewNullableString(utils.Pointer("10s")),
 						}),
 					},
 					{
 						Group:  "group-2",
 						Id:     "id",
 						Params: map[string]interface{}{},
-						Frequency: makePtr(alerting.ActionsInnerFrequency{
+						Frequency: utils.Pointer(alerting.ActionsInnerFrequency{
 							Summary:    true,
 							NotifyWhen: "onActionGroupChange",
 						}),
@@ -93,14 +94,14 @@ func Test_ruleResponseToModel(t *testing.T) {
 					},
 				},
 				ExecutionStatus: alerting.RuleResponsePropertiesExecutionStatus{
-					Status:            makePtr("firing"),
+					Status:            utils.Pointer("firing"),
 					LastExecutionDate: &now,
 				},
-				ScheduledTaskId: makePtr("scheduled-task-id"),
+				ScheduledTaskId: utils.Pointer("scheduled-task-id"),
 				Schedule: alerting.Schedule{
-					Interval: makePtr("1m"),
+					Interval: utils.Pointer("1m"),
 				},
-				Throttle: *alerting.NewNullableString(makePtr("throttle")),
+				Throttle: *alerting.NewNullableString(utils.Pointer("throttle")),
 				AlertDelay: &alerting.AlertDelay{
 					Active: float32(4),
 				},
@@ -112,15 +113,15 @@ func Test_ruleResponseToModel(t *testing.T) {
 				Consumer:        "consumer",
 				Params:          map[string]interface{}{},
 				RuleTypeID:      "rule-type-id",
-				Enabled:         makePtr(true),
+				Enabled:         utils.Pointer(true),
 				Tags:            []string{"hello"},
-				NotifyWhen:      makePtr("broken"),
+				NotifyWhen:      utils.Pointer("broken"),
 				Schedule:        models.AlertingRuleSchedule{Interval: "1m"},
-				Throttle:        makePtr("throttle"),
-				ScheduledTaskID: makePtr("scheduled-task-id"),
+				Throttle:        utils.Pointer("throttle"),
+				ScheduledTaskID: utils.Pointer("scheduled-task-id"),
 				ExecutionStatus: models.AlertingRuleExecutionStatus{
 					LastExecutionDate: &now,
-					Status:            makePtr("firing"),
+					Status:            utils.Pointer("firing"),
 				},
 				Actions: []models.AlertingRuleAction{
 					{
@@ -130,7 +131,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 						Frequency: &models.AlertingRuleActionFrequency{
 							Summary:    true,
 							NotifyWhen: "onThrottleInterval",
-							Throttle:   makePtr("10s"),
+							Throttle:   utils.Pointer("10s"),
 						},
 					},
 					{
@@ -148,7 +149,7 @@ func Test_ruleResponseToModel(t *testing.T) {
 						Params: map[string]interface{}{},
 					},
 				},
-				AlertDelay: makePtr(float32(4)),
+				AlertDelay: utils.Pointer(float32(4)),
 			},
 		},
 	}
