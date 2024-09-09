@@ -256,14 +256,14 @@ type KibanaSyntheticsMonitorGet func(ctx context.Context, id MonitorID, namespac
 
 type KibanaSyntheticsMonitorDelete func(ctx context.Context, namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
 
-type KibanaSyntheticsPrivateLocationCreate func(ctx context.Context, pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error)
+type KibanaSyntheticsPrivateLocationCreate func(ctx context.Context, pLoc PrivateLocationConfig) (*PrivateLocation, error)
 
-type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel string, namespace string) (*PrivateLocation, error)
+type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel string) (*PrivateLocation, error)
 
-type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string, namespace string) error
+type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string) error
 
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
-	return func(ctx context.Context, idOrLabel string, _ string) (*PrivateLocation, error) {
+	return func(ctx context.Context, idOrLabel string) (*PrivateLocation, error) {
 		if idOrLabel == "" {
 			return nil, APIError{
 				Code:    404,
@@ -282,11 +282,11 @@ func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSynthetics
 }
 
 func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSyntheticsPrivateLocationCreate {
-	return func(ctx context.Context, pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error) {
+	return func(ctx context.Context, pLoc PrivateLocationConfig) (*PrivateLocation, error) {
 		plMu.Lock()
 		defer plMu.Unlock()
 
-		path := basePath(namespace, privateLocationsSuffix)
+		path := basePath("", privateLocationsSuffix)
 		log.Debugf("URL to create private locations: %s", path)
 		resp, err := c.R().SetContext(ctx).SetBody(pLoc).Post(path)
 		if err = handleKibanaError(err, resp); err != nil {
@@ -297,11 +297,11 @@ func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSynthet
 }
 
 func newKibanaSyntheticsPrivateLocationDeleteFunc(c *resty.Client) KibanaSyntheticsPrivateLocationDelete {
-	return func(ctx context.Context, id string, namespace string) error {
+	return func(ctx context.Context, id string) error {
 		plMu.Lock()
 		defer plMu.Unlock()
 
-		path := basePathWithId(namespace, privateLocationsSuffix, id)
+		path := basePathWithId("", privateLocationsSuffix, id)
 		log.Debugf("URL to delete private locations: %s", path)
 		resp, err := c.R().SetContext(ctx).Delete(path)
 		err = handleKibanaError(err, resp)

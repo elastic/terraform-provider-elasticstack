@@ -378,7 +378,6 @@ resource "elasticstack_fleet_agent_policy" "%s" {
 
 resource "elasticstack_kibana_synthetics_private_location" "%s" {
 	label = "monitor-pll-%s"
-	space_id = "testacc"
 	agent_policy_id = elasticstack_fleet_agent_policy.%s.policy_id
 }
 `, agentPolicyId, name, privateLocationId, name, agentPolicyId)

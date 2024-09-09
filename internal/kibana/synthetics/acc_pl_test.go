@@ -39,7 +39,6 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 				Config: testConfig("testacc", "test_policy") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label"
-	space_id = "testacc"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
 	tags = ["a", "b"]
 	geo = {
@@ -50,7 +49,6 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label"),
-					resource.TestCheckResourceAttr(resourceId, "space_id", "testacc"),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceId, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "tags.0", "a"),
@@ -68,7 +66,6 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				Config: testConfig("testacc", "test_policy") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label"
-	space_id = "testacc"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
 	tags = ["a", "b"]
 	geo = {
@@ -84,7 +81,6 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				Config: testConfig("default", "test_policy_default") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label-2"
-	space_id = "default"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 	tags = ["c", "d", "e"]
 	geo = {
@@ -95,7 +91,6 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label-2"),
-					resource.TestCheckResourceAttr(resourceId, "space_id", "default"),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceId, "tags.#", "3"),
 					resource.TestCheckResourceAttr(resourceId, "tags.0", "c"),
@@ -111,13 +106,11 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				Config: testConfig("default", "test_policy_default") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label-2"
-	space_id = "default"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label-2"),
-					resource.TestCheckResourceAttr(resourceId, "space_id", "default"),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckNoResourceAttr(resourceId, "tags"),
 					resource.TestCheckNoResourceAttr(resourceId, "geo"),
@@ -129,14 +122,12 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				Config: testConfig("default", "test_policy_default") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label-2"
-	space_id = "default"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 	tags = ["c", "d", "e"]
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label-2"),
-					resource.TestCheckResourceAttr(resourceId, "space_id", "default"),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceId, "tags.#", "3"),
 					resource.TestCheckResourceAttr(resourceId, "tags.0", "c"),
@@ -151,7 +142,6 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				Config: testConfig("default", "test_policy_default") + `
 resource "elasticstack_kibana_synthetics_private_location" "test" {
 	label = "pl-test-label-2"
-	space_id = "default"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 	geo = {
 		lat = -33.21
@@ -161,7 +151,6 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label-2"),
-					resource.TestCheckResourceAttr(resourceId, "space_id", "default"),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckNoResourceAttr(resourceId, "tags"),
 					resource.TestCheckResourceAttr(resourceId, "geo.lat", "-33.21"),
