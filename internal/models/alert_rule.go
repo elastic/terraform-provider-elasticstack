@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type AlertingRule struct {
 	RuleID     string
@@ -26,12 +28,19 @@ type AlertingRuleSchedule struct {
 }
 
 type AlertingRuleAction struct {
-	Group  string
-	ID     string
-	Params map[string]interface{}
+	Group     string
+	ID        string
+	Params    map[string]interface{}
+	Frequency *AlertingRuleActionFrequency
 }
 
 type AlertingRuleExecutionStatus struct {
 	LastExecutionDate *time.Time
 	Status            *string
+}
+
+type AlertingRuleActionFrequency struct {
+	Summary    bool
+	NotifyWhen string
+	Throttle   *string
 }
