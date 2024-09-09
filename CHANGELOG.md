@@ -7,6 +7,7 @@
 - Fix error handling in `elasticstack_kibana_import_saved_objects` ([#738](https://github.com/elastic/terraform-provider-elasticstack/pull/738))
 - Remove `space_id` parameter from private locations to fix inconsistent state for `elasticstack_kibana_synthetics_private_location` `space_id` ([#733](https://github.com/elastic/terraform-provider-elasticstack/pull/733))  
 - Add the `Frequency` field to the Create Rule API ([#753](https://github.com/elastic/terraform-provider-elasticstack/pull/753))
+- Prevent a provider panic when the repository referenced in an `elasticstack_elasticsearch_snapshot_repository` does not exist ([#758](https://github.com/elastic/terraform-provider-elasticstack/pull/758))
 
 ## [0.11.6] - 2024-08-20
 
