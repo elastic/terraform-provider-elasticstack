@@ -142,7 +142,7 @@ func ResourceAlertingRule() *schema.Resource {
 			},
 		},
 		"throttle": {
-			Description:  "Required until v8.6.0. Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
+			Description:  "Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
 			Type:         schema.TypeString,
 			Optional:     true,
 			ValidateFunc: utils.StringIsDuration,
@@ -217,16 +217,6 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 	if v, ok := d.GetOk("throttle"); ok {
 		t := v.(string)
 		rule.Throttle = &t
-	} else {
-		if serverVersion.LessThan(frequencyMinSupportedVersion) {
-			return models.AlertingRule{}, diag.Diagnostics{
-				diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  "throttle is required until v8.6",
-					Detail:   "throttle is required until v8.6",
-				},
-			}
-		}
 	}
 
 	if v, ok := d.GetOk("notify_when"); ok {

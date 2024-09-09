@@ -67,7 +67,7 @@ Could not create API key - Unsupported scheme "ApiKey" for granting API Key
 - `rule_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) A list of tag names that are applied to the rule.
-- `throttle` (String) Required until v8.6.0. Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.
+- `throttle` (String) Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.
 
 ### Read-Only
 
