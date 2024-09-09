@@ -63,7 +63,7 @@ Could not create API key - Unsupported scheme "ApiKey" for granting API Key
 - `actions` (Block List) An action that runs under defined conditions. (see [below for nested schema](#nestedblock--actions))
 - `alert_delay` (Number) A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.
 - `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
-- `notify_when` (String) Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.
+- `notify_when` (String) Deprecated in 8.13.0. Use the `notify_when` property in the action `frequency` object instead. Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.
 - `rule_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) A list of tag names that are applied to the rule.
@@ -86,7 +86,7 @@ Required:
 
 Optional:
 
-- `frequency` (Block List, Max: 1) The parameters for the action, which are sent to the connector. (see [below for nested schema](#nestedblock--actions--frequency))
+- `frequency` (Block List, Max: 1) The properties that affect how often actions are generated. If the rule type supports setting summary to true, the action can be a summary of alerts at the specified notification interval. Otherwise, an action runs for each alert at the specified notification interval. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level. (see [below for nested schema](#nestedblock--actions--frequency))
 - `group` (String) The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names.
 
 <a id="nestedblock--actions--frequency"></a>
