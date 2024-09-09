@@ -272,6 +272,16 @@ func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 
+	d.SetId(id.String())
+	if currentRepo == nil {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("Could not find snapshot repository [%s]", repoName),
+			},
+		}
+	}
+
 	// get the schema of the Elem of the current repo type
 	schemaSettings := DataSourceSnapshotRespository().Schema[currentRepo.Type].Elem.(*schema.Resource).Schema
 	settings, err := flattenRepoSettings(currentRepo, schemaSettings)
@@ -291,6 +301,5 @@ func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta in
 		return diag.FromErr(err)
 	}
 
-	d.SetId(id.String())
 	return diags
 }
