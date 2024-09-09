@@ -17,6 +17,7 @@ import (
 )
 
 var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
+var frequencyMinSupportedVersion = version.Must(version.NewVersion("8.6.0"))
 
 func ResourceAlertingRule() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -272,14 +273,8 @@ func getActionsFromResourceData(d *schema.ResourceData, serverVersion *version.V
 			currentAction := fmt.Sprintf("actions.%d", i)
 
 			if _, ok := d.GetOk(currentAction + ".frequency"); ok {
-				if serverVersion.LessThan(alertDelayMinSupportedVersion) {
-					return []models.AlertingRuleAction{}, diag.Diagnostics{
-						diag.Diagnostic{
-							Severity: diag.Error,
-							Summary:  "actions.frequency is only supported for Elasticsearch v8.13 or higher",
-							Detail:   "actions.frequency is only supported for Elasticsearch v8.13 or higher",
-						},
-					}
+				if serverVersion.LessThan(frequencyMinSupportedVersion) {
+					return []models.AlertingRuleAction{}, diag.Errorf("actions.frequency is only supported for Elasticsearch v8.6 or higher")
 				}
 
 				frequency := models.AlertingRuleActionFrequency{

@@ -27,9 +27,7 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 			Params: action.Params,
 		}
 
-		if alerting.IsNil(action.Frequency) {
-			a.Frequency = nil
-		} else {
+		if !alerting.IsNil(action.Frequency) {
 			frequency := unwrapOptionalField(action.Frequency)
 
 			a.Frequency = &models.AlertingRuleActionFrequency{
@@ -89,9 +87,7 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 			Params: action.Params,
 		}
 
-		if alerting.IsNil(action.Frequency) {
-			actionToAppend.Frequency = nil
-		} else {
+		if !alerting.IsNil(action.Frequency) {
 			frequency := alerting.ActionsInnerFrequency{
 				Summary:    action.Frequency.Summary,
 				NotifyWhen: (alerting.NotifyWhen)(action.Frequency.NotifyWhen),
