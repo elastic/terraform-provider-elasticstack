@@ -17,6 +17,8 @@ import (
 )
 
 var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
+
+// when notify_when and throttle became optional
 var frequencyMinSupportedVersion = version.Must(version.NewVersion("8.6.0"))
 
 func ResourceAlertingRule() *schema.Resource {
@@ -47,7 +49,7 @@ func ResourceAlertingRule() *schema.Resource {
 			ForceNew:    true,
 		},
 		"notify_when": {
-			Description:  "Deprecated in 8.13.0. Use the `notify_when` property in the action `frequency` object instead. Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.",
+			Description:  "Required until v8.6.0. Deprecated in v8.13.0. Use the `notify_when` property in the action `frequency` object instead. Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.",
 			Type:         schema.TypeString,
 			Optional:     true,
 			ValidateFunc: validation.StringInSlice([]string{"onActionGroupChange", "onActiveAlert", "onThrottleInterval"}, false),
@@ -140,7 +142,7 @@ func ResourceAlertingRule() *schema.Resource {
 			},
 		},
 		"throttle": {
-			Description:  "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
+			Description:  "Required until v8.6.0. Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
 			Type:         schema.TypeString,
 			Optional:     true,
 			ValidateFunc: utils.StringIsDuration,
@@ -215,10 +217,30 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 	if v, ok := d.GetOk("throttle"); ok {
 		t := v.(string)
 		rule.Throttle = &t
+	} else {
+		if serverVersion.LessThan(frequencyMinSupportedVersion) {
+			return models.AlertingRule{}, diag.Diagnostics{
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "throttle is required until v8.6",
+					Detail:   "throttle is required until v8.6",
+				},
+			}
+		}
 	}
 
 	if v, ok := d.GetOk("notify_when"); ok {
 		rule.NotifyWhen = utils.Pointer(v.(string))
+	} else {
+		if serverVersion.LessThan(frequencyMinSupportedVersion) {
+			return models.AlertingRule{}, diag.Diagnostics{
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "notify_when is required until v8.6",
+					Detail:   "notify_when is required until v8.6",
+				},
+			}
+		}
 	}
 
 	if v, ok := d.GetOk("alert_delay"); ok {
@@ -230,7 +252,6 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 					Detail:   "alert_delay is only supported for Elasticsearch v8.13 or higher",
 				},
 			}
-
 		}
 
 		rule.AlertDelay = utils.Pointer(float32(v.(float64)))
