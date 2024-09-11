@@ -15,6 +15,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -41,21 +42,19 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 							return err
 						}
 
-						allowRestrictedIndicesF := false
-						allowRestrictedIndicesT := true
 						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
 							"role-a": {
 								Cluster: []string{"all"},
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-a*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: &allowRestrictedIndicesF,
+									AllowRestrictedIndices: utils.Pointer(false),
 								}},
 								RemoteIndices: []models.RemoteIndexPerms{{
 									Clusters:               []string{"*"},
 									Names:                  []string{"index-a*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: &allowRestrictedIndicesT,
+									AllowRestrictedIndices: utils.Pointer(true),
 								}},
 							},
 						}
@@ -204,8 +203,8 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
         privileges = ["read"]
         allow_restricted_indices = false
       }],
-      restriction = { 
-		workflows = [ "search_application_query"] 
+      restriction = {
+		workflows = [ "search_application_query"]
       }
     }
   })
