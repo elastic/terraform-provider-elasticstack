@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-version"
 	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/go-version"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -40,14 +41,21 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 							return err
 						}
 
-						allowRestrictedIndices := false
+						allowRestrictedIndicesF := false
+						allowRestrictedIndicesT := true
 						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
 							"role-a": {
 								Cluster: []string{"all"},
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-a*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: &allowRestrictedIndices,
+									AllowRestrictedIndices: &allowRestrictedIndicesF,
+								}},
+								RemoteIndices: []models.RemoteIndexPerms{{
+									Clusters:               []string{"*"},
+									Names:                  []string{"index-a*"},
+									Privileges:             []string{"read"},
+									AllowRestrictedIndices: &allowRestrictedIndicesT,
 								}},
 							},
 						}
@@ -165,7 +173,13 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
         privileges = ["read"]
         allow_restricted_indices = false
       }]
-    }
+      remote_indices = [{
+	    clusters = ["*"]
+		names = ["index-a*"]
+		privileges = ["read"]
+		allow_restricted_indices = true
+	  }]
+	}
   })
 
 	expiration = "1d"
