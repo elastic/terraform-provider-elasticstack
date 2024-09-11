@@ -304,6 +304,16 @@ func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string)
 }
 
 func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.Index, fwdiags.Diagnostics) {
+	indices, diags := GetIndices(ctx, apiClient, name)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	index := indices[name]
+	return &index, diags
+}
+
+func GetIndices(ctx context.Context, apiClient *clients.ApiClient, name string) (map[string]models.Index, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, fwdiags.Diagnostics{
@@ -333,8 +343,8 @@ func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*
 			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
 		}
 	}
-	index := indices[name]
-	return &index, nil
+
+	return indices, nil
 }
 
 func DeleteIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index string, aliases []string) fwdiags.Diagnostics {
