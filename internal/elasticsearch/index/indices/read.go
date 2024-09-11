@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -23,8 +22,8 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	// Call client API
-	indexApiModels, sdkDiags := elasticsearch.GetIndices(ctx, &d.client, target)
-	resp.Diagnostics.Append(utils.ConvertSDKDiagnosticsToFramework(sdkDiags)...)
+	indexApiModels, diags := elasticsearch.GetIndices(ctx, &d.client, target)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

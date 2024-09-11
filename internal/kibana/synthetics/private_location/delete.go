@@ -3,6 +3,7 @@ package private_location
 import (
 	"context"
 	"fmt"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -22,7 +23,6 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	}
 
 	resourceId := plan.ID.ValueString()
-	namespace := plan.SpaceID.ValueString()
 
 	compositeId, dg := tryReadCompositeId(resourceId)
 	response.Diagnostics.Append(dg...)
@@ -32,13 +32,12 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 
 	if compositeId != nil {
 		resourceId = compositeId.ResourceId
-		namespace = compositeId.ClusterId
 	}
 
-	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, resourceId, namespace)
+	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, resourceId)
 
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`, namespace %s", resourceId, namespace), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`", resourceId), err.Error())
 		return
 	}
 

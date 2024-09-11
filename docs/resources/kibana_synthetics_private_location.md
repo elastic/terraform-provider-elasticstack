@@ -52,7 +52,6 @@ resource "elasticstack_kibana_synthetics_private_location" "example" {
 ### Optional
 
 - `geo` (Attributes) Geographic coordinates (WGS84) for the location (see [below for nested schema](#nestedatt--geo))
-- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) An array of tags to categorize the private location.
 
 ### Read-Only

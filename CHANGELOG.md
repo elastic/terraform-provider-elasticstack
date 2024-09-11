@@ -4,6 +4,10 @@
 - Add support for data_stream `lifecycle` template settings ([#724](https://github.com/elastic/terraform-provider-elasticstack/pull/724))
 - Fix a provider panic when `elasticstack_kibana_action_connector` reads a non-existant connector ([#729](https://github.com/elastic/terraform-provider-elasticstack/pull/729))
 - Add support for `remote_indicies` to `elasticstack_elasticsearch_security_role` & `elasticstack_kibana_security_role` (#723)[https://github.com/elastic/terraform-provider-elasticstack/pull/723]
+- Fix error handling in `elasticstack_kibana_import_saved_objects` ([#738](https://github.com/elastic/terraform-provider-elasticstack/pull/738))
+- Remove `space_id` parameter from private locations to fix inconsistent state for `elasticstack_kibana_synthetics_private_location` `space_id` ([#733](https://github.com/elastic/terraform-provider-elasticstack/pull/733))  
+- Add the `Frequency` field to the Create Rule API ([#753](https://github.com/elastic/terraform-provider-elasticstack/pull/753))
+- Prevent a provider panic when the repository referenced in an `elasticstack_elasticsearch_snapshot_repository` does not exist ([#758](https://github.com/elastic/terraform-provider-elasticstack/pull/758))
 
 ## [0.11.6] - 2024-08-20
 

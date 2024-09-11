@@ -1,7 +1,7 @@
 steps:
   - label: Release
     agents:
-      image: golang:${GO_VERSION}
+      image: "golang:latest@sha256:4a3c2bcd243d3dbb7b15237eecb0792db3614900037998c2cd6a579c46888c1e":${GO_VERSION}
       cpu: "8"
       memory: "8G"
     command:
