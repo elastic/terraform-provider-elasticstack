@@ -44,10 +44,9 @@ resource "elasticstack_elasticsearch_index" "my_index" {
     }
   })
 
-  number_of_shards      = 1
-  number_of_replicas    = 2
-  search_idle_after     = "20s"
-  total_shards_per_node = 200
+  number_of_shards   = 1
+  number_of_replicas = 2
+  search_idle_after  = "20s"
 }
 ```
 
@@ -76,7 +75,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
 - `default_pipeline` (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
 - `deletion_protection` (Boolean) Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.
 - `highlight_max_analyzed_offset` (Number) The maximum number of characters that will be analyzed for a highlight request.
@@ -90,10 +89,10 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `load_fixed_bitset_filters_eagerly` (Boolean) Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.
 - `mapping_coerce` (Boolean) Set index level coercion setting that is applied to all mapping types.
 - `mappings` (String) Mapping for fields in the index.
-If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-**NOTE:**
-- Changing datatypes in the existing _mappings_ will force index to be re-created.
-- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
+			If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
+			**NOTE:**
+			- Changing datatypes in the existing _mappings_ will force index to be re-created.
+			- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
 - `master_timeout` (String) Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`. This value is ignored when running against Serverless projects.
 - `max_docvalue_fields_search` (Number) The maximum number of `docvalue_fields` that are allowed in a query.
 - `max_inner_result_window` (Number) The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.
@@ -123,7 +122,7 @@ If specified, this mapping can include: field names, [field data types](https://
 - `search_slowlog_threshold_query_info` (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `5s`
 - `search_slowlog_threshold_query_trace` (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `500ms`
 - `search_slowlog_threshold_query_warn` (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `10s`
-- `settings` (Block List, Max: 1, Deprecated) DEPRECATED: Please use dedicated setting field. Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
+- `settings` (Block List, Deprecated) DEPRECATED: Please use dedicated setting field. Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
 **NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error (see [below for nested schema](#nestedblock--settings))
 - `shard_check_on_startup` (String) Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.
 - `sort_field` (Set of String) The field to sort shards in this index by.
@@ -177,9 +176,9 @@ Optional:
 <a id="nestedblock--settings"></a>
 ### Nested Schema for `settings`
 
-Required:
+Optional:
 
-- `setting` (Block Set, Min: 1) Defines the setting for the index. (see [below for nested schema](#nestedblock--settings--setting))
+- `setting` (Block Set) Defines the setting for the index. (see [below for nested schema](#nestedblock--settings--setting))
 
 <a id="nestedblock--settings--setting"></a>
 ### Nested Schema for `settings.setting`
