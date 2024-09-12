@@ -4,16 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-version"
 	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/go-version"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -40,14 +42,65 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 							return err
 						}
 
-						allowRestrictedIndices := false
 						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
 							"role-a": {
 								Cluster: []string{"all"},
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-a*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: &allowRestrictedIndices,
+									AllowRestrictedIndices: utils.Pointer(false),
+								}},
+							},
+						}
+
+						if !reflect.DeepEqual(testRoleDescriptor, expectedRoleDescriptor) {
+							return fmt.Errorf("%v doesn't match %v", testRoleDescriptor, expectedRoleDescriptor)
+						}
+
+						return nil
+					}),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityApiKeyWithRemoteIndices(t *testing.T) {
+	// generate a random name
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				Config:   testAccResourceSecurityApiKeyRemoteIndices(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
+						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
+							return err
+						}
+
+						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+							"role-a": {
+								Cluster: []string{"all"},
+								Indices: []models.IndexPerms{{
+									Names:                  []string{"index-a*"},
+									Privileges:             []string{"read"},
+									AllowRestrictedIndices: utils.Pointer(false),
+								}},
+								RemoteIndices: []models.RemoteIndexPerms{{
+									Clusters:               []string{"*"},
+									Names:                  []string{"index-a*"},
+									Privileges:             []string{"read"},
+									AllowRestrictedIndices: utils.Pointer(true),
 								}},
 							},
 						}
@@ -165,7 +218,38 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
         privileges = ["read"]
         allow_restricted_indices = false
       }]
-    }
+	}
+  })
+
+	expiration = "1d"
+}
+	`, apiKeyName)
+}
+
+func testAccResourceSecurityApiKeyRemoteIndices(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+
+  role_descriptors = jsonencode({
+    role-a = {
+      cluster = ["all"]
+      indices = [{
+        names = ["index-a*"]
+        privileges = ["read"]
+        allow_restricted_indices = false
+      }]
+      remote_indices = [{
+	    clusters = ["*"]
+		names = ["index-a*"]
+		privileges = ["read"]
+		allow_restricted_indices = true
+	  }]
+	}
   })
 
 	expiration = "1d"
@@ -190,8 +274,8 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
         privileges = ["read"]
         allow_restricted_indices = false
       }],
-      restriction = { 
-		workflows = [ "search_application_query"] 
+      restriction = {
+		workflows = [ "search_application_query"]
       }
     }
   })

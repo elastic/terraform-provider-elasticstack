@@ -13,11 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+var minSupportedRemoteIndicesVersion = version.Must(version.NewSemver("8.10.0"))
+
 func TestAccResourceSecurityRole(t *testing.T) {
 	// generate a random username
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	roleNameRemoteIndices := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
-	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -202,7 +203,7 @@ resource "elasticstack_elasticsearch_security_role" "test" {
 	names = ["sample2"]
 	privileges = ["create", "read", "write"]
   }
-	
+
   metadata = jsonencode({
     version = 1
   })
