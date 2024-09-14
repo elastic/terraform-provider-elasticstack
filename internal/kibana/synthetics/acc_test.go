@@ -576,7 +576,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 							ImportStateVerify: true,
 							Config:            config,
 						},
-			*/// Update and Read browser monitor
+			*/ // Update and Read browser monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName: browserMonitorId,
