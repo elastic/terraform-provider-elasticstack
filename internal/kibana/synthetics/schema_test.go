@@ -707,10 +707,9 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
 				Browser: &tfBrowserMonitorFieldsV0{
-					InlineScript:      types.StringValue("aaa"),
-					SyntheticsArgs:    []types.String{types.StringValue("aaa"), types.StringValue("bbb")},
-					Screenshots:       types.StringValue(""),
-					PlaywrightOptions: jsontypes.NewNormalizedValue("null"),
+					InlineScript:   types.StringValue("aaa"),
+					SyntheticsArgs: []types.String{types.StringValue("aaa"), types.StringValue("bbb")},
+					Screenshots:    types.StringValue(""),
 				},
 			},
 		},

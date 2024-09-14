@@ -55,7 +55,8 @@ func (r *Resource) ConfigValidators(ctx context.Context) []resource.ConfigValida
 		resourcevalidator.ExactlyOneOf(
 			path.MatchRoot("http"),
 			path.MatchRoot("tcp"),
-			// other monitor config types: icmp, browser
+			path.MatchRoot("icmp"),
+			path.MatchRoot("browser"),
 		),
 		resourcevalidator.AtLeastOneOf(
 			path.MatchRoot("locations"),

@@ -11,7 +11,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -209,6 +212,8 @@ func browserMonitorFieldsSchema() schema.Attribute {
 				Validators: []validator.String{
 					stringvalidator.OneOf("on", "off", "only-on-failure"),
 				},
+				Computed: true,
+				Default:  stringdefault.StaticString("on"),
 			},
 			"synthetics_args": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -218,6 +223,8 @@ func browserMonitorFieldsSchema() schema.Attribute {
 			"ignore_https_errors": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Whether to ignore HTTPS errors.",
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
 			},
 			"playwright_options": jsonObjectSchema("Playwright options."),
 		},
@@ -237,6 +244,8 @@ func icmpMonitorFieldsSchema() schema.Attribute {
 			"wait": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: " Wait time in seconds. Default: `1`",
+				Default:             int64default.StaticInt64(1),
+				Computed:            true,
 			},
 		},
 	}
@@ -294,6 +303,8 @@ func httpMonitorFieldsSchema() schema.Attribute {
 			"max_redirects": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
+				Default:             int64default.StaticInt64(0),
+				Computed:            true,
 			},
 			"mode": schema.StringAttribute{
 				Optional:            true,
@@ -583,9 +594,13 @@ func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(api *kbapi.SyntheticsMon
 
 func (v *tfBrowserMonitorFieldsV0) toTfIBrowserMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
 
-	playwrightOptions, err := toNormalizedValue(api.PlaywrightOptions)
-	if err != nil {
-		return nil, err
+	var err error
+	playwrightOptions := v.PlaywrightOptions
+	if api.PlaywrightOptions != nil {
+		playwrightOptions, err = toNormalizedValue(api.PlaywrightOptions)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	syntheticsArgs := v.SyntheticsArgs
