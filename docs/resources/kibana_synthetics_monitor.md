@@ -20,6 +20,7 @@ See [API docs](https://www.elastic.co/guide/en/kibana/current/add-monitor-api.ht
 **NOTE:** Due-to nature of partial update API, reset values to defaults is not supported.
 In case you would like to reset an optional monitor value, please set it explicitly or delete and create new monitor.
 
+
 ## Example Usage
 
 ```terraform
@@ -187,4 +188,4 @@ terraform import elasticstack_kibana_synthetics_monitor.my_monitor <space id>/<m
 **NOTE:** Not all monitor fields are supported during the import due-to API limitation.
 Full field support could be implemented after this [kibana issue](https://github.com/elastic/kibana/issues/189906) is resolved.
 
-Currently not supported fields during the import:  `params`, `retest_on_failure`, `http.proxy_header`, `http.username`, `http.password`, `http.check`, `http.response`, `tcp.check_send`, `tcp.check_receive`, and monitor type `browser`
+Currently not supported fields during the import:  `params`, `retest_on_failure`, `http.proxy_header`, `http.username`, `http.password`, `http.check`, `http.response`, `tcp.check_send`, `tcp.check_receive` and monitor type `browser`
