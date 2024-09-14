@@ -354,6 +354,8 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 	})
 }
 
+// TODO: icmp and browser
+
 func testMonitorConfig(id, cfg, name string) (string, string) {
 
 	resourceId := "elasticstack_kibana_synthetics_monitor." + id

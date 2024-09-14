@@ -65,8 +65,10 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
 ### Optional
 
 - `alert` (Attributes) Alert configuration. Default: `{ status: { enabled: true }, tls: { enabled: true } }`. (see [below for nested schema](#nestedatt--alert))
+- `browser` (Attributes) Browser Monitor specific fields (see [below for nested schema](#nestedatt--browser))
 - `enabled` (Boolean) Whether the monitor is enabled. Default: `true`
 - `http` (Attributes) HTTP Monitor specific fields (see [below for nested schema](#nestedatt--http))
+- `icmp` (Attributes) ICMP Monitor specific fields (see [below for nested schema](#nestedatt--icmp))
 - `locations` (List of String) Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
 - `params` (String) Monitor parameters. Raw JSON object, use `jsonencode` function to represent JSON
 - `private_locations` (List of String) These Private Locations refer to locations hosted and managed by you, whereas locations are hosted by Elastic. You can specify a Private Location using the location’s name.
@@ -107,6 +109,21 @@ Optional:
 
 
 
+<a id="nestedatt--browser"></a>
+### Nested Schema for `browser`
+
+Required:
+
+- `inline_script` (String) The inline script.
+
+Optional:
+
+- `ignore_https_errors` (Boolean) Whether to ignore HTTPS errors.
+- `playwright_options` (String) Playwright options.. Raw JSON object, use `jsonencode` function to represent JSON
+- `screenshots` (String) Controls the behavior of the screenshots feature.
+- `synthetics_args` (List of String) Synthetics agent CLI arguments.
+
+
 <a id="nestedatt--http"></a>
 ### Nested Schema for `http`
 
@@ -128,6 +145,18 @@ Optional:
 - `ssl_supported_protocols` (List of String) List of allowed SSL/TLS versions.
 - `ssl_verification_mode` (String) Controls the verification of server certificates.
 - `username` (String) The username for authenticating with the server. The credentials are passed with the request.
+
+
+<a id="nestedatt--icmp"></a>
+### Nested Schema for `icmp`
+
+Required:
+
+- `host` (String) Host to ping; it can be an IP address or a hostname.
+
+Optional:
+
+- `wait` (Number) Wait time in seconds. Default: `1`
 
 
 <a id="nestedatt--tcp"></a>

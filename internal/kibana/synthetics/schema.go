@@ -62,22 +62,37 @@ type tfTCPMonitorFieldsV0 struct {
 	ProxyUseLocalResolver types.Bool     `tfsdk:"proxy_use_local_resolver"`
 }
 
+type tfICMPMonitorFieldsV0 struct {
+	Host types.String `tfsdk:"host"`
+	Wait types.Int64  `tfsdk:"wait"`
+}
+
+type tfBrowserMonitorFieldsV0 struct {
+	InlineScript      types.String         `tfsdk:"inline_script"`
+	Screenshots       types.String         `tfsdk:"screenshots"`
+	SyntheticsArgs    []types.String       `tfsdk:"synthetics_args"`
+	IgnoreHttpsErrors types.Bool           `tfsdk:"ignore_https_errors"`
+	PlaywrightOptions jsontypes.Normalized `tfsdk:"playwright_options"`
+}
+
 type tfModelV0 struct {
-	ID               types.String           `tfsdk:"id"`
-	Name             types.String           `tfsdk:"name"`
-	SpaceID          types.String           `tfsdk:"space_id"`
-	Schedule         types.Int64            `tfsdk:"schedule"`
-	Locations        []types.String         `tfsdk:"locations"`
-	PrivateLocations []types.String         `tfsdk:"private_locations"`
-	Enabled          types.Bool             `tfsdk:"enabled"`
-	Tags             []types.String         `tfsdk:"tags"`
-	Alert            *tfAlertConfigV0       `tfsdk:"alert"`
-	APMServiceName   types.String           `tfsdk:"service_name"`
-	TimeoutSeconds   types.Int64            `tfsdk:"timeout"`
-	HTTP             *tfHTTPMonitorFieldsV0 `tfsdk:"http"`
-	TCP              *tfTCPMonitorFieldsV0  `tfsdk:"tcp"`
-	Params           jsontypes.Normalized   `tfsdk:"params"`
-	RetestOnFailure  types.Bool             `tfsdk:"retest_on_failure"`
+	ID               types.String              `tfsdk:"id"`
+	Name             types.String              `tfsdk:"name"`
+	SpaceID          types.String              `tfsdk:"space_id"`
+	Schedule         types.Int64               `tfsdk:"schedule"`
+	Locations        []types.String            `tfsdk:"locations"`
+	PrivateLocations []types.String            `tfsdk:"private_locations"`
+	Enabled          types.Bool                `tfsdk:"enabled"`
+	Tags             []types.String            `tfsdk:"tags"`
+	Alert            *tfAlertConfigV0          `tfsdk:"alert"`
+	APMServiceName   types.String              `tfsdk:"service_name"`
+	TimeoutSeconds   types.Int64               `tfsdk:"timeout"`
+	HTTP             *tfHTTPMonitorFieldsV0    `tfsdk:"http"`
+	TCP              *tfTCPMonitorFieldsV0     `tfsdk:"tcp"`
+	ICMP             *tfICMPMonitorFieldsV0    `tfsdk:"icmp"`
+	Browser          *tfBrowserMonitorFieldsV0 `tfsdk:"browser"`
+	Params           jsontypes.Normalized      `tfsdk:"params"`
+	RetestOnFailure  types.Bool                `tfsdk:"retest_on_failure"`
 }
 
 func GetCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
@@ -165,12 +180,63 @@ func monitorConfigSchema() schema.Schema {
 				Optional:            true,
 				MarkdownDescription: "The monitor timeout in seconds, monitor will fail if it doesn’t complete within this time. Default: `16`",
 			},
-			"params": jsonObjectSchema("Monitor parameters"),
-			"http":   httpMonitorFieldsSchema(),
-			"tcp":    tcpMonitorFieldsSchema(),
+			"params":  jsonObjectSchema("Monitor parameters"),
+			"http":    httpMonitorFieldsSchema(),
+			"tcp":     tcpMonitorFieldsSchema(),
+			"icmp":    icmpMonitorFieldsSchema(),
+			"browser": browserMonitorFieldsSchema(),
 			"retest_on_failure": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from \"up\" to \"down\". If the result of the retest is also \"down\", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.",
+			},
+		},
+	}
+}
+
+func browserMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Browser Monitor specific fields",
+		Attributes: map[string]schema.Attribute{
+			"inline_script": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "The inline script.",
+			},
+			"screenshots": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Controls the behavior of the screenshots feature.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("on", "off", "only-on-failure"),
+				},
+			},
+			"synthetics_args": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Synthetics agent CLI arguments.",
+			},
+			"ignore_https_errors": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Whether to ignore HTTPS errors.",
+			},
+			"playwright_options": jsonObjectSchema("Playwright options."),
+		},
+	}
+}
+
+func icmpMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "ICMP Monitor specific fields",
+		Attributes: map[string]schema.Attribute{
+			"host": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "Host to ping; it can be an IP address or a hostname.",
+			},
+			"wait": schema.Int64Attribute{
+				Optional:            true,
+				MarkdownDescription: " Wait time in seconds. Default: `1`",
 			},
 		},
 	}
@@ -414,6 +480,8 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) 
 
 	var http *tfHTTPMonitorFieldsV0
 	var tcp *tfTCPMonitorFieldsV0
+	var icmp *tfICMPMonitorFieldsV0
+	var browser *tfBrowserMonitorFieldsV0
 
 	switch mType := api.Type; mType {
 	case kbapi.Http:
@@ -428,6 +496,18 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) 
 			tcp = v.TCP
 		}
 		tcp, err = tcp.toTfTCPMonitorFieldsV0(api)
+	case kbapi.Icmp:
+		icmp = &tfICMPMonitorFieldsV0{}
+		if v.ICMP != nil {
+			icmp = v.ICMP
+		}
+		icmp, err = icmp.toTfICMPMonitorFieldsV0(api)
+	case kbapi.Browser:
+		browser = &tfBrowserMonitorFieldsV0{}
+		if v.Browser != nil {
+			browser = v.Browser
+		}
+		browser, err = browser.toTfIBrowserMonitorFieldsV0(api)
 	default:
 		err = fmt.Errorf("unsupported monitor type: %s", mType)
 	}
@@ -464,6 +544,8 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) 
 		Params:           params,
 		HTTP:             http,
 		TCP:              tcp,
+		ICMP:             icmp,
+		Browser:          browser,
 		RetestOnFailure:  v.RetestOnFailure,
 	}, nil
 }
@@ -485,6 +567,43 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(api *kbapi.SyntheticsMonit
 		CheckReceive:          checkReceive,
 		ProxyURL:              types.StringValue(api.ProxyUrl),
 		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
+	}, nil
+}
+
+func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfICMPMonitorFieldsV0, error) {
+	wait, err := stringToInt64(string(api.Wait))
+	if err != nil {
+		return nil, err
+	}
+	return &tfICMPMonitorFieldsV0{
+		Host: types.StringValue(api.Host),
+		Wait: types.Int64Value(wait),
+	}, nil
+}
+
+func (v *tfBrowserMonitorFieldsV0) toTfIBrowserMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
+
+	playwrightOptions, err := toNormalizedValue(api.PlaywrightOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	syntheticsArgs := v.SyntheticsArgs
+	if api.SyntheticsArgs != nil {
+		syntheticsArgs = StringSliceValue(api.SyntheticsArgs)
+	}
+
+	inlineScript := v.InlineScript
+	if api.InlineScript != "" {
+		inlineScript = types.StringValue(api.InlineScript)
+	}
+
+	return &tfBrowserMonitorFieldsV0{
+		InlineScript:      inlineScript,
+		Screenshots:       types.StringValue(api.Screenshots),
+		SyntheticsArgs:    syntheticsArgs,
+		IgnoreHttpsErrors: types.BoolPointerValue(api.IgnoreHttpsErrors),
+		PlaywrightOptions: playwrightOptions,
 	}, nil
 }
 
@@ -572,6 +691,10 @@ func (v *tfModelV0) toMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
 		return v.toHttpMonitorFields()
 	} else if v.TCP != nil {
 		return v.toTCPMonitorFields(), dg
+	} else if v.ICMP != nil {
+		return v.toICMPMonitorFields(), dg
+	} else if v.Browser != nil {
+		return v.toBrowserMonitorFields()
 	}
 
 	dg.AddError("Unsupported monitor type config", "one of http,tcp monitor fields is required")
@@ -606,6 +729,14 @@ func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig,
 	}, diag.Diagnostics{} //dg
 }
 
+func tfInt64ToString(v types.Int64) string {
+	res := ""
+	if !v.IsUnknown() && !v.IsNull() { // handle omitempty case
+		return strconv.FormatInt(v.ValueInt64(), 10)
+	}
+	return res
+}
+
 func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
 	proxyHeaders, dg := toJsonObject(v.HTTP.ProxyHeader)
 	if dg.HasError() {
@@ -619,11 +750,7 @@ func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics
 	if dg.HasError() {
 		return nil, dg
 	}
-	maxRedirects := ""
-	if !v.HTTP.MaxRedirects.IsUnknown() && !v.HTTP.MaxRedirects.IsNull() { // handle omitempty case
-		maxRedirects = strconv.FormatInt(v.HTTP.MaxRedirects.ValueInt64(), 10)
-
-	}
+	maxRedirects := tfInt64ToString(v.HTTP.MaxRedirects)
 	return kbapi.HTTPMonitorFields{
 		Url:                   v.HTTP.URL.ValueString(),
 		SslVerificationMode:   v.HTTP.SslVerificationMode.ValueString(),
@@ -651,6 +778,27 @@ func (v *tfModelV0) toTCPMonitorFields() kbapi.MonitorFields {
 		ProxyUrl:              v.TCP.ProxyURL.ValueString(),
 		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
 	}
+}
+
+func (v *tfModelV0) toICMPMonitorFields() kbapi.MonitorFields {
+	return kbapi.ICMPMonitorFields{
+		Host: v.ICMP.Host.ValueString(),
+		Wait: tfInt64ToString(v.ICMP.Wait),
+	}
+}
+
+func (v *tfModelV0) toBrowserMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
+	playwrightOptions, dg := toJsonObject(v.Browser.PlaywrightOptions)
+	if dg.HasError() {
+		return nil, dg
+	}
+	return kbapi.BrowserMonitorFields{
+		InlineScript:      v.Browser.InlineScript.ValueString(),
+		Screenshots:       kbapi.ScreenshotOption(v.Browser.Screenshots.ValueString()),
+		SyntheticsArgs:    ValueStringSlice(v.Browser.SyntheticsArgs),
+		IgnoreHttpsErrors: v.Browser.IgnoreHttpsErrors.ValueBoolPointer(),
+		PlaywrightOptions: playwrightOptions,
+	}, diag.Diagnostics{} //dg
 }
 
 func Map[T, U any](ts []T, f func(T) U) []U {
