@@ -28,10 +28,11 @@ type AlertingRuleSchedule struct {
 }
 
 type AlertingRuleAction struct {
-	Group     string
-	ID        string
-	Params    map[string]interface{}
-	Frequency *AlertingRuleActionFrequency
+	Group        string
+	ID           string
+	Params       map[string]interface{}
+	Frequency    *ActionFrequency
+	AlertsFilter *ActionAlertsFilter
 }
 
 type AlertingRuleExecutionStatus struct {
@@ -39,8 +40,20 @@ type AlertingRuleExecutionStatus struct {
 	Status            *string
 }
 
-type AlertingRuleActionFrequency struct {
+type ActionFrequency struct {
 	Summary    bool
 	NotifyWhen string
 	Throttle   *string
+}
+
+type ActionAlertsFilter struct {
+	Kql       string
+	Timeframe AlertsFilterTimeframe
+}
+
+type AlertsFilterTimeframe struct {
+	Days       []int32
+	Timezone   string
+	HoursStart string
+	HoursEnd   string
 }

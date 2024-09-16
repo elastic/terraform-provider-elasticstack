@@ -77,6 +77,19 @@ func Test_ruleResponseToModel(t *testing.T) {
 							NotifyWhen: "onThrottleInterval",
 							Throttle:   *alerting.NewNullableString(utils.Pointer("10s")),
 						}),
+						AlertsFilter: utils.Pointer(alerting.ActionsInnerAlertsFilter{
+							Query: &alerting.ActionsInnerAlertsFilterQuery{
+								Kql: utils.Pointer("foobar"),
+							},
+							Timeframe: &alerting.ActionsInnerAlertsFilterTimeframe{
+								Days:     []int32{3, 5, 7},
+								Timezone: utils.Pointer("UTC+1"),
+								Hours: &alerting.ActionsInnerAlertsFilterTimeframeHours{
+									Start: utils.Pointer("00:00"),
+									End:   utils.Pointer("08:00"),
+								},
+							},
+						}),
 					},
 					{
 						Group:  "group-2",
@@ -128,17 +141,26 @@ func Test_ruleResponseToModel(t *testing.T) {
 						Group:  "group-1",
 						ID:     "id",
 						Params: map[string]interface{}{},
-						Frequency: &models.AlertingRuleActionFrequency{
+						Frequency: &models.ActionFrequency{
 							Summary:    true,
 							NotifyWhen: "onThrottleInterval",
 							Throttle:   utils.Pointer("10s"),
+						},
+						AlertsFilter: &models.ActionAlertsFilter{
+							Kql: "foobar",
+							Timeframe: models.AlertsFilterTimeframe{
+								Days:       []int32{3, 5, 7},
+								Timezone:   "UTC+1",
+								HoursStart: "00:00",
+								HoursEnd:   "08:00",
+							},
 						},
 					},
 					{
 						Group:  "group-2",
 						ID:     "id",
 						Params: map[string]interface{}{},
-						Frequency: &models.AlertingRuleActionFrequency{
+						Frequency: &models.ActionFrequency{
 							Summary:    true,
 							NotifyWhen: "onActionGroupChange",
 						},
