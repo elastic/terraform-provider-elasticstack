@@ -11,10 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -212,8 +211,8 @@ func browserMonitorFieldsSchema() schema.Attribute {
 				Validators: []validator.String{
 					stringvalidator.OneOf("on", "off", "only-on-failure"),
 				},
-				Computed: true,
-				Default:  stringdefault.StaticString("on"),
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"synthetics_args": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -224,7 +223,7 @@ func browserMonitorFieldsSchema() schema.Attribute {
 				Optional:            true,
 				MarkdownDescription: "Whether to ignore HTTPS errors.",
 				Computed:            true,
-				Default:             booldefault.StaticBool(false),
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 			"playwright_options": jsonObjectSchema("Playwright options."),
 		},
@@ -244,7 +243,7 @@ func icmpMonitorFieldsSchema() schema.Attribute {
 			"wait": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: " Wait time in seconds. Default: `1`",
-				Default:             int64default.StaticInt64(1),
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 				Computed:            true,
 			},
 		},
@@ -303,7 +302,7 @@ func httpMonitorFieldsSchema() schema.Attribute {
 			"max_redirects": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
-				Default:             int64default.StaticInt64(0),
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 				Computed:            true,
 			},
 			"mode": schema.StringAttribute{
@@ -518,7 +517,7 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) 
 		if v.Browser != nil {
 			browser = v.Browser
 		}
-		browser, err = browser.toTfIBrowserMonitorFieldsV0(api)
+		browser, err = browser.toTfBrowserMonitorFieldsV0(api)
 	default:
 		err = fmt.Errorf("unsupported monitor type: %s", mType)
 	}
