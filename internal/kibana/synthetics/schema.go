@@ -592,7 +592,7 @@ func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(api *kbapi.SyntheticsMon
 	}, nil
 }
 
-func (v *tfBrowserMonitorFieldsV0) toTfIBrowserMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
+func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
 
 	var err error
 	playwrightOptions := v.PlaywrightOptions
