@@ -20,6 +20,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
@@ -154,6 +155,35 @@ func ConvertProviderData(providerData any) (*ApiClient, fwdiags.Diagnostics) {
 		return nil, diags
 	}
 	return client, diags
+}
+
+func MaybeNewApiClientFromFrameworkResource(ctx context.Context, esConnList types.List, defaultClient *ApiClient) (*ApiClient, fwdiags.Diagnostics) {
+	var esConns []config.ElasticsearchConnection
+	if diags := esConnList.ElementsAs(ctx, &esConns, true); diags.HasError() {
+		return nil, diags
+	}
+
+	if len(esConns) == 0 {
+		return defaultClient, nil
+	}
+
+	cfg, diags := config.NewFromFramework(ctx, config.ProviderConfiguration{Elasticsearch: esConns}, defaultClient.version)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	esClient, err := buildEsClient(cfg)
+	if err != nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
+	}
+
+	return &ApiClient{
+		elasticsearch:            esClient,
+		elasticsearchClusterInfo: defaultClient.elasticsearchClusterInfo,
+		kibana:                   defaultClient.kibana,
+		fleet:                    defaultClient.fleet,
+		version:                  defaultClient.version,
+	}, diags
 }
 
 func NewApiClientFromSDKResource(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Diagnostics) {

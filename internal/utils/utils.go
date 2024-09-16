@@ -19,6 +19,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+func ConvertSDKDiagnosticsToFramework(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
+	var fwDiags fwdiag.Diagnostics
+
+	for _, sdkDiag := range sdkDiags {
+		if sdkDiag.Severity == sdkdiag.Error {
+			fwDiags.AddError(sdkDiag.Summary, sdkDiag.Detail)
+		} else {
+			fwDiags.AddWarning(sdkDiag.Summary, sdkDiag.Detail)
+		}
+	}
+
+	return fwDiags
+}
+
 func CheckError(res *esapi.Response, errMsg string) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
 
@@ -67,6 +81,24 @@ func CheckHttpErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics 
 		diags.AddError(errMsg, fmt.Sprintf("Failed with: %s", body))
 		return diags
 	}
+	return diags
+}
+
+func FrameworkDiagsFromSDK(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	for _, sdkDiag := range sdkDiags {
+		var fwDiag fwdiag.Diagnostic
+
+		if sdkDiag.Severity == sdkdiag.Error {
+			fwDiag = fwdiag.NewErrorDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
+		} else {
+			fwDiag = fwdiag.NewWarningDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
+		}
+
+		diags.Append(fwDiag)
+	}
+
 	return diags
 }
 
