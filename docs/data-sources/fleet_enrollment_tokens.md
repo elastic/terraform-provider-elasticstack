@@ -32,17 +32,17 @@ data "elasticstack_fleet_enrollment_tokens" "test" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `tokens` (List of Object) A list of enrollment tokens. (see [below for nested schema](#nestedatt--tokens))
+- `tokens` (Attributes List) A list of enrollment tokens. (see [below for nested schema](#nestedatt--tokens))
 
 <a id="nestedatt--tokens"></a>
 ### Nested Schema for `tokens`
 
 Read-Only:
 
-- `active` (Boolean)
-- `api_key` (String)
-- `api_key_id` (String)
-- `created_at` (String)
-- `key_id` (String)
-- `name` (String)
-- `policy_id` (String)
+- `active` (Boolean) Indicates if the enrollment token is active.
+- `api_key` (String, Sensitive) The API key.
+- `api_key_id` (String) The API key identifier.
+- `created_at` (String) The time at which the enrollment token was created.
+- `key_id` (String) The unique identifier of the enrollment token.
+- `name` (String) The name of the enrollment token.
+- `policy_id` (String) The identifier of the associated agent policy.
