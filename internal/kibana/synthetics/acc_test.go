@@ -39,7 +39,6 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 		url = "http://localhost:5601"
 		ssl_verification_mode = "full"
 		ssl_supported_protocols = ["TLSv1.0", "TLSv1.1", "TLSv1.2"]
-		max_redirects = 10
 		mode = "any"
 		ipv4 = true
 		ipv6 = false
@@ -165,7 +164,108 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 		check_receive = "World Updated"
 	}
 }
+`
 
+	icmpMonitorConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestIcmpMonitorResource - %s"
+	space_id = "testacc"
+	schedule = 5
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	enabled = true
+	tags = ["a", "b"]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = true
+		}
+	}
+	service_name = "test apm service"
+	timeout = 30
+	icmp = {
+		host = "localhost"
+	}
+}
+`
+
+	icmpMonitorUpdated = `
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestIcmpMonitorResource Updated - %s"
+	space_id = "testacc"
+	schedule = 10
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	enabled = false
+	tags = ["c", "d", "e"]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = false
+		}
+	}
+	service_name = "test apm service"
+	timeout = 30
+	icmp = {
+		host = "google.com"
+		wait = 10
+	}
+}
+`
+	browserMonitorConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestBrowserMonitorResource - %s"
+	space_id = "testacc"
+	schedule = 5
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	enabled = true
+	tags = ["a", "b"]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = true
+		}
+	}
+	service_name = "test apm service"
+	timeout = 30
+	browser = {
+		inline_script = "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"
+	}
+}
+`
+
+	browserMonitorUpdated = `
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestBrowserMonitorResource Updated - %s"
+	space_id = "testacc"
+	schedule = 10
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	enabled = false
+	tags = ["c", "d", "e"]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = false
+		}
+	}
+	service_name = "test apm service"
+	timeout = 30
+	browser = {
+		inline_script = "step('Go to https://google.de', () => page.goto('https://www.google.de'))"
+		synthetics_args = ["--no-sandbox", "--disable-setuid-sandbox"]
+		screenshots = "off"
+		ignore_https_errors = true
+		playwright_options = jsonencode({"httpCredentials":{"password":"test","username":"test"},"ignoreHTTPSErrors":false})
+	}
+}
 `
 )
 
@@ -205,7 +305,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.0", "TLSv1.0"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.1", "TLSv1.1"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.2", "TLSv1.2"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.max_redirects", "10"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.max_redirects", "0"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.mode", "any"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv4", "true"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv6", "false"),
@@ -251,6 +351,8 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv6", "true"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_url", "http://localhost"),
 					resource.TestCheckNoResourceAttr(httpMonitorId, "tcp"),
+					resource.TestCheckNoResourceAttr(httpMonitorId, "browser"),
+					resource.TestCheckNoResourceAttr(httpMonitorId, "icmp"),
 					//check for merge attributes
 					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_header", `{"header-name":"header-value-updated"}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.username", "testupdated"),
@@ -343,9 +445,168 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_url", "http://localhost"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_use_local_resolver", "false"),
 					resource.TestCheckNoResourceAttr(tcpMonitorId, "http"),
+					resource.TestCheckNoResourceAttr(tcpMonitorId, "browser"),
+					resource.TestCheckNoResourceAttr(tcpMonitorId, "icmp"),
 					//check for merge attributes
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.check_send", "Hello Updated"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.check_receive", "World Updated"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+
+		},
+	})
+}
+
+func TestSyntheticMonitorICMPResource(t *testing.T) {
+
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	id := "icmp-monitor"
+	icmpMonitorId, config := testMonitorConfig(id, icmpMonitorConfig, name)
+	_, configUpdated := testMonitorConfig(id, icmpMonitorUpdated, name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+
+			// Create and Read icmp monitor
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(icmpMonitorId, "id"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "name", "TestIcmpMonitorResource - "+name),
+					resource.TestCheckResourceAttr(icmpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "schedule", "5"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(icmpMonitorId, "private_locations.0"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "enabled", "true"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "tags.#", "2"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "tags.0", "a"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "tags.1", "b"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "timeout", "30"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "icmp.host", "localhost"),
+				),
+			},
+			// ImportState testing
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:      icmpMonitorId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            config,
+			},
+			// Update and Read icmp monitor
+			{
+				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName: icmpMonitorId,
+				Config:       configUpdated,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(icmpMonitorId, "id"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "name", "TestIcmpMonitorResource Updated - "+name),
+					resource.TestCheckResourceAttr(icmpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "schedule", "10"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(icmpMonitorId, "private_locations.0"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "enabled", "false"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "tags.#", "3"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "tags.0", "c"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "tags.1", "d"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "tags.2", "e"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "alert.tls.enabled", "false"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "timeout", "30"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "icmp.host", "google.com"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "icmp.wait", "10"),
+					resource.TestCheckNoResourceAttr(icmpMonitorId, "http"),
+					resource.TestCheckNoResourceAttr(icmpMonitorId, "browser"),
+					resource.TestCheckNoResourceAttr(icmpMonitorId, "tcp"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+
+		},
+	})
+}
+
+func TestSyntheticMonitorBrowserResource(t *testing.T) {
+
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	id := "browser-monitor"
+	browserMonitorId, config := testMonitorConfig(id, browserMonitorConfig, name)
+	_, configUpdated := testMonitorConfig(id, browserMonitorUpdated, name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+
+			// Create and Read browser monitor
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(browserMonitorId, "id"),
+					resource.TestCheckResourceAttr(browserMonitorId, "name", "TestBrowserMonitorResource - "+name),
+					resource.TestCheckResourceAttr(browserMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(browserMonitorId, "schedule", "5"),
+					resource.TestCheckResourceAttr(browserMonitorId, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(browserMonitorId, "private_locations.0"),
+					resource.TestCheckResourceAttr(browserMonitorId, "enabled", "true"),
+					resource.TestCheckResourceAttr(browserMonitorId, "tags.#", "2"),
+					resource.TestCheckResourceAttr(browserMonitorId, "tags.0", "a"),
+					resource.TestCheckResourceAttr(browserMonitorId, "tags.1", "b"),
+					resource.TestCheckResourceAttr(browserMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(browserMonitorId, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(browserMonitorId, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(browserMonitorId, "timeout", "30"),
+					resource.TestCheckResourceAttr(browserMonitorId, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
+				),
+			},
+			// ImportState testing - kibana doesn't return required parameter inline_script for browser monitor, so import state is not supported till the fix
+			/*			{
+							SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+							ResourceName:      browserMonitorId,
+							ImportState:       true,
+							ImportStateVerify: true,
+							Config:            config,
+						},
+			*/ // Update and Read browser monitor
+			{
+				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName: browserMonitorId,
+				Config:       configUpdated,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(browserMonitorId, "id"),
+					resource.TestCheckResourceAttr(browserMonitorId, "name", "TestBrowserMonitorResource Updated - "+name),
+					resource.TestCheckResourceAttr(browserMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(browserMonitorId, "schedule", "10"),
+					resource.TestCheckResourceAttr(browserMonitorId, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(browserMonitorId, "private_locations.0"),
+					resource.TestCheckResourceAttr(browserMonitorId, "enabled", "false"),
+					resource.TestCheckResourceAttr(browserMonitorId, "tags.#", "3"),
+					resource.TestCheckResourceAttr(browserMonitorId, "tags.0", "c"),
+					resource.TestCheckResourceAttr(browserMonitorId, "tags.1", "d"),
+					resource.TestCheckResourceAttr(browserMonitorId, "tags.2", "e"),
+					resource.TestCheckResourceAttr(browserMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(browserMonitorId, "alert.tls.enabled", "false"),
+					resource.TestCheckResourceAttr(browserMonitorId, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(browserMonitorId, "timeout", "30"),
+					resource.TestCheckResourceAttr(browserMonitorId, "browser.inline_script", "step('Go to https://google.de', () => page.goto('https://www.google.de'))"),
+					resource.TestCheckResourceAttr(browserMonitorId, "browser.synthetics_args.#", "2"),
+					resource.TestCheckResourceAttr(browserMonitorId, "browser.synthetics_args.0", "--no-sandbox"),
+					resource.TestCheckResourceAttr(browserMonitorId, "browser.synthetics_args.1", "--disable-setuid-sandbox"),
+					resource.TestCheckResourceAttr(browserMonitorId, "browser.screenshots", "off"),
+					resource.TestCheckResourceAttr(browserMonitorId, "browser.ignore_https_errors", "true"),
+					resource.TestCheckResourceAttr(browserMonitorId, "browser.playwright_options", `{"httpCredentials":{"password":"test","username":"test"},"ignoreHTTPSErrors":false}`),
+					resource.TestCheckNoResourceAttr(browserMonitorId, "http"),
+					resource.TestCheckNoResourceAttr(browserMonitorId, "icmp"),
+					resource.TestCheckNoResourceAttr(browserMonitorId, "tcp"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

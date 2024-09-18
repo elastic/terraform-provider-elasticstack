@@ -46,6 +46,10 @@ const (
 
 	ModeAll HttpMonitorMode = "all"
 	ModeAny                 = "any"
+
+	ScreenshotOn             ScreenshotOption = "on"
+	ScreenshotOff                             = "off"
+	ScreenshotOnlyOfFailures                  = "only-on-failure"
 )
 
 var plMu sync.Mutex
@@ -65,6 +69,7 @@ type MonitorType string
 type MonitorLocation string
 type MonitorSchedule int
 type HttpMonitorMode string
+type ScreenshotOption string
 
 type JsonObject map[string]interface{}
 
@@ -88,6 +93,19 @@ type SyntheticsStatusConfig struct {
 type MonitorAlertConfig struct {
 	Status *SyntheticsStatusConfig `json:"status,omitempty"`
 	Tls    *SyntheticsStatusConfig `json:"tls,omitempty"`
+}
+
+type ICMPMonitorFields struct {
+	Host string `json:"host"`
+	Wait string `json:"wait,omitempty"`
+}
+
+type BrowserMonitorFields struct {
+	InlineScript      string           `json:"inline_script"`
+	Screenshots       ScreenshotOption `json:"screenshots,omitempty"`
+	SyntheticsArgs    []string         `json:"synthetics_args,omitempty"`
+	IgnoreHttpsErrors *bool            `json:"ignore_https_errors,omitempty"`
+	PlaywrightOptions JsonObject       `json:"playwright_options,omitempty"`
 }
 
 type TCPMonitorFields struct {
@@ -207,11 +225,20 @@ type SyntheticsMonitor struct {
 	ProxyUrl              string   `json:"proxy_url,omitempty"`
 	SslVerificationMode   string   `json:"ssl.verification_mode"`
 	SslSupportedProtocols []string `json:"ssl.supported_protocols"`
+	//tcp and icmp
+	Host string `json:"host,omitempty"`
 	//tcp
-	Host                  string `json:"host,omitempty"`
 	ProxyUseLocalResolver *bool  `json:"proxy_use_local_resolver,omitempty"`
 	CheckSend             string `json:"check.send,omitempty"`
 	CheckReceive          string `json:"check.receive,omitempty"`
+	//icmp
+	Wait json.Number `json:"wait,omitempty"`
+	//browser
+	Screenshots       string     `json:"screenshots,omitempty"`
+	IgnoreHttpsErrors *bool      `json:"ignore_https_errors,omitempty"`
+	InlineScript      string     `json:"inline_script"`
+	SyntheticsArgs    []string   `json:"synthetics_args,omitempty"`
+	PlaywrightOptions JsonObject `json:"playwright_options,omitempty"`
 }
 
 type MonitorTypeConfig struct {
@@ -241,6 +268,36 @@ func (f TCPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{}
 		SyntheticsMonitorConfig
 		MonitorTypeConfig
 		TCPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
+}
+
+func (f ICMPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
+
+	mType := MonitorTypeConfig{Type: Icmp}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		ICMPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
+}
+
+func (f BrowserMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
+
+	mType := MonitorTypeConfig{Type: Browser}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		BrowserMonitorFields
 	}{
 		config,
 		mType,
