@@ -10,10 +10,6 @@ import (
 )
 
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
-
 	var stateModel tfModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
 	if resp.Diagnostics.HasError() {

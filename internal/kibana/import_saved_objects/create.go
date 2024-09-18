@@ -19,10 +19,6 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 }
 
 func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, diags *diag.Diagnostics) {
-	if !resourceReady(r, diags) {
-		return
-	}
-
 	var model modelV0
 
 	diags.Append(plan.Get(ctx, &model)...)

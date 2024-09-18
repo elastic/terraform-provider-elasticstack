@@ -8,10 +8,6 @@ import (
 )
 
 func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	if !r.resourceReady(&response.Diagnostics) {
-		return
-	}
-
 	dataviewClient, err := r.client.GetDataViewsClient()
 	if err != nil {
 		response.Diagnostics.AddError("unable to get data view client", err.Error())

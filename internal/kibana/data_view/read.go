@@ -9,10 +9,6 @@ import (
 )
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	if !r.resourceReady(&response.Diagnostics) {
-		return
-	}
-
 	var model tfModelV0
 	response.Diagnostics.Append(request.State.Get(ctx, &model)...)
 	if response.Diagnostics.HasError() {
