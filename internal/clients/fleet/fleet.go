@@ -49,10 +49,10 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 }
 
 // ReadAgentPolicy reads a specific agent policy from the API.
-func ReadAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.AgentPolicy, diag.Diagnostics) {
+func ReadAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.AgentPolicy, fwdiag.Diagnostics) {
 	resp, err := client.API.AgentPolicyInfoWithResponse(ctx, id)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -61,7 +61,7 @@ func ReadAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -77,41 +77,41 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.AgentPo
 		return nil
 	})
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // UpdateAgentPolicy updates an existing agent policy.
-func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req fleetapi.AgentPolicyUpdateRequest) (*fleetapi.AgentPolicy, diag.Diagnostics) {
+func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req fleetapi.AgentPolicyUpdateRequest) (*fleetapi.AgentPolicy, fwdiag.Diagnostics) {
 	resp, err := client.API.UpdateAgentPolicyWithResponse(ctx, id, req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // DeleteAgentPolicy deletes an existing agent policy
-func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diagnostics {
+func DeleteAgentPolicy(ctx context.Context, client *Client, id string) fwdiag.Diagnostics {
 	body := fleetapi.DeleteAgentPolicyJSONRequestBody{
 		AgentPolicyId: id,
 	}
 
 	resp, err := client.API.DeleteAgentPolicyWithResponse(ctx, body)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -120,7 +120,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
