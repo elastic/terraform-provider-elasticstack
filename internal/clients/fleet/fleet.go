@@ -333,12 +333,12 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 }
 
 // ReadPackage reads a specific package from the API.
-func ReadPackage(ctx context.Context, client *Client, name, version string) diag.Diagnostics {
+func ReadPackage(ctx context.Context, client *Client, name, version string) fwdiag.Diagnostics {
 	params := fleetapi.GetPackageParams{}
 
 	resp, err := client.API.GetPackage(ctx, name, version, &params)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 	defer resp.Body.Close()
 
@@ -346,19 +346,19 @@ func ReadPackage(ctx context.Context, client *Client, name, version string) diag
 	case http.StatusOK:
 		return nil
 	case http.StatusNotFound:
-		return diag.FromErr(ErrPackageNotFound)
+		return fromErr(ErrPackageNotFound)
 	default:
 		errData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return diag.FromErr(err)
+			return fromErr(err)
 		}
 
-		return reportUnknownError(resp.StatusCode, errData)
+		return reportUnknownErrorFw(resp.StatusCode, errData)
 	}
 }
 
 // InstallPackage installs a package.
-func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) fwdiag.Diagnostics {
 	params := fleetapi.InstallPackageParams{}
 	body := fleetapi.InstallPackageJSONRequestBody{
 		Force:             &force,
@@ -367,7 +367,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 
 	resp, err := client.API.InstallPackage(ctx, name, version, &params, body)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 	defer resp.Body.Close()
 
@@ -377,15 +377,15 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 	default:
 		errData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return diag.FromErr(err)
+			return fromErr(err)
 		}
 
-		return reportUnknownError(resp.StatusCode, errData)
+		return reportUnknownErrorFw(resp.StatusCode, errData)
 	}
 }
 
 // Uninstall uninstalls a package.
-func Uninstall(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+func Uninstall(ctx context.Context, client *Client, name, version string, force bool) fwdiag.Diagnostics {
 	params := fleetapi.DeletePackageParams{}
 	body := fleetapi.DeletePackageJSONRequestBody{
 		Force: &force,
@@ -393,7 +393,7 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 
 	resp, err := client.API.DeletePackageWithResponse(ctx, name, version, &params, body)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -402,26 +402,26 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // AllPackages returns information about the latest packages known to Fleet.
-func AllPackages(ctx context.Context, client *Client, prerelease bool) ([]fleetapi.SearchResult, diag.Diagnostics) {
+func AllPackages(ctx context.Context, client *Client, prerelease bool) ([]fleetapi.SearchResult, fwdiag.Diagnostics) {
 	params := fleetapi.ListAllPackagesParams{
 		Prerelease: &prerelease,
 	}
 
 	resp, err := client.API.ListAllPackagesWithResponse(ctx, &params)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Items, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 

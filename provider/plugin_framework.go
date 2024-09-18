@@ -9,6 +9,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agent_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollment_tokens"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_ds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
@@ -75,6 +77,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 		indices.NewDataSource,
 		spaces.NewDataSource,
 		enrollment_tokens.NewDataSource,
+		integration_ds.NewDataSource,
 	}
 }
 
@@ -86,5 +89,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &index.Resource{} },
 		func() resource.Resource { return &synthetics.Resource{} },
 		agent_policy.NewResource,
+		integration.NewResource,
 	}
 }

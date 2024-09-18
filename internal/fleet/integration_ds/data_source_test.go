@@ -1,15 +1,14 @@
-package fleet_test
+package integration_ds_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 )
 
 var minVersionIntegrationDataSource = version.Must(version.NewVersion("8.6.0"))
@@ -38,7 +37,7 @@ provider "elasticstack" {
 }
 
 data "elasticstack_fleet_integration" "test" {
-    name = "tcp"
+  name = "tcp"
 }
 `
 
