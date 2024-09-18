@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollment_tokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
@@ -72,6 +73,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
+		enrollment_tokens.NewDataSource,
 	}
 }
 
