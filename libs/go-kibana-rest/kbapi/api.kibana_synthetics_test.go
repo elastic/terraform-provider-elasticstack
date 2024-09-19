@@ -236,6 +236,129 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 						},
 					},
 				},
+				{
+					name: "bare minimum icmp monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test synthetics icmp monitor %s", testUuid),
+							PrivateLocations: []string{location.Label},
+						},
+						fields: ICMPMonitorFields{
+							Host: "localhost",
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{},
+						fields: ICMPMonitorFields{
+							Host: "127.0.0.1",
+						},
+					},
+				},
+				{
+					name: "all fields icmp monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test all fields icmp monitor %s", testUuid),
+							Schedule:         Every10Minutes,
+							PrivateLocations: []string{location.Label},
+							Enabled:          f,
+							Tags:             []string{"aaa", "bbb"},
+							Alert: &MonitorAlertConfig{
+								Status: &SyntheticsStatusConfig{Enabled: t},
+								Tls:    &SyntheticsStatusConfig{Enabled: f},
+							},
+							APMServiceName: "APMServiceName",
+							TimeoutSeconds: 42,
+							Namespace:      space,
+							Params: map[string]interface{}{
+								"param1": "some-params",
+								"my_url": "http://localhost:8080",
+							},
+							RetestOnFailure: f,
+						},
+						fields: ICMPMonitorFields{
+							Host: "localhost",
+							Wait: "10",
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:     fmt.Sprintf("update all fields icmp monitor %s", testUuid),
+							Schedule: Every30Minutes,
+						},
+						fields: ICMPMonitorFields{
+							Host: "127.0.0.1",
+							Wait: "5",
+						},
+					},
+				},
+				{
+					name: "bare minimum browser monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test synthetics browser monitor %s", testUuid),
+							PrivateLocations: []string{location.Label},
+						},
+						fields: BrowserMonitorFields{
+							InlineScript: `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name: fmt.Sprintf("test synthetics browser monitor %s", testUuid),
+						},
+						fields: BrowserMonitorFields{
+							InlineScript: `step('Go to https://www.google.de', () => page.goto('https://www.google.de'))`,
+						},
+					},
+				},
+				{
+					name: "all fields browser monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test all fields browser monitor %s", testUuid),
+							Schedule:         Every10Minutes,
+							PrivateLocations: []string{location.Label},
+							Enabled:          f,
+							Tags:             []string{"aaa", "bbb"},
+							Alert: &MonitorAlertConfig{
+								Status: &SyntheticsStatusConfig{Enabled: t},
+								Tls:    &SyntheticsStatusConfig{Enabled: f},
+							},
+							APMServiceName: "APMServiceName",
+							TimeoutSeconds: 42,
+							Namespace:      space,
+							Params: map[string]interface{}{
+								"param1": "some-params",
+								"my_url": "http://localhost:8080",
+							},
+							RetestOnFailure: f,
+						},
+						fields: BrowserMonitorFields{
+							InlineScript:      `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
+							Screenshots:       ScreenshotOn,
+							SyntheticsArgs:    []string{"a", "b"},
+							IgnoreHttpsErrors: t,
+							PlaywrightOptions: map[string]interface{}{
+								"ignoreHTTPSErrors": false,
+								"httpCredentials": map[string]interface{}{
+									"username": "test",
+									"password": "test",
+								},
+							},
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:     fmt.Sprintf("update all fields browser monitor %s", testUuid),
+							Schedule: Every30Minutes,
+						},
+						fields: BrowserMonitorFields{
+							InlineScript: `step('Go to https://google.de', () => page.goto('https://www.google.de'))`,
+							Screenshots:  ScreenshotOff,
+						},
+					},
+				},
 			}
 
 			for _, tc := range testCases {
@@ -298,6 +421,8 @@ func updateDueToKibanaAPIDiff(m *SyntheticsMonitor) {
 	m.CheckRequestHeaders = nil
 	m.CheckSend = ""
 	m.CheckReceive = ""
+	m.InlineScript = ""
+	m.SyntheticsArgs = nil
 }
 
 func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {

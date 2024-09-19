@@ -14,6 +14,8 @@ See [API docs](https://www.elastic.co/guide/en/kibana/current/add-monitor-api.ht
 ## Supported monitor types
  * `http`
  * `tcp`
+ * `icmp`
+ * `browser`
 
 **NOTE:** Due-to nature of partial update API, reset values to defaults is not supported.
 In case you would like to reset an optional monitor value, please set it explicitly or delete and create new monitor.
@@ -34,4 +36,4 @@ Import is supported using the following syntax:
 **NOTE:** Not all monitor fields are supported during the import due-to API limitation.
 Full field support could be implemented after this [kibana issue](https://github.com/elastic/kibana/issues/189906) is resolved.
 
-Currently not supported fields during the import:  `params`, `retest_on_failure`, `http.proxy_header`, `http.username`, `http.password`, `http.check`, `http.response`, `tcp.check_send`, `tcp.check_receive`
+Currently not supported fields during the import:  `params`, `retest_on_failure`, `http.proxy_header`, `http.username`, `http.password`, `http.check`, `http.response`, `tcp.check_send`, `tcp.check_receive` and monitor type `browser`
