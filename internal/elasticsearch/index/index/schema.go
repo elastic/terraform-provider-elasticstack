@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -58,31 +59,46 @@ func getSchema() schema.Schema {
 							Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
 							Optional:    true,
 							Computed:    true,
-							Default:     stringdefault.StaticString(""),
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+								planmodifiers.StringUseDefaultIfUnknown(""),
+							},
 						},
 						"is_hidden": schema.BoolAttribute{
 							Description: "If true, the alias is hidden.",
 							Optional:    true,
 							Computed:    true,
-							Default:     booldefault.StaticBool(false),
+							PlanModifiers: []planmodifier.Bool{
+								boolplanmodifier.UseStateForUnknown(),
+								planmodifiers.BoolUseDefaultIfUnknown(false),
+							},
 						},
 						"is_write_index": schema.BoolAttribute{
 							Description: "If true, the index is the write index for the alias.",
 							Optional:    true,
 							Computed:    true,
-							Default:     booldefault.StaticBool(false),
+							PlanModifiers: []planmodifier.Bool{
+								boolplanmodifier.UseStateForUnknown(),
+								planmodifiers.BoolUseDefaultIfUnknown(false),
+							},
 						},
 						"routing": schema.StringAttribute{
 							Description: "Value used to route indexing and search operations to a specific shard.",
 							Optional:    true,
 							Computed:    true,
-							Default:     stringdefault.StaticString(""),
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+								planmodifiers.StringUseDefaultIfUnknown(""),
+							},
 						},
 						"search_routing": schema.StringAttribute{
 							Description: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
 							Optional:    true,
 							Computed:    true,
-							Default:     stringdefault.StaticString(""),
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+								planmodifiers.StringUseDefaultIfUnknown(""),
+							},
 						},
 					},
 				},
@@ -216,10 +232,6 @@ func getSchema() schema.Schema {
 			"number_of_replicas": schema.Int64Attribute{
 				Description: "Number of shard replicas.",
 				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
 			},
 			"auto_expand_replicas": schema.StringAttribute{
 				Description: "Set the number of replicas to the node count in the cluster. Set to a dash delimited lower and upper bound (e.g. 0-5) or use all for the upper bound (e.g. 0-all)",

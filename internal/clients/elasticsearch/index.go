@@ -309,8 +309,11 @@ func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*
 		return nil, diags
 	}
 
-	index := indices[name]
-	return &index, diags
+	if index, ok := indices[name]; ok {
+		return &index, nil
+	}
+
+	return nil, nil
 }
 
 func GetIndices(ctx context.Context, apiClient *clients.ApiClient, name string) (map[string]models.Index, fwdiags.Diagnostics) {

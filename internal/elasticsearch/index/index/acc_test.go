@@ -212,6 +212,25 @@ func TestAccResourceIndexSettings(t *testing.T) {
 	})
 }
 
+func TestAccResourceIndexWithTemplate(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceIndexWithTemplate(indexName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test", "default_pipeline"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceIndexRemovingField(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -448,6 +467,38 @@ resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
   deletion_protection = false
 }
 	`, name)
+}
+
+func testAccResourceIndexWithTemplate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_template" "test" {
+  name           = "%s"
+  index_patterns = ["%s"]
+  template {
+    settings = jsonencode({
+      default_pipeline = ".fleet_final_pipeline-1"
+      lifecycle        = { name = ".monitoring-8-ilm-policy" }
+    })
+  }
+}
+
+resource "elasticstack_elasticsearch_index" "test" {
+  name                = "%s"
+  deletion_protection = false
+  alias {
+    name           = "%s-alias"
+    is_write_index = true
+  }
+  lifecycle {
+    ignore_changes = [mappings]
+  }
+  depends_on = [elasticstack_elasticsearch_index_template.test]
+}
+`, name, name, name, name)
 }
 
 func checkResourceIndexDestroy(s *terraform.State) error {
