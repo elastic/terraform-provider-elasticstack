@@ -60,6 +60,19 @@ func TestAccResourceIndex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "number_of_replicas", "0"),
 				),
 			},
+			{
+				Config:       testAccResourceIndexZeroReplicas(indexName),
+				ImportState:  true,
+				ResourceName: "elasticstack_elasticsearch_index.test",
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("test_alias_1"),
+					}),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "number_of_replicas", "0"),
+				),
+			},
 		},
 	})
 }
