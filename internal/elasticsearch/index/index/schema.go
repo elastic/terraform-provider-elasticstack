@@ -15,13 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -469,8 +467,8 @@ func getSchema() schema.Schema {
 				Validators: []validator.String{
 					index.StringIsJSONObject{},
 				},
-				Default: stringdefault.StaticString("{}"),
 				PlanModifiers: []planmodifier.String{
+					planmodifiers.StringUseDefaultIfUnknown("{}"),
 					mappingsPlanModifier{},
 				},
 			},
@@ -483,34 +481,44 @@ func getSchema() schema.Schema {
 			"deletion_protection": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(true),
 				Description: "Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.",
+				PlanModifiers: []planmodifier.Bool{
+					planmodifiers.BoolUseDefaultIfUnknown(true),
+				},
 			},
 			"include_type_name": schema.BoolAttribute{
 				Description: "If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.",
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					planmodifiers.BoolUseDefaultIfUnknown(false),
+				},
 			},
 			"wait_for_active_shards": schema.StringAttribute{
 				Description: "The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard. This value is ignored when running against Serverless projects.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString("1"),
+				PlanModifiers: []planmodifier.String{
+					planmodifiers.StringUseDefaultIfUnknown("1"),
+				},
 			},
 			"master_timeout": schema.StringAttribute{
 				Description: "Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`. This value is ignored when running against Serverless projects.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString("30s"),
-				CustomType:  customtypes.DurationType{},
+				PlanModifiers: []planmodifier.String{
+					planmodifiers.StringUseDefaultIfUnknown("30s"),
+				},
+				CustomType: customtypes.DurationType{},
 			},
 			"timeout": schema.StringAttribute{
 				Description: "Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString("30s"),
-				CustomType:  customtypes.DurationType{},
+				PlanModifiers: []planmodifier.String{
+					planmodifiers.StringUseDefaultIfUnknown("30s"),
+				},
+				CustomType: customtypes.DurationType{},
 			},
 		},
 	}
