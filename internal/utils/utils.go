@@ -13,7 +13,9 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -254,11 +256,17 @@ func SdkDiagsAsError(diags sdkdiag.Diagnostics) error {
 	return nil
 }
 
-func FwDiagsAsError(diags fwdiag.Diagnostics) error {
-	for _, diag := range diags {
-		if diag.Severity() == fwdiag.SeverityError {
-			return fmt.Errorf("%s: %s", diag.Summary(), diag.Detail())
+// ConvertToAttrDiags wraps an existing collection of diagnostics with an attribute path.
+func ConvertToAttrDiags(diags fwdiag.Diagnostics, path path.Path) fwdiag.Diagnostics {
+	var nd fwdiag.Diagnostics
+	for _, d := range diags {
+		if d.Severity() == fwdiag.SeverityError {
+			nd.AddAttributeError(path, d.Summary(), d.Detail())
+		} else if d.Severity() == diag.SeverityWarning {
+			nd.AddAttributeWarning(path, d.Summary(), d.Detail())
+		} else {
+			nd.Append(d)
 		}
 	}
-	return nil
+	return nd
 }

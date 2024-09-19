@@ -10,6 +10,7 @@
 - Prevent a provider panic when the repository referenced in an `elasticstack_elasticsearch_snapshot_repository` does not exist ([#758](https://github.com/elastic/terraform-provider-elasticstack/pull/758))
 - Add support for `remote_indicies` to `elasticstack_elasticsearch_security_api_key` (#766)[https://github.com/elastic/terraform-provider-elasticstack/pull/766]
 - Add support for `icmp` and `browser` monitor types to `elasticstack_kibana_synthetics_monitor` resource (#772)[https://github.com/elastic/terraform-provider-elasticstack/pull/772]
+- Migrate `elasticstack_fleet_enrollment_tokens` to terraform-plugin-framework ([#778](https://github.com/elastic/terraform-provider-elasticstack/pull/778))
 
 ## [0.11.6] - 2024-08-20
 

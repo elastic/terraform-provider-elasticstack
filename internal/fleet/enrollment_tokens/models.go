@@ -1,14 +1,19 @@
 package enrollment_tokens
 
 import (
+	"context"
+
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type enrollmentTokensModel struct {
-	ID       types.String           `tfsdk:"id"`
-	PolicyID types.String           `tfsdk:"policy_id"`
-	Tokens   []enrollmentTokenModel `tfsdk:"tokens"`
+	ID       types.String `tfsdk:"id"`
+	PolicyID types.String `tfsdk:"policy_id"`
+	Tokens   types.List   `tfsdk:"tokens"` //> enrollmentTokenModel
 }
 
 type enrollmentTokenModel struct {
@@ -21,21 +26,19 @@ type enrollmentTokenModel struct {
 	PolicyID  types.String `tfsdk:"policy_id"`
 }
 
-func (model *enrollmentTokensModel) populateFromAPI(data []fleetapi.EnrollmentApiKey) {
-	model.Tokens = make([]enrollmentTokenModel, 0, len(data))
-	for _, token := range data {
-		itemModel := enrollmentTokenModel{}
-		itemModel.populateFromAPI(token)
-		model.Tokens = append(model.Tokens, itemModel)
-	}
+func (model *enrollmentTokensModel) populateFromAPI(ctx context.Context, data []fleetapi.EnrollmentApiKey) (diags diag.Diagnostics) {
+	model.Tokens = utils.SliceToListType(ctx, data, getTokenType(), path.Root("tokens"), diags, newEnrollmentTokenModel)
+	return
 }
 
-func (model *enrollmentTokenModel) populateFromAPI(data fleetapi.EnrollmentApiKey) {
-	model.KeyID = types.StringValue(data.Id)
-	model.Active = types.BoolValue(data.Active)
-	model.ApiKey = types.StringValue(data.ApiKey)
-	model.ApiKeyID = types.StringValue(data.ApiKeyId)
-	model.CreatedAt = types.StringValue(data.CreatedAt)
-	model.Name = types.StringPointerValue(data.Name)
-	model.PolicyID = types.StringPointerValue(data.PolicyId)
+func newEnrollmentTokenModel(data fleetapi.EnrollmentApiKey) enrollmentTokenModel {
+	return enrollmentTokenModel{
+		KeyID:     types.StringValue(data.Id),
+		Active:    types.BoolValue(data.Active),
+		ApiKey:    types.StringValue(data.ApiKey),
+		ApiKeyID:  types.StringValue(data.ApiKeyId),
+		CreatedAt: types.StringValue(data.CreatedAt),
+		Name:      types.StringPointerValue(data.Name),
+		PolicyID:  types.StringPointerValue(data.PolicyId),
+	}
 }

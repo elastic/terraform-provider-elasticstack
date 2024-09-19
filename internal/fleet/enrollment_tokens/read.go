@@ -48,7 +48,11 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 		model.ID = types.StringPointerValue(hash)
 	}
 
-	model.populateFromAPI(tokens)
+	diags = model.populateFromAPI(ctx, tokens)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	diags = resp.State.Set(ctx, model)
 	resp.Diagnostics.Append(diags...)
