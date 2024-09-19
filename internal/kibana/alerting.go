@@ -16,10 +16,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
-
 // when notify_when and throttle became optional
 var frequencyMinSupportedVersion = version.Must(version.NewVersion("8.6.0"))
+var alertsFilterMinSupportedVersion = version.Must(version.NewVersion("8.9.0"))
+var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
 
 func ResourceAlertingRule() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -121,6 +121,59 @@ func ResourceAlertingRule() *schema.Resource {
 									Type:         schema.TypeString,
 									Optional:     true,
 									ValidateFunc: utils.StringIsDuration,
+								},
+							},
+						},
+					},
+					"alerts_filter": {
+						Description: "Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs.",
+						Type:        schema.TypeList,
+						MinItems:    0,
+						MaxItems:    1,
+						Optional:    true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"kql": {
+									Description: "Defines a query filter that determines whether the action runs. Written in Kibana Query Language (KQL).",
+									Type:        schema.TypeString,
+									Optional:    true,
+								},
+								"timeframe": {
+									Description: "Defines a period that limits whether the action runs.",
+									Type:        schema.TypeList,
+									MinItems:    0,
+									MaxItems:    1,
+									Optional:    true,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"days": {
+												Description: "Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.",
+												Type:        schema.TypeList,
+												Required:    true,
+												Elem: &schema.Schema{
+													Type:         schema.TypeInt,
+													ValidateFunc: validation.IntBetween(1, 7),
+												},
+											},
+											"timezone": {
+												Description: "The ISO time zone for the hours values. Values such as UTC and UTC+1 also work but lack built-in daylight savings time support and are not recommended.",
+												Type:        schema.TypeString,
+												Required:    true,
+											},
+											"hours_start": {
+												Description:  "Defines the range of time in a day that the action can run. The start of the time frame in 24-hour notation (hh:mm).",
+												Type:         schema.TypeString,
+												Required:     true,
+												ValidateFunc: utils.StringIsHours,
+											},
+											"hours_end": {
+												Description:  "Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).",
+												Type:         schema.TypeString,
+												Required:     true,
+												ValidateFunc: utils.StringIsHours,
+											},
+										},
+									},
 								},
 							},
 						},
@@ -288,7 +341,7 @@ func getActionsFromResourceData(d *schema.ResourceData, serverVersion *version.V
 					return []models.AlertingRuleAction{}, diag.Errorf("actions.frequency is only supported for Elasticsearch v8.6 or higher")
 				}
 
-				frequency := models.AlertingRuleActionFrequency{
+				frequency := models.ActionFrequency{
 					Summary:    d.Get(currentAction + ".frequency.0.summary").(bool),
 					NotifyWhen: d.Get(currentAction + ".frequency.0.notify_when").(string),
 				}
@@ -298,6 +351,34 @@ func getActionsFromResourceData(d *schema.ResourceData, serverVersion *version.V
 				}
 
 				a.Frequency = &frequency
+			}
+
+			if _, ok := d.GetOk(currentAction + ".alerts_filter"); ok {
+				if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
+					return []models.AlertingRuleAction{}, diag.Errorf("actions.alerts_filter is only supported for Elasticsearch v8.9 or higher")
+				}
+
+				resourceDays := d.Get(currentAction + ".alerts_filter.0.timeframe.0.days").([]interface{})
+				days := []int32{}
+
+				for _, a := range resourceDays {
+					day := int32(a.(int))
+					days = append(days, day)
+				}
+
+				timeframe := models.AlertsFilterTimeframe{
+					Days:       days,
+					Timezone:   d.Get(currentAction + ".alerts_filter.0.timeframe.0.timezone").(string),
+					HoursStart: d.Get(currentAction + ".alerts_filter.0.timeframe.0.hours_start").(string),
+					HoursEnd:   d.Get(currentAction + ".alerts_filter.0.timeframe.0.hours_end").(string),
+				}
+
+				filter := models.ActionAlertsFilter{
+					Kql:       d.Get(currentAction + ".alerts_filter.0.kql").(string),
+					Timeframe: timeframe,
+				}
+
+				a.AlertsFilter = &filter
 			}
 
 			actions = append(actions, a)
@@ -454,11 +535,31 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 			frequency = nil
 		}
 
+		alerts_filter := []interface{}{}
+
+		if action.AlertsFilter != nil {
+			timeframe := []interface{}{}
+			timeframe = append(timeframe, map[string]interface{}{
+				"days":        action.AlertsFilter.Timeframe.Days,
+				"timezone":    action.AlertsFilter.Timeframe.Timezone,
+				"hours_start": action.AlertsFilter.Timeframe.HoursStart,
+				"hours_end":   action.AlertsFilter.Timeframe.HoursEnd,
+			})
+
+			alerts_filter = append(alerts_filter, map[string]interface{}{
+				"kql":       action.AlertsFilter.Kql,
+				"timeframe": timeframe,
+			})
+		} else {
+			alerts_filter = nil
+		}
+
 		actions = append(actions, map[string]interface{}{
-			"group":     action.Group,
-			"id":        action.ID,
-			"params":    string(params),
-			"frequency": frequency,
+			"group":         action.Group,
+			"id":            action.ID,
+			"params":        string(params),
+			"frequency":     frequency,
+			"alerts_filter": alerts_filter,
 		})
 	}
 

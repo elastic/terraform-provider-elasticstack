@@ -40,3 +40,23 @@ func StringIsElasticDuration(i interface{}, k string) (warnings []string, errors
 
 	return nil, nil
 }
+
+// StringIsHours is a SchemaValidateFunc which tests to make sure the supplied string is in the required format of HH:mm
+func StringIsHours(i interface{}, k string) (warnings []string, errors []error) {
+	v, ok := i.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("expected type of %s to be string", k)}
+	}
+
+	if v == "" {
+		return nil, []error{fmt.Errorf("%q string is not a valid time in HH:mm format: [empty]", k)}
+	}
+
+	r := regexp.MustCompile(`^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$`)
+
+	if !r.MatchString(v) {
+		return nil, []error{fmt.Errorf("%q string is not a valid time in HH:mm format", k)}
+	}
+
+	return nil, nil
+}

@@ -86,8 +86,29 @@ Required:
 
 Optional:
 
+- `alerts_filter` (Block List, Max: 1) Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs. (see [below for nested schema](#nestedblock--actions--alerts_filter))
 - `frequency` (Block List, Max: 1) The properties that affect how often actions are generated. If the rule type supports setting summary to true, the action can be a summary of alerts at the specified notification interval. Otherwise, an action runs for each alert at the specified notification interval. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level. (see [below for nested schema](#nestedblock--actions--frequency))
 - `group` (String) The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names.
+
+<a id="nestedblock--actions--alerts_filter"></a>
+### Nested Schema for `actions.alerts_filter`
+
+Optional:
+
+- `kql` (String) Defines a query filter that determines whether the action runs. Written in Kibana Query Language (KQL).
+- `timeframe` (Block List, Max: 1) Defines a period that limits whether the action runs. (see [below for nested schema](#nestedblock--actions--alerts_filter--timeframe))
+
+<a id="nestedblock--actions--alerts_filter--timeframe"></a>
+### Nested Schema for `actions.alerts_filter.timeframe`
+
+Required:
+
+- `days` (List of Number) Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.
+- `hours_end` (String) Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).
+- `hours_start` (String) Defines the range of time in a day that the action can run. The start of the time frame in 24-hour notation (hh:mm).
+- `timezone` (String) The ISO time zone for the hours values. Values such as UTC and UTC+1 also work but lack built-in daylight savings time support and are not recommended.
+
+
 
 <a id="nestedblock--actions--frequency"></a>
 ### Nested Schema for `actions.frequency`
