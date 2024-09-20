@@ -15,10 +15,6 @@ import (
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
-
 	var planModel tfModel
 	var stateModel tfModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)

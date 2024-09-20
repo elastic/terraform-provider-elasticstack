@@ -154,6 +154,12 @@ func ConvertProviderData(providerData any) (*ApiClient, fwdiags.Diagnostics) {
 
 		return nil, diags
 	}
+	if client == nil {
+		diags.AddError(
+			"Unconfigured Client",
+			"Expected configured client. Please report this issue to the provider developers.",
+		)
+	}
 	return client, diags
 }
 

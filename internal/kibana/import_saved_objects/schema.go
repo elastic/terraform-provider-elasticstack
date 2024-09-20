@@ -5,7 +5,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -122,18 +121,6 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 
 type Resource struct {
 	client *clients.ApiClient
-}
-
-func resourceReady(r *Resource, dg *diag.Diagnostics) bool {
-	if r.client == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
-
-		return false
-	}
-	return true
 }
 
 func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {

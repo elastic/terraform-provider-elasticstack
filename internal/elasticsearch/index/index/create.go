@@ -16,10 +16,6 @@ import (
 var includeTypeNameMinUnsupportedVersion = version.Must(version.NewVersion("8.0.0"))
 
 func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
-
 	var planModel tfModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
 	if resp.Diagnostics.HasError() {

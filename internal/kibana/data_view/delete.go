@@ -8,10 +8,6 @@ import (
 )
 
 func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
-	if !r.resourceReady(&response.Diagnostics) {
-		return
-	}
-
 	dataviewClient, err := r.client.GetDataViewsClient()
 	if err != nil {
 		response.Diagnostics.AddError("unable to get data view client", err.Error())

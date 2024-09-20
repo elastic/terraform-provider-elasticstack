@@ -10,10 +10,6 @@ import (
 )
 
 func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
-
 	var model tfModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {

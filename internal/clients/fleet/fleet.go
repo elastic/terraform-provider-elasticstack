@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -16,20 +17,20 @@ var (
 )
 
 // AllEnrollmentTokens reads all enrollment tokens from the API.
-func AllEnrollmentTokens(ctx context.Context, client *Client) ([]fleetapi.EnrollmentApiKey, diag.Diagnostics) {
+func AllEnrollmentTokens(ctx context.Context, client *Client) ([]fleetapi.EnrollmentApiKey, fwdiag.Diagnostics) {
 	resp, err := client.API.GetEnrollmentApiKeysWithResponse(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	if resp.StatusCode() == http.StatusOK {
 		return resp.JSON200.Items, nil
 	}
-	return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 }
 
 // GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID
-func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]fleetapi.EnrollmentApiKey, diag.Diagnostics) {
+func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]fleetapi.EnrollmentApiKey, fwdiag.Diagnostics) {
 	resp, err := client.API.GetEnrollmentApiKeysWithResponse(ctx, func(ctx context.Context, req *http.Request) error {
 		q := req.URL.Query()
 		q.Set("kuery", "policy_id:"+policyID)
@@ -38,13 +39,13 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 		return nil
 	})
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	if resp.StatusCode() == http.StatusOK {
 		return resp.JSON200.Items, nil
 	}
-	return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 }
 
 // ReadAgentPolicy reads a specific agent policy from the API.
@@ -416,6 +417,16 @@ func AllPackages(ctx context.Context, client *Client, prerelease bool) ([]fleeta
 	}
 }
 
+// fromErr recreates the sdkdiag.FromErr functionality.
+func fromErr(err error) fwdiag.Diagnostics {
+	if err == nil {
+		return nil
+	}
+	return fwdiag.Diagnostics{
+		fwdiag.NewErrorDiagnostic(err.Error(), ""),
+	}
+}
+
 func reportUnknownError(statusCode int, body []byte) diag.Diagnostics {
 	return diag.Diagnostics{
 		diag.Diagnostic{
@@ -423,5 +434,14 @@ func reportUnknownError(statusCode int, body []byte) diag.Diagnostics {
 			Summary:  fmt.Sprintf("Unexpected status code from server: got HTTP %d", statusCode),
 			Detail:   string(body),
 		},
+	}
+}
+
+func reportUnknownErrorFw(statusCode int, body []byte) fwdiag.Diagnostics {
+	return fwdiag.Diagnostics{
+		fwdiag.NewErrorDiagnostic(
+			fmt.Sprintf("Unexpected status code from server: got HTTP %d", statusCode),
+			string(body),
+		),
 	}
 }
