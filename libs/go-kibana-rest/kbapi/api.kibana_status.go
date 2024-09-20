@@ -17,7 +17,7 @@ type KibanaStatus map[string]interface{}
 // KibanaStatusGet permit to get the current status of Kibana
 type KibanaStatusGet func() (KibanaStatus, error)
 
-// newKibanaStatusGetFunc permit to get the kibana status and some usefull information
+// newKibanaStatusGetFunc permit to get the kibana status and some useful information
 func newKibanaStatusGetFunc(c *resty.Client) KibanaStatusGet {
 	return func() (KibanaStatus, error) {
 		resp, err := c.R().Get(basePathKibanaStatus)

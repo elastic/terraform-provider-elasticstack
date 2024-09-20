@@ -889,7 +889,7 @@ components:
           type: string
           description: The username for HTTP basic authentication. If `hasAuth` is set to `true`, this property is required.
     create_connector_request_cases_webhook:
-      title: Create Webhook - Case Managment connector request
+      title: Create Webhook - Case Management connector request
       description: |
         The Webhook - Case Management connector uses axios to send POST, PUT, and GET requests to a case management RESTful API web service.
       type: object
@@ -2375,7 +2375,7 @@ components:
           .webhook: '#/components/schemas/connector_response_properties_webhook'
           .xmatters: '#/components/schemas/connector_response_properties_xmatters'
     update_connector_request_cases_webhook:
-      title: Update Webhook - Case Managment connector request
+      title: Update Webhook - Case Management connector request
       type: object
       required:
         - config

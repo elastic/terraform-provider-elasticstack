@@ -54,7 +54,7 @@ func (o *OptionalFindParameters) String() string {
 	return string(json)
 }
 
-// newKibanaSavedObjectGetFunc permit to get saved obejct by it id and type
+// newKibanaSavedObjectGetFunc permit to get saved object by it id and type
 func newKibanaSavedObjectGetFunc(c *resty.Client) KibanaSavedObjectGet {
 	return func(objectType string, id string, kibanaSpace string) (map[string]interface{}, error) {
 

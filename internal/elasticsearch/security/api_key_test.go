@@ -299,7 +299,7 @@ func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
 
 		apiKey, diags := elasticsearch.GetApiKey(client, compId.ResourceId)
 		if diags.HasError() {
-			return fmt.Errorf("Unabled to get API key %v", diags)
+			return fmt.Errorf("Unable to get API key %v", diags)
 		}
 
 		if !apiKey.Invalidated {

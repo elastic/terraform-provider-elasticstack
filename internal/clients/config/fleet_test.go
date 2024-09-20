@@ -44,7 +44,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 			},
 		},
 		{
-			name: "should use the provided config optios",
+			name: "should use the provided config options",
 			args: func() args {
 				kibanaCfg := kibanaConfig{
 					Address:          "example.com/kibana",

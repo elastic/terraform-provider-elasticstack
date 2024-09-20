@@ -21,7 +21,7 @@ var _ MappedNullable = &ErrorBudget{}
 type ErrorBudget struct {
 	// The initial error budget, as 1 - objective
 	Initial float64 `json:"initial"`
-	// The error budget consummed, as a percentage of the initial value.
+	// The error budget consumed, as a percentage of the initial value.
 	Consumed float64 `json:"consumed"`
 	// The error budget remaining, as a percentage of the initial value.
 	Remaining float64 `json:"remaining"`

@@ -315,5 +315,5 @@ func DeleteAlertingRule(ctx context.Context, apiClient *clients.ApiClient, ruleI
 	}
 
 	defer res.Body.Close()
-	return utils.CheckHttpError(res, "Unabled to delete alerting rule")
+	return utils.CheckHttpError(res, "Unable to delete alerting rule")
 }

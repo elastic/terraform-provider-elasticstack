@@ -274,7 +274,7 @@ func ResourceTransform() *schema.Resource {
 		},
 		"enabled": {
 			Type:        schema.TypeBool,
-			Description: "Controls wether the transform should be started or stopped. Default is `false` (stopped).",
+			Description: "Controls weather the transform should be started or stopped. Default is `false` (stopped).",
 			Optional:    true,
 			Default:     false,
 		},

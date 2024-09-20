@@ -1077,7 +1077,7 @@ components:
           example: 0.02
         consumed:
           type: number
-          description: The error budget consummed, as a percentage of the initial value.
+          description: The error budget consumed, as a percentage of the initial value.
           example: 0.8
         remaining:
           type: number

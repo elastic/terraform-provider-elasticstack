@@ -58,7 +58,7 @@ type KibanaSpaceDelete func(id string) error
 // KibanaSpaceUpdate permit to update space
 type KibanaSpaceUpdate func(kibanaSpace *KibanaSpace) (*KibanaSpace, error)
 
-// KibanaSpaceCopySavedObjects permit to copy dashboad between space
+// KibanaSpaceCopySavedObjects permit to copy dashboard between space
 type KibanaSpaceCopySavedObjects func(parameter *KibanaSpaceCopySavedObjectParameter, spaceOrigin string) error
 
 // String permit to return KibanaSpace object as JSON string
@@ -212,7 +212,7 @@ func newKibanaSpaceCopySavedObjectsFunc(c *resty.Client) KibanaSpaceCopySavedObj
 
 }
 
-// newKibanaSpaceDeleteFunc permit to delete the kubana space wiht it id
+// newKibanaSpaceDeleteFunc permit to delete the kubana space with it id
 func newKibanaSpaceDeleteFunc(c *resty.Client) KibanaSpaceDelete {
 	return func(id string) error {
 
