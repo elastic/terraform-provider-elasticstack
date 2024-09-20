@@ -2,10 +2,6 @@
 
 set -euo pipefail
 
-echo "--- Golang version:"
-export GO_VERSION=1.22
-echo "${GO_VERSION}"
-
 RELEASE_VAULT_PATH=kv/ci-shared/terraform-providers
 
 if [[ "$BUILDKITE_PIPELINE_SLUG" == "terraform-provider-elasticstack-release" ]]; then

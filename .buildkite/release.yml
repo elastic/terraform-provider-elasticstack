@@ -1,7 +1,7 @@
 steps:
   - label: Release
     agents:
-      image: golang:${GO_VERSION}
+      image: golang:1.23.1
       cpu: "8"
       memory: "8G"
     command:
