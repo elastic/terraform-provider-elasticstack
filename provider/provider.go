@@ -109,7 +109,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
 
 			"elasticstack_fleet_output":             fleet.ResourceOutput(),
-			"elasticstack_fleet_server_host":        fleet.ResourceFleetServerHost(),
 			"elasticstack_fleet_integration_policy": fleet.ResourceIntegrationPolicy(),
 		},
 	}

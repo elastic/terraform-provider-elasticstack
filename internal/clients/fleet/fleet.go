@@ -189,10 +189,10 @@ func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnosti
 }
 
 // ReadFleetServerHost reads a specific fleet server host from the API.
-func ReadFleetServerHost(ctx context.Context, client *Client, id string) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+func ReadFleetServerHost(ctx context.Context, client *Client, id string) (*fleetapi.FleetServerHost, fwdiag.Diagnostics) {
 	resp, err := client.API.GetOneFleetServerHostsWithResponse(ctx, id)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -201,45 +201,45 @@ func ReadFleetServerHost(ctx context.Context, client *Client, id string) (*fleet
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // CreateFleetServerHost creates a new fleet server host.
-func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.PostFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.PostFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, fwdiag.Diagnostics) {
 	resp, err := client.API.PostFleetServerHostsWithResponse(ctx, req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // UpdateFleetServerHost updates an existing fleet server host.
-func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req fleetapi.UpdateFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req fleetapi.UpdateFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, fwdiag.Diagnostics) {
 	resp, err := client.API.UpdateFleetServerHostsWithResponse(ctx, id, req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // DeleteFleetServerHost deletes an existing fleet server host.
-func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.Diagnostics {
+func DeleteFleetServerHost(ctx context.Context, client *Client, id string) fwdiag.Diagnostics {
 	resp, err := client.API.DeleteFleetServerHostsWithResponse(ctx, id)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -248,7 +248,7 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 

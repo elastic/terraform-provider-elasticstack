@@ -1,14 +1,14 @@
-package fleet_test
+package server_host_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -19,7 +19,7 @@ import (
 var minVersionFleetServerHost = version.Must(version.NewVersion("8.6.0"))
 
 func TestAccResourceFleetServerHost(t *testing.T) {
-	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -45,6 +45,13 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
 				),
+			},
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				Config:            testAccResourceFleetServerHostUpdate(policyName),
+				ResourceName:      "elasticstack_fleet_server_host.test_host",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -83,7 +90,6 @@ resource "elasticstack_fleet_server_host" "test_host" {
     "https://fleet-server:8220"
   ]
 }
-
 `, fmt.Sprintf("Updated FleetServerHost %s", id))
 }
 
@@ -102,12 +108,12 @@ func checkResourceFleetServerHostDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		packagePolicy, diag := fleet.ReadFleetServerHost(context.Background(), fleetClient, rs.Primary.ID)
-		if diag.HasError() {
-			return errors.New(diag[0].Summary)
+		host, diags := fleet.ReadFleetServerHost(context.Background(), fleetClient, rs.Primary.ID)
+		if diags.HasError() {
+			return utils.FwDiagsAsError(diags)
 		}
-		if packagePolicy != nil {
-			return fmt.Errorf("FleetServerHost id=%v still exists, but it should have been removed", rs.Primary.ID)
+		if host != nil {
+			return fmt.Errorf("fleet server host id=%v still exists, but it should have been removed", rs.Primary.ID)
 		}
 	}
 	return nil
