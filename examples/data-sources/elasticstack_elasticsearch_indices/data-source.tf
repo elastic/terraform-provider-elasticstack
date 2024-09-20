@@ -3,6 +3,6 @@ provider "elasticstack" {
   kibana {}
 }
 
-data "elasticstack_elasticsearch_indices" "logs" {
-  search = "log*"
+data "elasticstack_elasticsearch_indices" "security_indices" {
+  target = ".security-*"
 }
