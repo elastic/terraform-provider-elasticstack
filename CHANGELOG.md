@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.7] - 2024-09-20
+
 - Add the `alerts_filter` field to the `actions` in the Create Rule API ([#774](https://github.com/elastic/terraform-provider-elasticstack/pull/774))
 - Add the `alert_delay` field to the Create Rule API ([#715](https://github.com/elastic/terraform-provider-elasticstack/pull/715))
 - Add support for data_stream `lifecycle` template settings ([#724](https://github.com/elastic/terraform-provider-elasticstack/pull/724))
@@ -338,7 +340,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...HEAD
+[0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...v0.11.4

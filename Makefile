@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 
 
-VERSION ?= 0.11.6
+VERSION ?= 0.11.7
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
