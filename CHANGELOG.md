@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add key_id to the `elasticstack_elasticsearch_api_key` resource. ([#789](https://github.com/elastic/terraform-provider-elasticstack/pull/789))
+
 ## [0.11.7] - 2024-09-20
 
 - Add the `alerts_filter` field to the `actions` in the Create Rule API ([#774](https://github.com/elastic/terraform-provider-elasticstack/pull/774))
