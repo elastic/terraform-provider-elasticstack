@@ -26,6 +26,11 @@ func ResourceApiKey() *schema.Resource {
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
+		"key_id": {
+			Description: "Unique id for this API key.",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"name": {
 			Description: "Specifies the name for this API key.",
 			Type:        schema.TypeString,
@@ -166,6 +171,9 @@ func resourceSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m
 			return diag.FromErr(err)
 		}
 	}
+	if err := d.Set("key_id", putResponse.Id); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("expiration_timestamp", putResponse.Expiration); err != nil {
 		return diag.FromErr(err)
 	}
@@ -228,6 +236,9 @@ func resourceSecurityApiKeyRead(ctx context.Context, d *schema.ResourceData, met
 		return diag.FromErr(err)
 	}
 	if err := d.Set("expiration_timestamp", apikey.Expiration); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("key_id", apikey.Id); err != nil {
 		return diag.FromErr(err)
 	}
 

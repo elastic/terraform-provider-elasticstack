@@ -98,6 +98,7 @@ output "api_key" {
 - `encoded` (String, Sensitive) API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:).
 - `expiration_timestamp` (Number) Expiration time in milliseconds for the API key. By default, API keys never expire.
 - `id` (String) Internal identifier of the resource.
+- `key_id` (String) Unique id for this API key.
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
