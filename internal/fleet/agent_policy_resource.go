@@ -63,6 +63,7 @@ func ResourceAgentPolicy() *schema.Resource {
 			Description: "Enable collection of system logs and metrics.",
 			Type:        schema.TypeBool,
 			Optional:    true,
+			ForceNew:    true,
 		},
 		"monitor_logs": {
 			Description: "Enable collection of agent logs.",
@@ -140,7 +141,8 @@ func resourceAgentPolicyCreate(ctx context.Context, d *schema.ResourceData, meta
 	}
 	req.MonitoringEnabled = &monitoringValues
 
-	policy, diags := fleet.CreateAgentPolicy(ctx, fleetClient, req)
+	sysMonitoring := d.Get("sys_monitoring").(bool)
+	policy, diags := fleet.CreateAgentPolicy(ctx, fleetClient, req, sysMonitoring)
 	if diags.HasError() {
 		return diags
 	}
