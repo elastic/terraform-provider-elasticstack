@@ -176,4 +176,4 @@ resource "elasticstack_elasticsearch_security_user" "monitoring_user" {
 }
 ```
 
-Note that resources can be target to certain deployments using the `provider` attribute. 
+Note that resources can be targeted to certain deployments using the `provider` attribute. 
