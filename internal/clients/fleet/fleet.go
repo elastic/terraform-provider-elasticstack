@@ -66,7 +66,7 @@ func ReadAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.
 }
 
 // CreateAgentPolicy creates a new agent policy.
-func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.AgentPolicyCreateRequest, sysMonitoring bool) (*fleetapi.AgentPolicy, diag.Diagnostics) {
+func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.AgentPolicyCreateRequest, sysMonitoring bool) (*fleetapi.AgentPolicy, fwdiag.Diagnostics) {
 	resp, err := client.API.CreateAgentPolicyWithResponse(ctx, req, func(ctx context.Context, req *http.Request) error {
 		if sysMonitoring {
 			qs := req.URL.Query()

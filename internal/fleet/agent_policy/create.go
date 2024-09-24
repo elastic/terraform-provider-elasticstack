@@ -23,7 +23,9 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	body := planModel.toAPICreateModel()
-	policy, diags := fleet.CreateAgentPolicy(ctx, client, body)
+
+	sysMonitoring := planModel.SysMonitoring.ValueBool()
+	policy, diags := fleet.CreateAgentPolicy(ctx, client, body, sysMonitoring)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
