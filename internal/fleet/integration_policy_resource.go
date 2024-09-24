@@ -11,6 +11,7 @@ import (
 
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 )
 
 func ResourceIntegrationPolicy() *schema.Resource {
@@ -135,7 +136,7 @@ func resourceIntegrationPolicyCreate(ctx context.Context, d *schema.ResourceData
 	}
 
 	req := fleetapi.CreatePackagePolicyJSONRequestBody{
-		PolicyId: d.Get("agent_policy_id").(string),
+		PolicyId: utils.Pointer(d.Get("agent_policy_id").(string)),
 		Name:     d.Get("name").(string),
 	}
 	req.Package.Name = d.Get("integration_name").(string)
@@ -215,7 +216,7 @@ func resourceIntegrationPolicyUpdate(ctx context.Context, d *schema.ResourceData
 	}
 
 	req := fleetapi.UpdatePackagePolicyJSONRequestBody{
-		PolicyId: d.Get("agent_policy_id").(string),
+		PolicyId: utils.Pointer(d.Get("agent_policy_id").(string)),
 		Name:     d.Get("name").(string),
 	}
 	req.Package.Name = d.Get("integration_name").(string)

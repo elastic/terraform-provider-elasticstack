@@ -41,6 +41,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `description` (String) The description of the agent policy.
 - `download_source_id` (String) The identifier for the Elastic Agent binary download server.
 - `fleet_server_host_id` (String) The identifier for the Fleet server host.
+- `global_data_tags` (Map of String) User-defined data tags that are added to all inputs.
 - `monitor_logs` (Boolean) Enable collection of agent logs.
 - `monitor_metrics` (Boolean) Enable collection of agent metrics.
 - `monitoring_output_id` (String) The identifier for monitoring output.
