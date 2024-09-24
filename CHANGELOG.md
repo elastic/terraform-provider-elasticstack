@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Fix handling of `sys_monitoring` in `elasticstack_fleet_agent_policy` ([#792](https://github.com/elastic/terraform-provider-elasticstack/pull/792))
+
 ## [0.11.7] - 2024-09-20
 
 - Add the `alerts_filter` field to the `actions` in the Create Rule API ([#774](https://github.com/elastic/terraform-provider-elasticstack/pull/774))
