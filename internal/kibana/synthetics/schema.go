@@ -827,7 +827,7 @@ func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorField
 		ProxyUrl:              v.HTTP.ProxyURL.ValueString(),
 		Response:              response,
 		Check:                 check,
-	}, diag.Diagnostics{} //dg
+	}, dg
 }
 
 func tfListToStringSlice(ctx context.Context, v types.List) ([]string, diag.Diagnostics) {
