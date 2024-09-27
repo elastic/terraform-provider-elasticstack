@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Fix handling of `sys_monitoring` in `elasticstack_fleet_agent_policy` ([#792](https://github.com/elastic/terraform-provider-elasticstack/pull/792))
+- Fix for synthetics http/tcp monitor produces inconsistent result after apply ([#801](https://github.com/elastic/terraform-provider-elasticstack/pull/801))
 
 ## [0.11.7] - 2024-09-20
 
