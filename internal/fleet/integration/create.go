@@ -4,22 +4,28 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	r.create(ctx, req.Plan, &resp.State, resp.Diagnostics)
+}
+
+func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, respDiags diag.Diagnostics) {
 	var planModel integrationModel
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	diags := plan.Get(ctx, &planModel)
+	respDiags.Append(diags...)
+	if respDiags.HasError() {
 		return
 	}
 
 	client, err := r.client.GetFleetClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
+		respDiags.AddError(err.Error(), "")
 		return
 	}
 
@@ -27,13 +33,13 @@ func (r *integrationResource) Create(ctx context.Context, req resource.CreateReq
 	version := planModel.Version.ValueString()
 	force := planModel.Force.ValueBool()
 	diags = fleet.InstallPackage(ctx, client, name, version, force)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	respDiags.Append(diags...)
+	if respDiags.HasError() {
 		return
 	}
 
 	planModel.ID = types.StringValue(getPackageID(name, version))
 
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	diags = state.Set(ctx, planModel)
+	respDiags.Append(diags...)
 }

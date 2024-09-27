@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -36,12 +37,20 @@ func (model *agentPolicyModel) populateFromAPI(data *fleetapi.AgentPolicy) {
 	model.FleetServerHostId = types.StringPointerValue(data.FleetServerHostId)
 
 	if data.MonitoringEnabled != nil {
-		model.MonitorLogs = types.BoolValue(slices.Contains(data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledLogs))
-		model.MonitorMetrics = types.BoolValue(slices.Contains(data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledMetrics))
-	} else {
-		model.MonitorLogs = types.BoolNull()
-		model.MonitorMetrics = types.BoolNull()
+		if slices.Contains(data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledLogs) {
+			model.MonitorLogs = types.BoolValue(true)
+		}
+		if slices.Contains(data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledMetrics) {
+			model.MonitorMetrics = types.BoolValue(true)
+		}
 	}
+	if !utils.IsKnown(model.MonitorLogs) {
+		model.MonitorLogs = types.BoolValue(false)
+	}
+	if !utils.IsKnown(model.MonitorLogs) {
+		model.MonitorLogs = types.BoolValue(false)
+	}
+
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)

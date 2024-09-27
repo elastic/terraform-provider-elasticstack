@@ -23,6 +23,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	body := planModel.toAPIUpdateModel()
+
 	policyID := planModel.PolicyID.ValueString()
 	policy, diags := fleet.UpdateAgentPolicy(ctx, client, policyID, body)
 	resp.Diagnostics.Append(diags...)

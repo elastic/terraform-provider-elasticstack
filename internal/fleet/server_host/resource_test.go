@@ -18,6 +18,45 @@ import (
 
 var minVersionFleetServerHost = version.Must(version.NewVersion("8.6.0"))
 
+func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.11.7",
+					},
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				Config:   testAccResourceFleetServerHostCreate(policyName),
+
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				Config:                   testAccResourceFleetServerHostCreate(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceFleetServerHost(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 
