@@ -37,10 +37,10 @@ func (model *agentPolicyModel) populateFromAPI(data *fleetapi.AgentPolicy) {
 	model.FleetServerHostId = types.StringPointerValue(data.FleetServerHostId)
 
 	if data.MonitoringEnabled != nil {
-		if slices.Contains(data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledLogs) {
+		if slices.Contains(*data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledLogs) {
 			model.MonitorLogs = types.BoolValue(true)
 		}
-		if slices.Contains(data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledMetrics) {
+		if slices.Contains(*data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledMetrics) {
 			model.MonitorMetrics = types.BoolValue(true)
 		}
 	}
@@ -71,7 +71,7 @@ func (model agentPolicyModel) toAPICreateModel() fleetapi.AgentPolicyCreateReque
 		DownloadSourceId:   model.DownloadSourceId.ValueStringPointer(),
 		FleetServerHostId:  model.FleetServerHostId.ValueStringPointer(),
 		Id:                 model.PolicyID.ValueStringPointer(),
-		MonitoringEnabled:  monitoring,
+		MonitoringEnabled:  &monitoring,
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
@@ -94,7 +94,7 @@ func (model agentPolicyModel) toAPIUpdateModel() fleetapi.AgentPolicyUpdateReque
 		Description:        model.Description.ValueStringPointer(),
 		DownloadSourceId:   model.DownloadSourceId.ValueStringPointer(),
 		FleetServerHostId:  model.FleetServerHostId.ValueStringPointer(),
-		MonitoringEnabled:  monitoring,
+		MonitoringEnabled:  &monitoring,
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
