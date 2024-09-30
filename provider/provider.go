@@ -108,7 +108,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_security_role":    kibana.ResourceRole(),
 			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
 
-			"elasticstack_fleet_output":             fleet.ResourceOutput(),
+			"elasticstack_fleet_output": fleet.ResourceOutput(),
 		},
 	}
 
