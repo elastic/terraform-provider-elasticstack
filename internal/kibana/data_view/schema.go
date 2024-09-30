@@ -147,6 +147,12 @@ func getSchema() schema.Schema {
 										"pattern": schema.StringAttribute{
 											Optional: true,
 										},
+										"urltemplate": schema.StringAttribute{
+											Optional: true,
+										},
+										"labeltemplate": schema.StringAttribute{
+											Optional: true,
+										},
 									},
 								},
 							},
@@ -334,8 +340,15 @@ func dataViewFromResponse(resp data_views.DataViewResponseObjectDataView) apiDat
 
 		if params, ok := formatMap["params"]; ok {
 			if paramsMap, ok := params.(map[string]interface{}); ok {
+				fieldFormatParams := apiFieldFormatParams{}
 				if pattern, ok := paramsMap["pattern"]; ok {
-					apiFormat.Params = &apiFieldFormatParams{Pattern: pattern.(string)}
+					fieldFormatParams.Pattern = pattern.(string)
+				}
+				if urltemplate, ok := paramsMap["urlTemplate"]; ok {
+					fieldFormatParams.Urltemplate = urltemplate.(string)
+				}
+				if labeltemplate, ok := paramsMap["labelTemplate"]; ok {
+					fieldFormatParams.Labeltemplate = labeltemplate.(string)
 				}
 			}
 		}
@@ -600,7 +613,9 @@ func tfFieldFormatsToAPI(ctx context.Context, fieldFormats types.Map) (map[strin
 			}
 
 			apiParams = &apiFieldFormatParams{
-				Pattern: tfParams.Pattern.ValueString(),
+				Pattern:       tfParams.Pattern.ValueString(),
+				Urltemplate:   tfParams.Urltemplate.ValueString(),
+				Labeltemplate: tfParams.Labeltemplate.ValueString(),
 			}
 		}
 
@@ -658,9 +673,13 @@ type apiFieldFormat struct {
 }
 
 type tfFieldFormatParamsV0 struct {
-	Pattern types.String `tfsdk:"pattern"`
+	Pattern       types.String `tfsdk:"pattern"`
+	Urltemplate   types.String `tfsdk:"urltemplate"`
+	Labeltemplate types.String `tfsdk:"labeltemplate"`
 }
 
 type apiFieldFormatParams struct {
-	Pattern string `tfsdk:"pattern" json:"pattern"`
+	Pattern       string `tfsdk:"pattern" json:"pattern,omitempty"`
+	Urltemplate   string `tfsdk:"urltemplate" json:"urlTemplate,omitempty"`
+	Labeltemplate string `tfsdk:"labeltemplate" json:"labelTemplate,omitempty"`
 }
