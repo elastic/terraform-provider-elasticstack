@@ -14,6 +14,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 )
 
@@ -81,7 +82,7 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 		case "elasticstack_fleet_agent_policy":
 			agentPolicy, diag := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 			if diag.HasError() {
-				return errors.New(diag[0].Summary)
+				return utils.FwDiagsAsError(diag)
 			}
 			if agentPolicy != nil {
 				return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)

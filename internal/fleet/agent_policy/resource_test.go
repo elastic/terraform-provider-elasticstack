@@ -1,4 +1,4 @@
-package fleet_test
+package agent_policy_test
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -17,6 +18,48 @@ import (
 )
 
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
+
+func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.11.7",
+					},
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				Config:   testAccResourceAgentPolicyCreate(policyName, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				Config:                   testAccResourceAgentPolicyCreate(policyName, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+				),
+			},
+		},
+	})
+}
 
 func TestAccResourceAgentPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -49,6 +92,14 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
 				),
+			},
+			{
+				SkipFunc:                versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				Config:                  testAccResourceAgentPolicyUpdate(policyName, false),
+				ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_destroy"},
 			},
 		},
 	})
@@ -138,11 +189,11 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		packagePolicy, diag := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
-		if diag.HasError() {
-			return errors.New(diag[0].Summary)
+		policy, diags := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+		if diags.HasError() {
+			return utils.FwDiagsAsError(diags)
 		}
-		if packagePolicy != nil {
+		if policy != nil {
 			return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)
 		}
 	}
@@ -164,16 +215,16 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		packagePolicy, diag := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
-		if diag.HasError() {
-			return errors.New(diag[0].Summary)
+		policy, diags := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+		if diags.HasError() {
+			return utils.FwDiagsAsError(diags)
 		}
-		if packagePolicy == nil {
+		if policy == nil {
 			return fmt.Errorf("agent policy id=%v does not exist, but should still exist when skip_destroy is true", rs.Primary.ID)
 		}
 
-		if diag = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID); diag.HasError() {
-			return errors.New(diag[0].Summary)
+		if diags = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID); diags.HasError() {
+			return errors.New(diags.Errors()[0].Summary())
 		}
 	}
 	return nil

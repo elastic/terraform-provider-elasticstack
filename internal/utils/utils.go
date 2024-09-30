@@ -256,6 +256,15 @@ func SdkDiagsAsError(diags sdkdiag.Diagnostics) error {
 	return nil
 }
 
+func FwDiagsAsError(diags fwdiag.Diagnostics) error {
+	for _, diag := range diags {
+		if diag.Severity() == fwdiag.SeverityError {
+			return fmt.Errorf("%s: %s", diag.Summary(), diag.Detail())
+		}
+	}
+	return nil
+}
+
 // ConvertToAttrDiags wraps an existing collection of diagnostics with an attribute path.
 func ConvertToAttrDiags(diags fwdiag.Diagnostics, path path.Path) fwdiag.Diagnostics {
 	var nd fwdiag.Diagnostics

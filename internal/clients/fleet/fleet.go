@@ -49,10 +49,10 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 }
 
 // ReadAgentPolicy reads a specific agent policy from the API.
-func ReadAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.AgentPolicy, diag.Diagnostics) {
+func ReadAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.AgentPolicy, fwdiag.Diagnostics) {
 	resp, err := client.API.AgentPolicyInfoWithResponse(ctx, id)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -61,12 +61,12 @@ func ReadAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // CreateAgentPolicy creates a new agent policy.
-func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.AgentPolicyCreateRequest, sysMonitoring bool) (*fleetapi.AgentPolicy, diag.Diagnostics) {
+func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.AgentPolicyCreateRequest, sysMonitoring bool) (*fleetapi.AgentPolicy, fwdiag.Diagnostics) {
 	resp, err := client.API.CreateAgentPolicyWithResponse(ctx, req, func(ctx context.Context, req *http.Request) error {
 		if sysMonitoring {
 			qs := req.URL.Query()
@@ -77,41 +77,41 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.AgentPo
 		return nil
 	})
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // UpdateAgentPolicy updates an existing agent policy.
-func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req fleetapi.AgentPolicyUpdateRequest) (*fleetapi.AgentPolicy, diag.Diagnostics) {
+func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req fleetapi.AgentPolicyUpdateRequest) (*fleetapi.AgentPolicy, fwdiag.Diagnostics) {
 	resp, err := client.API.UpdateAgentPolicyWithResponse(ctx, id, req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // DeleteAgentPolicy deletes an existing agent policy
-func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diagnostics {
+func DeleteAgentPolicy(ctx context.Context, client *Client, id string) fwdiag.Diagnostics {
 	body := fleetapi.DeleteAgentPolicyJSONRequestBody{
 		AgentPolicyId: id,
 	}
 
 	resp, err := client.API.DeleteAgentPolicyWithResponse(ctx, body)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -120,7 +120,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -189,10 +189,10 @@ func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnosti
 }
 
 // ReadFleetServerHost reads a specific fleet server host from the API.
-func ReadFleetServerHost(ctx context.Context, client *Client, id string) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+func ReadFleetServerHost(ctx context.Context, client *Client, id string) (*fleetapi.FleetServerHost, fwdiag.Diagnostics) {
 	resp, err := client.API.GetOneFleetServerHostsWithResponse(ctx, id)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -201,45 +201,45 @@ func ReadFleetServerHost(ctx context.Context, client *Client, id string) (*fleet
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // CreateFleetServerHost creates a new fleet server host.
-func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.PostFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.PostFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, fwdiag.Diagnostics) {
 	resp, err := client.API.PostFleetServerHostsWithResponse(ctx, req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // UpdateFleetServerHost updates an existing fleet server host.
-func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req fleetapi.UpdateFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, diag.Diagnostics) {
+func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req fleetapi.UpdateFleetServerHostsJSONRequestBody) (*fleetapi.FleetServerHost, fwdiag.Diagnostics) {
 	resp, err := client.API.UpdateFleetServerHostsWithResponse(ctx, id, req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // DeleteFleetServerHost deletes an existing fleet server host.
-func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.Diagnostics {
+func DeleteFleetServerHost(ctx context.Context, client *Client, id string) fwdiag.Diagnostics {
 	resp, err := client.API.DeleteFleetServerHostsWithResponse(ctx, id)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -248,7 +248,7 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -333,12 +333,12 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 }
 
 // ReadPackage reads a specific package from the API.
-func ReadPackage(ctx context.Context, client *Client, name, version string) diag.Diagnostics {
+func ReadPackage(ctx context.Context, client *Client, name, version string) fwdiag.Diagnostics {
 	params := fleetapi.GetPackageParams{}
 
 	resp, err := client.API.GetPackage(ctx, name, version, &params)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 	defer resp.Body.Close()
 
@@ -346,19 +346,19 @@ func ReadPackage(ctx context.Context, client *Client, name, version string) diag
 	case http.StatusOK:
 		return nil
 	case http.StatusNotFound:
-		return diag.FromErr(ErrPackageNotFound)
+		return fromErr(ErrPackageNotFound)
 	default:
 		errData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return diag.FromErr(err)
+			return fromErr(err)
 		}
 
-		return reportUnknownError(resp.StatusCode, errData)
+		return reportUnknownErrorFw(resp.StatusCode, errData)
 	}
 }
 
 // InstallPackage installs a package.
-func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) fwdiag.Diagnostics {
 	params := fleetapi.InstallPackageParams{}
 	body := fleetapi.InstallPackageJSONRequestBody{
 		Force:             &force,
@@ -367,7 +367,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 
 	resp, err := client.API.InstallPackage(ctx, name, version, &params, body)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 	defer resp.Body.Close()
 
@@ -377,15 +377,15 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 	default:
 		errData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return diag.FromErr(err)
+			return fromErr(err)
 		}
 
-		return reportUnknownError(resp.StatusCode, errData)
+		return reportUnknownErrorFw(resp.StatusCode, errData)
 	}
 }
 
 // Uninstall uninstalls a package.
-func Uninstall(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+func Uninstall(ctx context.Context, client *Client, name, version string, force bool) fwdiag.Diagnostics {
 	params := fleetapi.DeletePackageParams{}
 	body := fleetapi.DeletePackageJSONRequestBody{
 		Force: &force,
@@ -393,7 +393,7 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 
 	resp, err := client.API.DeletePackageWithResponse(ctx, name, version, &params, body)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -402,26 +402,26 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // AllPackages returns information about the latest packages known to Fleet.
-func AllPackages(ctx context.Context, client *Client, prerelease bool) ([]fleetapi.SearchResult, diag.Diagnostics) {
+func AllPackages(ctx context.Context, client *Client, prerelease bool) ([]fleetapi.SearchResult, fwdiag.Diagnostics) {
 	params := fleetapi.ListAllPackagesParams{
 		Prerelease: &prerelease,
 	}
 
 	resp, err := client.API.ListAllPackagesWithResponse(ctx, &params)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Items, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
