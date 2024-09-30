@@ -71,6 +71,7 @@ var transformers = []TransformFunc{
 	transformSchemasInputsType,
 	transformInlinePackageDefinitions,
 	transformAddPackagePolicyVars,
+	transformAddPackagePolicySecretReferences,
 	transformFixPackageSearchResult,
 }
 
@@ -330,6 +331,30 @@ func transformAddPackagePolicyVars(schema *Schema) {
 	// Only add it if it doesn't exist.
 	if _, ok = inputs.Get("vars"); !ok {
 		inputs.Set("vars.type", "object")
+	}
+}
+
+// transformAddPackagePolicySecretReferences adds the missing 'secretReferences'
+// field to the PackagePolicy schema struct.
+func transformAddPackagePolicySecretReferences(schema *Schema) {
+	inputs, ok := schema.Components.GetFields("schemas.new_package_policy.properties")
+	if !ok {
+		panic("properties not found")
+	}
+
+	// Only add it if it doesn't exist.
+	if _, ok = inputs.Get("secret_references"); !ok {
+		inputs.Set("secret_references", map[string]any{
+			"type": "array",
+			"items": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"id": map[string]any{
+						"type": "string",
+					},
+				},
+			},
+		})
 	}
 }
 
