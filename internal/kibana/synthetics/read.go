@@ -42,9 +42,9 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	state, err = state.toModelV0(result)
-	if err != nil {
-		response.Diagnostics.AddError("Failed to convert Kibana monitor API to TF state", err.Error())
+	state, diags = state.toModelV0(ctx, result)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 

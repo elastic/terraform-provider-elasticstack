@@ -37,12 +37,9 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	timeout = 30
 	http = {
 		url = "http://localhost:5601"
-		ssl_verification_mode = "full"
-		ssl_supported_protocols = ["TLSv1.0", "TLSv1.1", "TLSv1.2"]
 		mode = "any"
 		ipv4 = true
 		ipv6 = false
-		proxy_url = "http://localhost:8080"
 	}
 }
 `
@@ -128,9 +125,6 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	timeout = 30
 	tcp = {
 		host = "http://localhost:5601"
-		ssl_verification_mode = "full"
-		ssl_supported_protocols = ["TLSv1.0", "TLSv1.1", "TLSv1.2"]
-		proxy_url = "http://localhost:8080"
 		proxy_use_local_resolver = true
 	}
 }
@@ -302,14 +296,14 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:5601"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_verification_mode", "full"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.#", "3"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.0", "TLSv1.0"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.1", "TLSv1.1"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.2", "TLSv1.2"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.0", "TLSv1.1"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.1", "TLSv1.2"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.2", "TLSv1.3"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.max_redirects", "0"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.mode", "any"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv4", "true"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv6", "false"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_url", "http://localhost:8080"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_url", ""),
 				),
 			},
 			// ImportState testing
@@ -402,10 +396,10 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.host", "http://localhost:5601"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_verification_mode", "full"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.#", "3"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.0", "TLSv1.0"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.1", "TLSv1.1"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.2", "TLSv1.2"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_url", "http://localhost:8080"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.0", "TLSv1.1"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.1", "TLSv1.2"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.2", "TLSv1.3"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_url", ""),
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_use_local_resolver", "true"),
 				),
 			},

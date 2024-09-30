@@ -70,7 +70,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 		}
 		policy, diags := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 		if diags.HasError() {
-			return utils.SdkDiagsAsError(diags)
+			return utils.FwDiagsAsError(diags)
 		}
 		if policy != nil {
 			return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)
