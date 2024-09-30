@@ -9,7 +9,7 @@ require (
 	github.com/golangci/golangci-lint v1.61.0
 	github.com/goreleaser/goreleaser/v2 v2.3.2
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
-	github.com/oapi-codegen/oapi-codegen/v2 v2.4.0
+	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	go.uber.org/mock v0.4.0
 )
 
