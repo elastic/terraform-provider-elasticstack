@@ -35,16 +35,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	secrets, diags := newSecretStore(ctx, resp.Private)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	pruneRefsFromResponse(policy, secrets)
-	handleReqRespSecrets(body, policy, secrets)
-
-	diags = secrets.Save(ctx, resp.Private)
+	diags = handleReqRespSecrets(ctx, body, policy, resp.Private)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

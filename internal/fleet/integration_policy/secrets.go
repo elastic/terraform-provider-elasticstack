@@ -16,7 +16,8 @@ import (
 type secretStore map[string]any
 
 // newSecretStore creates a new secretStore from the resource privateData.
-func newSecretStore(ctx context.Context, private privateData) (store secretStore, diags diag.Diagnostics) {
+// If the store already exists, it is filtered by any references in the resp policy.
+func newSecretStore(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (store secretStore, diags diag.Diagnostics) {
 	bytes, diags := private.GetKey(ctx, "secrets")
 	if diags != nil {
 		return
@@ -30,6 +31,18 @@ func newSecretStore(ctx context.Context, private privateData) (store secretStore
 	if err != nil {
 		diags.AddError("could not unmarshal secret store", err.Error())
 		return
+	}
+
+	// Remove any saved secret refs not present in the API response.
+	refs := make(map[string]any)
+	for _, r := range utils.Deref(resp.SecretReferences) {
+		refs[*r.Id] = nil
+	}
+
+	for id := range store {
+		if _, ok := refs[id]; !ok {
+			delete(store, id)
+		}
 	}
 
 	return
@@ -46,23 +59,15 @@ func (s secretStore) Save(ctx context.Context, private privateData) (diags diag.
 	return private.SetKey(ctx, "secrets", bytes)
 }
 
-// pruneRefsFromResponse removes any saved secret refs not present in the API response.
-func pruneRefsFromResponse(resp *fleetapi.PackagePolicy, secrets secretStore) {
-	refs := make(map[string]any)
-	for _, r := range utils.Deref(resp.SecretReferences) {
-		refs[*r.Id] = nil
-	}
-
-	for id := range secrets {
-		if _, ok := refs[id]; !ok {
-			delete(secrets, id)
-		}
-	}
-}
-
 // handleRespSecrets extracts the wrapped value from each response var, then
 // replaces any secret refs with the original value from secrets if available.
-func handleRespSecrets(resp *fleetapi.PackagePolicy, secrets secretStore) {
+func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+	secrets, nd := newSecretStore(ctx, resp, private)
+	diags.Append(nd...)
+	if diags.HasError() {
+		return
+	}
+
 	handleVars := func(vars map[string]any) {
 		for key, val := range vars {
 			if mval, ok := val.(map[string]any); ok {
@@ -96,11 +101,22 @@ func handleRespSecrets(resp *fleetapi.PackagePolicy, secrets secretStore) {
 			handleVars(streamVars)
 		}
 	}
+
+	nd = secrets.Save(ctx, private)
+	diags.Append(nd...)
+
+	return
 }
 
 // handleReqRespSecrets extracts the wrapped value from each response var, then
 // maps any secret refs to the original request value.
-func handleReqRespSecrets(req fleetapi.PackagePolicyRequest, resp *fleetapi.PackagePolicy, secrets secretStore) {
+func handleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+	secrets, nd := newSecretStore(ctx, resp, private)
+	diags.Append(nd...)
+	if diags.HasError() {
+		return
+	}
+
 	handleVars := func(reqVars map[string]any, respVars map[string]any) {
 		for key, val := range respVars {
 			if mval, ok := val.(map[string]any); ok {
@@ -136,6 +152,11 @@ func handleReqRespSecrets(req fleetapi.PackagePolicyRequest, resp *fleetapi.Pack
 			handleVars(utils.Deref(streamReq.Vars), streamRespVars)
 		}
 	}
+
+	nd = secrets.Save(ctx, private)
+	diags.Append(nd...)
+
+	return
 }
 
 // Equivalent to privatestate.ProviderData

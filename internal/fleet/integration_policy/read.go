@@ -34,16 +34,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	secrets, diags := newSecretStore(ctx, resp.Private)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	pruneRefsFromResponse(policy, secrets)
-	handleRespSecrets(policy, secrets)
-
-	diags = secrets.Save(ctx, resp.Private)
+	diags = handleRespSecrets(ctx, policy, resp.Private)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
