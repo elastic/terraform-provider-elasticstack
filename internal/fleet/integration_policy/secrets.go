@@ -18,10 +18,12 @@ type secretStore map[string]any
 // newSecretStore creates a new secretStore from the resource privateData.
 // If the store already exists, it is filtered by any references in the resp policy.
 func newSecretStore(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (store secretStore, diags diag.Diagnostics) {
-	bytes, diags := private.GetKey(ctx, "secrets")
-	if diags != nil {
+	bytes, nd := private.GetKey(ctx, "secrets")
+	diags.Append(nd...)
+	if diags.HasError() {
 		return
 	}
+
 	if len(bytes) == 0 {
 		store = secretStore{}
 		return
