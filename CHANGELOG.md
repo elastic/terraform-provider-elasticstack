@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.8] - 2024-09-30
+
 - Fix handling of `sys_monitoring` in `elasticstack_fleet_agent_policy` ([#792](https://github.com/elastic/terraform-provider-elasticstack/pull/792))
 - Migrate `elasticstack_fleet_agent_policy`, `elasticstack_fleet_integration` (both), and `elasticstack_fleet_server_host` to terraform-plugin-framework ([#785](https://github.com/elastic/terraform-provider-elasticstack/pull/785))
 - Fix for synthetics http/tcp monitor produces inconsistent result after apply ([#801](https://github.com/elastic/terraform-provider-elasticstack/pull/801))
@@ -344,8 +346,9 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...HEAD
-[0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...HEAD
+[0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
+[0.11.7]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...v0.11.4
