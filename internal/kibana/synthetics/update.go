@@ -21,7 +21,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	input, diags := plan.toKibanaAPIRequest()
+	input, diags := plan.toKibanaAPIRequest(ctx)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
@@ -40,9 +40,9 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	plan, err = plan.toModelV0(result)
-	if err != nil {
-		response.Diagnostics.AddError("Failed to convert Kibana monitor API to TF state", err.Error())
+	plan, diags = plan.toModelV0(ctx, result)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
