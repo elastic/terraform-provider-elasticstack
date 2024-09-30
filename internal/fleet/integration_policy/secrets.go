@@ -21,8 +21,9 @@ func newSecretStore(ctx context.Context, private privateData) (store secretStore
 	if diags != nil {
 		return
 	}
-	if bytes == nil {
-		bytes = []byte("{}")
+	if len(bytes) == 0 {
+		store = secretStore{}
+		return
 	}
 
 	err := json.Unmarshal(bytes, &store)
