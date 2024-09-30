@@ -53,7 +53,7 @@ func TestToModelV0(t *testing.T) {
 					ProxyURL:              types.StringValue(""),
 					Response:              jsontypes.NewNormalizedValue("null"),
 					Check:                 jsontypes.NewNormalizedValue("null"),
-					SslSupportedProtocols: types.ListUnknown(types.StringType),
+					SslSupportedProtocols: types.ListNull(types.StringType),
 				},
 			},
 		},
@@ -76,7 +76,7 @@ func TestToModelV0(t *testing.T) {
 					CheckSend:             types.StringValue(""),
 					CheckReceive:          types.StringValue(""),
 					ProxyURL:              types.StringValue(""),
-					SslSupportedProtocols: types.ListUnknown(types.StringType),
+					SslSupportedProtocols: types.ListNull(types.StringType),
 				},
 			},
 		},
@@ -354,7 +354,8 @@ func TestToModelV0(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			model, diag := tt.expected.toModelV0(&tt.input)
+			ctx := context.Background()
+			model, diag := tt.expected.toModelV0(ctx, &tt.input)
 			assert.False(t, diag.HasError())
 			assert.Equal(t, &tt.expected, model)
 		})
@@ -662,7 +663,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				HTTP: &tfHTTPMonitorFieldsV0{
 					URL:                   types.StringValue(""),
 					SslVerificationMode:   types.StringValue(""),
-					SslSupportedProtocols: types.ListUnknown(types.StringType),
+					SslSupportedProtocols: types.ListNull(types.StringType),
 					MaxRedirects:          types.Int64Value(0),
 					Mode:                  types.StringValue(""),
 					ProxyURL:              types.StringValue(""),
@@ -698,7 +699,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 					CheckSend:             types.StringValue("hello"),
 					CheckReceive:          types.StringValue("world"),
 					ProxyURL:              types.StringValue(""),
-					SslSupportedProtocols: types.ListUnknown(types.StringType),
+					SslSupportedProtocols: types.ListNull(types.StringType),
 				},
 			},
 		},
@@ -731,7 +732,8 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, diag := tt.state.toModelV0(&tt.input)
+			ctx := context.Background()
+			actual, diag := tt.state.toModelV0(ctx, &tt.input)
 			assert.False(t, diag.HasError())
 			assert.NotNil(t, actual)
 			assert.Equal(t, &tt.expected, actual)

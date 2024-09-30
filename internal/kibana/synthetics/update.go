@@ -40,7 +40,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	plan, diags = plan.toModelV0(result)
+	plan, diags = plan.toModelV0(ctx, result)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

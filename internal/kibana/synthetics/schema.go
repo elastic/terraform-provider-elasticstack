@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
@@ -450,19 +451,6 @@ func StringSliceValue(v []string) []types.String {
 	return res
 }
 
-func StringSliceToListAttrValue(v []string) (types.List, diag.Diagnostics) {
-
-	if v == nil {
-		return types.ListUnknown(types.StringType), diag.Diagnostics{}
-	}
-
-	var res []attr.Value
-	for _, s := range v {
-		res = append(res, types.StringValue(s))
-	}
-	return types.ListValue(types.StringType, res)
-}
-
 func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
 	res, err := json.Marshal(jsObj)
 	if err != nil {
@@ -492,7 +480,7 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
-func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, diag.Diagnostics) {
+func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor) (*tfModelV0, diag.Diagnostics) {
 	var schedule int64
 	var err error
 	dg := diag.Diagnostics{}
@@ -530,13 +518,13 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, diag.Di
 		if v.HTTP != nil {
 			http = v.HTTP
 		}
-		http = http.toTfHTTPMonitorFieldsV0(dg, api)
+		http = http.toTfHTTPMonitorFieldsV0(ctx, dg, api)
 	case kbapi.Tcp:
 		tcp = &tfTCPMonitorFieldsV0{}
 		if v.TCP != nil {
 			tcp = v.TCP
 		}
-		tcp = tcp.toTfTCPMonitorFieldsV0(dg, api)
+		tcp = tcp.toTfTCPMonitorFieldsV0(ctx, dg, api)
 	case kbapi.Icmp:
 		icmp = &tfICMPMonitorFieldsV0{}
 		if v.ICMP != nil {
@@ -593,7 +581,7 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, diag.Di
 	}, dg
 }
 
-func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfTCPMonitorFieldsV0 {
+func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfTCPMonitorFieldsV0 {
 	checkSend := v.CheckSend
 	if api.CheckSend != "" {
 		checkSend = types.StringValue(api.CheckSend)
@@ -602,9 +590,8 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(dg diag.Diagnostics, api *
 	if api.CheckReceive != "" {
 		checkReceive = types.StringValue(api.CheckReceive)
 	}
-	sslSupportedProtocols, d := StringSliceToListAttrValue(api.SslSupportedProtocols)
-	dg.Append(d...)
-	if d.HasError() {
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), dg)
+	if dg.HasError() {
 		return nil
 	}
 	return &tfTCPMonitorFieldsV0{
@@ -659,7 +646,7 @@ func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.Synthet
 	}, nil
 }
 
-func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfHTTPMonitorFieldsV0 {
+func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfHTTPMonitorFieldsV0 {
 
 	var err error
 	proxyHeaders := v.ProxyHeader
@@ -686,9 +673,9 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(dg diag.Diagnostics, api
 		return nil
 	}
 
-	sslSupportedProtocols, d := StringSliceToListAttrValue(api.SslSupportedProtocols)
-	dg.Append(d...)
-	if d.HasError() {
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), dg)
+
+	if dg.HasError() {
 		return nil
 	}
 	return &tfHTTPMonitorFieldsV0{
@@ -744,7 +731,7 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaAPIRequest, 
 }
 
 func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
-	var dg diag.Diagnostics
+	dg := diag.Diagnostics{}
 
 	if v.HTTP != nil {
 		return v.toHttpMonitorFields(ctx)
@@ -810,7 +797,10 @@ func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorField
 		return nil, dg
 	}
 
-	sslSupportedProtocols, dg := tfListToStringSlice(ctx, v.HTTP.SslSupportedProtocols)
+	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.HTTP.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), dg)
+	if dg.HasError() {
+		return nil, dg
+	}
 
 	maxRedirects := tfInt64ToString(v.HTTP.MaxRedirects)
 	return kbapi.HTTPMonitorFields{
@@ -830,19 +820,12 @@ func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorField
 	}, dg
 }
 
-func tfListToStringSlice(ctx context.Context, v types.List) ([]string, diag.Diagnostics) {
-	var res []string
-	if !v.IsNull() {
-		if d := v.ElementsAs(ctx, &res, true); d.HasError() {
-			return nil, d
-		}
-	}
-
-	return res, diag.Diagnostics{}
-}
-
 func (v *tfModelV0) toTCPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
-	sslSupportedProtocols, dg := tfListToStringSlice(ctx, v.TCP.SslSupportedProtocols)
+	dg := diag.Diagnostics{}
+	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.TCP.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), dg)
+	if dg.HasError() {
+		return nil, dg
+	}
 
 	return kbapi.TCPMonitorFields{
 		Host:                  v.TCP.Host.ValueString(),

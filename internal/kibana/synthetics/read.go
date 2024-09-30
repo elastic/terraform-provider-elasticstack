@@ -42,7 +42,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	state, diags = state.toModelV0(result)
+	state, diags = state.toModelV0(ctx, result)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
