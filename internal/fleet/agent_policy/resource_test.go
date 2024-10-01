@@ -2,7 +2,6 @@ package agent_policy_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -224,7 +223,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		}
 
 		if diags = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID); diags.HasError() {
-			return errors.New(diags.Errors()[0].Summary())
+			return utils.FwDiagsAsError(diags)
 		}
 	}
 	return nil

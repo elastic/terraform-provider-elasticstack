@@ -93,7 +93,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `description` (String) The description of the integration policy.
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
-- `input` (Block List) (see [below for nested schema](#nestedblock--input))
+- `input` (Block List) Integration inputs. (see [below for nested schema](#nestedblock--input))
 - `policy_id` (String) Unique identifier of the integration policy.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON.
 
