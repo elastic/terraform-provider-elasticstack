@@ -238,6 +238,7 @@ func TestAccResourceIndexWithTemplate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test", "default_pipeline"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "mappings"),
 				),
 			},
 		},
@@ -496,6 +497,19 @@ resource "elasticstack_elasticsearch_index_template" "test" {
       default_pipeline = ".fleet_final_pipeline-1"
       lifecycle        = { name = ".monitoring-8-ilm-policy" }
     })
+	mappings = jsonencode({
+      dynamic_templates = [
+        {
+          strings_as_ip = {
+            match_mapping_type = "string",
+            match              = "ip*",
+            runtime = {
+              type = "ip"
+            }
+          }
+        }
+      ]
+	})
   }
 }
 
