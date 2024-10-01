@@ -31,7 +31,7 @@ func (model *enrollmentTokensModel) populateFromAPI(ctx context.Context, data []
 	return
 }
 
-func newEnrollmentTokenModel(data fleetapi.EnrollmentApiKey) enrollmentTokenModel {
+func newEnrollmentTokenModel(data fleetapi.EnrollmentApiKey, meta utils.ListMeta) enrollmentTokenModel {
 	return enrollmentTokenModel{
 		KeyID:     types.StringValue(data.Id),
 		Active:    types.BoolValue(data.Active),

@@ -253,7 +253,7 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string) fwdia
 }
 
 // ReadPackagePolicy reads a specific package policy from the API.
-func ReadPackagePolicy(ctx context.Context, client *Client, id string) (*fleetapi.PackagePolicy, diag.Diagnostics) {
+func ReadPackagePolicy(ctx context.Context, client *Client, id string) (*fleetapi.PackagePolicy, fwdiag.Diagnostics) {
 	format := fleetapi.GetPackagePolicyParamsFormatSimplified
 	params := fleetapi.GetPackagePolicyParams{
 		Format: &format,
@@ -261,7 +261,7 @@ func ReadPackagePolicy(ctx context.Context, client *Client, id string) (*fleetap
 
 	resp, err := client.API.GetPackagePolicyWithResponse(ctx, id, &params)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -270,12 +270,12 @@ func ReadPackagePolicy(ctx context.Context, client *Client, id string) (*fleetap
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // CreatePackagePolicy creates a new package policy.
-func CreatePackagePolicy(ctx context.Context, client *Client, req fleetapi.CreatePackagePolicyJSONRequestBody) (*fleetapi.PackagePolicy, diag.Diagnostics) {
+func CreatePackagePolicy(ctx context.Context, client *Client, req fleetapi.CreatePackagePolicyJSONRequestBody) (*fleetapi.PackagePolicy, fwdiag.Diagnostics) {
 	format := fleetapi.CreatePackagePolicyParamsFormatSimplified
 	params := fleetapi.CreatePackagePolicyParams{
 		Format: &format,
@@ -283,19 +283,19 @@ func CreatePackagePolicy(ctx context.Context, client *Client, req fleetapi.Creat
 
 	resp, err := client.API.CreatePackagePolicyWithResponse(ctx, &params, req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // UpdatePackagePolicy updates an existing package policy.
-func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req fleetapi.UpdatePackagePolicyJSONRequestBody) (*fleetapi.PackagePolicy, diag.Diagnostics) {
+func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req fleetapi.UpdatePackagePolicyJSONRequestBody) (*fleetapi.PackagePolicy, fwdiag.Diagnostics) {
 	format := fleetapi.UpdatePackagePolicyParamsFormatSimplified
 	params := fleetapi.UpdatePackagePolicyParams{
 		Format: &format,
@@ -303,23 +303,23 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req fle
 
 	resp, err := client.API.UpdatePackagePolicyWithResponse(ctx, id, &params, req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fromErr(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 
 // DeletePackagePolicy deletes an existing package policy.
-func DeletePackagePolicy(ctx context.Context, client *Client, id string, force bool) diag.Diagnostics {
+func DeletePackagePolicy(ctx context.Context, client *Client, id string, force bool) fwdiag.Diagnostics {
 	params := fleetapi.DeletePackagePolicyParams{Force: &force}
 	resp, err := client.API.DeletePackagePolicyWithResponse(ctx, id, &params)
 	if err != nil {
-		return diag.FromErr(err)
+		return fromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -328,7 +328,7 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownErrorFw(resp.StatusCode(), resp.Body)
 	}
 }
 

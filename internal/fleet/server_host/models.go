@@ -44,7 +44,7 @@ func (model serverHostModel) toAPICreateModel(ctx context.Context) (body fleetap
 
 func (model serverHostModel) toAPIUpdateModel(ctx context.Context) (body fleetapi.UpdateFleetServerHostsJSONRequestBody, diags diag.Diagnostics) {
 	body = fleetapi.UpdateFleetServerHostsJSONRequestBody{
-		HostUrls:  utils.Pointer(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags)),
+		HostUrls:  utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags)),
 		IsDefault: model.Default.ValueBoolPointer(),
 		Name:      model.Name.ValueStringPointer(),
 	}
