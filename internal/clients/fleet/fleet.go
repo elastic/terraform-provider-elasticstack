@@ -9,7 +9,6 @@ import (
 
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 var (
@@ -432,16 +431,6 @@ func fromErr(err error) fwdiag.Diagnostics {
 	}
 	return fwdiag.Diagnostics{
 		fwdiag.NewErrorDiagnostic(err.Error(), ""),
-	}
-}
-
-func reportUnknownError(statusCode int, body []byte) diag.Diagnostics {
-	return diag.Diagnostics{
-		diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("Unexpected status code from server: got HTTP %d", statusCode),
-			Detail:   string(body),
-		},
 	}
 }
 
