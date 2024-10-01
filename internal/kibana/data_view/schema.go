@@ -674,8 +674,8 @@ type apiFieldFormat struct {
 
 type tfFieldFormatParamsV0 struct {
 	Pattern       types.String `tfsdk:"pattern"`
-	Urltemplate   types.String `tfsdk:"urltemplate"`
-	Labeltemplate types.String `tfsdk:"labeltemplate"`
+	UrlTemplate   types.String `tfsdk:"urltemplate"`
+	LabelTemplate types.String `tfsdk:"labeltemplate"`
 }
 
 type apiFieldFormatParams struct {
