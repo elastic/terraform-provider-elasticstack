@@ -680,6 +680,6 @@ type tfFieldFormatParamsV0 struct {
 
 type apiFieldFormatParams struct {
 	Pattern       string `tfsdk:"pattern" json:"pattern,omitempty"`
-	Urltemplate   string `tfsdk:"urltemplate" json:"urlTemplate,omitempty"`
-	Labeltemplate string `tfsdk:"labeltemplate" json:"labelTemplate,omitempty"`
+	UrlTemplate   string `tfsdk:"urltemplate" json:"urlTemplate,omitempty"`
+	LabelTemplate string `tfsdk:"labeltemplate" json:"labelTemplate,omitempty"`
 }
