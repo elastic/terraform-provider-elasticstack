@@ -72,6 +72,7 @@ var (
 		"k2": {ID: "id2"},
 		"k3": {ID: "id3"},
 	}
+
 	normUnk   = jsontypes.NewNormalizedUnknown()
 	normNil   = jsontypes.NewNormalizedNull()
 	normEmpty = jsontypes.NewNormalizedValue(`{}`)
