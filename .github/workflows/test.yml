@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
         with:
           go-version-file: 'go.mod'
@@ -34,7 +34,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
         with:
           go-version-file: 'tools/go.mod'
@@ -63,7 +63,6 @@ jobs:
           xpack.security.enabled: true
           xpack.security.authc.api_key.enabled: true
           xpack.security.authc.token.enabled: true
-          xpack.security.http.ssl.enabled: false
           xpack.watcher.enabled: true
           xpack.license.self_generated.type: trial
           repositories.url.allowed_urls: https://example.com/*
@@ -80,10 +79,28 @@ jobs:
           ELASTICSEARCH_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
           ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
           XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
-#          LOGGING_ROOT_LEVEL: debug
+          # LOGGING_ROOT_LEVEL: debug
         ports:
           - 5601:5601
         options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
+      fleet:
+        image: docker.elastic.co/beats/elastic-agent:${{ matrix.version }}
+        env:
+          SERVER_NAME: fleet
+          FLEET_ENROLL: "1"
+          FLEET_URL: https://fleet:8220
+          FLEET_INSECURE: "true"
+          FLEET_SERVER_ENABLE: "1"
+          FLEET_SERVER_POLICY_ID: fleet-server
+          FLEET_SERVER_ELASTICSEARCH_HOST: http://elasticsearch:9200
+          FLEET_SERVER_ELASTICSEARCH_INSECURE: "true"
+          FLEET_SERVER_INSECURE_HTTP: "true"
+          KIBANA_HOST: http://kibana:5601
+          KIBANA_FLEET_SETUP: "1"
+          KIBANA_FLEET_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+        ports:
+          - 8220:8220
+        options: --restart="unless-stopped"
 
     timeout-minutes: 15
     strategy:
@@ -108,7 +125,7 @@ jobs:
           - '8.14.3'
           - '8.15.0'
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
         with:
           go-version-file: 'go.mod'
@@ -123,8 +140,6 @@ jobs:
       - name: Setup Kibana user
         run: make set-kibana-password
         env:
-          ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
-          ELASTICSEARCH_USERNAME: "elastic"
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           KIBANA_SYSTEM_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
           KIBANA_SYSTEM_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
@@ -134,9 +149,16 @@ jobs:
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
         env:
-          ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
-          ELASTICSEARCH_USERNAME: "elastic"
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+
+      - id: setup-fleet
+        name: Setup Fleet
+        if: matrix.version == '8.10.3' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.0'
+        run: |-
+          make setup-kibana-fleet
+        env:
+          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+          FLEET_NAME: "fleet"
 
       - id: force-install-synthetics
         name: Force install synthetics

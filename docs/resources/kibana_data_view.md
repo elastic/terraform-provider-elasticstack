@@ -88,7 +88,9 @@ Optional:
 
 Optional:
 
+- `labeltemplate` (String)
 - `pattern` (String)
+- `urltemplate` (String)
 
 
 

@@ -239,6 +239,37 @@ func Pointer[T any](value T) *T {
 	return &value
 }
 
+// MapRef is similar to Pointer, in that it takes the reference of
+// the given value, however if the value is already nil then it returns
+// nil rather than a pointer to nil.
+func MapRef[T any](value map[string]T) *map[string]T {
+	if value == nil {
+		return nil
+	}
+	return &value
+}
+
+// SliceRef is similar to Pointer, in that it takes the reference of
+// the given value, however if the value is already nil then it returns
+// nil rather than a pointer to nil.
+func SliceRef[T any](value []T) *[]T {
+	if value == nil {
+		return nil
+	}
+	return &value
+}
+
+// Deref returns the value referenced by the given pointer. If the value is
+// nil, a zero value is returned.
+func Deref[T any](value *T) T {
+	if value == nil {
+		var zero T
+		return zero
+	} else {
+		return *value
+	}
+}
+
 func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {
 	inv := make(map[V]K)
 	for k, v := range m {
@@ -251,6 +282,15 @@ func SdkDiagsAsError(diags sdkdiag.Diagnostics) error {
 	for _, diag := range diags {
 		if diag.Severity == sdkdiag.Error {
 			return fmt.Errorf("%s: %s", diag.Summary, diag.Detail)
+		}
+	}
+	return nil
+}
+
+func FwDiagsAsError(diags fwdiag.Diagnostics) error {
+	for _, diag := range diags {
+		if diag.Severity() == fwdiag.SeverityError {
+			return fmt.Errorf("%s: %s", diag.Summary(), diag.Detail())
 		}
 	}
 	return nil

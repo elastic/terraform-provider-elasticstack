@@ -147,6 +147,12 @@ func getSchema() schema.Schema {
 										"pattern": schema.StringAttribute{
 											Optional: true,
 										},
+										"urltemplate": schema.StringAttribute{
+											Optional: true,
+										},
+										"labeltemplate": schema.StringAttribute{
+											Optional: true,
+										},
 									},
 								},
 							},
@@ -334,8 +340,15 @@ func dataViewFromResponse(resp data_views.DataViewResponseObjectDataView) apiDat
 
 		if params, ok := formatMap["params"]; ok {
 			if paramsMap, ok := params.(map[string]interface{}); ok {
+				apiFormat.Params = &apiFieldFormatParams{}
 				if pattern, ok := paramsMap["pattern"]; ok {
-					apiFormat.Params = &apiFieldFormatParams{Pattern: pattern.(string)}
+					apiFormat.Params.Pattern = utils.Pointer(pattern.(string))
+				}
+				if urltemplate, ok := paramsMap["urlTemplate"]; ok {
+					apiFormat.Params.UrlTemplate = utils.Pointer(urltemplate.(string))
+				}
+				if labeltemplate, ok := paramsMap["labelTemplate"]; ok {
+					apiFormat.Params.LabelTemplate = utils.Pointer(labeltemplate.(string))
 				}
 			}
 		}
@@ -600,7 +613,9 @@ func tfFieldFormatsToAPI(ctx context.Context, fieldFormats types.Map) (map[strin
 			}
 
 			apiParams = &apiFieldFormatParams{
-				Pattern: tfParams.Pattern.ValueString(),
+				Pattern:       tfParams.Pattern.ValueStringPointer(),
+				UrlTemplate:   tfParams.UrlTemplate.ValueStringPointer(),
+				LabelTemplate: tfParams.LabelTemplate.ValueStringPointer(),
 			}
 		}
 
@@ -658,9 +673,13 @@ type apiFieldFormat struct {
 }
 
 type tfFieldFormatParamsV0 struct {
-	Pattern types.String `tfsdk:"pattern"`
+	Pattern       types.String `tfsdk:"pattern"`
+	UrlTemplate   types.String `tfsdk:"urltemplate"`
+	LabelTemplate types.String `tfsdk:"labeltemplate"`
 }
 
 type apiFieldFormatParams struct {
-	Pattern string `tfsdk:"pattern" json:"pattern"`
+	Pattern       *string `tfsdk:"pattern" json:"pattern,omitempty"`
+	UrlTemplate   *string `tfsdk:"urltemplate" json:"urlTemplate,omitempty"`
+	LabelTemplate *string `tfsdk:"labeltemplate" json:"labelTemplate,omitempty"`
 }

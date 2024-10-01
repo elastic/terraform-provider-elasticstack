@@ -1,6 +1,11 @@
 ## [Unreleased]
 
 - Add key_id to the `elasticstack_elasticsearch_api_key` resource. ([#789](https://github.com/elastic/terraform-provider-elasticstack/pull/789))
+- Fix handling of `sys_monitoring` in `elasticstack_fleet_agent_policy` ([#792](https://github.com/elastic/terraform-provider-elasticstack/pull/792))
+- Migrate `elasticstack_fleet_agent_policy`, `elasticstack_fleet_integration` (both), and `elasticstack_fleet_server_host` to terraform-plugin-framework ([#785](https://github.com/elastic/terraform-provider-elasticstack/pull/785))
+- Fix for synthetics http/tcp monitor produces inconsistent result after apply ([#801](https://github.com/elastic/terraform-provider-elasticstack/pull/801))
+- Migrate `elasticstack_fleet_integration_policy` to terraform-plugin-framework. Fix drift in integration policy secrets. ([#797](https://github.com/elastic/terraform-provider-elasticstack/pull/797))
+- Migrate `elasticstack_fleet_output` to terraform-plugin-framework. ([#811](https://github.com/elastic/terraform-provider-elasticstack/pull/811))
 
 ## [0.11.7] - 2024-09-20
 
