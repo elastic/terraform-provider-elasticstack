@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add support for the `.gemini` connector type for Kibana action connectors ([#819](https://github.com/elastic/terraform-provider-elasticstack/pull/819))
+
 ## [0.11.8] - 2024-10-02
 
 - Add key_id to the `elasticstack_elasticsearch_api_key` resource. ([#789](https://github.com/elastic/terraform-provider-elasticstack/pull/789))
