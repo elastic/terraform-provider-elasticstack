@@ -44,7 +44,9 @@ func Test_tfModelV0_ToCreateRequest(t *testing.T) {
 						"field1": {
 							ID: "field1",
 							Params: &apiFieldFormatParams{
-								Pattern: "0.00",
+								Pattern:       utils.Pointer("0.00"),
+								UrlTemplate:   utils.Pointer("https://test.com/{{value}}"),
+								LabelTemplate: utils.Pointer("{{value}}"),
 							},
 						},
 					},
@@ -66,7 +68,9 @@ func Test_tfModelV0_ToCreateRequest(t *testing.T) {
 						"field1": apiFieldFormat{
 							ID: "field1",
 							Params: &apiFieldFormatParams{
-								Pattern: "0.00",
+								Pattern:       utils.Pointer("0.00"),
+								UrlTemplate:   utils.Pointer("https://test.com/{{value}}"),
+								LabelTemplate: utils.Pointer("{{value}}"),
 							},
 						},
 					},
@@ -161,7 +165,9 @@ func Test_tfModelV0_ToUpdateRequest(t *testing.T) {
 						"field1": {
 							ID: "field1",
 							Params: &apiFieldFormatParams{
-								Pattern: "0.00",
+								Pattern:       utils.Pointer("0.00"),
+								UrlTemplate:   utils.Pointer("https://test.com/{{value}}"),
+								LabelTemplate: utils.Pointer("{{value}}"),
 							},
 						},
 					},
@@ -176,7 +182,9 @@ func Test_tfModelV0_ToUpdateRequest(t *testing.T) {
 						"field1": apiFieldFormat{
 							ID: "field1",
 							Params: &apiFieldFormatParams{
-								Pattern: "0.00",
+								Pattern:       utils.Pointer("0.00"),
+								UrlTemplate:   utils.Pointer("https://test.com/{{value}}"),
+								LabelTemplate: utils.Pointer("{{value}}"),
 							},
 						},
 					},
