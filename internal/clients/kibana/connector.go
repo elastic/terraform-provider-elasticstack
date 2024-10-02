@@ -248,6 +248,9 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (
 	case connectors.ConnectorTypesDotEmail:
 		return connectorConfigWithDefaultsEmail(plan)
 
+	case connectors.ConnectorTypesDotGemini:
+		return connectorConfigWithDefaultsGemini(plan)
+
 	case connectors.ConnectorTypesDotIndex:
 		return connectorConfigWithDefaultsIndex(plan)
 
@@ -343,6 +346,10 @@ func connectorConfigWithDefaultsEmail(plan string) (string, error) {
 		return "", err
 	}
 	return string(customJSON), nil
+}
+
+func connectorConfigWithDefaultsGemini(plan string) (string, error) {
+	return plan, nil
 }
 
 func connectorConfigWithDefaultsIndex(plan string) (string, error) {
@@ -464,6 +471,9 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 	case connectors.ConnectorTypesDotEmail:
 		return createConnectorRequestEmail(connector)
 
+	case connectors.ConnectorTypesDotGemini:
+		return createConnectorRequestGemini(connector)
+
 	case connectors.ConnectorTypesDotIndex:
 		return createConnectorRequestIndex(connector)
 
@@ -524,6 +534,9 @@ func updateConnectorRequestBody(connector models.KibanaActionConnector) (io.Read
 
 	case connectors.ConnectorTypesDotEmail:
 		return updateConnectorRequestEmail(connector)
+
+	case connectors.ConnectorTypesDotGemini:
+		return updateConnectorRequestGemini(connector)
 
 	case connectors.ConnectorTypesDotIndex:
 		return updateConnectorRequestIndex(connector)
@@ -610,6 +623,15 @@ func createConnectorRequestCasesWebhook(connector models.KibanaActionConnector) 
 func createConnectorRequestEmail(connector models.KibanaActionConnector) (io.Reader, error) {
 	request := connectors.CreateConnectorRequestEmail{
 		ConnectorTypeId: connectors.CreateConnectorRequestEmailConnectorTypeIdDotEmail,
+		Name:            connector.Name,
+	}
+
+	return marshalConnectorRequest(connector, &request.Config, &request.Secrets, &request)
+}
+
+func createConnectorRequestGemini(connector models.KibanaActionConnector) (io.Reader, error) {
+	request := connectors.CreateConnectorRequestGemini{
+		ConnectorTypeId: connectors.CreateConnectorRequestGeminiConnectorTypeIdDotGemini,
 		Name:            connector.Name,
 	}
 
@@ -776,6 +798,14 @@ func updateConnectorRequestEmail(connector models.KibanaActionConnector) (io.Rea
 	return marshalConnectorRequest(connector, &request.Config, &request.Secrets, &request)
 }
 
+func updateConnectorRequestGemini(connector models.KibanaActionConnector) (io.Reader, error) {
+	request := connectors.UpdateConnectorRequestGemini{
+		Name: connector.Name,
+	}
+
+	return marshalConnectorRequest(connector, &request.Config, &request.Secrets, &request)
+}
+
 func updateConnectorRequestIndex(connector models.KibanaActionConnector) (io.Reader, error) {
 	request := connectors.UpdateConnectorRequestIndex{
 		Name: connector.Name,
@@ -918,6 +948,9 @@ func connectorResponseToModel(spaceID string, properties connectors.ConnectorRes
 	case connectors.ConnectorTypesDotEmail:
 		return connectorResponseToModelEmail(discriminator, spaceID, properties)
 
+	case connectors.ConnectorTypesDotGemini:
+		return connectorResponseToModelGemini(discriminator, spaceID, properties)
+
 	case connectors.ConnectorTypesDotIndex:
 		return connectorResponseToModelIndex(discriminator, spaceID, properties)
 
@@ -1008,6 +1041,42 @@ func connectorResponseToModelCasesWebhook(discriminator, spaceID string, propert
 
 func connectorResponseToModelEmail(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
 	resp, err := properties.AsConnectorResponsePropertiesEmail()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := json.Marshal(resp.Config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal config: %w", err)
+	}
+
+	isDeprecated := false
+	isMissingSecrets := false
+
+	if resp.IsDeprecated != nil {
+		isDeprecated = *resp.IsDeprecated
+	}
+
+	if resp.IsMissingSecrets != nil {
+		isMissingSecrets = *resp.IsMissingSecrets
+	}
+
+	connector := models.KibanaActionConnector{
+		ConnectorID:      resp.Id,
+		SpaceID:          spaceID,
+		Name:             resp.Name,
+		ConnectorTypeID:  discriminator,
+		IsDeprecated:     isDeprecated,
+		IsMissingSecrets: isMissingSecrets,
+		IsPreconfigured:  bool(resp.IsPreconfigured),
+		ConfigJSON:       string(config),
+	}
+
+	return &connector, nil
+}
+
+func connectorResponseToModelGemini(discriminator, spaceID string, properties connectors.ConnectorResponseProperties) (*models.KibanaActionConnector, error) {
+	resp, err := properties.AsConnectorResponsePropertiesGemini()
 	if err != nil {
 		return nil, err
 	}
