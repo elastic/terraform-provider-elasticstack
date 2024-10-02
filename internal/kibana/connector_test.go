@@ -225,7 +225,7 @@ func TestAccResourceKibanaConnectorGemini(t *testing.T) {
 	resource "elasticstack_kibana_action_connector" "test" {
 	  name         = "%s"
 	  config       = jsonencode({
-      apiUrl       = "url1",
+      apiUrl       = "https://elastic.co",
       gcpRegion    = "us-central1",
       gcpProjectID = "project1",
       defaultModel = "gemini-1.5-pro-001"
@@ -248,7 +248,7 @@ func TestAccResourceKibanaConnectorGemini(t *testing.T) {
 	resource "elasticstack_kibana_action_connector" "test" {
 	  name         = "Updated %s"
 	  config       = jsonencode({
-      apiUrl       = "url2",
+      apiUrl       = "https://elasticsearch.com",
       gcpRegion    = "us-east4",
       gcpProjectID = "project2",
       defaultModel = "gemini-1.5-pro-001"
@@ -272,7 +272,7 @@ func TestAccResourceKibanaConnectorGemini(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".gemini"),
 
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"url1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elastic\.co\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"gcpRegion\":\"us-central1\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"gcpProjectID\":\"project1\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"gemini-1.5-pro-001\"`)),
@@ -286,7 +286,7 @@ func TestAccResourceKibanaConnectorGemini(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".gemini"),
 
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"url2\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elasticsearch\.com\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"gcpRegion\":\"us-east4\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"gcpProjectID\":\"project2\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"gemini-1.5-pro-001\"`)),
