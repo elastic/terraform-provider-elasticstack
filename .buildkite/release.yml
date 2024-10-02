@@ -3,6 +3,6 @@ steps:
     agents:
       image: "golang:1.23.2@sha256:adee809c2d0009a4199a11a1b2618990b244c6515149fe609e2788ddf164bd10"
       cpu: "8"
-      memory: "12G"
+      memory: "16G"
     command:
       - ".buildkite/scripts/release.sh"
