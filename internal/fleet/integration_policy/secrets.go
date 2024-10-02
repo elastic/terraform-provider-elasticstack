@@ -70,12 +70,21 @@ func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, privat
 		return
 	}
 
+	handleVar := func(key string, mval map[string]any, vars map[string]any) {
+		refID := mval["id"].(string)
+		if original, ok := secrets[refID]; ok {
+			vars[key] = original
+		}
+	}
+
 	handleVars := func(vars map[string]any) {
 		for key, val := range vars {
 			if mval, ok := val.(map[string]any); ok {
 				if wrapped, ok := mval["value"]; ok {
 					vars[key] = wrapped
 					val = wrapped
+				} else if v, ok := mval["isSecretRef"]; ok && v == true {
+					handleVar(key, mval, vars)
 				} else {
 					// Don't keep null (missing) values
 					delete(vars, key)
@@ -84,10 +93,7 @@ func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, privat
 
 				if mval, ok := val.(map[string]any); ok {
 					if v, ok := mval["isSecretRef"]; ok && v == true {
-						refID := mval["id"].(string)
-						if original, ok := secrets[refID]; ok {
-							vars[key] = original
-						}
+						handleVar(key, mval, vars)
 					}
 				}
 			}
@@ -119,12 +125,23 @@ func handleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest
 		return
 	}
 
+	handleVar := func(key string, mval map[string]any, reqVars map[string]any, respVars map[string]any) {
+		if v, ok := mval["isSecretRef"]; ok && v == true {
+			refID := mval["id"].(string)
+			original := reqVars[key]
+			secrets[refID] = original
+			respVars[key] = original
+		}
+	}
+
 	handleVars := func(reqVars map[string]any, respVars map[string]any) {
 		for key, val := range respVars {
 			if mval, ok := val.(map[string]any); ok {
 				if wrapped, ok := mval["value"]; ok {
 					respVars[key] = wrapped
 					val = wrapped
+				} else if v, ok := mval["isSecretRef"]; ok && v == true {
+					handleVar(key, mval, reqVars, respVars)
 				} else {
 					// Don't keep null (missing) values
 					delete(respVars, key)
@@ -132,12 +149,7 @@ func handleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest
 				}
 
 				if mval, ok := val.(map[string]any); ok {
-					if v, ok := mval["isSecretRef"]; ok && v == true {
-						refID := mval["id"].(string)
-						original := reqVars[key]
-						secrets[refID] = original
-						respVars[key] = original
-					}
+					handleVar(key, mval, reqVars, respVars)
 				}
 			}
 		}
