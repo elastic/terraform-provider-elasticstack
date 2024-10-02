@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.8] - 2024-10-02
+
 - Add key_id to the `elasticstack_elasticsearch_api_key` resource. ([#789](https://github.com/elastic/terraform-provider-elasticstack/pull/789))
 - Fix handling of `sys_monitoring` in `elasticstack_fleet_agent_policy` ([#792](https://github.com/elastic/terraform-provider-elasticstack/pull/792))
 - Migrate `elasticstack_fleet_agent_policy`, `elasticstack_fleet_integration` (both), and `elasticstack_fleet_server_host` to terraform-plugin-framework ([#785](https://github.com/elastic/terraform-provider-elasticstack/pull/785))
@@ -347,8 +349,9 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...HEAD
-[0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...HEAD
+[0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
+[0.11.7]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...v0.11.4
