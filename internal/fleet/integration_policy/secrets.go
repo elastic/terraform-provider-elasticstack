@@ -61,9 +61,9 @@ func (s secretStore) Save(ctx context.Context, private privateData) (diags diag.
 	return private.SetKey(ctx, "secrets", bytes)
 }
 
-// handleRespSecrets extracts the wrapped value from each response var, then
+// HandleRespSecrets extracts the wrapped value from each response var, then
 // replaces any secret refs with the original value from secrets if available.
-func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+func HandleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
 	secrets, nd := newSecretStore(ctx, resp, private)
 	diags.Append(nd...)
 	if diags.HasError() {
@@ -116,9 +116,9 @@ func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, privat
 	return
 }
 
-// handleReqRespSecrets extracts the wrapped value from each response var, then
+// HandleReqRespSecrets extracts the wrapped value from each response var, then
 // maps any secret refs to the original request value.
-func handleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+func HandleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
 	secrets, nd := newSecretStore(ctx, resp, private)
 	diags.Append(nd...)
 	if diags.HasError() {
@@ -127,10 +127,19 @@ func handleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest
 
 	handleVar := func(key string, mval map[string]any, reqVars map[string]any, respVars map[string]any) {
 		if v, ok := mval["isSecretRef"]; ok && v == true {
-			refID := mval["id"].(string)
 			original := reqVars[key]
-			secrets[refID] = original
 			respVars[key] = original
+
+			// Is the original also a secret ref?
+			// This should only show up during importing and pre 0.11.7 migration.
+			if moriginal, ok := original.(map[string]any); ok {
+				if v, ok := moriginal["isSecretRef"]; ok && v == true {
+					return
+				}
+			}
+
+			refID := mval["id"].(string)
+			secrets[refID] = original
 		}
 	}
 

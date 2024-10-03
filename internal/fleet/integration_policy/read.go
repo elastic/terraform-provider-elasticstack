@@ -34,7 +34,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	diags = handleRespSecrets(ctx, policy, resp.Private)
+	diags = HandleRespSecrets(ctx, policy, resp.Private)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
