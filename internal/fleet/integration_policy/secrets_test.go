@@ -89,12 +89,8 @@ func TestHandleRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
-						Streams: &Map{
-							"stream1": Map{
-								"vars": maps.Clone(tt.input),
-							},
-						},
-						Vars: utils.Pointer(maps.Clone(tt.input)),
+						Streams: &Map{"stream1": Map{"vars": maps.Clone(tt.input)}},
+						Vars:    utils.Pointer(maps.Clone(tt.input)),
 					},
 				},
 				Vars: utils.Pointer(maps.Clone(tt.input)),
@@ -102,12 +98,8 @@ func TestHandleRespSecrets(t *testing.T) {
 			wants := fleetapi.PackagePolicy{
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
-						Streams: &Map{
-							"stream1": Map{
-								"vars": tt.want,
-							},
-						},
-						Vars: &tt.want,
+						Streams: &Map{"stream1": Map{"vars": tt.want}},
+						Vars:    &tt.want,
 					},
 				},
 				Vars: &tt.want,
@@ -115,34 +107,22 @@ func TestHandleRespSecrets(t *testing.T) {
 
 			diags := integration_policy.HandleRespSecrets(ctx, &resp, &private)
 			// Policy vars
-			if !reflect.DeepEqual(
-				*resp.Vars,
-				*wants.Vars,
-			) {
-				t.Errorf("HandleRespSecrets() policy-vars = %#v, want %#v",
-					*resp.Vars,
-					*wants.Vars,
-				)
+			got := *resp.Vars
+			want := *wants.Vars
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("HandleRespSecrets() policy-vars = %#v, want %#v", got, want)
 			}
 			// Input vars
-			if !reflect.DeepEqual(
-				*resp.Inputs["input1"].Vars,
-				*wants.Inputs["input1"].Vars,
-			) {
-				t.Errorf("HandleRespSecrets() input-vars = %#v, want %#v",
-					*resp.Inputs["input1"].Vars,
-					*wants.Inputs["input1"].Vars,
-				)
+			got = *resp.Inputs["input1"].Vars
+			want = *wants.Inputs["input1"].Vars
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("HandleRespSecrets() input-vars = %#v, want %#v", got, want)
 			}
 			// Stream vars
-			if !reflect.DeepEqual(
-				(*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"],
-				(*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"],
-			) {
-				t.Errorf("HandleRespSecrets() stream-vars = %#v, want %#v",
-					(*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"],
-					(*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"],
-				)
+			got = (*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
+			want = (*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("HandleRespSecrets() stream-vars = %#v, want %#v", got, want)
 			}
 			for _, d := range diags.Errors() {
 				t.Errorf("HandleRespSecrets() diagnostic: %s: %s", d.Summary(), d.Detail())
@@ -222,12 +202,8 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			req := fleetapi.PackagePolicyRequest{
 				Inputs: &map[string]fleetapi.PackagePolicyRequestInput{
 					"input1": {
-						Streams: &map[string]fleetapi.PackagePolicyRequestInputStream{
-							"stream1": {
-								Vars: utils.Pointer(maps.Clone(tt.reqInput)),
-							},
-						},
-						Vars: utils.Pointer(maps.Clone(tt.reqInput)),
+						Streams: &map[string]fleetapi.PackagePolicyRequestInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.reqInput))}},
+						Vars:    utils.Pointer(maps.Clone(tt.reqInput)),
 					},
 				},
 				Vars: utils.Pointer(maps.Clone(tt.reqInput)),
@@ -236,12 +212,8 @@ func TestHandleReqRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
-						Streams: &Map{
-							"stream1": Map{
-								"vars": maps.Clone(tt.respInput),
-							},
-						},
-						Vars: utils.Pointer(maps.Clone(tt.respInput)),
+						Streams: &Map{"stream1": Map{"vars": maps.Clone(tt.respInput)}},
+						Vars:    utils.Pointer(maps.Clone(tt.respInput)),
 					},
 				},
 				Vars: utils.Pointer(maps.Clone(tt.respInput)),
@@ -249,12 +221,8 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			wants := fleetapi.PackagePolicy{
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
-						Streams: &Map{
-							"stream1": Map{
-								"vars": tt.want,
-							},
-						},
-						Vars: &tt.want,
+						Streams: &Map{"stream1": Map{"vars": tt.want}},
+						Vars:    &tt.want,
 					},
 				},
 				Vars: &tt.want,
@@ -263,34 +231,22 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			private := privateData{}
 			diags := integration_policy.HandleReqRespSecrets(ctx, req, &resp, &private)
 			// Policy vars
-			if !reflect.DeepEqual(
-				*resp.Vars,
-				*wants.Vars,
-			) {
-				t.Errorf("HandleReqRespSecrets() policy-vars = %#v, want %#v",
-					*resp.Vars,
-					*wants.Vars,
-				)
+			got := *resp.Vars
+			want := *wants.Vars
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("HandleReqRespSecrets() policy-vars = %#v, want %#v", got, want)
 			}
 			// Input vars
-			if !reflect.DeepEqual(
-				*resp.Inputs["input1"].Vars,
-				*wants.Inputs["input1"].Vars,
-			) {
-				t.Errorf("HandleReqRespSecrets() input-vars = %#v, want %#v",
-					*resp.Inputs["input1"].Vars,
-					*wants.Inputs["input1"].Vars,
-				)
+			got = *resp.Inputs["input1"].Vars
+			want = *wants.Inputs["input1"].Vars
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("HandleReqRespSecrets() input-vars = %#v, want %#v", got, want)
 			}
 			// Stream vars
-			if !reflect.DeepEqual(
-				(*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"],
-				(*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"],
-			) {
-				t.Errorf("HandleReqRespSecrets() stream-vars = %#v, want %#v",
-					(*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"],
-					(*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"],
-				)
+			got = (*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
+			want = (*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("HandleReqRespSecrets() stream-vars = %#v, want %#v", got, want)
 			}
 			for _, d := range diags.Errors() {
 				t.Errorf("HandleReqRespSecrets() diagnostic: %s: %s", d.Summary(), d.Detail())
