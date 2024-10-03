@@ -979,35 +979,41 @@ components:
         secrets:
           $ref: '#/components/schemas/secrets_properties_email'
     config_properties_gemini:
-      title: Connector request properties for an gemini connector
+      title: Connector request properties for an Google Gemini connector
       description: Defines properties for connectors when type is `.gemini`.
+      required:
+        - apiUrl
+        - gcpRegion
+        - gcpProjectID
       type: object
       properties:
         apiUrl:
           type: string
-          description: The Google Gemini request URL. `https://us-central1-aiplatform.googleapis.com`
-        gcpRegion:
-          type: string
-          description: The GCP region where the Vertex AI endpoint enabled
-        gcpProjectID:
-          type: string
-          description: The project which has Vertex AI endpoint enabled
+          description: The Google Gemini request URL.
         defaultModel:
           type: string
-          description: The GAI model for Google Gemini to use.
+          description: The generative artificial intelligence model for Google Gemini to use.
+          default: gemini-1.5-pro-001
+        gcpRegion:
+          type: string
+          description: The GCP region where the Vertex AI endpoint enabled.
+        gcpProjectID:
+          type: string
+          description: The Google ProjectID that has Vertex AI endpoint enabled.
     secrets_properties_gemini:
-      required:
-        - credentialsJson
+      title: Connector secrets properties for a Google Gemini connector
       description: Defines secrets for connectors when type is `.gemini`.
       type: object
+      required:
+        - credentialsJSON
       properties:
-        credentialsJson:
-          description: Service account json credentials to authenticate to GCP Console
+        credentialsJSON:
           type: string
+          description: The service account credentials JSON file. The service account should have Vertex AI user IAM role assigned to it.
     create_connector_request_gemini:
-      title: Create gemini connector request
+      title: Create Google Gemini connector request
       description: |
-        Send requests to Google Gemini
+        The Google Gemini connector uses axios to send a POST request to Google Gemini.
       type: object
       required:
         - config
@@ -1930,7 +1936,7 @@ components:
           type: string
           description: The display name for the connector.
     connector_response_properties_gemini:
-      title: Connector response properties for an gemini connector
+      title: Connector response properties for a Google Gemini connector
       type: object
       required:
         - config
@@ -2491,12 +2497,11 @@ components:
         secrets:
           $ref: '#/components/schemas/secrets_properties_email'
     update_connector_request_gemini:
-      title: Update gemini connector request
+      title: Update Google Gemini connector request
       type: object
       required:
         - config
         - name
-        - secrets
       properties:
         config:
           $ref: '#/components/schemas/config_properties_gemini'

@@ -517,17 +517,17 @@ type ConfigPropertiesEmail struct {
 
 // ConfigPropertiesGemini Defines properties for connectors when type is `.gemini`.
 type ConfigPropertiesGemini struct {
-	// ApiUrl The Google Gemini request URL. `https://us-central1-aiplatform.googleapis.com`
-	ApiUrl *string `json:"apiUrl,omitempty"`
+	// ApiUrl The Google Gemini request URL.
+	ApiUrl string `json:"apiUrl"`
 
-	// DefaultModel The GAI model for Google Gemini to use.
+	// DefaultModel The generative artificial intelligence model for Google Gemini to use.
 	DefaultModel *string `json:"defaultModel,omitempty"`
 
-	// GcpProjectID The project which has Vertex AI endpoint enabled
-	GcpProjectID *string `json:"gcpProjectID,omitempty"`
+	// GcpProjectID The Google ProjectID that has Vertex AI endpoint enabled.
+	GcpProjectID string `json:"gcpProjectID"`
 
-	// GcpRegion The GCP region where the Vertex AI endpoint enabled
-	GcpRegion *string `json:"gcpRegion,omitempty"`
+	// GcpRegion The GCP region where the Vertex AI endpoint enabled.
+	GcpRegion string `json:"gcpRegion"`
 }
 
 // ConfigPropertiesIndex Defines properties for connectors when type is `.index`.
@@ -1303,7 +1303,7 @@ type CreateConnectorRequestEmail struct {
 // CreateConnectorRequestEmailConnectorTypeId The type of connector.
 type CreateConnectorRequestEmailConnectorTypeId string
 
-// CreateConnectorRequestGemini Send requests to Google Gemini
+// CreateConnectorRequestGemini The Google Gemini connector uses axios to send a POST request to Google Gemini.
 type CreateConnectorRequestGemini struct {
 	// Config Defines properties for connectors when type is `.gemini`.
 	Config ConfigPropertiesGemini `json:"config"`
@@ -2055,8 +2055,8 @@ type SecretsPropertiesEmail map[string]interface{}
 
 // SecretsPropertiesGemini Defines secrets for connectors when type is `.gemini`.
 type SecretsPropertiesGemini struct {
-	// CredentialsJson Service account json credentials to authenticate to GCP Console
-	CredentialsJson string `json:"credentialsJson"`
+	// CredentialsJSON The service account credentials JSON file. The service account should have Vertex AI user IAM role assigned to it.
+	CredentialsJSON string `json:"credentialsJSON"`
 }
 
 // SecretsPropertiesJira Defines secrets for connectors when type is `.jira`.
@@ -2162,7 +2162,7 @@ type UpdateConnectorRequestGemini struct {
 	Name string `json:"name"`
 
 	// Secrets Defines secrets for connectors when type is `.gemini`.
-	Secrets SecretsPropertiesGemini `json:"secrets"`
+	Secrets *SecretsPropertiesGemini `json:"secrets,omitempty"`
 }
 
 // UpdateConnectorRequestIndex defines model for update_connector_request_index.
