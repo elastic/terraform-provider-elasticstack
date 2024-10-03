@@ -247,7 +247,6 @@ func TestHandleReqRespSecrets(t *testing.T) {
 				Vars: utils.Pointer(maps.Clone(tt.respInput)),
 			}
 			wants := fleetapi.PackagePolicy{
-				SecretReferences: secretRefs,
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
 						Streams: &Map{
