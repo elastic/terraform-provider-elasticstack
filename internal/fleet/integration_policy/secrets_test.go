@@ -3,13 +3,13 @@ package integration_policy_test
 import (
 	"context"
 	"maps"
-	"reflect"
 	"testing"
 
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/stretchr/testify/require"
 )
 
 type privateData map[string]string
@@ -106,32 +106,25 @@ func TestHandleRespSecrets(t *testing.T) {
 			}
 
 			diags := integration_policy.HandleRespSecrets(ctx, &resp, &private)
+			require.Empty(t, diags)
 			// Policy vars
 			got := *resp.Vars
 			want := *wants.Vars
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("HandleRespSecrets() policy-vars = %#v, want %#v", got, want)
-			}
+			require.Equal(t, want, got)
+
 			// Input vars
 			got = *resp.Inputs["input1"].Vars
 			want = *wants.Inputs["input1"].Vars
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("HandleRespSecrets() input-vars = %#v, want %#v", got, want)
-			}
+			require.Equal(t, want, got)
+
 			// Stream vars
 			got = (*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
 			want = (*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("HandleRespSecrets() stream-vars = %#v, want %#v", got, want)
-			}
-			for _, d := range diags.Errors() {
-				t.Errorf("HandleRespSecrets() diagnostic: %s: %s", d.Summary(), d.Detail())
-			}
+			require.Equal(t, want, got)
+
 			// privateData
 			privateWants := privateData{"secrets": `{"known-secret":"secret"}`}
-			if !reflect.DeepEqual(private, privateWants) {
-				t.Errorf("HandleRespSecrets() privateData = %#v, want %#v", private, privateWants)
-			}
+			require.Equal(t, privateWants, private)
 		})
 	}
 }
@@ -230,38 +223,29 @@ func TestHandleReqRespSecrets(t *testing.T) {
 
 			private := privateData{}
 			diags := integration_policy.HandleReqRespSecrets(ctx, req, &resp, &private)
+			require.Empty(t, diags)
+
 			// Policy vars
 			got := *resp.Vars
 			want := *wants.Vars
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("HandleReqRespSecrets() policy-vars = %#v, want %#v", got, want)
-			}
+			require.Equal(t, want, got)
+
 			// Input vars
 			got = *resp.Inputs["input1"].Vars
 			want = *wants.Inputs["input1"].Vars
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("HandleReqRespSecrets() input-vars = %#v, want %#v", got, want)
-			}
+			require.Equal(t, want, got)
+
 			// Stream vars
 			got = (*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
 			want = (*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("HandleReqRespSecrets() stream-vars = %#v, want %#v", got, want)
-			}
-			for _, d := range diags.Errors() {
-				t.Errorf("HandleReqRespSecrets() diagnostic: %s: %s", d.Summary(), d.Detail())
-			}
+			require.Equal(t, want, got)
 
 			if v, ok := (*req.Vars)["k"]; ok && v == "secret" {
 				privateWants := privateData{"secrets": `{"known-secret":"secret"}`}
-				if !reflect.DeepEqual(private, privateWants) {
-					t.Errorf("HandleReqRespSecrets() privateData = %#v, want %#v", private, privateWants)
-				}
+				require.Equal(t, privateWants, private)
 			} else {
 				privateWants := privateData{"secrets": `{}`}
-				if !reflect.DeepEqual(private, privateWants) {
-					t.Errorf("HandleReqRespSecrets() privateData = %#v, want %#v", private, privateWants)
-				}
+				require.Equal(t, privateWants, private)
 			}
 		})
 	}
