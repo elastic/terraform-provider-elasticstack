@@ -1,6 +1,8 @@
 ## [Unreleased]
 
 - Add support for the `.gemini` connector type for Kibana action connectors ([#819](https://github.com/elastic/terraform-provider-elasticstack/pull/819))
+- Fix secret handling `elasticstack_fleet_integration_policy` resource. ([#821](https://github.com/elastic/terraform-provider-elasticstack/pull/821))
+
 
 ## [0.11.8] - 2024-10-02
 

@@ -61,13 +61,20 @@ func (s secretStore) Save(ctx context.Context, private privateData) (diags diag.
 	return private.SetKey(ctx, "secrets", bytes)
 }
 
-// handleRespSecrets extracts the wrapped value from each response var, then
+// HandleRespSecrets extracts the wrapped value from each response var, then
 // replaces any secret refs with the original value from secrets if available.
-func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+func HandleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
 	secrets, nd := newSecretStore(ctx, resp, private)
 	diags.Append(nd...)
 	if diags.HasError() {
 		return
+	}
+
+	handleVar := func(key string, mval map[string]any, vars map[string]any) {
+		refID := mval["id"].(string)
+		if original, ok := secrets[refID]; ok {
+			vars[key] = original
+		}
 	}
 
 	handleVars := func(vars map[string]any) {
@@ -76,6 +83,8 @@ func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, privat
 				if wrapped, ok := mval["value"]; ok {
 					vars[key] = wrapped
 					val = wrapped
+				} else if v, ok := mval["isSecretRef"]; ok && v == true {
+					handleVar(key, mval, vars)
 				} else {
 					// Don't keep null (missing) values
 					delete(vars, key)
@@ -84,10 +93,7 @@ func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, privat
 
 				if mval, ok := val.(map[string]any); ok {
 					if v, ok := mval["isSecretRef"]; ok && v == true {
-						refID := mval["id"].(string)
-						if original, ok := secrets[refID]; ok {
-							vars[key] = original
-						}
+						handleVar(key, mval, vars)
 					}
 				}
 			}
@@ -110,13 +116,31 @@ func handleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, privat
 	return
 }
 
-// handleReqRespSecrets extracts the wrapped value from each response var, then
+// HandleReqRespSecrets extracts the wrapped value from each response var, then
 // maps any secret refs to the original request value.
-func handleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+func HandleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
 	secrets, nd := newSecretStore(ctx, resp, private)
 	diags.Append(nd...)
 	if diags.HasError() {
 		return
+	}
+
+	handleVar := func(key string, mval map[string]any, reqVars map[string]any, respVars map[string]any) {
+		if v, ok := mval["isSecretRef"]; ok && v == true {
+			original := reqVars[key]
+			respVars[key] = original
+
+			// Is the original also a secret ref?
+			// This should only show up during importing and pre 0.11.7 migration.
+			if moriginal, ok := original.(map[string]any); ok {
+				if v, ok := moriginal["isSecretRef"]; ok && v == true {
+					return
+				}
+			}
+
+			refID := mval["id"].(string)
+			secrets[refID] = original
+		}
 	}
 
 	handleVars := func(reqVars map[string]any, respVars map[string]any) {
@@ -125,6 +149,8 @@ func handleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest
 				if wrapped, ok := mval["value"]; ok {
 					respVars[key] = wrapped
 					val = wrapped
+				} else if v, ok := mval["isSecretRef"]; ok && v == true {
+					handleVar(key, mval, reqVars, respVars)
 				} else {
 					// Don't keep null (missing) values
 					delete(respVars, key)
@@ -132,12 +158,7 @@ func handleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest
 				}
 
 				if mval, ok := val.(map[string]any); ok {
-					if v, ok := mval["isSecretRef"]; ok && v == true {
-						refID := mval["id"].(string)
-						original := reqVars[key]
-						secrets[refID] = original
-						respVars[key] = original
-					}
+					handleVar(key, mval, reqVars, respVars)
 				}
 			}
 		}
