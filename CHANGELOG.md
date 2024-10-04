@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Fix secret handling `elasticstack_fleet_integration_policy` resource. ([#821](https://github.com/elastic/terraform-provider-elasticstack/pull/821))
+
 ## [0.11.8] - 2024-10-02
 
 - Add key_id to the `elasticstack_elasticsearch_api_key` resource. ([#789](https://github.com/elastic/terraform-provider-elasticstack/pull/789))

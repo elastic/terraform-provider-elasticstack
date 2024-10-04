@@ -35,7 +35,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	diags = handleReqRespSecrets(ctx, body, policy, resp.Private)
+	diags = HandleReqRespSecrets(ctx, body, policy, resp.Private)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
