@@ -104,6 +104,28 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 	})
 }
 
+func TestAccResourceTransformWithAliases(t *testing.T) {
+	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceTransformDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceTransformWithAliases(transformName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "name", transformName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.0.alias", "test_alias_1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.0.move_on_creation", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.1.alias", "test_alias_2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.1.move_on_creation", "false"),
+				),
+			},
+		},
+	})
+}
+
 // create a transform referencing a non-existing source index;
 // because validations are deferred, this should pass
 func testAccResourceTransformWithPivotCreate(name string) string {
@@ -355,6 +377,56 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
   timeout = "1m"
 }
   `, indexName, transformName)
+}
+
+func testAccResourceTransformWithAliases(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_transform" "test_aliases" {
+  name = "%s"
+  description = "test transform with aliases"
+
+  source {
+    indices = ["source_index"]
+  }
+
+  destination {
+    index = "dest_index_for_transform"
+
+    aliases {
+      alias = "test_alias_1"
+      move_on_creation = true
+    }
+
+    aliases {
+      alias = "test_alias_2"
+      move_on_creation = false
+    }
+  }
+
+  pivot = jsonencode({
+    "group_by": {
+      "customer_id": {
+        "terms": {
+          "field": "customer_id"
+        }
+      }
+    },
+    "aggregations": {
+      "total_sales": {
+        "sum": {
+          "field": "sales"
+        }
+      }
+    }
+  })
+
+  defer_validation = true
+}
+`, name)
 }
 
 func checkResourceTransformDestroy(s *terraform.State) error {
