@@ -25,15 +25,16 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 
   destination {
     index = "destination_index_for_transform"
-    aliases = [
-      {
-        alias            = "alias_for_destination_index"
-        move_on_creation = true
-      },
-      {
-        alias = "some_other_alias"
-      },
-    ]
+
+    aliases {
+      alias = "test_alias_1"
+      move_on_creation = true
+    }
+
+    aliases {
+      alias = "test_alias_2"
+      move_on_creation = false
+    }
   }
 
   pivot = jsonencode({

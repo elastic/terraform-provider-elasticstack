@@ -10,12 +10,12 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
     index = "destination_index_for_transform"
 
     aliases {
-      alias = "test_alias_1"
+      alias            = "test_alias_1"
       move_on_creation = true
     }
 
     aliases {
-      alias = "test_alias_2"
+      alias            = "test_alias_2"
       move_on_creation = false
     }
   }
