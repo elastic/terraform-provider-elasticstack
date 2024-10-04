@@ -57,14 +57,14 @@ func DataSourceTemplate() *schema.Resource {
 			},
 		},
 		"metadata": {
-			Description:      "Optional user metadata about the index template.",
-			Type:             schema.TypeString,
-			Computed:         true,
+			Description: "Optional user metadata about the index template.",
+			Type:        schema.TypeString,
+			Computed:    true,
 		},
 		"priority": {
-			Description:  "Priority to determine index template precedence when a new data stream or index is created.",
-			Type:         schema.TypeInt,
-			Computed:     true,
+			Description: "Priority to determine index template precedence when a new data stream or index is created.",
+			Type:        schema.TypeInt,
+			Computed:    true,
 		},
 		"template": {
 			Description: "Template to be applied. It may optionally include an aliases, mappings, lifecycle, or settings configuration.",
