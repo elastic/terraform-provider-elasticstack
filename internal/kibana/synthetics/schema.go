@@ -491,12 +491,10 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 			return nil, dg
 		}
 	}
-	var locLabels []string
+
 	var privateLocLabels []string
 	for _, l := range api.Locations {
-		if l.IsServiceManaged {
-			locLabels = append(locLabels, l.Id)
-		} else {
+		if !l.IsServiceManaged {
 			privateLocLabels = append(privateLocLabels, l.Label)
 		}
 	}
@@ -565,7 +563,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 		Name:             types.StringValue(api.Name),
 		SpaceID:          types.StringValue(api.Namespace),
 		Schedule:         types.Int64Value(schedule),
-		Locations:        StringSliceValue(locLabels),
+		Locations:        v.Locations,
 		PrivateLocations: StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
 		Tags:             StringSliceValue(api.Tags),
