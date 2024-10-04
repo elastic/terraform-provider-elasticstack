@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Fix secret handling `elasticstack_fleet_integration_policy` resource. ([#821](https://github.com/elastic/terraform-provider-elasticstack/pull/821))
+- Add `description` attribute to `elasticstack_elasticsearch_security_role` resource. ([#824](https://github.com/elastic/terraform-provider-elasticstack/pull/824))
 
 ## [0.11.8] - 2024-10-02
 
