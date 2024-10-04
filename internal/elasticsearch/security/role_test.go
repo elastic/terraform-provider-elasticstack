@@ -29,6 +29,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				Config: testAccResourceSecurityRoleCreate(roleName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "test description"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
@@ -41,6 +42,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				Config: testAccResourceSecurityRoleUpdate(roleName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
@@ -92,7 +94,9 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_security_role" "test" {
-  name    = "%s"
+  name        = "%s"
+  description = "test description"
+
   cluster = ["all"]
 
   indices {
@@ -123,7 +127,9 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_security_role" "test" {
-  name    = "%s"
+  name        = "%s"
+  description = "updated test description"
+  
   cluster = ["all"]
 
   indices {
@@ -234,7 +240,7 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Role (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("role (%s) still exists", compId.ResourceId)
 		}
 	}
 	return nil
