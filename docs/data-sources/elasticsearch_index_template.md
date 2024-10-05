@@ -1,13 +1,14 @@
 ---
-page_title: "Index"
-subcategory: ""
+subcategory: "Index"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_index_template Data Source"
 description: |-
-  Retrieves index template definition. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-template.html
+  Retrieves index template.
 ---
 
 # Data Source: elasticstack_elasticsearch_index_template
 
-Retrieves index template definition. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-template.html
+Use this data source to retrieve information about existing Elasticsearch index templates. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-template.html
 
 ## Example Usage
 
@@ -16,12 +17,12 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-data "elasticstack_elasticsearch_index_template" "index_template" {
-  name = "existingtemplate"
+data "elasticstack_elasticsearch_index_template" "ilm-history-7" {
+  name = "ilm-history-7"
 }
 
 output "template" {
-  value = data.elasticstack_elasticsearch_index_template.index_template.name
+  value = data.elasticstack_elasticsearch_index_template.ilm-history-7
 }
 ```
 
