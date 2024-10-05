@@ -148,7 +148,6 @@ type tfModel struct {
 	Mappings                           jsontypes.Normalized `tfsdk:"mappings"`
 	SettingsRaw                        jsontypes.Normalized `tfsdk:"settings_raw"`
 	DeletionProtection                 types.Bool           `tfsdk:"deletion_protection"`
-	IncludeTypeName                    types.Bool           `tfsdk:"include_type_name"`
 	WaitForActiveShards                types.String         `tfsdk:"wait_for_active_shards"`
 	MasterTimeout                      customtypes.Duration `tfsdk:"master_timeout"`
 	Timeout                            customtypes.Duration `tfsdk:"timeout"`
@@ -293,7 +292,6 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 
 	if serverFlavor != "serverless" {
 		params.WaitForActiveShards = model.WaitForActiveShards.ValueString()
-		params.IncludeTypeName = model.IncludeTypeName.ValueBool()
 	}
 
 	return params

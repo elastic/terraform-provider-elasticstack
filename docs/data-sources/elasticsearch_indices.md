@@ -63,7 +63,6 @@ Optional:
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.
 - `highlight_max_analyzed_offset` (Number) The maximum number of characters that will be analyzed for a highlight request.
-- `include_type_name` (Boolean) If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.
 - `indexing_slowlog_level` (String) Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`
 - `indexing_slowlog_source` (String) Set the number of characters of the `_source` to include in the slowlog lines, `false` or `0` will skip logging the source entirely and setting it to `true` will log the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.
 - `indexing_slowlog_threshold_index_debug` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `2s`

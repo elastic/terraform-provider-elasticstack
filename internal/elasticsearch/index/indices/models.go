@@ -149,7 +149,6 @@ type indexTfModel struct {
 	AnalysisFilter                     jsontypes.Normalized `tfsdk:"analysis_filter"`
 	AnalysisNormalizer                 jsontypes.Normalized `tfsdk:"analysis_normalizer"`
 	DeletionProtection                 types.Bool           `tfsdk:"deletion_protection"`
-	IncludeTypeName                    types.Bool           `tfsdk:"include_type_name"`
 	WaitForActiveShards                types.String         `tfsdk:"wait_for_active_shards"`
 	MasterTimeout                      customtypes.Duration `tfsdk:"master_timeout"`
 	Timeout                            customtypes.Duration `tfsdk:"timeout"`

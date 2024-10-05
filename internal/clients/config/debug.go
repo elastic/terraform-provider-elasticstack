@@ -7,7 +7,7 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v7/estransport"
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -22,7 +22,7 @@ const logRespMsg = `%s API Response for [%s] Details:
 %s
 -----------------------------------------------------`
 
-var _ estransport.Logger = &debugLogger{}
+var _ elastictransport.Logger = &debugLogger{}
 
 type debugLogger struct {
 	Name string

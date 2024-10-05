@@ -330,11 +330,6 @@ func getSchema() schema.Schema {
 							Computed:    true,
 							Description: "Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.",
 						},
-						"include_type_name": schema.BoolAttribute{
-							Description: "If true, a mapping type is expected in the body of mappings. Defaults to false. Supported for Elasticsearch 7.x.",
-							Optional:    true,
-							Computed:    true,
-						},
 						"wait_for_active_shards": schema.StringAttribute{
 							Description: "The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard. This value is ignored when running against Serverless projects.",
 							Optional:    true,
