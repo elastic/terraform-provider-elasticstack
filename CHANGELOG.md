@@ -1,7 +1,14 @@
 ## [Unreleased]
 
+### Breaking changes
+
+- Remove support for specifying `include_type_name` from the `elasticstack_elasticsearch_index` resource. This parameter has been deprecated from 7.0, with indices restricted to a single type since 6.0. ([#832](https://github.com/elastic/terraform-provider-elasticstack/pull/832))
+
+### Changes
+
 - Fix secret handling `elasticstack_fleet_integration_policy` resource. ([#821](https://github.com/elastic/terraform-provider-elasticstack/pull/821))
-- Fix merge values for `elasticstack_kibana_synthetics_monitor` monitor locations ([#823](https://github.com/elastic/terraform-provider-elasticstack/pull/823)
+- Fix merge values for `elasticstack_kibana_synthetics_monitor` monitor locations ([#823](https://github.com/elastic/terraform-provider-elasticstack/pull/823))
+- Migrate to a v8 Elasticsearch client ([#832](https://github.com/elastic/terraform-provider-elasticstack/pull/832))
 
 ## [0.11.8] - 2024-10-02
 
