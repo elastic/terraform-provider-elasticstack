@@ -15,9 +15,9 @@ func TestAccIndexTemplateDataSource(t *testing.T) {
 			{
 				Config: testAccIndexTemplateDataSourceConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.ilm-history-7", "name", "ilm-history-7"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.ilm-history-7", "index_patterns.0", "ilm-history-7*"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.ilm-history-7", "priority", "2147483647"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.logs", "name", "logs"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.logs", "index_patterns.0", "logs-*-*"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.logs", "priority", "100"),
 				),
 			},
 		},
@@ -29,7 +29,7 @@ provider "elasticstack" {
 	elasticsearch {}
 	kibana {}
 }
-data "elasticstack_elasticsearch_index_template" "ilm-history-7" {
-	name = "ilm-history-7"
+data "elasticstack_elasticsearch_index_template" "logs" {
+	name = "logs"
 }
 `
