@@ -44,6 +44,5 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 data "elasticstack_elasticsearch_index_template" "test" {
 	name = "%s"
 }
-	`, templateName, templateName, templateName
+	`, templateName, templateName, templateName)
 }
-
