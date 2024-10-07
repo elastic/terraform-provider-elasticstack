@@ -143,8 +143,7 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_security_role" "test" {
   name        = "%s"
-  description = "updated test description"
-  
+
   cluster = ["all"]
 
   indices {
