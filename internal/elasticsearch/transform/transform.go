@@ -26,6 +26,7 @@ func init() {
 
 	// capabilities
 	settingsRequiredVersions["destination.pipeline"] = version.Must(version.NewVersion("7.3.0"))
+	settingsRequiredVersions["destination.aliases"] = version.Must(version.NewVersion("8.8.0"))
 	settingsRequiredVersions["frequency"] = version.Must(version.NewVersion("7.3.0"))
 	settingsRequiredVersions["latest"] = version.Must(version.NewVersion("7.11.0"))
 	settingsRequiredVersions["retention_policy"] = version.Must(version.NewVersion("7.12.0"))
@@ -115,6 +116,26 @@ func ResourceTransform() *schema.Resource {
 							validation.StringMatch(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
 							validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"),
 						),
+					},
+					"aliases": {
+						Description: "The aliases that the destination index for the transform should have.",
+						Type:        schema.TypeList,
+						Optional:    true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"alias": {
+									Description: "The name of the alias.",
+									Type:        schema.TypeString,
+									Required:    true,
+								},
+								"move_on_creation": {
+									Description: "Whether the destination index should be the only index in this alias. Defaults to false.",
+									Type:        schema.TypeBool,
+									Optional:    true,
+									Default:     false,
+								},
+							},
+						},
 					},
 					"pipeline": {
 						Description: "The unique identifier for an ingest pipeline.",
@@ -267,14 +288,14 @@ func ResourceTransform() *schema.Resource {
 		},
 		"timeout": {
 			Type:         schema.TypeString,
-			Description:  "Period to wait for a response from Elastisearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.",
+			Description:  "Period to wait for a response from Elasticsearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.",
 			Optional:     true,
 			Default:      "30s",
 			ValidateFunc: utils.StringIsDuration,
 		},
 		"enabled": {
 			Type:        schema.TypeBool,
-			Description: "Controls wether the transform should be started or stopped. Default is `false` (stopped).",
+			Description: "Controls whether the transform should be started or stopped. Default is `false` (stopped).",
 			Optional:    true,
 			Default:     false,
 		},
@@ -365,7 +386,7 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 		return diags
 	}
 
-	if err := updateResourceDataFromModel(ctx, d, transform); err != nil {
+	if err := updateResourceDataFromModel(d, transform); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -375,7 +396,7 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 		return diags
 	}
 
-	if err := updateResourceDataFromStats(ctx, d, transformStats); err != nil {
+	if err := updateResourceDataFromStats(d, transformStats); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -485,11 +506,21 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("destination"); ok {
-
 		definedDestination := v.([]interface{})[0].(map[string]interface{})
 
 		transform.Destination = &models.TransformDestination{
 			Index: definedDestination["index"].(string),
+		}
+
+		if aliases, ok := definedDestination["aliases"].([]interface{}); ok && len(aliases) > 0 && isSettingAllowed(ctx, "destination.aliases", serverVersion) {
+			transform.Destination.Aliases = make([]models.TransformAlias, len(aliases))
+			for i, alias := range aliases {
+				aliasMap := alias.(map[string]interface{})
+				transform.Destination.Aliases[i] = models.TransformAlias{
+					Alias:          aliasMap["alias"].(string),
+					MoveOnCreation: aliasMap["move_on_creation"].(bool),
+				}
+			}
 		}
 
 		if pipeline, ok := definedDestination["pipeline"]; ok && isSettingAllowed(ctx, "destination.pipeline", serverVersion) {
@@ -608,7 +639,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	return &transform, nil
 }
 
-func updateResourceDataFromModel(ctx context.Context, d *schema.ResourceData, transform *models.Transform) error {
+func updateResourceDataFromModel(d *schema.ResourceData, transform *models.Transform) error {
 
 	// transform.Description
 	if err := d.Set("description", transform.Description); err != nil {
@@ -724,7 +755,7 @@ func updateResourceDataFromModel(ctx context.Context, d *schema.ResourceData, tr
 	return nil
 }
 
-func updateResourceDataFromStats(ctx context.Context, d *schema.ResourceData, transformStats *models.TransformStats) error {
+func updateResourceDataFromStats(d *schema.ResourceData, transformStats *models.TransformStats) error {
 
 	// transform.Enabled
 	if err := d.Set("enabled", transformStats.IsStarted()); err != nil {
@@ -774,8 +805,18 @@ func flattenDestination(dest *models.TransformDestination) []interface{} {
 	}
 
 	d := make(map[string]interface{})
-
 	d["index"] = dest.Index
+
+	if len(dest.Aliases) > 0 {
+		aliases := make([]interface{}, len(dest.Aliases))
+		for i, alias := range dest.Aliases {
+			aliasMap := make(map[string]interface{})
+			aliasMap["alias"] = alias.Alias
+			aliasMap["move_on_creation"] = alias.MoveOnCreation
+			aliases[i] = aliasMap
+		}
+		d["aliases"] = aliases
+	}
 
 	if dest.Pipeline != "" {
 		d["pipeline"] = dest.Pipeline
@@ -789,18 +830,18 @@ func flattenSync(sync *models.TransformSync) []interface{} {
 		return nil
 	}
 
-	time := make(map[string]interface{})
+	t := make(map[string]interface{})
 
 	if sync.Time.Delay != "" {
-		time["delay"] = sync.Time.Delay
+		t["delay"] = sync.Time.Delay
 	}
 
 	if sync.Time.Field != "" {
-		time["field"] = sync.Time.Field
+		t["field"] = sync.Time.Field
 	}
 
 	s := make(map[string]interface{})
-	s["time"] = []interface{}{time}
+	s["time"] = []interface{}{t}
 
 	return []interface{}{s}
 }
@@ -810,18 +851,18 @@ func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []interf
 		return []interface{}{}
 	}
 
-	time := make(map[string]interface{})
+	t := make(map[string]interface{})
 
 	if retention.Time.MaxAge != "" {
-		time["max_age"] = retention.Time.MaxAge
+		t["max_age"] = retention.Time.MaxAge
 	}
 
 	if retention.Time.Field != "" {
-		time["field"] = retention.Time.Field
+		t["field"] = retention.Time.Field
 	}
 
 	r := make(map[string]interface{})
-	r["time"] = []interface{}{time}
+	r["time"] = []interface{}{t}
 
 	return []interface{}{r}
 }

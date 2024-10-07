@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Fix secret handling `elasticstack_fleet_integration_policy` resource. ([#821](https://github.com/elastic/terraform-provider-elasticstack/pull/821))
+- Add `aliases` attribute to `elasticstack_elasticsearch_transform` resource. ([#825](https://github.com/elastic/terraform-provider-elasticstack/pull/825))
 - Add `description` attribute to `elasticstack_elasticsearch_security_role` resource. ([#824](https://github.com/elastic/terraform-provider-elasticstack/pull/824))
 - Fix merge values for `elasticstack_kibana_synthetics_monitor` monitor locations ([#823](https://github.com/elastic/terraform-provider-elasticstack/pull/823)
 - Add `elasticstack_elasticsearch_index_template` data source ([#828](https://github.com/elastic/terraform-provider-elasticstack/pull/828))
