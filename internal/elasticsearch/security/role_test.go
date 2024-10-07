@@ -14,11 +14,13 @@ import (
 )
 
 var minSupportedRemoteIndicesVersion = version.Must(version.NewSemver("8.10.0"))
+var minSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
 
 func TestAccResourceSecurityRole(t *testing.T) {
 	// generate a random username
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	roleNameRemoteIndices := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	roleNameDescription := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -81,6 +83,22 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample2"),
 				),
 			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				Config:   testAccResourceSecurityRoleDescriptionCreate(roleNameDescription),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "test description"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				Config:   testAccResourceSecurityRoleDescriptionUpdate(roleNameDescription),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
+				),
+			},
 		},
 	})
 }
@@ -92,7 +110,8 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_security_role" "test" {
-  name    = "%s"
+  name        = "%s"
+
   cluster = ["all"]
 
   indices {
@@ -123,7 +142,8 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_security_role" "test" {
-  name    = "%s"
+  name        = "%s"
+
   cluster = ["all"]
 
   indices {
@@ -211,6 +231,32 @@ resource "elasticstack_elasticsearch_security_role" "test" {
 	`, roleName)
 }
 
+func testAccResourceSecurityRoleDescriptionCreate(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role" "test" {
+  name        = "%s"
+  description = "test description"
+}
+	`, roleName)
+}
+
+func testAccResourceSecurityRoleDescriptionUpdate(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role" "test" {
+  name        = "%s"
+  description = "updated test description"
+}
+	`, roleName)
+}
+
 func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
@@ -234,7 +280,7 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Role (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("role (%s) still exists", compId.ResourceId)
 		}
 	}
 	return nil

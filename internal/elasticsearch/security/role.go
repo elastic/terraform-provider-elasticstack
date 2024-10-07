@@ -18,6 +18,7 @@ import (
 )
 
 var minSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
+var minSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
 
 func ResourceRole() *schema.Resource {
 	roleSchema := map[string]*schema.Schema{
@@ -31,6 +32,11 @@ func ResourceRole() *schema.Resource {
 			Type:        schema.TypeString,
 			Required:    true,
 			ForceNew:    true,
+		},
+		"description": {
+			Description: "The description of the role.",
+			Type:        schema.TypeString,
+			Optional:    true,
 		},
 		"applications": {
 			Description: "A list of application privilege entries.",
@@ -258,6 +264,18 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 	}
 	var role models.Role
 	role.Name = roleId
+
+	// Add description to the role
+	if v, ok := d.GetOk("description"); ok {
+		// Return an error if the server version is less than the minimum supported version
+		if serverVersion.LessThan(minSupportedDescriptionVersion) {
+			return diag.FromErr(fmt.Errorf("'description' is supported only for Elasticsearch v%s and above", minSupportedDescriptionVersion.String()))
+		}
+
+		description := v.(string)
+		role.Description = &description
+	}
+
 	if v, ok := d.GetOk("applications"); ok {
 		definedApps := v.(*schema.Set)
 		applications := make([]models.Application, definedApps.Len())
@@ -364,37 +382,37 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 		if definedRemoteIndices.Len() > 0 && serverVersion.LessThan(minSupportedRemoteIndicesVersion) {
 			return diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Elasticsearch v%s and above", minSupportedRemoteIndicesVersion.String()))
 		}
-		remote_indices := make([]models.RemoteIndexPerms, definedRemoteIndices.Len())
+		remoteIndices := make([]models.RemoteIndexPerms, definedRemoteIndices.Len())
 		for i, idx := range definedRemoteIndices.List() {
-			remote_index := idx.(map[string]interface{})
+			remoteIndex := idx.(map[string]interface{})
 
-			definedRemoteNames := remote_index["names"].(*schema.Set)
-			remote_names := make([]string, definedRemoteNames.Len())
+			definedRemoteNames := remoteIndex["names"].(*schema.Set)
+			remoteNames := make([]string, definedRemoteNames.Len())
 			for i, name := range definedRemoteNames.List() {
-				remote_names[i] = name.(string)
+				remoteNames[i] = name.(string)
 			}
-			definedRemoteClusters := remote_index["clusters"].(*schema.Set)
-			remote_clusters := make([]string, definedRemoteClusters.Len())
+			definedRemoteClusters := remoteIndex["clusters"].(*schema.Set)
+			remoteClusters := make([]string, definedRemoteClusters.Len())
 			for i, cluster := range definedRemoteClusters.List() {
-				remote_clusters[i] = cluster.(string)
+				remoteClusters[i] = cluster.(string)
 			}
-			definedRemotePrivs := remote_index["privileges"].(*schema.Set)
-			remote_privs := make([]string, definedRemotePrivs.Len())
+			definedRemotePrivs := remoteIndex["privileges"].(*schema.Set)
+			remotePrivs := make([]string, definedRemotePrivs.Len())
 			for i, pr := range definedRemotePrivs.List() {
-				remote_privs[i] = pr.(string)
+				remotePrivs[i] = pr.(string)
 			}
 
 			newRemoteIndex := models.RemoteIndexPerms{
-				Names:      remote_names,
-				Clusters:   remote_clusters,
-				Privileges: remote_privs,
+				Names:      remoteNames,
+				Clusters:   remoteClusters,
+				Privileges: remotePrivs,
 			}
 
-			if query := remote_index["query"].(string); query != "" {
+			if query := remoteIndex["query"].(string); query != "" {
 				newRemoteIndex.Query = &query
 			}
-			if fieldSec := remote_index["field_security"].([]interface{}); len(fieldSec) > 0 {
-				remote_fieldSecurity := models.FieldSecurity{}
+			if fieldSec := remoteIndex["field_security"].([]interface{}); len(fieldSec) > 0 {
+				remoteFieldSecurity := models.FieldSecurity{}
 				// there must be only 1 entry
 				definedRemoteFieldSec := fieldSec[0].(map[string]interface{})
 
@@ -404,7 +422,7 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 					for i, grant := range gr.List() {
 						grants[i] = grant.(string)
 					}
-					remote_fieldSecurity.Grant = grants
+					remoteFieldSecurity.Grant = grants
 				}
 				// except
 				if exp := definedRemoteFieldSec["except"].(*schema.Set); exp != nil {
@@ -412,14 +430,14 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 					for i, except := range exp.List() {
 						excepts[i] = except.(string)
 					}
-					remote_fieldSecurity.Except = excepts
+					remoteFieldSecurity.Except = excepts
 				}
-				newRemoteIndex.FieldSecurity = &remote_fieldSecurity
+				newRemoteIndex.FieldSecurity = &remoteFieldSecurity
 			}
 
-			remote_indices[i] = newRemoteIndex
+			remoteIndices[i] = newRemoteIndex
 		}
-		role.RemoteIndices = remote_indices
+		role.RemoteIndices = remoteIndices
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
@@ -471,6 +489,13 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 	// set the fields
 	if err := d.Set("name", roleId); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Set the description if it exists
+	if role.Description != nil {
+		if err := d.Set("description", *role.Description); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	apps := role.Applications
