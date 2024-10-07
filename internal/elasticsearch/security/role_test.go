@@ -14,11 +14,13 @@ import (
 )
 
 var minSupportedRemoteIndicesVersion = version.Must(version.NewSemver("8.10.0"))
+var minSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
 
 func TestAccResourceSecurityRole(t *testing.T) {
 	// generate a random username
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	roleNameRemoteIndices := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	roleNameDescription := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -29,7 +31,6 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				Config: testAccResourceSecurityRoleCreate(roleName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "test description"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
@@ -42,7 +43,6 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				Config: testAccResourceSecurityRoleUpdate(roleName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
@@ -83,6 +83,22 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample2"),
 				),
 			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				Config:   testAccResourceSecurityRoleDescriptionCreate(roleNameDescription),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "test description"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				Config:   testAccResourceSecurityRoleDescriptionUpdate(roleNameDescription),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
+				),
+			},
 		},
 	})
 }
@@ -95,7 +111,6 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_security_role" "test" {
   name        = "%s"
-  description = "test description"
 
   cluster = ["all"]
 
@@ -213,6 +228,32 @@ resource "elasticstack_elasticsearch_security_role" "test" {
   metadata = jsonencode({
     version = 1
   })
+}
+	`, roleName)
+}
+
+func testAccResourceSecurityRoleDescriptionCreate(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role" "test" {
+  name        = "%s"
+  description = "test description"
+}
+	`, roleName)
+}
+
+func testAccResourceSecurityRoleDescriptionUpdate(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role" "test" {
+  name        = "%s"
+  description = "updated test description"
 }
 	`, roleName)
 }
