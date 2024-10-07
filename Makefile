@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 
 
-VERSION ?= 0.11.7
+VERSION ?= 0.11.8
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -31,7 +31,11 @@ KIBANA_SYSTEM_USERNAME ?= kibana_system
 KIBANA_SYSTEM_PASSWORD ?= password
 KIBANA_API_KEY_NAME ?= kibana-api-key
 
+FLEET_NAME ?= terraform-elasticstack-fleet
+FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
+
 SOURCE_LOCATION ?= $(shell pwd)
+, := ,
 
 export GOBIN = $(shell pwd)/bin
 
@@ -72,7 +76,7 @@ retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$atte
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
 # To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
 .PHONY: docker-testacc
-docker-testacc: docker-elasticsearch docker-kibana ## Run acceptance tests in the docker container
+docker-testacc: docker-elasticsearch docker-kibana docker-fleet ## Run acceptance tests in the docker container
 	@ docker run --rm \
 		-e ELASTICSEARCH_ENDPOINTS="$(ELASTICSEARCH_ENDPOINTS)" \
 		-e KIBANA_ENDPOINT="$(KIBANA_ENDPOINT)" \
@@ -163,6 +167,30 @@ docker-kibana-with-tls: docker-network docker-elasticsearch set-kibana-password
 		docker.elastic.co/kibana/kibana:$(STACK_VERSION); \
 		fi)
 
+.PHONY: docker-fleet
+docker-fleet: docker-network docker-elasticsearch docker-kibana setup-kibana-fleet ## Start Fleet node in docker container
+	@ docker rm -f $(FLEET_NAME)  &> /dev/null || true
+	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(FLEET_NAME) > /dev/null 2>&1 ; then \
+		docker run -d \
+		-p 8220:8220 \
+		-e SERVER_NAME=fleet \
+      	-e FLEET_ENROLL=1 \
+      	-e FLEET_URL=$(FLEET_ENDPOINT) \
+      	-e FLEET_INSECURE=true \
+      	-e FLEET_SERVER_ENABLE=1 \
+      	-e FLEET_SERVER_POLICY_ID=fleet-server \
+      	-e FLEET_SERVER_ELASTICSEARCH_HOST=$(ELASTICSEARCH_ENDPOINTS) \
+      	-e FLEET_SERVER_ELASTICSEARCH_INSECURE=true \
+      	-e FLEET_SERVER_INSECURE_HTTP=true \
+      	-e KIBANA_HOST=$(KIBANA_ENDPOINT) \
+      	-e KIBANA_FLEET_SETUP=1 \
+      	-e KIBANA_FLEET_USERNAME=$(ELASTICSEARCH_USERNAME) \
+      	-e KIBANA_FLEET_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
+		--name $(FLEET_NAME) \
+		--network $(ELASTICSEARCH_NETWORK) \
+		docker.elastic.co/beats/elastic-agent:$(STACK_VERSION); \
+		fi)
+
 
 .PHONY: docker-network
 docker-network: ## Create a dedicated network for ES and test runs
@@ -172,19 +200,25 @@ docker-network: ## Create a dedicated network for ES and test runs
 
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
-	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d "{\"password\":\"$(KIBANA_SYSTEM_PASSWORD)\"}" | grep -q "^{}")
+	@ $(call retry, 10, curl -sS -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d '{"password":"$(KIBANA_SYSTEM_PASSWORD)"}' | grep -q "^{}")
 
 .PHONY: create-es-api-key
 create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200
-	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/api_key -d "{\"name\":\"$(KIBANA_API_KEY_NAME)\"}")
+	@ $(call retry, 10, curl -sS -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/api_key -d '{"name":"$(KIBANA_API_KEY_NAME)"}')
 
 .PHONY: create-es-bearer-token
-create-es-bearer-token:
-	@ $(call retry, 10, curl -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/oauth2/token -d "{\"grant_type\": \"client_credentials\"}")
+create-es-bearer-token: ## Creates and outputs a new OAuth bearer token. This expects Elasticsearch to be available at localhost:9200
+	@ $(call retry, 10, curl -sS -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/oauth2/token -d '{"grant_type":"client_credentials"}')
+
+.PHONY: setup-kibana-fleet
+setup-kibana-fleet: ## Creates the agent and integration policies required to run Fleet. This expects Kibana to be available at localhost:5601
+	@ $(call retry, 10, curl -sS --fail-with-body -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" -H "kbn-xsrf: true" http://localhost:5601/api/fleet/fleet_server_hosts -d '{"name":"default"$(,)"host_urls":["$(FLEET_ENDPOINT)"]$(,)"is_default":true}')
+	@ $(call retry, 10, curl -sS --fail-with-body -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_policies -d '{"id":"fleet-server"$(,)"name":"Fleet Server"$(,)"namespace":"default"$(,)"monitoring_enabled":["logs"$(,)"metrics"]}')
+	@ $(call retry, 10, curl -sS --fail-with-body -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" -H "kbn-xsrf: true" http://localhost:5601/api/fleet/package_policies -d '{"name":"fleet-server"$(,)"namespace":"default"$(,)"policy_id":"fleet-server"$(,)"enabled":true$(,)"inputs":[{"type":"fleet-server"$(,)"enabled":true$(,)"streams":[]$(,)"vars":{}}]$(,)"package":{"name":"fleet_server"$(,)"version":"1.5.0"}}')
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
-	@ docker rm -f $(ELASTICSEARCH_NAME) $(KIBANA_NAME) || true
+	@ docker rm -f $(ELASTICSEARCH_NAME) $(KIBANA_NAME) $(FLEET_NAME) || true
 	@ docker network rm $(ELASTICSEARCH_NETWORK) || true
 
 

@@ -462,7 +462,7 @@ func getSchema() schema.Schema {
 					index.StringIsJSONObject{},
 				},
 				PlanModifiers: []planmodifier.String{
-					planmodifiers.StringUseDefaultIfUnknown("{}"),
+					stringplanmodifier.UseStateForUnknown(),
 					mappingsPlanModifier{},
 				},
 			},

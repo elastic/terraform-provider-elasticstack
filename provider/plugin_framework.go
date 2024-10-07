@@ -11,6 +11,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollment_tokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_ds"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
@@ -91,6 +93,8 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &synthetics.Resource{} },
 		agent_policy.NewResource,
 		integration.NewResource,
+		integration_policy.NewResource,
+		output.NewResource,
 		server_host.NewResource,
 	}
 }

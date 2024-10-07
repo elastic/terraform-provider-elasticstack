@@ -10,7 +10,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -107,9 +106,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_action_connector": kibana.ResourceActionConnector(),
 			"elasticstack_kibana_security_role":    kibana.ResourceRole(),
 			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
-
-			"elasticstack_fleet_output":             fleet.ResourceOutput(),
-			"elasticstack_fleet_integration_policy": fleet.ResourceIntegrationPolicy(),
 		},
 	}
 
