@@ -70,6 +70,9 @@ func Test_connectorResponseToModel(t *testing.T) {
 		generator(".email", connectors.ConfigPropertiesEmail{}, func(props *connectors.ConnectorResponseProperties) error {
 			return props.FromConnectorResponsePropertiesEmail(connectors.ConnectorResponsePropertiesEmail{})
 		}),
+		generator(".gemini", connectors.ConfigPropertiesGemini{}, func(props *connectors.ConnectorResponseProperties) error {
+			return props.FromConnectorResponsePropertiesGemini(connectors.ConnectorResponsePropertiesGemini{})
+		}),
 		generator(".index", connectors.ConfigPropertiesIndex{}, func(props *connectors.ConnectorResponseProperties) error {
 			return props.FromConnectorResponsePropertiesIndex(connectors.ConnectorResponsePropertiesIndex{})
 		}),
