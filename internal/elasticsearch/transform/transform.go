@@ -26,6 +26,7 @@ func init() {
 
 	// capabilities
 	settingsRequiredVersions["destination.pipeline"] = version.Must(version.NewVersion("7.3.0"))
+	settingsRequiredVersions["destination.aliases"] = version.Must(version.NewVersion("8.8.0"))
 	settingsRequiredVersions["frequency"] = version.Must(version.NewVersion("7.3.0"))
 	settingsRequiredVersions["latest"] = version.Must(version.NewVersion("7.11.0"))
 	settingsRequiredVersions["retention_policy"] = version.Must(version.NewVersion("7.12.0"))
@@ -511,7 +512,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 			Index: definedDestination["index"].(string),
 		}
 
-		if aliases, ok := definedDestination["aliases"].([]interface{}); ok && len(aliases) > 0 {
+		if aliases, ok := definedDestination["aliases"].([]interface{}); ok && len(aliases) > 0 && isSettingAllowed(ctx, "destination.aliases", serverVersion) {
 			transform.Destination.Aliases = make([]models.TransformAlias, len(aliases))
 			for i, alias := range aliases {
 				aliasMap := alias.(map[string]interface{})
