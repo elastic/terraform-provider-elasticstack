@@ -188,4 +188,4 @@ terraform import elasticstack_kibana_synthetics_monitor.my_monitor <space id>/<m
 **NOTE:** Not all monitor fields are supported during the import due-to API limitation.
 Full field support could be implemented after this [kibana issue](https://github.com/elastic/kibana/issues/189906) is resolved.
 
-Currently not supported fields during the import:  `params`, `retest_on_failure`, `http.proxy_header`, `http.username`, `http.password`, `http.check`, `http.response`, `tcp.check_send`, `tcp.check_receive` and monitor type `browser`
+Currently not supported fields during the import:  `params`, `retest_on_failure`, `locations`, `http.proxy_header`, `http.username`, `http.password`, `http.check`, `http.response`, `tcp.check_send`, `tcp.check_receive` and monitor type `browser`
