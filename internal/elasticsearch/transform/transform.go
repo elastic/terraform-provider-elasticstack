@@ -840,7 +840,7 @@ func flattenSync(sync *models.TransformSync) []interface{} {
 	}
 
 	s := make(map[string]interface{})
-	s["t"] = []interface{}{t}
+	s["time"] = []interface{}{t}
 
 	return []interface{}{s}
 }
