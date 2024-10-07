@@ -11,7 +11,7 @@ import (
 
 func TestAccIndexTemplateDataSource(t *testing.T) {
 	// generate a random role name
-	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	templateName := "test-template-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -43,7 +43,7 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 }
 
 data "elasticstack_elasticsearch_index_template" "test" {
-	name = "%s"
+	name = elasticstack_elasticsearch_index_template.test.name
 }
-	`, templateName, templateName, templateName)
+	`, templateName, templateName)
 }
