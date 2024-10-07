@@ -1,6 +1,7 @@
 package index_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
