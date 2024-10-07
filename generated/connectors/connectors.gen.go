@@ -2055,8 +2055,8 @@ type SecretsPropertiesEmail map[string]interface{}
 
 // SecretsPropertiesGemini Defines secrets for connectors when type is `.gemini`.
 type SecretsPropertiesGemini struct {
-	// CredentialsJSON The service account credentials JSON file. The service account should have Vertex AI user IAM role assigned to it.
-	CredentialsJSON string `json:"credentialsJSON"`
+	// CredentialsJson The service account credentials JSON file. The service account should have Vertex AI user IAM role assigned to it.
+	CredentialsJson string `json:"credentialsJson"`
 }
 
 // SecretsPropertiesJira Defines secrets for connectors when type is `.jira`.
