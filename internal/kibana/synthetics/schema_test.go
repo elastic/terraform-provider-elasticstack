@@ -132,7 +132,7 @@ func TestToModelV0(t *testing.T) {
 				APMServiceName: "test-service-http",
 				Timeout:        json.Number("30"),
 				Locations: []kbapi.MonitorLocationConfig{
-					{Label: "North America - US East", Id: "us_east", IsServiceManaged: true},
+					{Label: "North America - US East", Id: "us-east4-a", IsServiceManaged: true},
 					{Label: "test private location", IsServiceManaged: false},
 				},
 				Origin:                      "origin",
@@ -678,6 +678,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 		{
 			name: "TCP monitor",
 			state: tfModelV0{
+				Locations: []types.String{types.StringValue("us_east")},
 				TCP: &tfTCPMonitorFieldsV0{
 					CheckSend:    types.StringValue("hello"),
 					CheckReceive: types.StringValue("world"),
@@ -685,6 +686,9 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 			},
 			input: kbapi.SyntheticsMonitor{
 				Type: kbapi.Tcp,
+				Locations: []kbapi.MonitorLocationConfig{
+					{Label: "North America - US East", Id: "us-east4-a", IsServiceManaged: true},
+				},
 			},
 			expected: tfModelV0{
 				ID:             types.StringValue("/"),
@@ -693,6 +697,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
+				Locations:      []types.String{types.StringValue("us_east")},
 				TCP: &tfTCPMonitorFieldsV0{
 					Host:                  types.StringValue(""),
 					SslVerificationMode:   types.StringValue(""),
