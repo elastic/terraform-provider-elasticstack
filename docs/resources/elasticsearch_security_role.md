@@ -18,8 +18,9 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_security_role" "role" {
-  name    = "testrole"
-  cluster = ["all"]
+  name        = "testrole"
+  description = "Role for testing"
+  cluster     = ["all"]
 
   indices {
     names      = ["index1", "index2"]
@@ -55,6 +56,7 @@ output "role" {
 
 - `applications` (Block Set) A list of application privilege entries. (see [below for nested schema](#nestedblock--applications))
 - `cluster` (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
+- `description` (String) The description of the role.
 - `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `global` (String) An object defining global privileges.
 - `indices` (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))

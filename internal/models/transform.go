@@ -26,9 +26,15 @@ type TransformSource struct {
 	RuntimeMappings interface{} `json:"runtime_mappings,omitempty"`
 }
 
+type TransformAlias struct {
+	Alias          string `json:"alias"`
+	MoveOnCreation bool   `json:"move_on_creation,omitempty"`
+}
+
 type TransformDestination struct {
-	Index    string `json:"index"`
-	Pipeline string `json:"pipeline,omitempty"`
+	Index    string           `json:"index"`
+	Aliases  []TransformAlias `json:"aliases,omitempty"`
+	Pipeline string           `json:"pipeline,omitempty"`
 }
 
 type TransformRetentionPolicy struct {
