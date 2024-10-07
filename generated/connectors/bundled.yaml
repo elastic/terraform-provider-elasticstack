@@ -36,6 +36,7 @@ paths:
               oneOf:
                 - $ref: '#/components/schemas/create_connector_request_cases_webhook'
                 - $ref: '#/components/schemas/create_connector_request_email'
+                - $ref: '#/components/schemas/create_connector_request_gemini'
                 - $ref: '#/components/schemas/create_connector_request_index'
                 - $ref: '#/components/schemas/create_connector_request_jira'
                 - $ref: '#/components/schemas/create_connector_request_opsgenie'
@@ -57,6 +58,7 @@ paths:
                 mapping:
                   .cases-webhook: '#/components/schemas/create_connector_request_cases_webhook'
                   .email: '#/components/schemas/create_connector_request_email'
+                  .gemini: '#/components/schemas/create_connector_request_gemini'
                   .index: '#/components/schemas/create_connector_request_index'
                   .jira: '#/components/schemas/create_connector_request_jira'
                   .opsgenie: '#/components/schemas/create_connector_request_opsgenie'
@@ -206,6 +208,7 @@ paths:
               oneOf:
                 - $ref: '#/components/schemas/update_connector_request_cases_webhook'
                 - $ref: '#/components/schemas/update_connector_request_email'
+                - $ref: '#/components/schemas/update_connector_request_gemini'
                 - $ref: '#/components/schemas/update_connector_request_index'
                 - $ref: '#/components/schemas/update_connector_request_jira'
                 - $ref: '#/components/schemas/update_connector_request_opsgenie'
@@ -975,6 +978,63 @@ components:
           example: my-connector
         secrets:
           $ref: '#/components/schemas/secrets_properties_email'
+    config_properties_gemini:
+      title: Connector request properties for an Google Gemini connector
+      description: Defines properties for connectors when type is `.gemini`.
+      required:
+        - apiUrl
+        - gcpRegion
+        - gcpProjectID
+      type: object
+      properties:
+        apiUrl:
+          type: string
+          description: The Google Gemini request URL.
+        defaultModel:
+          type: string
+          description: The generative artificial intelligence model for Google Gemini to use.
+          default: gemini-1.5-pro-001
+        gcpRegion:
+          type: string
+          description: The GCP region where the Vertex AI endpoint enabled.
+        gcpProjectID:
+          type: string
+          description: The Google ProjectID that has Vertex AI endpoint enabled.
+    secrets_properties_gemini:
+      title: Connector secrets properties for a Google Gemini connector
+      description: Defines secrets for connectors when type is `.gemini`.
+      type: object
+      required:
+        - credentialsJson
+      properties:
+        credentialsJson:
+          type: string
+          description: The service account credentials JSON file. The service account should have Vertex AI user IAM role assigned to it.
+    create_connector_request_gemini:
+      title: Create Google Gemini connector request
+      description: |
+        The Google Gemini connector uses axios to send a POST request to Google Gemini.
+      type: object
+      required:
+        - config
+        - connector_type_id
+        - name
+        - secrets
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_gemini'
+        connector_type_id:
+          type: string
+          description: The type of connector.
+          enum:
+            - .gemini
+          example: .gemini
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_gemini'
     config_properties_index:
       title: Connector request properties for an index connector
       required:
@@ -1875,6 +1935,35 @@ components:
         name:
           type: string
           description: The display name for the connector.
+    connector_response_properties_gemini:
+      title: Connector response properties for a Google Gemini connector
+      type: object
+      required:
+        - config
+        - connector_type_id
+        - id
+        - is_preconfigured
+        - name
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_gemini'
+        connector_type_id:
+          type: string
+          description: The type of connector.
+          enum:
+            - .gemini
+        id:
+          type: string
+          description: The identifier for the connector.
+        is_deprecated:
+          $ref: '#/components/schemas/is_deprecated'
+        is_missing_secrets:
+          $ref: '#/components/schemas/is_missing_secrets'
+        is_preconfigured:
+          $ref: '#/components/schemas/is_preconfigured'
+        name:
+          type: string
+          description: The display name for the connector.
     connector_response_properties_index:
       title: Connector response properties for an index connector
       type: object
@@ -2337,6 +2426,7 @@ components:
       oneOf:
         - $ref: '#/components/schemas/connector_response_properties_cases_webhook'
         - $ref: '#/components/schemas/connector_response_properties_email'
+        - $ref: '#/components/schemas/connector_response_properties_gemini'
         - $ref: '#/components/schemas/connector_response_properties_index'
         - $ref: '#/components/schemas/connector_response_properties_jira'
         - $ref: '#/components/schemas/connector_response_properties_opsgenie'
@@ -2358,6 +2448,7 @@ components:
         mapping:
           .cases-webhook: '#/components/schemas/connector_response_properties_cases_webhook'
           .email: '#/components/schemas/connector_response_properties_email'
+          .gemini: '#/components/schemas/connector_response_properties_gemini'
           .index: '#/components/schemas/connector_response_properties_index'
           .jira: '#/components/schemas/connector_response_properties_jira'
           .opsgenie: '#/components/schemas/connector_response_properties_opsgenie'
@@ -2405,6 +2496,21 @@ components:
           example: my-connector
         secrets:
           $ref: '#/components/schemas/secrets_properties_email'
+    update_connector_request_gemini:
+      title: Update Google Gemini connector request
+      type: object
+      required:
+        - config
+        - name
+      properties:
+        config:
+          $ref: '#/components/schemas/config_properties_gemini'
+        name:
+          type: string
+          description: The display name for the connector.
+          example: my-connector
+        secrets:
+          $ref: '#/components/schemas/secrets_properties_gemini'
     update_connector_request_index:
       title: Update index connector request
       type: object
@@ -2654,6 +2760,7 @@ components:
       enum:
         - .cases-webhook
         - .email
+        - .gemini
         - .index
         - .jira
         - .opsgenie

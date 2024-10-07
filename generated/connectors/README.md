@@ -1,5 +1,6 @@
 [OpenAPI specs](./bundled.yaml) is copied from [Kibana repo](https://raw.githubusercontent.com/elastic/kibana/8.7/x-pack/plugins/actions/docs/openapi/bundled.yaml) with some modifications:
 
+- added `.gemini` as a possible value for `connector_types`;
 - `.slack_api` connector support comes from version 8.8 of the API specification;
 - added `.slack_api` as a possible value for `connector_types`;
 - added mapping section for discriminator field in `POST` `/s/{spaceId}/api/actions/connector`;

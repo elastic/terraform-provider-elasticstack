@@ -3,8 +3,9 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_security_role" "role" {
-  name    = "testrole"
-  cluster = ["all"]
+  name        = "testrole"
+  description = "Role for testing"
+  cluster     = ["all"]
 
   indices {
     names      = ["index1", "index2"]

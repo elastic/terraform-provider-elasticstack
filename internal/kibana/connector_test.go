@@ -210,6 +210,94 @@ func TestAccResourceKibanaConnectorEmail(t *testing.T) {
 	})
 }
 
+func TestAccResourceKibanaConnectorGemini(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("8.15.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config       = jsonencode({
+      apiUrl       = "https://elastic.co",
+      gcpRegion    = "us-central1",
+      gcpProjectID = "project1",
+      defaultModel = "gemini-1.5-pro-001"
+    })
+	  secrets = jsonencode({
+      credentialsJson = "secret1"
+    })
+	  connector_type_id = ".gemini"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config       = jsonencode({
+      apiUrl       = "https://elasticsearch.com",
+      gcpRegion    = "us-east4",
+      gcpProjectID = "project2",
+      defaultModel = "gemini-1.5-pro-001"
+	  })
+	  secrets = jsonencode({
+      credentialsJson = "secret2"
+	  })
+	  connector_type_id = ".gemini"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".gemini"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elastic\.co\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"gcpRegion\":\"us-central1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"gcpProjectID\":\"project1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"gemini-1.5-pro-001\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"credentialsJson\":\"secret1\"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".gemini"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://elasticsearch\.com\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"gcpRegion\":\"us-east4\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"gcpProjectID\":\"project2\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"gemini-1.5-pro-001\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"credentialsJson\":\"secret2\"`)),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 

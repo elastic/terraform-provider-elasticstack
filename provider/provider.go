@@ -33,6 +33,7 @@ func New(version string) *schema.Provider {
 			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"elasticstack_elasticsearch_index_template":                     index.DataSourceTemplate(),
 			"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),
 			"elasticstack_elasticsearch_ingest_processor_bytes":             ingest.DataSourceProcessorBytes(),
 			"elasticstack_elasticsearch_ingest_processor_circle":            ingest.DataSourceProcessorCircle(),

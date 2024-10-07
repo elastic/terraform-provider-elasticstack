@@ -25,6 +25,16 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 
   destination {
     index = "destination_index_for_transform"
+
+    aliases {
+      alias            = "test_alias_1"
+      move_on_creation = true
+    }
+
+    aliases {
+      alias            = "test_alias_2"
+      move_on_creation = false
+    }
   }
 
   pivot = jsonencode({
@@ -94,7 +104,7 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 - `pivot` (String) The pivot method transforms the data by aggregating and grouping it. JSON definition expected. Either 'pivot' or 'latest' must be present.
 - `retention_policy` (Block List, Max: 1) Defines a retention policy for the transform. (see [below for nested schema](#nestedblock--retention_policy))
 - `sync` (Block List, Max: 1) Defines the properties transforms require to run continuously. (see [below for nested schema](#nestedblock--sync))
-- `timeout` (String) Period to wait for a response from Elastisearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.
+- `timeout` (String) Period to wait for a response from Elasticsearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.
 - `unattended` (Boolean) In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails.
 
 ### Read-Only
@@ -110,7 +120,20 @@ Required:
 
 Optional:
 
+- `aliases` (Block List) The aliases that the destination index for the transform should have. (see [below for nested schema](#nestedblock--destination--aliases))
 - `pipeline` (String) The unique identifier for an ingest pipeline.
+
+<a id="nestedblock--destination--aliases"></a>
+### Nested Schema for `destination.aliases`
+
+Required:
+
+- `alias` (String) The name of the alias.
+
+Optional:
+
+- `move_on_creation` (Boolean) Whether the destination index should be the only index in this alias. Defaults to false.
+
 
 
 <a id="nestedblock--source"></a>
