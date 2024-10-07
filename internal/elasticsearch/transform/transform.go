@@ -861,7 +861,7 @@ func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []interf
 	}
 
 	r := make(map[string]interface{})
-	r["t"] = []interface{}{t}
+	r["time"] = []interface{}{t}
 
 	return []interface{}{r}
 }
