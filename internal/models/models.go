@@ -74,6 +74,7 @@ type UserPassword struct {
 
 type Role struct {
 	Name          string                 `json:"-"`
+	Description   *string                `json:"description,omitempty"`
 	Applications  []Application          `json:"applications,omitempty"`
 	Global        map[string]interface{} `json:"global,omitempty"`
 	Cluster       []string               `json:"cluster,omitempty"`
