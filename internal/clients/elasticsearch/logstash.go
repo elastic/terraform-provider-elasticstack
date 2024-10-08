@@ -41,7 +41,7 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipe
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	res, err := esClient.LogstashGetPipeline(pipelineID, esClient.LogstashGetPipeline.WithContext(ctx))
+	res, err := esClient.LogstashGetPipeline(esClient.LogstashGetPipeline.WithDocumentID(pipelineID), esClient.LogstashGetPipeline.WithContext(ctx))
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}

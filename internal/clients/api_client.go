@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/disaster37/go-kibana-rest/v8"
-	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/generated/data_views"

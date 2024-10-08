@@ -176,7 +176,7 @@ func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		res, err := esClient.LogstashGetPipeline(compId.ResourceId)
+		res, err := esClient.LogstashGetPipeline(esClient.LogstashGetPipeline.WithDocumentID(compId.ResourceId))
 		if err != nil {
 			return err
 		}

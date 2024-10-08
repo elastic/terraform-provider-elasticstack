@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -268,9 +268,6 @@ func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.I
 		esClient.Indices.Create.WithMasterTimeout(params.MasterTimeout),
 		esClient.Indices.Create.WithTimeout(params.Timeout),
 	}
-	if params.IncludeTypeName {
-		opts = append(opts, esClient.Indices.Create.WithIncludeTypeName(params.IncludeTypeName))
-	}
 	res, err := esClient.Indices.Create(
 		index.Name,
 		opts...,
@@ -425,8 +422,7 @@ func UpdateIndexMappings(ctx context.Context, apiClient *clients.ApiClient, inde
 			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
 		}
 	}
-	req := esClient.Indices.PutMapping.WithIndex(index)
-	res, err := esClient.Indices.PutMapping(strings.NewReader(mappings), req, esClient.Indices.PutMapping.WithContext(ctx))
+	res, err := esClient.Indices.PutMapping([]string{index}, strings.NewReader(mappings), esClient.Indices.PutMapping.WithContext(ctx))
 	if err != nil {
 		return fwdiags.Diagnostics{
 			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),

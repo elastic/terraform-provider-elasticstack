@@ -359,13 +359,11 @@ func Test_tfModel_toPutIndexParams(t *testing.T) {
 				MasterTimeout:       customtypes.NewDurationValue(expectedParams.MasterTimeout.String()),
 				Timeout:             customtypes.NewDurationValue(expectedParams.Timeout.String()),
 				WaitForActiveShards: basetypes.NewStringValue(expectedParams.WaitForActiveShards),
-				IncludeTypeName:     basetypes.NewBoolValue(expectedParams.IncludeTypeName),
 			}
 
 			flavor := "not_serverless"
 			if isServerless {
 				flavor = "serverless"
-				expectedParams.IncludeTypeName = false
 				expectedParams.WaitForActiveShards = ""
 			}
 
