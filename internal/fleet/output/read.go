@@ -23,7 +23,7 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	outputID := stateModel.OutputID.ValueString()
-	output, diags := fleet.ReadOutput(ctx, client, outputID)
+	output, diags := fleet.GetOutput(ctx, client, outputID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		resp.State.RemoveResource(ctx)
@@ -35,7 +35,7 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	diags = stateModel.populateFromAPICreate(ctx, output)
+	diags = stateModel.populateFromAPI(ctx, output)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
