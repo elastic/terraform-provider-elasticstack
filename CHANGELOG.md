@@ -6,6 +6,7 @@
 
 ### Changes
 
+- Fix inconsistent output errors in `elasticstack_fleet_output` for `default_integrations` and `default_monitoring`. ([#841](https://github.com/elastic/terraform-provider-elasticstack/pull/841))
 - Fix secret handling `elasticstack_fleet_integration_policy` resource. ([#821](https://github.com/elastic/terraform-provider-elasticstack/pull/821))
 - Fix merge values for `elasticstack_kibana_synthetics_monitor` monitor locations ([#823](https://github.com/elastic/terraform-provider-elasticstack/pull/823))
 - Migrate to a v8 Elasticsearch client ([#832](https://github.com/elastic/terraform-provider-elasticstack/pull/832))
@@ -14,7 +15,6 @@
 - Add `description` attribute to `elasticstack_elasticsearch_security_role` resource. ([#824](https://github.com/elastic/terraform-provider-elasticstack/pull/824))
 - Fix merge values for `elasticstack_kibana_synthetics_monitor` monitor locations ([#823](https://github.com/elastic/terraform-provider-elasticstack/pull/823)
 - Add `elasticstack_elasticsearch_index_template` data source ([#828](https://github.com/elastic/terraform-provider-elasticstack/pull/828))
-
 
 ## [0.11.8] - 2024-10-02
 
