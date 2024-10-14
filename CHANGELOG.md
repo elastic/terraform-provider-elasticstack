@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.9] - 2024-10-14
+
 ### Breaking changes
 
 - Remove support for specifying `include_type_name` from the `elasticstack_elasticsearch_index` resource. This parameter has been deprecated from 7.0, with indices restricted to a single type since 6.0. ([#832](https://github.com/elastic/terraform-provider-elasticstack/pull/832))
@@ -365,7 +367,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...HEAD
+[0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
 [0.11.7]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6
