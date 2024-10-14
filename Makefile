@@ -260,7 +260,7 @@ misspell:
 
 .PHONY: golangci-lint
 golangci-lint:
-	@ $(GOBIN)/golangci-lint run --max-same-issues=0 --timeout=300s $(GOLANGCIFLAGS) ./internal/...
+	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
 
 .PHONY: lint
