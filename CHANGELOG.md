@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Support updating `elasticstack_elasticsearch_security_api_key` when supported by the backing cluster ([#843](https://github.com/elastic/terraform-provider-elasticstack/pull/843))
+
 ## [0.11.9] - 2024-10-14
 
 ### Breaking changes
