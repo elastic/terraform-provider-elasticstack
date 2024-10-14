@@ -1,4 +1,4 @@
-package security_test
+package api_key_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/go-version"
@@ -13,7 +14,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -32,7 +33,7 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
 				Config:   testAccResourceSecurityApiKeyCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
@@ -70,6 +71,8 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 }
 
 func TestAccResourceSecurityApiKeyWithRemoteIndices(t *testing.T) {
+	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
+
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -131,7 +134,7 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyWithRestrictionMinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithRestriction),
 				Config:   testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
@@ -172,6 +175,8 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
 func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	errorPattern := fmt.Sprintf(".*Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor\\(s\\) %s.*", "role-a")
+	errorPattern = strings.ReplaceAll(errorPattern, " ", "\\s+")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -179,9 +184,9 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *te
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:    SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(security.APIKeyMinVersion, security.APIKeyWithRestrictionMinVersion),
+				SkipFunc:    SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(api_key.MinVersion, api_key.MinVersionWithRestriction),
 				Config:      testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
-				ExpectError: regexp.MustCompile(fmt.Sprintf(".*Error: Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor\\(s\\) %s.*", "role-a")),
+				ExpectError: regexp.MustCompile(errorPattern),
 			},
 		},
 	})

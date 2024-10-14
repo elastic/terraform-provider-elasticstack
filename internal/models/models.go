@@ -110,10 +110,18 @@ type RoleMapping struct {
 }
 
 type ApiKey struct {
-	Name             string                          `json:"name"`
+	ID               string                          `json:"-"`
+	Name             string                          `json:"name,omitempty"`
 	RolesDescriptors map[string]ApiKeyRoleDescriptor `json:"role_descriptors,omitempty"`
 	Expiration       string                          `json:"expiration,omitempty"`
 	Metadata         map[string]interface{}          `json:"metadata,omitempty"`
+}
+
+type ApiKeyCreateResponse struct {
+	Id         string `json:"id,omitempty"`
+	Name       string `json:"name"`
+	Key        string `json:"api_key,omitempty"`
+	EncodedKey string `json:"encoded,omitempty"`
 }
 
 type ApiKeyResponse struct {
