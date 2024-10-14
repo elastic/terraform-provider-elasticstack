@@ -59,7 +59,7 @@ func (r *Resource) getSchema() schema.Schema {
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
+					r.requiresReplaceIfUpdateNotSupported(),
 				},
 			},
 			"expiration": schema.StringAttribute{
@@ -83,7 +83,7 @@ func (r *Resource) getSchema() schema.Schema {
 				CustomType:  jsontypes.NormalizedType{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
+					r.requiresReplaceIfUpdateNotSupported(),
 				},
 			},
 			"api_key": schema.StringAttribute{
@@ -104,4 +104,16 @@ func (r *Resource) getSchema() schema.Schema {
 			},
 		},
 	}
+}
+
+func (r *Resource) requiresReplaceIfUpdateNotSupported() planmodifier.String {
+	return stringplanmodifier.RequiresReplaceIf(
+		func(ctx context.Context, res planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+			version, _ := r.clusterVersionOfLastRead(ctx, res.Private)
+
+			resp.RequiresReplace = version != nil && version.LessThan(MinVersionWithUpdate)
+		},
+		"Requires replace if the server does not support update",
+		"Requries replace if the server does not support update",
+	)
 }

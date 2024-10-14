@@ -66,6 +66,40 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
 				),
 			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithUpdate),
+				Config:   testAccResourceSecurityApiKeyUpdate(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
+						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
+							return err
+						}
+
+						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+							"role-a": {
+								Cluster: []string{"manage"},
+								Indices: []models.IndexPerms{{
+									Names:                  []string{"index-b*"},
+									Privileges:             []string{"read"},
+									AllowRestrictedIndices: utils.Pointer(false),
+								}},
+							},
+						}
+
+						if !reflect.DeepEqual(testRoleDescriptor, expectedRoleDescriptor) {
+							return fmt.Errorf("%v doesn't match %v", testRoleDescriptor, expectedRoleDescriptor)
+						}
+
+						return nil
+					}),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
+				),
+			},
 		},
 	})
 }
@@ -221,6 +255,31 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
       cluster = ["all"]
       indices = [{
         names = ["index-a*"]
+        privileges = ["read"]
+        allow_restricted_indices = false
+      }]
+	}
+  })
+
+	expiration = "1d"
+}
+	`, apiKeyName)
+}
+
+func testAccResourceSecurityApiKeyUpdate(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+
+  role_descriptors = jsonencode({
+    role-a = {
+      cluster = ["manage"]
+      indices = [{
+        names = ["index-b*"]
         privileges = ["read"]
         allow_restricted_indices = false
       }]

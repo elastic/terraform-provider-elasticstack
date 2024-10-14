@@ -321,6 +321,33 @@ func CreateApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.
 	return &apiKey, nil
 }
 
+func UpdateApiKey(apiClient *clients.ApiClient, apikey models.ApiKey) fwdiag.Diagnostics {
+	id := apikey.ID
+
+	apikey.Expiration = ""
+	apikey.Name = ""
+	apikey.ID = ""
+	apikeyBytes, err := json.Marshal(apikey)
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+	res, err := esClient.Security.UpdateAPIKey(id, esClient.Security.UpdateAPIKey.WithBody(bytes.NewReader(apikeyBytes)))
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to create apikey"); diags.HasError() {
+		return utils.FrameworkDiagsFromSDK(diags)
+	}
+
+	return nil
+}
+
 func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse, fwdiag.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {

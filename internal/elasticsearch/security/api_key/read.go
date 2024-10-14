@@ -35,6 +35,11 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(r.saveClusterVersion(ctx, client, resp.Private)...)
 }
 
 func (r *Resource) read(ctx context.Context, client *clients.ApiClient, model tfModel) (*tfModel, diag.Diagnostics) {
