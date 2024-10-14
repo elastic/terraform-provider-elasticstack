@@ -290,7 +290,7 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (
 	return plan, nil
 }
 
-// User can omit optonal fields in config JSON.
+// User can omit optional fields in config JSON.
 // The func adds empty optional fields to the diff.
 // Otherwise plan command shows omitted fields as the diff,
 // because backend returns all fields.

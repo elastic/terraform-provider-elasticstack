@@ -5,7 +5,7 @@
 - added `.slack_api` as a possible value for `connector_types`;
 - added mapping section for discriminator field in `POST` `/s/{spaceId}/api/actions/connector`;
 - added explicit object definitions for `400`, `401` and `404` errors (`oapi-codegen` doesn't generate proper code for embedded anonymous objects in some cases) - `bad_request_error`, `authorization_error` and `object_not_found_error`;
-- added missing `oneOf` types in `requestBody` for `PUT` `/s/{spaceId}/api/actions/connector/{connectorId}` - the original `bundled.yaml` misses some connector types in the `PUT` `requestBody` defintion:
+- added missing `oneOf` types in `requestBody` for `PUT` `/s/{spaceId}/api/actions/connector/{connectorId}` - the original `bundled.yaml` misses some connector types in the `PUT` `requestBody` definition:
   - `update_connector_request_email`;
   - `update_connector_request_pagerduty`;
   - `update_connector_request_servicenow_sir`;

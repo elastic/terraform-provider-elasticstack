@@ -59,7 +59,7 @@ func newKibanaLogstashPipelineGetFunc(c *resty.Client) KibanaLogstashPipelineGet
 	return func(id string) (*LogstashPipeline, error) {
 
 		if id == "" {
-			return nil, NewAPIError(600, "You must provide logstash pipline ID")
+			return nil, NewAPIError(600, "You must provide logstash pipeline ID")
 		}
 		log.Debug("ID: ", id)
 
@@ -143,7 +143,7 @@ func newKibanaLogstashPipelineCreateOrUpdateFunc(c *resty.Client) KibanaLogstash
 			return nil, NewAPIError(resp.StatusCode(), resp.Status())
 		}
 
-		// Retrive the object to return it
+		// Retrieve the object to return it
 		logstashPipeline, err = newKibanaLogstashPipelineGetFunc(c)(logstashPipeline.ID)
 		if err != nil {
 			return nil, err

@@ -90,13 +90,13 @@ For Elasticsearch resources, you can use the following variables:
 - `ELASTICSEARCH_BEARER_TOKEN` - A bearer token to use for Elasticsearch authorization header.
 - `ELASTICSEARCH_ES_CLIENT_AUTHENTICATION` - The shared secret for the Elasticsearch authorization header.
 
-Kibana resources will re-use any Elasticsearch credentials specified, these may be overridden with the following variables:
+Kibana resources will reuse any Elasticsearch credentials specified, these may be overridden with the following variables:
 - `KIBANA_USERNAME` - The username to use for Kibana authentication
 - `KIBANA_PASSWORD` - The password to use for Kibana authentication
 - `KIBANA_ENDPOINT` - The Kibana host to connect to
 - `KIBANA_API_KEY` - An Elasticsearch API key to use instead of `KIBANA_USERNAME` and `KIBANA_PASSWORD`
 
-Fleet resources will re-use any Kibana or Elasticsearch credentials specified, these may be overridden with the following variables:
+Fleet resources will reuse any Kibana or Elasticsearch credentials specified, these may be overridden with the following variables:
 - `FLEET_USERNAME` - The username to use for Kibana authentication
 - `FLEET_PASSWORD` - The password to use for Kibana authentication
 - `FLEET_ENDPOINT` - The Kibana host to connect to. ** Note the Fleet API is hosted within Kibana. This must be a Kibana HTTP host **

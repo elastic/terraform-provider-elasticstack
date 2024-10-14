@@ -50,7 +50,7 @@ func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, 
 	}
 
 	defer res.Body.Close()
-	return utils.CheckHttpError(res, "Unabled to delete slo with ID "+string(sloId))
+	return utils.CheckHttpError(res, "Unable to delete slo with ID "+string(sloId))
 }
 
 func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) (*models.Slo, diag.Diagnostics) {

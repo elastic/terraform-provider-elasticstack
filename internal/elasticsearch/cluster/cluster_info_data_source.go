@@ -48,13 +48,13 @@ func DataSourceClusterInfo() *schema.Resource {
 			Required:    false,
 		},
 		"minimum_index_compatibility_version": {
-			Description: "Minium index compatibility version.",
+			Description: "Minimum index compatibility version.",
 			Type:        schema.TypeString,
 			Computed:    true,
 			Required:    false,
 		},
 		"minimum_wire_compatibility_version": {
-			Description: "Minium wire compatibility version.",
+			Description: "Minimum wire compatibility version.",
 			Type:        schema.TypeString,
 			Computed:    true,
 			Required:    false,

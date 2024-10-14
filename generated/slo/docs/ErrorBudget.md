@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Initial** | **float64** | The initial error budget, as 1 - objective | 
-**Consumed** | **float64** | The error budget consummed, as a percentage of the initial value. | 
+**Consumed** | **float64** | The error budget consumed, as a percentage of the initial value. | 
 **Remaining** | **float64** | The error budget remaining, as a percentage of the initial value. | 
 **IsEstimated** | **bool** | Only for SLO defined with occurrences budgeting method and calendar aligned time window. | 
 

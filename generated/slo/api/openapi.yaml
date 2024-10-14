@@ -949,7 +949,7 @@ components:
           example: 0.02
           type: number
         consumed:
-          description: "The error budget consummed, as a percentage of the initial\
+          description: "The error budget consumed, as a percentage of the initial\
             \ value."
           example: 0.8
           type: number

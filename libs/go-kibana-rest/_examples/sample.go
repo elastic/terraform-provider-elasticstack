@@ -132,7 +132,7 @@ func main() {
 	// Delete user space
 	err = client.API.KibanaSpaces.Delete("test")
 	if err != nil {
-		log.Fatalf("Error deleteing user space: %s", err)
+		log.Fatalf("Error deleting user space: %s", err)
 	}
 	log.Println("User space 'test' successfully deleted")
 

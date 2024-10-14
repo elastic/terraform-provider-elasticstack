@@ -426,7 +426,7 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 	}
 
 	if logging.IsDebugOrHigher() {
-		// Don't use kib.Client.SetDebug() here as we re-use the http client within the OpenAPI generated clients
+		// Don't use kib.Client.SetDebug() here as we reuse the http client within the OpenAPI generated clients
 		transport, err := kib.Client.Transport()
 		if err != nil {
 			return nil, err

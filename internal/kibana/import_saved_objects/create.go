@@ -73,7 +73,7 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		for i, err := range respModel.Errors {
 			detail.WriteString(fmt.Sprintf("import error [%d]: %s\n", i, err))
 		}
-		detail.WriteString("see the `errors` attribute for the full resposne")
+		detail.WriteString("see the `errors` attribute for the full response")
 
 		if respModel.SuccessCount > 0 {
 			diags.AddWarning(

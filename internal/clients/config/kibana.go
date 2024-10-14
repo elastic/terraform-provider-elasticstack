@@ -40,7 +40,7 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 		}
 
 		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
-			// We're curently limited by the API to a single endpoint
+			// We're currently limited by the API to a single endpoint
 			if endpoint := endpoints.([]interface{})[0]; endpoint != nil {
 				config.Address = endpoint.(string)
 			}

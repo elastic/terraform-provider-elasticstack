@@ -3761,7 +3761,7 @@ type UpdatePackagePolicyResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *struct {
 		Item   PackagePolicy `json:"item"`
-		Sucess bool          `json:"sucess"`
+		Success bool          `json:"success"`
 	}
 	JSON400 *Error
 }
@@ -4858,7 +4858,7 @@ func ParseUpdatePackagePolicyResponse(rsp *http.Response) (*UpdatePackagePolicyR
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
 			Item   PackagePolicy `json:"item"`
-			Sucess bool          `json:"sucess"`
+			Success bool          `json:"success"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err

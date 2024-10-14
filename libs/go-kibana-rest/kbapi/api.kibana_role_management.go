@@ -162,7 +162,7 @@ func newKibanaRoleManagementCreateOrUpdateFunc(c *resty.Client) KibanaRoleManage
 			return nil, NewAPIError(resp.StatusCode(), resp.Status())
 		}
 
-		// Retrive the object to return it
+		// Retrieve the object to return it
 		kibanaRole, err = newKibanaRoleManagementGetFunc(c)(roleName)
 		if err != nil {
 			return nil, err
