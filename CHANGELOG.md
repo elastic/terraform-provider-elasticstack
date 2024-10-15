@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Fix validation of `throttle`, and `interval` attributes in `elasticstack_kibana_alerting_rule` allowing all Elastic duration values ([#846](https://github.com/elastic/terraform-provider-elasticstack/pull/846))
+
 ## [0.11.9] - 2024-10-14
 
 ### Breaking changes
