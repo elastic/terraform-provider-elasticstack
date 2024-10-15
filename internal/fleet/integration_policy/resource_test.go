@@ -2,6 +2,7 @@ package integration_policy_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"testing"
@@ -12,12 +13,22 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 var minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
+
+func TestJsonTypes(t *testing.T) {
+	mapBytes, err := json.Marshal(map[string]string{})
+	require.NoError(t, err)
+	equal, diags := jsontypes.NewNormalizedValue(`{"a": "b"}`).StringSemanticEquals(context.Background(), jsontypes.NewNormalizedValue(string(mapBytes)))
+	require.Empty(t, diags)
+	require.False(t, equal)
+}
 
 func TestAccResourceIntegrationPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
