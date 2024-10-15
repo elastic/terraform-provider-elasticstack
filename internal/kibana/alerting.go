@@ -71,7 +71,7 @@ func ResourceAlertingRule() *schema.Resource {
 			Description:  "The check interval, which specifies how frequently the rule conditions are checked. The interval must be specified in seconds, minutes, hours or days.",
 			Type:         schema.TypeString,
 			Required:     true,
-			ValidateFunc: utils.StringIsDuration,
+			ValidateFunc: utils.StringIsElasticDuration,
 		},
 		"actions": {
 			Description: "An action that runs under defined conditions.",
@@ -120,7 +120,7 @@ func ResourceAlertingRule() *schema.Resource {
 									Description:  "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
 									Type:         schema.TypeString,
 									Optional:     true,
-									ValidateFunc: utils.StringIsDuration,
+									ValidateFunc: utils.StringIsElasticDuration,
 								},
 							},
 						},
@@ -198,7 +198,7 @@ func ResourceAlertingRule() *schema.Resource {
 			Description:  "Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
 			Type:         schema.TypeString,
 			Optional:     true,
-			ValidateFunc: utils.StringIsDuration,
+			ValidateFunc: utils.StringIsElasticDuration,
 		},
 		"scheduled_task_id": {
 			Description: "ID of the scheduled task that will execute the alert.",

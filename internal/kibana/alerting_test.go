@@ -52,7 +52,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "10m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1d"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "tags.0", "first"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "tags.1", "second"),
@@ -244,7 +244,7 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 	termField           = "name"
   })
   rule_type_id = ".index-threshold"
-  interval     = "10m"
+  interval     = "1d"
   enabled      = false
   tags         = ["first", "second"]
 }
@@ -439,7 +439,7 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
         days        = [1,2,3]
       timezone    = "Africa/Accra"
       hours_start = "01:00"
-      hours_end   = "07:00" 
+      hours_end   = "07:00"
       }
     }
   }
@@ -514,7 +514,7 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
         days        = [7]
       timezone    = "Pacific/Honolulu"
       hours_start = "02:00"
-      hours_end   = "03:00" 
+      hours_end   = "03:00"
       }
     }
   }
