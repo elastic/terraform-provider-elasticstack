@@ -295,7 +295,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 					}
 				}
 
-				settingsValue = bool(settingBool)
+				settingsValue = settingBool
 			}
 
 			settingBool, ok := settingsValue.(bool)
