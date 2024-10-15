@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Changes
+
+- Fix boolean setting parsing for `elasticstack_elasticsearch_indices` data source. ([#842](https://github.com/elastic/terraform-provider-elasticstack/pull/842))
+
 ## [0.11.9] - 2024-10-14
 
 ### Breaking changes
