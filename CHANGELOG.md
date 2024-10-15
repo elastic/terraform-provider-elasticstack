@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Add `max_primary_shard_docs` condition to ILM rollover ([#845](https://github.com/elastic/terraform-provider-elasticstack/pull/845))
 - Fix boolean setting parsing for `elasticstack_elasticsearch_indices` data source. ([#842](https://github.com/elastic/terraform-provider-elasticstack/pull/842))
 
 ## [0.11.9] - 2024-10-14
