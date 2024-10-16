@@ -284,6 +284,20 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 			}
 			tfValue = basetypes.NewStringValue(settingStr)
 		case types.Bool:
+			if settingStr, ok := settingsValue.(string); ok {
+				settingBool, err := strconv.ParseBool(settingStr)
+				if err != nil {
+					return diag.Diagnostics{
+						diag.NewErrorDiagnostic(
+							"failed to convert setting to bool",
+							fmt.Sprintf("expected setting to be a bool but it was a string. Attempted to parse it but got %s", err.Error()),
+						),
+					}
+				}
+
+				settingsValue = settingBool
+			}
+
 			settingBool, ok := settingsValue.(bool)
 			if !ok {
 				return diag.Diagnostics{
@@ -300,7 +314,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 					return diag.Diagnostics{
 						diag.NewErrorDiagnostic(
 							"failed to convert setting to int",
-							fmt.Sprintf("expected setting to be an in but it was a string. Attempted to parse it but got %s", err.Error()),
+							fmt.Sprintf("expected setting to be an int but it was a string. Attempted to parse it but got %s", err.Error()),
 						),
 					}
 				}
