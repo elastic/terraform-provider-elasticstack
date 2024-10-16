@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -20,6 +21,14 @@ import (
 var frequencyMinSupportedVersion = version.Must(version.NewVersion("8.6.0"))
 var alertsFilterMinSupportedVersion = version.Must(version.NewVersion("8.9.0"))
 var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
+
+// Avoid lint error on deprecated SchemaValidateFunc usage.
+//
+//nolint:staticcheck
+func stringIsAlertingDuration() schema.SchemaValidateFunc {
+	r := regexp.MustCompile(`^[1-9][0-9]*(?:d|h|m|s)$`)
+	return validation.StringMatch(r, "string is not a valid Alerting duration in seconds (s), minutes (m), hours (h), or days (d)")
+}
 
 func ResourceAlertingRule() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -71,7 +80,7 @@ func ResourceAlertingRule() *schema.Resource {
 			Description:  "The check interval, which specifies how frequently the rule conditions are checked. The interval must be specified in seconds, minutes, hours or days.",
 			Type:         schema.TypeString,
 			Required:     true,
-			ValidateFunc: utils.StringIsDuration,
+			ValidateFunc: stringIsAlertingDuration(),
 		},
 		"actions": {
 			Description: "An action that runs under defined conditions.",
@@ -120,7 +129,7 @@ func ResourceAlertingRule() *schema.Resource {
 									Description:  "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
 									Type:         schema.TypeString,
 									Optional:     true,
-									ValidateFunc: utils.StringIsDuration,
+									ValidateFunc: stringIsAlertingDuration(),
 								},
 							},
 						},
@@ -198,7 +207,7 @@ func ResourceAlertingRule() *schema.Resource {
 			Description:  "Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
 			Type:         schema.TypeString,
 			Optional:     true,
-			ValidateFunc: utils.StringIsDuration,
+			ValidateFunc: stringIsAlertingDuration(),
 		},
 		"scheduled_task_id": {
 			Description: "ID of the scheduled task that will execute the alert.",
