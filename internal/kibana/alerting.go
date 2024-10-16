@@ -26,7 +26,7 @@ var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
 //
 //nolint:staticcheck
 func stringIsAlertingDuration() schema.SchemaValidateFunc {
-	r := regexp.MustCompile(`^[0-9]+(?:\.[0-9]+)?(?:d|h|m|s)$`)
+	r := regexp.MustCompile(`^[1-9][0-9]*(?:d|h|m|s)$`)
 	return validation.StringMatch(r, "string is not a valid Alerting duration in seconds (s), minutes (m), hours (h), or days (d)")
 }
 
