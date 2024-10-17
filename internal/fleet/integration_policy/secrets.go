@@ -38,7 +38,7 @@ func newSecretStore(ctx context.Context, resp *fleetapi.PackagePolicy, private p
 	// Remove any saved secret refs not present in the API response.
 	refs := make(map[string]any)
 	for _, r := range utils.Deref(resp.SecretReferences) {
-		refs[*r.Id] = nil
+		refs[r.Id] = nil
 	}
 
 	for id := range store {
@@ -103,10 +103,8 @@ func HandleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, privat
 	handleVars(utils.Deref(resp.Vars))
 	for _, input := range resp.Inputs {
 		handleVars(utils.Deref(input.Vars))
-		for _, _stream := range utils.Deref(input.Streams) {
-			stream := _stream.(map[string]any)
-			streamVars := stream["vars"].(map[string]any)
-			handleVars(streamVars)
+		for _, stream := range utils.Deref(input.Streams) {
+			handleVars(*stream.Vars)
 		}
 	}
 
@@ -170,9 +168,8 @@ func HandleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest
 		handleVars(utils.Deref(inputReq.Vars), utils.Deref(inputResp.Vars))
 		streamsResp := utils.Deref(inputResp.Streams)
 		for streamID, streamReq := range utils.Deref(inputReq.Streams) {
-			streamResp := streamsResp[streamID].(map[string]any)
-			streamRespVars := streamResp["vars"].(map[string]any)
-			handleVars(utils.Deref(streamReq.Vars), streamRespVars)
+			streamResp := streamsResp[streamID]
+			handleVars(utils.Deref(streamReq.Vars), utils.Deref(streamResp.Vars))
 		}
 	}
 

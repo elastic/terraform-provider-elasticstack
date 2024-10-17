@@ -67,7 +67,6 @@ func NewClient(cfg Config) (*Client, error) {
 	if !strings.HasSuffix(endpoint, "/") {
 		endpoint += "/"
 	}
-	endpoint += "api/fleet/"
 
 	fleetAPIClient, err := fleetapi.NewClientWithResponses(endpoint, fleetapi.WithHTTPClient(httpClient))
 	if err != nil {

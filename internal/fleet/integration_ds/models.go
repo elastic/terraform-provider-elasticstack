@@ -12,7 +12,7 @@ type integrationDataSourceModel struct {
 	Version    types.String `tfsdk:"version"`
 }
 
-func (m *integrationDataSourceModel) populateFromAPI(pkgName string, packages []fleetapi.SearchResult) {
+func (m *integrationDataSourceModel) populateFromAPI(pkgName string, packages []fleetapi.PackageListItem) {
 	m.Version = types.StringNull()
 	for _, pkg := range packages {
 		if pkg.Name == pkgName {

@@ -23,7 +23,7 @@ func (r *serverHostResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	hostID := stateModel.HostID.ValueString()
-	host, diags := fleet.ReadFleetServerHost(ctx, client, hostID)
+	host, diags := fleet.GetFleetServerHost(ctx, client, hostID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
