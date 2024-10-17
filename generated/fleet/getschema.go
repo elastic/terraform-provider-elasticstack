@@ -73,6 +73,7 @@ var transformers = []TransformFunc{
 	transformAddPackagePolicyVars,
 	transformAddPackagePolicySecretReferences,
 	transformFixPackageSearchResult,
+	transformFixGetPackageResult,
 }
 
 // transformFilterPaths filters the paths in a schema down to
@@ -232,16 +233,36 @@ func transformInlinePackageDefinitions(schema *Schema) {
 
 	// Get
 	{
-		props, ok := epmPath.Get.Responses.GetFields("200.content.application/json.schema.allOf.1.properties")
+		respSchema, ok := epmPath.Get.Responses.GetFields("200.content.application/json.schema")
 		if !ok {
 			panic("properties not found")
 		}
 
-		// status needs to be moved to schemes and a ref inserted in its place.
-		value, _ := props.Get("status")
+		// allOf.1 should also be inside "item"
+		_allOf, _ := respSchema.Get("allOf")
+		allOf := _allOf.([]any)
+		respSchema.Delete("allOf")
+
+		list := make([]any, 2)
+		allOf0, _ := Fields(allOf[0].(map[string]any)).GetFields("properties.item")
+		allOf1 := Fields(allOf[1].(map[string]any))
+		list[0] = allOf0
+		list[1] = allOf1
+		respSchema.Set("properties.item.allOf", list)
+
+		// item needs to be moved to schemas and a ref inserted in its place.
+		value, _ := respSchema.Get("properties.item.allOf")
+		respSchema.Delete("properties.item.allOf")
+		schema.Components.Set("schemas.get_package_item.allOf", value)
+		respSchema.Set("properties.item.$ref", "#/components/schemas/get_package_item")
+
+		// status needs to be moved to schemas and a ref inserted in its place.
+		props, _ := schema.Components.GetFields("schemas.get_package_item.allOf.1.properties")
+		value, _ = props.GetFields("status")
 		schema.Components.Set("schemas.package_status", value)
 		props.Delete("status")
 		props.Set("status.$ref", "#/components/schemas/package_status")
+
 	}
 
 	// Post
@@ -369,6 +390,18 @@ func transformFixPackageSearchResult(schema *Schema) {
 	properties.Delete("installationInfo")
 }
 
+// transformFixGetPackageResult removes unneeded fields from the
+// GetPackageResult struct. These fields are also causing parsing errors.
+func transformFixGetPackageResult(schema *Schema) {
+	properties, ok := schema.Components.GetFields("schemas.package_info.properties")
+	if !ok {
+		panic("properties not found")
+	}
+	properties.Delete("assets")
+	properties.Delete("icons")
+	properties.Delete("installationInfo")
+}
+
 // downloadFile will download a file from url and return the
 // bytes. If the request fails, or a non 200 error code is
 // observed in the response, an error is returned instead.
@@ -462,11 +495,15 @@ func (f Fields) Get(key string) (any, bool) {
 			if !ok {
 				return nil, false
 			}
-			if m, isMap := slicedValue.(map[string]any); ok && isMap {
-				return Fields(m).Get(postSliceKeys)
-			}
-			return slicedValue, true
 
+			switch m := slicedValue.(type) {
+			case map[string]any:
+				return Fields(m).Get(postSliceKeys)
+			case Fields:
+				return m.Get(postSliceKeys)
+			default:
+				return slicedValue, true
+			}
 		default:
 			rootKey = key
 		}
