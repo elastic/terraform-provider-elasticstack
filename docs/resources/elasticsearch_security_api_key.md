@@ -87,7 +87,7 @@ output "api_key" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `expiration` (String) Expiration time for the API key. By default, API keys never expire.
 - `metadata` (String) Arbitrary metadata that you want to associate with the API key.
 - `role_descriptors` (String) Role descriptors for this API key.

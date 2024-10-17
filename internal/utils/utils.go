@@ -5,13 +5,10 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -20,89 +17,6 @@ import (
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-func ConvertSDKDiagnosticsToFramework(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
-	var fwDiags fwdiag.Diagnostics
-
-	for _, sdkDiag := range sdkDiags {
-		if sdkDiag.Severity == sdkdiag.Error {
-			fwDiags.AddError(sdkDiag.Summary, sdkDiag.Detail)
-		} else {
-			fwDiags.AddWarning(sdkDiag.Summary, sdkDiag.Detail)
-		}
-	}
-
-	return fwDiags
-}
-
-func CheckError(res *esapi.Response, errMsg string) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
-
-	if res.IsError() {
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return sdkdiag.FromErr(err)
-		}
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  errMsg,
-			Detail:   fmt.Sprintf("Failed with: %s", body),
-		})
-		return diags
-	}
-	return diags
-}
-
-func CheckHttpError(res *http.Response, errMsg string) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
-
-	if res.StatusCode >= 400 {
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return sdkdiag.FromErr(err)
-		}
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  errMsg,
-			Detail:   fmt.Sprintf("Failed with: %s", body),
-		})
-		return diags
-	}
-	return diags
-}
-
-func CheckHttpErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
-	if res.StatusCode >= 400 {
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			diags.AddError(errMsg, err.Error())
-			return diags
-		}
-		diags.AddError(errMsg, fmt.Sprintf("Failed with: %s", body))
-		return diags
-	}
-	return diags
-}
-
-func FrameworkDiagsFromSDK(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
-	for _, sdkDiag := range sdkDiags {
-		var fwDiag fwdiag.Diagnostic
-
-		if sdkDiag.Severity == sdkdiag.Error {
-			fwDiag = fwdiag.NewErrorDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
-		} else {
-			fwDiag = fwdiag.NewWarningDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
-		}
-
-		diags.Append(fwDiag)
-	}
-
-	return diags
-}
 
 // Compares the JSON in two byte slices
 func JSONBytesEqual(a, b []byte) (bool, error) {

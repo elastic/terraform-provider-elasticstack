@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -292,57 +293,77 @@ func DeleteRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMa
 	return nil
 }
 
-func PutApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.ApiKeyResponse, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func CreateApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.ApiKeyCreateResponse, fwdiag.Diagnostics) {
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Security.CreateAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if diags := utils.CheckError(res, "Unable to create apikey"); diags.HasError() {
-		return nil, diags
+		return nil, utils.FrameworkDiagsFromSDK(diags)
 	}
 
-	var apiKey models.ApiKeyResponse
+	var apiKey models.ApiKeyCreateResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
-		return nil, diag.FromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
-	return &apiKey, diags
+	return &apiKey, nil
 }
 
-func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func UpdateApiKey(apiClient *clients.ApiClient, apikey models.ApiKey) fwdiag.Diagnostics {
+	id := apikey.ID
+
+	apikey.Expiration = ""
+	apikey.Name = ""
+	apikey.ID = ""
+	apikeyBytes, err := json.Marshal(apikey)
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return utils.FrameworkDiagFromError(err)
+	}
+	res, err := esClient.Security.UpdateAPIKey(id, esClient.Security.UpdateAPIKey.WithBody(bytes.NewReader(apikeyBytes)))
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to create apikey"); diags.HasError() {
+		return utils.FrameworkDiagsFromSDK(diags)
+	}
+
+	return nil
+}
+
+func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse, fwdiag.Diagnostics) {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 	req := esClient.Security.GetAPIKey.WithID(id)
 	res, err := esClient.Security.GetAPIKey(req)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
-		diags := append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to find an apikey in the cluster.",
-			Detail:   fmt.Sprintf("Unable to get apikey: '%s' from the cluster.", id),
-		})
-		return nil, diags
+		return nil, nil
 	}
 	if diags := utils.CheckError(res, "Unable to get an apikey."); diags.HasError() {
-		return nil, diags
+		return nil, utils.FrameworkDiagsFromSDK(diags)
 	}
 
 	// unmarshal our response to proper type
@@ -350,25 +371,23 @@ func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse,
 		ApiKeys []models.ApiKeyResponse `json:"api_keys"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&apiKeys); err != nil {
-		return nil, diag.FromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	if len(apiKeys.ApiKeys) != 1 {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to find an apikey in the cluster",
-			Detail:   fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
-		})
-		return nil, diags
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(
+				"Unable to find an apikey in the cluster",
+				fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
+			),
+		}
 	}
 
 	apiKey := apiKeys.ApiKeys[0]
-	return &apiKey, diags
+	return &apiKey, nil
 }
 
-func DeleteApiKey(apiClient *clients.ApiClient, id string) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func DeleteApiKey(apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
 	apiKeys := struct {
 		Ids []string `json:"ids"`
 	}{
@@ -377,19 +396,19 @@ func DeleteApiKey(apiClient *clients.ApiClient, id string) diag.Diagnostics {
 
 	apikeyBytes, err := json.Marshal(apiKeys)
 	if err != nil {
-		return diag.FromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil && res.IsError() {
-		return diag.FromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if diags := utils.CheckError(res, "Unable to delete an apikey"); diags.HasError() {
-		return diags
+		return utils.FrameworkDiagsFromSDK(diags)
 	}
-	return diags
+	return nil
 }
