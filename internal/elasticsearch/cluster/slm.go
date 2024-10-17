@@ -10,7 +10,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -31,33 +30,11 @@ func ResourceSlm() *schema.Resource {
 			ForceNew:    true,
 		},
 		"expand_wildcards": {
-			Description: "Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.",
-			Type:        schema.TypeString,
-			Optional:    true,
-			Default:     "open,hidden",
-			ValidateDiagFunc: func(value interface{}, path cty.Path) diag.Diagnostics {
-				validValues := []string{"all", "open", "closed", "hidden", "none"}
-
-				var diags diag.Diagnostics
-				for _, pv := range strings.Split(value.(string), ",") {
-					found := false
-					for _, vv := range validValues {
-						if vv == strings.TrimSpace(pv) {
-							found = true
-							break
-						}
-					}
-					if !found {
-						diags = append(diags, diag.Diagnostic{
-							Severity: diag.Error,
-							Summary:  "Invalid value was provided.",
-							Detail:   fmt.Sprintf(`"%s" is not valid value for this field.`, pv),
-						})
-						return diags
-					}
-				}
-				return diags
-			},
+			Description:      "Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.",
+			Type:             schema.TypeString,
+			Optional:         true,
+			Default:          "open,hidden",
+			ValidateDiagFunc: utils.AllowedExpandWildcards,
 		},
 		"ignore_unavailable": {
 			Description: "If `false`, the snapshot fails if any data stream or index in indices is missing or closed. If `true`, the snapshot ignores missing or closed data streams and indices.",
