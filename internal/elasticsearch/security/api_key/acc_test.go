@@ -1,4 +1,4 @@
-package security_test
+package api_key_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/go-version"
@@ -13,7 +14,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -32,7 +33,7 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyMinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
 				Config:   testAccResourceSecurityApiKeyCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
@@ -65,11 +66,47 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
 				),
 			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithUpdate),
+				Config:   testAccResourceSecurityApiKeyUpdate(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
+						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
+							return err
+						}
+
+						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+							"role-a": {
+								Cluster: []string{"manage"},
+								Indices: []models.IndexPerms{{
+									Names:                  []string{"index-b*"},
+									Privileges:             []string{"read"},
+									AllowRestrictedIndices: utils.Pointer(false),
+								}},
+							},
+						}
+
+						if !reflect.DeepEqual(testRoleDescriptor, expectedRoleDescriptor) {
+							return fmt.Errorf("%v doesn't match %v", testRoleDescriptor, expectedRoleDescriptor)
+						}
+
+						return nil
+					}),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
+				),
+			},
 		},
 	})
 }
 
 func TestAccResourceSecurityApiKeyWithRemoteIndices(t *testing.T) {
+	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
+
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -131,7 +168,7 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.APIKeyWithRestrictionMinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithRestriction),
 				Config:   testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
@@ -172,6 +209,8 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
 func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	errorPattern := fmt.Sprintf(".*Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor\\(s\\) %s.*", "role-a")
+	errorPattern = strings.ReplaceAll(errorPattern, " ", "\\s+")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -179,9 +218,9 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *te
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:    SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(security.APIKeyMinVersion, security.APIKeyWithRestrictionMinVersion),
+				SkipFunc:    SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(api_key.MinVersion, api_key.MinVersionWithRestriction),
 				Config:      testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
-				ExpectError: regexp.MustCompile(fmt.Sprintf(".*Error: Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor\\(s\\) %s.*", "role-a")),
+				ExpectError: regexp.MustCompile(errorPattern),
 			},
 		},
 	})
@@ -216,6 +255,31 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
       cluster = ["all"]
       indices = [{
         names = ["index-a*"]
+        privileges = ["read"]
+        allow_restricted_indices = false
+      }]
+	}
+  })
+
+	expiration = "1d"
+}
+	`, apiKeyName)
+}
+
+func testAccResourceSecurityApiKeyUpdate(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+
+  role_descriptors = jsonencode({
+    role-a = {
+      cluster = ["manage"]
+      indices = [{
+        names = ["index-b*"]
         privileges = ["read"]
         allow_restricted_indices = false
       }]

@@ -18,7 +18,7 @@ var (
 func GetEnrollmentTokens(ctx context.Context, client *Client) ([]fleetapi.EnrollmentApiKey, diag.Diagnostics) {
 	resp, err := client.API.GetEnrollmentApiKeysWithResponse(ctx, nil)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -37,7 +37,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 
 	resp, err := client.API.GetEnrollmentApiKeysWithResponse(ctx, &params)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -52,7 +52,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 func GetAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.AgentPolicy, diag.Diagnostics) {
 	resp, err := client.API.GetAgentPolicyWithResponse(ctx, id, nil)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -73,7 +73,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.CreateA
 
 	resp, err := client.API.CreateAgentPolicyWithResponse(ctx, &params, req)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -88,7 +88,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.CreateA
 func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req fleetapi.UpdateAgentPolicyJSONRequestBody) (*fleetapi.AgentPolicy, diag.Diagnostics) {
 	resp, err := client.API.UpdateAgentPolicyWithResponse(ctx, id, nil, req)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -107,7 +107,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 
 	resp, err := client.API.DeleteAgentPolicyWithResponse(ctx, body)
 	if err != nil {
-		return fromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -124,7 +124,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 func GetOutput(ctx context.Context, client *Client, id string) (*fleetapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.GetOutputWithResponse(ctx, id)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -141,7 +141,7 @@ func GetOutput(ctx context.Context, client *Client, id string) (*fleetapi.Output
 func CreateOutput(ctx context.Context, client *Client, req fleetapi.NewOutputUnion) (*fleetapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.CreateOutputWithResponse(ctx, req)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -156,7 +156,7 @@ func CreateOutput(ctx context.Context, client *Client, req fleetapi.NewOutputUni
 func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.UpdateOutputUnion) (*fleetapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.UpdateOutputWithResponse(ctx, id, req)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -171,7 +171,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.U
 func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnostics {
 	resp, err := client.API.DeleteOutputWithResponse(ctx, id)
 	if err != nil {
-		return fromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -188,7 +188,7 @@ func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnosti
 func GetFleetServerHost(ctx context.Context, client *Client, id string) (*fleetapi.ServerHost, diag.Diagnostics) {
 	resp, err := client.API.GetFleetServerHostWithResponse(ctx, id)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -205,7 +205,7 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string) (*fleeta
 func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.CreateFleetServerHostJSONRequestBody) (*fleetapi.ServerHost, diag.Diagnostics) {
 	resp, err := client.API.CreateFleetServerHostWithResponse(ctx, req)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -220,7 +220,7 @@ func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.Cre
 func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req fleetapi.UpdateFleetServerHostJSONRequestBody) (*fleetapi.ServerHost, diag.Diagnostics) {
 	resp, err := client.API.UpdateFleetServerHostWithResponse(ctx, id, req)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -235,7 +235,7 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req f
 func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetServerHostWithResponse(ctx, id)
 	if err != nil {
-		return fromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -256,7 +256,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string) (*fleetapi
 
 	resp, err := client.API.GetPackagePolicyWithResponse(ctx, id, &params)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -277,7 +277,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, req fleetapi.Creat
 
 	resp, err := client.API.CreatePackagePolicyWithResponse(ctx, &params, req)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -296,7 +296,7 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req fle
 
 	resp, err := client.API.UpdatePackagePolicyWithResponse(ctx, id, &params, req)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -315,7 +315,7 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 
 	resp, err := client.API.DeletePackagePolicyWithResponse(ctx, id, &params)
 	if err != nil {
-		return fromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -332,14 +332,14 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 func GetPackage(ctx context.Context, client *Client, name, version string) diag.Diagnostics {
 	resp, err := client.API.GetPackageWithResponse(ctx, name, version, nil)
 	if err != nil {
-		return fromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return nil
 	case http.StatusNotFound:
-		return fromErr(ErrPackageNotFound)
+		return utils.FrameworkDiagFromError(ErrPackageNotFound)
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
@@ -353,7 +353,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 
 	resp, err := client.API.InstallPackageWithResponse(ctx, name, version, nil, body)
 	if err != nil {
-		return fromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -372,7 +372,7 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 
 	resp, err := client.API.DeletePackageWithResponse(ctx, name, version, nil, body)
 	if err != nil {
-		return fromErr(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -393,7 +393,7 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool) ([]fleeta
 
 	resp, err := client.API.ListPackagesWithResponse(ctx, &params)
 	if err != nil {
-		return nil, fromErr(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {

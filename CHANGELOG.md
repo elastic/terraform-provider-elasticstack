@@ -1,11 +1,18 @@
 ## [Unreleased]
 
+- Support updating `elasticstack_elasticsearch_security_api_key` when supported by the backing cluster ([#843](https://github.com/elastic/terraform-provider-elasticstack/pull/843))
+- Fix validation of `throttle`, and `interval` attributes in `elasticstack_kibana_alerting_rule` allowing all Elastic duration values ([#846](https://github.com/elastic/terraform-provider-elasticstack/pull/846))
+- Fix boolean setting parsing for `elasticstack_elasticsearch_indices` data source. ([#842](https://github.com/elastic/terraform-provider-elasticstack/pull/842))
+
+## [0.11.9] - 2024-10-14
+
 ### Breaking changes
 
 - Remove support for specifying `include_type_name` from the `elasticstack_elasticsearch_index` resource. This parameter has been deprecated from 7.0, with indices restricted to a single type since 6.0. ([#832](https://github.com/elastic/terraform-provider-elasticstack/pull/832))
 
 ### Changes
 
+- Fix inconsistent output errors in `elasticstack_fleet_output` for `default_integrations` and `default_monitoring`. ([#841](https://github.com/elastic/terraform-provider-elasticstack/pull/841))
 - Fix secret handling `elasticstack_fleet_integration_policy` resource. ([#821](https://github.com/elastic/terraform-provider-elasticstack/pull/821))
 - Fix merge values for `elasticstack_kibana_synthetics_monitor` monitor locations ([#823](https://github.com/elastic/terraform-provider-elasticstack/pull/823))
 - Migrate to a v8 Elasticsearch client ([#832](https://github.com/elastic/terraform-provider-elasticstack/pull/832))
@@ -14,7 +21,6 @@
 - Add `description` attribute to `elasticstack_elasticsearch_security_role` resource. ([#824](https://github.com/elastic/terraform-provider-elasticstack/pull/824))
 - Fix merge values for `elasticstack_kibana_synthetics_monitor` monitor locations ([#823](https://github.com/elastic/terraform-provider-elasticstack/pull/823)
 - Add `elasticstack_elasticsearch_index_template` data source ([#828](https://github.com/elastic/terraform-provider-elasticstack/pull/828))
-
 
 ## [0.11.8] - 2024-10-02
 
@@ -365,7 +371,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...HEAD
+[0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
 [0.11.7]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6

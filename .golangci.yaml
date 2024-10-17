@@ -1,0 +1,4 @@
+# increase the default timeout for slow CI needs
+run:
+  timeout: 300s
+  concurrency: 0

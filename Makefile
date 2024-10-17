@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 
 
-VERSION ?= 0.11.8
+VERSION ?= 0.11.9
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -16,7 +16,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 8.15.0
+STACK_VERSION ?= 8.15.2
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -262,7 +262,7 @@ misspell:
 
 .PHONY: golangci-lint
 golangci-lint:
-	@ $(GOBIN)/golangci-lint run --max-same-issues=0 --timeout=300s $(GOLANGCIFLAGS) ./internal/...
+	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
 
 .PHONY: lint

@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -67,11 +68,15 @@ func getSchema() schema.Schema {
 			},
 			"default_integrations": schema.BoolAttribute{
 				Description: "Make this output the default for agent integrations.",
+				Computed:    true,
 				Optional:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"default_monitoring": schema.BoolAttribute{
 				Description: "Make this output the default for agent monitoring.",
+				Computed:    true,
 				Optional:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"config_yaml": schema.StringAttribute{
 				Description: "Advanced YAML configuration. YAML settings here will be added to the output section of each agent policy.",
