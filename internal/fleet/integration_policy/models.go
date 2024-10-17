@@ -52,25 +52,25 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.VarsJson = utils.MapToNormalizedType(utils.Deref(data.Vars), path.Root("vars_json"), &diags)
 
-	model.populateInputFromAPI(ctx, data.Inputs, diags)
+	model.populateInputFromAPI(ctx, data.Inputs, &diags)
 
 	return diags
 }
 
-func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, inputs map[string]fleetapi.PackagePolicyInput, diags diag.Diagnostics) {
-	newInputs := utils.TransformMapToSlice(inputs, path.Root("input"), &diags,
+func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, inputs map[string]fleetapi.PackagePolicyInput, diags *diag.Diagnostics) {
+	newInputs := utils.TransformMapToSlice(inputs, path.Root("input"), diags,
 		func(inputData fleetapi.PackagePolicyInput, meta utils.MapMeta) integrationPolicyInputModel {
 			return integrationPolicyInputModel{
 				InputID:     types.StringValue(meta.Key),
 				Enabled:     types.BoolValue(inputData.Enabled),
-				StreamsJson: utils.MapToNormalizedType(utils.Deref(inputData.Streams), meta.Path.AtName("streams_json"), &diags),
-				VarsJson:    utils.MapToNormalizedType(utils.Deref(inputData.Vars), meta.Path.AtName("vars_json"), &diags),
+				StreamsJson: utils.MapToNormalizedType(utils.Deref(inputData.Streams), meta.Path.AtName("streams_json"), diags),
+				VarsJson:    utils.MapToNormalizedType(utils.Deref(inputData.Vars), meta.Path.AtName("vars_json"), diags),
 			}
 		})
 	if newInputs == nil {
 		model.Input = types.ListNull(getInputType())
 	} else {
-		oldInputs := utils.ListTypeAs[integrationPolicyInputModel](ctx, model.Input, path.Root("input"), &diags)
+		oldInputs := utils.ListTypeAs[integrationPolicyInputModel](ctx, model.Input, path.Root("input"), diags)
 		sortInputs(newInputs, oldInputs)
 
 		inputList, d := types.ListValueFrom(ctx, getInputType(), newInputs)
