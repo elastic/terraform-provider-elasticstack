@@ -3,7 +3,11 @@ package utils
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
+
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 // StringIsDuration is a SchemaValidateFunc which tests to make sure the supplied string is valid duration.
@@ -59,4 +63,28 @@ func StringIsHours(i interface{}, k string) (warnings []string, errors []error) 
 	}
 
 	return nil, nil
+}
+
+func AllowedExpandWildcards(value interface{}, path cty.Path) diag.Diagnostics {
+	validValues := []string{"all", "open", "closed", "hidden", "none"}
+
+	var diags diag.Diagnostics
+	for _, pv := range strings.Split(value.(string), ",") {
+		found := false
+		for _, vv := range validValues {
+			if vv == strings.TrimSpace(pv) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Invalid value was provided.",
+				Detail:   fmt.Sprintf(`"%s" is not valid value for this field.`, pv),
+			})
+			return diags
+		}
+	}
+	return diags
 }
