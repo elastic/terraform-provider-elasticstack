@@ -1,10 +1,14 @@
 package integration_test
 
 import (
+	"context"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -68,6 +72,47 @@ func TestAccResourceIntegration(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegrationDeleted(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationDeleted,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "sysmon_linux"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.7.0"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationDeleted,
+				// Force uninstall the integration
+				PreConfig: func() {
+					client, err := clients.NewAcceptanceTestingClient()
+					if err != nil {
+						panic(err)
+					}
+					fleetClient, err := client.GetFleetClient()
+					if err != nil {
+						panic(err)
+					}
+
+					ctx := context.Background()
+					diags := fleet.Uninstall(ctx, fleetClient, "sysmon_linux", "1.7.0", true)
+					if diags.HasError() {
+						panic(utils.FwDiagsAsError(diags))
+					}
+				},
+				// Expect the plan to want to reinstall
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 const testAccResourceIntegration = `
 provider "elasticstack" {
   elasticsearch {}
@@ -79,5 +124,19 @@ resource "elasticstack_fleet_integration" "test_integration" {
   version      = "1.16.0"
   force        = true
   skip_destroy = true
+}
+`
+
+const testAccResourceIntegrationDeleted = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration" {
+  name         = "sysmon_linux"
+  version      = "1.7.0"
+  force        = true
+  skip_destroy = false
 }
 `

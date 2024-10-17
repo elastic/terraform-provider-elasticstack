@@ -50,6 +50,27 @@ const (
 	Transform           ElasticsearchAssetType = "transform"
 )
 
+// Defines values for GetPackageItemConditionsElasticsearchSubscription.
+const (
+	GetPackageItemConditionsElasticsearchSubscriptionBasic      GetPackageItemConditionsElasticsearchSubscription = "basic"
+	GetPackageItemConditionsElasticsearchSubscriptionEnterprise GetPackageItemConditionsElasticsearchSubscription = "enterprise"
+	GetPackageItemConditionsElasticsearchSubscriptionGold       GetPackageItemConditionsElasticsearchSubscription = "gold"
+	GetPackageItemConditionsElasticsearchSubscriptionPlatinum   GetPackageItemConditionsElasticsearchSubscription = "platinum"
+)
+
+// Defines values for GetPackageItemRelease.
+const (
+	GetPackageItemReleaseBeta         GetPackageItemRelease = "beta"
+	GetPackageItemReleaseExperimental GetPackageItemRelease = "experimental"
+	GetPackageItemReleaseGa           GetPackageItemRelease = "ga"
+)
+
+// Defines values for GetPackageItemSourceLicense.
+const (
+	GetPackageItemSourceLicenseApache20  GetPackageItemSourceLicense = "Apache-2.0"
+	GetPackageItemSourceLicenseElastic20 GetPackageItemSourceLicense = "Elastic-2.0"
+)
+
 // Defines values for KibanaSavedObjectType.
 const (
 	CspRuleTemplate KibanaSavedObjectType = "csp_rule_template"
@@ -123,23 +144,23 @@ const (
 
 // Defines values for PackageInfoConditionsElasticsearchSubscription.
 const (
-	Basic      PackageInfoConditionsElasticsearchSubscription = "basic"
-	Enterprise PackageInfoConditionsElasticsearchSubscription = "enterprise"
-	Gold       PackageInfoConditionsElasticsearchSubscription = "gold"
-	Platinum   PackageInfoConditionsElasticsearchSubscription = "platinum"
+	PackageInfoConditionsElasticsearchSubscriptionBasic      PackageInfoConditionsElasticsearchSubscription = "basic"
+	PackageInfoConditionsElasticsearchSubscriptionEnterprise PackageInfoConditionsElasticsearchSubscription = "enterprise"
+	PackageInfoConditionsElasticsearchSubscriptionGold       PackageInfoConditionsElasticsearchSubscription = "gold"
+	PackageInfoConditionsElasticsearchSubscriptionPlatinum   PackageInfoConditionsElasticsearchSubscription = "platinum"
 )
 
 // Defines values for PackageInfoRelease.
 const (
-	Beta         PackageInfoRelease = "beta"
-	Experimental PackageInfoRelease = "experimental"
-	Ga           PackageInfoRelease = "ga"
+	PackageInfoReleaseBeta         PackageInfoRelease = "beta"
+	PackageInfoReleaseExperimental PackageInfoRelease = "experimental"
+	PackageInfoReleaseGa           PackageInfoRelease = "ga"
 )
 
 // Defines values for PackageInfoSourceLicense.
 const (
-	Apache20  PackageInfoSourceLicense = "Apache-2.0"
-	Elastic20 PackageInfoSourceLicense = "Elastic-2.0"
+	PackageInfoSourceLicenseApache20  PackageInfoSourceLicense = "Apache-2.0"
+	PackageInfoSourceLicenseElastic20 PackageInfoSourceLicense = "Elastic-2.0"
 )
 
 // Defines values for PackageInstallSource.
@@ -280,6 +301,76 @@ type FleetServerHost struct {
 	IsPreconfigured bool     `json:"is_preconfigured"`
 	Name            *string  `json:"name,omitempty"`
 }
+
+// GetPackageItem defines model for get_package_item.
+type GetPackageItem struct {
+	Categories []string `json:"categories"`
+	Conditions struct {
+		Elasticsearch *struct {
+			Subscription *GetPackageItemConditionsElasticsearchSubscription `json:"subscription,omitempty"`
+		} `json:"elasticsearch,omitempty"`
+		Kibana *struct {
+			Versions *string `json:"versions,omitempty"`
+		} `json:"kibana,omitempty"`
+	} `json:"conditions"`
+	DataStreams *[]struct {
+		IngesetPipeline string `json:"ingeset_pipeline"`
+		Name            string `json:"name"`
+		Package         string `json:"package"`
+		Release         string `json:"release"`
+		Title           string `json:"title"`
+		Type            string `json:"type"`
+		Vars            *[]struct {
+			Default string `json:"default"`
+			Name    string `json:"name"`
+		} `json:"vars,omitempty"`
+	} `json:"data_streams,omitempty"`
+	Description   string `json:"description"`
+	Download      string `json:"download"`
+	Elasticsearch *struct {
+		Privileges *struct {
+			Cluster *[]string `json:"cluster,omitempty"`
+		} `json:"privileges,omitempty"`
+	} `json:"elasticsearch,omitempty"`
+	FormatVersion        string  `json:"format_version"`
+	Internal             *bool   `json:"internal,omitempty"`
+	KeepPoliciesUpToDate *bool   `json:"keepPoliciesUpToDate,omitempty"`
+	LatestVersion        *string `json:"latestVersion,omitempty"`
+	LicensePath          *string `json:"licensePath,omitempty"`
+	Name                 string  `json:"name"`
+	Notice               *string `json:"notice,omitempty"`
+	Path                 string  `json:"path"`
+	Readme               *string `json:"readme,omitempty"`
+
+	// Release release label is deprecated, derive from the version instead (packages follow semver)
+	// Deprecated:
+	Release *GetPackageItemRelease `json:"release,omitempty"`
+	// Deprecated:
+	SavedObject map[string]interface{} `json:"savedObject"`
+	Screenshots *[]struct {
+		Path  string  `json:"path"`
+		Size  *string `json:"size,omitempty"`
+		Src   string  `json:"src"`
+		Title *string `json:"title,omitempty"`
+		Type  *string `json:"type,omitempty"`
+	} `json:"screenshots,omitempty"`
+	Source *struct {
+		License *GetPackageItemSourceLicense `json:"license,omitempty"`
+	} `json:"source,omitempty"`
+	Status  PackageStatus `json:"status"`
+	Title   string        `json:"title"`
+	Type    string        `json:"type"`
+	Version string        `json:"version"`
+}
+
+// GetPackageItemConditionsElasticsearchSubscription defines model for GetPackageItem.Conditions.Elasticsearch.Subscription.
+type GetPackageItemConditionsElasticsearchSubscription string
+
+// GetPackageItemRelease release label is deprecated, derive from the version instead (packages follow semver)
+type GetPackageItemRelease string
+
+// GetPackageItemSourceLicense defines model for GetPackageItem.Source.License.
+type GetPackageItemSourceLicense string
 
 // GetPackagesResponse defines model for get_packages_response.
 type GetPackagesResponse struct {
@@ -592,7 +683,6 @@ type OutputUpdateRequestLogstashType string
 
 // PackageInfo defines model for package_info.
 type PackageInfo struct {
-	Assets     []string `json:"assets"`
 	Categories []string `json:"categories"`
 	Conditions struct {
 		Elasticsearch *struct {
@@ -621,12 +711,11 @@ type PackageInfo struct {
 			Cluster *[]string `json:"cluster,omitempty"`
 		} `json:"privileges,omitempty"`
 	} `json:"elasticsearch,omitempty"`
-	FormatVersion string    `json:"format_version"`
-	Icons         *[]string `json:"icons,omitempty"`
-	Internal      *bool     `json:"internal,omitempty"`
-	Name          string    `json:"name"`
-	Path          string    `json:"path"`
-	Readme        *string   `json:"readme,omitempty"`
+	FormatVersion string  `json:"format_version"`
+	Internal      *bool   `json:"internal,omitempty"`
+	Name          string  `json:"name"`
+	Path          string  `json:"path"`
+	Readme        *string `json:"readme,omitempty"`
 
 	// Release release label is deprecated, derive from the version instead (packages follow semver)
 	// Deprecated:
@@ -3393,14 +3482,7 @@ type GetPackageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Item                 *PackageInfo `json:"item,omitempty"`
-		KeepPoliciesUpToDate *bool        `json:"keepPoliciesUpToDate,omitempty"`
-		LatestVersion        *string      `json:"latestVersion,omitempty"`
-		LicensePath          *string      `json:"licensePath,omitempty"`
-		Notice               *string      `json:"notice,omitempty"`
-		// Deprecated:
-		SavedObject map[string]interface{} `json:"savedObject"`
-		Status      PackageStatus          `json:"status"`
+		Item *GetPackageItem `json:"item,omitempty"`
 	}
 	JSON400 *Error
 }
@@ -4344,14 +4426,7 @@ func ParseGetPackageResponse(rsp *http.Response) (*GetPackageResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Item                 *PackageInfo `json:"item,omitempty"`
-			KeepPoliciesUpToDate *bool        `json:"keepPoliciesUpToDate,omitempty"`
-			LatestVersion        *string      `json:"latestVersion,omitempty"`
-			LicensePath          *string      `json:"licensePath,omitempty"`
-			Notice               *string      `json:"notice,omitempty"`
-			// Deprecated:
-			SavedObject map[string]interface{} `json:"savedObject"`
-			Status      PackageStatus          `json:"status"`
+			Item *GetPackageItem `json:"item,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
