@@ -3,6 +3,7 @@
 - Support updating `elasticstack_elasticsearch_security_api_key` when supported by the backing cluster ([#843](https://github.com/elastic/terraform-provider-elasticstack/pull/843))
 - Fix validation of `throttle`, and `interval` attributes in `elasticstack_kibana_alerting_rule` allowing all Elastic duration values ([#846](https://github.com/elastic/terraform-provider-elasticstack/pull/846))
 - Fix boolean setting parsing for `elasticstack_elasticsearch_indices` data source. ([#842](https://github.com/elastic/terraform-provider-elasticstack/pull/842))
+- Fix utils/tfsdk.go helpers by passing all diags as pointers instead of by value. ([#855](https://github.com/elastic/terraform-provider-elasticstack/pull/855))
 
 ## [0.11.9] - 2024-10-14
 
