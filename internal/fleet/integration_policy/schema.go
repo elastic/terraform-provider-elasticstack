@@ -13,11 +13,12 @@ import (
 )
 
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
+	resp.Schema = getSchemaV1()
 }
 
-func getSchema() schema.Schema {
+func getSchemaV1() schema.Schema {
 	return schema.Schema{
+		Version:     1,
 		Description: "Creates a new Fleet Integration Policy. See https://www.elastic.co/guide/en/fleet/current/add-integration-to-policy.html",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -114,6 +115,6 @@ func getSchema() schema.Schema {
 	}
 }
 
-func getInputType() attr.Type {
-	return getSchema().Blocks["input"].Type().(attr.TypeWithElementType).ElementType()
+func getInputTypeV1() attr.Type {
+	return getSchemaV1().Blocks["input"].Type().(attr.TypeWithElementType).ElementType()
 }

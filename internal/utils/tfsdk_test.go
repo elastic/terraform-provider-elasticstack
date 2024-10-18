@@ -95,7 +95,7 @@ func TestMapToNormalizedType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.MapToNormalizedType(tt.input, path.Empty(), diags)
+			got := utils.MapToNormalizedType(tt.input, path.Empty(), &diags)
 			if !got.Equal(tt.want) {
 				t.Errorf("MapToNormalizedType() = %v, want %v", got, tt.want)
 			}
@@ -124,7 +124,7 @@ func TestSliceToListType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.SliceToListType(ctx, tt.input, awareType, path.Empty(), diags,
+			got := utils.SliceToListType(ctx, tt.input, awareType, path.Empty(), &diags,
 				func(item naive, meta utils.ListMeta) aware {
 					return aware{ID: types.StringValue(item.ID)}
 				},
@@ -157,7 +157,7 @@ func TestSliceToListType_String(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.SliceToListType_String(ctx, tt.input, path.Empty(), diags)
+			got := utils.SliceToListType_String(ctx, tt.input, path.Empty(), &diags)
 			if !got.Equal(tt.want) {
 				t.Errorf("SliceToListType_String() = %v, want %v", got, tt.want)
 			}
@@ -187,7 +187,7 @@ func TestListTypeToMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.ListTypeToMap(ctx, tt.input, path.Empty(), diags,
+			got := utils.ListTypeToMap(ctx, tt.input, path.Empty(), &diags,
 				func(item aware, meta utils.ListMeta) (string, naive) {
 					return "k" + item.ID.ValueString()[2:], toNaive(item)
 				})
@@ -220,7 +220,7 @@ func TestListTypeToSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.ListTypeToSlice(ctx, tt.input, path.Empty(), diags,
+			got := utils.ListTypeToSlice(ctx, tt.input, path.Empty(), &diags,
 				func(item aware, meta utils.ListMeta) naive {
 					return toNaive(item)
 				})
@@ -253,7 +253,7 @@ func TestListTypeToSlice_String(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.ListTypeToSlice_String(ctx, tt.input, path.Empty(), diags)
+			got := utils.ListTypeToSlice_String(ctx, tt.input, path.Empty(), &diags)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ListTypeToSlice_String() = %v, want %v", got, tt.want)
 			}
@@ -283,9 +283,38 @@ func TestListTypeAs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.ListTypeAs[aware](ctx, tt.input, path.Empty(), diags)
+			got := utils.ListTypeAs[aware](ctx, tt.input, path.Empty(), &diags)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ListTypeAs() = %v, want %v", got, tt.want)
+			}
+			for _, d := range diags.Errors() {
+				t.Errorf("ListTypeAs() diagnostic: %s: %s", d.Summary(), d.Detail())
+			}
+		})
+	}
+}
+
+func TestListValueFrom(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input []aware
+		want  types.List
+	}{
+		{name: "converts nil", input: awareNil, want: awareListNil},
+		{name: "converts empty", input: awareEmpty, want: awareListEmpty},
+		{name: "converts struct", input: awareFull, want: awareListFull},
+	}
+
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := utils.ListValueFrom(ctx, tt.input, awareType, path.Empty(), &diags)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ListValueFrom() = %v, want %v", got, tt.want)
 			}
 			for _, d := range diags.Errors() {
 				t.Errorf("ListTypeAs() diagnostic: %s: %s", d.Summary(), d.Detail())
@@ -311,7 +340,7 @@ func TestNormalizedTypeToMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.NormalizedTypeToMap[naive](tt.input, path.Empty(), diags)
+			got := utils.NormalizedTypeToMap[naive](tt.input, path.Empty(), &diags)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MapToNormalizedType() = %v, want %v", got, tt.want)
 			}
@@ -338,7 +367,7 @@ func TestTransformSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.TransformSlice(tt.input, path.Empty(), diags,
+			got := utils.TransformSlice(tt.input, path.Empty(), &diags,
 				func(item naive, meta utils.ListMeta) aware {
 					return toAware(item)
 				})
@@ -368,7 +397,7 @@ func TestTransformSliceToMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.TransformSliceToMap(tt.input, path.Empty(), diags,
+			got := utils.TransformSliceToMap(tt.input, path.Empty(), &diags,
 				func(item aware, meta utils.ListMeta) (string, naive) {
 					return "k" + item.ID.ValueString()[2:], toNaive(item)
 				})
@@ -404,7 +433,7 @@ func TestTransformMapToSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := utils.TransformMapToSlice(tt.input, path.Empty(), diags,
+			got := utils.TransformMapToSlice(tt.input, path.Empty(), &diags,
 				func(item naive, meta utils.MapMeta) naive {
 					return item
 				})

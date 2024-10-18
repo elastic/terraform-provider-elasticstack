@@ -26,7 +26,7 @@ func (model *serverHostModel) populateFromAPI(ctx context.Context, data *fleetap
 	model.Id = types.StringValue(data.Id)
 	model.HostID = types.StringValue(data.Id)
 	model.Name = types.StringPointerValue(data.Name)
-	model.Hosts = utils.SliceToListType_String(ctx, data.HostUrls, path.Root("hosts"), diags)
+	model.Hosts = utils.SliceToListType_String(ctx, data.HostUrls, path.Root("hosts"), &diags)
 	model.Default = types.BoolValue(data.IsDefault)
 
 	return
@@ -34,7 +34,7 @@ func (model *serverHostModel) populateFromAPI(ctx context.Context, data *fleetap
 
 func (model serverHostModel) toAPICreateModel(ctx context.Context) (body fleetapi.PostFleetServerHostsJSONRequestBody, diags diag.Diagnostics) {
 	body = fleetapi.PostFleetServerHostsJSONRequestBody{
-		HostUrls:  utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags),
+		HostUrls:  utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
 		Id:        model.HostID.ValueStringPointer(),
 		IsDefault: model.Default.ValueBoolPointer(),
 		Name:      model.Name.ValueString(),
@@ -44,7 +44,7 @@ func (model serverHostModel) toAPICreateModel(ctx context.Context) (body fleetap
 
 func (model serverHostModel) toAPIUpdateModel(ctx context.Context) (body fleetapi.UpdateFleetServerHostsJSONRequestBody, diags diag.Diagnostics) {
 	body = fleetapi.UpdateFleetServerHostsJSONRequestBody{
-		HostUrls:  utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags)),
+		HostUrls:  utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault: model.Default.ValueBoolPointer(),
 		Name:      model.Name.ValueStringPointer(),
 	}

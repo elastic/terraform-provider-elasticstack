@@ -14,17 +14,17 @@ import (
 type ListMeta struct {
 	Index int
 	Path  path.Path
-	Diags diag.Diagnostics
+	Diags *diag.Diagnostics
 }
 
 type MapMeta struct {
 	Key   string
 	Path  path.Path
-	Diags diag.Diagnostics
+	Diags *diag.Diagnostics
 }
 
 // MapToNormalizedType marshals a map into a jsontypes.Normalized.
-func MapToNormalizedType[T any](value map[string]T, p path.Path, diags diag.Diagnostics) jsontypes.Normalized {
+func MapToNormalizedType[T any](value map[string]T, p path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
 	if value == nil {
 		return jsontypes.NewNormalizedNull()
 	}
@@ -39,7 +39,7 @@ func MapToNormalizedType[T any](value map[string]T, p path.Path, diags diag.Diag
 
 // SliceToListType converts a tfsdk naive []T1 into an types.List of []T2.
 // This handles both structs and simple types to attr.Values.
-func SliceToListType[T1 any, T2 any](ctx context.Context, value []T1, elemType attr.Type, p path.Path, diags diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) types.List {
+func SliceToListType[T1 any, T2 any](ctx context.Context, value []T1, elemType attr.Type, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) types.List {
 	if value == nil {
 		return types.ListNull(elemType)
 	}
@@ -53,7 +53,7 @@ func SliceToListType[T1 any, T2 any](ctx context.Context, value []T1, elemType a
 
 // SliceToListType_String converts a tfsdk naive []string into a types.List.
 // This is a shorthand SliceToListType helper for strings.
-func SliceToListType_String(ctx context.Context, value []string, p path.Path, diags diag.Diagnostics) types.List {
+func SliceToListType_String(ctx context.Context, value []string, p path.Path, diags *diag.Diagnostics) types.List {
 	return SliceToListType(ctx, value, types.StringType, p, diags,
 		func(item string, meta ListMeta) types.String {
 			return types.StringValue(item)
@@ -62,7 +62,7 @@ func SliceToListType_String(ctx context.Context, value []string, p path.Path, di
 
 // ListTypeToMap converts a types.List first into a tfsdk aware map[string]T1
 // and transforms the result into a map[string]T2.
-func ListTypeToMap[T1 any, T2 any](ctx context.Context, value types.List, p path.Path, diags diag.Diagnostics, iteratee func(item T1, meta ListMeta) (key string, elem T2)) map[string]T2 {
+func ListTypeToMap[T1 any, T2 any](ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) (key string, elem T2)) map[string]T2 {
 	if !IsKnown(value) {
 		return nil
 	}
@@ -77,7 +77,7 @@ func ListTypeToMap[T1 any, T2 any](ctx context.Context, value types.List, p path
 
 // ListTypeToSlice converts a types.List first into a tfsdk aware []T1 and transforms
 // the result into a []T2.
-func ListTypeToSlice[T1 any, T2 any](ctx context.Context, value types.List, p path.Path, diags diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) []T2 {
+func ListTypeToSlice[T1 any, T2 any](ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) []T2 {
 	if !IsKnown(value) {
 		return nil
 	}
@@ -92,14 +92,14 @@ func ListTypeToSlice[T1 any, T2 any](ctx context.Context, value types.List, p pa
 
 // ListTypeToSlice_String converts a types.List into a []string.
 // This is a shorthand ListTypeToSlice helper for strings.
-func ListTypeToSlice_String(ctx context.Context, value types.List, p path.Path, diags diag.Diagnostics) []string {
+func ListTypeToSlice_String(ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics) []string {
 	return ListTypeToSlice(ctx, value, p, diags, func(item types.String, meta ListMeta) string {
 		return item.ValueString()
 	})
 }
 
 // ListTypeAs converts a types.List into a tfsdk aware []T.
-func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags diag.Diagnostics) []T {
+func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics) []T {
 	if !IsKnown(value) {
 		return nil
 	}
@@ -110,8 +110,15 @@ func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags
 	return items
 }
 
+// ListValueFrom converts a tfsdk aware []T to a types.List.
+func ListValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.List {
+	list, d := types.ListValueFrom(ctx, elemType, value)
+	diags.Append(ConvertToAttrDiags(d, p)...)
+	return list
+}
+
 // NormalizedTypeToMap unmarshals a jsontypes.Normalized to a map[string]T.
-func NormalizedTypeToMap[T any](value jsontypes.Normalized, p path.Path, diags diag.Diagnostics) map[string]T {
+func NormalizedTypeToMap[T any](value jsontypes.Normalized, p path.Path, diags *diag.Diagnostics) map[string]T {
 	if !IsKnown(value) {
 		return nil
 	}
@@ -123,7 +130,7 @@ func NormalizedTypeToMap[T any](value jsontypes.Normalized, p path.Path, diags d
 }
 
 // TransformSlice converts []T1 to []T2 via the iteratee.
-func TransformSlice[T1 any, T2 any](value []T1, p path.Path, diags diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) []T2 {
+func TransformSlice[T1 any, T2 any](value []T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) []T2 {
 	if value == nil {
 		return nil
 	}
@@ -137,7 +144,7 @@ func TransformSlice[T1 any, T2 any](value []T1, p path.Path, diags diag.Diagnost
 }
 
 // TransformSliceToMap converts []T1 to map[string]]T2 via the iteratee.
-func TransformSliceToMap[T1 any, T2 any](value []T1, p path.Path, diags diag.Diagnostics, iteratee func(item T1, meta ListMeta) (key string, elem T2)) map[string]T2 {
+func TransformSliceToMap[T1 any, T2 any](value []T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) (key string, elem T2)) map[string]T2 {
 	if value == nil {
 		return nil
 	}
@@ -152,7 +159,7 @@ func TransformSliceToMap[T1 any, T2 any](value []T1, p path.Path, diags diag.Dia
 }
 
 // TransformSliceToMap converts []T1 to map[string]]T2 via the iteratee.
-func TransformMapToSlice[T1 any, T2 any](value map[string]T1, p path.Path, diags diag.Diagnostics, iteratee func(item T1, meta MapMeta) T2) []T2 {
+func TransformMapToSlice[T1 any, T2 any](value map[string]T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta MapMeta) T2) []T2 {
 	if value == nil {
 		return nil
 	}

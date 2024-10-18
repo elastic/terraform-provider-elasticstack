@@ -11,10 +11,10 @@ import (
 )
 
 func (r *integrationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	r.create(ctx, req.Plan, &resp.State, resp.Diagnostics)
+	r.create(ctx, req.Plan, &resp.State, &resp.Diagnostics)
 }
 
-func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, respDiags diag.Diagnostics) {
+func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, respDiags *diag.Diagnostics) {
 	var planModel integrationModel
 
 	diags := plan.Get(ctx, &planModel)
