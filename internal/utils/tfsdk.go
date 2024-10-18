@@ -110,6 +110,13 @@ func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags
 	return items
 }
 
+// ListValueFrom converts a tfsdk aware []T to a types.List.
+func ListValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.List {
+	list, d := types.ListValueFrom(ctx, elemType, value)
+	diags.Append(ConvertToAttrDiags(d, p)...)
+	return list
+}
+
 // NormalizedTypeToMap unmarshals a jsontypes.Normalized to a map[string]T.
 func NormalizedTypeToMap[T any](value jsontypes.Normalized, p path.Path, diags *diag.Diagnostics) map[string]T {
 	if !IsKnown(value) {

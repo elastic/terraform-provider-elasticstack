@@ -294,6 +294,35 @@ func TestListTypeAs(t *testing.T) {
 	}
 }
 
+func TestListValueFrom(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input []aware
+		want  types.List
+	}{
+		{name: "converts nil", input: awareNil, want: awareListNil},
+		{name: "converts empty", input: awareEmpty, want: awareListEmpty},
+		{name: "converts struct", input: awareFull, want: awareListFull},
+	}
+
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := utils.ListValueFrom(ctx, tt.input, awareType, path.Empty(), &diags)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ListValueFrom() = %v, want %v", got, tt.want)
+			}
+			for _, d := range diags.Errors() {
+				t.Errorf("ListTypeAs() diagnostic: %s: %s", d.Summary(), d.Detail())
+			}
+		})
+	}
+}
+
 func TestNormalizedTypeToMap(t *testing.T) {
 	t.Parallel()
 

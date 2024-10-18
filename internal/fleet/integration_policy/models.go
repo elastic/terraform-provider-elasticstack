@@ -68,12 +68,13 @@ func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, i
 			}
 		})
 	if newInputs == nil {
-		model.Input = types.ListNull(getInputType())
+		model.Input = types.ListNull(getInputTypeV1())
 	} else {
 		oldInputs := utils.ListTypeAs[integrationPolicyInputModel](ctx, model.Input, path.Root("input"), diags)
+
 		sortInputs(newInputs, oldInputs)
 
-		inputList, d := types.ListValueFrom(ctx, getInputType(), newInputs)
+		inputList, d := types.ListValueFrom(ctx, getInputTypeV1(), newInputs)
 		diags.Append(d...)
 
 		model.Input = inputList
