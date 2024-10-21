@@ -10,7 +10,7 @@ require (
 	github.com/goreleaser/goreleaser/v2 v2.3.2
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.5.0
 )
 
 require (

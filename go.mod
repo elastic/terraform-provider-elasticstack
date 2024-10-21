@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/hashicorp/terraform-plugin-framework v1.12.0
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
-	github.com/hashicorp/terraform-plugin-framework-validators v0.13.0
+	github.com/hashicorp/terraform-plugin-framework-validators v0.14.0
 	github.com/hashicorp/terraform-plugin-go v0.24.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-mux v0.16.0
@@ -23,7 +23,7 @@ require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/stretchr/testify v1.9.0
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.5.0
 )
 
 require (
