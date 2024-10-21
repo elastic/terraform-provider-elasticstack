@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	_ resource.Resource                = &integrationPolicyResource{}
-	_ resource.ResourceWithConfigure   = &integrationPolicyResource{}
-	_ resource.ResourceWithImportState = &integrationPolicyResource{}
+	_ resource.Resource                 = &integrationPolicyResource{}
+	_ resource.ResourceWithConfigure    = &integrationPolicyResource{}
+	_ resource.ResourceWithImportState  = &integrationPolicyResource{}
+	_ resource.ResourceWithUpgradeState = &integrationPolicyResource{}
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -36,4 +37,10 @@ func (r *integrationPolicyResource) Metadata(ctx context.Context, req resource.M
 
 func (r *integrationPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("policy_id"), req, resp)
+}
+
+func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {PriorSchema: getSchemaV0(), StateUpgrader: upgradeV0},
+	}
 }

@@ -588,7 +588,7 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 	if api.CheckReceive != "" {
 		checkReceive = types.StringValue(api.CheckReceive)
 	}
-	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), dg)
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), &dg)
 	if dg.HasError() {
 		return nil
 	}
@@ -671,7 +671,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		return nil
 	}
 
-	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), dg)
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
 
 	if dg.HasError() {
 		return nil
@@ -795,7 +795,7 @@ func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorField
 		return nil, dg
 	}
 
-	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.HTTP.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), dg)
+	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.HTTP.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
 	if dg.HasError() {
 		return nil, dg
 	}
@@ -820,7 +820,7 @@ func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorField
 
 func (v *tfModelV0) toTCPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
 	dg := diag.Diagnostics{}
-	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.TCP.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), dg)
+	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.TCP.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), &dg)
 	if dg.HasError() {
 		return nil, dg
 	}

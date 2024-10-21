@@ -49,7 +49,7 @@ func (model *outputModel) populateFromAPICreate(ctx context.Context, data *fleet
 		model.OutputID = types.StringPointerValue(data.Id)
 		model.Name = types.StringValue(data.Name)
 		model.Type = types.StringValue(string(data.Type))
-		model.Hosts = utils.SliceToListType_String(ctx, utils.Deref(data.Hosts), path.Root("hosts"), diags)
+		model.Hosts = utils.SliceToListType_String(ctx, utils.Deref(data.Hosts), path.Root("hosts"), &diags)
 		model.CaSha256 = types.StringPointerValue(data.CaSha256)
 		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
 		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -59,7 +59,7 @@ func (model *outputModel) populateFromAPICreate(ctx context.Context, data *fleet
 		if data.Ssl != nil {
 			p := path.Root("ssl")
 			sslModels := []outputSslModel{{
-				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(data.Ssl.CertificateAuthorities), p.AtName("certificate_authorities"), diags),
+				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(data.Ssl.CertificateAuthorities), p.AtName("certificate_authorities"), &diags),
 				Certificate:            types.StringPointerValue(data.Ssl.Certificate),
 				Key:                    types.StringPointerValue(data.Ssl.Key),
 			}}
@@ -74,7 +74,7 @@ func (model *outputModel) populateFromAPICreate(ctx context.Context, data *fleet
 		model.OutputID = types.StringPointerValue(data.Id)
 		model.Name = types.StringValue(data.Name)
 		model.Type = types.StringValue(string(data.Type))
-		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), diags)
+		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
 		model.CaSha256 = types.StringPointerValue(data.CaSha256)
 		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
 		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -84,7 +84,7 @@ func (model *outputModel) populateFromAPICreate(ctx context.Context, data *fleet
 		if data.Ssl != nil {
 			p := path.Root("ssl")
 			sslModels := []outputSslModel{{
-				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(data.Ssl.CertificateAuthorities), p.AtName("certificate_authorities"), diags),
+				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(data.Ssl.CertificateAuthorities), p.AtName("certificate_authorities"), &diags),
 				Certificate:            types.StringPointerValue(data.Ssl.Certificate),
 				Key:                    types.StringPointerValue(data.Ssl.Key),
 			}}
@@ -119,7 +119,7 @@ func (model *outputModel) populateFromAPIUpdate(ctx context.Context, data *fleet
 		model.OutputID = types.StringPointerValue(data.Id)
 		model.Name = types.StringValue(data.Name)
 		model.Type = types.StringValue(string(data.Type))
-		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), diags)
+		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
 		model.CaSha256 = types.StringPointerValue(data.CaSha256)
 		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
 		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -129,7 +129,7 @@ func (model *outputModel) populateFromAPIUpdate(ctx context.Context, data *fleet
 		if data.Ssl != nil {
 			p := path.Root("ssl")
 			sslModel := []outputSslModel{{
-				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(data.Ssl.CertificateAuthorities), p.AtName("certificate_authorities"), diags),
+				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(data.Ssl.CertificateAuthorities), p.AtName("certificate_authorities"), &diags),
 				Certificate:            types.StringPointerValue(data.Ssl.Certificate),
 				Key:                    types.StringPointerValue(data.Ssl.Key),
 			}}
@@ -144,7 +144,7 @@ func (model *outputModel) populateFromAPIUpdate(ctx context.Context, data *fleet
 		model.OutputID = types.StringPointerValue(data.Id)
 		model.Name = types.StringValue(data.Name)
 		model.Type = types.StringValue(string(data.Type))
-		model.Hosts = utils.SliceToListType_String(ctx, utils.Deref(data.Hosts), path.Root("hosts"), diags)
+		model.Hosts = utils.SliceToListType_String(ctx, utils.Deref(data.Hosts), path.Root("hosts"), &diags)
 		model.CaSha256 = types.StringPointerValue(data.CaSha256)
 		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
 		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -154,7 +154,7 @@ func (model *outputModel) populateFromAPIUpdate(ctx context.Context, data *fleet
 		if data.Ssl != nil {
 			p := path.Root("ssl")
 			sslModel := []outputSslModel{{
-				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(data.Ssl.CertificateAuthorities), p.AtName("certificate_authorities"), diags),
+				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(data.Ssl.CertificateAuthorities), p.AtName("certificate_authorities"), &diags),
 				Certificate:            types.StringPointerValue(data.Ssl.Certificate),
 				Key:                    types.StringPointerValue(data.Ssl.Key),
 			}}
@@ -180,7 +180,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.O
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags)),
+			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
 			Id:                   model.OutputID.ValueStringPointer(),
 			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
@@ -189,7 +189,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.O
 
 		// Can't use helpers for anonymous structs
 		if utils.IsKnown(model.Ssl) {
-			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), diags)
+			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
 			if len(sslModels) > 0 {
 				body.Ssl = &struct {
 					Certificate            *string   `json:"certificate,omitempty"`
@@ -197,7 +197,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.O
 					Key                    *string   `json:"key,omitempty"`
 				}{
 					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), diags)),
+					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 					Key:                    sslModels[0].Key.ValueStringPointer(),
 				}
 			}
@@ -213,7 +213,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.O
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags),
+			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
 			Id:                   model.OutputID.ValueStringPointer(),
 			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
@@ -223,7 +223,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.O
 
 		// Can't use helpers for anonymous structs
 		if utils.IsKnown(model.Ssl) {
-			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), diags)
+			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
 			if len(sslModels) > 0 {
 				body.Ssl = &struct {
 					Certificate            *string   `json:"certificate,omitempty"`
@@ -231,7 +231,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.O
 					Key                    *string   `json:"key,omitempty"`
 				}{
 					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), diags)),
+					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 					Key:                    sslModels[0].Key.ValueStringPointer(),
 				}
 			}
@@ -258,7 +258,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.O
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags),
+			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
 			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 			Name:                 model.Name.ValueString(),
@@ -266,7 +266,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.O
 
 		// Can't use helpers for anonymous structs
 		if utils.IsKnown(model.Ssl) {
-			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), diags)
+			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
 			if len(sslModels) > 0 {
 				body.Ssl = &struct {
 					Certificate            *string   `json:"certificate,omitempty"`
@@ -274,7 +274,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.O
 					Key                    *string   `json:"key,omitempty"`
 				}{
 					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), diags)),
+					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 					Key:                    sslModels[0].Key.ValueStringPointer(),
 				}
 			}
@@ -290,7 +290,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.O
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags)),
+			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
 			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 			Name:                 model.Name.ValueString(),
@@ -299,7 +299,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.O
 
 		// Can't use helpers for anonymous structs
 		if utils.IsKnown(model.Ssl) {
-			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), diags)
+			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
 			if len(sslModels) > 0 {
 				body.Ssl = &struct {
 					Certificate            *string   `json:"certificate,omitempty"`
@@ -307,7 +307,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.O
 					Key                    *string   `json:"key,omitempty"`
 				}{
 					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), diags)),
+					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 					Key:                    sslModels[0].Key.ValueStringPointer(),
 				}
 			}
