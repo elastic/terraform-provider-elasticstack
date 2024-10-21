@@ -8,10 +8,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/stretchr/testify/require"
 )
 
 var minVersionIntegration = version.Must(version.NewVersion("8.6.0"))
@@ -92,6 +92,7 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingClient()
 					require.NoError(t, err)
+
 					fleetClient, err := client.GetFleetClient()
 					require.NoError(t, err)
 
