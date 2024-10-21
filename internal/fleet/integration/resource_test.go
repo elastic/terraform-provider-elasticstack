@@ -91,9 +91,7 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 				// Force uninstall the integration
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingClient()
-					if err != nil {
-						panic(err)
-					}
+					require.NoError(t, err)
 					fleetClient, err := client.GetFleetClient()
 					if err != nil {
 						panic(err)
