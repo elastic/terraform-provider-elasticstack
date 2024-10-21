@@ -390,7 +390,7 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 	case http.StatusBadRequest:
 		msg := resp.JSON400.Message
 		// {"statusCode":400,"error":"Bad Request","message":"some-integration is not installed"}
-		if msg != nil && strings.Contains(*msg, "is not installed") {
+		if msg != nil && *msg == fmt.Sprintf("%s is not installed", name) {
 			return nil
 		} else {
 			return reportUnknownError(resp.StatusCode(), resp.Body)
