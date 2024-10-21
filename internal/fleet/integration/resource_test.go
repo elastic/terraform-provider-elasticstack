@@ -93,9 +93,7 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 					client, err := clients.NewAcceptanceTestingClient()
 					require.NoError(t, err)
 					fleetClient, err := client.GetFleetClient()
-					if err != nil {
-						panic(err)
-					}
+					require.NoError(t, err)
 
 					ctx := context.Background()
 					diags := fleet.Uninstall(ctx, fleetClient, "sysmon_linux", "1.7.0", true)
