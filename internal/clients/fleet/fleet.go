@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
+	"strings"
 
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -333,27 +333,21 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 }
 
 // ReadPackage reads a specific package from the API.
-func ReadPackage(ctx context.Context, client *Client, name, version string) diag.Diagnostics {
+func ReadPackage(ctx context.Context, client *Client, name, version string) (*fleetapi.GetPackageItem, diag.Diagnostics) {
 	params := fleetapi.GetPackageParams{}
 
-	resp, err := client.API.GetPackage(ctx, name, version, &params)
+	resp, err := client.API.GetPackageWithResponse(ctx, name, version, &params)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
-	defer resp.Body.Close()
 
-	switch resp.StatusCode {
+	switch resp.StatusCode() {
 	case http.StatusOK:
-		return nil
+		return resp.JSON200.Item, nil
 	case http.StatusNotFound:
-		return utils.FrameworkDiagFromError(ErrPackageNotFound)
+		return nil, utils.FrameworkDiagFromError(ErrPackageNotFound)
 	default:
-		errData, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return utils.FrameworkDiagFromError(err)
-		}
-
-		return reportUnknownError(resp.StatusCode, errData)
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -365,22 +359,16 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 		IgnoreConstraints: nil,
 	}
 
-	resp, err := client.API.InstallPackage(ctx, name, version, &params, body)
+	resp, err := client.API.InstallPackageWithResponse(ctx, name, version, &params, body)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
-	defer resp.Body.Close()
 
-	switch resp.StatusCode {
+	switch resp.StatusCode() {
 	case http.StatusOK:
 		return nil
 	default:
-		errData, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return utils.FrameworkDiagFromError(err)
-		}
-
-		return reportUnknownError(resp.StatusCode, errData)
+		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -399,6 +387,14 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return nil
+	case http.StatusBadRequest:
+		msg := resp.JSON400.Message
+		// {"statusCode":400,"error":"Bad Request","message":"some-integration is not installed"}
+		if msg != nil && strings.Contains(*msg, "is not installed") {
+			return nil
+		} else {
+			return reportUnknownError(resp.StatusCode(), resp.Body)
+		}
 	case http.StatusNotFound:
 		return nil
 	default:
