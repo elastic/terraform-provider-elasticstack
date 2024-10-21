@@ -56,16 +56,16 @@ func (model *agentPolicyModel) populateFromAPI(data *fleetapi.AgentPolicy) {
 	model.Namespace = types.StringValue(data.Namespace)
 }
 
-func (model agentPolicyModel) toAPICreateModel() fleetapi.AgentPolicyCreateRequest {
-	monitoring := make([]fleetapi.AgentPolicyCreateRequestMonitoringEnabled, 0, 2)
+func (model agentPolicyModel) toAPICreateModel() fleetapi.CreateAgentPolicyJSONRequestBody {
+	monitoring := make([]fleetapi.CreateAgentPolicyJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, fleetapi.AgentPolicyCreateRequestMonitoringEnabledLogs)
+		monitoring = append(monitoring, fleetapi.CreateAgentPolicyJSONBodyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, fleetapi.AgentPolicyCreateRequestMonitoringEnabledMetrics)
+		monitoring = append(monitoring, fleetapi.CreateAgentPolicyJSONBodyMonitoringEnabledMetrics)
 	}
 
-	body := fleetapi.AgentPolicyCreateRequest{
+	body := fleetapi.CreateAgentPolicyJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
 		DownloadSourceId:   model.DownloadSourceId.ValueStringPointer(),
@@ -80,8 +80,8 @@ func (model agentPolicyModel) toAPICreateModel() fleetapi.AgentPolicyCreateReque
 	return body
 }
 
-func (model agentPolicyModel) toAPIUpdateModel() fleetapi.AgentPolicyUpdateRequest {
-	monitoring := make([]fleetapi.AgentPolicyUpdateRequestMonitoringEnabled, 0, 2)
+func (model agentPolicyModel) toAPIUpdateModel() fleetapi.UpdateAgentPolicyJSONRequestBody {
+	monitoring := make([]fleetapi.UpdateAgentPolicyJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, fleetapi.Logs)
 	}
@@ -89,7 +89,7 @@ func (model agentPolicyModel) toAPIUpdateModel() fleetapi.AgentPolicyUpdateReque
 		monitoring = append(monitoring, fleetapi.Metrics)
 	}
 
-	body := fleetapi.AgentPolicyUpdateRequest{
+	body := fleetapi.UpdateAgentPolicyJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
 		DownloadSourceId:   model.DownloadSourceId.ValueStringPointer(),

@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
+
+package: fleetapi
+output: fleet.gen.go
+generate:
+  client: true
+  models: true
+# output-options:
+#   nullable-type: true

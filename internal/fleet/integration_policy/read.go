@@ -23,7 +23,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	policyID := stateModel.PolicyID.ValueString()
-	policy, diags := fleet.ReadPackagePolicy(ctx, client, policyID)
+	policy, diags := fleet.GetPackagePolicy(ctx, client, policyID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

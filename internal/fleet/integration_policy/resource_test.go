@@ -188,7 +188,7 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		switch rs.Type {
 		case "elasticstack_fleet_agent_policy":
-			policy, diags := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+			policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 			if diags.HasError() {
 				return utils.FwDiagsAsError(diags)
 			}
@@ -196,7 +196,7 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 				return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)
 			}
 		case "elasticstack_fleet_integration_policy":
-			policy, diags := fleet.ReadPackagePolicy(context.Background(), fleetClient, rs.Primary.ID)
+			policy, diags := fleet.GetPackagePolicy(context.Background(), fleetClient, rs.Primary.ID)
 			if diags.HasError() {
 				return utils.FwDiagsAsError(diags)
 			}

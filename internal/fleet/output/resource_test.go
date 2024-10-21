@@ -318,7 +318,7 @@ func checkResourceOutputDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		output, diags := fleet.ReadOutput(context.Background(), fleetClient, rs.Primary.ID)
+		output, diags := fleet.GetOutput(context.Background(), fleetClient, rs.Primary.ID)
 		if diags.HasError() {
 			return utils.FwDiagsAsError(diags)
 		}

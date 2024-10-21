@@ -47,7 +47,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	model.Namespace = types.StringPointerValue(data.Namespace)
 	model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
 	model.Description = types.StringPointerValue(data.Description)
-	model.Enabled = types.BoolPointerValue(data.Enabled)
+	model.Enabled = types.BoolValue(data.Enabled)
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.VarsJson = utils.MapToNormalizedType(utils.Deref(data.Vars), path.Root("vars_json"), &diags)
@@ -62,7 +62,7 @@ func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, i
 		func(inputData fleetapi.PackagePolicyInput, meta utils.MapMeta) integrationPolicyInputModel {
 			return integrationPolicyInputModel{
 				InputID:     types.StringValue(meta.Key),
-				Enabled:     types.BoolValue(inputData.Enabled),
+				Enabled:     types.BoolPointerValue(inputData.Enabled),
 				StreamsJson: utils.MapToNormalizedType(utils.Deref(inputData.Streams), meta.Path.AtName("streams_json"), diags),
 				VarsJson:    utils.MapToNormalizedType(utils.Deref(inputData.Vars), meta.Path.AtName("vars_json"), diags),
 			}
@@ -89,14 +89,11 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 		Force:       model.Force.ValueBoolPointer(),
 		Name:        model.Name.ValueString(),
 		Namespace:   model.Namespace.ValueStringPointer(),
-		Package: struct {
-			Name    string `json:"name"`
-			Version string `json:"version"`
-		}{
+		Package: fleetapi.PackagePolicyRequestPackage{
 			Name:    model.IntegrationName.ValueString(),
 			Version: model.IntegrationVersion.ValueString(),
 		},
-		PolicyId: model.AgentPolicyID.ValueString(),
+		PolicyId: model.AgentPolicyID.ValueStringPointer(),
 		Vars:     utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
 	}
 
