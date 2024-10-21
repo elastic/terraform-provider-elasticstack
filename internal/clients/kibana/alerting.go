@@ -219,6 +219,16 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 
 	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
+	var alertDelay *alerting.AlertDelay
+
+	if alerting.IsNil(rule.AlertDelay) {
+		alertDelay = nil
+	} else {
+		alertDelay = &alerting.AlertDelay{
+			Active: *rule.AlertDelay,
+		}
+	}
+
 	reqModel := alerting.UpdateRuleRequest{
 		Actions:    ruleActionsToActionsInner((rule.Actions)),
 		Name:       rule.Name,
@@ -227,8 +237,9 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 		Schedule: alerting.Schedule{
 			Interval: &rule.Schedule.Interval,
 		},
-		Tags:     rule.Tags,
-		Throttle: *alerting.NewNullableString(rule.Throttle),
+		Tags:       rule.Tags,
+		Throttle:   *alerting.NewNullableString(rule.Throttle),
+		AlertDelay: alertDelay,
 	}
 
 	req := client.UpdateRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").UpdateRuleRequest(reqModel)

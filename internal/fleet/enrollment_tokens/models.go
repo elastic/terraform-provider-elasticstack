@@ -27,7 +27,7 @@ type enrollmentTokenModel struct {
 }
 
 func (model *enrollmentTokensModel) populateFromAPI(ctx context.Context, data []fleetapi.EnrollmentApiKey) (diags diag.Diagnostics) {
-	model.Tokens = utils.SliceToListType(ctx, data, getTokenType(), path.Root("tokens"), diags, newEnrollmentTokenModel)
+	model.Tokens = utils.SliceToListType(ctx, data, getTokenType(), path.Root("tokens"), &diags, newEnrollmentTokenModel)
 	return
 }
 

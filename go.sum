@@ -99,8 +99,8 @@ github.com/hashicorp/terraform-plugin-framework v1.12.0 h1:7HKaueHPaikX5/7cbC1r9
 github.com/hashicorp/terraform-plugin-framework v1.12.0/go.mod h1:N/IOQ2uYjW60Jp39Cp3mw7I/OpC/GfZ0385R0YibmkE=
 github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0 h1:SJXL5FfJJm17554Kpt9jFXngdM6fXbnUnZ6iT2IeiYA=
 github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0/go.mod h1:p0phD0IYhsu9bR4+6OetVvvH59I6LwjXGnTVEr8ox6E=
-github.com/hashicorp/terraform-plugin-framework-validators v0.13.0 h1:bxZfGo9DIUoLLtHMElsu+zwqI4IsMZQBRRy4iLzZJ8E=
-github.com/hashicorp/terraform-plugin-framework-validators v0.13.0/go.mod h1:wGeI02gEhj9nPANU62F2jCaHjXulejm/X+af4PdZaNo=
+github.com/hashicorp/terraform-plugin-framework-validators v0.14.0 h1:3PCn9iyzdVOgHYOBmncpSSOxjQhCTYmc+PGvbdlqSaI=
+github.com/hashicorp/terraform-plugin-framework-validators v0.14.0/go.mod h1:LwDKNdzxrDY/mHBrlC6aYfE2fQ3Dk3gaJD64vNiXvo4=
 github.com/hashicorp/terraform-plugin-go v0.24.0 h1:2WpHhginCdVhFIrWHxDEg6RBn3YaWzR2o6qUeIEat2U=
 github.com/hashicorp/terraform-plugin-go v0.24.0/go.mod h1:tUQ53lAsOyYSckFGEefGC5C8BAaO0ENqzFd3bQeuYQg=
 github.com/hashicorp/terraform-plugin-log v0.9.0 h1:i7hOA+vdAItN1/7UrfBqBwvYPQ9TFvymaRGZED3FCV0=
@@ -201,8 +201,8 @@ go.opentelemetry.io/otel/sdk v1.21.0 h1:FTt8qirL1EysG6sTQRZ5TokkU8d0ugCj8htOgThZ
 go.opentelemetry.io/otel/sdk v1.21.0/go.mod h1:Nna6Yv7PWTdgJHVRD9hIYywQBRx7pbox6nwBnZIxl/E=
 go.opentelemetry.io/otel/trace v1.24.0 h1:CsKnnL4dUAr/0llH9FKuc698G04IrpWV0MQA/Y1YELI=
 go.opentelemetry.io/otel/trace v1.24.0/go.mod h1:HPc3Xr/cOApsBI154IU0OI0HJexz+aw5uPdbs3UCjNU=
-go.uber.org/mock v0.4.0 h1:VcM4ZOtdbR4f6VXfiOpwpVJDL6lCReaZ6mw31wqh7KU=
-go.uber.org/mock v0.4.0/go.mod h1:a6FSlNadKUHUa9IP5Vyt1zh4fC7uAwxMutEAscFbkZc=
+go.uber.org/mock v0.5.0 h1:KAMbZvZPyBPWgD14IrIQ38QCyjwpvVVV6K/bHl1IwQU=
+go.uber.org/mock v0.5.0/go.mod h1:ge71pBPLYDk7QIi1LupWxdAykm7KIEFchiOqd6z7qMM=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
 golang.org/x/crypto v0.25.0 h1:ypSNr+bnYL2YhwoMt2zPxHFmbAN1KZs/njMG3hxUp30=

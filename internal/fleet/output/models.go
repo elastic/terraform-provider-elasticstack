@@ -40,7 +40,7 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *fleetapi.O
 		if ssl != nil {
 			p := path.Root("ssl")
 			sslModels := []outputSslModel{{
-				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(ssl.CertificateAuthorities), p.AtName("certificate_authorities"), diags),
+				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(ssl.CertificateAuthorities), p.AtName("certificate_authorities"), &diags),
 				Certificate:            types.StringPointerValue(ssl.Certificate),
 				Key:                    types.StringPointerValue(ssl.Key),
 			}}
@@ -70,7 +70,7 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *fleetapi.O
 		model.OutputID = types.StringPointerValue(data.Id)
 		model.Name = types.StringValue(data.Name)
 		model.Type = types.StringValue(string(data.Type))
-		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), diags)
+		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
 		model.CaSha256 = types.StringPointerValue(data.CaSha256)
 		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
 		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -89,7 +89,7 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *fleetapi.O
 		model.OutputID = types.StringPointerValue(data.Id)
 		model.Name = types.StringValue(data.Name)
 		model.Type = types.StringValue(string(data.Type))
-		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), diags)
+		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
 		model.CaSha256 = types.StringPointerValue(data.CaSha256)
 		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
 		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -107,11 +107,11 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *fleetapi.O
 func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.NewOutputUnion, diags diag.Diagnostics) {
 	doSsl := func() *fleetapi.NewOutputSsl {
 		if utils.IsKnown(model.Ssl) {
-			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), diags)
+			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
 			if len(sslModels) > 0 {
 				return &fleetapi.NewOutputSsl{
 					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), diags)),
+					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 					Key:                    sslModels[0].Key.ValueStringPointer(),
 				}
 			}
@@ -127,7 +127,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.N
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags),
+			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
 			Id:                   model.OutputID.ValueStringPointer(),
 			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
@@ -147,7 +147,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.N
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags),
+			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
 			Id:                   model.OutputID.ValueStringPointer(),
 			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
@@ -171,11 +171,11 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.N
 func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.UpdateOutputUnion, diags diag.Diagnostics) {
 	doSsl := func() *fleetapi.UpdateOutputSsl {
 		if utils.IsKnown(model.Ssl) {
-			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), diags)
+			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
 			if len(sslModels) > 0 {
 				return &fleetapi.UpdateOutputSsl{
 					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), diags)),
+					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 					Key:                    sslModels[0].Key.ValueStringPointer(),
 				}
 			}
@@ -191,7 +191,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.U
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags)),
+			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
 			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 			Name:                 model.Name.ValueStringPointer(),
@@ -210,7 +210,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.U
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), diags)),
+			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
 			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 			Name:                 model.Name.ValueStringPointer(),
