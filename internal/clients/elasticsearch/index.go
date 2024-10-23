@@ -499,6 +499,85 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStr
 	return diags
 }
 
+func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string, expand_wildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
+
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+
+	lifecycleBytes, err := json.Marshal(lifecycle)
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+
+	opts := []func(*esapi.IndicesPutDataLifecycleRequest){
+		esClient.Indices.PutDataLifecycle.WithBody(bytes.NewReader(lifecycleBytes)),
+		esClient.Indices.PutDataLifecycle.WithContext(ctx),
+		esClient.Indices.PutDataLifecycle.WithExpandWildcards(expand_wildcards),
+	}
+	res, err := esClient.Indices.PutDataLifecycle([]string{dataStreamName}, opts...)
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
+		return utils.FrameworkDiagsFromSDK(diags)
+	}
+	return nil
+}
+
+func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string, expand_wildcards string) (*[]models.DataStreamLifecycle, fwdiags.Diagnostics) {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, utils.FrameworkDiagFromError(err)
+	}
+	opts := []func(*esapi.IndicesGetDataLifecycleRequest){
+		esClient.Indices.GetDataLifecycle.WithContext(ctx),
+		esClient.Indices.GetDataLifecycle.WithExpandWildcards(expand_wildcards),
+	}
+	res, err := esClient.Indices.GetDataLifecycle([]string{dataStreamName}, opts...)
+	if err != nil {
+		return nil, utils.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
+		return nil, utils.FrameworkDiagsFromSDK(diags)
+	}
+
+	dStreams := make(map[string][]models.DataStreamLifecycle)
+	if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
+		return nil, utils.FrameworkDiagFromError(err)
+	}
+	ds := dStreams["data_streams"]
+	return &ds, nil
+}
+
+func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string, expand_wildcards string) fwdiags.Diagnostics {
+
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+	opts := []func(*esapi.IndicesDeleteDataLifecycleRequest){
+		esClient.Indices.DeleteDataLifecycle.WithContext(ctx),
+		esClient.Indices.DeleteDataLifecycle.WithExpandWildcards(expand_wildcards),
+	}
+	res, err := esClient.Indices.DeleteDataLifecycle([]string{dataStreamName}, opts...)
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
+		return utils.FrameworkDiagsFromSDK(diags)
+	}
+
+	return nil
+}
+
 func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline *models.IngestPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 	pipelineBytes, err := json.Marshal(pipeline)

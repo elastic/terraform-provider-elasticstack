@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add resource `elasticstack_elasticsearch_data_stream_lifecycle` ([838](https://github.com/elastic/terraform-provider-elasticstack/issues/838))
+
 ## [0.11.10] - 2024-10-23
 
 - Fix bug updating alert delay ([#859](https://github.com/elastic/terraform-provider-elasticstack/pull/859))

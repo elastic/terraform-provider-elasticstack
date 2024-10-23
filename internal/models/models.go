@@ -312,7 +312,14 @@ type IndexAlias struct {
 }
 
 type LifecycleSettings struct {
-	DataRetention string `json:"data_retention,omitempty"`
+	DataRetention string         `json:"data_retention,omitempty"`
+	Enabled       bool           `json:"enabled,omitempty"`
+	Downsampling  []Downsampling `json:"downsampling,omitempty"`
+}
+
+type Downsampling struct {
+	After         string `json:"after,omitempty"`
+	FixedInterval string `json:"fixed_interval,omitempty"`
 }
 
 type DataStream struct {
@@ -332,6 +339,11 @@ type DataStream struct {
 type DataStreamIndex struct {
 	IndexName string `json:"index_name"`
 	IndexUUID string `json:"index_uuid"`
+}
+
+type DataStreamLifecycle struct {
+	Name      string            `json:"name"`
+	Lifecycle LifecycleSettings `json:"lifecycle,omitempty"`
 }
 
 type TimestampField struct {
