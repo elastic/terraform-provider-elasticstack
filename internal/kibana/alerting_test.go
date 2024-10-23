@@ -189,7 +189,6 @@ func TestAccResourceAlertingRule(t *testing.T) {
 func testAccResourceAlertingRuleCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -221,7 +220,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -256,7 +254,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithFrequencyCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -314,7 +311,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithFrequencyUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -375,7 +371,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithAlertsFilterCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -450,7 +445,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithAlertsFilterUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -527,7 +521,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithAlertDelayCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -587,7 +580,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithAlertDelayUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
