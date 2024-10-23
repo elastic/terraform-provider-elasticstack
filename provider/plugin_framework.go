@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
@@ -93,6 +94,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &index.Resource{} },
 		func() resource.Resource { return &synthetics.Resource{} },
 		func() resource.Resource { return &api_key.Resource{} },
+		func() resource.Resource { return &data_stream_lifecycle.Resource{} },
 		agent_policy.NewResource,
 		integration.NewResource,
 		integration_policy.NewResource,

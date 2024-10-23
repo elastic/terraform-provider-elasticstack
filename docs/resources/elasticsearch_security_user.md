@@ -99,5 +99,5 @@ Optional:
 Import is supported using the following syntax:
 
 ```shell
-terraform import elasticstack_elasticsearch_security_user.user <cluster_uuid>/elastic
+terraform import elasticstack_elasticsearch_security_user.user <cluster_uuid>/<user-name>
 ```
