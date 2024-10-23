@@ -358,6 +358,43 @@ func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.D
 }
 
 func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
+	if a.elasticsearch != nil {
+		return a.versionFromElasticsearch(ctx)
+	}
+
+	return a.versionFromKibana()
+}
+
+func (a *ApiClient) versionFromKibana() (*version.Version, diag.Diagnostics) {
+	kibClient, err := a.GetKibanaClient()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	status, err := kibClient.KibanaStatus.Get()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	vMap, ok := status["version"].(map[string]interface{})
+	if !ok {
+		return nil, diag.Errorf("failed to get version from Kibana API")
+	}
+
+	rawVersion, ok := vMap["number"].(string)
+	if !ok {
+		return nil, diag.Errorf("failed to get version number from Kibana status")
+	}
+
+	serverVersion, err := version.NewVersion(rawVersion)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	return serverVersion, nil
+}
+
+func (a *ApiClient) versionFromElasticsearch(ctx context.Context) (*version.Version, diag.Diagnostics) {
 	info, diags := a.serverInfo(ctx)
 	if diags.HasError() {
 		return nil, diags
