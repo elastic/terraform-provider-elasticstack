@@ -7,5 +7,5 @@ import (
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	r.create(ctx, req.Plan, &resp.State, &resp.Diagnostics)
+	resp.Diagnostics.Append(r.create(ctx, req.Plan, &resp.State)...)
 }

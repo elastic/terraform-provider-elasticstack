@@ -13,48 +13,48 @@ import (
 )
 
 func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	r.create(ctx, req.Plan, &resp.State, &resp.Diagnostics)
+	resp.Diagnostics.Append(r.create(ctx, req.Plan, &resp.State)...)
 }
 
-func (r Resource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, respDiags *diag.Diagnostics) {
+func (r Resource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
 	var planModel tfModel
-	respDiags.Append(plan.Get(ctx, &planModel)...)
-	if respDiags.HasError() {
-		return
+	diags := plan.Get(ctx, &planModel)
+	if diags.HasError() {
+		return diags
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
-	respDiags.Append(diags...)
-	if respDiags.HasError() {
-		return
+	client, d := clients.MaybeNewApiClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
 	}
 
 	name := planModel.Name.ValueString()
 	id, sdkDiags := client.ID(ctx, name)
 	if sdkDiags.HasError() {
-		respDiags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
-		return
+		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+		return diags
 	}
 
 	planModel.ID = types.StringValue(id.String())
 
-	apiModel, diags := planModel.toAPIModel(ctx)
-	respDiags.Append(diags...)
-	if respDiags.HasError() {
-		return
+	apiModel, d := planModel.toAPIModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
 	}
 
-	respDiags.Append(elasticsearch.PutDataStreamLifecycle(ctx, client, name, planModel.ExpandWildcards.ValueString(), apiModel)...)
-	if respDiags.HasError() {
-		return
+	diags.Append(elasticsearch.PutDataStreamLifecycle(ctx, client, name, planModel.ExpandWildcards.ValueString(), apiModel)...)
+	if diags.HasError() {
+		return diags
 	}
 
-	finalModel, diags := r.read(ctx, client, planModel)
-	respDiags.Append(diags...)
-	if respDiags.HasError() {
-		return
+	finalModel, d := r.read(ctx, client, planModel)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
 	}
 
-	respDiags.Append(state.Set(ctx, finalModel)...)
-
+	diags.Append(state.Set(ctx, finalModel)...)
+	return diags
 }
