@@ -1,6 +1,9 @@
 ## [Unreleased]
 
 - Add resource `elasticstack_elasticsearch_data_stream_lifecycle` ([838](https://github.com/elastic/terraform-provider-elasticstack/issues/838))
+
+## [0.11.10] - 2024-10-23
+
 - Fix bug updating alert delay ([#859](https://github.com/elastic/terraform-provider-elasticstack/pull/859))
 - Support updating `elasticstack_elasticsearch_security_api_key` when supported by the backing cluster ([#843](https://github.com/elastic/terraform-provider-elasticstack/pull/843))
 - Fix validation of `throttle`, and `interval` attributes in `elasticstack_kibana_alerting_rule` allowing all Elastic duration values ([#846](https://github.com/elastic/terraform-provider-elasticstack/pull/846))
@@ -375,7 +378,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.10...HEAD
+[0.11.9]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.10
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
 [0.11.7]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
