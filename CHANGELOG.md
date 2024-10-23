@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Allow `elasticstack_kibana_alerting_rule` to be used without Elasticsearch being configured. ([#869](https://github.com/elastic/terraform-provider-elasticstack/pull/869))
+
 ## [0.11.10] - 2024-10-23
 
 - Fix bug updating alert delay ([#859](https://github.com/elastic/terraform-provider-elasticstack/pull/859))
@@ -377,8 +379,8 @@
 - CI integration
 
 [Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.10...HEAD
-[0.11.9]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.10
-[0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
+[0.11.10]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.10
+[0.11.9]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
 [0.11.7]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6
