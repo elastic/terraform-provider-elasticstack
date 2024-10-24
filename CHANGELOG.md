@@ -1,10 +1,16 @@
 ## [Unreleased]
 
+- Allow `elasticstack_kibana_alerting_rule` to be used without Elasticsearch being configured. ([#869](https://github.com/elastic/terraform-provider-elasticstack/pull/869))
+- Add resource `elasticstack_elasticsearch_data_stream_lifecycle` ([838](https://github.com/elastic/terraform-provider-elasticstack/issues/838))
+
+## [0.11.10] - 2024-10-23
+
 - Fix bug updating alert delay ([#859](https://github.com/elastic/terraform-provider-elasticstack/pull/859))
 - Support updating `elasticstack_elasticsearch_security_api_key` when supported by the backing cluster ([#843](https://github.com/elastic/terraform-provider-elasticstack/pull/843))
 - Fix validation of `throttle`, and `interval` attributes in `elasticstack_kibana_alerting_rule` allowing all Elastic duration values ([#846](https://github.com/elastic/terraform-provider-elasticstack/pull/846))
 - Fix boolean setting parsing for `elasticstack_elasticsearch_indices` data source. ([#842](https://github.com/elastic/terraform-provider-elasticstack/pull/842))
 - Update all Fleet and utils/tfsdk instances of diagnostics parameters to pass by pointer instead of pass by value. Added upgrader for fleet_integration_policy v0 to handle empty string vars_json/streams_json. ([#855](https://github.com/elastic/terraform-provider-elasticstack/pull/855))
+- Fix handling of EPM packages when uninstalled outside Terraform, and diags in create/update. ([#854](https://github.com/elastic/terraform-provider-elasticstack/pull/854))
 
 ## [0.11.9] - 2024-10-14
 
@@ -373,8 +379,9 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...HEAD
-[0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.10...HEAD
+[0.11.10]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.10
+[0.11.9]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
 [0.11.7]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6

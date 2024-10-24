@@ -25,9 +25,13 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 
 	name := stateModel.Name.ValueString()
 	version := stateModel.Version.ValueString()
-	diags = fleet.GetPackage(ctx, client, name, version)
+	pkg, diags := fleet.GetPackage(ctx, client, name, version)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if pkg.Status != nil && *pkg.Status != "installed" {
 		resp.State.RemoveResource(ctx)
 		return
 	}

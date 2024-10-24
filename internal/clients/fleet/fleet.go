@@ -3,6 +3,7 @@ package fleet
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
@@ -329,29 +330,32 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 }
 
 // GetPackage reads a specific package from the API.
-func GetPackage(ctx context.Context, client *Client, name, version string) diag.Diagnostics {
-	resp, err := client.API.GetPackageWithResponse(ctx, name, version, nil)
+func GetPackage(ctx context.Context, client *Client, name, version string) (*fleetapi.PackageInfo, diag.Diagnostics) {
+	params := fleetapi.GetPackageParams{}
+
+	resp, err := client.API.GetPackageWithResponse(ctx, name, version, &params)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return nil, utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return nil
+		return &resp.JSON200.Item, nil
 	case http.StatusNotFound:
-		return utils.FrameworkDiagFromError(ErrPackageNotFound)
+		return nil, utils.FrameworkDiagFromError(ErrPackageNotFound)
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
 // InstallPackage installs a package.
 func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+	params := fleetapi.InstallPackageParams{}
 	body := fleetapi.InstallPackageJSONRequestBody{
 		Force: &force,
 	}
 
-	resp, err := client.API.InstallPackageWithResponse(ctx, name, version, nil, body)
+	resp, err := client.API.InstallPackageWithResponse(ctx, name, version, &params, body)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
@@ -378,6 +382,13 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return nil
+	case http.StatusBadRequest:
+		msg := resp.JSON400.Message
+		if msg == fmt.Sprintf("%s is not installed", name) {
+			return nil
+		} else {
+			return reportUnknownError(resp.StatusCode(), resp.Body)
+		}
 	case http.StatusNotFound:
 		return nil
 	default:
