@@ -35,7 +35,6 @@ FLEET_NAME ?= terraform-elasticstack-fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 
 SOURCE_LOCATION ?= $(shell pwd)
-, := ,
 
 export GOBIN = $(shell pwd)/bin
 
@@ -73,6 +72,11 @@ retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$atte
 		backoff=$$((backoff * 2)); \
 	done
 
+# wait_until_healthy command - first argument is the container name
+wait_until_healthy = $(call retry, 5, [ "$$(docker inspect -f '{{ .State.Health.Status }}' $(1))" == "healthy" ])
+
+CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
+
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
 # To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
 .PHONY: docker-testacc
@@ -107,8 +111,7 @@ docker-testacc-with-token:
 .PHONY: docker-elasticsearch
 docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
 	@ docker rm -f $(ELASTICSEARCH_NAME) &> /dev/null || true
-	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(ELASTICSEARCH_NAME) > /dev/null 2>&1 ; then \
-		docker run -d \
+	@ docker run -d \
 		--memory $(ELASTICSEARCH_MEM) \
 		-p 9200:9200 -p 9300:9300 \
 		-e "discovery.type=single-node" \
@@ -122,14 +125,15 @@ docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster 
 		-e ELASTIC_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
 		--name $(ELASTICSEARCH_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		docker.elastic.co/elasticsearch/elasticsearch:$(STACK_VERSION); \
-		fi)
+		--health-cmd="curl http://localhost:9200/_cluster/health" \
+		--health-interval=10s --health-timeout=5s --health-retries=10 \
+		docker.elastic.co/elasticsearch/elasticsearch:$(STACK_VERSION)
+	@ $(call wait_until_healthy, $(ELASTICSEARCH_NAME))
 
 .PHONY: docker-kibana
 docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start Kibana node in docker container
 	@ docker rm -f $(KIBANA_NAME)  &> /dev/null || true
-	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(KIBANA_NAME) > /dev/null 2>&1 ; then \
-		docker run -d \
+	@ docker run -d \
 		-p 5601:5601 \
 		-e SERVER_NAME=kibana \
 		-e ELASTICSEARCH_HOSTS=$(ELASTICSEARCH_ENDPOINTS) \
@@ -139,8 +143,10 @@ docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start 
 		-e LOGGING_ROOT_LEVEL=debug \
 		--name $(KIBANA_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		docker.elastic.co/kibana/kibana:$(STACK_VERSION); \
-		fi)
+		--health-cmd="curl http://localhost:5601/api/status" \
+		--health-interval=10s --health-timeout=5s --health-retries=10 \
+		docker.elastic.co/kibana/kibana:$(STACK_VERSION)
+	@ $(call wait_until_healthy, $(KIBANA_NAME))
 
 .PHONY: docker-kibana-with-tls
 docker-kibana-with-tls: docker-network docker-elasticsearch set-kibana-password
@@ -148,9 +154,7 @@ docker-kibana-with-tls: docker-network docker-elasticsearch set-kibana-password
 	@ mkdir -p certs
 	@ CAROOT=certs mkcert localhost $(KIBANA_NAME)
 	@ mv localhost*.pem certs/
-
-	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(KIBANA_NAME) > /dev/null 2>&1 ; then \
-		docker run -d \
+	@ docker run -d \
 		-p 5601:5601 \
 		-v $(shell pwd)/certs:/certs \
 		-e SERVER_NAME=kibana \
@@ -164,14 +168,15 @@ docker-kibana-with-tls: docker-network docker-elasticsearch set-kibana-password
 		-e LOGGING_ROOT_LEVEL=debug \
 		--name $(KIBANA_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		docker.elastic.co/kibana/kibana:$(STACK_VERSION); \
-		fi)
+		--health-cmd="curl -k https://localhost:5601/api/status" \
+		--health-interval=10s --health-timeout=5s --health-retries=10 \
+		docker.elastic.co/kibana/kibana:$(STACK_VERSION)
+	@ $(call wait_until_healthy, $(KIBANA_NAME))
 
 .PHONY: docker-fleet
 docker-fleet: docker-network docker-elasticsearch docker-kibana setup-kibana-fleet ## Start Fleet node in docker container
 	@ docker rm -f $(FLEET_NAME)  &> /dev/null || true
-	@ $(call retry, 5, if ! docker ps --format '{{.Names}}' | grep -w $(FLEET_NAME) > /dev/null 2>&1 ; then \
-		docker run -d \
+	@ docker run -d \
 		-p 8220:8220 \
 		-e SERVER_NAME=fleet \
       	-e FLEET_ENROLL=1 \
@@ -188,33 +193,30 @@ docker-fleet: docker-network docker-elasticsearch docker-kibana setup-kibana-fle
       	-e KIBANA_FLEET_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
 		--name $(FLEET_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		docker.elastic.co/beats/elastic-agent:$(STACK_VERSION); \
-		fi)
+		docker.elastic.co/beats/elastic-agent:$(STACK_VERSION)
 
 
 .PHONY: docker-network
 docker-network: ## Create a dedicated network for ES and test runs
-	@ if ! docker network ls --format '{{.Name}}' | grep -w $(ELASTICSEARCH_NETWORK) > /dev/null 2>&1 ; then \
-		docker network create $(ELASTICSEARCH_NETWORK); \
-		fi
+	@ docker network inspect $(ELASTICSEARCH_NETWORK) >/dev/null 2>&1 || docker network create $(ELASTICSEARCH_NETWORK)
 
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
-	@ $(call retry, 10, curl -sS -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d '{"password":"$(KIBANA_SYSTEM_PASSWORD)"}' | grep -q "^{}")
+	@ curl $(CURL_OPTS) http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d '{"password":"$(KIBANA_SYSTEM_PASSWORD)"}'
 
 .PHONY: create-es-api-key
 create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200
-	@ $(call retry, 10, curl -sS -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/api_key -d '{"name":"$(KIBANA_API_KEY_NAME)"}')
+	@ curl $(CURL_OPTS) http://localhost:9200/_security/api_key -d '{"name":"$(KIBANA_API_KEY_NAME)"}'
 
 .PHONY: create-es-bearer-token
 create-es-bearer-token: ## Creates and outputs a new OAuth bearer token. This expects Elasticsearch to be available at localhost:9200
-	@ $(call retry, 10, curl -sS -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" http://localhost:9200/_security/oauth2/token -d '{"grant_type":"client_credentials"}')
+	@ curl $(CURL_OPTS) http://localhost:9200/_security/oauth2/token -d '{"grant_type":"client_credentials"}'
 
 .PHONY: setup-kibana-fleet
 setup-kibana-fleet: ## Creates the agent and integration policies required to run Fleet. This expects Kibana to be available at localhost:5601
-	@ $(call retry, 10, curl -sS --fail-with-body -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" -H "kbn-xsrf: true" http://localhost:5601/api/fleet/fleet_server_hosts -d '{"name":"default"$(,)"host_urls":["$(FLEET_ENDPOINT)"]$(,)"is_default":true}')
-	@ $(call retry, 10, curl -sS --fail-with-body -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_policies -d '{"id":"fleet-server"$(,)"name":"Fleet Server"$(,)"namespace":"default"$(,)"monitoring_enabled":["logs"$(,)"metrics"]}')
-	@ $(call retry, 10, curl -sS --fail-with-body -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json" -H "kbn-xsrf: true" http://localhost:5601/api/fleet/package_policies -d '{"name":"fleet-server"$(,)"namespace":"default"$(,)"policy_id":"fleet-server"$(,)"enabled":true$(,)"inputs":[{"type":"fleet-server"$(,)"enabled":true$(,)"streams":[]$(,)"vars":{}}]$(,)"package":{"name":"fleet_server"$(,)"version":"1.5.0"}}')
+	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/fleet_server_hosts -d '{"name":"default","host_urls":["$(FLEET_ENDPOINT)"],"is_default":true}'
+	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_policies -d '{"id":"fleet-server","name":"Fleet Server","namespace":"default","monitoring_enabled":["logs","metrics"]}'
+	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/package_policies -d '{"name":"fleet-server","namespace":"default","policy_id":"fleet-server","enabled":true,"inputs":[{"type":"fleet-server","enabled":true,"streams":[],"vars":{}}],"package":{"name":"fleet_server","version":"1.5.0"}}'
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network

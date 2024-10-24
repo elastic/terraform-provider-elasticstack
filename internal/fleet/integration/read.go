@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -26,13 +25,13 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 
 	name := stateModel.Name.ValueString()
 	version := stateModel.Version.ValueString()
-	pkg, diags := fleet.ReadPackage(ctx, client, name, version)
+	pkg, diags := fleet.GetPackage(ctx, client, name, version)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	if pkg.Status != fleetapi.Installed {
+	if pkg.Status != nil && *pkg.Status != "installed" {
 		resp.State.RemoveResource(ctx)
 		return
 	}

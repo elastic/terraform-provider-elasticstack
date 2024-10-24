@@ -11,6 +11,7 @@ require (
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	go.uber.org/mock v0.5.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -251,7 +252,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.20.0 // indirect
 	github.com/hashicorp/terraform-json v0.21.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
-	github.com/huandu/xstrings v1.4.0 // indirect
+	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/jsonschema v0.12.0 // indirect
@@ -465,8 +466,6 @@ require (
 	gopkg.in/mail.v2 v2.3.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gotest.tools/v3 v3.1.0 // indirect
 	honnef.co/go/tools v0.5.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 	mvdan.cc/gofumpt v0.7.0 // indirect

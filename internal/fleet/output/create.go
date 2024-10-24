@@ -34,7 +34,7 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	diags = planModel.populateFromAPICreate(ctx, output)
+	diags = planModel.populateFromAPI(ctx, output)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
