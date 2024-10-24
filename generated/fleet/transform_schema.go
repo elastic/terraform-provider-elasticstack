@@ -330,8 +330,6 @@ func (m Map) CreateRef(schema *Schema, name string, key string) Map {
 		if reflect.DeepEqual(refTarget, existing) {
 			writeComponent = false
 		} else {
-			//os.WriteFile("./existing.txt", []byte(spew.Sdump(existing)), 0644)
-			//os.WriteFile("./target.txt", []byte(spew.Sdump(refTarget)), 0644)
 			log.Panicf("Component schema key already in use and not an exact duplicate: %q", refPath)
 			return nil
 		}
@@ -776,6 +774,15 @@ func transformFleetPaths(schema *Schema) {
 	agentPolicyPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
 	agentPolicyPath.Put.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
 
+	// See: https://github.com/elastic/kibana/issues/197155
+	// [request body.keep_monitoring_alive]: expected value of type [boolean] but got [null]
+	// [request body.supports_agentless]: expected value of type [boolean] but got [null]
+	// [request body.overrides]: expected value of type [boolean] but got [null]
+	for _, key := range []string{"keep_monitoring_alive", "supports_agentless", "overrides"} {
+		agentPoliciesPath.Post.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
+		agentPolicyPath.Put.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
+	}
+
 	// Enrollment api keys
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/enrollment_api_key.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/enrollment_api_key.ts
@@ -804,6 +811,12 @@ func transformFleetPaths(schema *Schema) {
 	hostPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
 	hostPath.Put.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
 
+	// 8.6.2 regression
+	// [request body.proxy_id]: definition for this key is missing
+	// See: https://github.com/elastic/kibana/issues/197155
+	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
+	hostPath.Put.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
+
 	// Outputs
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/output.ts
@@ -811,11 +824,11 @@ func transformFleetPaths(schema *Schema) {
 	outputByIdPath := schema.MustGetPath("/api/fleet/outputs/{outputId}")
 	outputsPath := schema.MustGetPath("/api/fleet/outputs")
 
-	outputsPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.items.items")
 	outputsPath.Post.CreateRef(schema, "new_output_union", "requestBody.content.application/json.schema")
-	outputsPath.Post.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
-	outputByIdPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
 	outputByIdPath.Put.CreateRef(schema, "update_output_union", "requestBody.content.application/json.schema")
+	outputsPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.items.items")
+	outputByIdPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
+	outputsPath.Post.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
 	outputByIdPath.Put.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
 
 	for _, name := range []string{"output", "new_output", "update_output"} {
@@ -825,42 +838,77 @@ func transformFleetPaths(schema *Schema) {
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_kafka", name), fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
-		// Add the missing discriminator
-		schema.Components.Set(fmt.Sprintf("schemas.%s_union.discriminator", name), Map{
-			"propertyName": "type",
-			"mapping": Map{
-				"elasticsearch":        fmt.Sprintf("#/components/schemas/%s_elasticsearch", name),
-				"remote_elasticsearch": fmt.Sprintf("#/components/schemas/%s_remote_elasticsearch", name),
-				"logstash":             fmt.Sprintf("#/components/schemas/%s_logstash", name),
-				"kafka":                fmt.Sprintf("#/components/schemas/%s_kafka", name),
-			},
-		})
-
 		// Extract child structs
 		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
 			schema.Components.CreateRef(schema, fmt.Sprintf("%s_shipper", name), fmt.Sprintf("schemas.%s_%s.properties.shipper", name, typ))
 			schema.Components.CreateRef(schema, fmt.Sprintf("%s_ssl", name), fmt.Sprintf("schemas.%s_%s.properties.ssl", name, typ))
 		}
 
+		// Ideally just remove the "anyOf", however then we would need to make
+		// refs for each of the "oneOf" options. So turn them into an "any" instead.
+		// See: https://github.com/elastic/kibana/issues/197153
 		/*
-			// These look like this and oapi breaks hard on it.
-			// Turn them into an `any` type.
-			   anyOf:
-			     - items: {}
-			       type: array
-			     - type: boolean
-			     - type: number
-			     - type: object
-			     - type: string
-			   nullable: true
-			   oneOf:
-			     - type: number
-			     - not: {}
+			anyOf:
+			  - items: {}
+			    type: array
+			  - type: boolean
+			  - type: number
+			  - type: object
+			  - type: string
+			nullable: true
+			oneOf:
+			  - type: number
+			  - not: {}
 		*/
-		node := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s_kafka.properties", name))
-		for _, typ := range []string{"compression_level", "connection_type", "password", "username"} {
-			node[typ] = Map{}
+
+		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s_kafka.properties", name))
+		for _, key := range []string{"compression_level", "connection_type", "password", "username"} {
+			props.Set(key, Map{})
 		}
+	}
+
+	// Add the missing discriminator to the response union
+	// See: https://github.com/elastic/kibana/issues/181994
+	schema.Components.Set("schemas.output_union.discriminator", Map{
+		"propertyName": "type",
+		"mapping": Map{
+			"elasticsearch":        "#/components/schemas/output_elasticsearch",
+			"remote_elasticsearch": "#/components/schemas/output_remote_elasticsearch",
+			"logstash":             "#/components/schemas/output_logstash",
+			"kafka":                "#/components/schemas/output_kafka",
+		},
+	})
+
+	for _, name := range []string{"new_output", "update_output"} {
+		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
+			// [request body.1.ca_sha256]: expected value of type [string] but got [null]"
+			// See: https://github.com/elastic/kibana/issues/197155
+			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.ca_sha256.x-omitempty", name, typ), true)
+
+			// [request body.1.ca_trusted_fingerprint]: expected value of type [string] but got [null]
+			// See: https://github.com/elastic/kibana/issues/197155
+			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.ca_trusted_fingerprint.x-omitempty", name, typ), true)
+
+			// 8.6.2 regression
+			// [request body.proxy_id]: definition for this key is missing"
+			// See: https://github.com/elastic/kibana/issues/197155
+			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.proxy_id.x-omitempty", name, typ), true)
+		}
+
+		// [request body.1.shipper]: expected a plain object value, but found [null] instead
+		// See: https://github.com/elastic/kibana/issues/197155
+		schema.Components.Set(fmt.Sprintf("schemas.%s_shipper.x-omitempty", name), true)
+
+		// [request body.1.ssl]: expected a plain object value, but found [null] instead
+		// See: https://github.com/elastic/kibana/issues/197155
+		schema.Components.Set(fmt.Sprintf("schemas.%s_ssl.x-omitempty", name), true)
+
+	}
+
+	for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
+		// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
+		// See: https://github.com/elastic/kibana/issues/197155
+		schema.Components.MustDelete(fmt.Sprintf("schemas.update_output_%s.properties.id", typ))
 	}
 
 	// Package policies
@@ -899,55 +947,9 @@ func transformFleetPaths(schema *Schema) {
 	schema.Components.Set("schemas.package_policy_request_input.properties.vars", Map{"type": "object"})
 	schema.Components.Set("schemas.package_policy_request_input_stream.properties.vars", Map{"type": "object"})
 
-	// Upstream issues
-
-	// [request body.keep_monitoring_alive]: expected value of type [boolean] but got [null]
-	agentPoliciesPath.Post.Set("requestBody.content.application/json.schema.properties.keep_monitoring_alive.x-omitempty", true)
-	agentPolicyPath.Put.Set("requestBody.content.application/json.schema.properties.keep_monitoring_alive.x-omitempty", true)
-
-	// [request body.supports_agentless]: expected value of type [boolean] but got [null]
-	agentPoliciesPath.Post.Set("requestBody.content.application/json.schema.properties.supports_agentless.x-omitempty", true)
-	agentPolicyPath.Put.Set("requestBody.content.application/json.schema.properties.supports_agentless.x-omitempty", true)
-
-	// [request body.supports_agentless]: expected value of type [boolean] but got [null]
-	agentPoliciesPath.Post.Set("requestBody.content.application/json.schema.properties.overrides.x-omitempty", true)
-	agentPolicyPath.Put.Set("requestBody.content.application/json.schema.properties.overrides.x-omitempty", true)
-
-	// 8.6.2 regression
-	// [request body.proxy_id]: definition for this key is missing
-	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
-	hostPath.Put.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
-
-	for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-		// Discriminator codegen failure, may not be required upstream, have not tested
-		schema.Components.Set(fmt.Sprintf("schemas.update_output_%s.required", typ), []string{"type"})
-
-		// [request body.3.ca_sha256]: expected value of type [string] but got [null]"
-		schema.Components.Set(fmt.Sprintf("schemas.new_output_%s.properties.ca_sha256.x-omitempty", typ), true)
-		schema.Components.Set(fmt.Sprintf("schemas.update_output_%s.properties.ca_sha256.x-omitempty", typ), true)
-
-		// [request body.1.ca_trusted_fingerprint]: expected value of type [string] but got [null]
-		schema.Components.Set(fmt.Sprintf("schemas.new_output_%s.properties.ca_trusted_fingerprint.x-omitempty", typ), true)
-		schema.Components.Set(fmt.Sprintf("schemas.update_output_%s.properties.ca_trusted_fingerprint.x-omitempty", typ), true)
-
-		// 8.6.2 regression
-		// [request body.proxy_id]: definition for this key is missing"
-		schema.Components.Set(fmt.Sprintf("schemas.new_output_%s.properties.proxy_id.x-omitempty", typ), true)
-		schema.Components.Set(fmt.Sprintf("schemas.update_output_%s.properties.proxy_id.x-omitempty", typ), true)
-
-		// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
-		schema.Components.MustDelete(fmt.Sprintf("schemas.update_output_%s.properties.id", typ))
-	}
-
-	// [request body.0.shipper]: expected a plain object value, but found [null] instead
-	schema.Components.Set("schemas.new_output_shipper.x-omitempty", true)
-	schema.Components.Set("schemas.new_output_ssl.x-omitempty", true)
-
-	// [request body.1.shipper]: expected a plain object value, but found [null] instead
-	schema.Components.Set("schemas.update_output_shipper.x-omitempty", true)
-	schema.Components.Set("schemas.update_output_ssl.x-omitempty", true)
-
+	// [request body.0.output_id]: expected value of type [string] but got [null]
 	// [request body.1.output_id]: definition for this key is missing"
+	// See: https://github.com/elastic/kibana/issues/197155
 	schema.Components.Set("schemas.package_policy_request.properties.output_id.x-omitempty", true)
 }
 

@@ -123,7 +123,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.N
 	switch outputType {
 	case "elasticsearch":
 		body := fleetapi.NewOutputElasticsearch{
-			Type:                 "elasticsearch",
+			Type:                 fleetapi.NewOutputElasticsearchTypeElasticsearch,
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -143,7 +143,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.N
 
 	case "logstash":
 		body := fleetapi.NewOutputLogstash{
-			Type:                 "logstash",
+			Type:                 fleetapi.NewOutputLogstashTypeLogstash,
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -187,7 +187,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.U
 	switch outputType {
 	case "elasticsearch":
 		body := fleetapi.UpdateOutputElasticsearch{
-			Type:                 "elasticsearch",
+			Type:                 utils.Pointer(fleetapi.Elasticsearch),
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -206,7 +206,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.U
 
 	case "logstash":
 		body := fleetapi.UpdateOutputLogstash{
-			Type:                 "logstash",
+			Type:                 utils.Pointer(fleetapi.Logstash),
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),

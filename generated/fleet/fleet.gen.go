@@ -304,6 +304,7 @@ const (
 
 // Defines values for PackageInfoType.
 const (
+	PackageInfoTypeContent     PackageInfoType = "content"
 	PackageInfoTypeInput       PackageInfoType = "input"
 	PackageInfoTypeIntegration PackageInfoType = "integration"
 )
@@ -390,6 +391,7 @@ const (
 
 // Defines values for PackageListItemType.
 const (
+	PackageListItemTypeContent     PackageListItemType = "content"
 	PackageListItemTypeInput       PackageListItemType = "input"
 	PackageListItemTypeIntegration PackageListItemType = "integration"
 )
@@ -1381,6 +1383,7 @@ type PackageInfo struct {
 	Conditions           *PackageInfo_Conditions       `json:"conditions,omitempty"`
 	DataStreams          *[]map[string]interface{}     `json:"data_streams,omitempty"`
 	Description          *string                       `json:"description,omitempty"`
+	Discovery            *PackageInfo_Discovery        `json:"discovery,omitempty"`
 	Download             *string                       `json:"download,omitempty"`
 	Elasticsearch        *map[string]interface{}       `json:"elasticsearch,omitempty"`
 	FormatVersion        *string                       `json:"format_version,omitempty"`
@@ -1435,6 +1438,18 @@ type PackageInfo_Conditions struct {
 	Elastic              *PackageInfo_Conditions_Elastic `json:"elastic,omitempty"`
 	Kibana               *PackageInfo_Conditions_Kibana  `json:"kibana,omitempty"`
 	AdditionalProperties map[string]interface{}          `json:"-"`
+}
+
+// PackageInfo_Discovery_Fields_Item defines model for PackageInfo.Discovery.Fields.Item.
+type PackageInfo_Discovery_Fields_Item struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// PackageInfo_Discovery defines model for PackageInfo.Discovery.
+type PackageInfo_Discovery struct {
+	Fields               *[]PackageInfo_Discovery_Fields_Item `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}               `json:"-"`
 }
 
 // PackageInfo_Icons_Item defines model for package_info.icons.Item.
@@ -1582,6 +1597,7 @@ type PackageListItem struct {
 	Conditions           *PackageListItem_Conditions       `json:"conditions,omitempty"`
 	DataStreams          *[]map[string]interface{}         `json:"data_streams,omitempty"`
 	Description          *string                           `json:"description,omitempty"`
+	Discovery            *PackageListItem_Discovery        `json:"discovery,omitempty"`
 	Download             *string                           `json:"download,omitempty"`
 	FormatVersion        *string                           `json:"format_version,omitempty"`
 	Icons                *[]PackageListItem_Icons_Item     `json:"icons,omitempty"`
@@ -1625,6 +1641,18 @@ type PackageListItem_Conditions struct {
 	Elastic              *PackageListItem_Conditions_Elastic `json:"elastic,omitempty"`
 	Kibana               *PackageListItem_Conditions_Kibana  `json:"kibana,omitempty"`
 	AdditionalProperties map[string]interface{}              `json:"-"`
+}
+
+// PackageListItem_Discovery_Fields_Item defines model for PackageListItem.Discovery.Fields.Item.
+type PackageListItem_Discovery_Fields_Item struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// PackageListItem_Discovery defines model for PackageListItem.Discovery.
+type PackageListItem_Discovery struct {
+	Fields               *[]PackageListItem_Discovery_Fields_Item `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                   `json:"-"`
 }
 
 // PackageListItem_Icons_Item defines model for package_list_item.icons.Item.
@@ -1942,7 +1970,7 @@ type UpdateOutputElasticsearch struct {
 	ProxyId              *string                          `json:"proxy_id,omitempty"`
 	Shipper              *UpdateOutputShipper             `json:"shipper,omitempty"`
 	Ssl                  *UpdateOutputSsl                 `json:"ssl,omitempty"`
-	Type                 UpdateOutputElasticsearchType    `json:"type"`
+	Type                 *UpdateOutputElasticsearchType   `json:"type,omitempty"`
 }
 
 // UpdateOutputElasticsearchPreset defines model for UpdateOutputElasticsearch.Preset.
@@ -1960,9 +1988,9 @@ type UpdateOutputKafka struct {
 	CaTrustedFingerprint *string                       `json:"ca_trusted_fingerprint,omitempty"`
 	ClientId             *string                       `json:"client_id,omitempty"`
 	Compression          *UpdateOutputKafkaCompression `json:"compression,omitempty"`
-	CompressionLevel     *interface{}                  `json:"compression_level,omitempty"`
+	CompressionLevel     interface{}                   `json:"compression_level"`
 	ConfigYaml           *string                       `json:"config_yaml"`
-	ConnectionType       *interface{}                  `json:"connection_type,omitempty"`
+	ConnectionType       interface{}                   `json:"connection_type"`
 	Hash                 *struct {
 		Hash   *string `json:"hash,omitempty"`
 		Random *bool   `json:"random,omitempty"`
@@ -1977,9 +2005,9 @@ type UpdateOutputKafka struct {
 	IsInternal          *bool                       `json:"is_internal,omitempty"`
 	IsPreconfigured     *bool                       `json:"is_preconfigured,omitempty"`
 	Key                 *string                     `json:"key,omitempty"`
-	Name                *string                     `json:"name,omitempty"`
+	Name                string                      `json:"name"`
 	Partition           *UpdateOutputKafkaPartition `json:"partition,omitempty"`
-	Password            *interface{}                `json:"password,omitempty"`
+	Password            interface{}                 `json:"password"`
 	ProxyId             *string                     `json:"proxy_id,omitempty"`
 	Random              *struct {
 		GroupEvents *float32 `json:"group_events,omitempty"`
@@ -2008,9 +2036,9 @@ type UpdateOutputKafka struct {
 			Type      *UpdateOutputKafkaTopicsWhenType `json:"type,omitempty"`
 		} `json:"when,omitempty"`
 	} `json:"topics,omitempty"`
-	Type     UpdateOutputKafkaType `json:"type"`
-	Username *interface{}          `json:"username,omitempty"`
-	Version  *string               `json:"version,omitempty"`
+	Type     *UpdateOutputKafkaType `json:"type,omitempty"`
+	Username interface{}            `json:"username"`
+	Version  *string                `json:"version,omitempty"`
 }
 
 // UpdateOutputKafkaAuthType defines model for UpdateOutputKafka.AuthType.
@@ -2078,9 +2106,9 @@ type UpdateOutputLogstash struct {
 			Key *UpdateOutputLogstash_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *UpdateOutputShipper     `json:"shipper,omitempty"`
-	Ssl     *UpdateOutputSsl         `json:"ssl,omitempty"`
-	Type    UpdateOutputLogstashType `json:"type"`
+	Shipper *UpdateOutputShipper      `json:"shipper,omitempty"`
+	Ssl     *UpdateOutputSsl          `json:"ssl,omitempty"`
+	Type    *UpdateOutputLogstashType `json:"type,omitempty"`
 }
 
 // UpdateOutputLogstashSecretsSslKey0 defines model for .
@@ -2116,10 +2144,10 @@ type UpdateOutputRemoteElasticsearch struct {
 	Secrets              *struct {
 		ServiceToken *UpdateOutputRemoteElasticsearch_Secrets_ServiceToken `json:"service_token,omitempty"`
 	} `json:"secrets,omitempty"`
-	ServiceToken *string                             `json:"service_token"`
-	Shipper      *UpdateOutputShipper                `json:"shipper,omitempty"`
-	Ssl          *UpdateOutputSsl                    `json:"ssl,omitempty"`
-	Type         UpdateOutputRemoteElasticsearchType `json:"type"`
+	ServiceToken *string                              `json:"service_token"`
+	Shipper      *UpdateOutputShipper                 `json:"shipper,omitempty"`
+	Ssl          *UpdateOutputSsl                     `json:"ssl,omitempty"`
+	Type         *UpdateOutputRemoteElasticsearchType `json:"type,omitempty"`
 }
 
 // UpdateOutputRemoteElasticsearchPreset defines model for UpdateOutputRemoteElasticsearch.Preset.
@@ -2179,9 +2207,16 @@ type GetAgentPoliciesParams struct {
 	SortOrder       *GetAgentPoliciesParamsSortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 	ShowUpgradeable *bool                            `form:"showUpgradeable,omitempty" json:"showUpgradeable,omitempty"`
 	Kuery           *string                          `form:"kuery,omitempty" json:"kuery,omitempty"`
-	NoAgentCount    *bool                            `form:"noAgentCount,omitempty" json:"noAgentCount,omitempty"`
-	Full            *bool                            `form:"full,omitempty" json:"full,omitempty"`
-	Format          *GetAgentPoliciesParamsFormat    `form:"format,omitempty" json:"format,omitempty"`
+
+	// NoAgentCount use withAgentCount instead
+	NoAgentCount *bool `form:"noAgentCount,omitempty" json:"noAgentCount,omitempty"`
+
+	// WithAgentCount get policies with agent count
+	WithAgentCount *bool `form:"withAgentCount,omitempty" json:"withAgentCount,omitempty"`
+
+	// Full get full policies with package policies populated
+	Full   *bool                         `form:"full,omitempty" json:"full,omitempty"`
+	Format *GetAgentPoliciesParamsFormat `form:"format,omitempty" json:"format,omitempty"`
 }
 
 // GetAgentPoliciesParamsSortOrder defines parameters for GetAgentPolicies.
@@ -5665,6 +5700,14 @@ func (a *PackageInfo) UnmarshalJSON(b []byte) error {
 		delete(object, "description")
 	}
 
+	if raw, found := object["discovery"]; found {
+		err = json.Unmarshal(raw, &a.Discovery)
+		if err != nil {
+			return fmt.Errorf("error reading 'discovery': %w", err)
+		}
+		delete(object, "discovery")
+	}
+
 	if raw, found := object["download"]; found {
 		err = json.Unmarshal(raw, &a.Download)
 		if err != nil {
@@ -5936,6 +5979,13 @@ func (a PackageInfo) MarshalJSON() ([]byte, error) {
 		object["description"], err = json.Marshal(a.Description)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	if a.Discovery != nil {
+		object["discovery"], err = json.Marshal(a.Discovery)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'discovery': %w", err)
 		}
 	}
 
@@ -6344,6 +6394,140 @@ func (a PackageInfo_Conditions) MarshalJSON() ([]byte, error) {
 		object["kibana"], err = json.Marshal(a.Kibana)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'kibana': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PackageInfo_Discovery_Fields_Item. Returns the specified
+// element and whether it was found
+func (a PackageInfo_Discovery_Fields_Item) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PackageInfo_Discovery_Fields_Item
+func (a *PackageInfo_Discovery_Fields_Item) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PackageInfo_Discovery_Fields_Item to handle AdditionalProperties
+func (a *PackageInfo_Discovery_Fields_Item) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PackageInfo_Discovery_Fields_Item to handle AdditionalProperties
+func (a PackageInfo_Discovery_Fields_Item) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PackageInfo_Discovery. Returns the specified
+// element and whether it was found
+func (a PackageInfo_Discovery) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PackageInfo_Discovery
+func (a *PackageInfo_Discovery) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PackageInfo_Discovery to handle AdditionalProperties
+func (a *PackageInfo_Discovery) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["fields"]; found {
+		err = json.Unmarshal(raw, &a.Fields)
+		if err != nil {
+			return fmt.Errorf("error reading 'fields': %w", err)
+		}
+		delete(object, "fields")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PackageInfo_Discovery to handle AdditionalProperties
+func (a PackageInfo_Discovery) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Fields != nil {
+		object["fields"], err = json.Marshal(a.Fields)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fields': %w", err)
 		}
 	}
 
@@ -7779,6 +7963,14 @@ func (a *PackageListItem) UnmarshalJSON(b []byte) error {
 		delete(object, "description")
 	}
 
+	if raw, found := object["discovery"]; found {
+		err = json.Unmarshal(raw, &a.Discovery)
+		if err != nil {
+			return fmt.Errorf("error reading 'discovery': %w", err)
+		}
+		delete(object, "discovery")
+	}
+
 	if raw, found := object["download"]; found {
 		err = json.Unmarshal(raw, &a.Download)
 		if err != nil {
@@ -7999,6 +8191,13 @@ func (a PackageListItem) MarshalJSON() ([]byte, error) {
 		object["description"], err = json.Marshal(a.Description)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	if a.Discovery != nil {
+		object["discovery"], err = json.Marshal(a.Discovery)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'discovery': %w", err)
 		}
 	}
 
@@ -8377,6 +8576,140 @@ func (a PackageListItem_Conditions) MarshalJSON() ([]byte, error) {
 		object["kibana"], err = json.Marshal(a.Kibana)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'kibana': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PackageListItem_Discovery_Fields_Item. Returns the specified
+// element and whether it was found
+func (a PackageListItem_Discovery_Fields_Item) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PackageListItem_Discovery_Fields_Item
+func (a *PackageListItem_Discovery_Fields_Item) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PackageListItem_Discovery_Fields_Item to handle AdditionalProperties
+func (a *PackageListItem_Discovery_Fields_Item) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PackageListItem_Discovery_Fields_Item to handle AdditionalProperties
+func (a PackageListItem_Discovery_Fields_Item) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PackageListItem_Discovery. Returns the specified
+// element and whether it was found
+func (a PackageListItem_Discovery) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PackageListItem_Discovery
+func (a *PackageListItem_Discovery) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PackageListItem_Discovery to handle AdditionalProperties
+func (a *PackageListItem_Discovery) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["fields"]; found {
+		err = json.Unmarshal(raw, &a.Fields)
+		if err != nil {
+			return fmt.Errorf("error reading 'fields': %w", err)
+		}
+		delete(object, "fields")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PackageListItem_Discovery to handle AdditionalProperties
+func (a PackageListItem_Discovery) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Fields != nil {
+		object["fields"], err = json.Marshal(a.Fields)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fields': %w", err)
 		}
 	}
 
@@ -10272,7 +10605,6 @@ func (t NewOutputUnion) AsNewOutputElasticsearch() (NewOutputElasticsearch, erro
 
 // FromNewOutputElasticsearch overwrites any union data inside the NewOutputUnion as the provided NewOutputElasticsearch
 func (t *NewOutputUnion) FromNewOutputElasticsearch(v NewOutputElasticsearch) error {
-	v.Type = "elasticsearch"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -10280,7 +10612,6 @@ func (t *NewOutputUnion) FromNewOutputElasticsearch(v NewOutputElasticsearch) er
 
 // MergeNewOutputElasticsearch performs a merge with any union data inside the NewOutputUnion, using the provided NewOutputElasticsearch
 func (t *NewOutputUnion) MergeNewOutputElasticsearch(v NewOutputElasticsearch) error {
-	v.Type = "elasticsearch"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10300,7 +10631,6 @@ func (t NewOutputUnion) AsNewOutputRemoteElasticsearch() (NewOutputRemoteElastic
 
 // FromNewOutputRemoteElasticsearch overwrites any union data inside the NewOutputUnion as the provided NewOutputRemoteElasticsearch
 func (t *NewOutputUnion) FromNewOutputRemoteElasticsearch(v NewOutputRemoteElasticsearch) error {
-	v.Type = "remote_elasticsearch"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -10308,7 +10638,6 @@ func (t *NewOutputUnion) FromNewOutputRemoteElasticsearch(v NewOutputRemoteElast
 
 // MergeNewOutputRemoteElasticsearch performs a merge with any union data inside the NewOutputUnion, using the provided NewOutputRemoteElasticsearch
 func (t *NewOutputUnion) MergeNewOutputRemoteElasticsearch(v NewOutputRemoteElasticsearch) error {
-	v.Type = "remote_elasticsearch"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10328,7 +10657,6 @@ func (t NewOutputUnion) AsNewOutputLogstash() (NewOutputLogstash, error) {
 
 // FromNewOutputLogstash overwrites any union data inside the NewOutputUnion as the provided NewOutputLogstash
 func (t *NewOutputUnion) FromNewOutputLogstash(v NewOutputLogstash) error {
-	v.Type = "logstash"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -10336,7 +10664,6 @@ func (t *NewOutputUnion) FromNewOutputLogstash(v NewOutputLogstash) error {
 
 // MergeNewOutputLogstash performs a merge with any union data inside the NewOutputUnion, using the provided NewOutputLogstash
 func (t *NewOutputUnion) MergeNewOutputLogstash(v NewOutputLogstash) error {
-	v.Type = "logstash"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10356,7 +10683,6 @@ func (t NewOutputUnion) AsNewOutputKafka() (NewOutputKafka, error) {
 
 // FromNewOutputKafka overwrites any union data inside the NewOutputUnion as the provided NewOutputKafka
 func (t *NewOutputUnion) FromNewOutputKafka(v NewOutputKafka) error {
-	v.Type = "kafka"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -10364,7 +10690,6 @@ func (t *NewOutputUnion) FromNewOutputKafka(v NewOutputKafka) error {
 
 // MergeNewOutputKafka performs a merge with any union data inside the NewOutputUnion, using the provided NewOutputKafka
 func (t *NewOutputUnion) MergeNewOutputKafka(v NewOutputKafka) error {
-	v.Type = "kafka"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10373,33 +10698,6 @@ func (t *NewOutputUnion) MergeNewOutputKafka(v NewOutputKafka) error {
 	merged, err := runtime.JSONMerge(t.union, b)
 	t.union = merged
 	return err
-}
-
-func (t NewOutputUnion) Discriminator() (string, error) {
-	var discriminator struct {
-		Discriminator string `json:"type"`
-	}
-	err := json.Unmarshal(t.union, &discriminator)
-	return discriminator.Discriminator, err
-}
-
-func (t NewOutputUnion) ValueByDiscriminator() (interface{}, error) {
-	discriminator, err := t.Discriminator()
-	if err != nil {
-		return nil, err
-	}
-	switch discriminator {
-	case "elasticsearch":
-		return t.AsNewOutputElasticsearch()
-	case "kafka":
-		return t.AsNewOutputKafka()
-	case "logstash":
-		return t.AsNewOutputLogstash()
-	case "remote_elasticsearch":
-		return t.AsNewOutputRemoteElasticsearch()
-	default:
-		return nil, errors.New("unknown discriminator value: " + discriminator)
-	}
 }
 
 func (t NewOutputUnion) MarshalJSON() ([]byte, error) {
@@ -11066,7 +11364,6 @@ func (t UpdateOutputUnion) AsUpdateOutputElasticsearch() (UpdateOutputElasticsea
 
 // FromUpdateOutputElasticsearch overwrites any union data inside the UpdateOutputUnion as the provided UpdateOutputElasticsearch
 func (t *UpdateOutputUnion) FromUpdateOutputElasticsearch(v UpdateOutputElasticsearch) error {
-	v.Type = "elasticsearch"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -11074,7 +11371,6 @@ func (t *UpdateOutputUnion) FromUpdateOutputElasticsearch(v UpdateOutputElastics
 
 // MergeUpdateOutputElasticsearch performs a merge with any union data inside the UpdateOutputUnion, using the provided UpdateOutputElasticsearch
 func (t *UpdateOutputUnion) MergeUpdateOutputElasticsearch(v UpdateOutputElasticsearch) error {
-	v.Type = "elasticsearch"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11094,7 +11390,6 @@ func (t UpdateOutputUnion) AsUpdateOutputRemoteElasticsearch() (UpdateOutputRemo
 
 // FromUpdateOutputRemoteElasticsearch overwrites any union data inside the UpdateOutputUnion as the provided UpdateOutputRemoteElasticsearch
 func (t *UpdateOutputUnion) FromUpdateOutputRemoteElasticsearch(v UpdateOutputRemoteElasticsearch) error {
-	v.Type = "remote_elasticsearch"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -11102,7 +11397,6 @@ func (t *UpdateOutputUnion) FromUpdateOutputRemoteElasticsearch(v UpdateOutputRe
 
 // MergeUpdateOutputRemoteElasticsearch performs a merge with any union data inside the UpdateOutputUnion, using the provided UpdateOutputRemoteElasticsearch
 func (t *UpdateOutputUnion) MergeUpdateOutputRemoteElasticsearch(v UpdateOutputRemoteElasticsearch) error {
-	v.Type = "remote_elasticsearch"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11122,7 +11416,6 @@ func (t UpdateOutputUnion) AsUpdateOutputLogstash() (UpdateOutputLogstash, error
 
 // FromUpdateOutputLogstash overwrites any union data inside the UpdateOutputUnion as the provided UpdateOutputLogstash
 func (t *UpdateOutputUnion) FromUpdateOutputLogstash(v UpdateOutputLogstash) error {
-	v.Type = "logstash"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -11130,7 +11423,6 @@ func (t *UpdateOutputUnion) FromUpdateOutputLogstash(v UpdateOutputLogstash) err
 
 // MergeUpdateOutputLogstash performs a merge with any union data inside the UpdateOutputUnion, using the provided UpdateOutputLogstash
 func (t *UpdateOutputUnion) MergeUpdateOutputLogstash(v UpdateOutputLogstash) error {
-	v.Type = "logstash"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11150,7 +11442,6 @@ func (t UpdateOutputUnion) AsUpdateOutputKafka() (UpdateOutputKafka, error) {
 
 // FromUpdateOutputKafka overwrites any union data inside the UpdateOutputUnion as the provided UpdateOutputKafka
 func (t *UpdateOutputUnion) FromUpdateOutputKafka(v UpdateOutputKafka) error {
-	v.Type = "kafka"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -11158,7 +11449,6 @@ func (t *UpdateOutputUnion) FromUpdateOutputKafka(v UpdateOutputKafka) error {
 
 // MergeUpdateOutputKafka performs a merge with any union data inside the UpdateOutputUnion, using the provided UpdateOutputKafka
 func (t *UpdateOutputUnion) MergeUpdateOutputKafka(v UpdateOutputKafka) error {
-	v.Type = "kafka"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -11167,33 +11457,6 @@ func (t *UpdateOutputUnion) MergeUpdateOutputKafka(v UpdateOutputKafka) error {
 	merged, err := runtime.JSONMerge(t.union, b)
 	t.union = merged
 	return err
-}
-
-func (t UpdateOutputUnion) Discriminator() (string, error) {
-	var discriminator struct {
-		Discriminator string `json:"type"`
-	}
-	err := json.Unmarshal(t.union, &discriminator)
-	return discriminator.Discriminator, err
-}
-
-func (t UpdateOutputUnion) ValueByDiscriminator() (interface{}, error) {
-	discriminator, err := t.Discriminator()
-	if err != nil {
-		return nil, err
-	}
-	switch discriminator {
-	case "elasticsearch":
-		return t.AsUpdateOutputElasticsearch()
-	case "kafka":
-		return t.AsUpdateOutputKafka()
-	case "logstash":
-		return t.AsUpdateOutputLogstash()
-	case "remote_elasticsearch":
-		return t.AsUpdateOutputRemoteElasticsearch()
-	default:
-		return nil, errors.New("unknown discriminator value: " + discriminator)
-	}
 }
 
 func (t UpdateOutputUnion) MarshalJSON() ([]byte, error) {
@@ -11945,6 +12208,22 @@ func NewGetAgentPoliciesRequest(server string, params *GetAgentPoliciesParams) (
 		if params.NoAgentCount != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "noAgentCount", runtime.ParamLocationQuery, *params.NoAgentCount); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.WithAgentCount != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "withAgentCount", runtime.ParamLocationQuery, *params.WithAgentCount); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -13907,6 +14186,14 @@ type ListPackages_200_Response_Conditions struct {
 	Kibana               *ListPackages_200_Response_Conditions_Kibana  `json:"kibana,omitempty"`
 	AdditionalProperties map[string]interface{}                        `json:"-"`
 }
+type ListPackages_200_Response_Discovery_Fields_Item struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+type ListPackages_200_Response_Discovery struct {
+	Fields               *[]ListPackages_200_Response_Discovery_Fields_Item `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                             `json:"-"`
+}
 type ListPackages_200_Response_Icons_Item struct {
 	DarkMode             *bool                  `json:"dark_mode,omitempty"`
 	Path                 *string                `json:"path,omitempty"`
@@ -14009,6 +14296,7 @@ type ListPackages_200_Response_Item struct {
 	Conditions           *ListPackages_200_Response_Conditions       `json:"conditions,omitempty"`
 	DataStreams          *[]map[string]interface{}                   `json:"data_streams,omitempty"`
 	Description          *string                                     `json:"description,omitempty"`
+	Discovery            *ListPackages_200_Response_Discovery        `json:"discovery,omitempty"`
 	Download             *string                                     `json:"download,omitempty"`
 	FormatVersion        *string                                     `json:"format_version,omitempty"`
 	Icons                *[]ListPackages_200_Response_Icons_Item     `json:"icons,omitempty"`
@@ -14165,6 +14453,14 @@ type GetPackage_200_Response_Conditions struct {
 	Kibana               *GetPackage_200_Response_Conditions_Kibana  `json:"kibana,omitempty"`
 	AdditionalProperties map[string]interface{}                      `json:"-"`
 }
+type GetPackage_200_Response_Discovery_Fields_Item struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+type GetPackage_200_Response_Discovery struct {
+	Fields               *[]GetPackage_200_Response_Discovery_Fields_Item `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                           `json:"-"`
+}
 type GetPackage_200_Response_Icons_Item struct {
 	DarkMode             *bool                  `json:"dark_mode,omitempty"`
 	Path                 *string                `json:"path,omitempty"`
@@ -14278,6 +14574,7 @@ type GetPackage_200_Response struct {
 	Conditions           *GetPackage_200_Response_Conditions       `json:"conditions,omitempty"`
 	DataStreams          *[]map[string]interface{}                 `json:"data_streams,omitempty"`
 	Description          *string                                   `json:"description,omitempty"`
+	Discovery            *GetPackage_200_Response_Discovery        `json:"discovery,omitempty"`
 	Download             *string                                   `json:"download,omitempty"`
 	Elasticsearch        *map[string]interface{}                   `json:"elasticsearch,omitempty"`
 	FormatVersion        *string                                   `json:"format_version,omitempty"`
