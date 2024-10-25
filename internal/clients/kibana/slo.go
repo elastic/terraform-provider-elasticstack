@@ -53,7 +53,7 @@ func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, 
 	return utils.CheckHttpError(res, "Unabled to delete slo with ID "+string(sloId))
 }
 
-func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) (*models.Slo, diag.Diagnostics) {
+func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -72,6 +72,7 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		BudgetingMethod: (*slo.BudgetingMethod)(&s.BudgetingMethod),
 		Objective:       &s.Objective,
 		Settings:        s.Settings,
+		GroupBy:         transformGroupBy(s.GroupBy, supportsGroupByList),
 		Tags:            s.Tags,
 	}
 
@@ -90,7 +91,7 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 	return sloResponseToModel(s.SpaceID, slo), diag.Diagnostics{}
 }
 
-func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) (*models.Slo, diag.Diagnostics) {
+func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -109,7 +110,7 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo) 
 		BudgetingMethod: slo.BudgetingMethod(s.BudgetingMethod),
 		Objective:       s.Objective,
 		Settings:        s.Settings,
-		GroupBy:         transformGroupBy(s.GroupBy),
+		GroupBy:         transformGroupBy(s.GroupBy, supportsGroupByList),
 		Tags:            s.Tags,
 	}
 
@@ -177,14 +178,33 @@ func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
 		TimeWindow:      res.TimeWindow,
 		Objective:       res.Objective,
 		Settings:        &res.Settings,
+		GroupBy:         transformGroupByFromResponse(res.GroupBy),
 		Tags:            res.Tags,
 	}
 }
 
-func transformGroupBy(groupBy *string) *slo.SloResponseGroupBy {
+func transformGroupBy(groupBy []string, supportsGroupByList bool) *slo.SloResponseGroupBy {
 	if groupBy == nil {
 		return nil
 	}
 
-	return &slo.SloResponseGroupBy{String: groupBy}
+	if !supportsGroupByList && len(groupBy) > 0 {
+		return &slo.SloResponseGroupBy{
+			String: &groupBy[0],
+		}
+	}
+
+	return &slo.SloResponseGroupBy{ArrayOfString: &groupBy}
+}
+
+func transformGroupByFromResponse(groupBy slo.SloResponseGroupBy) []string {
+	if groupBy.String != nil {
+		return []string{*groupBy.String}
+	}
+
+	if groupBy.ArrayOfString == nil {
+		return nil
+	}
+
+	return *groupBy.ArrayOfString
 }
