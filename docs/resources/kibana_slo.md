@@ -208,7 +208,7 @@ resource "elasticstack_kibana_slo" "custom_metric" {
 
 - `apm_availability_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--apm_availability_indicator))
 - `apm_latency_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--apm_latency_indicator))
-- `group_by` (String) Optional group by field to use to generate an SLO per distinct value.
+- `group_by` (List of String) Optional group by fields to use to generate an SLO per distinct value.
 - `histogram_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--histogram_custom_indicator))
 - `kql_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--kql_custom_indicator))
 - `metric_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator))
