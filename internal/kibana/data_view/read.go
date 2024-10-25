@@ -3,61 +3,43 @@ package data_view
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana2"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	var model tfModelV0
-	response.Diagnostics.Append(request.State.Get(ctx, &model)...)
-	if response.Diagnostics.HasError() {
+func (r *DataViewResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var stateModel dataViewModel
+
+	diags := req.State.Get(ctx, &stateModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	apiModel, diags := r.read(ctx, model)
-	response.Diagnostics = append(response.Diagnostics, diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if apiModel == nil {
-		response.State.RemoveResource(ctx)
-		return
-	}
-
-	response.Diagnostics.Append(response.State.Set(ctx, apiModel)...)
-}
-
-func (r *Resource) read(ctx context.Context, model tfModelV0) (*apiModelV0, diag.Diagnostics) {
-	dataviewClient, err := r.client.GetDataViewsClient()
+	client, err := r.client.GetKibana2Client()
 	if err != nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic("unable to get data view client", err.Error()),
-		}
-	}
-	id, spaceID := model.getIDAndSpaceID()
-	authCtx := r.client.SetDataviewAuthContext(ctx)
-	respModel, res, err := dataviewClient.GetDataView(authCtx, id, spaceID).Execute()
-	if err != nil && res == nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic("failed to read data view", err.Error()),
-		}
+		resp.Diagnostics.AddError(err.Error(), "")
+		return
 	}
 
-	defer res.Body.Close()
-	if res.StatusCode == 404 {
-		return nil, nil
+	viewID, spaceID := stateModel.getViewIDAndSpaceID()
+	dataView, diags := kibana2.GetDataView(ctx, client, spaceID, viewID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	if diags := utils.CheckHttpErrorFromFW(res, "Unable to read data view"); diags.HasError() {
-		return nil, diags
+	if dataView == nil {
+		resp.State.RemoveResource(ctx)
+		return
 	}
 
-	apiModel, diags := model.FromResponse(ctx, respModel)
-	if diags.HasError() {
-		return nil, diags
+	diags = stateModel.populateFromAPI(ctx, dataView)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	return &apiModel, nil
+	diags = resp.State.Set(ctx, stateModel)
+	resp.Diagnostics.Append(diags...)
 }

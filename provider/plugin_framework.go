@@ -89,7 +89,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		func() resource.Resource { return &import_saved_objects.Resource{} },
-		func() resource.Resource { return &data_view.Resource{} },
+		data_view.NewResource,
 		func() resource.Resource { return &private_location.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
 		func() resource.Resource { return &synthetics.Resource{} },

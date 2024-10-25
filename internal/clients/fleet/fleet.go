@@ -30,7 +30,7 @@ func GetEnrollmentTokens(ctx context.Context, client *Client) ([]fleetapi.Enroll
 	}
 }
 
-// GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID
+// GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID.
 func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]fleetapi.EnrollmentApiKey, diag.Diagnostics) {
 	params := fleetapi.GetEnrollmentApiKeysParams{
 		Kuery: utils.Pointer("policy_id:" + policyID),
@@ -100,7 +100,7 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req fleet
 	}
 }
 
-// DeleteAgentPolicy deletes an existing agent policy
+// DeleteAgentPolicy deletes an existing agent policy.
 func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diagnostics {
 	body := fleetapi.DeleteAgentPolicyJSONRequestBody{
 		AgentPolicyId: id,
@@ -168,7 +168,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.U
 	}
 }
 
-// DeleteOutput deletes an existing output
+// DeleteOutput deletes an existing output.
 func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnostics {
 	resp, err := client.API.DeleteOutputWithResponse(ctx, id)
 	if err != nil {

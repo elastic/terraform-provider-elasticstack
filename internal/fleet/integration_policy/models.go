@@ -58,7 +58,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 }
 
 func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, inputs map[string]fleetapi.PackagePolicyInput, diags *diag.Diagnostics) {
-	newInputs := utils.TransformMapToSlice(inputs, path.Root("input"), diags,
+	newInputs := utils.TransformMapToSlice(ctx, inputs, path.Root("input"), diags,
 		func(inputData fleetapi.PackagePolicyInput, meta utils.MapMeta) integrationPolicyInputModel {
 			return integrationPolicyInputModel{
 				InputID:     types.StringValue(meta.Key),

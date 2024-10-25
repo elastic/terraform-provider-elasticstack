@@ -1,0 +1,885 @@
+//go:build ignore
+// +build ignore
+
+package main
+
+import (
+	"bytes"
+	"errors"
+	"flag"
+	"fmt"
+	"log"
+	"maps"
+	"os"
+	"path"
+	"reflect"
+	"slices"
+	"strconv"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
+
+func main() {
+	_inFile := flag.String("i", "", "input file")
+	_outFile := flag.String("o", "", "output file")
+	flag.Parse()
+
+	inFile := *_inFile
+	outFile := *_outFile
+
+	if inFile == "" || outFile == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	outDir, _ := path.Split(outFile)
+	if !pathExists(outDir) {
+		if err := os.MkdirAll(outDir, 0755); err != nil {
+			log.Fatalf("failed to create directory %q: %v", outDir, err)
+		}
+	}
+
+	bytes, err := os.ReadFile(inFile)
+	if err != nil {
+		log.Fatalf("failed to read file %q: %v", inFile, err)
+	}
+
+	var schema Schema
+	err = yaml.Unmarshal(bytes, &schema)
+	if err != nil {
+		log.Fatalf("failed to unmarshal schema from %q: %v", inFile, err)
+	}
+
+	// Run each transform
+	for _, fn := range transformers {
+		fn(&schema)
+	}
+
+	saveFile(schema, outFile)
+}
+
+// pathExists checks if path exists.
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	return !errors.Is(err, os.ErrNotExist)
+}
+
+// saveFile marshal and writes obj to path.
+func saveFile(obj any, path string) {
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(obj); err != nil {
+		log.Fatalf("failed to marshal to file %q: %v", path, err)
+	}
+
+	if err := os.WriteFile(path, buf.Bytes(), 0664); err != nil {
+		log.Fatalf("failed to write file %q: %v", path, err)
+	}
+}
+
+// ============================================================================
+
+type Schema struct {
+	Paths      map[string]*Path `yaml:"paths"`
+	Version    string           `yaml:"openapi"`
+	Tags       []Map            `yaml:"tags,omitempty"`
+	Servers    []Map            `yaml:"servers,omitempty"`
+	Components Map              `yaml:"components,omitempty"`
+	Security   []Map            `yaml:"security,omitempty"`
+	Info       Map              `yaml:"info"`
+}
+
+func (s Schema) GetPath(path string) *Path {
+	return s.Paths[path]
+}
+
+func (s Schema) MustGetPath(path string) *Path {
+	p := s.GetPath(path)
+	if p == nil {
+		log.Panicf("Path not found: %q", path)
+	}
+	return p
+}
+
+// ============================================================================
+
+type Path struct {
+	Parameters []Map `yaml:"parameters,omitempty"`
+	Get        Map   `yaml:"get,omitempty"`
+	Post       Map   `yaml:"post,omitempty"`
+	Put        Map   `yaml:"put,omitempty"`
+	Delete     Map   `yaml:"delete,omitempty"`
+}
+
+func (p Path) Endpoints(yield func(key string, endpoint Map) bool) {
+	if p.Get != nil {
+		yield("get", p.Get)
+	}
+	if p.Post != nil {
+		yield("post", p.Post)
+	}
+	if p.Put != nil {
+		yield("put", p.Put)
+	}
+	if p.Delete != nil {
+		yield("delete", p.Delete)
+	}
+}
+
+func (p Path) GetEndpoint(method string) Map {
+	switch method {
+	case "get":
+		return p.Get
+	case "post":
+		return p.Post
+	case "put":
+		return p.Put
+	case "delete":
+		return p.Delete
+	default:
+		log.Panicf("Unhandled method: %q", method)
+	}
+	return nil
+}
+
+func (p Path) MustGetEndpoint(method string) Map {
+	endpoint := p.GetEndpoint(method)
+	if endpoint == nil {
+		log.Panicf("Method not found: %q", method)
+	}
+	return endpoint
+}
+
+func (p *Path) SetEndpoint(method string, endpoint Map) {
+	switch method {
+	case "get":
+		p.Get = endpoint
+	case "post":
+		p.Post = endpoint
+	case "put":
+		p.Put = endpoint
+	case "delete":
+		p.Delete = endpoint
+	default:
+		log.Panicf("Invalid method %q", method)
+	}
+}
+
+// ============================================================================
+
+type Map map[string]any
+
+func (m Map) Keys() []string {
+	keys := slices.Collect(maps.Keys(m))
+	slices.Sort(keys)
+	return keys
+}
+
+func (m Map) Has(key string) bool {
+	_, ok := m.Get(key)
+	return ok
+}
+
+func (m Map) Get(key string) (any, bool) {
+	rootKey, subKeys, found := strings.Cut(key, ".")
+	if found {
+		switch t := m[rootKey].(type) {
+		case Map:
+			return t.Get(subKeys)
+		case map[string]any:
+			return Map(t).Get(subKeys)
+		case Slice:
+			return t.Get(subKeys)
+		case []any:
+			return Slice(t).Get(subKeys)
+		default:
+			rootKey = key
+		}
+	}
+
+	value, ok := m[rootKey]
+	return value, ok
+}
+
+func (m Map) MustGet(key string) any {
+	v, ok := m.Get(key)
+	if !ok {
+		log.Panicf("%q not found", key)
+	}
+	return v
+}
+
+func (m Map) GetSlice(key string) (Slice, bool) {
+	value, ok := m.Get(key)
+	if !ok {
+		return nil, false
+	}
+
+	switch t := value.(type) {
+	case Slice:
+		return t, true
+	case []any:
+		return t, true
+	}
+
+	log.Panicf("%q is not a slice", key)
+	return nil, false
+}
+
+func (m Map) MustGetSlice(key string) Slice {
+	v, ok := m.GetSlice(key)
+	if !ok {
+		log.Panicf("%q not found", key)
+	}
+	return v
+}
+
+func (m Map) GetMap(key string) (Map, bool) {
+	value, ok := m.Get(key)
+	if !ok {
+		return nil, false
+	}
+
+	switch t := value.(type) {
+	case Map:
+		return t, true
+	case map[string]any:
+		return t, true
+	}
+
+	log.Panicf("%q is not a map", key)
+	return nil, false
+}
+
+func (m Map) MustGetMap(key string) Map {
+	v, ok := m.GetMap(key)
+	if !ok {
+		log.Panicf("%q not found", key)
+	}
+	return v
+}
+
+func (m Map) Set(key string, value any) {
+	rootKey, subKeys, found := strings.Cut(key, ".")
+	if found {
+		if v, ok := m[rootKey]; ok {
+			switch t := v.(type) {
+			case Slice:
+				t.Set(subKeys, value)
+			case []any:
+				Slice(t).Set(subKeys, value)
+			case Map:
+				t.Set(subKeys, value)
+			case map[string]any:
+				Map(t).Set(subKeys, value)
+			}
+		} else {
+			subMap := Map{}
+			subMap.Set(subKeys, value)
+			m[rootKey] = subMap
+		}
+	} else {
+		m[rootKey] = value
+	}
+}
+
+func (m Map) Move(src string, dst string) {
+	value := m.MustGet(src)
+	m.Set(dst, value)
+	m.Delete(src)
+}
+
+func (m Map) Delete(key string) bool {
+	rootKey, subKeys, found := strings.Cut(key, ".")
+	if found {
+		if v, ok := m[rootKey]; ok {
+			switch t := v.(type) {
+			case Slice:
+				return t.Delete(subKeys)
+			case []any:
+				return Slice(t).Delete(subKeys)
+			case Map:
+				return t.Delete(subKeys)
+			case map[string]any:
+				return Map(t).Delete(subKeys)
+			}
+		}
+	} else {
+		delete(m, rootKey)
+		return true
+	}
+	return false
+}
+
+func (m Map) MustDelete(key string) {
+	if !m.Delete(key) {
+		log.Panicf("%q not found", key)
+	}
+}
+
+func (m Map) CreateRef(schema *Schema, name string, key string) Map {
+	refTarget := m.MustGet(key) // Check the full path
+	refPath := fmt.Sprintf("schemas.%s", name)
+	refValue := Map{"$ref": fmt.Sprintf("#/components/schemas/%s", name)}
+
+	// If the component schema already exists and is not the same, panic
+	writeComponent := true
+	if existing, ok := schema.Components.Get(refPath); ok {
+		if reflect.DeepEqual(refTarget, existing) {
+			writeComponent = false
+		} else {
+			log.Panicf("Component schema key already in use and not an exact duplicate: %q", refPath)
+			return nil
+		}
+	}
+
+	var parent any
+	var childKey string
+	// Get the parent of the refTarget
+	i := strings.LastIndex(key, ".")
+	if i == -1 {
+		parent = m
+		childKey = key
+	} else {
+		parent = m.MustGet(key[:i])
+		childKey = key[i+1:]
+	}
+
+	doMap := func(target Map, key string) {
+		if writeComponent {
+			schema.Components.Set(refPath, target.MustGet(key))
+		}
+		target.Set(key, refValue)
+	}
+
+	doSlice := func(target Slice, key string) {
+		index := target.atoi(key)
+		if writeComponent {
+			schema.Components.Set(refPath, target[index])
+		}
+		target[index] = refValue
+	}
+
+	switch t := parent.(type) {
+	case map[string]any:
+		doMap(Map(t), childKey)
+	case Map:
+		doMap(t, childKey)
+	case []any:
+		doSlice(Slice(t), childKey)
+	case Slice:
+		doSlice(t, childKey)
+	default:
+		log.Panicf("Cannot create a ref of target type %T at %q", parent, key)
+	}
+
+	return refValue
+}
+
+func (m Map) Iterate(iteratee func(key string, node Map)) {
+	joinPath := func(existing string, next string) string {
+		if existing == "" {
+			return next
+		} else {
+			return fmt.Sprintf("%s.%s", existing, next)
+		}
+	}
+	joinIndex := func(existing string, next int) string {
+		if existing == "" {
+			return fmt.Sprintf("%d", next)
+		} else {
+			return fmt.Sprintf("%s.%d", existing, next)
+		}
+	}
+
+	var iterate func(key string, val any)
+	iterate = func(key string, val any) {
+		switch tval := val.(type) {
+		case []any:
+			iterate(key, Slice(tval))
+		case Slice:
+			for i, v := range tval {
+				iterate(joinIndex(key, i), v)
+			}
+		case map[string]any:
+			iterate(key, Map(tval))
+		case Map:
+			for _, k := range tval.Keys() {
+				iterate(joinPath(key, k), tval[k])
+			}
+			iteratee(key, tval)
+		}
+	}
+
+	iterate("", m)
+}
+
+// ============================================================================
+
+type Slice []any
+
+func (s Slice) Get(key string) (any, bool) {
+	rootKey, subKeys, found := strings.Cut(key, ".")
+	index := s.atoi(rootKey)
+
+	if found {
+		switch t := s[index].(type) {
+		case Slice:
+			return t.Get(subKeys)
+		case []any:
+			return Slice(t).Get(subKeys)
+		case Map:
+			return t.Get(subKeys)
+		case map[string]any:
+			return Map(t).Get(subKeys)
+		}
+	}
+
+	value := s[index]
+	return value, true
+}
+
+func (s Slice) GetMap(key string) (Map, bool) {
+	value, ok := s.Get(key)
+	if !ok {
+		return nil, false
+	}
+
+	switch t := value.(type) {
+	case Map:
+		return t, true
+	case map[string]any:
+		return t, true
+	}
+
+	log.Panicf("%q is not a map", key)
+	return nil, false
+}
+
+func (s Slice) MustGetMap(key string) Map {
+	v, ok := s.GetMap(key)
+	if !ok {
+		log.Panicf("%q not found", key)
+	}
+	return v
+}
+
+func (s Slice) Set(key string, value any) {
+	rootKey, subKeys, found := strings.Cut(key, ".")
+	index := s.atoi(rootKey)
+	if found {
+		v := s[index]
+		switch t := v.(type) {
+		case Slice:
+			t.Set(subKeys, value)
+		case []any:
+			Slice(t).Set(subKeys, value)
+		case Map:
+			t.Set(subKeys, value)
+		case map[string]any:
+			Map(t).Set(subKeys, value)
+		}
+	} else {
+		s[index] = value
+	}
+}
+
+func (s Slice) Delete(key string) bool {
+	rootKey, subKeys, found := strings.Cut(key, ".")
+	index := s.atoi(rootKey)
+	if found {
+		item := (s)[index]
+		switch t := item.(type) {
+		case Slice:
+			return t.Delete(subKeys)
+		case []any:
+			return Slice(t).Delete(subKeys)
+		case Map:
+			return t.Delete(subKeys)
+		case map[string]any:
+			return Map(t).Delete(subKeys)
+		}
+	} else {
+		log.Panicf("Unable to delete from slice directly")
+		return true
+	}
+	return false
+}
+
+func (s Slice) Contains(value string) bool {
+	for _, v := range s {
+		s, ok := v.(string)
+		if !ok {
+			continue
+		}
+		if value == s {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s Slice) atoi(key string) int {
+	index, err := strconv.Atoi(key)
+	if err != nil {
+		log.Panicf("Failed to parse slice index key %q: %v", key, err)
+	}
+	if index < 0 || index >= len(s) {
+		log.Panicf("Slice index is out of bounds (%d, target slice len: %d)", index, len(s))
+	}
+	return index
+}
+
+// ============================================================================
+
+type TransformFunc func(schema *Schema)
+
+var transformers = []TransformFunc{
+	transformFilterPaths,
+	transformRemoveKbnXsrf,
+	transformRemoveApiVersionParam,
+	transformSimplifyContentType,
+	transformKibanaPaths,
+	// transformRemoveEnums,
+	// transformAddGoPointersFlag,
+	transformRemoveExamples,
+	transformRemoveUnusedComponents,
+}
+
+// transformFilterPaths filters the paths in a schema down to a specified list
+// of endpoints and methods.
+func transformFilterPaths(schema *Schema) {
+	var includePaths = map[string][]string{
+		"/api/data_views":                    {"get"},
+		"/api/data_views/data_view":          {"post"},
+		"/api/data_views/data_view/{viewId}": {"get", "post", "delete"},
+	}
+
+	for path, pathInfo := range schema.Paths {
+		if allowedMethods, ok := includePaths[path]; ok {
+			// Filter out endpoints not if filter list
+			for method := range pathInfo.Endpoints {
+				if !slices.Contains(allowedMethods, method) {
+					pathInfo.SetEndpoint(method, nil)
+				}
+			}
+		} else {
+			// Remove paths not in filter list.
+			delete(schema.Paths, path)
+		}
+	}
+
+	// Go through again, verify each entry exists
+	for path, methods := range includePaths {
+		pathInfo := schema.GetPath(path)
+		if pathInfo == nil {
+			log.Panicf("Missing path %q", path)
+		}
+
+		for _, method := range methods {
+			endpoint := pathInfo.GetEndpoint(method)
+			if endpoint == nil {
+				log.Panicf("Missing method %q of %q", method, path)
+			}
+		}
+	}
+}
+
+// transformRemoveKbnXsrf removes the kbn-xsrf header as it	is already applied
+// in the client.
+func transformRemoveKbnXsrf(schema *Schema) {
+	removeKbnXsrf := func(node any) bool {
+		param := node.(Map)
+		if v, ok := param["name"]; ok {
+			name := v.(string)
+			if strings.HasSuffix(name, "kbn_xsrf") || strings.HasSuffix(name, "kbn-xsrf") {
+				return true
+			}
+		}
+		// Data_views_kbn_xsrf, Saved_objects_kbn_xsrf, etc
+		if v, ok := param["$ref"]; ok {
+			ref := v.(string)
+			if strings.HasSuffix(ref, "kbn_xsrf") || strings.HasSuffix(ref, "kbn-xsrf") {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, pathInfo := range schema.Paths {
+		for _, endpoint := range pathInfo.Endpoints {
+			if params, ok := endpoint.GetSlice("parameters"); ok {
+				params = slices.DeleteFunc(params, removeKbnXsrf)
+				endpoint["parameters"] = params
+			}
+		}
+	}
+}
+
+// transformRemoveApiVersionParam removes the Elastic API Version query
+// parameter header.
+func transformRemoveApiVersionParam(schema *Schema) {
+	removeApiVersion := func(node any) bool {
+		param := node.(Map)
+		if name, ok := param["name"]; ok && name == "elastic-api-version" {
+			return true
+		}
+		return false
+	}
+
+	for _, pathInfo := range schema.Paths {
+		for _, endpoint := range pathInfo.Endpoints {
+			if params, ok := endpoint.GetSlice("parameters"); ok {
+				params = slices.DeleteFunc(params, removeApiVersion)
+				endpoint["parameters"] = params
+			}
+		}
+	}
+}
+
+// transformSimplifyContentType simplifies Content-Type headers such as
+// 'application/json; Elastic-Api-Version=2023-10-31' by stripping everything
+// after the ';'.
+func transformSimplifyContentType(schema *Schema) {
+	simplifyContentType := func(fields Map) {
+		if content, ok := fields.GetMap("content"); ok {
+			for key := range content {
+				newKey, _, found := strings.Cut(key, ";")
+				if found {
+					content.Move(key, newKey)
+				}
+			}
+		}
+	}
+
+	for _, pathInfo := range schema.Paths {
+		for _, endpoint := range pathInfo.Endpoints {
+			if req, ok := endpoint.GetMap("requestBody"); ok {
+				simplifyContentType(req)
+			}
+			if resp, ok := endpoint.GetMap("responses"); ok {
+				for code := range resp {
+					simplifyContentType(resp.MustGetMap(code))
+				}
+			}
+		}
+	}
+
+	if responses, ok := schema.Components.GetMap("responses"); ok {
+		for key := range responses {
+			resp := responses.MustGetMap(key)
+			simplifyContentType(resp)
+		}
+	}
+}
+
+// transformKibanaPaths fixes the Kibana paths.
+func transformKibanaPaths(schema *Schema) {
+	operationIds := map[string]map[string]string{
+		"/api/data_views": {
+			"get": "get_data_views",
+		},
+		"/api/data_views/data_view": {
+			"post": "create_data_view",
+		},
+		"/api/data_views/data_view/{viewId}": {
+			"get":    "get_data_view",
+			"post":   "update_data_view",
+			"delete": "delete_data_view",
+		},
+	}
+
+	// Set each missing operationId
+	for path, methods := range operationIds {
+		pathInfo := schema.MustGetPath(path)
+		for method, operationId := range methods {
+			endpoint := pathInfo.GetEndpoint(method)
+			endpoint.Set("operationId", operationId)
+		}
+	}
+
+	// Fix OpenAPI error: set each missing description
+	for _, pathInfo := range schema.Paths {
+		for _, endpoint := range pathInfo.Endpoints {
+			responses := endpoint.MustGetMap("responses")
+			for code := range responses {
+				response := responses.MustGetMap(code)
+				if _, ok := response["description"]; !ok {
+					response["description"] = ""
+				}
+			}
+		}
+	}
+
+	// Convert any paths needing it to /s/{spaceId} variants
+	spaceIdPaths := []string{
+		"/api/data_views",
+		"/api/data_views/data_view",
+		"/api/data_views/data_view/{viewId}",
+	}
+
+	// Add a spaceId parameter if not already present
+	if _, ok := schema.Components.Get("parameters.spaceId"); !ok {
+		schema.Components.Set("parameters.spaceId", Map{
+			"in":          "path",
+			"name":        "spaceId",
+			"description": "An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.",
+			"required":    true,
+			"schema":      Map{"type": "string", "example": "default"},
+		})
+	}
+
+	for _, path := range spaceIdPaths {
+		pathInfo := schema.Paths[path]
+		schema.Paths[fmt.Sprintf("/s/{spaceId}%s", path)] = pathInfo
+		delete(schema.Paths, path)
+
+		// Add the spaceId parameter
+		param := Map{"$ref": "#/components/parameters/spaceId"}
+		for _, endpoint := range pathInfo.Endpoints {
+			if params, ok := endpoint.GetSlice("parameters"); ok {
+				params = append(params, param)
+				endpoint.Set("parameters", params)
+			} else {
+				params = Slice{param}
+				endpoint.Set("parameters", params)
+			}
+		}
+	}
+
+	// Data views
+	// https://github.com/elastic/kibana/blob/main/src/plugins/data_views/server/rest_api_routes/schema.ts
+
+	dataViewsPath := schema.MustGetPath("/s/{spaceId}/api/data_views")
+
+	dataViewsPath.Get.CreateRef(schema, "get_data_views_response_item", "responses.200.content.application/json.schema.properties.data_view.items")
+
+	schema.Components.CreateRef(schema, "Data_views_data_view_response_object_inner", "schemas.Data_views_data_view_response_object.properties.data_view")
+	schema.Components.CreateRef(schema, "Data_views_sourcefilter_item", "schemas.Data_views_sourcefilters.items")
+	schema.Components.CreateRef(schema, "Data_views_runtimefieldmap_script", "schemas.Data_views_runtimefieldmap.properties.script")
+
+	schema.Components.Set("schemas.Data_views_fieldformats.additionalProperties", Map{
+		"$ref": "#/components/schemas/Data_views_fieldformat",
+	})
+	schema.Components.Set("schemas.Data_views_fieldformat", Map{
+		"type": "object",
+		"properties": Map{
+			"id":     Map{"type": "string"},
+			"params": Map{"$ref": "#/components/schemas/Data_views_fieldformat_params"},
+		},
+	})
+	schema.Components.Set("schemas.Data_views_fieldformat_params", Map{
+		"type": "object",
+		"properties": Map{
+			"pattern":       Map{"type": "string"},
+			"urlTemplate":   Map{"type": "string"},
+			"labelTemplate": Map{"type": "string"},
+		},
+	})
+
+	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
+	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
+}
+
+// transformRemoveEnums remove all enums.
+func transformRemoveEnums(schema *Schema) {
+	deleteEnumFn := func(key string, node Map) {
+		if node.Has("enum") {
+			delete(node, "enum")
+		}
+	}
+
+	for _, pathInfo := range schema.Paths {
+		for _, methInfo := range pathInfo.Endpoints {
+			methInfo.Iterate(deleteEnumFn)
+		}
+	}
+	schema.Components.Iterate(deleteEnumFn)
+}
+
+// transformRemoveExamples removes all examples.
+func transformRemoveExamples(schema *Schema) {
+	deleteExampleFn := func(key string, node Map) {
+		if node.Has("example") {
+			delete(node, "example")
+		}
+		if node.Has("examples") {
+			delete(node, "examples")
+		}
+	}
+
+	for _, pathInfo := range schema.Paths {
+		for _, methInfo := range pathInfo.Endpoints {
+			methInfo.Iterate(deleteExampleFn)
+		}
+	}
+	schema.Components.Iterate(deleteExampleFn)
+	schema.Components.Set("examples", Map{})
+}
+
+// transformAddOptionalPointersFlag adds a x-go-type-skip-optional-pointer
+// flag to maps and arrays, since they are already nullable types.
+func transformAddOptionalPointersFlag(schema *Schema) {
+	addFlagFn := func(key string, node Map) {
+		if node["type"] == "array" {
+			node["x-go-type-skip-optional-pointer"] = true
+		} else if node["type"] == "object" {
+			if _, ok := node["properties"]; !ok {
+				node["x-go-type-skip-optional-pointer"] = true
+			}
+		}
+	}
+
+	for _, pathInfo := range schema.Paths {
+		for _, methInfo := range pathInfo.Endpoints {
+			methInfo.Iterate(addFlagFn)
+		}
+	}
+	schema.Components.Iterate(addFlagFn)
+}
+
+// transformRemoveUnusedComponents removes all unused schema components.
+func transformRemoveUnusedComponents(schema *Schema) {
+	var refs map[string]any
+	collectRefsFn := func(key string, node Map) {
+		if ref, ok := node["$ref"].(string); ok {
+			i := strings.LastIndex(ref, "/")
+			ref = ref[i+1:]
+			refs[ref] = nil
+		}
+	}
+
+	componentParams := schema.Components.MustGetMap("parameters")
+	componentSchemas := schema.Components.MustGetMap("schemas")
+
+	for {
+		// Collect refs
+		refs = make(map[string]any)
+		for _, pathInfo := range schema.Paths {
+			for _, methInfo := range pathInfo.Endpoints {
+				methInfo.Iterate(collectRefsFn)
+			}
+		}
+		schema.Components.Iterate(collectRefsFn)
+
+		loop := false
+		for key := range componentSchemas {
+			if _, ok := refs[key]; !ok {
+				delete(componentSchemas, key)
+				loop = true
+			}
+		}
+		for key := range componentParams {
+			if _, ok := refs[key]; !ok {
+				delete(componentParams, key)
+				loop = true
+			}
+		}
+		if !loop {
+			break
+		}
+	}
+}

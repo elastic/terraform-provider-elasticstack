@@ -16,7 +16,7 @@ import (
 
 func Test_newFleetConfigFromSDK(t *testing.T) {
 	type args struct {
-		kibanaCfg      kibanaConfig
+		kibanaCfg      kibana2Config
 		resourceData   map[string]interface{}
 		expectedConfig fleetConfig
 		expectedDiags  sdkdiags.Diagnostics
@@ -29,11 +29,11 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 		{
 			name: "should return kibana config if no fleet config defined",
 			args: func() args {
-				kibanaCfg := kibanaConfig{
-					Address:          "example.com/kibana",
-					Username:         "elastic",
-					Password:         "changeme",
-					DisableVerifySSL: true,
+				kibanaCfg := kibana2Config{
+					URL:      "example.com/kibana",
+					Username: "elastic",
+					Password: "changeme",
+					Insecure: true,
 				}
 
 				return args{
@@ -46,11 +46,11 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 		{
 			name: "should use the provided config optios",
 			args: func() args {
-				kibanaCfg := kibanaConfig{
-					Address:          "example.com/kibana",
-					Username:         "elastic",
-					Password:         "changeme",
-					DisableVerifySSL: true,
+				kibanaCfg := kibana2Config{
+					URL:      "example.com/kibana",
+					Username: "elastic",
+					Password: "changeme",
+					Insecure: true,
 				}
 
 				return args{
@@ -81,11 +81,11 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 		{
 			name: "should prefer environment variables",
 			args: func() args {
-				kibanaCfg := kibanaConfig{
-					Address:          "example.com/kibana",
-					Username:         "elastic",
-					Password:         "changeme",
-					DisableVerifySSL: true,
+				kibanaCfg := kibana2Config{
+					URL:      "example.com/kibana",
+					Username: "elastic",
+					Password: "changeme",
+					Insecure: true,
 				}
 
 				return args{
@@ -149,7 +149,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 
 func Test_newFleetConfigFromFramework(t *testing.T) {
 	type args struct {
-		kibanaCfg      kibanaConfig
+		kibanaCfg      kibana2Config
 		providerConfig ProviderConfiguration
 		expectedConfig fleetConfig
 		expectedDiags  fwdiags.Diagnostics
@@ -162,11 +162,11 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 		{
 			name: "should return kibana config if no fleet config defined",
 			args: func() args {
-				kibanaCfg := kibanaConfig{
-					Address:          "example.com/kibana",
-					Username:         "elastic",
-					Password:         "changeme",
-					DisableVerifySSL: true,
+				kibanaCfg := kibana2Config{
+					URL:      "example.com/kibana",
+					Username: "elastic",
+					Password: "changeme",
+					Insecure: true,
 				}
 
 				return args{
@@ -179,11 +179,11 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 		{
 			name: "should use the provided config options",
 			args: func() args {
-				kibanaCfg := kibanaConfig{
-					Address:          "example.com/kibana",
-					Username:         "elastic",
-					Password:         "changeme",
-					DisableVerifySSL: true,
+				kibanaCfg := kibana2Config{
+					URL:      "example.com/kibana",
+					Username: "elastic",
+					Password: "changeme",
+					Insecure: true,
 				}
 
 				return args{
@@ -217,11 +217,11 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 		{
 			name: "should prefer environment variables",
 			args: func() args {
-				kibanaCfg := kibanaConfig{
-					Address:          "example.com/kibana",
-					Username:         "elastic",
-					Password:         "changeme",
-					DisableVerifySSL: true,
+				kibanaCfg := kibana2Config{
+					URL:      "example.com/kibana",
+					Username: "elastic",
+					Password: "changeme",
+					Insecure: true,
 				}
 
 				return args{

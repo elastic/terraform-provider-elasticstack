@@ -13,7 +13,7 @@ import (
 
 type fleetConfig fleet.Config
 
-func newFleetConfigFromSDK(d *schema.ResourceData, kibanaCfg kibanaConfig) (fleetConfig, sdkdiags.Diagnostics) {
+func newFleetConfigFromSDK(d *schema.ResourceData, kibanaCfg kibana2Config) (fleetConfig, sdkdiags.Diagnostics) {
 	config := kibanaCfg.toFleetConfig()
 
 	// Set variables from resource config.
@@ -56,7 +56,7 @@ func newFleetConfigFromSDK(d *schema.ResourceData, kibanaCfg kibanaConfig) (flee
 	return config.withEnvironmentOverrides(), nil
 }
 
-func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, kibanaCfg kibanaConfig) (fleetConfig, fwdiags.Diagnostics) {
+func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, kibanaCfg kibana2Config) (fleetConfig, fwdiags.Diagnostics) {
 	config := kibanaCfg.toFleetConfig()
 
 	if len(cfg.Fleet) > 0 {
