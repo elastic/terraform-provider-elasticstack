@@ -341,7 +341,7 @@ func UpdateApiKey(apiClient *clients.ApiClient, apikey models.ApiKey) fwdiag.Dia
 		return utils.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create apikey"); diags.HasError() {
+	if diags := utils.CheckError(res, "Unable to update apikey"); diags.HasError() {
 		return utils.FrameworkDiagsFromSDK(diags)
 	}
 

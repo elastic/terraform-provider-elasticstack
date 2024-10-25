@@ -241,6 +241,60 @@ func SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(minApiKeySupported
 	}
 }
 
+func TestAccResourceSecurityApiKeyFromSDK(t *testing.T) {
+	// generate a random name
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	var initialApiKey string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityApiKeyDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create the api_key with the last provider version where the api_key resource was built on the SDK
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.11.9",
+					},
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
+				Config:                   testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "role_descriptors"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "api_key", func(value string) error {
+						initialApiKey = value
+
+						if value == "" {
+							return fmt.Errorf("expected api_key to be non-empty")
+						}
+
+						return nil
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
+				Config:                   testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "api_key", func(value string) error {
+						if value != initialApiKey {
+							return fmt.Errorf("expected api_key to be unchanged")
+						}
+
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
 func testAccResourceSecurityApiKeyCreate(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -287,6 +341,29 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
   })
 
 	expiration = "1d"
+}
+	`, apiKeyName)
+}
+
+func testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+
+  role_descriptors = jsonencode({
+    role-a = {
+      cluster = ["all"]
+      indices = [{
+        names = ["index-a*"]
+        privileges = ["read"]
+        allow_restricted_indices = false
+      }]
+	}
+  })
 }
 	`, apiKeyName)
 }
