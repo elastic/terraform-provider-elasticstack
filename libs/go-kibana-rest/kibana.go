@@ -37,7 +37,8 @@ func NewClient(cfg Config) (*Client, error) {
 	restyClient := resty.New().
 		SetBaseURL(cfg.Address).
 		SetHeader("kbn-xsrf", "true").
-		SetHeader("Content-Type", "application/json")
+		SetHeader("Content-Type", "application/json").
+		SetDisableWarn(true)
 
 	if cfg.ApiKey != "" {
 		restyClient.SetAuthScheme("ApiKey").SetAuthToken(cfg.ApiKey)
