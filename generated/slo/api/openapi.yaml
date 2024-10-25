@@ -1349,6 +1349,8 @@ components:
           $ref: '#/components/schemas/objective'
         settings:
           $ref: '#/components/schemas/settings'
+        groupBy:
+          $ref: '#/components/schemas/slo_response_groupBy'
         tags:
           description: List of tags
           items:
