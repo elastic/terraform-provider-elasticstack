@@ -14,6 +14,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
+var _ resource.ResourceWithUpgradeState = &Resource{}
 var (
 	MinVersion                         = version.Must(version.NewVersion("8.0.0")) // Enabled in 8.0
 	MinVersionWithUpdate               = version.Must(version.NewVersion("8.4.0"))
