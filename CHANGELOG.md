@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Support multiple group by fields in SLOs ([#870](https://github.com/elastic/terraform-provider-elasticstack/pull/878))
+
 ## [0.11.11] - 2024-10-25
 
 - Allow `elasticstack_kibana_alerting_rule` to be used without Elasticsearch being configured. ([#869](https://github.com/elastic/terraform-provider-elasticstack/pull/869))
