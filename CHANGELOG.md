@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.11] - 2024-10-25
+
 - Allow `elasticstack_kibana_alerting_rule` to be used without Elasticsearch being configured. ([#869](https://github.com/elastic/terraform-provider-elasticstack/pull/869))
 - Add resource `elasticstack_elasticsearch_data_stream_lifecycle` ([#838](https://github.com/elastic/terraform-provider-elasticstack/issues/838))
 - Ensure API keys are not replaced when upgrading from 0.11.9 or earlier. ([#875](https://github.com/elastic/terraform-provider-elasticstack/pull/875))
@@ -380,7 +382,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.10...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.11...HEAD
+[0.11.11]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.11
 [0.11.10]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.10
 [0.11.9]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
