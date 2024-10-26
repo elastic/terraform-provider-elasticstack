@@ -35,10 +35,8 @@ func TestHandleRespSecrets(t *testing.T) {
 	ctx := context.Background()
 	private := privateData{"secrets": `{"known-secret":"secret"}`}
 
-	secretRefs := &[]struct {
-		Id *string `json:"id,omitempty"`
-	}{
-		{Id: utils.Pointer("known-secret")},
+	secretRefs := &[]fleetapi.PackagePolicySecretRef{
+		{Id: "known-secret"},
 	}
 
 	tests := []struct {
@@ -89,7 +87,7 @@ func TestHandleRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
-						Streams: &Map{"stream1": Map{"vars": maps.Clone(tt.input)}},
+						Streams: &map[string]fleetapi.PackagePolicyInputStream{"stream1": fleetapi.PackagePolicyInputStream{Vars: utils.Pointer(maps.Clone(tt.input))}},
 						Vars:    utils.Pointer(maps.Clone(tt.input)),
 					},
 				},
@@ -98,7 +96,7 @@ func TestHandleRespSecrets(t *testing.T) {
 			wants := fleetapi.PackagePolicy{
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
-						Streams: &Map{"stream1": Map{"vars": tt.want}},
+						Streams: &map[string]fleetapi.PackagePolicyInputStream{"stream1": fleetapi.PackagePolicyInputStream{Vars: utils.Pointer(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
@@ -118,8 +116,8 @@ func TestHandleRespSecrets(t *testing.T) {
 			require.Equal(t, want, got)
 
 			// Stream vars
-			got = (*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
-			want = (*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
+			got = *(*resp.Inputs["input1"].Streams)["stream1"].Vars
+			want = *(*wants.Inputs["input1"].Streams)["stream1"].Vars
 			require.Equal(t, want, got)
 
 			// privateData
@@ -134,10 +132,8 @@ func TestHandleReqRespSecrets(t *testing.T) {
 
 	ctx := context.Background()
 
-	secretRefs := &[]struct {
-		Id *string `json:"id,omitempty"`
-	}{
-		{Id: utils.Pointer("known-secret")},
+	secretRefs := &[]fleetapi.PackagePolicySecretRef{
+		{Id: "known-secret"},
 	}
 
 	tests := []struct {
@@ -205,7 +201,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
-						Streams: &Map{"stream1": Map{"vars": maps.Clone(tt.respInput)}},
+						Streams: &map[string]fleetapi.PackagePolicyInputStream{"stream1": fleetapi.PackagePolicyInputStream{Vars: utils.Pointer(maps.Clone(tt.respInput))}},
 						Vars:    utils.Pointer(maps.Clone(tt.respInput)),
 					},
 				},
@@ -214,7 +210,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			wants := fleetapi.PackagePolicy{
 				Inputs: map[string]fleetapi.PackagePolicyInput{
 					"input1": {
-						Streams: &Map{"stream1": Map{"vars": tt.want}},
+						Streams: &map[string]fleetapi.PackagePolicyInputStream{"stream1": fleetapi.PackagePolicyInputStream{Vars: utils.Pointer(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
@@ -236,8 +232,8 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			require.Equal(t, want, got)
 
 			// Stream vars
-			got = (*resp.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
-			want = (*wants.Inputs["input1"].Streams)["stream1"].(Map)["vars"].(Map)
+			got = *(*resp.Inputs["input1"].Streams)["stream1"].Vars
+			want = *(*wants.Inputs["input1"].Streams)["stream1"].Vars
 			require.Equal(t, want, got)
 
 			if v, ok := (*req.Vars)["k"]; ok && v == "secret" {

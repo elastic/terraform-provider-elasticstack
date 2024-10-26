@@ -28,7 +28,7 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 	var tokens []fleetapi.EnrollmentApiKey
 	policyID := model.PolicyID.ValueString()
 	if policyID == "" {
-		tokens, diags = fleet.AllEnrollmentTokens(ctx, client)
+		tokens, diags = fleet.GetEnrollmentTokens(ctx, client)
 	} else {
 		tokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, client, policyID)
 	}
