@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
-// Config is the configuration for the fleet client.
+// Config is the configuration for the Kibana client.
 type Config struct {
 	URL      string
 	Username string
@@ -23,14 +23,14 @@ type Config struct {
 	CACerts  []string
 }
 
-// Client provides an API client for Elastic Fleet.
+// Client provides an API client for Elastic Kibana.
 type Client struct {
 	URL  string
 	HTTP *http.Client
 	API  *kbapi.ClientWithResponses
 }
 
-// NewClient creates a new Elastic Fleet API client.
+// NewClient creates a new Elastic Kibana API client.
 func NewClient(cfg Config) (*Client, error) {
 	var caCertPool *x509.CertPool
 	if len(cfg.CACerts) > 0 {
@@ -68,7 +68,7 @@ func NewClient(cfg Config) (*Client, error) {
 		endpoint += "/"
 	}
 
-	fleetAPIClient, err := kbapi.NewClientWithResponses(endpoint, kbapi.WithHTTPClient(httpClient))
+	kibanaAPIClient, err := kbapi.NewClientWithResponses(endpoint, kbapi.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create Kibana API client: %w", err)
 	}
@@ -76,7 +76,7 @@ func NewClient(cfg Config) (*Client, error) {
 	return &Client{
 		URL:  cfg.URL,
 		HTTP: httpClient,
-		API:  fleetAPIClient,
+		API:  kibanaAPIClient,
 	}, nil
 }
 
