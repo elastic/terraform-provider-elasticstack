@@ -50,7 +50,7 @@ func ValueStringPointer(value types.String) *string {
 // ===== Maps =====
 // ================
 
-// MapToNormalizedType marshals a map into a jsontypes.Normalized.
+// MapToNormalizedType marshals a map[string]T into a jsontypes.Normalized.
 func MapToNormalizedType[T any](value map[string]T, p path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
 	if value == nil {
 		return jsontypes.NewNormalizedNull()
@@ -117,7 +117,7 @@ func MapTypeAs[T any](ctx context.Context, value types.Map, p path.Path, diags *
 	return items
 }
 
-// MapValueFrom converts a tfsdk aware []T to a types.List.
+// MapValueFrom converts a tfsdk aware map[string]T to a types.Map.
 func MapValueFrom[T any](ctx context.Context, value map[string]T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.Map {
 	mapping, d := types.MapValueFrom(ctx, elemType, value)
 	diags.Append(ConvertToAttrDiags(d, p)...)
@@ -225,8 +225,8 @@ func StructToObjectType[T1 any, T2 any](ctx context.Context, value *T1, attrType
 	return obj
 }
 
-// ListTypeToSlice converts a types.List first into a tfsdk aware []T1 and transforms
-// the result into a []T2.
+// ObjectTypeToStruct converts a types.Object first into a tfsdk aware T1 and transforms
+// the result into a T2.
 func ObjectTypeToStruct[T1 any, T2 any](ctx context.Context, value types.Object, p path.Path, diags *diag.Diagnostics, transformee func(item T1, meta ObjectMeta) T2) *T2 {
 	if !IsKnown(value) {
 		return nil
@@ -263,7 +263,7 @@ func ObjectValueFrom[T any](ctx context.Context, value *T, attrTypes map[string]
 // ===== Transforms =====
 // ======================
 
-// TransformSlice converts T1 to T2 via the iteratee.
+// TransformObject converts T1 to T2 via the transformee.
 func TransformObject[T1 any, T2 any](ctx context.Context, value *T1, p path.Path, diags *diag.Diagnostics, transformee func(item T1, meta ObjectMeta) T2) *T2 {
 	if value == nil {
 		return nil
