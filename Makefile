@@ -343,21 +343,6 @@ generate-alerting-client: ## generate Kibana alerting client
 	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
 	@ go fmt ./generated/alerting/...
 
-.PHONY: generate-data-views-client
-generate-data-views-client: ## generate Kibana data-views client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
-		-i /local/generated/data_views/bundled.yaml \
-		--skip-validate-spec \
-		--git-repo-id terraform-provider-elasticstack \
-		--git-user-id elastic \
-		-p isGoSubmodule=true \
-		-p packageName=data_views \
-		-p generateInterfaces=true \
-		-g go \
-		-o /local/generated/data_views
-	@ rm -rf generated/data_views/go.mod generated/data_views/go.sum generated/data_views/test
-	@ go fmt ./generated/data_views/...
-
 .PHONY: generate-connectors-client
 generate-connectors-client: tools ## generate Kibana connectors client
 	@ cd tools && go generate
@@ -381,4 +366,4 @@ generate-slo-client: tools ## generate Kibana slo client
 	@ go fmt ./generated/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client generate-data-views-client generate-connectors-client ## generate all clients
+generate-clients: generate-alerting-client generate-slo-client generate-connectors-client ## generate all clients
