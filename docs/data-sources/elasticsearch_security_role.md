@@ -42,6 +42,7 @@ output "role" {
 
 - `applications` (Set of Object) A list of application privilege entries. (see [below for nested schema](#nestedatt--applications))
 - `cluster` (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
+- `description` (String) The description of the role.
 - `global` (String) An object defining global privileges.
 - `id` (String) Internal identifier of the resource
 - `indices` (Set of Object) A list of indices permissions entries. (see [below for nested schema](#nestedatt--indices))
