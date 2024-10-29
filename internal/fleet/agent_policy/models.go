@@ -3,7 +3,7 @@ package agent_policy
 import (
 	"slices"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -24,7 +24,7 @@ type agentPolicyModel struct {
 	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
 }
 
-func (model *agentPolicyModel) populateFromAPI(data *fleetapi.AgentPolicy) {
+func (model *agentPolicyModel) populateFromAPI(data *kbapi.AgentPolicy) {
 	if data == nil {
 		return
 	}
@@ -37,10 +37,10 @@ func (model *agentPolicyModel) populateFromAPI(data *fleetapi.AgentPolicy) {
 	model.FleetServerHostId = types.StringPointerValue(data.FleetServerHostId)
 
 	if data.MonitoringEnabled != nil {
-		if slices.Contains(*data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledLogs) {
+		if slices.Contains(*data.MonitoringEnabled, kbapi.AgentPolicyMonitoringEnabledLogs) {
 			model.MonitorLogs = types.BoolValue(true)
 		}
-		if slices.Contains(*data.MonitoringEnabled, fleetapi.AgentPolicyMonitoringEnabledMetrics) {
+		if slices.Contains(*data.MonitoringEnabled, kbapi.AgentPolicyMonitoringEnabledMetrics) {
 			model.MonitorMetrics = types.BoolValue(true)
 		}
 	}
@@ -56,16 +56,16 @@ func (model *agentPolicyModel) populateFromAPI(data *fleetapi.AgentPolicy) {
 	model.Namespace = types.StringValue(data.Namespace)
 }
 
-func (model agentPolicyModel) toAPICreateModel() fleetapi.CreateAgentPolicyJSONRequestBody {
-	monitoring := make([]fleetapi.CreateAgentPolicyJSONBodyMonitoringEnabled, 0, 2)
+func (model agentPolicyModel) toAPICreateModel() kbapi.CreateAgentPolicyJSONRequestBody {
+	monitoring := make([]kbapi.CreateAgentPolicyJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, fleetapi.CreateAgentPolicyJSONBodyMonitoringEnabledLogs)
+		monitoring = append(monitoring, kbapi.CreateAgentPolicyJSONBodyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, fleetapi.CreateAgentPolicyJSONBodyMonitoringEnabledMetrics)
+		monitoring = append(monitoring, kbapi.CreateAgentPolicyJSONBodyMonitoringEnabledMetrics)
 	}
 
-	body := fleetapi.CreateAgentPolicyJSONRequestBody{
+	body := kbapi.CreateAgentPolicyJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
 		DownloadSourceId:   model.DownloadSourceId.ValueStringPointer(),
@@ -80,16 +80,16 @@ func (model agentPolicyModel) toAPICreateModel() fleetapi.CreateAgentPolicyJSONR
 	return body
 }
 
-func (model agentPolicyModel) toAPIUpdateModel() fleetapi.UpdateAgentPolicyJSONRequestBody {
-	monitoring := make([]fleetapi.UpdateAgentPolicyJSONBodyMonitoringEnabled, 0, 2)
+func (model agentPolicyModel) toAPIUpdateModel() kbapi.UpdateAgentPolicyJSONRequestBody {
+	monitoring := make([]kbapi.UpdateAgentPolicyJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, fleetapi.Logs)
+		monitoring = append(monitoring, kbapi.Logs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, fleetapi.Metrics)
+		monitoring = append(monitoring, kbapi.Metrics)
 	}
 
-	body := fleetapi.UpdateAgentPolicyJSONRequestBody{
+	body := kbapi.UpdateAgentPolicyJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
 		DownloadSourceId:   model.DownloadSourceId.ValueStringPointer(),

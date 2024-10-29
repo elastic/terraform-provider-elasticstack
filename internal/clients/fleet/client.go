@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
@@ -27,7 +27,7 @@ type Config struct {
 type Client struct {
 	URL  string
 	HTTP *http.Client
-	API  *fleetapi.ClientWithResponses
+	API  *kbapi.ClientWithResponses
 }
 
 // NewClient creates a new Elastic Fleet API client.
@@ -68,7 +68,7 @@ func NewClient(cfg Config) (*Client, error) {
 		endpoint += "/"
 	}
 
-	fleetAPIClient, err := fleetapi.NewClientWithResponses(endpoint, fleetapi.WithHTTPClient(httpClient))
+	fleetAPIClient, err := kbapi.NewClientWithResponses(endpoint, kbapi.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create Fleet API client: %w", err)
 	}

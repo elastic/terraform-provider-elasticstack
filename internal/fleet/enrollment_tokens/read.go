@@ -3,7 +3,7 @@ package enrollment_tokens
 import (
 	"context"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -25,7 +25,7 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	var tokens []fleetapi.EnrollmentApiKey
+	var tokens []kbapi.EnrollmentApiKey
 	policyID := model.PolicyID.ValueString()
 	if policyID == "" {
 		tokens, diags = fleet.GetEnrollmentTokens(ctx, client)

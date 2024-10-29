@@ -542,7 +542,10 @@ var transformers = []TransformFunc{
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
+	transformOperationIDs,
+	transformAddMisingDescriptions,
 	transformKibanaPaths,
+	transformFleetPaths,
 	// transformRemoveEnums,
 	// transformAddGoPointersFlag,
 	transformRemoveExamples,
@@ -553,9 +556,21 @@ var transformers = []TransformFunc{
 // of endpoints and methods.
 func transformFilterPaths(schema *Schema) {
 	var includePaths = map[string][]string{
-		"/api/data_views":                    {"get"},
-		"/api/data_views/data_view":          {"post"},
-		"/api/data_views/data_view/{viewId}": {"get", "post", "delete"},
+		"/api/data_views":                                {"get"},
+		"/api/data_views/data_view":                      {"post"},
+		"/api/data_views/data_view/{viewId}":             {"get", "post", "delete"},
+		"/api/fleet/agent_policies":                      {"get", "post"},
+		"/api/fleet/agent_policies/delete":               {"post"},
+		"/api/fleet/agent_policies/{agentPolicyId}":      {"get", "put"},
+		"/api/fleet/enrollment_api_keys":                 {"get"},
+		"/api/fleet/epm/packages":                        {"get", "post"},
+		"/api/fleet/epm/packages/{pkgName}/{pkgVersion}": {"get", "post", "delete"},
+		"/api/fleet/fleet_server_hosts":                  {"get", "post"},
+		"/api/fleet/fleet_server_hosts/{itemId}":         {"get", "put", "delete"},
+		"/api/fleet/outputs":                             {"get", "post"},
+		"/api/fleet/outputs/{outputId}":                  {"get", "put", "delete"},
+		"/api/fleet/package_policies":                    {"get", "post"},
+		"/api/fleet/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
 	}
 
 	for path, pathInfo := range schema.Paths {
@@ -676,8 +691,8 @@ func transformSimplifyContentType(schema *Schema) {
 	}
 }
 
-// transformKibanaPaths fixes the Kibana paths.
-func transformKibanaPaths(schema *Schema) {
+// transformOperationIDs fixes each path's operationId.
+func transformOperationIDs(schema *Schema) {
 	operationIds := map[string]map[string]string{
 		"/api/data_views": {
 			"get": "get_data_views",
@@ -690,6 +705,56 @@ func transformKibanaPaths(schema *Schema) {
 			"post":   "update_data_view",
 			"delete": "delete_data_view",
 		},
+		"/api/fleet/agent_policies": {
+			"get":  "get_agent_policies",
+			"post": "create_agent_policy",
+		},
+		"/api/fleet/agent_policies/delete": {
+			"post": "delete_agent_policy",
+		},
+		"/api/fleet/agent_policies/{agentPolicyId}": {
+			"get": "get_agent_policy",
+			"put": "update_agent_policy",
+		},
+		"/api/fleet/enrollment_api_keys": {
+			"get": "get_enrollment_api_keys",
+		},
+		"/api/fleet/epm/packages": {
+			"get":  "list_packages",
+			"post": "install_package_by_upload",
+		},
+		"/api/fleet/epm/packages/{pkgName}/{pkgVersion}": {
+			"get":    "get_package",
+			"post":   "install_package",
+			"delete": "delete_package",
+		},
+		"/api/fleet/fleet_server_hosts": {
+			"get":  "get_fleet_server_hosts",
+			"post": "create_fleet_server_host",
+		},
+		"/api/fleet/fleet_server_hosts/{itemId}": {
+			"get":    "get_fleet_server_host",
+			"put":    "update_fleet_server_host",
+			"delete": "delete_fleet_server_host",
+		},
+		"/api/fleet/outputs": {
+			"get":  "get_outputs",
+			"post": "create_output",
+		},
+		"/api/fleet/outputs/{outputId}": {
+			"get":    "get_output",
+			"put":    "update_output",
+			"delete": "delete_output",
+		},
+		"/api/fleet/package_policies": {
+			"get":  "get_package_policies",
+			"post": "create_package_policy",
+		},
+		"/api/fleet/package_policies/{packagePolicyId}": {
+			"get":    "get_package_policy",
+			"put":    "update_package_policy",
+			"delete": "delete_package_policy",
+		},
 	}
 
 	// Set each missing operationId
@@ -700,8 +765,10 @@ func transformKibanaPaths(schema *Schema) {
 			endpoint.Set("operationId", operationId)
 		}
 	}
+}
 
-	// Fix OpenAPI error: set each missing description
+// transformAddMisingDescriptions adds descriptions to each path missing one.
+func transformAddMisingDescriptions(schema *Schema) {
 	for _, pathInfo := range schema.Paths {
 		for _, endpoint := range pathInfo.Endpoints {
 			responses := endpoint.MustGetMap("responses")
@@ -713,7 +780,10 @@ func transformKibanaPaths(schema *Schema) {
 			}
 		}
 	}
+}
 
+// transformKibanaPaths fixes the Kibana paths.
+func transformKibanaPaths(schema *Schema) {
 	// Convert any paths needing it to /s/{spaceId} variants
 	spaceIdPaths := []string{
 		"/api/data_views",
@@ -782,6 +852,199 @@ func transformKibanaPaths(schema *Schema) {
 
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
+}
+
+// transformFleetPaths fixes the fleet paths.
+func transformFleetPaths(schema *Schema) {
+	// Agent policies
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/agent_policy.ts
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/agent_policy.ts
+
+	agentPoliciesPath := schema.MustGetPath("/api/fleet/agent_policies")
+	agentPolicyPath := schema.MustGetPath("/api/fleet/agent_policies/{agentPolicyId}")
+
+	agentPoliciesPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.items.items")
+	agentPoliciesPath.Post.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
+	agentPolicyPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
+	agentPolicyPath.Put.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
+
+	// See: https://github.com/elastic/kibana/issues/197155
+	// [request body.keep_monitoring_alive]: expected value of type [boolean] but got [null]
+	// [request body.supports_agentless]: expected value of type [boolean] but got [null]
+	// [request body.overrides]: expected value of type [boolean] but got [null]
+	for _, key := range []string{"keep_monitoring_alive", "supports_agentless", "overrides"} {
+		agentPoliciesPath.Post.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
+		agentPolicyPath.Put.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
+	}
+
+	// Enrollment api keys
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/enrollment_api_key.ts
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/enrollment_api_key.ts
+
+	apiKeysPath := schema.MustGetPath("/api/fleet/enrollment_api_keys")
+	apiKeysPath.Get.CreateRef(schema, "enrollment_api_key", "responses.200.content.application/json.schema.properties.items.items")
+
+	// EPM
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/epm.ts
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/epm.ts
+
+	packagesPath := schema.MustGetPath("/api/fleet/epm/packages")
+	packagePath := schema.MustGetPath("/api/fleet/epm/packages/{pkgName}/{pkgVersion}")
+	packagesPath.Get.CreateRef(schema, "package_list_item", "responses.200.content.application/json.schema.properties.items.items")
+	packagePath.Get.CreateRef(schema, "package_info", "responses.200.content.application/json.schema.properties.item")
+
+	// Server hosts
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/fleet_server_policy_config.ts
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/fleet_server_hosts.ts
+
+	hostsPath := schema.MustGetPath("/api/fleet/fleet_server_hosts")
+	hostPath := schema.MustGetPath("/api/fleet/fleet_server_hosts/{itemId}")
+
+	hostsPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.items.items")
+	hostsPath.Post.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
+	hostPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
+	hostPath.Put.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
+
+	// 8.6.2 regression
+	// [request body.proxy_id]: definition for this key is missing
+	// See: https://github.com/elastic/kibana/issues/197155
+	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
+	hostPath.Put.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
+
+	// Outputs
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/output.ts
+
+	outputByIdPath := schema.MustGetPath("/api/fleet/outputs/{outputId}")
+	outputsPath := schema.MustGetPath("/api/fleet/outputs")
+
+	outputsPath.Post.CreateRef(schema, "new_output_union", "requestBody.content.application/json.schema")
+	outputByIdPath.Put.CreateRef(schema, "update_output_union", "requestBody.content.application/json.schema")
+	outputsPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.items.items")
+	outputByIdPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
+	outputsPath.Post.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
+	outputByIdPath.Put.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
+
+	for _, name := range []string{"output", "new_output", "update_output"} {
+		// Ref each index in the anyOf union
+		schema.Components.CreateRef(schema, fmt.Sprintf("%s_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.0", name))
+		schema.Components.CreateRef(schema, fmt.Sprintf("%s_remote_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.1", name))
+		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
+		schema.Components.CreateRef(schema, fmt.Sprintf("%s_kafka", name), fmt.Sprintf("schemas.%s_union.anyOf.3", name))
+
+		// Extract child structs
+		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
+			schema.Components.CreateRef(schema, fmt.Sprintf("%s_shipper", name), fmt.Sprintf("schemas.%s_%s.properties.shipper", name, typ))
+			schema.Components.CreateRef(schema, fmt.Sprintf("%s_ssl", name), fmt.Sprintf("schemas.%s_%s.properties.ssl", name, typ))
+		}
+
+		// Ideally just remove the "anyOf", however then we would need to make
+		// refs for each of the "oneOf" options. So turn them into an "any" instead.
+		// See: https://github.com/elastic/kibana/issues/197153
+		/*
+			anyOf:
+			  - items: {}
+			    type: array
+			  - type: boolean
+			  - type: number
+			  - type: object
+			  - type: string
+			nullable: true
+			oneOf:
+			  - type: number
+			  - not: {}
+		*/
+
+		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s_kafka.properties", name))
+		for _, key := range []string{"compression_level", "connection_type", "password", "username"} {
+			props.Set(key, Map{})
+		}
+	}
+
+	// Add the missing discriminator to the response union
+	// See: https://github.com/elastic/kibana/issues/181994
+	schema.Components.Set("schemas.output_union.discriminator", Map{
+		"propertyName": "type",
+		"mapping": Map{
+			"elasticsearch":        "#/components/schemas/output_elasticsearch",
+			"remote_elasticsearch": "#/components/schemas/output_remote_elasticsearch",
+			"logstash":             "#/components/schemas/output_logstash",
+			"kafka":                "#/components/schemas/output_kafka",
+		},
+	})
+
+	for _, name := range []string{"new_output", "update_output"} {
+		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
+			// [request body.1.ca_sha256]: expected value of type [string] but got [null]"
+			// See: https://github.com/elastic/kibana/issues/197155
+			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.ca_sha256.x-omitempty", name, typ), true)
+
+			// [request body.1.ca_trusted_fingerprint]: expected value of type [string] but got [null]
+			// See: https://github.com/elastic/kibana/issues/197155
+			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.ca_trusted_fingerprint.x-omitempty", name, typ), true)
+
+			// 8.6.2 regression
+			// [request body.proxy_id]: definition for this key is missing"
+			// See: https://github.com/elastic/kibana/issues/197155
+			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.proxy_id.x-omitempty", name, typ), true)
+		}
+
+		// [request body.1.shipper]: expected a plain object value, but found [null] instead
+		// See: https://github.com/elastic/kibana/issues/197155
+		schema.Components.Set(fmt.Sprintf("schemas.%s_shipper.x-omitempty", name), true)
+
+		// [request body.1.ssl]: expected a plain object value, but found [null] instead
+		// See: https://github.com/elastic/kibana/issues/197155
+		schema.Components.Set(fmt.Sprintf("schemas.%s_ssl.x-omitempty", name), true)
+
+	}
+
+	for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
+		// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
+		// See: https://github.com/elastic/kibana/issues/197155
+		schema.Components.MustDelete(fmt.Sprintf("schemas.update_output_%s.properties.id", typ))
+	}
+
+	// Package policies
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/package_policy.ts
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/package_policy.ts
+
+	epmPoliciesPath := schema.MustGetPath("/api/fleet/package_policies")
+	epmPolicyPath := schema.MustGetPath("/api/fleet/package_policies/{packagePolicyId}")
+
+	epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
+	epmPoliciesPath.Post.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
+
+	epmPoliciesPath.Post.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema") // anyOf.0 is the deprecated array format
+	epmPolicyPath.Put.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema")    // anyOf.0 is the deprecated array format
+	epmPoliciesPath.Post.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+
+	epmPolicyPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
+
+	schema.Components.CreateRef(schema, "package_policy_secret_ref", "schemas.package_policy.properties.secret_references.items")
+	schema.Components.Move("schemas.package_policy.properties.inputs.anyOf.1", "schemas.package_policy.properties.inputs") // anyOf.0 is the deprecated array format
+
+	schema.Components.CreateRef(schema, "package_policy_input", "schemas.package_policy.properties.inputs.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_input_stream", "schemas.package_policy_input.properties.streams.additionalProperties")
+
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request.properties.package")
+	schema.Components.CreateRef(schema, "package_policy_request_input", "schemas.package_policy_request.properties.inputs.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_request_input_stream", "schemas.package_policy_request_input.properties.streams.additionalProperties")
+
+	// Simplify all of the vars
+	schema.Components.Set("schemas.package_policy.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_input_stream.properties.vars", Map{"type": "object"})
+
+	// [request body.0.output_id]: expected value of type [string] but got [null]
+	// [request body.1.output_id]: definition for this key is missing"
+	// See: https://github.com/elastic/kibana/issues/197155
+	schema.Components.Set("schemas.package_policy_request.properties.output_id.x-omitempty", true)
 }
 
 // transformRemoveEnums remove all enums.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -17,7 +17,7 @@ type secretStore map[string]any
 
 // newSecretStore creates a new secretStore from the resource privateData.
 // If the store already exists, it is filtered by any references in the resp policy.
-func newSecretStore(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (store secretStore, diags diag.Diagnostics) {
+func newSecretStore(ctx context.Context, resp *kbapi.PackagePolicy, private privateData) (store secretStore, diags diag.Diagnostics) {
 	bytes, nd := private.GetKey(ctx, "secrets")
 	diags.Append(nd...)
 	if diags.HasError() {
@@ -63,7 +63,7 @@ func (s secretStore) Save(ctx context.Context, private privateData) (diags diag.
 
 // HandleRespSecrets extracts the wrapped value from each response var, then
 // replaces any secret refs with the original value from secrets if available.
-func HandleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
 	secrets, nd := newSecretStore(ctx, resp, private)
 	diags.Append(nd...)
 	if diags.HasError() {
@@ -116,7 +116,7 @@ func HandleRespSecrets(ctx context.Context, resp *fleetapi.PackagePolicy, privat
 
 // HandleReqRespSecrets extracts the wrapped value from each response var, then
 // maps any secret refs to the original request value.
-func HandleReqRespSecrets(ctx context.Context, req fleetapi.PackagePolicyRequest, resp *fleetapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, resp *kbapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
 	secrets, nd := newSecretStore(ctx, resp, private)
 	diags.Append(nd...)
 	if diags.HasError() {

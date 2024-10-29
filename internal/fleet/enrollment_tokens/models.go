@@ -3,7 +3,7 @@ package enrollment_tokens
 import (
 	"context"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -26,12 +26,12 @@ type enrollmentTokenModel struct {
 	PolicyID  types.String `tfsdk:"policy_id"`
 }
 
-func (model *enrollmentTokensModel) populateFromAPI(ctx context.Context, data []fleetapi.EnrollmentApiKey) (diags diag.Diagnostics) {
+func (model *enrollmentTokensModel) populateFromAPI(ctx context.Context, data []kbapi.EnrollmentApiKey) (diags diag.Diagnostics) {
 	model.Tokens = utils.SliceToListType(ctx, data, getTokenType(), path.Root("tokens"), &diags, newEnrollmentTokenModel)
 	return
 }
 
-func newEnrollmentTokenModel(data fleetapi.EnrollmentApiKey, meta utils.ListMeta) enrollmentTokenModel {
+func newEnrollmentTokenModel(data kbapi.EnrollmentApiKey, meta utils.ListMeta) enrollmentTokenModel {
 	return enrollmentTokenModel{
 		KeyID:     types.StringValue(data.Id),
 		Active:    types.BoolValue(data.Active),

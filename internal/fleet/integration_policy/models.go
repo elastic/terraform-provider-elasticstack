@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,7 +34,7 @@ type integrationPolicyInputModel struct {
 	VarsJson    jsontypes.Normalized `tfsdk:"vars_json"`
 }
 
-func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *fleetapi.PackagePolicy) diag.Diagnostics {
+func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.PackagePolicy) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -57,9 +57,9 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	return diags
 }
 
-func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, inputs map[string]fleetapi.PackagePolicyInput, diags *diag.Diagnostics) {
+func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, inputs map[string]kbapi.PackagePolicyInput, diags *diag.Diagnostics) {
 	newInputs := utils.TransformMapToSlice(ctx, inputs, path.Root("input"), diags,
-		func(inputData fleetapi.PackagePolicyInput, meta utils.MapMeta) integrationPolicyInputModel {
+		func(inputData kbapi.PackagePolicyInput, meta utils.MapMeta) integrationPolicyInputModel {
 			return integrationPolicyInputModel{
 				InputID:     types.StringValue(meta.Key),
 				Enabled:     types.BoolPointerValue(inputData.Enabled),
@@ -81,15 +81,15 @@ func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, i
 	}
 }
 
-func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool) (fleetapi.PackagePolicyRequest, diag.Diagnostics) {
+func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	body := fleetapi.PackagePolicyRequest{
+	body := kbapi.PackagePolicyRequest{
 		Description: model.Description.ValueStringPointer(),
 		Force:       model.Force.ValueBoolPointer(),
 		Name:        model.Name.ValueString(),
 		Namespace:   model.Namespace.ValueStringPointer(),
-		Package: fleetapi.PackagePolicyRequestPackage{
+		Package: kbapi.PackagePolicyRequestPackage{
 			Name:    model.IntegrationName.ValueString(),
 			Version: model.IntegrationVersion.ValueString(),
 		},
@@ -102,10 +102,10 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 	}
 
 	body.Inputs = utils.MapRef(utils.ListTypeToMap(ctx, model.Input, path.Root("input"), &diags,
-		func(inputModel integrationPolicyInputModel, meta utils.ListMeta) (string, fleetapi.PackagePolicyRequestInput) {
-			return inputModel.InputID.ValueString(), fleetapi.PackagePolicyRequestInput{
+		func(inputModel integrationPolicyInputModel, meta utils.ListMeta) (string, kbapi.PackagePolicyRequestInput) {
+			return inputModel.InputID.ValueString(), kbapi.PackagePolicyRequestInput{
 				Enabled: inputModel.Enabled.ValueBoolPointer(),
-				Streams: utils.MapRef(utils.NormalizedTypeToMap[fleetapi.PackagePolicyRequestInputStream](inputModel.StreamsJson, meta.Path.AtName("streams_json"), &diags)),
+				Streams: utils.MapRef(utils.NormalizedTypeToMap[kbapi.PackagePolicyRequestInputStream](inputModel.StreamsJson, meta.Path.AtName("streams_json"), &diags)),
 				Vars:    utils.MapRef(utils.NormalizedTypeToMap[any](inputModel.VarsJson, meta.Path.AtName("vars_json"), &diags)),
 			}
 		}))

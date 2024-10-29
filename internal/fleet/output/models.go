@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -31,12 +31,12 @@ type outputSslModel struct {
 	Key                    types.String `tfsdk:"key"`
 }
 
-func (model *outputModel) populateFromAPI(ctx context.Context, union *fleetapi.OutputUnion) (diags diag.Diagnostics) {
+func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
 	if union == nil {
 		return
 	}
 
-	doSsl := func(ssl *fleetapi.OutputSsl) types.List {
+	doSsl := func(ssl *kbapi.OutputSsl) types.List {
 		if ssl != nil {
 			p := path.Root("ssl")
 			sslModels := []outputSslModel{{
@@ -104,12 +104,12 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *fleetapi.O
 	return
 }
 
-func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.NewOutputUnion, diags diag.Diagnostics) {
-	doSsl := func() *fleetapi.NewOutputSsl {
+func (model outputModel) toAPICreateModel(ctx context.Context) (union kbapi.NewOutputUnion, diags diag.Diagnostics) {
+	doSsl := func() *kbapi.NewOutputSsl {
 		if utils.IsKnown(model.Ssl) {
 			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
 			if len(sslModels) > 0 {
-				return &fleetapi.NewOutputSsl{
+				return &kbapi.NewOutputSsl{
 					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
 					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 					Key:                    sslModels[0].Key.ValueStringPointer(),
@@ -122,8 +122,8 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.N
 	outputType := model.Type.ValueString()
 	switch outputType {
 	case "elasticsearch":
-		body := fleetapi.NewOutputElasticsearch{
-			Type:                 fleetapi.NewOutputElasticsearchTypeElasticsearch,
+		body := kbapi.NewOutputElasticsearch{
+			Type:                 kbapi.NewOutputElasticsearchTypeElasticsearch,
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -142,8 +142,8 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.N
 		}
 
 	case "logstash":
-		body := fleetapi.NewOutputLogstash{
-			Type:                 fleetapi.NewOutputLogstashTypeLogstash,
+		body := kbapi.NewOutputLogstash{
+			Type:                 kbapi.NewOutputLogstashTypeLogstash,
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -168,12 +168,12 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union fleetapi.N
 	return
 }
 
-func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.UpdateOutputUnion, diags diag.Diagnostics) {
-	doSsl := func() *fleetapi.UpdateOutputSsl {
+func (model outputModel) toAPIUpdateModel(ctx context.Context) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
+	doSsl := func() *kbapi.UpdateOutputSsl {
 		if utils.IsKnown(model.Ssl) {
 			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
 			if len(sslModels) > 0 {
-				return &fleetapi.UpdateOutputSsl{
+				return &kbapi.UpdateOutputSsl{
 					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
 					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 					Key:                    sslModels[0].Key.ValueStringPointer(),
@@ -186,8 +186,8 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.U
 	outputType := model.Type.ValueString()
 	switch outputType {
 	case "elasticsearch":
-		body := fleetapi.UpdateOutputElasticsearch{
-			Type:                 utils.Pointer(fleetapi.Elasticsearch),
+		body := kbapi.UpdateOutputElasticsearch{
+			Type:                 utils.Pointer(kbapi.Elasticsearch),
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -205,8 +205,8 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union fleetapi.U
 		}
 
 	case "logstash":
-		body := fleetapi.UpdateOutputLogstash{
-			Type:                 utils.Pointer(fleetapi.Logstash),
+		body := kbapi.UpdateOutputLogstash{
+			Type:                 utils.Pointer(kbapi.Logstash),
 			CaSha256:             model.CaSha256.ValueStringPointer(),
 			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
