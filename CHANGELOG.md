@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Use the auto-generated OAS schema from elastic/kibana for the Fleet API. ([#834](https://github.com/elastic/terraform-provider-elasticstack/issues/834))
+- Support description in `elasticstack_elasticsearch_security_role` data sources. ([#884](https://github.com/elastic/terraform-provider-elasticstack/pull/884))
 - Rename generated/fleet to generated/kibana, add data_view APIs. Keep libs/go-kibana-rest until migration can be completed. Clean and simplify the `elasticstack_kibana_data_view` resource to match the styling of Fleet resources. ([#881](https://github.com/elastic/terraform-provider-elasticstack/issues/881))
 
 ## [0.11.11] - 2024-10-25
