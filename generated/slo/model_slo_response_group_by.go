@@ -42,8 +42,8 @@ func (dst *SloResponseGroupBy) UnmarshalJSON(data []byte) error {
 	// try to unmarshal data into ArrayOfString
 	err = json.Unmarshal(data, &dst.ArrayOfString)
 	if err == nil {
-		jsonstring, _ := json.Marshal(dst.ArrayOfString)
-		if string(jsonstring) == "{}" { // empty struct
+		jsonArraystring, _ := json.Marshal(dst.ArrayOfString)
+		if string(jsonArraystring) == "{}" { // empty struct
 			dst.ArrayOfString = nil
 		} else {
 			match++
