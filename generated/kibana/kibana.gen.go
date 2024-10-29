@@ -32,926 +32,6 @@ const (
 	N404 DataViews404ResponseStatusCode = 404
 )
 
-// DataViews400Response defines model for Data_views_400_response.
-type DataViews400Response struct {
-	Error      string  `json:"error"`
-	Message    string  `json:"message"`
-	StatusCode float32 `json:"statusCode"`
-}
-
-// DataViews404Response defines model for Data_views_404_response.
-type DataViews404Response struct {
-	Error      *DataViews404ResponseError      `json:"error,omitempty"`
-	Message    *string                         `json:"message,omitempty"`
-	StatusCode *DataViews404ResponseStatusCode `json:"statusCode,omitempty"`
-}
-
-// DataViews404ResponseError defines model for DataViews404Response.Error.
-type DataViews404ResponseError string
-
-// DataViews404ResponseStatusCode defines model for DataViews404Response.StatusCode.
-type DataViews404ResponseStatusCode int
-
-// DataViewsAllownoindex Allows the data view saved object to exist before the data is available.
-type DataViewsAllownoindex = bool
-
-// DataViewsCreateDataViewRequestObject defines model for Data_views_create_data_view_request_object.
-type DataViewsCreateDataViewRequestObject struct {
-	// DataView The data view object.
-	DataView DataViewsCreateDataViewRequestObjectInner `json:"data_view"`
-
-	// Override Override an existing data view if a data view with the provided title already exists.
-	Override *bool `json:"override,omitempty"`
-}
-
-// DataViewsCreateDataViewRequestObjectInner The data view object.
-type DataViewsCreateDataViewRequestObjectInner struct {
-	// AllowNoIndex Allows the data view saved object to exist before the data is available.
-	AllowNoIndex *DataViewsAllownoindex          `json:"allowNoIndex,omitempty"`
-	FieldAttrs   *map[string]DataViewsFieldattrs `json:"fieldAttrs,omitempty"`
-
-	// FieldFormats A map of field formats by field name.
-	FieldFormats *DataViewsFieldformats  `json:"fieldFormats,omitempty"`
-	Fields       *map[string]interface{} `json:"fields,omitempty"`
-	Id           *string                 `json:"id,omitempty"`
-
-	// Name The data view name.
-	Name *string `json:"name,omitempty"`
-
-	// Namespaces An array of space identifiers for sharing the data view between multiple spaces.
-	Namespaces      *DataViewsNamespaces                 `json:"namespaces,omitempty"`
-	RuntimeFieldMap *map[string]DataViewsRuntimefieldmap `json:"runtimeFieldMap,omitempty"`
-
-	// SourceFilters The array of field names you want to filter out in Discover.
-	SourceFilters *DataViewsSourcefilters `json:"sourceFilters,omitempty"`
-
-	// TimeFieldName The timestamp field name, which you use for time-based data views.
-	TimeFieldName *DataViewsTimefieldname `json:"timeFieldName,omitempty"`
-
-	// Title Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
-	Title DataViewsTitle `json:"title"`
-
-	// Type When set to `rollup`, identifies the rollup data views.
-	Type *DataViewsType `json:"type,omitempty"`
-
-	// TypeMeta When you use rollup indices, contains the field list for the rollup data view API endpoints.
-	TypeMeta *DataViewsTypemeta `json:"typeMeta,omitempty"`
-	Version  *string            `json:"version,omitempty"`
-}
-
-// DataViewsDataViewResponseObject defines model for Data_views_data_view_response_object.
-type DataViewsDataViewResponseObject struct {
-	DataView *DataViewsDataViewResponseObjectInner `json:"data_view,omitempty"`
-}
-
-// DataViewsDataViewResponseObjectInner defines model for Data_views_data_view_response_object_inner.
-type DataViewsDataViewResponseObjectInner struct {
-	// AllowNoIndex Allows the data view saved object to exist before the data is available.
-	AllowNoIndex *DataViewsAllownoindex          `json:"allowNoIndex,omitempty"`
-	FieldAttrs   *map[string]DataViewsFieldattrs `json:"fieldAttrs,omitempty"`
-
-	// FieldFormats A map of field formats by field name.
-	FieldFormats *DataViewsFieldformats  `json:"fieldFormats,omitempty"`
-	Fields       *map[string]interface{} `json:"fields,omitempty"`
-	Id           *string                 `json:"id,omitempty"`
-
-	// Name The data view name.
-	Name *string `json:"name,omitempty"`
-
-	// Namespaces An array of space identifiers for sharing the data view between multiple spaces.
-	Namespaces      *DataViewsNamespaces                 `json:"namespaces,omitempty"`
-	RuntimeFieldMap *map[string]DataViewsRuntimefieldmap `json:"runtimeFieldMap,omitempty"`
-
-	// SourceFilters The array of field names you want to filter out in Discover.
-	SourceFilters *DataViewsSourcefilters `json:"sourceFilters,omitempty"`
-
-	// TimeFieldName The timestamp field name, which you use for time-based data views.
-	TimeFieldName *DataViewsTimefieldname `json:"timeFieldName,omitempty"`
-
-	// Title Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
-	Title *DataViewsTitle `json:"title,omitempty"`
-
-	// TypeMeta When you use rollup indices, contains the field list for the rollup data view API endpoints.
-	TypeMeta *DataViewsTypemetaResponse `json:"typeMeta"`
-	Version  *string                    `json:"version,omitempty"`
-}
-
-// DataViewsFieldattrs A map of field attributes by field name.
-type DataViewsFieldattrs struct {
-	// Count Popularity count for the field.
-	Count *int `json:"count,omitempty"`
-
-	// CustomDescription Custom description for the field.
-	CustomDescription *string `json:"customDescription,omitempty"`
-
-	// CustomLabel Custom label for the field.
-	CustomLabel *string `json:"customLabel,omitempty"`
-}
-
-// DataViewsFieldformat defines model for Data_views_fieldformat.
-type DataViewsFieldformat struct {
-	Id     *string                     `json:"id,omitempty"`
-	Params *DataViewsFieldformatParams `json:"params,omitempty"`
-}
-
-// DataViewsFieldformatParams defines model for Data_views_fieldformat_params.
-type DataViewsFieldformatParams struct {
-	LabelTemplate *string `json:"labelTemplate,omitempty"`
-	Pattern       *string `json:"pattern,omitempty"`
-	UrlTemplate   *string `json:"urlTemplate,omitempty"`
-}
-
-// DataViewsFieldformats A map of field formats by field name.
-type DataViewsFieldformats map[string]DataViewsFieldformat
-
-// DataViewsNamespaces An array of space identifiers for sharing the data view between multiple spaces.
-type DataViewsNamespaces = []string
-
-// DataViewsRuntimefieldmap A map of runtime field definitions by field name.
-type DataViewsRuntimefieldmap struct {
-	Script DataViewsRuntimefieldmapScript `json:"script"`
-
-	// Type Mapping type of the runtime field.
-	Type string `json:"type"`
-}
-
-// DataViewsRuntimefieldmapScript defines model for Data_views_runtimefieldmap_script.
-type DataViewsRuntimefieldmapScript struct {
-	// Source Script for the runtime field.
-	Source *string `json:"source,omitempty"`
-}
-
-// DataViewsSourcefilterItem defines model for Data_views_sourcefilter_item.
-type DataViewsSourcefilterItem struct {
-	Value string `json:"value"`
-}
-
-// DataViewsSourcefilters The array of field names you want to filter out in Discover.
-type DataViewsSourcefilters = []DataViewsSourcefilterItem
-
-// DataViewsTimefieldname The timestamp field name, which you use for time-based data views.
-type DataViewsTimefieldname = string
-
-// DataViewsTitle Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
-type DataViewsTitle = string
-
-// DataViewsType When set to `rollup`, identifies the rollup data views.
-type DataViewsType = string
-
-// DataViewsTypemeta When you use rollup indices, contains the field list for the rollup data view API endpoints.
-type DataViewsTypemeta struct {
-	// Aggs A map of rollup restrictions by aggregation type and field name.
-	Aggs map[string]interface{} `json:"aggs"`
-
-	// Params Properties for retrieving rollup fields.
-	Params map[string]interface{} `json:"params"`
-}
-
-// DataViewsTypemetaResponse When you use rollup indices, contains the field list for the rollup data view API endpoints.
-type DataViewsTypemetaResponse struct {
-	// Aggs A map of rollup restrictions by aggregation type and field name.
-	Aggs *map[string]interface{} `json:"aggs,omitempty"`
-
-	// Params Properties for retrieving rollup fields.
-	Params *map[string]interface{} `json:"params,omitempty"`
-}
-
-// DataViewsUpdateDataViewRequestObject defines model for Data_views_update_data_view_request_object.
-type DataViewsUpdateDataViewRequestObject struct {
-	// DataView The data view properties you want to update. Only the specified properties are updated in the data view. Unspecified fields stay as they are persisted.
-	DataView DataViewsUpdateDataViewRequestObjectInner `json:"data_view"`
-
-	// RefreshFields Reloads the data view fields after the data view is updated.
-	RefreshFields *bool `json:"refresh_fields,omitempty"`
-}
-
-// DataViewsUpdateDataViewRequestObjectInner The data view properties you want to update. Only the specified properties are updated in the data view. Unspecified fields stay as they are persisted.
-type DataViewsUpdateDataViewRequestObjectInner struct {
-	// AllowNoIndex Allows the data view saved object to exist before the data is available.
-	AllowNoIndex *DataViewsAllownoindex `json:"allowNoIndex,omitempty"`
-
-	// FieldFormats A map of field formats by field name.
-	FieldFormats    *DataViewsFieldformats               `json:"fieldFormats,omitempty"`
-	Fields          *map[string]interface{}              `json:"fields,omitempty"`
-	Name            *string                              `json:"name,omitempty"`
-	RuntimeFieldMap *map[string]DataViewsRuntimefieldmap `json:"runtimeFieldMap,omitempty"`
-
-	// SourceFilters The array of field names you want to filter out in Discover.
-	SourceFilters *DataViewsSourcefilters `json:"sourceFilters,omitempty"`
-
-	// TimeFieldName The timestamp field name, which you use for time-based data views.
-	TimeFieldName *DataViewsTimefieldname `json:"timeFieldName,omitempty"`
-
-	// Title Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
-	Title *DataViewsTitle `json:"title,omitempty"`
-
-	// Type When set to `rollup`, identifies the rollup data views.
-	Type *DataViewsType `json:"type,omitempty"`
-
-	// TypeMeta When you use rollup indices, contains the field list for the rollup data view API endpoints.
-	TypeMeta *DataViewsTypemeta `json:"typeMeta,omitempty"`
-}
-
-// GetDataViewsResponseItem defines model for get_data_views_response_item.
-type GetDataViewsResponseItem struct {
-	Id         *string                 `json:"id,omitempty"`
-	Name       *string                 `json:"name,omitempty"`
-	Namespaces *[]string               `json:"namespaces,omitempty"`
-	Title      *string                 `json:"title,omitempty"`
-	TypeMeta   *map[string]interface{} `json:"typeMeta,omitempty"`
-}
-
-// DataViewsViewId defines model for Data_views_view_id.
-type DataViewsViewId = string
-
-// SpaceId defines model for spaceId.
-type SpaceId = string
-
-// CreateDataViewJSONRequestBody defines body for CreateDataView for application/json ContentType.
-type CreateDataViewJSONRequestBody = DataViewsCreateDataViewRequestObject
-
-// UpdateDataViewJSONRequestBody defines body for UpdateDataView for application/json ContentType.
-type UpdateDataViewJSONRequestBody = DataViewsUpdateDataViewRequestObject
-
-func (c *Client) GetDataViews(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDataViewsRequest(c.Server, spaceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDataViewWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDataViewRequestWithBody(c.Server, spaceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateDataView(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDataViewRequest(c.Server, spaceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteDataViewRequest(c.Server, spaceId, viewId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDataViewRequest(c.Server, spaceId, viewId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateDataViewWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDataViewRequestWithBody(c.Server, spaceId, viewId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDataViewRequest(c.Server, spaceId, viewId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// NewGetDataViewsRequest generates requests for GetDataViews
-func NewGetDataViewsRequest(server string, spaceId SpaceId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/s/%s/api/data_views", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateDataViewRequest calls the generic CreateDataView builder with application/json body
-func NewCreateDataViewRequest(server string, spaceId SpaceId, body CreateDataViewJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateDataViewRequestWithBody(server, spaceId, "application/json", bodyReader)
-}
-
-// NewCreateDataViewRequestWithBody generates requests for CreateDataView with any type of body
-func NewCreateDataViewRequestWithBody(server string, spaceId SpaceId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/s/%s/api/data_views/data_view", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteDataViewRequest generates requests for DeleteDataView
-func NewDeleteDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "viewId", runtime.ParamLocationPath, viewId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/s/%s/api/data_views/data_view/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetDataViewRequest generates requests for GetDataView
-func NewGetDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "viewId", runtime.ParamLocationPath, viewId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/s/%s/api/data_views/data_view/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateDataViewRequest calls the generic UpdateDataView builder with application/json body
-func NewUpdateDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateDataViewRequestWithBody(server, spaceId, viewId, "application/json", bodyReader)
-}
-
-// NewUpdateDataViewRequestWithBody generates requests for UpdateDataView with any type of body
-func NewUpdateDataViewRequestWithBody(server string, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "viewId", runtime.ParamLocationPath, viewId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/s/%s/api/data_views/data_view/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
-	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// ClientWithResponses builds on ClientInterface to offer response payloads
-type ClientWithResponses struct {
-	ClientInterface
-}
-
-// NewClientWithResponses creates a new ClientWithResponses, which wraps
-// Client with return type handling
-func NewClientWithResponses(server string, opts ...ClientOption) (*ClientWithResponses, error) {
-	client, err := NewClient(server, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &ClientWithResponses{client}, nil
-}
-
-// WithBaseURL overrides the baseURL.
-func WithBaseURL(baseURL string) ClientOption {
-	return func(c *Client) error {
-		newBaseURL, err := url.Parse(baseURL)
-		if err != nil {
-			return err
-		}
-		c.Server = newBaseURL.String()
-		return nil
-	}
-}
-
-type GetDataViewsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		DataView *[]GetDataViewsResponseItem `json:"data_view,omitempty"`
-	}
-	JSON400 *DataViews400Response
-}
-
-// Status returns HTTPResponse.Status
-func (r GetDataViewsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetDataViewsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateDataViewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DataViewsDataViewResponseObject
-	JSON400      *DataViews400Response
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateDataViewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateDataViewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteDataViewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON404      *DataViews404Response
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteDataViewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteDataViewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetDataViewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DataViewsDataViewResponseObject
-	JSON404      *DataViews404Response
-}
-
-// Status returns HTTPResponse.Status
-func (r GetDataViewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetDataViewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateDataViewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DataViewsDataViewResponseObject
-	JSON400      *DataViews400Response
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateDataViewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateDataViewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// GetDataViewsWithResponse request returning *GetDataViewsResponse
-func (c *ClientWithResponses) GetDataViewsWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetDataViewsResponse, error) {
-	rsp, err := c.GetDataViews(ctx, spaceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetDataViewsResponse(rsp)
-}
-
-// CreateDataViewWithBodyWithResponse request with arbitrary body returning *CreateDataViewResponse
-func (c *ClientWithResponses) CreateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error) {
-	rsp, err := c.CreateDataViewWithBody(ctx, spaceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDataViewResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateDataViewWithResponse(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error) {
-	rsp, err := c.CreateDataView(ctx, spaceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateDataViewResponse(rsp)
-}
-
-// DeleteDataViewWithResponse request returning *DeleteDataViewResponse
-func (c *ClientWithResponses) DeleteDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*DeleteDataViewResponse, error) {
-	rsp, err := c.DeleteDataView(ctx, spaceId, viewId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteDataViewResponse(rsp)
-}
-
-// GetDataViewWithResponse request returning *GetDataViewResponse
-func (c *ClientWithResponses) GetDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*GetDataViewResponse, error) {
-	rsp, err := c.GetDataView(ctx, spaceId, viewId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetDataViewResponse(rsp)
-}
-
-// UpdateDataViewWithBodyWithResponse request with arbitrary body returning *UpdateDataViewResponse
-func (c *ClientWithResponses) UpdateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error) {
-	rsp, err := c.UpdateDataViewWithBody(ctx, spaceId, viewId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateDataViewResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error) {
-	rsp, err := c.UpdateDataView(ctx, spaceId, viewId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateDataViewResponse(rsp)
-}
-
-// ParseGetDataViewsResponse parses an HTTP response from a GetDataViewsWithResponse call
-func ParseGetDataViewsResponse(rsp *http.Response) (*GetDataViewsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetDataViewsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			DataView *[]GetDataViewsResponseItem `json:"data_view,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest DataViews400Response
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateDataViewResponse parses an HTTP response from a CreateDataViewWithResponse call
-func ParseCreateDataViewResponse(rsp *http.Response) (*CreateDataViewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateDataViewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataViewsDataViewResponseObject
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest DataViews400Response
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteDataViewResponse parses an HTTP response from a DeleteDataViewWithResponse call
-func ParseDeleteDataViewResponse(rsp *http.Response) (*DeleteDataViewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteDataViewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest DataViews404Response
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetDataViewResponse parses an HTTP response from a GetDataViewWithResponse call
-func ParseGetDataViewResponse(rsp *http.Response) (*GetDataViewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetDataViewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataViewsDataViewResponseObject
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest DataViews404Response
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateDataViewResponse parses an HTTP response from a UpdateDataViewWithResponse call
-func ParseUpdateDataViewResponse(rsp *http.Response) (*UpdateDataViewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateDataViewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DataViewsDataViewResponseObject
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest DataViews400Response
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	}
-
-	return response, nil
-}
-
 // Defines values for AgentPolicyMonitoringEnabled.
 const (
 	AgentPolicyMonitoringEnabledLogs    AgentPolicyMonitoringEnabled = "logs"
@@ -1484,6 +564,226 @@ const (
 	Simplified UpdatePackagePolicyParamsFormat = "simplified"
 )
 
+// DataViews400Response defines model for Data_views_400_response.
+type DataViews400Response struct {
+	Error      string  `json:"error"`
+	Message    string  `json:"message"`
+	StatusCode float32 `json:"statusCode"`
+}
+
+// DataViews404Response defines model for Data_views_404_response.
+type DataViews404Response struct {
+	Error      *DataViews404ResponseError      `json:"error,omitempty"`
+	Message    *string                         `json:"message,omitempty"`
+	StatusCode *DataViews404ResponseStatusCode `json:"statusCode,omitempty"`
+}
+
+// DataViews404ResponseError defines model for DataViews404Response.Error.
+type DataViews404ResponseError string
+
+// DataViews404ResponseStatusCode defines model for DataViews404Response.StatusCode.
+type DataViews404ResponseStatusCode int
+
+// DataViewsAllownoindex Allows the data view saved object to exist before the data is available.
+type DataViewsAllownoindex = bool
+
+// DataViewsCreateDataViewRequestObject defines model for Data_views_create_data_view_request_object.
+type DataViewsCreateDataViewRequestObject struct {
+	// DataView The data view object.
+	DataView DataViewsCreateDataViewRequestObjectInner `json:"data_view"`
+
+	// Override Override an existing data view if a data view with the provided title already exists.
+	Override *bool `json:"override,omitempty"`
+}
+
+// DataViewsCreateDataViewRequestObjectInner The data view object.
+type DataViewsCreateDataViewRequestObjectInner struct {
+	// AllowNoIndex Allows the data view saved object to exist before the data is available.
+	AllowNoIndex *DataViewsAllownoindex          `json:"allowNoIndex,omitempty"`
+	FieldAttrs   *map[string]DataViewsFieldattrs `json:"fieldAttrs,omitempty"`
+
+	// FieldFormats A map of field formats by field name.
+	FieldFormats *DataViewsFieldformats  `json:"fieldFormats,omitempty"`
+	Fields       *map[string]interface{} `json:"fields,omitempty"`
+	Id           *string                 `json:"id,omitempty"`
+
+	// Name The data view name.
+	Name *string `json:"name,omitempty"`
+
+	// Namespaces An array of space identifiers for sharing the data view between multiple spaces.
+	Namespaces      *DataViewsNamespaces                 `json:"namespaces,omitempty"`
+	RuntimeFieldMap *map[string]DataViewsRuntimefieldmap `json:"runtimeFieldMap,omitempty"`
+
+	// SourceFilters The array of field names you want to filter out in Discover.
+	SourceFilters *DataViewsSourcefilters `json:"sourceFilters,omitempty"`
+
+	// TimeFieldName The timestamp field name, which you use for time-based data views.
+	TimeFieldName *DataViewsTimefieldname `json:"timeFieldName,omitempty"`
+
+	// Title Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
+	Title DataViewsTitle `json:"title"`
+
+	// Type When set to `rollup`, identifies the rollup data views.
+	Type *DataViewsType `json:"type,omitempty"`
+
+	// TypeMeta When you use rollup indices, contains the field list for the rollup data view API endpoints.
+	TypeMeta *DataViewsTypemeta `json:"typeMeta,omitempty"`
+	Version  *string            `json:"version,omitempty"`
+}
+
+// DataViewsDataViewResponseObject defines model for Data_views_data_view_response_object.
+type DataViewsDataViewResponseObject struct {
+	DataView *DataViewsDataViewResponseObjectInner `json:"data_view,omitempty"`
+}
+
+// DataViewsDataViewResponseObjectInner defines model for Data_views_data_view_response_object_inner.
+type DataViewsDataViewResponseObjectInner struct {
+	// AllowNoIndex Allows the data view saved object to exist before the data is available.
+	AllowNoIndex *DataViewsAllownoindex          `json:"allowNoIndex,omitempty"`
+	FieldAttrs   *map[string]DataViewsFieldattrs `json:"fieldAttrs,omitempty"`
+
+	// FieldFormats A map of field formats by field name.
+	FieldFormats *DataViewsFieldformats  `json:"fieldFormats,omitempty"`
+	Fields       *map[string]interface{} `json:"fields,omitempty"`
+	Id           *string                 `json:"id,omitempty"`
+
+	// Name The data view name.
+	Name *string `json:"name,omitempty"`
+
+	// Namespaces An array of space identifiers for sharing the data view between multiple spaces.
+	Namespaces      *DataViewsNamespaces                 `json:"namespaces,omitempty"`
+	RuntimeFieldMap *map[string]DataViewsRuntimefieldmap `json:"runtimeFieldMap,omitempty"`
+
+	// SourceFilters The array of field names you want to filter out in Discover.
+	SourceFilters *DataViewsSourcefilters `json:"sourceFilters,omitempty"`
+
+	// TimeFieldName The timestamp field name, which you use for time-based data views.
+	TimeFieldName *DataViewsTimefieldname `json:"timeFieldName,omitempty"`
+
+	// Title Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
+	Title *DataViewsTitle `json:"title,omitempty"`
+
+	// TypeMeta When you use rollup indices, contains the field list for the rollup data view API endpoints.
+	TypeMeta *DataViewsTypemetaResponse `json:"typeMeta"`
+	Version  *string                    `json:"version,omitempty"`
+}
+
+// DataViewsFieldattrs A map of field attributes by field name.
+type DataViewsFieldattrs struct {
+	// Count Popularity count for the field.
+	Count *int `json:"count,omitempty"`
+
+	// CustomDescription Custom description for the field.
+	CustomDescription *string `json:"customDescription,omitempty"`
+
+	// CustomLabel Custom label for the field.
+	CustomLabel *string `json:"customLabel,omitempty"`
+}
+
+// DataViewsFieldformat defines model for Data_views_fieldformat.
+type DataViewsFieldformat struct {
+	Id     *string                     `json:"id,omitempty"`
+	Params *DataViewsFieldformatParams `json:"params,omitempty"`
+}
+
+// DataViewsFieldformatParams defines model for Data_views_fieldformat_params.
+type DataViewsFieldformatParams struct {
+	LabelTemplate *string `json:"labelTemplate,omitempty"`
+	Pattern       *string `json:"pattern,omitempty"`
+	UrlTemplate   *string `json:"urlTemplate,omitempty"`
+}
+
+// DataViewsFieldformats A map of field formats by field name.
+type DataViewsFieldformats map[string]DataViewsFieldformat
+
+// DataViewsNamespaces An array of space identifiers for sharing the data view between multiple spaces.
+type DataViewsNamespaces = []string
+
+// DataViewsRuntimefieldmap A map of runtime field definitions by field name.
+type DataViewsRuntimefieldmap struct {
+	Script DataViewsRuntimefieldmapScript `json:"script"`
+
+	// Type Mapping type of the runtime field.
+	Type string `json:"type"`
+}
+
+// DataViewsRuntimefieldmapScript defines model for Data_views_runtimefieldmap_script.
+type DataViewsRuntimefieldmapScript struct {
+	// Source Script for the runtime field.
+	Source *string `json:"source,omitempty"`
+}
+
+// DataViewsSourcefilterItem defines model for Data_views_sourcefilter_item.
+type DataViewsSourcefilterItem struct {
+	Value string `json:"value"`
+}
+
+// DataViewsSourcefilters The array of field names you want to filter out in Discover.
+type DataViewsSourcefilters = []DataViewsSourcefilterItem
+
+// DataViewsTimefieldname The timestamp field name, which you use for time-based data views.
+type DataViewsTimefieldname = string
+
+// DataViewsTitle Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
+type DataViewsTitle = string
+
+// DataViewsType When set to `rollup`, identifies the rollup data views.
+type DataViewsType = string
+
+// DataViewsTypemeta When you use rollup indices, contains the field list for the rollup data view API endpoints.
+type DataViewsTypemeta struct {
+	// Aggs A map of rollup restrictions by aggregation type and field name.
+	Aggs map[string]interface{} `json:"aggs"`
+
+	// Params Properties for retrieving rollup fields.
+	Params map[string]interface{} `json:"params"`
+}
+
+// DataViewsTypemetaResponse When you use rollup indices, contains the field list for the rollup data view API endpoints.
+type DataViewsTypemetaResponse struct {
+	// Aggs A map of rollup restrictions by aggregation type and field name.
+	Aggs *map[string]interface{} `json:"aggs,omitempty"`
+
+	// Params Properties for retrieving rollup fields.
+	Params *map[string]interface{} `json:"params,omitempty"`
+}
+
+// DataViewsUpdateDataViewRequestObject defines model for Data_views_update_data_view_request_object.
+type DataViewsUpdateDataViewRequestObject struct {
+	// DataView The data view properties you want to update. Only the specified properties are updated in the data view. Unspecified fields stay as they are persisted.
+	DataView DataViewsUpdateDataViewRequestObjectInner `json:"data_view"`
+
+	// RefreshFields Reloads the data view fields after the data view is updated.
+	RefreshFields *bool `json:"refresh_fields,omitempty"`
+}
+
+// DataViewsUpdateDataViewRequestObjectInner The data view properties you want to update. Only the specified properties are updated in the data view. Unspecified fields stay as they are persisted.
+type DataViewsUpdateDataViewRequestObjectInner struct {
+	// AllowNoIndex Allows the data view saved object to exist before the data is available.
+	AllowNoIndex *DataViewsAllownoindex `json:"allowNoIndex,omitempty"`
+
+	// FieldFormats A map of field formats by field name.
+	FieldFormats    *DataViewsFieldformats               `json:"fieldFormats,omitempty"`
+	Fields          *map[string]interface{}              `json:"fields,omitempty"`
+	Name            *string                              `json:"name,omitempty"`
+	RuntimeFieldMap *map[string]DataViewsRuntimefieldmap `json:"runtimeFieldMap,omitempty"`
+
+	// SourceFilters The array of field names you want to filter out in Discover.
+	SourceFilters *DataViewsSourcefilters `json:"sourceFilters,omitempty"`
+
+	// TimeFieldName The timestamp field name, which you use for time-based data views.
+	TimeFieldName *DataViewsTimefieldname `json:"timeFieldName,omitempty"`
+
+	// Title Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (`*`).
+	Title *DataViewsTitle `json:"title,omitempty"`
+
+	// Type When set to `rollup`, identifies the rollup data views.
+	Type *DataViewsType `json:"type,omitempty"`
+
+	// TypeMeta When you use rollup indices, contains the field list for the rollup data view API endpoints.
+	TypeMeta *DataViewsTypemeta `json:"typeMeta,omitempty"`
+}
+
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
@@ -1738,6 +1038,15 @@ type EnrollmentApiKey struct {
 
 	// PolicyId The ID of the agent policy the Elastic Agent will be enrolled in.
 	PolicyId *string `json:"policy_id,omitempty"`
+}
+
+// GetDataViewsResponseItem defines model for get_data_views_response_item.
+type GetDataViewsResponseItem struct {
+	Id         *string                 `json:"id,omitempty"`
+	Name       *string                 `json:"name,omitempty"`
+	Namespaces *[]string               `json:"namespaces,omitempty"`
+	Title      *string                 `json:"title,omitempty"`
+	TypeMeta   *map[string]interface{} `json:"typeMeta,omitempty"`
 }
 
 // NewOutputElasticsearch defines model for new_output_elasticsearch.
@@ -3129,6 +2438,12 @@ type UpdateOutputUnion struct {
 	union json.RawMessage
 }
 
+// DataViewsViewId defines model for Data_views_view_id.
+type DataViewsViewId = string
+
+// SpaceId defines model for spaceId.
+type SpaceId = string
+
 // GetAgentPoliciesParams defines parameters for GetAgentPolicies.
 type GetAgentPoliciesParams struct {
 	Page            *float32                         `form:"page,omitempty" json:"page,omitempty"`
@@ -3499,6 +2814,12 @@ type CreatePackagePolicyJSONRequestBody = PackagePolicyRequest
 
 // UpdatePackagePolicyJSONRequestBody defines body for UpdatePackagePolicy for application/json ContentType.
 type UpdatePackagePolicyJSONRequestBody = PackagePolicyRequest
+
+// CreateDataViewJSONRequestBody defines body for CreateDataView for application/json ContentType.
+type CreateDataViewJSONRequestBody = DataViewsCreateDataViewRequestObject
+
+// UpdateDataViewJSONRequestBody defines body for UpdateDataView for application/json ContentType.
+type UpdateDataViewJSONRequestBody = DataViewsUpdateDataViewRequestObject
 
 // Getter for additional properties for AgentPolicy_PackagePolicies_1_Elasticsearch_Privileges. Returns the specified
 // element and whether it was found
@@ -12472,25 +11793,6 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetDataViews request
-	GetDataViews(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateDataViewWithBody request with any body
-	CreateDataViewWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateDataView(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteDataView request
-	DeleteDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetDataView request
-	GetDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateDataViewWithBody request with any body
-	UpdateDataViewWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetAgentPolicies request
 	GetAgentPolicies(ctx context.Context, params *GetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -12590,6 +11892,25 @@ type ClientInterface interface {
 	UpdatePackagePolicyWithBody(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdatePackagePolicy(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, body UpdatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDataViews request
+	GetDataViews(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateDataViewWithBody request with any body
+	CreateDataViewWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateDataView(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteDataView request
+	DeleteDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDataView request
+	GetDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateDataViewWithBody request with any body
+	UpdateDataViewWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetAgentPolicies(ctx context.Context, params *GetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13026,6 +12347,90 @@ func (c *Client) UpdatePackagePolicyWithBody(ctx context.Context, packagePolicyI
 
 func (c *Client) UpdatePackagePolicy(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, body UpdatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdatePackagePolicyRequest(c.Server, packagePolicyId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDataViews(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataViewsRequest(c.Server, spaceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateDataViewWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDataViewRequestWithBody(c.Server, spaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateDataView(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDataViewRequest(c.Server, spaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteDataViewRequest(c.Server, spaceId, viewId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataViewRequest(c.Server, spaceId, viewId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDataViewWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDataViewRequestWithBody(c.Server, spaceId, viewId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDataViewRequest(c.Server, spaceId, viewId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -14764,27 +14169,266 @@ func NewUpdatePackagePolicyRequestWithBody(server string, packagePolicyId string
 	return req, nil
 }
 
+// NewGetDataViewsRequest generates requests for GetDataViews
+func NewGetDataViewsRequest(server string, spaceId SpaceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/data_views", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateDataViewRequest calls the generic CreateDataView builder with application/json body
+func NewCreateDataViewRequest(server string, spaceId SpaceId, body CreateDataViewJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateDataViewRequestWithBody(server, spaceId, "application/json", bodyReader)
+}
+
+// NewCreateDataViewRequestWithBody generates requests for CreateDataView with any type of body
+func NewCreateDataViewRequestWithBody(server string, spaceId SpaceId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/data_views/data_view", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteDataViewRequest generates requests for DeleteDataView
+func NewDeleteDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "viewId", runtime.ParamLocationPath, viewId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/data_views/data_view/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDataViewRequest generates requests for GetDataView
+func NewGetDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "viewId", runtime.ParamLocationPath, viewId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/data_views/data_view/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateDataViewRequest calls the generic UpdateDataView builder with application/json body
+func NewUpdateDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateDataViewRequestWithBody(server, spaceId, viewId, "application/json", bodyReader)
+}
+
+// NewUpdateDataViewRequestWithBody generates requests for UpdateDataView with any type of body
+func NewUpdateDataViewRequestWithBody(server string, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "viewId", runtime.ParamLocationPath, viewId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/data_views/data_view/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+	for _, r := range c.RequestEditors {
+		if err := r(ctx, req); err != nil {
+			return err
+		}
+	}
+	for _, r := range additionalEditors {
+		if err := r(ctx, req); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ClientWithResponses builds on ClientInterface to offer response payloads
+type ClientWithResponses struct {
+	ClientInterface
+}
+
+// NewClientWithResponses creates a new ClientWithResponses, which wraps
+// Client with return type handling
+func NewClientWithResponses(server string, opts ...ClientOption) (*ClientWithResponses, error) {
+	client, err := NewClient(server, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &ClientWithResponses{client}, nil
+}
+
+// WithBaseURL overrides the baseURL.
+func WithBaseURL(baseURL string) ClientOption {
+	return func(c *Client) error {
+		newBaseURL, err := url.Parse(baseURL)
+		if err != nil {
+			return err
+		}
+		c.Server = newBaseURL.String()
+		return nil
+	}
+}
+
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetDataViewsWithResponse request
-	GetDataViewsWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetDataViewsResponse, error)
-
-	// CreateDataViewWithBodyWithResponse request with any body
-	CreateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error)
-
-	CreateDataViewWithResponse(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error)
-
-	// DeleteDataViewWithResponse request
-	DeleteDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*DeleteDataViewResponse, error)
-
-	// GetDataViewWithResponse request
-	GetDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*GetDataViewResponse, error)
-
-	// UpdateDataViewWithBodyWithResponse request with any body
-	UpdateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error)
-
-	UpdateDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error)
-
 	// GetAgentPoliciesWithResponse request
 	GetAgentPoliciesWithResponse(ctx context.Context, params *GetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetAgentPoliciesResponse, error)
 
@@ -14884,6 +14528,25 @@ type ClientWithResponsesInterface interface {
 	UpdatePackagePolicyWithBodyWithResponse(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePackagePolicyResponse, error)
 
 	UpdatePackagePolicyWithResponse(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, body UpdatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePackagePolicyResponse, error)
+
+	// GetDataViewsWithResponse request
+	GetDataViewsWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetDataViewsResponse, error)
+
+	// CreateDataViewWithBodyWithResponse request with any body
+	CreateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error)
+
+	CreateDataViewWithResponse(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error)
+
+	// DeleteDataViewWithResponse request
+	DeleteDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*DeleteDataViewResponse, error)
+
+	// GetDataViewWithResponse request
+	GetDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*GetDataViewResponse, error)
+
+	// UpdateDataViewWithBodyWithResponse request with any body
+	UpdateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error)
+
+	UpdateDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error)
 }
 
 type GetAgentPoliciesResponse struct {
@@ -16082,6 +15745,122 @@ func (r UpdatePackagePolicyResponse) StatusCode() int {
 	return 0
 }
 
+type GetDataViewsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		DataView *[]GetDataViewsResponseItem `json:"data_view,omitempty"`
+	}
+	JSON400 *DataViews400Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDataViewsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDataViewsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateDataViewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataViewsDataViewResponseObject
+	JSON400      *DataViews400Response
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateDataViewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateDataViewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteDataViewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *DataViews404Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteDataViewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteDataViewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDataViewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataViewsDataViewResponseObject
+	JSON404      *DataViews404Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDataViewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDataViewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateDataViewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DataViewsDataViewResponseObject
+	JSON400      *DataViews400Response
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateDataViewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateDataViewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // GetAgentPoliciesWithResponse request returning *GetAgentPoliciesResponse
 func (c *ClientWithResponses) GetAgentPoliciesWithResponse(ctx context.Context, params *GetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetAgentPoliciesResponse, error) {
 	rsp, err := c.GetAgentPolicies(ctx, params, reqEditors...)
@@ -16402,6 +16181,67 @@ func (c *ClientWithResponses) UpdatePackagePolicyWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseUpdatePackagePolicyResponse(rsp)
+}
+
+// GetDataViewsWithResponse request returning *GetDataViewsResponse
+func (c *ClientWithResponses) GetDataViewsWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetDataViewsResponse, error) {
+	rsp, err := c.GetDataViews(ctx, spaceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDataViewsResponse(rsp)
+}
+
+// CreateDataViewWithBodyWithResponse request with arbitrary body returning *CreateDataViewResponse
+func (c *ClientWithResponses) CreateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error) {
+	rsp, err := c.CreateDataViewWithBody(ctx, spaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDataViewResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateDataViewWithResponse(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error) {
+	rsp, err := c.CreateDataView(ctx, spaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDataViewResponse(rsp)
+}
+
+// DeleteDataViewWithResponse request returning *DeleteDataViewResponse
+func (c *ClientWithResponses) DeleteDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*DeleteDataViewResponse, error) {
+	rsp, err := c.DeleteDataView(ctx, spaceId, viewId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteDataViewResponse(rsp)
+}
+
+// GetDataViewWithResponse request returning *GetDataViewResponse
+func (c *ClientWithResponses) GetDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*GetDataViewResponse, error) {
+	rsp, err := c.GetDataView(ctx, spaceId, viewId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDataViewResponse(rsp)
+}
+
+// UpdateDataViewWithBodyWithResponse request with arbitrary body returning *UpdateDataViewResponse
+func (c *ClientWithResponses) UpdateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error) {
+	rsp, err := c.UpdateDataViewWithBody(ctx, spaceId, viewId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDataViewResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error) {
+	rsp, err := c.UpdateDataView(ctx, spaceId, viewId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDataViewResponse(rsp)
 }
 
 // ParseGetAgentPoliciesResponse parses an HTTP response from a GetAgentPoliciesWithResponse call
@@ -17479,6 +17319,166 @@ func ParseUpdatePackagePolicyResponse(rsp *http.Response) (*UpdatePackagePolicyR
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDataViewsResponse parses an HTTP response from a GetDataViewsWithResponse call
+func ParseGetDataViewsResponse(rsp *http.Response) (*GetDataViewsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDataViewsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			DataView *[]GetDataViewsResponseItem `json:"data_view,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest DataViews400Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateDataViewResponse parses an HTTP response from a CreateDataViewWithResponse call
+func ParseCreateDataViewResponse(rsp *http.Response) (*CreateDataViewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateDataViewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataViewsDataViewResponseObject
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest DataViews400Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteDataViewResponse parses an HTTP response from a DeleteDataViewWithResponse call
+func ParseDeleteDataViewResponse(rsp *http.Response) (*DeleteDataViewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteDataViewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest DataViews404Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDataViewResponse parses an HTTP response from a GetDataViewWithResponse call
+func ParseGetDataViewResponse(rsp *http.Response) (*GetDataViewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDataViewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataViewsDataViewResponseObject
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest DataViews404Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateDataViewResponse parses an HTTP response from a UpdateDataViewWithResponse call
+func ParseUpdateDataViewResponse(rsp *http.Response) (*UpdateDataViewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateDataViewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DataViewsDataViewResponseObject
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest DataViews400Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	}
 
