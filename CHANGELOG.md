@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Use the auto-generated OAS schema from elastic/kibana for the Fleet API. ([#834](https://github.com/elastic/terraform-provider-elasticstack/issues/834))
+- Support description in `elasticstack_elasticsearch_security_role` data sources. ([#884](https://github.com/elastic/terraform-provider-elasticstack/pull/884))
 
 ## [0.11.11] - 2024-10-25
 
