@@ -112,7 +112,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.summary", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.notify_when", "onActionGroupChange"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.throttle", "10m"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.kql", ""),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.days.0", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.days.1", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.days.2", "3"),
@@ -138,7 +138,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.notify_when", "onActionGroupChange"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.throttle", "10m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.kql", `kibana.alert.action_group: "slo.burnRate.alert"`),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.#", "0"),
 				),
 			},
 			{
