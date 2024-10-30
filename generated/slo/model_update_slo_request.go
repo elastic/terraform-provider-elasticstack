@@ -28,6 +28,7 @@ type UpdateSloRequest struct {
 	BudgetingMethod *BudgetingMethod           `json:"budgetingMethod,omitempty"`
 	Objective       *Objective                 `json:"objective,omitempty"`
 	Settings        *Settings                  `json:"settings,omitempty"`
+	GroupBy         *SloResponseGroupBy        `json:"groupBy,omitempty"`
 	// List of tags
 	Tags []string `json:"tags,omitempty"`
 }
@@ -273,6 +274,38 @@ func (o *UpdateSloRequest) SetSettings(v Settings) {
 	o.Settings = &v
 }
 
+// GetGroupBy returns the GroupBy field value if set, zero value otherwise.
+func (o *UpdateSloRequest) GetGroupBy() SloResponseGroupBy {
+	if o == nil || IsNil(o.GroupBy) {
+		var ret SloResponseGroupBy
+		return ret
+	}
+	return *o.GroupBy
+}
+
+// GetGroupByOk returns a tuple with the GroupBy field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *UpdateSloRequest) GetGroupByOk() (*SloResponseGroupBy, bool) {
+	if o == nil || IsNil(o.GroupBy) {
+		return nil, false
+	}
+	return o.GroupBy, true
+}
+
+// HasGroupBy returns a boolean if a field has been set.
+func (o *UpdateSloRequest) HasGroupBy() bool {
+	if o != nil && !IsNil(o.GroupBy) {
+		return true
+	}
+
+	return false
+}
+
+// SetGroupBy gets a reference to the given SloResponseGroupBy and assigns it to the GroupBy field.
+func (o *UpdateSloRequest) SetGroupBy(v SloResponseGroupBy) {
+	o.GroupBy = &v
+}
+
 // GetTags returns the Tags field value if set, zero value otherwise.
 func (o *UpdateSloRequest) GetTags() []string {
 	if o == nil || IsNil(o.Tags) {
@@ -335,6 +368,9 @@ func (o UpdateSloRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Settings) {
 		toSerialize["settings"] = o.Settings
+	}
+	if !IsNil(o.GroupBy) {
+		toSerialize["groupBy"] = o.GroupBy
 	}
 	if !IsNil(o.Tags) {
 		toSerialize["tags"] = o.Tags

@@ -17,12 +17,16 @@ func (r *agentPolicyResource) Schema(ctx context.Context, req resource.SchemaReq
 		"id": schema.StringAttribute{
 			Description: "The ID of this resource.",
 			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"policy_id": schema.StringAttribute{
 			Description: "Unique identifier of the agent policy.",
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
