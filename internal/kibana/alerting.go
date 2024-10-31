@@ -367,24 +367,29 @@ func getActionsFromResourceData(d *schema.ResourceData, serverVersion *version.V
 					return []models.AlertingRuleAction{}, diag.Errorf("actions.alerts_filter is only supported for Elasticsearch v8.9 or higher")
 				}
 
-				resourceDays := d.Get(currentAction + ".alerts_filter.0.timeframe.0.days").([]interface{})
-				days := []int32{}
+				filter := models.ActionAlertsFilter{}
 
-				for _, a := range resourceDays {
-					day := int32(a.(int))
-					days = append(days, day)
+				if _, ok := d.GetOk(currentAction + ".alerts_filter.0.timeframe"); ok {
+
+					resourceDays := d.Get(currentAction + ".alerts_filter.0.timeframe.0.days").([]interface{})
+					days := []int32{}
+
+					for _, a := range resourceDays {
+						day := int32(a.(int))
+						days = append(days, day)
+					}
+
+					timeframe := models.AlertsFilterTimeframe{
+						Days:       days,
+						Timezone:   d.Get(currentAction + ".alerts_filter.0.timeframe.0.timezone").(string),
+						HoursStart: d.Get(currentAction + ".alerts_filter.0.timeframe.0.hours_start").(string),
+						HoursEnd:   d.Get(currentAction + ".alerts_filter.0.timeframe.0.hours_end").(string),
+					}
+					filter.Timeframe = &timeframe
 				}
 
-				timeframe := models.AlertsFilterTimeframe{
-					Days:       days,
-					Timezone:   d.Get(currentAction + ".alerts_filter.0.timeframe.0.timezone").(string),
-					HoursStart: d.Get(currentAction + ".alerts_filter.0.timeframe.0.hours_start").(string),
-					HoursEnd:   d.Get(currentAction + ".alerts_filter.0.timeframe.0.hours_end").(string),
-				}
-
-				filter := models.ActionAlertsFilter{
-					Kql:       d.Get(currentAction + ".alerts_filter.0.kql").(string),
-					Timeframe: timeframe,
+				if kql, ok := d.GetOk(currentAction + ".alerts_filter.0.kql"); ok {
+					filter.Kql = utils.Pointer(kql.(string))
 				}
 
 				a.AlertsFilter = &filter
@@ -547,18 +552,24 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		alerts_filter := []interface{}{}
 
 		if action.AlertsFilter != nil {
-			timeframe := []interface{}{}
-			timeframe = append(timeframe, map[string]interface{}{
-				"days":        action.AlertsFilter.Timeframe.Days,
-				"timezone":    action.AlertsFilter.Timeframe.Timezone,
-				"hours_start": action.AlertsFilter.Timeframe.HoursStart,
-				"hours_end":   action.AlertsFilter.Timeframe.HoursEnd,
-			})
+			filter := map[string]interface{}{}
 
-			alerts_filter = append(alerts_filter, map[string]interface{}{
-				"kql":       action.AlertsFilter.Kql,
-				"timeframe": timeframe,
-			})
+			if action.AlertsFilter.Timeframe != nil {
+				timeframe := []interface{}{}
+				timeframe = append(timeframe, map[string]interface{}{
+					"days":        action.AlertsFilter.Timeframe.Days,
+					"timezone":    action.AlertsFilter.Timeframe.Timezone,
+					"hours_start": action.AlertsFilter.Timeframe.HoursStart,
+					"hours_end":   action.AlertsFilter.Timeframe.HoursEnd,
+				})
+				filter["timeframe"] = timeframe
+			}
+
+			if action.AlertsFilter.Kql != nil {
+				filter["kql"] = action.AlertsFilter.Kql
+			}
+
+			alerts_filter = append(alerts_filter, filter)
 		} else {
 			alerts_filter = nil
 		}
