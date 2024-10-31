@@ -427,9 +427,9 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
     alerts_filter {
       timeframe {
         days        = [1,2,3]
-		timezone    = "Africa/Accra"
-		hours_start = "01:00"
-		hours_end   = "07:00"
+        timezone    = "Africa/Accra"
+        hours_start = "01:00"
+        hours_end   = "07:00"
       }
     }
   }
