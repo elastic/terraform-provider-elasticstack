@@ -39,16 +39,21 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 
 		if !alerting.IsNil(action.AlertsFilter) {
 			filter := unwrapOptionalField(action.AlertsFilter)
-			timeframe := unwrapOptionalField(filter.Timeframe)
 
-			a.AlertsFilter = &models.ActionAlertsFilter{
-				Kql: *filter.Query.Kql,
-				Timeframe: models.AlertsFilterTimeframe{
+			a.AlertsFilter = &models.ActionAlertsFilter{}
+
+			if filter.Query != nil {
+				a.AlertsFilter.Kql = filter.Query.Kql
+			}
+
+			if filter.Timeframe != nil {
+				timeframe := unwrapOptionalField(filter.Timeframe)
+				a.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
 					Days:       timeframe.Days,
 					Timezone:   *timeframe.Timezone,
 					HoursStart: *timeframe.Hours.Start,
 					HoursEnd:   *timeframe.Hours.End,
-				},
+				}
 			}
 		}
 
@@ -116,21 +121,25 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 		}
 
 		if !alerting.IsNil(action.AlertsFilter) {
-			timeframe := action.AlertsFilter.Timeframe
+			filter := alerting.ActionsInnerAlertsFilter{}
 
-			filter := alerting.ActionsInnerAlertsFilter{
-				Query: &alerting.ActionsInnerAlertsFilterQuery{
-					Kql:     &action.AlertsFilter.Kql,
+			if action.AlertsFilter.Kql != nil {
+				filter.Query = &alerting.ActionsInnerAlertsFilterQuery{
+					Kql:     action.AlertsFilter.Kql,
 					Filters: []alerting.Filter{},
-				},
-				Timeframe: &alerting.ActionsInnerAlertsFilterTimeframe{
+				}
+			}
+
+			if action.AlertsFilter.Timeframe != nil {
+				timeframe := action.AlertsFilter.Timeframe
+				filter.Timeframe = &alerting.ActionsInnerAlertsFilterTimeframe{
 					Timezone: &timeframe.Timezone,
 					Days:     timeframe.Days,
 					Hours: &alerting.ActionsInnerAlertsFilterTimeframeHours{
 						Start: &timeframe.HoursStart,
 						End:   &timeframe.HoursEnd,
 					},
-				},
+				}
 			}
 
 			actionToAppend.AlertsFilter = &filter
