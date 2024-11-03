@@ -48,5 +48,6 @@ func (r *DataViewResource) ImportState(ctx context.Context, req resource.ImportS
 		DataView: types.ObjectUnknown(getDataViewAttrTypes()),
 	}
 
-	resp.State.Set(ctx, stateModel)
+	diags = resp.State.Set(ctx, stateModel)
+	resp.Diagnostics.Append(diags...)
 }
