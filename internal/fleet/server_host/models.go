@@ -32,8 +32,8 @@ func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.S
 	return
 }
 
-func (model serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.CreateFleetServerHostJSONRequestBody, diags diag.Diagnostics) {
-	body = kbapi.CreateFleetServerHostJSONRequestBody{
+func (model serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.PostFleetFleetServerHostsJSONRequestBody, diags diag.Diagnostics) {
+	body = kbapi.PostFleetFleetServerHostsJSONRequestBody{
 		HostUrls:  utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
 		Id:        model.HostID.ValueStringPointer(),
 		IsDefault: model.Default.ValueBoolPointer(),
@@ -42,8 +42,8 @@ func (model serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.C
 	return
 }
 
-func (model serverHostModel) toAPIUpdateModel(ctx context.Context) (body kbapi.UpdateFleetServerHostJSONRequestBody, diags diag.Diagnostics) {
-	body = kbapi.UpdateFleetServerHostJSONRequestBody{
+func (model serverHostModel) toAPIUpdateModel(ctx context.Context) (body kbapi.PutFleetFleetServerHostsItemidJSONRequestBody, diags diag.Diagnostics) {
+	body = kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
 		HostUrls:  utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault: model.Default.ValueBoolPointer(),
 		Name:      model.Name.ValueStringPointer(),

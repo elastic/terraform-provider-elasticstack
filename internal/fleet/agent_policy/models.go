@@ -56,16 +56,16 @@ func (model *agentPolicyModel) populateFromAPI(data *kbapi.AgentPolicy) {
 	model.Namespace = types.StringValue(data.Namespace)
 }
 
-func (model agentPolicyModel) toAPICreateModel() kbapi.CreateAgentPolicyJSONRequestBody {
-	monitoring := make([]kbapi.CreateAgentPolicyJSONBodyMonitoringEnabled, 0, 2)
+func (model agentPolicyModel) toAPICreateModel() kbapi.PostFleetAgentPoliciesJSONRequestBody {
+	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.CreateAgentPolicyJSONBodyMonitoringEnabledLogs)
+		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.CreateAgentPolicyJSONBodyMonitoringEnabledMetrics)
+		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledMetrics)
 	}
 
-	body := kbapi.CreateAgentPolicyJSONRequestBody{
+	body := kbapi.PostFleetAgentPoliciesJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
 		DownloadSourceId:   model.DownloadSourceId.ValueStringPointer(),
@@ -80,8 +80,8 @@ func (model agentPolicyModel) toAPICreateModel() kbapi.CreateAgentPolicyJSONRequ
 	return body
 }
 
-func (model agentPolicyModel) toAPIUpdateModel() kbapi.UpdateAgentPolicyJSONRequestBody {
-	monitoring := make([]kbapi.UpdateAgentPolicyJSONBodyMonitoringEnabled, 0, 2)
+func (model agentPolicyModel) toAPIUpdateModel() kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody {
+	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.Logs)
 	}
@@ -89,7 +89,7 @@ func (model agentPolicyModel) toAPIUpdateModel() kbapi.UpdateAgentPolicyJSONRequ
 		monitoring = append(monitoring, kbapi.Metrics)
 	}
 
-	body := kbapi.UpdateAgentPolicyJSONRequestBody{
+	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
 		DownloadSourceId:   model.DownloadSourceId.ValueStringPointer(),

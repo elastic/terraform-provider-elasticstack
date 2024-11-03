@@ -496,72 +496,72 @@ const (
 	Strict      UpdateOutputSslVerificationMode = "strict"
 )
 
-// Defines values for GetAgentPoliciesParamsSortOrder.
+// Defines values for GetFleetAgentPoliciesParamsSortOrder.
 const (
-	GetAgentPoliciesParamsSortOrderAsc  GetAgentPoliciesParamsSortOrder = "asc"
-	GetAgentPoliciesParamsSortOrderDesc GetAgentPoliciesParamsSortOrder = "desc"
+	GetFleetAgentPoliciesParamsSortOrderAsc  GetFleetAgentPoliciesParamsSortOrder = "asc"
+	GetFleetAgentPoliciesParamsSortOrderDesc GetFleetAgentPoliciesParamsSortOrder = "desc"
 )
 
-// Defines values for GetAgentPoliciesParamsFormat.
+// Defines values for GetFleetAgentPoliciesParamsFormat.
 const (
-	GetAgentPoliciesParamsFormatLegacy     GetAgentPoliciesParamsFormat = "legacy"
-	GetAgentPoliciesParamsFormatSimplified GetAgentPoliciesParamsFormat = "simplified"
+	GetFleetAgentPoliciesParamsFormatLegacy     GetFleetAgentPoliciesParamsFormat = "legacy"
+	GetFleetAgentPoliciesParamsFormatSimplified GetFleetAgentPoliciesParamsFormat = "simplified"
 )
 
-// Defines values for CreateAgentPolicyJSONBodyMonitoringEnabled.
+// Defines values for PostFleetAgentPoliciesJSONBodyMonitoringEnabled.
 const (
-	CreateAgentPolicyJSONBodyMonitoringEnabledLogs    CreateAgentPolicyJSONBodyMonitoringEnabled = "logs"
-	CreateAgentPolicyJSONBodyMonitoringEnabledMetrics CreateAgentPolicyJSONBodyMonitoringEnabled = "metrics"
-	CreateAgentPolicyJSONBodyMonitoringEnabledTraces  CreateAgentPolicyJSONBodyMonitoringEnabled = "traces"
+	PostFleetAgentPoliciesJSONBodyMonitoringEnabledLogs    PostFleetAgentPoliciesJSONBodyMonitoringEnabled = "logs"
+	PostFleetAgentPoliciesJSONBodyMonitoringEnabledMetrics PostFleetAgentPoliciesJSONBodyMonitoringEnabled = "metrics"
+	PostFleetAgentPoliciesJSONBodyMonitoringEnabledTraces  PostFleetAgentPoliciesJSONBodyMonitoringEnabled = "traces"
 )
 
-// Defines values for GetAgentPolicyParamsFormat.
+// Defines values for GetFleetAgentPoliciesAgentpolicyidParamsFormat.
 const (
-	GetAgentPolicyParamsFormatLegacy     GetAgentPolicyParamsFormat = "legacy"
-	GetAgentPolicyParamsFormatSimplified GetAgentPolicyParamsFormat = "simplified"
+	GetFleetAgentPoliciesAgentpolicyidParamsFormatLegacy     GetFleetAgentPoliciesAgentpolicyidParamsFormat = "legacy"
+	GetFleetAgentPoliciesAgentpolicyidParamsFormatSimplified GetFleetAgentPoliciesAgentpolicyidParamsFormat = "simplified"
 )
 
-// Defines values for UpdateAgentPolicyParamsFormat.
+// Defines values for PutFleetAgentPoliciesAgentpolicyidParamsFormat.
 const (
-	UpdateAgentPolicyParamsFormatLegacy     UpdateAgentPolicyParamsFormat = "legacy"
-	UpdateAgentPolicyParamsFormatSimplified UpdateAgentPolicyParamsFormat = "simplified"
+	PutFleetAgentPoliciesAgentpolicyidParamsFormatLegacy     PutFleetAgentPoliciesAgentpolicyidParamsFormat = "legacy"
+	PutFleetAgentPoliciesAgentpolicyidParamsFormatSimplified PutFleetAgentPoliciesAgentpolicyidParamsFormat = "simplified"
 )
 
-// Defines values for UpdateAgentPolicyJSONBodyMonitoringEnabled.
+// Defines values for PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled.
 const (
-	Logs    UpdateAgentPolicyJSONBodyMonitoringEnabled = "logs"
-	Metrics UpdateAgentPolicyJSONBodyMonitoringEnabled = "metrics"
-	Traces  UpdateAgentPolicyJSONBodyMonitoringEnabled = "traces"
+	Logs    PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled = "logs"
+	Metrics PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled = "metrics"
+	Traces  PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled = "traces"
 )
 
-// Defines values for GetPackagePoliciesParamsSortOrder.
+// Defines values for GetFleetPackagePoliciesParamsSortOrder.
 const (
-	GetPackagePoliciesParamsSortOrderAsc  GetPackagePoliciesParamsSortOrder = "asc"
-	GetPackagePoliciesParamsSortOrderDesc GetPackagePoliciesParamsSortOrder = "desc"
+	GetFleetPackagePoliciesParamsSortOrderAsc  GetFleetPackagePoliciesParamsSortOrder = "asc"
+	GetFleetPackagePoliciesParamsSortOrderDesc GetFleetPackagePoliciesParamsSortOrder = "desc"
 )
 
-// Defines values for GetPackagePoliciesParamsFormat.
+// Defines values for GetFleetPackagePoliciesParamsFormat.
 const (
-	GetPackagePoliciesParamsFormatLegacy     GetPackagePoliciesParamsFormat = "legacy"
-	GetPackagePoliciesParamsFormatSimplified GetPackagePoliciesParamsFormat = "simplified"
+	GetFleetPackagePoliciesParamsFormatLegacy     GetFleetPackagePoliciesParamsFormat = "legacy"
+	GetFleetPackagePoliciesParamsFormatSimplified GetFleetPackagePoliciesParamsFormat = "simplified"
 )
 
-// Defines values for CreatePackagePolicyParamsFormat.
+// Defines values for PostFleetPackagePoliciesParamsFormat.
 const (
-	CreatePackagePolicyParamsFormatLegacy     CreatePackagePolicyParamsFormat = "legacy"
-	CreatePackagePolicyParamsFormatSimplified CreatePackagePolicyParamsFormat = "simplified"
+	PostFleetPackagePoliciesParamsFormatLegacy     PostFleetPackagePoliciesParamsFormat = "legacy"
+	PostFleetPackagePoliciesParamsFormatSimplified PostFleetPackagePoliciesParamsFormat = "simplified"
 )
 
-// Defines values for GetPackagePolicyParamsFormat.
+// Defines values for GetFleetPackagePoliciesPackagepolicyidParamsFormat.
 const (
-	GetPackagePolicyParamsFormatLegacy     GetPackagePolicyParamsFormat = "legacy"
-	GetPackagePolicyParamsFormatSimplified GetPackagePolicyParamsFormat = "simplified"
+	GetFleetPackagePoliciesPackagepolicyidParamsFormatLegacy     GetFleetPackagePoliciesPackagepolicyidParamsFormat = "legacy"
+	GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified GetFleetPackagePoliciesPackagepolicyidParamsFormat = "simplified"
 )
 
-// Defines values for UpdatePackagePolicyParamsFormat.
+// Defines values for PutFleetPackagePoliciesPackagepolicyidParamsFormat.
 const (
-	Legacy     UpdatePackagePolicyParamsFormat = "legacy"
-	Simplified UpdatePackagePolicyParamsFormat = "simplified"
+	Legacy     PutFleetPackagePoliciesPackagepolicyidParamsFormat = "legacy"
+	Simplified PutFleetPackagePoliciesPackagepolicyidParamsFormat = "simplified"
 )
 
 // DataViews400Response defines model for Data_views_400_response.
@@ -2444,14 +2444,14 @@ type DataViewsViewId = string
 // SpaceId defines model for spaceId.
 type SpaceId = string
 
-// GetAgentPoliciesParams defines parameters for GetAgentPolicies.
-type GetAgentPoliciesParams struct {
-	Page            *float32                         `form:"page,omitempty" json:"page,omitempty"`
-	PerPage         *float32                         `form:"perPage,omitempty" json:"perPage,omitempty"`
-	SortField       *string                          `form:"sortField,omitempty" json:"sortField,omitempty"`
-	SortOrder       *GetAgentPoliciesParamsSortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
-	ShowUpgradeable *bool                            `form:"showUpgradeable,omitempty" json:"showUpgradeable,omitempty"`
-	Kuery           *string                          `form:"kuery,omitempty" json:"kuery,omitempty"`
+// GetFleetAgentPoliciesParams defines parameters for GetFleetAgentPolicies.
+type GetFleetAgentPoliciesParams struct {
+	Page            *float32                              `form:"page,omitempty" json:"page,omitempty"`
+	PerPage         *float32                              `form:"perPage,omitempty" json:"perPage,omitempty"`
+	SortField       *string                               `form:"sortField,omitempty" json:"sortField,omitempty"`
+	SortOrder       *GetFleetAgentPoliciesParamsSortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
+	ShowUpgradeable *bool                                 `form:"showUpgradeable,omitempty" json:"showUpgradeable,omitempty"`
+	Kuery           *string                               `form:"kuery,omitempty" json:"kuery,omitempty"`
 
 	// NoAgentCount use withAgentCount instead
 	NoAgentCount *bool `form:"noAgentCount,omitempty" json:"noAgentCount,omitempty"`
@@ -2460,18 +2460,18 @@ type GetAgentPoliciesParams struct {
 	WithAgentCount *bool `form:"withAgentCount,omitempty" json:"withAgentCount,omitempty"`
 
 	// Full get full policies with package policies populated
-	Full   *bool                         `form:"full,omitempty" json:"full,omitempty"`
-	Format *GetAgentPoliciesParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+	Full   *bool                              `form:"full,omitempty" json:"full,omitempty"`
+	Format *GetFleetAgentPoliciesParamsFormat `form:"format,omitempty" json:"format,omitempty"`
 }
 
-// GetAgentPoliciesParamsSortOrder defines parameters for GetAgentPolicies.
-type GetAgentPoliciesParamsSortOrder string
+// GetFleetAgentPoliciesParamsSortOrder defines parameters for GetFleetAgentPolicies.
+type GetFleetAgentPoliciesParamsSortOrder string
 
-// GetAgentPoliciesParamsFormat defines parameters for GetAgentPolicies.
-type GetAgentPoliciesParamsFormat string
+// GetFleetAgentPoliciesParamsFormat defines parameters for GetFleetAgentPolicies.
+type GetFleetAgentPoliciesParamsFormat string
 
-// CreateAgentPolicyJSONBody defines parameters for CreateAgentPolicy.
-type CreateAgentPolicyJSONBody struct {
+// PostFleetAgentPoliciesJSONBody defines parameters for PostFleetAgentPolicies.
+type PostFleetAgentPoliciesJSONBody struct {
 	AdvancedSettings *struct {
 		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
 		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
@@ -2491,8 +2491,8 @@ type CreateAgentPolicyJSONBody struct {
 
 	// GlobalDataTags User defined data tags that are added to all of the inputs. The values can be strings or numbers.
 	GlobalDataTags *[]struct {
-		Name  string                                         `json:"name"`
-		Value CreateAgentPolicyJSONBody_GlobalDataTags_Value `json:"value"`
+		Name  string                                              `json:"name"`
+		Value PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value `json:"value"`
 	} `json:"global_data_tags,omitempty"`
 	HasFleetServer       *bool    `json:"has_fleet_server,omitempty"`
 	Id                   *string  `json:"id,omitempty"`
@@ -2515,7 +2515,7 @@ type CreateAgentPolicyJSONBody struct {
 			MaxRetries *float32 `json:"max_retries,omitempty"`
 		} `json:"uploader,omitempty"`
 	} `json:"monitoring_diagnostics,omitempty"`
-	MonitoringEnabled *[]CreateAgentPolicyJSONBodyMonitoringEnabled `json:"monitoring_enabled,omitempty"`
+	MonitoringEnabled *[]PostFleetAgentPoliciesJSONBodyMonitoringEnabled `json:"monitoring_enabled,omitempty"`
 	MonitoringHttp    *struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
@@ -2538,43 +2538,43 @@ type CreateAgentPolicyJSONBody struct {
 	UnenrollTimeout   *float32 `json:"unenroll_timeout,omitempty"`
 }
 
-// CreateAgentPolicyParams defines parameters for CreateAgentPolicy.
-type CreateAgentPolicyParams struct {
+// PostFleetAgentPoliciesParams defines parameters for PostFleetAgentPolicies.
+type PostFleetAgentPoliciesParams struct {
 	SysMonitoring *bool `form:"sys_monitoring,omitempty" json:"sys_monitoring,omitempty"`
 }
 
-// CreateAgentPolicyJSONBodyGlobalDataTagsValue0 defines parameters for CreateAgentPolicy.
-type CreateAgentPolicyJSONBodyGlobalDataTagsValue0 = string
+// PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue0 defines parameters for PostFleetAgentPolicies.
+type PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue0 = string
 
-// CreateAgentPolicyJSONBodyGlobalDataTagsValue1 defines parameters for CreateAgentPolicy.
-type CreateAgentPolicyJSONBodyGlobalDataTagsValue1 = float32
+// PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue1 defines parameters for PostFleetAgentPolicies.
+type PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue1 = float32
 
-// CreateAgentPolicyJSONBody_GlobalDataTags_Value defines parameters for CreateAgentPolicy.
-type CreateAgentPolicyJSONBody_GlobalDataTags_Value struct {
+// PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value defines parameters for PostFleetAgentPolicies.
+type PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value struct {
 	union json.RawMessage
 }
 
-// CreateAgentPolicyJSONBodyMonitoringEnabled defines parameters for CreateAgentPolicy.
-type CreateAgentPolicyJSONBodyMonitoringEnabled string
+// PostFleetAgentPoliciesJSONBodyMonitoringEnabled defines parameters for PostFleetAgentPolicies.
+type PostFleetAgentPoliciesJSONBodyMonitoringEnabled string
 
-// DeleteAgentPolicyJSONBody defines parameters for DeleteAgentPolicy.
-type DeleteAgentPolicyJSONBody struct {
+// PostFleetAgentPoliciesDeleteJSONBody defines parameters for PostFleetAgentPoliciesDelete.
+type PostFleetAgentPoliciesDeleteJSONBody struct {
 	AgentPolicyId string `json:"agentPolicyId"`
 
 	// Force bypass validation checks that can prevent agent policy deletion
 	Force *bool `json:"force,omitempty"`
 }
 
-// GetAgentPolicyParams defines parameters for GetAgentPolicy.
-type GetAgentPolicyParams struct {
-	Format *GetAgentPolicyParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+// GetFleetAgentPoliciesAgentpolicyidParams defines parameters for GetFleetAgentPoliciesAgentpolicyid.
+type GetFleetAgentPoliciesAgentpolicyidParams struct {
+	Format *GetFleetAgentPoliciesAgentpolicyidParamsFormat `form:"format,omitempty" json:"format,omitempty"`
 }
 
-// GetAgentPolicyParamsFormat defines parameters for GetAgentPolicy.
-type GetAgentPolicyParamsFormat string
+// GetFleetAgentPoliciesAgentpolicyidParamsFormat defines parameters for GetFleetAgentPoliciesAgentpolicyid.
+type GetFleetAgentPoliciesAgentpolicyidParamsFormat string
 
-// UpdateAgentPolicyJSONBody defines parameters for UpdateAgentPolicy.
-type UpdateAgentPolicyJSONBody struct {
+// PutFleetAgentPoliciesAgentpolicyidJSONBody defines parameters for PutFleetAgentPoliciesAgentpolicyid.
+type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	AdvancedSettings *struct {
 		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
 		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
@@ -2594,8 +2594,8 @@ type UpdateAgentPolicyJSONBody struct {
 
 	// GlobalDataTags User defined data tags that are added to all of the inputs. The values can be strings or numbers.
 	GlobalDataTags *[]struct {
-		Name  string                                         `json:"name"`
-		Value UpdateAgentPolicyJSONBody_GlobalDataTags_Value `json:"value"`
+		Name  string                                                          `json:"name"`
+		Value PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value `json:"value"`
 	} `json:"global_data_tags,omitempty"`
 	HasFleetServer       *bool    `json:"has_fleet_server,omitempty"`
 	Id                   *string  `json:"id,omitempty"`
@@ -2618,7 +2618,7 @@ type UpdateAgentPolicyJSONBody struct {
 			MaxRetries *float32 `json:"max_retries,omitempty"`
 		} `json:"uploader,omitempty"`
 	} `json:"monitoring_diagnostics,omitempty"`
-	MonitoringEnabled *[]UpdateAgentPolicyJSONBodyMonitoringEnabled `json:"monitoring_enabled,omitempty"`
+	MonitoringEnabled *[]PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled `json:"monitoring_enabled,omitempty"`
 	MonitoringHttp    *struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
@@ -2641,82 +2641,82 @@ type UpdateAgentPolicyJSONBody struct {
 	UnenrollTimeout   *float32 `json:"unenroll_timeout,omitempty"`
 }
 
-// UpdateAgentPolicyParams defines parameters for UpdateAgentPolicy.
-type UpdateAgentPolicyParams struct {
-	Format *UpdateAgentPolicyParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+// PutFleetAgentPoliciesAgentpolicyidParams defines parameters for PutFleetAgentPoliciesAgentpolicyid.
+type PutFleetAgentPoliciesAgentpolicyidParams struct {
+	Format *PutFleetAgentPoliciesAgentpolicyidParamsFormat `form:"format,omitempty" json:"format,omitempty"`
 }
 
-// UpdateAgentPolicyParamsFormat defines parameters for UpdateAgentPolicy.
-type UpdateAgentPolicyParamsFormat string
+// PutFleetAgentPoliciesAgentpolicyidParamsFormat defines parameters for PutFleetAgentPoliciesAgentpolicyid.
+type PutFleetAgentPoliciesAgentpolicyidParamsFormat string
 
-// UpdateAgentPolicyJSONBodyGlobalDataTagsValue0 defines parameters for UpdateAgentPolicy.
-type UpdateAgentPolicyJSONBodyGlobalDataTagsValue0 = string
+// PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue0 defines parameters for PutFleetAgentPoliciesAgentpolicyid.
+type PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue0 = string
 
-// UpdateAgentPolicyJSONBodyGlobalDataTagsValue1 defines parameters for UpdateAgentPolicy.
-type UpdateAgentPolicyJSONBodyGlobalDataTagsValue1 = float32
+// PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue1 defines parameters for PutFleetAgentPoliciesAgentpolicyid.
+type PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue1 = float32
 
-// UpdateAgentPolicyJSONBody_GlobalDataTags_Value defines parameters for UpdateAgentPolicy.
-type UpdateAgentPolicyJSONBody_GlobalDataTags_Value struct {
+// PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value defines parameters for PutFleetAgentPoliciesAgentpolicyid.
+type PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value struct {
 	union json.RawMessage
 }
 
-// UpdateAgentPolicyJSONBodyMonitoringEnabled defines parameters for UpdateAgentPolicy.
-type UpdateAgentPolicyJSONBodyMonitoringEnabled string
+// PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled defines parameters for PutFleetAgentPoliciesAgentpolicyid.
+type PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled string
 
-// GetEnrollmentApiKeysParams defines parameters for GetEnrollmentApiKeys.
-type GetEnrollmentApiKeysParams struct {
+// GetFleetEnrollmentApiKeysParams defines parameters for GetFleetEnrollmentApiKeys.
+type GetFleetEnrollmentApiKeysParams struct {
 	Page    *float32 `form:"page,omitempty" json:"page,omitempty"`
 	PerPage *float32 `form:"perPage,omitempty" json:"perPage,omitempty"`
 	Kuery   *string  `form:"kuery,omitempty" json:"kuery,omitempty"`
 }
 
-// ListPackagesParams defines parameters for ListPackages.
-type ListPackagesParams struct {
+// GetFleetEpmPackagesParams defines parameters for GetFleetEpmPackages.
+type GetFleetEpmPackagesParams struct {
 	Category             *string `form:"category,omitempty" json:"category,omitempty"`
 	Prerelease           *bool   `form:"prerelease,omitempty" json:"prerelease,omitempty"`
 	Experimental         *bool   `form:"experimental,omitempty" json:"experimental,omitempty"`
 	ExcludeInstallStatus *bool   `form:"excludeInstallStatus,omitempty" json:"excludeInstallStatus,omitempty"`
 }
 
-// InstallPackageByUploadParams defines parameters for InstallPackageByUpload.
-type InstallPackageByUploadParams struct {
+// PostFleetEpmPackagesParams defines parameters for PostFleetEpmPackages.
+type PostFleetEpmPackagesParams struct {
 	IgnoreMappingUpdateErrors *bool `form:"ignoreMappingUpdateErrors,omitempty" json:"ignoreMappingUpdateErrors,omitempty"`
 	SkipDataStreamRollover    *bool `form:"skipDataStreamRollover,omitempty" json:"skipDataStreamRollover,omitempty"`
 }
 
-// DeletePackageJSONBody defines parameters for DeletePackage.
-type DeletePackageJSONBody struct {
+// DeleteFleetEpmPackagesPkgnamePkgversionJSONBody defines parameters for DeleteFleetEpmPackagesPkgnamePkgversion.
+type DeleteFleetEpmPackagesPkgnamePkgversionJSONBody struct {
 	Force bool `json:"force"`
 }
 
-// DeletePackageParams defines parameters for DeletePackage.
-type DeletePackageParams struct {
+// DeleteFleetEpmPackagesPkgnamePkgversionParams defines parameters for DeleteFleetEpmPackagesPkgnamePkgversion.
+type DeleteFleetEpmPackagesPkgnamePkgversionParams struct {
 	Force *bool `form:"force,omitempty" json:"force,omitempty"`
 }
 
-// GetPackageParams defines parameters for GetPackage.
-type GetPackageParams struct {
+// GetFleetEpmPackagesPkgnamePkgversionParams defines parameters for GetFleetEpmPackagesPkgnamePkgversion.
+type GetFleetEpmPackagesPkgnamePkgversionParams struct {
 	IgnoreUnverified *bool `form:"ignoreUnverified,omitempty" json:"ignoreUnverified,omitempty"`
 	Prerelease       *bool `form:"prerelease,omitempty" json:"prerelease,omitempty"`
 	Full             *bool `form:"full,omitempty" json:"full,omitempty"`
 	WithMetadata     *bool `form:"withMetadata,omitempty" json:"withMetadata,omitempty"`
 }
 
-// InstallPackageJSONBody defines parameters for InstallPackage.
-type InstallPackageJSONBody struct {
+// PostFleetEpmPackagesPkgnamePkgversionJSONBody defines parameters for PostFleetEpmPackagesPkgnamePkgversion.
+type PostFleetEpmPackagesPkgnamePkgversionJSONBody struct {
 	Force             *bool `json:"force,omitempty"`
 	IgnoreConstraints *bool `json:"ignore_constraints,omitempty"`
 }
 
-// InstallPackageParams defines parameters for InstallPackage.
-type InstallPackageParams struct {
+// PostFleetEpmPackagesPkgnamePkgversionParams defines parameters for PostFleetEpmPackagesPkgnamePkgversion.
+type PostFleetEpmPackagesPkgnamePkgversionParams struct {
 	Prerelease                *bool `form:"prerelease,omitempty" json:"prerelease,omitempty"`
 	IgnoreMappingUpdateErrors *bool `form:"ignoreMappingUpdateErrors,omitempty" json:"ignoreMappingUpdateErrors,omitempty"`
 	SkipDataStreamRollover    *bool `form:"skipDataStreamRollover,omitempty" json:"skipDataStreamRollover,omitempty"`
 }
 
-// CreateFleetServerHostJSONBody defines parameters for CreateFleetServerHost.
-type CreateFleetServerHostJSONBody struct {
+// PostFleetFleetServerHostsJSONBody defines parameters for PostFleetFleetServerHosts.
+type PostFleetFleetServerHostsJSONBody struct {
 	HostUrls        []string `json:"host_urls"`
 	Id              *string  `json:"id,omitempty"`
 	IsDefault       *bool    `json:"is_default,omitempty"`
@@ -2726,8 +2726,8 @@ type CreateFleetServerHostJSONBody struct {
 	ProxyId         *string  `json:"proxy_id,omitempty"`
 }
 
-// UpdateFleetServerHostJSONBody defines parameters for UpdateFleetServerHost.
-type UpdateFleetServerHostJSONBody struct {
+// PutFleetFleetServerHostsItemidJSONBody defines parameters for PutFleetFleetServerHostsItemid.
+type PutFleetFleetServerHostsItemidJSONBody struct {
 	HostUrls   *[]string `json:"host_urls,omitempty"`
 	IsDefault  *bool     `json:"is_default,omitempty"`
 	IsInternal *bool     `json:"is_internal,omitempty"`
@@ -2735,91 +2735,91 @@ type UpdateFleetServerHostJSONBody struct {
 	ProxyId    *string   `json:"proxy_id,omitempty"`
 }
 
-// GetPackagePoliciesParams defines parameters for GetPackagePolicies.
-type GetPackagePoliciesParams struct {
-	Page            *float32                           `form:"page,omitempty" json:"page,omitempty"`
-	PerPage         *float32                           `form:"perPage,omitempty" json:"perPage,omitempty"`
-	SortField       *string                            `form:"sortField,omitempty" json:"sortField,omitempty"`
-	SortOrder       *GetPackagePoliciesParamsSortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
-	ShowUpgradeable *bool                              `form:"showUpgradeable,omitempty" json:"showUpgradeable,omitempty"`
-	Kuery           *string                            `form:"kuery,omitempty" json:"kuery,omitempty"`
-	Format          *GetPackagePoliciesParamsFormat    `form:"format,omitempty" json:"format,omitempty"`
-	WithAgentCount  *bool                              `form:"withAgentCount,omitempty" json:"withAgentCount,omitempty"`
+// GetFleetPackagePoliciesParams defines parameters for GetFleetPackagePolicies.
+type GetFleetPackagePoliciesParams struct {
+	Page            *float32                                `form:"page,omitempty" json:"page,omitempty"`
+	PerPage         *float32                                `form:"perPage,omitempty" json:"perPage,omitempty"`
+	SortField       *string                                 `form:"sortField,omitempty" json:"sortField,omitempty"`
+	SortOrder       *GetFleetPackagePoliciesParamsSortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
+	ShowUpgradeable *bool                                   `form:"showUpgradeable,omitempty" json:"showUpgradeable,omitempty"`
+	Kuery           *string                                 `form:"kuery,omitempty" json:"kuery,omitempty"`
+	Format          *GetFleetPackagePoliciesParamsFormat    `form:"format,omitempty" json:"format,omitempty"`
+	WithAgentCount  *bool                                   `form:"withAgentCount,omitempty" json:"withAgentCount,omitempty"`
 }
 
-// GetPackagePoliciesParamsSortOrder defines parameters for GetPackagePolicies.
-type GetPackagePoliciesParamsSortOrder string
+// GetFleetPackagePoliciesParamsSortOrder defines parameters for GetFleetPackagePolicies.
+type GetFleetPackagePoliciesParamsSortOrder string
 
-// GetPackagePoliciesParamsFormat defines parameters for GetPackagePolicies.
-type GetPackagePoliciesParamsFormat string
+// GetFleetPackagePoliciesParamsFormat defines parameters for GetFleetPackagePolicies.
+type GetFleetPackagePoliciesParamsFormat string
 
-// CreatePackagePolicyParams defines parameters for CreatePackagePolicy.
-type CreatePackagePolicyParams struct {
-	Format *CreatePackagePolicyParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+// PostFleetPackagePoliciesParams defines parameters for PostFleetPackagePolicies.
+type PostFleetPackagePoliciesParams struct {
+	Format *PostFleetPackagePoliciesParamsFormat `form:"format,omitempty" json:"format,omitempty"`
 }
 
-// CreatePackagePolicyParamsFormat defines parameters for CreatePackagePolicy.
-type CreatePackagePolicyParamsFormat string
+// PostFleetPackagePoliciesParamsFormat defines parameters for PostFleetPackagePolicies.
+type PostFleetPackagePoliciesParamsFormat string
 
-// DeletePackagePolicyParams defines parameters for DeletePackagePolicy.
-type DeletePackagePolicyParams struct {
+// DeleteFleetPackagePoliciesPackagepolicyidParams defines parameters for DeleteFleetPackagePoliciesPackagepolicyid.
+type DeleteFleetPackagePoliciesPackagepolicyidParams struct {
 	Force *bool `form:"force,omitempty" json:"force,omitempty"`
 }
 
-// GetPackagePolicyParams defines parameters for GetPackagePolicy.
-type GetPackagePolicyParams struct {
-	Format *GetPackagePolicyParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+// GetFleetPackagePoliciesPackagepolicyidParams defines parameters for GetFleetPackagePoliciesPackagepolicyid.
+type GetFleetPackagePoliciesPackagepolicyidParams struct {
+	Format *GetFleetPackagePoliciesPackagepolicyidParamsFormat `form:"format,omitempty" json:"format,omitempty"`
 }
 
-// GetPackagePolicyParamsFormat defines parameters for GetPackagePolicy.
-type GetPackagePolicyParamsFormat string
+// GetFleetPackagePoliciesPackagepolicyidParamsFormat defines parameters for GetFleetPackagePoliciesPackagepolicyid.
+type GetFleetPackagePoliciesPackagepolicyidParamsFormat string
 
-// UpdatePackagePolicyParams defines parameters for UpdatePackagePolicy.
-type UpdatePackagePolicyParams struct {
-	Format *UpdatePackagePolicyParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+// PutFleetPackagePoliciesPackagepolicyidParams defines parameters for PutFleetPackagePoliciesPackagepolicyid.
+type PutFleetPackagePoliciesPackagepolicyidParams struct {
+	Format *PutFleetPackagePoliciesPackagepolicyidParamsFormat `form:"format,omitempty" json:"format,omitempty"`
 }
 
-// UpdatePackagePolicyParamsFormat defines parameters for UpdatePackagePolicy.
-type UpdatePackagePolicyParamsFormat string
+// PutFleetPackagePoliciesPackagepolicyidParamsFormat defines parameters for PutFleetPackagePoliciesPackagepolicyid.
+type PutFleetPackagePoliciesPackagepolicyidParamsFormat string
 
-// CreateAgentPolicyJSONRequestBody defines body for CreateAgentPolicy for application/json ContentType.
-type CreateAgentPolicyJSONRequestBody CreateAgentPolicyJSONBody
+// PostFleetAgentPoliciesJSONRequestBody defines body for PostFleetAgentPolicies for application/json ContentType.
+type PostFleetAgentPoliciesJSONRequestBody PostFleetAgentPoliciesJSONBody
 
-// DeleteAgentPolicyJSONRequestBody defines body for DeleteAgentPolicy for application/json ContentType.
-type DeleteAgentPolicyJSONRequestBody DeleteAgentPolicyJSONBody
+// PostFleetAgentPoliciesDeleteJSONRequestBody defines body for PostFleetAgentPoliciesDelete for application/json ContentType.
+type PostFleetAgentPoliciesDeleteJSONRequestBody PostFleetAgentPoliciesDeleteJSONBody
 
-// UpdateAgentPolicyJSONRequestBody defines body for UpdateAgentPolicy for application/json ContentType.
-type UpdateAgentPolicyJSONRequestBody UpdateAgentPolicyJSONBody
+// PutFleetAgentPoliciesAgentpolicyidJSONRequestBody defines body for PutFleetAgentPoliciesAgentpolicyid for application/json ContentType.
+type PutFleetAgentPoliciesAgentpolicyidJSONRequestBody PutFleetAgentPoliciesAgentpolicyidJSONBody
 
-// DeletePackageJSONRequestBody defines body for DeletePackage for application/json ContentType.
-type DeletePackageJSONRequestBody DeletePackageJSONBody
+// DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody defines body for DeleteFleetEpmPackagesPkgnamePkgversion for application/json ContentType.
+type DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody DeleteFleetEpmPackagesPkgnamePkgversionJSONBody
 
-// InstallPackageJSONRequestBody defines body for InstallPackage for application/json ContentType.
-type InstallPackageJSONRequestBody InstallPackageJSONBody
+// PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody defines body for PostFleetEpmPackagesPkgnamePkgversion for application/json ContentType.
+type PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody PostFleetEpmPackagesPkgnamePkgversionJSONBody
 
-// CreateFleetServerHostJSONRequestBody defines body for CreateFleetServerHost for application/json ContentType.
-type CreateFleetServerHostJSONRequestBody CreateFleetServerHostJSONBody
+// PostFleetFleetServerHostsJSONRequestBody defines body for PostFleetFleetServerHosts for application/json ContentType.
+type PostFleetFleetServerHostsJSONRequestBody PostFleetFleetServerHostsJSONBody
 
-// UpdateFleetServerHostJSONRequestBody defines body for UpdateFleetServerHost for application/json ContentType.
-type UpdateFleetServerHostJSONRequestBody UpdateFleetServerHostJSONBody
+// PutFleetFleetServerHostsItemidJSONRequestBody defines body for PutFleetFleetServerHostsItemid for application/json ContentType.
+type PutFleetFleetServerHostsItemidJSONRequestBody PutFleetFleetServerHostsItemidJSONBody
 
-// CreateOutputJSONRequestBody defines body for CreateOutput for application/json ContentType.
-type CreateOutputJSONRequestBody = NewOutputUnion
+// PostFleetOutputsJSONRequestBody defines body for PostFleetOutputs for application/json ContentType.
+type PostFleetOutputsJSONRequestBody = NewOutputUnion
 
-// UpdateOutputJSONRequestBody defines body for UpdateOutput for application/json ContentType.
-type UpdateOutputJSONRequestBody = UpdateOutputUnion
+// PutFleetOutputsOutputidJSONRequestBody defines body for PutFleetOutputsOutputid for application/json ContentType.
+type PutFleetOutputsOutputidJSONRequestBody = UpdateOutputUnion
 
-// CreatePackagePolicyJSONRequestBody defines body for CreatePackagePolicy for application/json ContentType.
-type CreatePackagePolicyJSONRequestBody = PackagePolicyRequest
+// PostFleetPackagePoliciesJSONRequestBody defines body for PostFleetPackagePolicies for application/json ContentType.
+type PostFleetPackagePoliciesJSONRequestBody = PackagePolicyRequest
 
-// UpdatePackagePolicyJSONRequestBody defines body for UpdatePackagePolicy for application/json ContentType.
-type UpdatePackagePolicyJSONRequestBody = PackagePolicyRequest
+// PutFleetPackagePoliciesPackagepolicyidJSONRequestBody defines body for PutFleetPackagePoliciesPackagepolicyid for application/json ContentType.
+type PutFleetPackagePoliciesPackagepolicyidJSONRequestBody = PackagePolicyRequest
 
-// CreateDataViewJSONRequestBody defines body for CreateDataView for application/json ContentType.
-type CreateDataViewJSONRequestBody = DataViewsCreateDataViewRequestObject
+// CreateDataViewDefaultwJSONRequestBody defines body for CreateDataViewDefaultw for application/json ContentType.
+type CreateDataViewDefaultwJSONRequestBody = DataViewsCreateDataViewRequestObject
 
-// UpdateDataViewJSONRequestBody defines body for UpdateDataView for application/json ContentType.
-type UpdateDataViewJSONRequestBody = DataViewsUpdateDataViewRequestObject
+// UpdateDataViewDefaultJSONRequestBody defines body for UpdateDataViewDefault for application/json ContentType.
+type UpdateDataViewDefaultJSONRequestBody = DataViewsUpdateDataViewRequestObject
 
 // Getter for additional properties for AgentPolicy_PackagePolicies_1_Elasticsearch_Privileges. Returns the specified
 // element and whether it was found
@@ -11793,128 +11793,128 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetAgentPolicies request
-	GetAgentPolicies(ctx context.Context, params *GetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetAgentPolicies request
+	GetFleetAgentPolicies(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateAgentPolicyWithBody request with any body
-	CreateAgentPolicyWithBody(ctx context.Context, params *CreateAgentPolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostFleetAgentPoliciesWithBody request with any body
+	PostFleetAgentPoliciesWithBody(ctx context.Context, params *PostFleetAgentPoliciesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateAgentPolicy(ctx context.Context, params *CreateAgentPolicyParams, body CreateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostFleetAgentPolicies(ctx context.Context, params *PostFleetAgentPoliciesParams, body PostFleetAgentPoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteAgentPolicyWithBody request with any body
-	DeleteAgentPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostFleetAgentPoliciesDeleteWithBody request with any body
+	PostFleetAgentPoliciesDeleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	DeleteAgentPolicy(ctx context.Context, body DeleteAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostFleetAgentPoliciesDelete(ctx context.Context, body PostFleetAgentPoliciesDeleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAgentPolicy request
-	GetAgentPolicy(ctx context.Context, agentPolicyId string, params *GetAgentPolicyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetAgentPoliciesAgentpolicyid request
+	GetFleetAgentPoliciesAgentpolicyid(ctx context.Context, agentPolicyId string, params *GetFleetAgentPoliciesAgentpolicyidParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateAgentPolicyWithBody request with any body
-	UpdateAgentPolicyWithBody(ctx context.Context, agentPolicyId string, params *UpdateAgentPolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PutFleetAgentPoliciesAgentpolicyidWithBody request with any body
+	PutFleetAgentPoliciesAgentpolicyidWithBody(ctx context.Context, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateAgentPolicy(ctx context.Context, agentPolicyId string, params *UpdateAgentPolicyParams, body UpdateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PutFleetAgentPoliciesAgentpolicyid(ctx context.Context, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, body PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetEnrollmentApiKeys request
-	GetEnrollmentApiKeys(ctx context.Context, params *GetEnrollmentApiKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetEnrollmentApiKeys request
+	GetFleetEnrollmentApiKeys(ctx context.Context, params *GetFleetEnrollmentApiKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPackages request
-	ListPackages(ctx context.Context, params *ListPackagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetEpmPackages request
+	GetFleetEpmPackages(ctx context.Context, params *GetFleetEpmPackagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// InstallPackageByUploadWithBody request with any body
-	InstallPackageByUploadWithBody(ctx context.Context, params *InstallPackageByUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostFleetEpmPackagesWithBody request with any body
+	PostFleetEpmPackagesWithBody(ctx context.Context, params *PostFleetEpmPackagesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeletePackageWithBody request with any body
-	DeletePackageWithBody(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteFleetEpmPackagesPkgnamePkgversionWithBody request with any body
+	DeleteFleetEpmPackagesPkgnamePkgversionWithBody(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	DeletePackage(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, body DeletePackageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetPackage request
-	GetPackage(ctx context.Context, pkgName string, pkgVersion string, params *GetPackageParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetEpmPackagesPkgnamePkgversion request
+	GetFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *GetFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// InstallPackageWithBody request with any body
-	InstallPackageWithBody(ctx context.Context, pkgName string, pkgVersion string, params *InstallPackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostFleetEpmPackagesPkgnamePkgversionWithBody request with any body
+	PostFleetEpmPackagesPkgnamePkgversionWithBody(ctx context.Context, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	InstallPackage(ctx context.Context, pkgName string, pkgVersion string, params *InstallPackageParams, body InstallPackageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, body PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetFleetServerHosts request
-	GetFleetServerHosts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetFleetServerHosts request
+	GetFleetFleetServerHosts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateFleetServerHostWithBody request with any body
-	CreateFleetServerHostWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostFleetFleetServerHostsWithBody request with any body
+	PostFleetFleetServerHostsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateFleetServerHost(ctx context.Context, body CreateFleetServerHostJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostFleetFleetServerHosts(ctx context.Context, body PostFleetFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteFleetServerHost request
-	DeleteFleetServerHost(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteFleetFleetServerHostsItemid request
+	DeleteFleetFleetServerHostsItemid(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetFleetServerHost request
-	GetFleetServerHost(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetFleetServerHostsItemid request
+	GetFleetFleetServerHostsItemid(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateFleetServerHostWithBody request with any body
-	UpdateFleetServerHostWithBody(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PutFleetFleetServerHostsItemidWithBody request with any body
+	PutFleetFleetServerHostsItemidWithBody(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateFleetServerHost(ctx context.Context, itemId string, body UpdateFleetServerHostJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PutFleetFleetServerHostsItemid(ctx context.Context, itemId string, body PutFleetFleetServerHostsItemidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetOutputs request
-	GetOutputs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetOutputs request
+	GetFleetOutputs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateOutputWithBody request with any body
-	CreateOutputWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostFleetOutputsWithBody request with any body
+	PostFleetOutputsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateOutput(ctx context.Context, body CreateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostFleetOutputs(ctx context.Context, body PostFleetOutputsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteOutput request
-	DeleteOutput(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteFleetOutputsOutputid request
+	DeleteFleetOutputsOutputid(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetOutput request
-	GetOutput(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetOutputsOutputid request
+	GetFleetOutputsOutputid(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateOutputWithBody request with any body
-	UpdateOutputWithBody(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PutFleetOutputsOutputidWithBody request with any body
+	PutFleetOutputsOutputidWithBody(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateOutput(ctx context.Context, outputId string, body UpdateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PutFleetOutputsOutputid(ctx context.Context, outputId string, body PutFleetOutputsOutputidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetPackagePolicies request
-	GetPackagePolicies(ctx context.Context, params *GetPackagePoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetPackagePolicies request
+	GetFleetPackagePolicies(ctx context.Context, params *GetFleetPackagePoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePackagePolicyWithBody request with any body
-	CreatePackagePolicyWithBody(ctx context.Context, params *CreatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostFleetPackagePoliciesWithBody request with any body
+	PostFleetPackagePoliciesWithBody(ctx context.Context, params *PostFleetPackagePoliciesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreatePackagePolicy(ctx context.Context, params *CreatePackagePolicyParams, body CreatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostFleetPackagePolicies(ctx context.Context, params *PostFleetPackagePoliciesParams, body PostFleetPackagePoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeletePackagePolicy request
-	DeletePackagePolicy(ctx context.Context, packagePolicyId string, params *DeletePackagePolicyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteFleetPackagePoliciesPackagepolicyid request
+	DeleteFleetPackagePoliciesPackagepolicyid(ctx context.Context, packagePolicyId string, params *DeleteFleetPackagePoliciesPackagepolicyidParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetPackagePolicy request
-	GetPackagePolicy(ctx context.Context, packagePolicyId string, params *GetPackagePolicyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetFleetPackagePoliciesPackagepolicyid request
+	GetFleetPackagePoliciesPackagepolicyid(ctx context.Context, packagePolicyId string, params *GetFleetPackagePoliciesPackagepolicyidParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdatePackagePolicyWithBody request with any body
-	UpdatePackagePolicyWithBody(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PutFleetPackagePoliciesPackagepolicyidWithBody request with any body
+	PutFleetPackagePoliciesPackagepolicyidWithBody(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdatePackagePolicy(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, body UpdatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PutFleetPackagePoliciesPackagepolicyid(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, body PutFleetPackagePoliciesPackagepolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDataViews request
-	GetDataViews(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetAllDataViewsDefault request
+	GetAllDataViewsDefault(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDataViewWithBody request with any body
-	CreateDataViewWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateDataViewDefaultwWithBody request with any body
+	CreateDataViewDefaultwWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateDataView(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDataViewDefaultw(ctx context.Context, spaceId SpaceId, body CreateDataViewDefaultwJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteDataView request
-	DeleteDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteDataViewDefault request
+	DeleteDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDataView request
-	GetDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetDataViewDefault request
+	GetDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateDataViewWithBody request with any body
-	UpdateDataViewWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateDataViewDefaultWithBody request with any body
+	UpdateDataViewDefaultWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) GetAgentPolicies(ctx context.Context, params *GetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentPoliciesRequest(c.Server, params)
+func (c *Client) GetFleetAgentPolicies(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetAgentPoliciesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -11925,8 +11925,8 @@ func (c *Client) GetAgentPolicies(ctx context.Context, params *GetAgentPoliciesP
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateAgentPolicyWithBody(ctx context.Context, params *CreateAgentPolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAgentPolicyRequestWithBody(c.Server, params, contentType, body)
+func (c *Client) PostFleetAgentPoliciesWithBody(ctx context.Context, params *PostFleetAgentPoliciesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetAgentPoliciesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11937,8 +11937,8 @@ func (c *Client) CreateAgentPolicyWithBody(ctx context.Context, params *CreateAg
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateAgentPolicy(ctx context.Context, params *CreateAgentPolicyParams, body CreateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAgentPolicyRequest(c.Server, params, body)
+func (c *Client) PostFleetAgentPolicies(ctx context.Context, params *PostFleetAgentPoliciesParams, body PostFleetAgentPoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetAgentPoliciesRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11949,8 +11949,8 @@ func (c *Client) CreateAgentPolicy(ctx context.Context, params *CreateAgentPolic
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteAgentPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteAgentPolicyRequestWithBody(c.Server, contentType, body)
+func (c *Client) PostFleetAgentPoliciesDeleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetAgentPoliciesDeleteRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11961,8 +11961,8 @@ func (c *Client) DeleteAgentPolicyWithBody(ctx context.Context, contentType stri
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteAgentPolicy(ctx context.Context, body DeleteAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteAgentPolicyRequest(c.Server, body)
+func (c *Client) PostFleetAgentPoliciesDelete(ctx context.Context, body PostFleetAgentPoliciesDeleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetAgentPoliciesDeleteRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11973,8 +11973,8 @@ func (c *Client) DeleteAgentPolicy(ctx context.Context, body DeleteAgentPolicyJS
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAgentPolicy(ctx context.Context, agentPolicyId string, params *GetAgentPolicyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentPolicyRequest(c.Server, agentPolicyId, params)
+func (c *Client) GetFleetAgentPoliciesAgentpolicyid(ctx context.Context, agentPolicyId string, params *GetFleetAgentPoliciesAgentpolicyidParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetAgentPoliciesAgentpolicyidRequest(c.Server, agentPolicyId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -11985,8 +11985,8 @@ func (c *Client) GetAgentPolicy(ctx context.Context, agentPolicyId string, param
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateAgentPolicyWithBody(ctx context.Context, agentPolicyId string, params *UpdateAgentPolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateAgentPolicyRequestWithBody(c.Server, agentPolicyId, params, contentType, body)
+func (c *Client) PutFleetAgentPoliciesAgentpolicyidWithBody(ctx context.Context, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFleetAgentPoliciesAgentpolicyidRequestWithBody(c.Server, agentPolicyId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11997,8 +11997,8 @@ func (c *Client) UpdateAgentPolicyWithBody(ctx context.Context, agentPolicyId st
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateAgentPolicy(ctx context.Context, agentPolicyId string, params *UpdateAgentPolicyParams, body UpdateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateAgentPolicyRequest(c.Server, agentPolicyId, params, body)
+func (c *Client) PutFleetAgentPoliciesAgentpolicyid(ctx context.Context, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, body PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFleetAgentPoliciesAgentpolicyidRequest(c.Server, agentPolicyId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12009,8 +12009,8 @@ func (c *Client) UpdateAgentPolicy(ctx context.Context, agentPolicyId string, pa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetEnrollmentApiKeys(ctx context.Context, params *GetEnrollmentApiKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetEnrollmentApiKeysRequest(c.Server, params)
+func (c *Client) GetFleetEnrollmentApiKeys(ctx context.Context, params *GetFleetEnrollmentApiKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetEnrollmentApiKeysRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12021,8 +12021,8 @@ func (c *Client) GetEnrollmentApiKeys(ctx context.Context, params *GetEnrollment
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListPackages(ctx context.Context, params *ListPackagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPackagesRequest(c.Server, params)
+func (c *Client) GetFleetEpmPackages(ctx context.Context, params *GetFleetEpmPackagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetEpmPackagesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12033,8 +12033,8 @@ func (c *Client) ListPackages(ctx context.Context, params *ListPackagesParams, r
 	return c.Client.Do(req)
 }
 
-func (c *Client) InstallPackageByUploadWithBody(ctx context.Context, params *InstallPackageByUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInstallPackageByUploadRequestWithBody(c.Server, params, contentType, body)
+func (c *Client) PostFleetEpmPackagesWithBody(ctx context.Context, params *PostFleetEpmPackagesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetEpmPackagesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12045,8 +12045,8 @@ func (c *Client) InstallPackageByUploadWithBody(ctx context.Context, params *Ins
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeletePackageWithBody(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePackageRequestWithBody(c.Server, pkgName, pkgVersion, params, contentType, body)
+func (c *Client) DeleteFleetEpmPackagesPkgnamePkgversionWithBody(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody(c.Server, pkgName, pkgVersion, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12057,8 +12057,8 @@ func (c *Client) DeletePackageWithBody(ctx context.Context, pkgName string, pkgV
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeletePackage(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, body DeletePackageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePackageRequest(c.Server, pkgName, pkgVersion, params, body)
+func (c *Client) DeleteFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFleetEpmPackagesPkgnamePkgversionRequest(c.Server, pkgName, pkgVersion, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12069,8 +12069,8 @@ func (c *Client) DeletePackage(ctx context.Context, pkgName string, pkgVersion s
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetPackage(ctx context.Context, pkgName string, pkgVersion string, params *GetPackageParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetPackageRequest(c.Server, pkgName, pkgVersion, params)
+func (c *Client) GetFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *GetFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetEpmPackagesPkgnamePkgversionRequest(c.Server, pkgName, pkgVersion, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12081,8 +12081,8 @@ func (c *Client) GetPackage(ctx context.Context, pkgName string, pkgVersion stri
 	return c.Client.Do(req)
 }
 
-func (c *Client) InstallPackageWithBody(ctx context.Context, pkgName string, pkgVersion string, params *InstallPackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInstallPackageRequestWithBody(c.Server, pkgName, pkgVersion, params, contentType, body)
+func (c *Client) PostFleetEpmPackagesPkgnamePkgversionWithBody(ctx context.Context, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetEpmPackagesPkgnamePkgversionRequestWithBody(c.Server, pkgName, pkgVersion, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12093,8 +12093,8 @@ func (c *Client) InstallPackageWithBody(ctx context.Context, pkgName string, pkg
 	return c.Client.Do(req)
 }
 
-func (c *Client) InstallPackage(ctx context.Context, pkgName string, pkgVersion string, params *InstallPackageParams, body InstallPackageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewInstallPackageRequest(c.Server, pkgName, pkgVersion, params, body)
+func (c *Client) PostFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, body PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetEpmPackagesPkgnamePkgversionRequest(c.Server, pkgName, pkgVersion, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12105,8 +12105,8 @@ func (c *Client) InstallPackage(ctx context.Context, pkgName string, pkgVersion 
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetFleetServerHosts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetFleetServerHostsRequest(c.Server)
+func (c *Client) GetFleetFleetServerHosts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetFleetServerHostsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -12117,8 +12117,8 @@ func (c *Client) GetFleetServerHosts(ctx context.Context, reqEditors ...RequestE
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateFleetServerHostWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateFleetServerHostRequestWithBody(c.Server, contentType, body)
+func (c *Client) PostFleetFleetServerHostsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetFleetServerHostsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12129,8 +12129,8 @@ func (c *Client) CreateFleetServerHostWithBody(ctx context.Context, contentType 
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateFleetServerHost(ctx context.Context, body CreateFleetServerHostJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateFleetServerHostRequest(c.Server, body)
+func (c *Client) PostFleetFleetServerHosts(ctx context.Context, body PostFleetFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetFleetServerHostsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12141,8 +12141,8 @@ func (c *Client) CreateFleetServerHost(ctx context.Context, body CreateFleetServ
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteFleetServerHost(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteFleetServerHostRequest(c.Server, itemId)
+func (c *Client) DeleteFleetFleetServerHostsItemid(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFleetFleetServerHostsItemidRequest(c.Server, itemId)
 	if err != nil {
 		return nil, err
 	}
@@ -12153,8 +12153,8 @@ func (c *Client) DeleteFleetServerHost(ctx context.Context, itemId string, reqEd
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetFleetServerHost(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetFleetServerHostRequest(c.Server, itemId)
+func (c *Client) GetFleetFleetServerHostsItemid(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetFleetServerHostsItemidRequest(c.Server, itemId)
 	if err != nil {
 		return nil, err
 	}
@@ -12165,8 +12165,8 @@ func (c *Client) GetFleetServerHost(ctx context.Context, itemId string, reqEdito
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateFleetServerHostWithBody(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateFleetServerHostRequestWithBody(c.Server, itemId, contentType, body)
+func (c *Client) PutFleetFleetServerHostsItemidWithBody(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFleetFleetServerHostsItemidRequestWithBody(c.Server, itemId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12177,8 +12177,8 @@ func (c *Client) UpdateFleetServerHostWithBody(ctx context.Context, itemId strin
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateFleetServerHost(ctx context.Context, itemId string, body UpdateFleetServerHostJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateFleetServerHostRequest(c.Server, itemId, body)
+func (c *Client) PutFleetFleetServerHostsItemid(ctx context.Context, itemId string, body PutFleetFleetServerHostsItemidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFleetFleetServerHostsItemidRequest(c.Server, itemId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12189,8 +12189,8 @@ func (c *Client) UpdateFleetServerHost(ctx context.Context, itemId string, body 
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetOutputs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetOutputsRequest(c.Server)
+func (c *Client) GetFleetOutputs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetOutputsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -12201,8 +12201,8 @@ func (c *Client) GetOutputs(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateOutputWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateOutputRequestWithBody(c.Server, contentType, body)
+func (c *Client) PostFleetOutputsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetOutputsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12213,8 +12213,8 @@ func (c *Client) CreateOutputWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateOutput(ctx context.Context, body CreateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateOutputRequest(c.Server, body)
+func (c *Client) PostFleetOutputs(ctx context.Context, body PostFleetOutputsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetOutputsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12225,8 +12225,8 @@ func (c *Client) CreateOutput(ctx context.Context, body CreateOutputJSONRequestB
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteOutput(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteOutputRequest(c.Server, outputId)
+func (c *Client) DeleteFleetOutputsOutputid(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFleetOutputsOutputidRequest(c.Server, outputId)
 	if err != nil {
 		return nil, err
 	}
@@ -12237,8 +12237,8 @@ func (c *Client) DeleteOutput(ctx context.Context, outputId string, reqEditors .
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetOutput(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetOutputRequest(c.Server, outputId)
+func (c *Client) GetFleetOutputsOutputid(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetOutputsOutputidRequest(c.Server, outputId)
 	if err != nil {
 		return nil, err
 	}
@@ -12249,8 +12249,8 @@ func (c *Client) GetOutput(ctx context.Context, outputId string, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateOutputWithBody(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateOutputRequestWithBody(c.Server, outputId, contentType, body)
+func (c *Client) PutFleetOutputsOutputidWithBody(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFleetOutputsOutputidRequestWithBody(c.Server, outputId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12261,8 +12261,8 @@ func (c *Client) UpdateOutputWithBody(ctx context.Context, outputId string, cont
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateOutput(ctx context.Context, outputId string, body UpdateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateOutputRequest(c.Server, outputId, body)
+func (c *Client) PutFleetOutputsOutputid(ctx context.Context, outputId string, body PutFleetOutputsOutputidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFleetOutputsOutputidRequest(c.Server, outputId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12273,8 +12273,8 @@ func (c *Client) UpdateOutput(ctx context.Context, outputId string, body UpdateO
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetPackagePolicies(ctx context.Context, params *GetPackagePoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetPackagePoliciesRequest(c.Server, params)
+func (c *Client) GetFleetPackagePolicies(ctx context.Context, params *GetFleetPackagePoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetPackagePoliciesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12285,8 +12285,8 @@ func (c *Client) GetPackagePolicies(ctx context.Context, params *GetPackagePolic
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreatePackagePolicyWithBody(ctx context.Context, params *CreatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePackagePolicyRequestWithBody(c.Server, params, contentType, body)
+func (c *Client) PostFleetPackagePoliciesWithBody(ctx context.Context, params *PostFleetPackagePoliciesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetPackagePoliciesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12297,8 +12297,8 @@ func (c *Client) CreatePackagePolicyWithBody(ctx context.Context, params *Create
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreatePackagePolicy(ctx context.Context, params *CreatePackagePolicyParams, body CreatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePackagePolicyRequest(c.Server, params, body)
+func (c *Client) PostFleetPackagePolicies(ctx context.Context, params *PostFleetPackagePoliciesParams, body PostFleetPackagePoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostFleetPackagePoliciesRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12309,8 +12309,8 @@ func (c *Client) CreatePackagePolicy(ctx context.Context, params *CreatePackageP
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeletePackagePolicy(ctx context.Context, packagePolicyId string, params *DeletePackagePolicyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePackagePolicyRequest(c.Server, packagePolicyId, params)
+func (c *Client) DeleteFleetPackagePoliciesPackagepolicyid(ctx context.Context, packagePolicyId string, params *DeleteFleetPackagePoliciesPackagepolicyidParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFleetPackagePoliciesPackagepolicyidRequest(c.Server, packagePolicyId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12321,8 +12321,8 @@ func (c *Client) DeletePackagePolicy(ctx context.Context, packagePolicyId string
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetPackagePolicy(ctx context.Context, packagePolicyId string, params *GetPackagePolicyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetPackagePolicyRequest(c.Server, packagePolicyId, params)
+func (c *Client) GetFleetPackagePoliciesPackagepolicyid(ctx context.Context, packagePolicyId string, params *GetFleetPackagePoliciesPackagepolicyidParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFleetPackagePoliciesPackagepolicyidRequest(c.Server, packagePolicyId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12333,8 +12333,8 @@ func (c *Client) GetPackagePolicy(ctx context.Context, packagePolicyId string, p
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdatePackagePolicyWithBody(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdatePackagePolicyRequestWithBody(c.Server, packagePolicyId, params, contentType, body)
+func (c *Client) PutFleetPackagePoliciesPackagepolicyidWithBody(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFleetPackagePoliciesPackagepolicyidRequestWithBody(c.Server, packagePolicyId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12345,8 +12345,8 @@ func (c *Client) UpdatePackagePolicyWithBody(ctx context.Context, packagePolicyI
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdatePackagePolicy(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, body UpdatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdatePackagePolicyRequest(c.Server, packagePolicyId, params, body)
+func (c *Client) PutFleetPackagePoliciesPackagepolicyid(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, body PutFleetPackagePoliciesPackagepolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFleetPackagePoliciesPackagepolicyidRequest(c.Server, packagePolicyId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12357,8 +12357,8 @@ func (c *Client) UpdatePackagePolicy(ctx context.Context, packagePolicyId string
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetDataViews(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDataViewsRequest(c.Server, spaceId)
+func (c *Client) GetAllDataViewsDefault(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAllDataViewsDefaultRequest(c.Server, spaceId)
 	if err != nil {
 		return nil, err
 	}
@@ -12369,8 +12369,8 @@ func (c *Client) GetDataViews(ctx context.Context, spaceId SpaceId, reqEditors .
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateDataViewWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDataViewRequestWithBody(c.Server, spaceId, contentType, body)
+func (c *Client) CreateDataViewDefaultwWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDataViewDefaultwRequestWithBody(c.Server, spaceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12381,8 +12381,8 @@ func (c *Client) CreateDataViewWithBody(ctx context.Context, spaceId SpaceId, co
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateDataView(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDataViewRequest(c.Server, spaceId, body)
+func (c *Client) CreateDataViewDefaultw(ctx context.Context, spaceId SpaceId, body CreateDataViewDefaultwJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDataViewDefaultwRequest(c.Server, spaceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12393,8 +12393,8 @@ func (c *Client) CreateDataView(ctx context.Context, spaceId SpaceId, body Creat
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteDataViewRequest(c.Server, spaceId, viewId)
+func (c *Client) DeleteDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteDataViewDefaultRequest(c.Server, spaceId, viewId)
 	if err != nil {
 		return nil, err
 	}
@@ -12405,8 +12405,8 @@ func (c *Client) DeleteDataView(ctx context.Context, spaceId SpaceId, viewId Dat
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDataViewRequest(c.Server, spaceId, viewId)
+func (c *Client) GetDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataViewDefaultRequest(c.Server, spaceId, viewId)
 	if err != nil {
 		return nil, err
 	}
@@ -12417,8 +12417,8 @@ func (c *Client) GetDataView(ctx context.Context, spaceId SpaceId, viewId DataVi
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDataViewWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDataViewRequestWithBody(c.Server, spaceId, viewId, contentType, body)
+func (c *Client) UpdateDataViewDefaultWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDataViewDefaultRequestWithBody(c.Server, spaceId, viewId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12429,8 +12429,8 @@ func (c *Client) UpdateDataViewWithBody(ctx context.Context, spaceId SpaceId, vi
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDataView(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDataViewRequest(c.Server, spaceId, viewId, body)
+func (c *Client) UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDataViewDefaultRequest(c.Server, spaceId, viewId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12441,8 +12441,8 @@ func (c *Client) UpdateDataView(ctx context.Context, spaceId SpaceId, viewId Dat
 	return c.Client.Do(req)
 }
 
-// NewGetAgentPoliciesRequest generates requests for GetAgentPolicies
-func NewGetAgentPoliciesRequest(server string, params *GetAgentPoliciesParams) (*http.Request, error) {
+// NewGetFleetAgentPoliciesRequest generates requests for GetFleetAgentPolicies
+func NewGetFleetAgentPoliciesRequest(server string, params *GetFleetAgentPoliciesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -12634,19 +12634,19 @@ func NewGetAgentPoliciesRequest(server string, params *GetAgentPoliciesParams) (
 	return req, nil
 }
 
-// NewCreateAgentPolicyRequest calls the generic CreateAgentPolicy builder with application/json body
-func NewCreateAgentPolicyRequest(server string, params *CreateAgentPolicyParams, body CreateAgentPolicyJSONRequestBody) (*http.Request, error) {
+// NewPostFleetAgentPoliciesRequest calls the generic PostFleetAgentPolicies builder with application/json body
+func NewPostFleetAgentPoliciesRequest(server string, params *PostFleetAgentPoliciesParams, body PostFleetAgentPoliciesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateAgentPolicyRequestWithBody(server, params, "application/json", bodyReader)
+	return NewPostFleetAgentPoliciesRequestWithBody(server, params, "application/json", bodyReader)
 }
 
-// NewCreateAgentPolicyRequestWithBody generates requests for CreateAgentPolicy with any type of body
-func NewCreateAgentPolicyRequestWithBody(server string, params *CreateAgentPolicyParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostFleetAgentPoliciesRequestWithBody generates requests for PostFleetAgentPolicies with any type of body
+func NewPostFleetAgentPoliciesRequestWithBody(server string, params *PostFleetAgentPoliciesParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -12696,19 +12696,19 @@ func NewCreateAgentPolicyRequestWithBody(server string, params *CreateAgentPolic
 	return req, nil
 }
 
-// NewDeleteAgentPolicyRequest calls the generic DeleteAgentPolicy builder with application/json body
-func NewDeleteAgentPolicyRequest(server string, body DeleteAgentPolicyJSONRequestBody) (*http.Request, error) {
+// NewPostFleetAgentPoliciesDeleteRequest calls the generic PostFleetAgentPoliciesDelete builder with application/json body
+func NewPostFleetAgentPoliciesDeleteRequest(server string, body PostFleetAgentPoliciesDeleteJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewDeleteAgentPolicyRequestWithBody(server, "application/json", bodyReader)
+	return NewPostFleetAgentPoliciesDeleteRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewDeleteAgentPolicyRequestWithBody generates requests for DeleteAgentPolicy with any type of body
-func NewDeleteAgentPolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostFleetAgentPoliciesDeleteRequestWithBody generates requests for PostFleetAgentPoliciesDelete with any type of body
+func NewPostFleetAgentPoliciesDeleteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -12736,8 +12736,8 @@ func NewDeleteAgentPolicyRequestWithBody(server string, contentType string, body
 	return req, nil
 }
 
-// NewGetAgentPolicyRequest generates requests for GetAgentPolicy
-func NewGetAgentPolicyRequest(server string, agentPolicyId string, params *GetAgentPolicyParams) (*http.Request, error) {
+// NewGetFleetAgentPoliciesAgentpolicyidRequest generates requests for GetFleetAgentPoliciesAgentpolicyid
+func NewGetFleetAgentPoliciesAgentpolicyidRequest(server string, agentPolicyId string, params *GetFleetAgentPoliciesAgentpolicyidParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12792,19 +12792,19 @@ func NewGetAgentPolicyRequest(server string, agentPolicyId string, params *GetAg
 	return req, nil
 }
 
-// NewUpdateAgentPolicyRequest calls the generic UpdateAgentPolicy builder with application/json body
-func NewUpdateAgentPolicyRequest(server string, agentPolicyId string, params *UpdateAgentPolicyParams, body UpdateAgentPolicyJSONRequestBody) (*http.Request, error) {
+// NewPutFleetAgentPoliciesAgentpolicyidRequest calls the generic PutFleetAgentPoliciesAgentpolicyid builder with application/json body
+func NewPutFleetAgentPoliciesAgentpolicyidRequest(server string, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, body PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateAgentPolicyRequestWithBody(server, agentPolicyId, params, "application/json", bodyReader)
+	return NewPutFleetAgentPoliciesAgentpolicyidRequestWithBody(server, agentPolicyId, params, "application/json", bodyReader)
 }
 
-// NewUpdateAgentPolicyRequestWithBody generates requests for UpdateAgentPolicy with any type of body
-func NewUpdateAgentPolicyRequestWithBody(server string, agentPolicyId string, params *UpdateAgentPolicyParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewPutFleetAgentPoliciesAgentpolicyidRequestWithBody generates requests for PutFleetAgentPoliciesAgentpolicyid with any type of body
+func NewPutFleetAgentPoliciesAgentpolicyidRequestWithBody(server string, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12861,8 +12861,8 @@ func NewUpdateAgentPolicyRequestWithBody(server string, agentPolicyId string, pa
 	return req, nil
 }
 
-// NewGetEnrollmentApiKeysRequest generates requests for GetEnrollmentApiKeys
-func NewGetEnrollmentApiKeysRequest(server string, params *GetEnrollmentApiKeysParams) (*http.Request, error) {
+// NewGetFleetEnrollmentApiKeysRequest generates requests for GetFleetEnrollmentApiKeys
+func NewGetFleetEnrollmentApiKeysRequest(server string, params *GetFleetEnrollmentApiKeysParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -12942,8 +12942,8 @@ func NewGetEnrollmentApiKeysRequest(server string, params *GetEnrollmentApiKeysP
 	return req, nil
 }
 
-// NewListPackagesRequest generates requests for ListPackages
-func NewListPackagesRequest(server string, params *ListPackagesParams) (*http.Request, error) {
+// NewGetFleetEpmPackagesRequest generates requests for GetFleetEpmPackages
+func NewGetFleetEpmPackagesRequest(server string, params *GetFleetEpmPackagesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -13039,8 +13039,8 @@ func NewListPackagesRequest(server string, params *ListPackagesParams) (*http.Re
 	return req, nil
 }
 
-// NewInstallPackageByUploadRequestWithBody generates requests for InstallPackageByUpload with any type of body
-func NewInstallPackageByUploadRequestWithBody(server string, params *InstallPackageByUploadParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostFleetEpmPackagesRequestWithBody generates requests for PostFleetEpmPackages with any type of body
+func NewPostFleetEpmPackagesRequestWithBody(server string, params *PostFleetEpmPackagesParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -13106,19 +13106,19 @@ func NewInstallPackageByUploadRequestWithBody(server string, params *InstallPack
 	return req, nil
 }
 
-// NewDeletePackageRequest calls the generic DeletePackage builder with application/json body
-func NewDeletePackageRequest(server string, pkgName string, pkgVersion string, params *DeletePackageParams, body DeletePackageJSONRequestBody) (*http.Request, error) {
+// NewDeleteFleetEpmPackagesPkgnamePkgversionRequest calls the generic DeleteFleetEpmPackagesPkgnamePkgversion builder with application/json body
+func NewDeleteFleetEpmPackagesPkgnamePkgversionRequest(server string, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewDeletePackageRequestWithBody(server, pkgName, pkgVersion, params, "application/json", bodyReader)
+	return NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody(server, pkgName, pkgVersion, params, "application/json", bodyReader)
 }
 
-// NewDeletePackageRequestWithBody generates requests for DeletePackage with any type of body
-func NewDeletePackageRequestWithBody(server string, pkgName string, pkgVersion string, params *DeletePackageParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody generates requests for DeleteFleetEpmPackagesPkgnamePkgversion with any type of body
+func NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody(server string, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13182,8 +13182,8 @@ func NewDeletePackageRequestWithBody(server string, pkgName string, pkgVersion s
 	return req, nil
 }
 
-// NewGetPackageRequest generates requests for GetPackage
-func NewGetPackageRequest(server string, pkgName string, pkgVersion string, params *GetPackageParams) (*http.Request, error) {
+// NewGetFleetEpmPackagesPkgnamePkgversionRequest generates requests for GetFleetEpmPackagesPkgnamePkgversion
+func NewGetFleetEpmPackagesPkgnamePkgversionRequest(server string, pkgName string, pkgVersion string, params *GetFleetEpmPackagesPkgnamePkgversionParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13293,19 +13293,19 @@ func NewGetPackageRequest(server string, pkgName string, pkgVersion string, para
 	return req, nil
 }
 
-// NewInstallPackageRequest calls the generic InstallPackage builder with application/json body
-func NewInstallPackageRequest(server string, pkgName string, pkgVersion string, params *InstallPackageParams, body InstallPackageJSONRequestBody) (*http.Request, error) {
+// NewPostFleetEpmPackagesPkgnamePkgversionRequest calls the generic PostFleetEpmPackagesPkgnamePkgversion builder with application/json body
+func NewPostFleetEpmPackagesPkgnamePkgversionRequest(server string, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, body PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewInstallPackageRequestWithBody(server, pkgName, pkgVersion, params, "application/json", bodyReader)
+	return NewPostFleetEpmPackagesPkgnamePkgversionRequestWithBody(server, pkgName, pkgVersion, params, "application/json", bodyReader)
 }
 
-// NewInstallPackageRequestWithBody generates requests for InstallPackage with any type of body
-func NewInstallPackageRequestWithBody(server string, pkgName string, pkgVersion string, params *InstallPackageParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostFleetEpmPackagesPkgnamePkgversionRequestWithBody generates requests for PostFleetEpmPackagesPkgnamePkgversion with any type of body
+func NewPostFleetEpmPackagesPkgnamePkgversionRequestWithBody(server string, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13401,8 +13401,8 @@ func NewInstallPackageRequestWithBody(server string, pkgName string, pkgVersion 
 	return req, nil
 }
 
-// NewGetFleetServerHostsRequest generates requests for GetFleetServerHosts
-func NewGetFleetServerHostsRequest(server string) (*http.Request, error) {
+// NewGetFleetFleetServerHostsRequest generates requests for GetFleetFleetServerHosts
+func NewGetFleetFleetServerHostsRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -13428,19 +13428,19 @@ func NewGetFleetServerHostsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCreateFleetServerHostRequest calls the generic CreateFleetServerHost builder with application/json body
-func NewCreateFleetServerHostRequest(server string, body CreateFleetServerHostJSONRequestBody) (*http.Request, error) {
+// NewPostFleetFleetServerHostsRequest calls the generic PostFleetFleetServerHosts builder with application/json body
+func NewPostFleetFleetServerHostsRequest(server string, body PostFleetFleetServerHostsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateFleetServerHostRequestWithBody(server, "application/json", bodyReader)
+	return NewPostFleetFleetServerHostsRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewCreateFleetServerHostRequestWithBody generates requests for CreateFleetServerHost with any type of body
-func NewCreateFleetServerHostRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostFleetFleetServerHostsRequestWithBody generates requests for PostFleetFleetServerHosts with any type of body
+func NewPostFleetFleetServerHostsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -13468,8 +13468,8 @@ func NewCreateFleetServerHostRequestWithBody(server string, contentType string, 
 	return req, nil
 }
 
-// NewDeleteFleetServerHostRequest generates requests for DeleteFleetServerHost
-func NewDeleteFleetServerHostRequest(server string, itemId string) (*http.Request, error) {
+// NewDeleteFleetFleetServerHostsItemidRequest generates requests for DeleteFleetFleetServerHostsItemid
+func NewDeleteFleetFleetServerHostsItemidRequest(server string, itemId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13502,8 +13502,8 @@ func NewDeleteFleetServerHostRequest(server string, itemId string) (*http.Reques
 	return req, nil
 }
 
-// NewGetFleetServerHostRequest generates requests for GetFleetServerHost
-func NewGetFleetServerHostRequest(server string, itemId string) (*http.Request, error) {
+// NewGetFleetFleetServerHostsItemidRequest generates requests for GetFleetFleetServerHostsItemid
+func NewGetFleetFleetServerHostsItemidRequest(server string, itemId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13536,19 +13536,19 @@ func NewGetFleetServerHostRequest(server string, itemId string) (*http.Request, 
 	return req, nil
 }
 
-// NewUpdateFleetServerHostRequest calls the generic UpdateFleetServerHost builder with application/json body
-func NewUpdateFleetServerHostRequest(server string, itemId string, body UpdateFleetServerHostJSONRequestBody) (*http.Request, error) {
+// NewPutFleetFleetServerHostsItemidRequest calls the generic PutFleetFleetServerHostsItemid builder with application/json body
+func NewPutFleetFleetServerHostsItemidRequest(server string, itemId string, body PutFleetFleetServerHostsItemidJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateFleetServerHostRequestWithBody(server, itemId, "application/json", bodyReader)
+	return NewPutFleetFleetServerHostsItemidRequestWithBody(server, itemId, "application/json", bodyReader)
 }
 
-// NewUpdateFleetServerHostRequestWithBody generates requests for UpdateFleetServerHost with any type of body
-func NewUpdateFleetServerHostRequestWithBody(server string, itemId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPutFleetFleetServerHostsItemidRequestWithBody generates requests for PutFleetFleetServerHostsItemid with any type of body
+func NewPutFleetFleetServerHostsItemidRequestWithBody(server string, itemId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13583,8 +13583,8 @@ func NewUpdateFleetServerHostRequestWithBody(server string, itemId string, conte
 	return req, nil
 }
 
-// NewGetOutputsRequest generates requests for GetOutputs
-func NewGetOutputsRequest(server string) (*http.Request, error) {
+// NewGetFleetOutputsRequest generates requests for GetFleetOutputs
+func NewGetFleetOutputsRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -13610,19 +13610,19 @@ func NewGetOutputsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCreateOutputRequest calls the generic CreateOutput builder with application/json body
-func NewCreateOutputRequest(server string, body CreateOutputJSONRequestBody) (*http.Request, error) {
+// NewPostFleetOutputsRequest calls the generic PostFleetOutputs builder with application/json body
+func NewPostFleetOutputsRequest(server string, body PostFleetOutputsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateOutputRequestWithBody(server, "application/json", bodyReader)
+	return NewPostFleetOutputsRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewCreateOutputRequestWithBody generates requests for CreateOutput with any type of body
-func NewCreateOutputRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostFleetOutputsRequestWithBody generates requests for PostFleetOutputs with any type of body
+func NewPostFleetOutputsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -13650,8 +13650,8 @@ func NewCreateOutputRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
-// NewDeleteOutputRequest generates requests for DeleteOutput
-func NewDeleteOutputRequest(server string, outputId string) (*http.Request, error) {
+// NewDeleteFleetOutputsOutputidRequest generates requests for DeleteFleetOutputsOutputid
+func NewDeleteFleetOutputsOutputidRequest(server string, outputId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13684,8 +13684,8 @@ func NewDeleteOutputRequest(server string, outputId string) (*http.Request, erro
 	return req, nil
 }
 
-// NewGetOutputRequest generates requests for GetOutput
-func NewGetOutputRequest(server string, outputId string) (*http.Request, error) {
+// NewGetFleetOutputsOutputidRequest generates requests for GetFleetOutputsOutputid
+func NewGetFleetOutputsOutputidRequest(server string, outputId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13718,19 +13718,19 @@ func NewGetOutputRequest(server string, outputId string) (*http.Request, error) 
 	return req, nil
 }
 
-// NewUpdateOutputRequest calls the generic UpdateOutput builder with application/json body
-func NewUpdateOutputRequest(server string, outputId string, body UpdateOutputJSONRequestBody) (*http.Request, error) {
+// NewPutFleetOutputsOutputidRequest calls the generic PutFleetOutputsOutputid builder with application/json body
+func NewPutFleetOutputsOutputidRequest(server string, outputId string, body PutFleetOutputsOutputidJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateOutputRequestWithBody(server, outputId, "application/json", bodyReader)
+	return NewPutFleetOutputsOutputidRequestWithBody(server, outputId, "application/json", bodyReader)
 }
 
-// NewUpdateOutputRequestWithBody generates requests for UpdateOutput with any type of body
-func NewUpdateOutputRequestWithBody(server string, outputId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPutFleetOutputsOutputidRequestWithBody generates requests for PutFleetOutputsOutputid with any type of body
+func NewPutFleetOutputsOutputidRequestWithBody(server string, outputId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13765,8 +13765,8 @@ func NewUpdateOutputRequestWithBody(server string, outputId string, contentType 
 	return req, nil
 }
 
-// NewGetPackagePoliciesRequest generates requests for GetPackagePolicies
-func NewGetPackagePoliciesRequest(server string, params *GetPackagePoliciesParams) (*http.Request, error) {
+// NewGetFleetPackagePoliciesRequest generates requests for GetFleetPackagePolicies
+func NewGetFleetPackagePoliciesRequest(server string, params *GetFleetPackagePoliciesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -13926,19 +13926,19 @@ func NewGetPackagePoliciesRequest(server string, params *GetPackagePoliciesParam
 	return req, nil
 }
 
-// NewCreatePackagePolicyRequest calls the generic CreatePackagePolicy builder with application/json body
-func NewCreatePackagePolicyRequest(server string, params *CreatePackagePolicyParams, body CreatePackagePolicyJSONRequestBody) (*http.Request, error) {
+// NewPostFleetPackagePoliciesRequest calls the generic PostFleetPackagePolicies builder with application/json body
+func NewPostFleetPackagePoliciesRequest(server string, params *PostFleetPackagePoliciesParams, body PostFleetPackagePoliciesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreatePackagePolicyRequestWithBody(server, params, "application/json", bodyReader)
+	return NewPostFleetPackagePoliciesRequestWithBody(server, params, "application/json", bodyReader)
 }
 
-// NewCreatePackagePolicyRequestWithBody generates requests for CreatePackagePolicy with any type of body
-func NewCreatePackagePolicyRequestWithBody(server string, params *CreatePackagePolicyParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostFleetPackagePoliciesRequestWithBody generates requests for PostFleetPackagePolicies with any type of body
+func NewPostFleetPackagePoliciesRequestWithBody(server string, params *PostFleetPackagePoliciesParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -13988,8 +13988,8 @@ func NewCreatePackagePolicyRequestWithBody(server string, params *CreatePackageP
 	return req, nil
 }
 
-// NewDeletePackagePolicyRequest generates requests for DeletePackagePolicy
-func NewDeletePackagePolicyRequest(server string, packagePolicyId string, params *DeletePackagePolicyParams) (*http.Request, error) {
+// NewDeleteFleetPackagePoliciesPackagepolicyidRequest generates requests for DeleteFleetPackagePoliciesPackagepolicyid
+func NewDeleteFleetPackagePoliciesPackagepolicyidRequest(server string, packagePolicyId string, params *DeleteFleetPackagePoliciesPackagepolicyidParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14044,8 +14044,8 @@ func NewDeletePackagePolicyRequest(server string, packagePolicyId string, params
 	return req, nil
 }
 
-// NewGetPackagePolicyRequest generates requests for GetPackagePolicy
-func NewGetPackagePolicyRequest(server string, packagePolicyId string, params *GetPackagePolicyParams) (*http.Request, error) {
+// NewGetFleetPackagePoliciesPackagepolicyidRequest generates requests for GetFleetPackagePoliciesPackagepolicyid
+func NewGetFleetPackagePoliciesPackagepolicyidRequest(server string, packagePolicyId string, params *GetFleetPackagePoliciesPackagepolicyidParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14100,19 +14100,19 @@ func NewGetPackagePolicyRequest(server string, packagePolicyId string, params *G
 	return req, nil
 }
 
-// NewUpdatePackagePolicyRequest calls the generic UpdatePackagePolicy builder with application/json body
-func NewUpdatePackagePolicyRequest(server string, packagePolicyId string, params *UpdatePackagePolicyParams, body UpdatePackagePolicyJSONRequestBody) (*http.Request, error) {
+// NewPutFleetPackagePoliciesPackagepolicyidRequest calls the generic PutFleetPackagePoliciesPackagepolicyid builder with application/json body
+func NewPutFleetPackagePoliciesPackagepolicyidRequest(server string, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, body PutFleetPackagePoliciesPackagepolicyidJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdatePackagePolicyRequestWithBody(server, packagePolicyId, params, "application/json", bodyReader)
+	return NewPutFleetPackagePoliciesPackagepolicyidRequestWithBody(server, packagePolicyId, params, "application/json", bodyReader)
 }
 
-// NewUpdatePackagePolicyRequestWithBody generates requests for UpdatePackagePolicy with any type of body
-func NewUpdatePackagePolicyRequestWithBody(server string, packagePolicyId string, params *UpdatePackagePolicyParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewPutFleetPackagePoliciesPackagepolicyidRequestWithBody generates requests for PutFleetPackagePoliciesPackagepolicyid with any type of body
+func NewPutFleetPackagePoliciesPackagepolicyidRequestWithBody(server string, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14169,8 +14169,8 @@ func NewUpdatePackagePolicyRequestWithBody(server string, packagePolicyId string
 	return req, nil
 }
 
-// NewGetDataViewsRequest generates requests for GetDataViews
-func NewGetDataViewsRequest(server string, spaceId SpaceId) (*http.Request, error) {
+// NewGetAllDataViewsDefaultRequest generates requests for GetAllDataViewsDefault
+func NewGetAllDataViewsDefaultRequest(server string, spaceId SpaceId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14203,19 +14203,19 @@ func NewGetDataViewsRequest(server string, spaceId SpaceId) (*http.Request, erro
 	return req, nil
 }
 
-// NewCreateDataViewRequest calls the generic CreateDataView builder with application/json body
-func NewCreateDataViewRequest(server string, spaceId SpaceId, body CreateDataViewJSONRequestBody) (*http.Request, error) {
+// NewCreateDataViewDefaultwRequest calls the generic CreateDataViewDefaultw builder with application/json body
+func NewCreateDataViewDefaultwRequest(server string, spaceId SpaceId, body CreateDataViewDefaultwJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateDataViewRequestWithBody(server, spaceId, "application/json", bodyReader)
+	return NewCreateDataViewDefaultwRequestWithBody(server, spaceId, "application/json", bodyReader)
 }
 
-// NewCreateDataViewRequestWithBody generates requests for CreateDataView with any type of body
-func NewCreateDataViewRequestWithBody(server string, spaceId SpaceId, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateDataViewDefaultwRequestWithBody generates requests for CreateDataViewDefaultw with any type of body
+func NewCreateDataViewDefaultwRequestWithBody(server string, spaceId SpaceId, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14250,8 +14250,8 @@ func NewCreateDataViewRequestWithBody(server string, spaceId SpaceId, contentTyp
 	return req, nil
 }
 
-// NewDeleteDataViewRequest generates requests for DeleteDataView
-func NewDeleteDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId) (*http.Request, error) {
+// NewDeleteDataViewDefaultRequest generates requests for DeleteDataViewDefault
+func NewDeleteDataViewDefaultRequest(server string, spaceId SpaceId, viewId DataViewsViewId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14291,8 +14291,8 @@ func NewDeleteDataViewRequest(server string, spaceId SpaceId, viewId DataViewsVi
 	return req, nil
 }
 
-// NewGetDataViewRequest generates requests for GetDataView
-func NewGetDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId) (*http.Request, error) {
+// NewGetDataViewDefaultRequest generates requests for GetDataViewDefault
+func NewGetDataViewDefaultRequest(server string, spaceId SpaceId, viewId DataViewsViewId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14332,19 +14332,19 @@ func NewGetDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewI
 	return req, nil
 }
 
-// NewUpdateDataViewRequest calls the generic UpdateDataView builder with application/json body
-func NewUpdateDataViewRequest(server string, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody) (*http.Request, error) {
+// NewUpdateDataViewDefaultRequest calls the generic UpdateDataViewDefault builder with application/json body
+func NewUpdateDataViewDefaultRequest(server string, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateDataViewRequestWithBody(server, spaceId, viewId, "application/json", bodyReader)
+	return NewUpdateDataViewDefaultRequestWithBody(server, spaceId, viewId, "application/json", bodyReader)
 }
 
-// NewUpdateDataViewRequestWithBody generates requests for UpdateDataView with any type of body
-func NewUpdateDataViewRequestWithBody(server string, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpdateDataViewDefaultRequestWithBody generates requests for UpdateDataViewDefault with any type of body
+func NewUpdateDataViewDefaultRequestWithBody(server string, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14429,127 +14429,127 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetAgentPoliciesWithResponse request
-	GetAgentPoliciesWithResponse(ctx context.Context, params *GetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetAgentPoliciesResponse, error)
+	// GetFleetAgentPoliciesWithResponse request
+	GetFleetAgentPoliciesWithResponse(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesResponse, error)
 
-	// CreateAgentPolicyWithBodyWithResponse request with any body
-	CreateAgentPolicyWithBodyWithResponse(ctx context.Context, params *CreateAgentPolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentPolicyResponse, error)
+	// PostFleetAgentPoliciesWithBodyWithResponse request with any body
+	PostFleetAgentPoliciesWithBodyWithResponse(ctx context.Context, params *PostFleetAgentPoliciesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetAgentPoliciesResponse, error)
 
-	CreateAgentPolicyWithResponse(ctx context.Context, params *CreateAgentPolicyParams, body CreateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentPolicyResponse, error)
+	PostFleetAgentPoliciesWithResponse(ctx context.Context, params *PostFleetAgentPoliciesParams, body PostFleetAgentPoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetAgentPoliciesResponse, error)
 
-	// DeleteAgentPolicyWithBodyWithResponse request with any body
-	DeleteAgentPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAgentPolicyResponse, error)
+	// PostFleetAgentPoliciesDeleteWithBodyWithResponse request with any body
+	PostFleetAgentPoliciesDeleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetAgentPoliciesDeleteResponse, error)
 
-	DeleteAgentPolicyWithResponse(ctx context.Context, body DeleteAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteAgentPolicyResponse, error)
+	PostFleetAgentPoliciesDeleteWithResponse(ctx context.Context, body PostFleetAgentPoliciesDeleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetAgentPoliciesDeleteResponse, error)
 
-	// GetAgentPolicyWithResponse request
-	GetAgentPolicyWithResponse(ctx context.Context, agentPolicyId string, params *GetAgentPolicyParams, reqEditors ...RequestEditorFn) (*GetAgentPolicyResponse, error)
+	// GetFleetAgentPoliciesAgentpolicyidWithResponse request
+	GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx context.Context, agentPolicyId string, params *GetFleetAgentPoliciesAgentpolicyidParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesAgentpolicyidResponse, error)
 
-	// UpdateAgentPolicyWithBodyWithResponse request with any body
-	UpdateAgentPolicyWithBodyWithResponse(ctx context.Context, agentPolicyId string, params *UpdateAgentPolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentPolicyResponse, error)
+	// PutFleetAgentPoliciesAgentpolicyidWithBodyWithResponse request with any body
+	PutFleetAgentPoliciesAgentpolicyidWithBodyWithResponse(ctx context.Context, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetAgentPoliciesAgentpolicyidResponse, error)
 
-	UpdateAgentPolicyWithResponse(ctx context.Context, agentPolicyId string, params *UpdateAgentPolicyParams, body UpdateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentPolicyResponse, error)
+	PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx context.Context, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, body PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetAgentPoliciesAgentpolicyidResponse, error)
 
-	// GetEnrollmentApiKeysWithResponse request
-	GetEnrollmentApiKeysWithResponse(ctx context.Context, params *GetEnrollmentApiKeysParams, reqEditors ...RequestEditorFn) (*GetEnrollmentApiKeysResponse, error)
+	// GetFleetEnrollmentApiKeysWithResponse request
+	GetFleetEnrollmentApiKeysWithResponse(ctx context.Context, params *GetFleetEnrollmentApiKeysParams, reqEditors ...RequestEditorFn) (*GetFleetEnrollmentApiKeysResponse, error)
 
-	// ListPackagesWithResponse request
-	ListPackagesWithResponse(ctx context.Context, params *ListPackagesParams, reqEditors ...RequestEditorFn) (*ListPackagesResponse, error)
+	// GetFleetEpmPackagesWithResponse request
+	GetFleetEpmPackagesWithResponse(ctx context.Context, params *GetFleetEpmPackagesParams, reqEditors ...RequestEditorFn) (*GetFleetEpmPackagesResponse, error)
 
-	// InstallPackageByUploadWithBodyWithResponse request with any body
-	InstallPackageByUploadWithBodyWithResponse(ctx context.Context, params *InstallPackageByUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InstallPackageByUploadResponse, error)
+	// PostFleetEpmPackagesWithBodyWithResponse request with any body
+	PostFleetEpmPackagesWithBodyWithResponse(ctx context.Context, params *PostFleetEpmPackagesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetEpmPackagesResponse, error)
 
-	// DeletePackageWithBodyWithResponse request with any body
-	DeletePackageWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeletePackageResponse, error)
+	// DeleteFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse request with any body
+	DeleteFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error)
 
-	DeletePackageWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, body DeletePackageJSONRequestBody, reqEditors ...RequestEditorFn) (*DeletePackageResponse, error)
+	DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error)
 
-	// GetPackageWithResponse request
-	GetPackageWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *GetPackageParams, reqEditors ...RequestEditorFn) (*GetPackageResponse, error)
+	// GetFleetEpmPackagesPkgnamePkgversionWithResponse request
+	GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *GetFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*GetFleetEpmPackagesPkgnamePkgversionResponse, error)
 
-	// InstallPackageWithBodyWithResponse request with any body
-	InstallPackageWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *InstallPackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InstallPackageResponse, error)
+	// PostFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse request with any body
+	PostFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetEpmPackagesPkgnamePkgversionResponse, error)
 
-	InstallPackageWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *InstallPackageParams, body InstallPackageJSONRequestBody, reqEditors ...RequestEditorFn) (*InstallPackageResponse, error)
+	PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, body PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetEpmPackagesPkgnamePkgversionResponse, error)
 
-	// GetFleetServerHostsWithResponse request
-	GetFleetServerHostsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFleetServerHostsResponse, error)
+	// GetFleetFleetServerHostsWithResponse request
+	GetFleetFleetServerHostsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFleetFleetServerHostsResponse, error)
 
-	// CreateFleetServerHostWithBodyWithResponse request with any body
-	CreateFleetServerHostWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFleetServerHostResponse, error)
+	// PostFleetFleetServerHostsWithBodyWithResponse request with any body
+	PostFleetFleetServerHostsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetFleetServerHostsResponse, error)
 
-	CreateFleetServerHostWithResponse(ctx context.Context, body CreateFleetServerHostJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFleetServerHostResponse, error)
+	PostFleetFleetServerHostsWithResponse(ctx context.Context, body PostFleetFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetFleetServerHostsResponse, error)
 
-	// DeleteFleetServerHostWithResponse request
-	DeleteFleetServerHostWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*DeleteFleetServerHostResponse, error)
+	// DeleteFleetFleetServerHostsItemidWithResponse request
+	DeleteFleetFleetServerHostsItemidWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*DeleteFleetFleetServerHostsItemidResponse, error)
 
-	// GetFleetServerHostWithResponse request
-	GetFleetServerHostWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*GetFleetServerHostResponse, error)
+	// GetFleetFleetServerHostsItemidWithResponse request
+	GetFleetFleetServerHostsItemidWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*GetFleetFleetServerHostsItemidResponse, error)
 
-	// UpdateFleetServerHostWithBodyWithResponse request with any body
-	UpdateFleetServerHostWithBodyWithResponse(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateFleetServerHostResponse, error)
+	// PutFleetFleetServerHostsItemidWithBodyWithResponse request with any body
+	PutFleetFleetServerHostsItemidWithBodyWithResponse(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetFleetServerHostsItemidResponse, error)
 
-	UpdateFleetServerHostWithResponse(ctx context.Context, itemId string, body UpdateFleetServerHostJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateFleetServerHostResponse, error)
+	PutFleetFleetServerHostsItemidWithResponse(ctx context.Context, itemId string, body PutFleetFleetServerHostsItemidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetFleetServerHostsItemidResponse, error)
 
-	// GetOutputsWithResponse request
-	GetOutputsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOutputsResponse, error)
+	// GetFleetOutputsWithResponse request
+	GetFleetOutputsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFleetOutputsResponse, error)
 
-	// CreateOutputWithBodyWithResponse request with any body
-	CreateOutputWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOutputResponse, error)
+	// PostFleetOutputsWithBodyWithResponse request with any body
+	PostFleetOutputsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetOutputsResponse, error)
 
-	CreateOutputWithResponse(ctx context.Context, body CreateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOutputResponse, error)
+	PostFleetOutputsWithResponse(ctx context.Context, body PostFleetOutputsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetOutputsResponse, error)
 
-	// DeleteOutputWithResponse request
-	DeleteOutputWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*DeleteOutputResponse, error)
+	// DeleteFleetOutputsOutputidWithResponse request
+	DeleteFleetOutputsOutputidWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*DeleteFleetOutputsOutputidResponse, error)
 
-	// GetOutputWithResponse request
-	GetOutputWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*GetOutputResponse, error)
+	// GetFleetOutputsOutputidWithResponse request
+	GetFleetOutputsOutputidWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*GetFleetOutputsOutputidResponse, error)
 
-	// UpdateOutputWithBodyWithResponse request with any body
-	UpdateOutputWithBodyWithResponse(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOutputResponse, error)
+	// PutFleetOutputsOutputidWithBodyWithResponse request with any body
+	PutFleetOutputsOutputidWithBodyWithResponse(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetOutputsOutputidResponse, error)
 
-	UpdateOutputWithResponse(ctx context.Context, outputId string, body UpdateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOutputResponse, error)
+	PutFleetOutputsOutputidWithResponse(ctx context.Context, outputId string, body PutFleetOutputsOutputidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetOutputsOutputidResponse, error)
 
-	// GetPackagePoliciesWithResponse request
-	GetPackagePoliciesWithResponse(ctx context.Context, params *GetPackagePoliciesParams, reqEditors ...RequestEditorFn) (*GetPackagePoliciesResponse, error)
+	// GetFleetPackagePoliciesWithResponse request
+	GetFleetPackagePoliciesWithResponse(ctx context.Context, params *GetFleetPackagePoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetPackagePoliciesResponse, error)
 
-	// CreatePackagePolicyWithBodyWithResponse request with any body
-	CreatePackagePolicyWithBodyWithResponse(ctx context.Context, params *CreatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePackagePolicyResponse, error)
+	// PostFleetPackagePoliciesWithBodyWithResponse request with any body
+	PostFleetPackagePoliciesWithBodyWithResponse(ctx context.Context, params *PostFleetPackagePoliciesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetPackagePoliciesResponse, error)
 
-	CreatePackagePolicyWithResponse(ctx context.Context, params *CreatePackagePolicyParams, body CreatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePackagePolicyResponse, error)
+	PostFleetPackagePoliciesWithResponse(ctx context.Context, params *PostFleetPackagePoliciesParams, body PostFleetPackagePoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetPackagePoliciesResponse, error)
 
-	// DeletePackagePolicyWithResponse request
-	DeletePackagePolicyWithResponse(ctx context.Context, packagePolicyId string, params *DeletePackagePolicyParams, reqEditors ...RequestEditorFn) (*DeletePackagePolicyResponse, error)
+	// DeleteFleetPackagePoliciesPackagepolicyidWithResponse request
+	DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx context.Context, packagePolicyId string, params *DeleteFleetPackagePoliciesPackagepolicyidParams, reqEditors ...RequestEditorFn) (*DeleteFleetPackagePoliciesPackagepolicyidResponse, error)
 
-	// GetPackagePolicyWithResponse request
-	GetPackagePolicyWithResponse(ctx context.Context, packagePolicyId string, params *GetPackagePolicyParams, reqEditors ...RequestEditorFn) (*GetPackagePolicyResponse, error)
+	// GetFleetPackagePoliciesPackagepolicyidWithResponse request
+	GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx context.Context, packagePolicyId string, params *GetFleetPackagePoliciesPackagepolicyidParams, reqEditors ...RequestEditorFn) (*GetFleetPackagePoliciesPackagepolicyidResponse, error)
 
-	// UpdatePackagePolicyWithBodyWithResponse request with any body
-	UpdatePackagePolicyWithBodyWithResponse(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePackagePolicyResponse, error)
+	// PutFleetPackagePoliciesPackagepolicyidWithBodyWithResponse request with any body
+	PutFleetPackagePoliciesPackagepolicyidWithBodyWithResponse(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetPackagePoliciesPackagepolicyidResponse, error)
 
-	UpdatePackagePolicyWithResponse(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, body UpdatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePackagePolicyResponse, error)
+	PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, body PutFleetPackagePoliciesPackagepolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetPackagePoliciesPackagepolicyidResponse, error)
 
-	// GetDataViewsWithResponse request
-	GetDataViewsWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetDataViewsResponse, error)
+	// GetAllDataViewsDefaultWithResponse request
+	GetAllDataViewsDefaultWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetAllDataViewsDefaultResponse, error)
 
-	// CreateDataViewWithBodyWithResponse request with any body
-	CreateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error)
+	// CreateDataViewDefaultwWithBodyWithResponse request with any body
+	CreateDataViewDefaultwWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataViewDefaultwResponse, error)
 
-	CreateDataViewWithResponse(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error)
+	CreateDataViewDefaultwWithResponse(ctx context.Context, spaceId SpaceId, body CreateDataViewDefaultwJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataViewDefaultwResponse, error)
 
-	// DeleteDataViewWithResponse request
-	DeleteDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*DeleteDataViewResponse, error)
+	// DeleteDataViewDefaultWithResponse request
+	DeleteDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*DeleteDataViewDefaultResponse, error)
 
-	// GetDataViewWithResponse request
-	GetDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*GetDataViewResponse, error)
+	// GetDataViewDefaultWithResponse request
+	GetDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*GetDataViewDefaultResponse, error)
 
-	// UpdateDataViewWithBodyWithResponse request with any body
-	UpdateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error)
+	// UpdateDataViewDefaultWithBodyWithResponse request with any body
+	UpdateDataViewDefaultWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
 
-	UpdateDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error)
+	UpdateDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
 }
 
-type GetAgentPoliciesResponse struct {
+type GetFleetAgentPoliciesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -14566,7 +14566,7 @@ type GetAgentPoliciesResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetAgentPoliciesResponse) Status() string {
+func (r GetFleetAgentPoliciesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14574,14 +14574,14 @@ func (r GetAgentPoliciesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetAgentPoliciesResponse) StatusCode() int {
+func (r GetFleetAgentPoliciesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type CreateAgentPolicyResponse struct {
+type PostFleetAgentPoliciesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -14595,7 +14595,7 @@ type CreateAgentPolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateAgentPolicyResponse) Status() string {
+func (r PostFleetAgentPoliciesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14603,14 +14603,14 @@ func (r CreateAgentPolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateAgentPolicyResponse) StatusCode() int {
+func (r PostFleetAgentPoliciesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeleteAgentPolicyResponse struct {
+type PostFleetAgentPoliciesDeleteResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -14625,7 +14625,7 @@ type DeleteAgentPolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteAgentPolicyResponse) Status() string {
+func (r PostFleetAgentPoliciesDeleteResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14633,14 +14633,14 @@ func (r DeleteAgentPolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteAgentPolicyResponse) StatusCode() int {
+func (r PostFleetAgentPoliciesDeleteResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetAgentPolicyResponse struct {
+type GetFleetAgentPoliciesAgentpolicyidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -14654,7 +14654,7 @@ type GetAgentPolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetAgentPolicyResponse) Status() string {
+func (r GetFleetAgentPoliciesAgentpolicyidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14662,14 +14662,14 @@ func (r GetAgentPolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetAgentPolicyResponse) StatusCode() int {
+func (r GetFleetAgentPoliciesAgentpolicyidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdateAgentPolicyResponse struct {
+type PutFleetAgentPoliciesAgentpolicyidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -14683,7 +14683,7 @@ type UpdateAgentPolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateAgentPolicyResponse) Status() string {
+func (r PutFleetAgentPoliciesAgentpolicyidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14691,14 +14691,14 @@ func (r UpdateAgentPolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateAgentPolicyResponse) StatusCode() int {
+func (r PutFleetAgentPoliciesAgentpolicyidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetEnrollmentApiKeysResponse struct {
+type GetFleetEnrollmentApiKeysResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -14734,7 +14734,7 @@ type GetEnrollmentApiKeysResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetEnrollmentApiKeysResponse) Status() string {
+func (r GetFleetEnrollmentApiKeysResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14742,19 +14742,19 @@ func (r GetEnrollmentApiKeysResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetEnrollmentApiKeysResponse) StatusCode() int {
+func (r GetFleetEnrollmentApiKeysResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type ListPackagesResponse struct {
+type GetFleetEpmPackagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items    []PackageListItem                 `json:"items"`
-		Response *[]ListPackages_200_Response_Item `json:"response,omitempty"`
+		Items    []PackageListItem                        `json:"items"`
+		Response *[]GetFleetEpmPackages_200_Response_Item `json:"response,omitempty"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
@@ -14762,29 +14762,29 @@ type ListPackagesResponse struct {
 		StatusCode *float32 `json:"statusCode,omitempty"`
 	}
 }
-type ListPackages_200_Response_Conditions_Elastic struct {
+type GetFleetEpmPackages_200_Response_Conditions_Elastic struct {
 	Capabilities         *[]string              `json:"capabilities,omitempty"`
 	Subscription         *string                `json:"subscription,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type ListPackages_200_Response_Conditions_Kibana struct {
+type GetFleetEpmPackages_200_Response_Conditions_Kibana struct {
 	Version              *string                `json:"version,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type ListPackages_200_Response_Conditions struct {
-	Elastic              *ListPackages_200_Response_Conditions_Elastic `json:"elastic,omitempty"`
-	Kibana               *ListPackages_200_Response_Conditions_Kibana  `json:"kibana,omitempty"`
-	AdditionalProperties map[string]interface{}                        `json:"-"`
+type GetFleetEpmPackages_200_Response_Conditions struct {
+	Elastic              *GetFleetEpmPackages_200_Response_Conditions_Elastic `json:"elastic,omitempty"`
+	Kibana               *GetFleetEpmPackages_200_Response_Conditions_Kibana  `json:"kibana,omitempty"`
+	AdditionalProperties map[string]interface{}                               `json:"-"`
 }
-type ListPackages_200_Response_Discovery_Fields_Item struct {
+type GetFleetEpmPackages_200_Response_Discovery_Fields_Item struct {
 	Name                 string                 `json:"name"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type ListPackages_200_Response_Discovery struct {
-	Fields               *[]ListPackages_200_Response_Discovery_Fields_Item `json:"fields,omitempty"`
-	AdditionalProperties map[string]interface{}                             `json:"-"`
+type GetFleetEpmPackages_200_Response_Discovery struct {
+	Fields               *[]GetFleetEpmPackages_200_Response_Discovery_Fields_Item `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                                    `json:"-"`
 }
-type ListPackages_200_Response_Icons_Item struct {
+type GetFleetEpmPackages_200_Response_Icons_Item struct {
 	DarkMode             *bool                  `json:"dark_mode,omitempty"`
 	Path                 *string                `json:"path,omitempty"`
 	Size                 *string                `json:"size,omitempty"`
@@ -14793,127 +14793,127 @@ type ListPackages_200_Response_Icons_Item struct {
 	Type                 *string                `json:"type,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type ListPackages200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType string
-type ListPackages_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item struct {
-	Id                   string                                                                     `json:"id"`
-	OriginId             *string                                                                    `json:"originId,omitempty"`
-	Type                 ListPackages200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                                     `json:"-"`
+type GetFleetEpmPackages200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType string
+type GetFleetEpmPackages_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item struct {
+	Id                   string                                                                            `json:"id"`
+	OriginId             *string                                                                           `json:"originId,omitempty"`
+	Type                 GetFleetEpmPackages200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType `json:"type"`
+	AdditionalProperties map[string]interface{}                                                            `json:"-"`
 }
-type ListPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features struct {
+type GetFleetEpmPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features struct {
 	DocValueOnlyNumeric  *bool                  `json:"doc_value_only_numeric,omitempty"`
 	DocValueOnlyOther    *bool                  `json:"doc_value_only_other,omitempty"`
 	SyntheticSource      *bool                  `json:"synthetic_source,omitempty"`
 	Tsdb                 *bool                  `json:"tsdb,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type ListPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item struct {
-	DataStream           string                                                                             `json:"data_stream"`
-	Features             ListPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features `json:"features"`
-	AdditionalProperties map[string]interface{}                                                             `json:"-"`
+type GetFleetEpmPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item struct {
+	DataStream           string                                                                                    `json:"data_stream"`
+	Features             GetFleetEpmPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features `json:"features"`
+	AdditionalProperties map[string]interface{}                                                                    `json:"-"`
 }
-type ListPackages200ResponseInstallationInfoInstallSource string
-type ListPackages200ResponseInstallationInfoInstallStatus string
-type ListPackages200ResponseInstallationInfoInstalledEsType string
-type ListPackages_200_Response_InstallationInfo_InstalledEs_Item struct {
-	Deferred             *bool                                                  `json:"deferred,omitempty"`
-	Id                   string                                                 `json:"id"`
-	Type                 ListPackages200ResponseInstallationInfoInstalledEsType `json:"type"`
-	Version              *string                                                `json:"version,omitempty"`
-	AdditionalProperties map[string]interface{}                                 `json:"-"`
+type GetFleetEpmPackages200ResponseInstallationInfoInstallSource string
+type GetFleetEpmPackages200ResponseInstallationInfoInstallStatus string
+type GetFleetEpmPackages200ResponseInstallationInfoInstalledEsType string
+type GetFleetEpmPackages_200_Response_InstallationInfo_InstalledEs_Item struct {
+	Deferred             *bool                                                         `json:"deferred,omitempty"`
+	Id                   string                                                        `json:"id"`
+	Type                 GetFleetEpmPackages200ResponseInstallationInfoInstalledEsType `json:"type"`
+	Version              *string                                                       `json:"version,omitempty"`
+	AdditionalProperties map[string]interface{}                                        `json:"-"`
 }
-type ListPackages200ResponseInstallationInfoInstalledKibanaType string
-type ListPackages_200_Response_InstallationInfo_InstalledKibana_Item struct {
-	Id                   string                                                     `json:"id"`
-	OriginId             *string                                                    `json:"originId,omitempty"`
-	Type                 ListPackages200ResponseInstallationInfoInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                     `json:"-"`
+type GetFleetEpmPackages200ResponseInstallationInfoInstalledKibanaType string
+type GetFleetEpmPackages_200_Response_InstallationInfo_InstalledKibana_Item struct {
+	Id                   string                                                            `json:"id"`
+	OriginId             *string                                                           `json:"originId,omitempty"`
+	Type                 GetFleetEpmPackages200ResponseInstallationInfoInstalledKibanaType `json:"type"`
+	AdditionalProperties map[string]interface{}                                            `json:"-"`
 }
-type ListPackages_200_Response_InstallationInfo_LatestExecutedState struct {
+type GetFleetEpmPackages_200_Response_InstallationInfo_LatestExecutedState struct {
 	Error                *string                `json:"error,omitempty"`
 	Name                 string                 `json:"name"`
 	StartedAt            string                 `json:"started_at"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type ListPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error struct {
+type GetFleetEpmPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error struct {
 	Message              string                 `json:"message"`
 	Name                 string                 `json:"name"`
 	Stack                *string                `json:"stack,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type ListPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item struct {
-	CreatedAt            string                                                                       `json:"created_at"`
-	Error                ListPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error `json:"error"`
-	TargetVersion        string                                                                       `json:"target_version"`
-	AdditionalProperties map[string]interface{}                                                       `json:"-"`
+type GetFleetEpmPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item struct {
+	CreatedAt            string                                                                              `json:"created_at"`
+	Error                GetFleetEpmPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error `json:"error"`
+	TargetVersion        string                                                                              `json:"target_version"`
+	AdditionalProperties map[string]interface{}                                                              `json:"-"`
 }
-type ListPackages200ResponseInstallationInfoVerificationStatus string
-type ListPackages_200_Response_InstallationInfo struct {
-	AdditionalSpacesInstalledKibana *map[string][]ListPackages_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item `json:"additional_spaces_installed_kibana,omitempty"`
-	CreatedAt                       *string                                                                                       `json:"created_at,omitempty"`
-	ExperimentalDataStreamFeatures  *[]ListPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item             `json:"experimental_data_stream_features,omitempty"`
-	InstallFormatSchemaVersion      *string                                                                                       `json:"install_format_schema_version,omitempty"`
-	InstallSource                   ListPackages200ResponseInstallationInfoInstallSource                                          `json:"install_source"`
-	InstallStatus                   ListPackages200ResponseInstallationInfoInstallStatus                                          `json:"install_status"`
-	InstalledEs                     []ListPackages_200_Response_InstallationInfo_InstalledEs_Item                                 `json:"installed_es"`
-	InstalledKibana                 []ListPackages_200_Response_InstallationInfo_InstalledKibana_Item                             `json:"installed_kibana"`
-	InstalledKibanaSpaceId          *string                                                                                       `json:"installed_kibana_space_id,omitempty"`
-	LatestExecutedState             *ListPackages_200_Response_InstallationInfo_LatestExecutedState                               `json:"latest_executed_state,omitempty"`
-	LatestInstallFailedAttempts     *[]ListPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
-	Name                            string                                                                                        `json:"name"`
-	Namespaces                      *[]string                                                                                     `json:"namespaces,omitempty"`
-	Type                            string                                                                                        `json:"type"`
-	UpdatedAt                       *string                                                                                       `json:"updated_at,omitempty"`
-	VerificationKeyId               *string                                                                                       `json:"verification_key_id"`
-	VerificationStatus              ListPackages200ResponseInstallationInfoVerificationStatus                                     `json:"verification_status"`
-	Version                         string                                                                                        `json:"version"`
-	AdditionalProperties            map[string]interface{}                                                                        `json:"-"`
+type GetFleetEpmPackages200ResponseInstallationInfoVerificationStatus string
+type GetFleetEpmPackages_200_Response_InstallationInfo struct {
+	AdditionalSpacesInstalledKibana *map[string][]GetFleetEpmPackages_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item `json:"additional_spaces_installed_kibana,omitempty"`
+	CreatedAt                       *string                                                                                              `json:"created_at,omitempty"`
+	ExperimentalDataStreamFeatures  *[]GetFleetEpmPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item             `json:"experimental_data_stream_features,omitempty"`
+	InstallFormatSchemaVersion      *string                                                                                              `json:"install_format_schema_version,omitempty"`
+	InstallSource                   GetFleetEpmPackages200ResponseInstallationInfoInstallSource                                          `json:"install_source"`
+	InstallStatus                   GetFleetEpmPackages200ResponseInstallationInfoInstallStatus                                          `json:"install_status"`
+	InstalledEs                     []GetFleetEpmPackages_200_Response_InstallationInfo_InstalledEs_Item                                 `json:"installed_es"`
+	InstalledKibana                 []GetFleetEpmPackages_200_Response_InstallationInfo_InstalledKibana_Item                             `json:"installed_kibana"`
+	InstalledKibanaSpaceId          *string                                                                                              `json:"installed_kibana_space_id,omitempty"`
+	LatestExecutedState             *GetFleetEpmPackages_200_Response_InstallationInfo_LatestExecutedState                               `json:"latest_executed_state,omitempty"`
+	LatestInstallFailedAttempts     *[]GetFleetEpmPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
+	Name                            string                                                                                               `json:"name"`
+	Namespaces                      *[]string                                                                                            `json:"namespaces,omitempty"`
+	Type                            string                                                                                               `json:"type"`
+	UpdatedAt                       *string                                                                                              `json:"updated_at,omitempty"`
+	VerificationKeyId               *string                                                                                              `json:"verification_key_id"`
+	VerificationStatus              GetFleetEpmPackages200ResponseInstallationInfoVerificationStatus                                     `json:"verification_status"`
+	Version                         string                                                                                               `json:"version"`
+	AdditionalProperties            map[string]interface{}                                                                               `json:"-"`
 }
-type ListPackages200ResponseOwnerType string
-type ListPackages_200_Response_Owner struct {
-	Github               *string                           `json:"github,omitempty"`
-	Type                 *ListPackages200ResponseOwnerType `json:"type,omitempty"`
-	AdditionalProperties map[string]interface{}            `json:"-"`
+type GetFleetEpmPackages200ResponseOwnerType string
+type GetFleetEpmPackages_200_Response_Owner struct {
+	Github               *string                                  `json:"github,omitempty"`
+	Type                 *GetFleetEpmPackages200ResponseOwnerType `json:"type,omitempty"`
+	AdditionalProperties map[string]interface{}                   `json:"-"`
 }
-type ListPackages200ResponseRelease string
-type ListPackages_200_Response_Source struct {
+type GetFleetEpmPackages200ResponseRelease string
+type GetFleetEpmPackages_200_Response_Source struct {
 	License              string                 `json:"license"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type ListPackages200ResponseType string
-type ListPackages_200_Response_Item struct {
-	Categories           *[]string                                   `json:"categories,omitempty"`
-	Conditions           *ListPackages_200_Response_Conditions       `json:"conditions,omitempty"`
-	DataStreams          *[]map[string]interface{}                   `json:"data_streams,omitempty"`
-	Description          *string                                     `json:"description,omitempty"`
-	Discovery            *ListPackages_200_Response_Discovery        `json:"discovery,omitempty"`
-	Download             *string                                     `json:"download,omitempty"`
-	FormatVersion        *string                                     `json:"format_version,omitempty"`
-	Icons                *[]ListPackages_200_Response_Icons_Item     `json:"icons,omitempty"`
-	Id                   string                                      `json:"id"`
-	InstallationInfo     *ListPackages_200_Response_InstallationInfo `json:"installationInfo,omitempty"`
-	Integration          *string                                     `json:"integration,omitempty"`
-	Internal             *bool                                       `json:"internal,omitempty"`
-	LatestVersion        *string                                     `json:"latestVersion,omitempty"`
-	Name                 string                                      `json:"name"`
-	Owner                *ListPackages_200_Response_Owner            `json:"owner,omitempty"`
-	Path                 *string                                     `json:"path,omitempty"`
-	PolicyTemplates      *[]map[string]interface{}                   `json:"policy_templates,omitempty"`
-	Readme               *string                                     `json:"readme,omitempty"`
-	Release              *ListPackages200ResponseRelease             `json:"release,omitempty"`
-	SavedObject          interface{}                                 `json:"savedObject"`
-	SignaturePath        *string                                     `json:"signature_path,omitempty"`
-	Source               *ListPackages_200_Response_Source           `json:"source,omitempty"`
-	Status               *string                                     `json:"status,omitempty"`
-	Title                string                                      `json:"title"`
-	Type                 *ListPackages200ResponseType                `json:"type,omitempty"`
-	Vars                 *[]map[string]interface{}                   `json:"vars,omitempty"`
-	Version              string                                      `json:"version"`
-	AdditionalProperties map[string]interface{}                      `json:"-"`
+type GetFleetEpmPackages200ResponseType string
+type GetFleetEpmPackages_200_Response_Item struct {
+	Categories           *[]string                                          `json:"categories,omitempty"`
+	Conditions           *GetFleetEpmPackages_200_Response_Conditions       `json:"conditions,omitempty"`
+	DataStreams          *[]map[string]interface{}                          `json:"data_streams,omitempty"`
+	Description          *string                                            `json:"description,omitempty"`
+	Discovery            *GetFleetEpmPackages_200_Response_Discovery        `json:"discovery,omitempty"`
+	Download             *string                                            `json:"download,omitempty"`
+	FormatVersion        *string                                            `json:"format_version,omitempty"`
+	Icons                *[]GetFleetEpmPackages_200_Response_Icons_Item     `json:"icons,omitempty"`
+	Id                   string                                             `json:"id"`
+	InstallationInfo     *GetFleetEpmPackages_200_Response_InstallationInfo `json:"installationInfo,omitempty"`
+	Integration          *string                                            `json:"integration,omitempty"`
+	Internal             *bool                                              `json:"internal,omitempty"`
+	LatestVersion        *string                                            `json:"latestVersion,omitempty"`
+	Name                 string                                             `json:"name"`
+	Owner                *GetFleetEpmPackages_200_Response_Owner            `json:"owner,omitempty"`
+	Path                 *string                                            `json:"path,omitempty"`
+	PolicyTemplates      *[]map[string]interface{}                          `json:"policy_templates,omitempty"`
+	Readme               *string                                            `json:"readme,omitempty"`
+	Release              *GetFleetEpmPackages200ResponseRelease             `json:"release,omitempty"`
+	SavedObject          interface{}                                        `json:"savedObject"`
+	SignaturePath        *string                                            `json:"signature_path,omitempty"`
+	Source               *GetFleetEpmPackages_200_Response_Source           `json:"source,omitempty"`
+	Status               *string                                            `json:"status,omitempty"`
+	Title                string                                             `json:"title"`
+	Type                 *GetFleetEpmPackages200ResponseType                `json:"type,omitempty"`
+	Vars                 *[]map[string]interface{}                          `json:"vars,omitempty"`
+	Version              string                                             `json:"version"`
+	AdditionalProperties map[string]interface{}                             `json:"-"`
 }
 
 // Status returns HTTPResponse.Status
-func (r ListPackagesResponse) Status() string {
+func (r GetFleetEpmPackagesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14921,20 +14921,20 @@ func (r ListPackagesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListPackagesResponse) StatusCode() int {
+func (r GetFleetEpmPackagesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type InstallPackageByUploadResponse struct {
+type PostFleetEpmPackagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 }
 
 // Status returns HTTPResponse.Status
-func (r InstallPackageByUploadResponse) Status() string {
+func (r PostFleetEpmPackagesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14942,20 +14942,20 @@ func (r InstallPackageByUploadResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r InstallPackageByUploadResponse) StatusCode() int {
+func (r PostFleetEpmPackagesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeletePackageResponse struct {
+type DeleteFleetEpmPackagesPkgnamePkgversionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items []DeletePackage_200_Items_Item `json:"items"`
+		Items []DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
 		// Deprecated:
-		Response *[]DeletePackage_200_Response_Item `json:"response,omitempty"`
+		Response *[]DeleteFleetEpmPackagesPkgnamePkgversion_200_Response_Item `json:"response,omitempty"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
@@ -14963,41 +14963,41 @@ type DeletePackageResponse struct {
 		StatusCode *float32 `json:"statusCode,omitempty"`
 	}
 }
-type DeletePackage200Items0 struct {
-	Id       string                     `json:"id"`
-	OriginId *string                    `json:"originId,omitempty"`
-	Type     DeletePackage200Items0Type `json:"type"`
+type DeleteFleetEpmPackagesPkgnamePkgversion200Items0 struct {
+	Id       string                                               `json:"id"`
+	OriginId *string                                              `json:"originId,omitempty"`
+	Type     DeleteFleetEpmPackagesPkgnamePkgversion200Items0Type `json:"type"`
 }
-type DeletePackage200Items0Type string
-type DeletePackage200Items1 struct {
-	Deferred *bool                      `json:"deferred,omitempty"`
-	Id       string                     `json:"id"`
-	Type     DeletePackage200Items1Type `json:"type"`
-	Version  *string                    `json:"version,omitempty"`
+type DeleteFleetEpmPackagesPkgnamePkgversion200Items0Type string
+type DeleteFleetEpmPackagesPkgnamePkgversion200Items1 struct {
+	Deferred *bool                                                `json:"deferred,omitempty"`
+	Id       string                                               `json:"id"`
+	Type     DeleteFleetEpmPackagesPkgnamePkgversion200Items1Type `json:"type"`
+	Version  *string                                              `json:"version,omitempty"`
 }
-type DeletePackage200Items1Type string
-type DeletePackage_200_Items_Item struct {
+type DeleteFleetEpmPackagesPkgnamePkgversion200Items1Type string
+type DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_Item struct {
 	union json.RawMessage
 }
-type DeletePackage200Response0 struct {
-	Id       string                        `json:"id"`
-	OriginId *string                       `json:"originId,omitempty"`
-	Type     DeletePackage200Response0Type `json:"type"`
+type DeleteFleetEpmPackagesPkgnamePkgversion200Response0 struct {
+	Id       string                                                  `json:"id"`
+	OriginId *string                                                 `json:"originId,omitempty"`
+	Type     DeleteFleetEpmPackagesPkgnamePkgversion200Response0Type `json:"type"`
 }
-type DeletePackage200Response0Type string
-type DeletePackage200Response1 struct {
-	Deferred *bool                         `json:"deferred,omitempty"`
-	Id       string                        `json:"id"`
-	Type     DeletePackage200Response1Type `json:"type"`
-	Version  *string                       `json:"version,omitempty"`
+type DeleteFleetEpmPackagesPkgnamePkgversion200Response0Type string
+type DeleteFleetEpmPackagesPkgnamePkgversion200Response1 struct {
+	Deferred *bool                                                   `json:"deferred,omitempty"`
+	Id       string                                                  `json:"id"`
+	Type     DeleteFleetEpmPackagesPkgnamePkgversion200Response1Type `json:"type"`
+	Version  *string                                                 `json:"version,omitempty"`
 }
-type DeletePackage200Response1Type string
-type DeletePackage_200_Response_Item struct {
+type DeleteFleetEpmPackagesPkgnamePkgversion200Response1Type string
+type DeleteFleetEpmPackagesPkgnamePkgversion_200_Response_Item struct {
 	union json.RawMessage
 }
 
 // Status returns HTTPResponse.Status
-func (r DeletePackageResponse) Status() string {
+func (r DeleteFleetEpmPackagesPkgnamePkgversionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15005,14 +15005,14 @@ func (r DeletePackageResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeletePackageResponse) StatusCode() int {
+func (r DeleteFleetEpmPackagesPkgnamePkgversionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetPackageResponse struct {
+type GetFleetEpmPackagesPkgnamePkgversionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15021,7 +15021,7 @@ type GetPackageResponse struct {
 			HasPolicies bool `json:"has_policies"`
 		} `json:"metadata,omitempty"`
 		// Deprecated:
-		Response *GetPackage_200_Response `json:"response,omitempty"`
+		Response *GetFleetEpmPackagesPkgnamePkgversion_200_Response `json:"response,omitempty"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
@@ -15029,29 +15029,29 @@ type GetPackageResponse struct {
 		StatusCode *float32 `json:"statusCode,omitempty"`
 	}
 }
-type GetPackage_200_Response_Conditions_Elastic struct {
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions_Elastic struct {
 	Capabilities         *[]string              `json:"capabilities,omitempty"`
 	Subscription         *string                `json:"subscription,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type GetPackage_200_Response_Conditions_Kibana struct {
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions_Kibana struct {
 	Version              *string                `json:"version,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type GetPackage_200_Response_Conditions struct {
-	Elastic              *GetPackage_200_Response_Conditions_Elastic `json:"elastic,omitempty"`
-	Kibana               *GetPackage_200_Response_Conditions_Kibana  `json:"kibana,omitempty"`
-	AdditionalProperties map[string]interface{}                      `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions struct {
+	Elastic              *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions_Elastic `json:"elastic,omitempty"`
+	Kibana               *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions_Kibana  `json:"kibana,omitempty"`
+	AdditionalProperties map[string]interface{}                                                `json:"-"`
 }
-type GetPackage_200_Response_Discovery_Fields_Item struct {
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Discovery_Fields_Item struct {
 	Name                 string                 `json:"name"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type GetPackage_200_Response_Discovery struct {
-	Fields               *[]GetPackage_200_Response_Discovery_Fields_Item `json:"fields,omitempty"`
-	AdditionalProperties map[string]interface{}                           `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Discovery struct {
+	Fields               *[]GetFleetEpmPackagesPkgnamePkgversion_200_Response_Discovery_Fields_Item `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                                                     `json:"-"`
 }
-type GetPackage_200_Response_Icons_Item struct {
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Icons_Item struct {
 	DarkMode             *bool                  `json:"dark_mode,omitempty"`
 	Path                 *string                `json:"path,omitempty"`
 	Size                 *string                `json:"size,omitempty"`
@@ -15060,95 +15060,95 @@ type GetPackage_200_Response_Icons_Item struct {
 	Type                 *string                `json:"type,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type GetPackage200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType string
-type GetPackage_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item struct {
-	Id                   string                                                                   `json:"id"`
-	OriginId             *string                                                                  `json:"originId,omitempty"`
-	Type                 GetPackage200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                                   `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType string
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item struct {
+	Id                   string                                                                                             `json:"id"`
+	OriginId             *string                                                                                            `json:"originId,omitempty"`
+	Type                 GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType `json:"type"`
+	AdditionalProperties map[string]interface{}                                                                             `json:"-"`
 }
-type GetPackage_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features struct {
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features struct {
 	DocValueOnlyNumeric  *bool                  `json:"doc_value_only_numeric,omitempty"`
 	DocValueOnlyOther    *bool                  `json:"doc_value_only_other,omitempty"`
 	SyntheticSource      *bool                  `json:"synthetic_source,omitempty"`
 	Tsdb                 *bool                  `json:"tsdb,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type GetPackage_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item struct {
-	DataStream           string                                                                           `json:"data_stream"`
-	Features             GetPackage_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features `json:"features"`
-	AdditionalProperties map[string]interface{}                                                           `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item struct {
+	DataStream           string                                                                                                     `json:"data_stream"`
+	Features             GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features `json:"features"`
+	AdditionalProperties map[string]interface{}                                                                                     `json:"-"`
 }
-type GetPackage200ResponseInstallationInfoInstallSource string
-type GetPackage200ResponseInstallationInfoInstallStatus string
-type GetPackage200ResponseInstallationInfoInstalledEsType string
-type GetPackage_200_Response_InstallationInfo_InstalledEs_Item struct {
-	Deferred             *bool                                                `json:"deferred,omitempty"`
-	Id                   string                                               `json:"id"`
-	Type                 GetPackage200ResponseInstallationInfoInstalledEsType `json:"type"`
-	Version              *string                                              `json:"version,omitempty"`
-	AdditionalProperties map[string]interface{}                               `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstallSource string
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstallStatus string
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstalledEsType string
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_InstalledEs_Item struct {
+	Deferred             *bool                                                                          `json:"deferred,omitempty"`
+	Id                   string                                                                         `json:"id"`
+	Type                 GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstalledEsType `json:"type"`
+	Version              *string                                                                        `json:"version,omitempty"`
+	AdditionalProperties map[string]interface{}                                                         `json:"-"`
 }
-type GetPackage200ResponseInstallationInfoInstalledKibanaType string
-type GetPackage_200_Response_InstallationInfo_InstalledKibana_Item struct {
-	Id                   string                                                   `json:"id"`
-	OriginId             *string                                                  `json:"originId,omitempty"`
-	Type                 GetPackage200ResponseInstallationInfoInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                   `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstalledKibanaType string
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_InstalledKibana_Item struct {
+	Id                   string                                                                             `json:"id"`
+	OriginId             *string                                                                            `json:"originId,omitempty"`
+	Type                 GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstalledKibanaType `json:"type"`
+	AdditionalProperties map[string]interface{}                                                             `json:"-"`
 }
-type GetPackage_200_Response_InstallationInfo_LatestExecutedState struct {
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestExecutedState struct {
 	Error                *string                `json:"error,omitempty"`
 	Name                 string                 `json:"name"`
 	StartedAt            string                 `json:"started_at"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type GetPackage_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error struct {
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error struct {
 	Message              string                 `json:"message"`
 	Name                 string                 `json:"name"`
 	Stack                *string                `json:"stack,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type GetPackage_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item struct {
-	CreatedAt            string                                                                     `json:"created_at"`
-	Error                GetPackage_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error `json:"error"`
-	TargetVersion        string                                                                     `json:"target_version"`
-	AdditionalProperties map[string]interface{}                                                     `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item struct {
+	CreatedAt            string                                                                                               `json:"created_at"`
+	Error                GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error `json:"error"`
+	TargetVersion        string                                                                                               `json:"target_version"`
+	AdditionalProperties map[string]interface{}                                                                               `json:"-"`
 }
-type GetPackage200ResponseInstallationInfoVerificationStatus string
-type GetPackage_200_Response_InstallationInfo struct {
-	AdditionalSpacesInstalledKibana *map[string][]GetPackage_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item `json:"additional_spaces_installed_kibana,omitempty"`
-	CreatedAt                       *string                                                                                     `json:"created_at,omitempty"`
-	ExperimentalDataStreamFeatures  *[]GetPackage_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item             `json:"experimental_data_stream_features,omitempty"`
-	InstallFormatSchemaVersion      *string                                                                                     `json:"install_format_schema_version,omitempty"`
-	InstallSource                   GetPackage200ResponseInstallationInfoInstallSource                                          `json:"install_source"`
-	InstallStatus                   GetPackage200ResponseInstallationInfoInstallStatus                                          `json:"install_status"`
-	InstalledEs                     []GetPackage_200_Response_InstallationInfo_InstalledEs_Item                                 `json:"installed_es"`
-	InstalledKibana                 []GetPackage_200_Response_InstallationInfo_InstalledKibana_Item                             `json:"installed_kibana"`
-	InstalledKibanaSpaceId          *string                                                                                     `json:"installed_kibana_space_id,omitempty"`
-	LatestExecutedState             *GetPackage_200_Response_InstallationInfo_LatestExecutedState                               `json:"latest_executed_state,omitempty"`
-	LatestInstallFailedAttempts     *[]GetPackage_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
-	Name                            string                                                                                      `json:"name"`
-	Namespaces                      *[]string                                                                                   `json:"namespaces,omitempty"`
-	Type                            string                                                                                      `json:"type"`
-	UpdatedAt                       *string                                                                                     `json:"updated_at,omitempty"`
-	VerificationKeyId               *string                                                                                     `json:"verification_key_id"`
-	VerificationStatus              GetPackage200ResponseInstallationInfoVerificationStatus                                     `json:"verification_status"`
-	Version                         string                                                                                      `json:"version"`
-	AdditionalProperties            map[string]interface{}                                                                      `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoVerificationStatus string
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo struct {
+	AdditionalSpacesInstalledKibana *map[string][]GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item `json:"additional_spaces_installed_kibana,omitempty"`
+	CreatedAt                       *string                                                                                                               `json:"created_at,omitempty"`
+	ExperimentalDataStreamFeatures  *[]GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item             `json:"experimental_data_stream_features,omitempty"`
+	InstallFormatSchemaVersion      *string                                                                                                               `json:"install_format_schema_version,omitempty"`
+	InstallSource                   GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstallSource                                          `json:"install_source"`
+	InstallStatus                   GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstallStatus                                          `json:"install_status"`
+	InstalledEs                     []GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_InstalledEs_Item                                 `json:"installed_es"`
+	InstalledKibana                 []GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_InstalledKibana_Item                             `json:"installed_kibana"`
+	InstalledKibanaSpaceId          *string                                                                                                               `json:"installed_kibana_space_id,omitempty"`
+	LatestExecutedState             *GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestExecutedState                               `json:"latest_executed_state,omitempty"`
+	LatestInstallFailedAttempts     *[]GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
+	Name                            string                                                                                                                `json:"name"`
+	Namespaces                      *[]string                                                                                                             `json:"namespaces,omitempty"`
+	Type                            string                                                                                                                `json:"type"`
+	UpdatedAt                       *string                                                                                                               `json:"updated_at,omitempty"`
+	VerificationKeyId               *string                                                                                                               `json:"verification_key_id"`
+	VerificationStatus              GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoVerificationStatus                                     `json:"verification_status"`
+	Version                         string                                                                                                                `json:"version"`
+	AdditionalProperties            map[string]interface{}                                                                                                `json:"-"`
 }
-type GetPackage200ResponseOwnerType string
-type GetPackage_200_Response_Owner struct {
-	Github               *string                         `json:"github,omitempty"`
-	Type                 *GetPackage200ResponseOwnerType `json:"type,omitempty"`
-	AdditionalProperties map[string]interface{}          `json:"-"`
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseOwnerType string
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Owner struct {
+	Github               *string                                                   `json:"github,omitempty"`
+	Type                 *GetFleetEpmPackagesPkgnamePkgversion200ResponseOwnerType `json:"type,omitempty"`
+	AdditionalProperties map[string]interface{}                                    `json:"-"`
 }
-type GetPackage200ResponseRelease string
-type GetPackage_200_Response_Source struct {
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseRelease string
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Source struct {
 	License              string                 `json:"license"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
-type GetPackage200ResponseType string
-type GetPackage_200_Response struct {
+type GetFleetEpmPackagesPkgnamePkgversion200ResponseType string
+type GetFleetEpmPackagesPkgnamePkgversion_200_Response struct {
 	Agent *struct {
 		Privileges *struct {
 			Root *bool `json:"root,omitempty"`
@@ -15159,30 +15159,30 @@ type GetPackage_200_Response struct {
 		AssetTypes *[]string `json:"asset_types,omitempty"`
 		Text       string    `json:"text"`
 	} `json:"asset_tags,omitempty"`
-	Assets               map[string]interface{}                    `json:"assets"`
-	Categories           *[]string                                 `json:"categories,omitempty"`
-	Conditions           *GetPackage_200_Response_Conditions       `json:"conditions,omitempty"`
-	DataStreams          *[]map[string]interface{}                 `json:"data_streams,omitempty"`
-	Description          *string                                   `json:"description,omitempty"`
-	Discovery            *GetPackage_200_Response_Discovery        `json:"discovery,omitempty"`
-	Download             *string                                   `json:"download,omitempty"`
-	Elasticsearch        *map[string]interface{}                   `json:"elasticsearch,omitempty"`
-	FormatVersion        *string                                   `json:"format_version,omitempty"`
-	Icons                *[]GetPackage_200_Response_Icons_Item     `json:"icons,omitempty"`
-	InstallationInfo     *GetPackage_200_Response_InstallationInfo `json:"installationInfo,omitempty"`
-	Internal             *bool                                     `json:"internal,omitempty"`
-	KeepPoliciesUpToDate *bool                                     `json:"keepPoliciesUpToDate,omitempty"`
-	LatestVersion        *string                                   `json:"latestVersion,omitempty"`
-	License              *string                                   `json:"license,omitempty"`
-	LicensePath          *string                                   `json:"licensePath,omitempty"`
-	Name                 string                                    `json:"name"`
-	Notice               *string                                   `json:"notice,omitempty"`
-	Owner                *GetPackage_200_Response_Owner            `json:"owner,omitempty"`
-	Path                 *string                                   `json:"path,omitempty"`
-	PolicyTemplates      *[]map[string]interface{}                 `json:"policy_templates,omitempty"`
-	Readme               *string                                   `json:"readme,omitempty"`
-	Release              *GetPackage200ResponseRelease             `json:"release,omitempty"`
-	SavedObject          interface{}                               `json:"savedObject"`
+	Assets               map[string]interface{}                                              `json:"assets"`
+	Categories           *[]string                                                           `json:"categories,omitempty"`
+	Conditions           *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions       `json:"conditions,omitempty"`
+	DataStreams          *[]map[string]interface{}                                           `json:"data_streams,omitempty"`
+	Description          *string                                                             `json:"description,omitempty"`
+	Discovery            *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Discovery        `json:"discovery,omitempty"`
+	Download             *string                                                             `json:"download,omitempty"`
+	Elasticsearch        *map[string]interface{}                                             `json:"elasticsearch,omitempty"`
+	FormatVersion        *string                                                             `json:"format_version,omitempty"`
+	Icons                *[]GetFleetEpmPackagesPkgnamePkgversion_200_Response_Icons_Item     `json:"icons,omitempty"`
+	InstallationInfo     *GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo `json:"installationInfo,omitempty"`
+	Internal             *bool                                                               `json:"internal,omitempty"`
+	KeepPoliciesUpToDate *bool                                                               `json:"keepPoliciesUpToDate,omitempty"`
+	LatestVersion        *string                                                             `json:"latestVersion,omitempty"`
+	License              *string                                                             `json:"license,omitempty"`
+	LicensePath          *string                                                             `json:"licensePath,omitempty"`
+	Name                 string                                                              `json:"name"`
+	Notice               *string                                                             `json:"notice,omitempty"`
+	Owner                *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Owner            `json:"owner,omitempty"`
+	Path                 *string                                                             `json:"path,omitempty"`
+	PolicyTemplates      *[]map[string]interface{}                                           `json:"policy_templates,omitempty"`
+	Readme               *string                                                             `json:"readme,omitempty"`
+	Release              *GetFleetEpmPackagesPkgnamePkgversion200ResponseRelease             `json:"release,omitempty"`
+	SavedObject          interface{}                                                         `json:"savedObject"`
 	Screenshots          *[]struct {
 		DarkMode *bool   `json:"dark_mode,omitempty"`
 		Path     *string `json:"path,omitempty"`
@@ -15191,18 +15191,18 @@ type GetPackage_200_Response struct {
 		Title    *string `json:"title,omitempty"`
 		Type     *string `json:"type,omitempty"`
 	} `json:"screenshots,omitempty"`
-	SignaturePath        *string                         `json:"signature_path,omitempty"`
-	Source               *GetPackage_200_Response_Source `json:"source,omitempty"`
-	Status               *string                         `json:"status,omitempty"`
-	Title                string                          `json:"title"`
-	Type                 *GetPackage200ResponseType      `json:"type,omitempty"`
-	Vars                 *[]map[string]interface{}       `json:"vars,omitempty"`
-	Version              string                          `json:"version"`
-	AdditionalProperties map[string]interface{}          `json:"-"`
+	SignaturePath        *string                                                   `json:"signature_path,omitempty"`
+	Source               *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Source `json:"source,omitempty"`
+	Status               *string                                                   `json:"status,omitempty"`
+	Title                string                                                    `json:"title"`
+	Type                 *GetFleetEpmPackagesPkgnamePkgversion200ResponseType      `json:"type,omitempty"`
+	Vars                 *[]map[string]interface{}                                 `json:"vars,omitempty"`
+	Version              string                                                    `json:"version"`
+	AdditionalProperties map[string]interface{}                                    `json:"-"`
 }
 
 // Status returns HTTPResponse.Status
-func (r GetPackageResponse) Status() string {
+func (r GetFleetEpmPackagesPkgnamePkgversionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15210,23 +15210,23 @@ func (r GetPackageResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetPackageResponse) StatusCode() int {
+func (r GetFleetEpmPackagesPkgnamePkgversionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type InstallPackageResponse struct {
+type PostFleetEpmPackagesPkgnamePkgversionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
 		Meta struct {
 			InstallSource string `json:"install_source"`
 		} `json:"_meta"`
-		Items []InstallPackage_200_Items_Item `json:"items"`
+		Items []PostFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
 		// Deprecated:
-		Response *[]InstallPackage_200_Response_Item `json:"response,omitempty"`
+		Response *[]PostFleetEpmPackagesPkgnamePkgversion_200_Response_Item `json:"response,omitempty"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
@@ -15234,41 +15234,41 @@ type InstallPackageResponse struct {
 		StatusCode *float32 `json:"statusCode,omitempty"`
 	}
 }
-type InstallPackage200Items0 struct {
-	Id       string                      `json:"id"`
-	OriginId *string                     `json:"originId,omitempty"`
-	Type     InstallPackage200Items0Type `json:"type"`
+type PostFleetEpmPackagesPkgnamePkgversion200Items0 struct {
+	Id       string                                             `json:"id"`
+	OriginId *string                                            `json:"originId,omitempty"`
+	Type     PostFleetEpmPackagesPkgnamePkgversion200Items0Type `json:"type"`
 }
-type InstallPackage200Items0Type string
-type InstallPackage200Items1 struct {
-	Deferred *bool                       `json:"deferred,omitempty"`
-	Id       string                      `json:"id"`
-	Type     InstallPackage200Items1Type `json:"type"`
-	Version  *string                     `json:"version,omitempty"`
+type PostFleetEpmPackagesPkgnamePkgversion200Items0Type string
+type PostFleetEpmPackagesPkgnamePkgversion200Items1 struct {
+	Deferred *bool                                              `json:"deferred,omitempty"`
+	Id       string                                             `json:"id"`
+	Type     PostFleetEpmPackagesPkgnamePkgversion200Items1Type `json:"type"`
+	Version  *string                                            `json:"version,omitempty"`
 }
-type InstallPackage200Items1Type string
-type InstallPackage_200_Items_Item struct {
+type PostFleetEpmPackagesPkgnamePkgversion200Items1Type string
+type PostFleetEpmPackagesPkgnamePkgversion_200_Items_Item struct {
 	union json.RawMessage
 }
-type InstallPackage200Response0 struct {
-	Id       string                         `json:"id"`
-	OriginId *string                        `json:"originId,omitempty"`
-	Type     InstallPackage200Response0Type `json:"type"`
+type PostFleetEpmPackagesPkgnamePkgversion200Response0 struct {
+	Id       string                                                `json:"id"`
+	OriginId *string                                               `json:"originId,omitempty"`
+	Type     PostFleetEpmPackagesPkgnamePkgversion200Response0Type `json:"type"`
 }
-type InstallPackage200Response0Type string
-type InstallPackage200Response1 struct {
-	Deferred *bool                          `json:"deferred,omitempty"`
-	Id       string                         `json:"id"`
-	Type     InstallPackage200Response1Type `json:"type"`
-	Version  *string                        `json:"version,omitempty"`
+type PostFleetEpmPackagesPkgnamePkgversion200Response0Type string
+type PostFleetEpmPackagesPkgnamePkgversion200Response1 struct {
+	Deferred *bool                                                 `json:"deferred,omitempty"`
+	Id       string                                                `json:"id"`
+	Type     PostFleetEpmPackagesPkgnamePkgversion200Response1Type `json:"type"`
+	Version  *string                                               `json:"version,omitempty"`
 }
-type InstallPackage200Response1Type string
-type InstallPackage_200_Response_Item struct {
+type PostFleetEpmPackagesPkgnamePkgversion200Response1Type string
+type PostFleetEpmPackagesPkgnamePkgversion_200_Response_Item struct {
 	union json.RawMessage
 }
 
 // Status returns HTTPResponse.Status
-func (r InstallPackageResponse) Status() string {
+func (r PostFleetEpmPackagesPkgnamePkgversionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15276,14 +15276,14 @@ func (r InstallPackageResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r InstallPackageResponse) StatusCode() int {
+func (r PostFleetEpmPackagesPkgnamePkgversionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetFleetServerHostsResponse struct {
+type GetFleetFleetServerHostsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15300,7 +15300,7 @@ type GetFleetServerHostsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetFleetServerHostsResponse) Status() string {
+func (r GetFleetFleetServerHostsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15308,14 +15308,14 @@ func (r GetFleetServerHostsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetFleetServerHostsResponse) StatusCode() int {
+func (r GetFleetFleetServerHostsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type CreateFleetServerHostResponse struct {
+type PostFleetFleetServerHostsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15329,7 +15329,7 @@ type CreateFleetServerHostResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateFleetServerHostResponse) Status() string {
+func (r PostFleetFleetServerHostsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15337,14 +15337,14 @@ func (r CreateFleetServerHostResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateFleetServerHostResponse) StatusCode() int {
+func (r PostFleetFleetServerHostsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeleteFleetServerHostResponse struct {
+type DeleteFleetFleetServerHostsItemidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15358,7 +15358,7 @@ type DeleteFleetServerHostResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteFleetServerHostResponse) Status() string {
+func (r DeleteFleetFleetServerHostsItemidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15366,14 +15366,14 @@ func (r DeleteFleetServerHostResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteFleetServerHostResponse) StatusCode() int {
+func (r DeleteFleetFleetServerHostsItemidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetFleetServerHostResponse struct {
+type GetFleetFleetServerHostsItemidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15387,7 +15387,7 @@ type GetFleetServerHostResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetFleetServerHostResponse) Status() string {
+func (r GetFleetFleetServerHostsItemidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15395,14 +15395,14 @@ func (r GetFleetServerHostResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetFleetServerHostResponse) StatusCode() int {
+func (r GetFleetFleetServerHostsItemidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdateFleetServerHostResponse struct {
+type PutFleetFleetServerHostsItemidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15416,7 +15416,7 @@ type UpdateFleetServerHostResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateFleetServerHostResponse) Status() string {
+func (r PutFleetFleetServerHostsItemidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15424,14 +15424,14 @@ func (r UpdateFleetServerHostResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateFleetServerHostResponse) StatusCode() int {
+func (r PutFleetFleetServerHostsItemidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetOutputsResponse struct {
+type GetFleetOutputsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15448,7 +15448,7 @@ type GetOutputsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetOutputsResponse) Status() string {
+func (r GetFleetOutputsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15456,14 +15456,14 @@ func (r GetOutputsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetOutputsResponse) StatusCode() int {
+func (r GetFleetOutputsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type CreateOutputResponse struct {
+type PostFleetOutputsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15477,7 +15477,7 @@ type CreateOutputResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateOutputResponse) Status() string {
+func (r PostFleetOutputsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15485,14 +15485,14 @@ func (r CreateOutputResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateOutputResponse) StatusCode() int {
+func (r PostFleetOutputsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeleteOutputResponse struct {
+type DeleteFleetOutputsOutputidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15511,7 +15511,7 @@ type DeleteOutputResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteOutputResponse) Status() string {
+func (r DeleteFleetOutputsOutputidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15519,14 +15519,14 @@ func (r DeleteOutputResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteOutputResponse) StatusCode() int {
+func (r DeleteFleetOutputsOutputidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetOutputResponse struct {
+type GetFleetOutputsOutputidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15540,7 +15540,7 @@ type GetOutputResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetOutputResponse) Status() string {
+func (r GetFleetOutputsOutputidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15548,14 +15548,14 @@ func (r GetOutputResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetOutputResponse) StatusCode() int {
+func (r GetFleetOutputsOutputidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdateOutputResponse struct {
+type PutFleetOutputsOutputidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15569,7 +15569,7 @@ type UpdateOutputResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateOutputResponse) Status() string {
+func (r PutFleetOutputsOutputidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15577,14 +15577,14 @@ func (r UpdateOutputResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateOutputResponse) StatusCode() int {
+func (r PutFleetOutputsOutputidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetPackagePoliciesResponse struct {
+type GetFleetPackagePoliciesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15601,7 +15601,7 @@ type GetPackagePoliciesResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetPackagePoliciesResponse) Status() string {
+func (r GetFleetPackagePoliciesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15609,14 +15609,14 @@ func (r GetPackagePoliciesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetPackagePoliciesResponse) StatusCode() int {
+func (r GetFleetPackagePoliciesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type CreatePackagePolicyResponse struct {
+type PostFleetPackagePoliciesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15635,7 +15635,7 @@ type CreatePackagePolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r CreatePackagePolicyResponse) Status() string {
+func (r PostFleetPackagePoliciesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15643,14 +15643,14 @@ func (r CreatePackagePolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreatePackagePolicyResponse) StatusCode() int {
+func (r PostFleetPackagePoliciesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeletePackagePolicyResponse struct {
+type DeleteFleetPackagePoliciesPackagepolicyidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15664,7 +15664,7 @@ type DeletePackagePolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeletePackagePolicyResponse) Status() string {
+func (r DeleteFleetPackagePoliciesPackagepolicyidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15672,14 +15672,14 @@ func (r DeletePackagePolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeletePackagePolicyResponse) StatusCode() int {
+func (r DeleteFleetPackagePoliciesPackagepolicyidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetPackagePolicyResponse struct {
+type GetFleetPackagePoliciesPackagepolicyidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15696,7 +15696,7 @@ type GetPackagePolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetPackagePolicyResponse) Status() string {
+func (r GetFleetPackagePoliciesPackagepolicyidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15704,14 +15704,14 @@ func (r GetPackagePolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetPackagePolicyResponse) StatusCode() int {
+func (r GetFleetPackagePoliciesPackagepolicyidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdatePackagePolicyResponse struct {
+type PutFleetPackagePoliciesPackagepolicyidResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15730,7 +15730,7 @@ type UpdatePackagePolicyResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdatePackagePolicyResponse) Status() string {
+func (r PutFleetPackagePoliciesPackagepolicyidResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15738,14 +15738,14 @@ func (r UpdatePackagePolicyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdatePackagePolicyResponse) StatusCode() int {
+func (r PutFleetPackagePoliciesPackagepolicyidResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetDataViewsResponse struct {
+type GetAllDataViewsDefaultResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
@@ -15755,7 +15755,7 @@ type GetDataViewsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetDataViewsResponse) Status() string {
+func (r GetAllDataViewsDefaultResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15763,14 +15763,14 @@ func (r GetDataViewsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetDataViewsResponse) StatusCode() int {
+func (r GetAllDataViewsDefaultResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type CreateDataViewResponse struct {
+type CreateDataViewDefaultwResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *DataViewsDataViewResponseObject
@@ -15778,7 +15778,7 @@ type CreateDataViewResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateDataViewResponse) Status() string {
+func (r CreateDataViewDefaultwResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15786,21 +15786,21 @@ func (r CreateDataViewResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateDataViewResponse) StatusCode() int {
+func (r CreateDataViewDefaultwResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type DeleteDataViewResponse struct {
+type DeleteDataViewDefaultResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON404      *DataViews404Response
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteDataViewResponse) Status() string {
+func (r DeleteDataViewDefaultResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15808,14 +15808,14 @@ func (r DeleteDataViewResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteDataViewResponse) StatusCode() int {
+func (r DeleteDataViewDefaultResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetDataViewResponse struct {
+type GetDataViewDefaultResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *DataViewsDataViewResponseObject
@@ -15823,7 +15823,7 @@ type GetDataViewResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetDataViewResponse) Status() string {
+func (r GetDataViewDefaultResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15831,14 +15831,14 @@ func (r GetDataViewResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetDataViewResponse) StatusCode() int {
+func (r GetDataViewDefaultResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type UpdateDataViewResponse struct {
+type UpdateDataViewDefaultResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *DataViewsDataViewResponseObject
@@ -15846,7 +15846,7 @@ type UpdateDataViewResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateDataViewResponse) Status() string {
+func (r UpdateDataViewDefaultResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -15854,405 +15854,405 @@ func (r UpdateDataViewResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateDataViewResponse) StatusCode() int {
+func (r UpdateDataViewDefaultResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-// GetAgentPoliciesWithResponse request returning *GetAgentPoliciesResponse
-func (c *ClientWithResponses) GetAgentPoliciesWithResponse(ctx context.Context, params *GetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetAgentPoliciesResponse, error) {
-	rsp, err := c.GetAgentPolicies(ctx, params, reqEditors...)
+// GetFleetAgentPoliciesWithResponse request returning *GetFleetAgentPoliciesResponse
+func (c *ClientWithResponses) GetFleetAgentPoliciesWithResponse(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesResponse, error) {
+	rsp, err := c.GetFleetAgentPolicies(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetAgentPoliciesResponse(rsp)
+	return ParseGetFleetAgentPoliciesResponse(rsp)
 }
 
-// CreateAgentPolicyWithBodyWithResponse request with arbitrary body returning *CreateAgentPolicyResponse
-func (c *ClientWithResponses) CreateAgentPolicyWithBodyWithResponse(ctx context.Context, params *CreateAgentPolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAgentPolicyResponse, error) {
-	rsp, err := c.CreateAgentPolicyWithBody(ctx, params, contentType, body, reqEditors...)
+// PostFleetAgentPoliciesWithBodyWithResponse request with arbitrary body returning *PostFleetAgentPoliciesResponse
+func (c *ClientWithResponses) PostFleetAgentPoliciesWithBodyWithResponse(ctx context.Context, params *PostFleetAgentPoliciesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetAgentPoliciesResponse, error) {
+	rsp, err := c.PostFleetAgentPoliciesWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateAgentPolicyResponse(rsp)
+	return ParsePostFleetAgentPoliciesResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateAgentPolicyWithResponse(ctx context.Context, params *CreateAgentPolicyParams, body CreateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentPolicyResponse, error) {
-	rsp, err := c.CreateAgentPolicy(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) PostFleetAgentPoliciesWithResponse(ctx context.Context, params *PostFleetAgentPoliciesParams, body PostFleetAgentPoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetAgentPoliciesResponse, error) {
+	rsp, err := c.PostFleetAgentPolicies(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateAgentPolicyResponse(rsp)
+	return ParsePostFleetAgentPoliciesResponse(rsp)
 }
 
-// DeleteAgentPolicyWithBodyWithResponse request with arbitrary body returning *DeleteAgentPolicyResponse
-func (c *ClientWithResponses) DeleteAgentPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAgentPolicyResponse, error) {
-	rsp, err := c.DeleteAgentPolicyWithBody(ctx, contentType, body, reqEditors...)
+// PostFleetAgentPoliciesDeleteWithBodyWithResponse request with arbitrary body returning *PostFleetAgentPoliciesDeleteResponse
+func (c *ClientWithResponses) PostFleetAgentPoliciesDeleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetAgentPoliciesDeleteResponse, error) {
+	rsp, err := c.PostFleetAgentPoliciesDeleteWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteAgentPolicyResponse(rsp)
+	return ParsePostFleetAgentPoliciesDeleteResponse(rsp)
 }
 
-func (c *ClientWithResponses) DeleteAgentPolicyWithResponse(ctx context.Context, body DeleteAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteAgentPolicyResponse, error) {
-	rsp, err := c.DeleteAgentPolicy(ctx, body, reqEditors...)
+func (c *ClientWithResponses) PostFleetAgentPoliciesDeleteWithResponse(ctx context.Context, body PostFleetAgentPoliciesDeleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetAgentPoliciesDeleteResponse, error) {
+	rsp, err := c.PostFleetAgentPoliciesDelete(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteAgentPolicyResponse(rsp)
+	return ParsePostFleetAgentPoliciesDeleteResponse(rsp)
 }
 
-// GetAgentPolicyWithResponse request returning *GetAgentPolicyResponse
-func (c *ClientWithResponses) GetAgentPolicyWithResponse(ctx context.Context, agentPolicyId string, params *GetAgentPolicyParams, reqEditors ...RequestEditorFn) (*GetAgentPolicyResponse, error) {
-	rsp, err := c.GetAgentPolicy(ctx, agentPolicyId, params, reqEditors...)
+// GetFleetAgentPoliciesAgentpolicyidWithResponse request returning *GetFleetAgentPoliciesAgentpolicyidResponse
+func (c *ClientWithResponses) GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx context.Context, agentPolicyId string, params *GetFleetAgentPoliciesAgentpolicyidParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesAgentpolicyidResponse, error) {
+	rsp, err := c.GetFleetAgentPoliciesAgentpolicyid(ctx, agentPolicyId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetAgentPolicyResponse(rsp)
+	return ParseGetFleetAgentPoliciesAgentpolicyidResponse(rsp)
 }
 
-// UpdateAgentPolicyWithBodyWithResponse request with arbitrary body returning *UpdateAgentPolicyResponse
-func (c *ClientWithResponses) UpdateAgentPolicyWithBodyWithResponse(ctx context.Context, agentPolicyId string, params *UpdateAgentPolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentPolicyResponse, error) {
-	rsp, err := c.UpdateAgentPolicyWithBody(ctx, agentPolicyId, params, contentType, body, reqEditors...)
+// PutFleetAgentPoliciesAgentpolicyidWithBodyWithResponse request with arbitrary body returning *PutFleetAgentPoliciesAgentpolicyidResponse
+func (c *ClientWithResponses) PutFleetAgentPoliciesAgentpolicyidWithBodyWithResponse(ctx context.Context, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetAgentPoliciesAgentpolicyidResponse, error) {
+	rsp, err := c.PutFleetAgentPoliciesAgentpolicyidWithBody(ctx, agentPolicyId, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateAgentPolicyResponse(rsp)
+	return ParsePutFleetAgentPoliciesAgentpolicyidResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateAgentPolicyWithResponse(ctx context.Context, agentPolicyId string, params *UpdateAgentPolicyParams, body UpdateAgentPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentPolicyResponse, error) {
-	rsp, err := c.UpdateAgentPolicy(ctx, agentPolicyId, params, body, reqEditors...)
+func (c *ClientWithResponses) PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx context.Context, agentPolicyId string, params *PutFleetAgentPoliciesAgentpolicyidParams, body PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetAgentPoliciesAgentpolicyidResponse, error) {
+	rsp, err := c.PutFleetAgentPoliciesAgentpolicyid(ctx, agentPolicyId, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateAgentPolicyResponse(rsp)
+	return ParsePutFleetAgentPoliciesAgentpolicyidResponse(rsp)
 }
 
-// GetEnrollmentApiKeysWithResponse request returning *GetEnrollmentApiKeysResponse
-func (c *ClientWithResponses) GetEnrollmentApiKeysWithResponse(ctx context.Context, params *GetEnrollmentApiKeysParams, reqEditors ...RequestEditorFn) (*GetEnrollmentApiKeysResponse, error) {
-	rsp, err := c.GetEnrollmentApiKeys(ctx, params, reqEditors...)
+// GetFleetEnrollmentApiKeysWithResponse request returning *GetFleetEnrollmentApiKeysResponse
+func (c *ClientWithResponses) GetFleetEnrollmentApiKeysWithResponse(ctx context.Context, params *GetFleetEnrollmentApiKeysParams, reqEditors ...RequestEditorFn) (*GetFleetEnrollmentApiKeysResponse, error) {
+	rsp, err := c.GetFleetEnrollmentApiKeys(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetEnrollmentApiKeysResponse(rsp)
+	return ParseGetFleetEnrollmentApiKeysResponse(rsp)
 }
 
-// ListPackagesWithResponse request returning *ListPackagesResponse
-func (c *ClientWithResponses) ListPackagesWithResponse(ctx context.Context, params *ListPackagesParams, reqEditors ...RequestEditorFn) (*ListPackagesResponse, error) {
-	rsp, err := c.ListPackages(ctx, params, reqEditors...)
+// GetFleetEpmPackagesWithResponse request returning *GetFleetEpmPackagesResponse
+func (c *ClientWithResponses) GetFleetEpmPackagesWithResponse(ctx context.Context, params *GetFleetEpmPackagesParams, reqEditors ...RequestEditorFn) (*GetFleetEpmPackagesResponse, error) {
+	rsp, err := c.GetFleetEpmPackages(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListPackagesResponse(rsp)
+	return ParseGetFleetEpmPackagesResponse(rsp)
 }
 
-// InstallPackageByUploadWithBodyWithResponse request with arbitrary body returning *InstallPackageByUploadResponse
-func (c *ClientWithResponses) InstallPackageByUploadWithBodyWithResponse(ctx context.Context, params *InstallPackageByUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InstallPackageByUploadResponse, error) {
-	rsp, err := c.InstallPackageByUploadWithBody(ctx, params, contentType, body, reqEditors...)
+// PostFleetEpmPackagesWithBodyWithResponse request with arbitrary body returning *PostFleetEpmPackagesResponse
+func (c *ClientWithResponses) PostFleetEpmPackagesWithBodyWithResponse(ctx context.Context, params *PostFleetEpmPackagesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetEpmPackagesResponse, error) {
+	rsp, err := c.PostFleetEpmPackagesWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseInstallPackageByUploadResponse(rsp)
+	return ParsePostFleetEpmPackagesResponse(rsp)
 }
 
-// DeletePackageWithBodyWithResponse request with arbitrary body returning *DeletePackageResponse
-func (c *ClientWithResponses) DeletePackageWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeletePackageResponse, error) {
-	rsp, err := c.DeletePackageWithBody(ctx, pkgName, pkgVersion, params, contentType, body, reqEditors...)
+// DeleteFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse request with arbitrary body returning *DeleteFleetEpmPackagesPkgnamePkgversionResponse
+func (c *ClientWithResponses) DeleteFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error) {
+	rsp, err := c.DeleteFleetEpmPackagesPkgnamePkgversionWithBody(ctx, pkgName, pkgVersion, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeletePackageResponse(rsp)
+	return ParseDeleteFleetEpmPackagesPkgnamePkgversionResponse(rsp)
 }
 
-func (c *ClientWithResponses) DeletePackageWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeletePackageParams, body DeletePackageJSONRequestBody, reqEditors ...RequestEditorFn) (*DeletePackageResponse, error) {
-	rsp, err := c.DeletePackage(ctx, pkgName, pkgVersion, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error) {
+	rsp, err := c.DeleteFleetEpmPackagesPkgnamePkgversion(ctx, pkgName, pkgVersion, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeletePackageResponse(rsp)
+	return ParseDeleteFleetEpmPackagesPkgnamePkgversionResponse(rsp)
 }
 
-// GetPackageWithResponse request returning *GetPackageResponse
-func (c *ClientWithResponses) GetPackageWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *GetPackageParams, reqEditors ...RequestEditorFn) (*GetPackageResponse, error) {
-	rsp, err := c.GetPackage(ctx, pkgName, pkgVersion, params, reqEditors...)
+// GetFleetEpmPackagesPkgnamePkgversionWithResponse request returning *GetFleetEpmPackagesPkgnamePkgversionResponse
+func (c *ClientWithResponses) GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *GetFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*GetFleetEpmPackagesPkgnamePkgversionResponse, error) {
+	rsp, err := c.GetFleetEpmPackagesPkgnamePkgversion(ctx, pkgName, pkgVersion, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetPackageResponse(rsp)
+	return ParseGetFleetEpmPackagesPkgnamePkgversionResponse(rsp)
 }
 
-// InstallPackageWithBodyWithResponse request with arbitrary body returning *InstallPackageResponse
-func (c *ClientWithResponses) InstallPackageWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *InstallPackageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InstallPackageResponse, error) {
-	rsp, err := c.InstallPackageWithBody(ctx, pkgName, pkgVersion, params, contentType, body, reqEditors...)
+// PostFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse request with arbitrary body returning *PostFleetEpmPackagesPkgnamePkgversionResponse
+func (c *ClientWithResponses) PostFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetEpmPackagesPkgnamePkgversionResponse, error) {
+	rsp, err := c.PostFleetEpmPackagesPkgnamePkgversionWithBody(ctx, pkgName, pkgVersion, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseInstallPackageResponse(rsp)
+	return ParsePostFleetEpmPackagesPkgnamePkgversionResponse(rsp)
 }
 
-func (c *ClientWithResponses) InstallPackageWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *InstallPackageParams, body InstallPackageJSONRequestBody, reqEditors ...RequestEditorFn) (*InstallPackageResponse, error) {
-	rsp, err := c.InstallPackage(ctx, pkgName, pkgVersion, params, body, reqEditors...)
+func (c *ClientWithResponses) PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *PostFleetEpmPackagesPkgnamePkgversionParams, body PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetEpmPackagesPkgnamePkgversionResponse, error) {
+	rsp, err := c.PostFleetEpmPackagesPkgnamePkgversion(ctx, pkgName, pkgVersion, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseInstallPackageResponse(rsp)
+	return ParsePostFleetEpmPackagesPkgnamePkgversionResponse(rsp)
 }
 
-// GetFleetServerHostsWithResponse request returning *GetFleetServerHostsResponse
-func (c *ClientWithResponses) GetFleetServerHostsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFleetServerHostsResponse, error) {
-	rsp, err := c.GetFleetServerHosts(ctx, reqEditors...)
+// GetFleetFleetServerHostsWithResponse request returning *GetFleetFleetServerHostsResponse
+func (c *ClientWithResponses) GetFleetFleetServerHostsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFleetFleetServerHostsResponse, error) {
+	rsp, err := c.GetFleetFleetServerHosts(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetFleetServerHostsResponse(rsp)
+	return ParseGetFleetFleetServerHostsResponse(rsp)
 }
 
-// CreateFleetServerHostWithBodyWithResponse request with arbitrary body returning *CreateFleetServerHostResponse
-func (c *ClientWithResponses) CreateFleetServerHostWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFleetServerHostResponse, error) {
-	rsp, err := c.CreateFleetServerHostWithBody(ctx, contentType, body, reqEditors...)
+// PostFleetFleetServerHostsWithBodyWithResponse request with arbitrary body returning *PostFleetFleetServerHostsResponse
+func (c *ClientWithResponses) PostFleetFleetServerHostsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetFleetServerHostsResponse, error) {
+	rsp, err := c.PostFleetFleetServerHostsWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateFleetServerHostResponse(rsp)
+	return ParsePostFleetFleetServerHostsResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateFleetServerHostWithResponse(ctx context.Context, body CreateFleetServerHostJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFleetServerHostResponse, error) {
-	rsp, err := c.CreateFleetServerHost(ctx, body, reqEditors...)
+func (c *ClientWithResponses) PostFleetFleetServerHostsWithResponse(ctx context.Context, body PostFleetFleetServerHostsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetFleetServerHostsResponse, error) {
+	rsp, err := c.PostFleetFleetServerHosts(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateFleetServerHostResponse(rsp)
+	return ParsePostFleetFleetServerHostsResponse(rsp)
 }
 
-// DeleteFleetServerHostWithResponse request returning *DeleteFleetServerHostResponse
-func (c *ClientWithResponses) DeleteFleetServerHostWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*DeleteFleetServerHostResponse, error) {
-	rsp, err := c.DeleteFleetServerHost(ctx, itemId, reqEditors...)
+// DeleteFleetFleetServerHostsItemidWithResponse request returning *DeleteFleetFleetServerHostsItemidResponse
+func (c *ClientWithResponses) DeleteFleetFleetServerHostsItemidWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*DeleteFleetFleetServerHostsItemidResponse, error) {
+	rsp, err := c.DeleteFleetFleetServerHostsItemid(ctx, itemId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteFleetServerHostResponse(rsp)
+	return ParseDeleteFleetFleetServerHostsItemidResponse(rsp)
 }
 
-// GetFleetServerHostWithResponse request returning *GetFleetServerHostResponse
-func (c *ClientWithResponses) GetFleetServerHostWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*GetFleetServerHostResponse, error) {
-	rsp, err := c.GetFleetServerHost(ctx, itemId, reqEditors...)
+// GetFleetFleetServerHostsItemidWithResponse request returning *GetFleetFleetServerHostsItemidResponse
+func (c *ClientWithResponses) GetFleetFleetServerHostsItemidWithResponse(ctx context.Context, itemId string, reqEditors ...RequestEditorFn) (*GetFleetFleetServerHostsItemidResponse, error) {
+	rsp, err := c.GetFleetFleetServerHostsItemid(ctx, itemId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetFleetServerHostResponse(rsp)
+	return ParseGetFleetFleetServerHostsItemidResponse(rsp)
 }
 
-// UpdateFleetServerHostWithBodyWithResponse request with arbitrary body returning *UpdateFleetServerHostResponse
-func (c *ClientWithResponses) UpdateFleetServerHostWithBodyWithResponse(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateFleetServerHostResponse, error) {
-	rsp, err := c.UpdateFleetServerHostWithBody(ctx, itemId, contentType, body, reqEditors...)
+// PutFleetFleetServerHostsItemidWithBodyWithResponse request with arbitrary body returning *PutFleetFleetServerHostsItemidResponse
+func (c *ClientWithResponses) PutFleetFleetServerHostsItemidWithBodyWithResponse(ctx context.Context, itemId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetFleetServerHostsItemidResponse, error) {
+	rsp, err := c.PutFleetFleetServerHostsItemidWithBody(ctx, itemId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateFleetServerHostResponse(rsp)
+	return ParsePutFleetFleetServerHostsItemidResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateFleetServerHostWithResponse(ctx context.Context, itemId string, body UpdateFleetServerHostJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateFleetServerHostResponse, error) {
-	rsp, err := c.UpdateFleetServerHost(ctx, itemId, body, reqEditors...)
+func (c *ClientWithResponses) PutFleetFleetServerHostsItemidWithResponse(ctx context.Context, itemId string, body PutFleetFleetServerHostsItemidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetFleetServerHostsItemidResponse, error) {
+	rsp, err := c.PutFleetFleetServerHostsItemid(ctx, itemId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateFleetServerHostResponse(rsp)
+	return ParsePutFleetFleetServerHostsItemidResponse(rsp)
 }
 
-// GetOutputsWithResponse request returning *GetOutputsResponse
-func (c *ClientWithResponses) GetOutputsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOutputsResponse, error) {
-	rsp, err := c.GetOutputs(ctx, reqEditors...)
+// GetFleetOutputsWithResponse request returning *GetFleetOutputsResponse
+func (c *ClientWithResponses) GetFleetOutputsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFleetOutputsResponse, error) {
+	rsp, err := c.GetFleetOutputs(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetOutputsResponse(rsp)
+	return ParseGetFleetOutputsResponse(rsp)
 }
 
-// CreateOutputWithBodyWithResponse request with arbitrary body returning *CreateOutputResponse
-func (c *ClientWithResponses) CreateOutputWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOutputResponse, error) {
-	rsp, err := c.CreateOutputWithBody(ctx, contentType, body, reqEditors...)
+// PostFleetOutputsWithBodyWithResponse request with arbitrary body returning *PostFleetOutputsResponse
+func (c *ClientWithResponses) PostFleetOutputsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetOutputsResponse, error) {
+	rsp, err := c.PostFleetOutputsWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateOutputResponse(rsp)
+	return ParsePostFleetOutputsResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateOutputWithResponse(ctx context.Context, body CreateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOutputResponse, error) {
-	rsp, err := c.CreateOutput(ctx, body, reqEditors...)
+func (c *ClientWithResponses) PostFleetOutputsWithResponse(ctx context.Context, body PostFleetOutputsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetOutputsResponse, error) {
+	rsp, err := c.PostFleetOutputs(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateOutputResponse(rsp)
+	return ParsePostFleetOutputsResponse(rsp)
 }
 
-// DeleteOutputWithResponse request returning *DeleteOutputResponse
-func (c *ClientWithResponses) DeleteOutputWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*DeleteOutputResponse, error) {
-	rsp, err := c.DeleteOutput(ctx, outputId, reqEditors...)
+// DeleteFleetOutputsOutputidWithResponse request returning *DeleteFleetOutputsOutputidResponse
+func (c *ClientWithResponses) DeleteFleetOutputsOutputidWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*DeleteFleetOutputsOutputidResponse, error) {
+	rsp, err := c.DeleteFleetOutputsOutputid(ctx, outputId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteOutputResponse(rsp)
+	return ParseDeleteFleetOutputsOutputidResponse(rsp)
 }
 
-// GetOutputWithResponse request returning *GetOutputResponse
-func (c *ClientWithResponses) GetOutputWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*GetOutputResponse, error) {
-	rsp, err := c.GetOutput(ctx, outputId, reqEditors...)
+// GetFleetOutputsOutputidWithResponse request returning *GetFleetOutputsOutputidResponse
+func (c *ClientWithResponses) GetFleetOutputsOutputidWithResponse(ctx context.Context, outputId string, reqEditors ...RequestEditorFn) (*GetFleetOutputsOutputidResponse, error) {
+	rsp, err := c.GetFleetOutputsOutputid(ctx, outputId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetOutputResponse(rsp)
+	return ParseGetFleetOutputsOutputidResponse(rsp)
 }
 
-// UpdateOutputWithBodyWithResponse request with arbitrary body returning *UpdateOutputResponse
-func (c *ClientWithResponses) UpdateOutputWithBodyWithResponse(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOutputResponse, error) {
-	rsp, err := c.UpdateOutputWithBody(ctx, outputId, contentType, body, reqEditors...)
+// PutFleetOutputsOutputidWithBodyWithResponse request with arbitrary body returning *PutFleetOutputsOutputidResponse
+func (c *ClientWithResponses) PutFleetOutputsOutputidWithBodyWithResponse(ctx context.Context, outputId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetOutputsOutputidResponse, error) {
+	rsp, err := c.PutFleetOutputsOutputidWithBody(ctx, outputId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateOutputResponse(rsp)
+	return ParsePutFleetOutputsOutputidResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateOutputWithResponse(ctx context.Context, outputId string, body UpdateOutputJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOutputResponse, error) {
-	rsp, err := c.UpdateOutput(ctx, outputId, body, reqEditors...)
+func (c *ClientWithResponses) PutFleetOutputsOutputidWithResponse(ctx context.Context, outputId string, body PutFleetOutputsOutputidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetOutputsOutputidResponse, error) {
+	rsp, err := c.PutFleetOutputsOutputid(ctx, outputId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateOutputResponse(rsp)
+	return ParsePutFleetOutputsOutputidResponse(rsp)
 }
 
-// GetPackagePoliciesWithResponse request returning *GetPackagePoliciesResponse
-func (c *ClientWithResponses) GetPackagePoliciesWithResponse(ctx context.Context, params *GetPackagePoliciesParams, reqEditors ...RequestEditorFn) (*GetPackagePoliciesResponse, error) {
-	rsp, err := c.GetPackagePolicies(ctx, params, reqEditors...)
+// GetFleetPackagePoliciesWithResponse request returning *GetFleetPackagePoliciesResponse
+func (c *ClientWithResponses) GetFleetPackagePoliciesWithResponse(ctx context.Context, params *GetFleetPackagePoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetPackagePoliciesResponse, error) {
+	rsp, err := c.GetFleetPackagePolicies(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetPackagePoliciesResponse(rsp)
+	return ParseGetFleetPackagePoliciesResponse(rsp)
 }
 
-// CreatePackagePolicyWithBodyWithResponse request with arbitrary body returning *CreatePackagePolicyResponse
-func (c *ClientWithResponses) CreatePackagePolicyWithBodyWithResponse(ctx context.Context, params *CreatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePackagePolicyResponse, error) {
-	rsp, err := c.CreatePackagePolicyWithBody(ctx, params, contentType, body, reqEditors...)
+// PostFleetPackagePoliciesWithBodyWithResponse request with arbitrary body returning *PostFleetPackagePoliciesResponse
+func (c *ClientWithResponses) PostFleetPackagePoliciesWithBodyWithResponse(ctx context.Context, params *PostFleetPackagePoliciesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetPackagePoliciesResponse, error) {
+	rsp, err := c.PostFleetPackagePoliciesWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreatePackagePolicyResponse(rsp)
+	return ParsePostFleetPackagePoliciesResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreatePackagePolicyWithResponse(ctx context.Context, params *CreatePackagePolicyParams, body CreatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePackagePolicyResponse, error) {
-	rsp, err := c.CreatePackagePolicy(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) PostFleetPackagePoliciesWithResponse(ctx context.Context, params *PostFleetPackagePoliciesParams, body PostFleetPackagePoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostFleetPackagePoliciesResponse, error) {
+	rsp, err := c.PostFleetPackagePolicies(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreatePackagePolicyResponse(rsp)
+	return ParsePostFleetPackagePoliciesResponse(rsp)
 }
 
-// DeletePackagePolicyWithResponse request returning *DeletePackagePolicyResponse
-func (c *ClientWithResponses) DeletePackagePolicyWithResponse(ctx context.Context, packagePolicyId string, params *DeletePackagePolicyParams, reqEditors ...RequestEditorFn) (*DeletePackagePolicyResponse, error) {
-	rsp, err := c.DeletePackagePolicy(ctx, packagePolicyId, params, reqEditors...)
+// DeleteFleetPackagePoliciesPackagepolicyidWithResponse request returning *DeleteFleetPackagePoliciesPackagepolicyidResponse
+func (c *ClientWithResponses) DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx context.Context, packagePolicyId string, params *DeleteFleetPackagePoliciesPackagepolicyidParams, reqEditors ...RequestEditorFn) (*DeleteFleetPackagePoliciesPackagepolicyidResponse, error) {
+	rsp, err := c.DeleteFleetPackagePoliciesPackagepolicyid(ctx, packagePolicyId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeletePackagePolicyResponse(rsp)
+	return ParseDeleteFleetPackagePoliciesPackagepolicyidResponse(rsp)
 }
 
-// GetPackagePolicyWithResponse request returning *GetPackagePolicyResponse
-func (c *ClientWithResponses) GetPackagePolicyWithResponse(ctx context.Context, packagePolicyId string, params *GetPackagePolicyParams, reqEditors ...RequestEditorFn) (*GetPackagePolicyResponse, error) {
-	rsp, err := c.GetPackagePolicy(ctx, packagePolicyId, params, reqEditors...)
+// GetFleetPackagePoliciesPackagepolicyidWithResponse request returning *GetFleetPackagePoliciesPackagepolicyidResponse
+func (c *ClientWithResponses) GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx context.Context, packagePolicyId string, params *GetFleetPackagePoliciesPackagepolicyidParams, reqEditors ...RequestEditorFn) (*GetFleetPackagePoliciesPackagepolicyidResponse, error) {
+	rsp, err := c.GetFleetPackagePoliciesPackagepolicyid(ctx, packagePolicyId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetPackagePolicyResponse(rsp)
+	return ParseGetFleetPackagePoliciesPackagepolicyidResponse(rsp)
 }
 
-// UpdatePackagePolicyWithBodyWithResponse request with arbitrary body returning *UpdatePackagePolicyResponse
-func (c *ClientWithResponses) UpdatePackagePolicyWithBodyWithResponse(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePackagePolicyResponse, error) {
-	rsp, err := c.UpdatePackagePolicyWithBody(ctx, packagePolicyId, params, contentType, body, reqEditors...)
+// PutFleetPackagePoliciesPackagepolicyidWithBodyWithResponse request with arbitrary body returning *PutFleetPackagePoliciesPackagepolicyidResponse
+func (c *ClientWithResponses) PutFleetPackagePoliciesPackagepolicyidWithBodyWithResponse(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetPackagePoliciesPackagepolicyidResponse, error) {
+	rsp, err := c.PutFleetPackagePoliciesPackagepolicyidWithBody(ctx, packagePolicyId, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdatePackagePolicyResponse(rsp)
+	return ParsePutFleetPackagePoliciesPackagepolicyidResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdatePackagePolicyWithResponse(ctx context.Context, packagePolicyId string, params *UpdatePackagePolicyParams, body UpdatePackagePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePackagePolicyResponse, error) {
-	rsp, err := c.UpdatePackagePolicy(ctx, packagePolicyId, params, body, reqEditors...)
+func (c *ClientWithResponses) PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, body PutFleetPackagePoliciesPackagepolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetPackagePoliciesPackagepolicyidResponse, error) {
+	rsp, err := c.PutFleetPackagePoliciesPackagepolicyid(ctx, packagePolicyId, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdatePackagePolicyResponse(rsp)
+	return ParsePutFleetPackagePoliciesPackagepolicyidResponse(rsp)
 }
 
-// GetDataViewsWithResponse request returning *GetDataViewsResponse
-func (c *ClientWithResponses) GetDataViewsWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetDataViewsResponse, error) {
-	rsp, err := c.GetDataViews(ctx, spaceId, reqEditors...)
+// GetAllDataViewsDefaultWithResponse request returning *GetAllDataViewsDefaultResponse
+func (c *ClientWithResponses) GetAllDataViewsDefaultWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetAllDataViewsDefaultResponse, error) {
+	rsp, err := c.GetAllDataViewsDefault(ctx, spaceId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetDataViewsResponse(rsp)
+	return ParseGetAllDataViewsDefaultResponse(rsp)
 }
 
-// CreateDataViewWithBodyWithResponse request with arbitrary body returning *CreateDataViewResponse
-func (c *ClientWithResponses) CreateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error) {
-	rsp, err := c.CreateDataViewWithBody(ctx, spaceId, contentType, body, reqEditors...)
+// CreateDataViewDefaultwWithBodyWithResponse request with arbitrary body returning *CreateDataViewDefaultwResponse
+func (c *ClientWithResponses) CreateDataViewDefaultwWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDataViewDefaultwResponse, error) {
+	rsp, err := c.CreateDataViewDefaultwWithBody(ctx, spaceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateDataViewResponse(rsp)
+	return ParseCreateDataViewDefaultwResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateDataViewWithResponse(ctx context.Context, spaceId SpaceId, body CreateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataViewResponse, error) {
-	rsp, err := c.CreateDataView(ctx, spaceId, body, reqEditors...)
+func (c *ClientWithResponses) CreateDataViewDefaultwWithResponse(ctx context.Context, spaceId SpaceId, body CreateDataViewDefaultwJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDataViewDefaultwResponse, error) {
+	rsp, err := c.CreateDataViewDefaultw(ctx, spaceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateDataViewResponse(rsp)
+	return ParseCreateDataViewDefaultwResponse(rsp)
 }
 
-// DeleteDataViewWithResponse request returning *DeleteDataViewResponse
-func (c *ClientWithResponses) DeleteDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*DeleteDataViewResponse, error) {
-	rsp, err := c.DeleteDataView(ctx, spaceId, viewId, reqEditors...)
+// DeleteDataViewDefaultWithResponse request returning *DeleteDataViewDefaultResponse
+func (c *ClientWithResponses) DeleteDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*DeleteDataViewDefaultResponse, error) {
+	rsp, err := c.DeleteDataViewDefault(ctx, spaceId, viewId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteDataViewResponse(rsp)
+	return ParseDeleteDataViewDefaultResponse(rsp)
 }
 
-// GetDataViewWithResponse request returning *GetDataViewResponse
-func (c *ClientWithResponses) GetDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*GetDataViewResponse, error) {
-	rsp, err := c.GetDataView(ctx, spaceId, viewId, reqEditors...)
+// GetDataViewDefaultWithResponse request returning *GetDataViewDefaultResponse
+func (c *ClientWithResponses) GetDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, reqEditors ...RequestEditorFn) (*GetDataViewDefaultResponse, error) {
+	rsp, err := c.GetDataViewDefault(ctx, spaceId, viewId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetDataViewResponse(rsp)
+	return ParseGetDataViewDefaultResponse(rsp)
 }
 
-// UpdateDataViewWithBodyWithResponse request with arbitrary body returning *UpdateDataViewResponse
-func (c *ClientWithResponses) UpdateDataViewWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error) {
-	rsp, err := c.UpdateDataViewWithBody(ctx, spaceId, viewId, contentType, body, reqEditors...)
+// UpdateDataViewDefaultWithBodyWithResponse request with arbitrary body returning *UpdateDataViewDefaultResponse
+func (c *ClientWithResponses) UpdateDataViewDefaultWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error) {
+	rsp, err := c.UpdateDataViewDefaultWithBody(ctx, spaceId, viewId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateDataViewResponse(rsp)
+	return ParseUpdateDataViewDefaultResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDataViewWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewResponse, error) {
-	rsp, err := c.UpdateDataView(ctx, spaceId, viewId, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error) {
+	rsp, err := c.UpdateDataViewDefault(ctx, spaceId, viewId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateDataViewResponse(rsp)
+	return ParseUpdateDataViewDefaultResponse(rsp)
 }
 
-// ParseGetAgentPoliciesResponse parses an HTTP response from a GetAgentPoliciesWithResponse call
-func ParseGetAgentPoliciesResponse(rsp *http.Response) (*GetAgentPoliciesResponse, error) {
+// ParseGetFleetAgentPoliciesResponse parses an HTTP response from a GetFleetAgentPoliciesWithResponse call
+func ParseGetFleetAgentPoliciesResponse(rsp *http.Response) (*GetFleetAgentPoliciesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetAgentPoliciesResponse{
+	response := &GetFleetAgentPoliciesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16286,15 +16286,15 @@ func ParseGetAgentPoliciesResponse(rsp *http.Response) (*GetAgentPoliciesRespons
 	return response, nil
 }
 
-// ParseCreateAgentPolicyResponse parses an HTTP response from a CreateAgentPolicyWithResponse call
-func ParseCreateAgentPolicyResponse(rsp *http.Response) (*CreateAgentPolicyResponse, error) {
+// ParsePostFleetAgentPoliciesResponse parses an HTTP response from a PostFleetAgentPoliciesWithResponse call
+func ParsePostFleetAgentPoliciesResponse(rsp *http.Response) (*PostFleetAgentPoliciesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateAgentPolicyResponse{
+	response := &PostFleetAgentPoliciesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16325,15 +16325,15 @@ func ParseCreateAgentPolicyResponse(rsp *http.Response) (*CreateAgentPolicyRespo
 	return response, nil
 }
 
-// ParseDeleteAgentPolicyResponse parses an HTTP response from a DeleteAgentPolicyWithResponse call
-func ParseDeleteAgentPolicyResponse(rsp *http.Response) (*DeleteAgentPolicyResponse, error) {
+// ParsePostFleetAgentPoliciesDeleteResponse parses an HTTP response from a PostFleetAgentPoliciesDeleteWithResponse call
+func ParsePostFleetAgentPoliciesDeleteResponse(rsp *http.Response) (*PostFleetAgentPoliciesDeleteResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteAgentPolicyResponse{
+	response := &PostFleetAgentPoliciesDeleteResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16365,15 +16365,15 @@ func ParseDeleteAgentPolicyResponse(rsp *http.Response) (*DeleteAgentPolicyRespo
 	return response, nil
 }
 
-// ParseGetAgentPolicyResponse parses an HTTP response from a GetAgentPolicyWithResponse call
-func ParseGetAgentPolicyResponse(rsp *http.Response) (*GetAgentPolicyResponse, error) {
+// ParseGetFleetAgentPoliciesAgentpolicyidResponse parses an HTTP response from a GetFleetAgentPoliciesAgentpolicyidWithResponse call
+func ParseGetFleetAgentPoliciesAgentpolicyidResponse(rsp *http.Response) (*GetFleetAgentPoliciesAgentpolicyidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetAgentPolicyResponse{
+	response := &GetFleetAgentPoliciesAgentpolicyidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16404,15 +16404,15 @@ func ParseGetAgentPolicyResponse(rsp *http.Response) (*GetAgentPolicyResponse, e
 	return response, nil
 }
 
-// ParseUpdateAgentPolicyResponse parses an HTTP response from a UpdateAgentPolicyWithResponse call
-func ParseUpdateAgentPolicyResponse(rsp *http.Response) (*UpdateAgentPolicyResponse, error) {
+// ParsePutFleetAgentPoliciesAgentpolicyidResponse parses an HTTP response from a PutFleetAgentPoliciesAgentpolicyidWithResponse call
+func ParsePutFleetAgentPoliciesAgentpolicyidResponse(rsp *http.Response) (*PutFleetAgentPoliciesAgentpolicyidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateAgentPolicyResponse{
+	response := &PutFleetAgentPoliciesAgentpolicyidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16443,15 +16443,15 @@ func ParseUpdateAgentPolicyResponse(rsp *http.Response) (*UpdateAgentPolicyRespo
 	return response, nil
 }
 
-// ParseGetEnrollmentApiKeysResponse parses an HTTP response from a GetEnrollmentApiKeysWithResponse call
-func ParseGetEnrollmentApiKeysResponse(rsp *http.Response) (*GetEnrollmentApiKeysResponse, error) {
+// ParseGetFleetEnrollmentApiKeysResponse parses an HTTP response from a GetFleetEnrollmentApiKeysWithResponse call
+func ParseGetFleetEnrollmentApiKeysResponse(rsp *http.Response) (*GetFleetEnrollmentApiKeysResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetEnrollmentApiKeysResponse{
+	response := &GetFleetEnrollmentApiKeysResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16504,15 +16504,15 @@ func ParseGetEnrollmentApiKeysResponse(rsp *http.Response) (*GetEnrollmentApiKey
 	return response, nil
 }
 
-// ParseListPackagesResponse parses an HTTP response from a ListPackagesWithResponse call
-func ParseListPackagesResponse(rsp *http.Response) (*ListPackagesResponse, error) {
+// ParseGetFleetEpmPackagesResponse parses an HTTP response from a GetFleetEpmPackagesWithResponse call
+func ParseGetFleetEpmPackagesResponse(rsp *http.Response) (*GetFleetEpmPackagesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListPackagesResponse{
+	response := &GetFleetEpmPackagesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16520,8 +16520,8 @@ func ParseListPackagesResponse(rsp *http.Response) (*ListPackagesResponse, error
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items    []PackageListItem                 `json:"items"`
-			Response *[]ListPackages_200_Response_Item `json:"response,omitempty"`
+			Items    []PackageListItem                        `json:"items"`
+			Response *[]GetFleetEpmPackages_200_Response_Item `json:"response,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16544,15 +16544,15 @@ func ParseListPackagesResponse(rsp *http.Response) (*ListPackagesResponse, error
 	return response, nil
 }
 
-// ParseInstallPackageByUploadResponse parses an HTTP response from a InstallPackageByUploadWithResponse call
-func ParseInstallPackageByUploadResponse(rsp *http.Response) (*InstallPackageByUploadResponse, error) {
+// ParsePostFleetEpmPackagesResponse parses an HTTP response from a PostFleetEpmPackagesWithResponse call
+func ParsePostFleetEpmPackagesResponse(rsp *http.Response) (*PostFleetEpmPackagesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &InstallPackageByUploadResponse{
+	response := &PostFleetEpmPackagesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16560,15 +16560,15 @@ func ParseInstallPackageByUploadResponse(rsp *http.Response) (*InstallPackageByU
 	return response, nil
 }
 
-// ParseDeletePackageResponse parses an HTTP response from a DeletePackageWithResponse call
-func ParseDeletePackageResponse(rsp *http.Response) (*DeletePackageResponse, error) {
+// ParseDeleteFleetEpmPackagesPkgnamePkgversionResponse parses an HTTP response from a DeleteFleetEpmPackagesPkgnamePkgversionWithResponse call
+func ParseDeleteFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeletePackageResponse{
+	response := &DeleteFleetEpmPackagesPkgnamePkgversionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16576,9 +16576,9 @@ func ParseDeletePackageResponse(rsp *http.Response) (*DeletePackageResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items []DeletePackage_200_Items_Item `json:"items"`
+			Items []DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
 			// Deprecated:
-			Response *[]DeletePackage_200_Response_Item `json:"response,omitempty"`
+			Response *[]DeleteFleetEpmPackagesPkgnamePkgversion_200_Response_Item `json:"response,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16601,15 +16601,15 @@ func ParseDeletePackageResponse(rsp *http.Response) (*DeletePackageResponse, err
 	return response, nil
 }
 
-// ParseGetPackageResponse parses an HTTP response from a GetPackageWithResponse call
-func ParseGetPackageResponse(rsp *http.Response) (*GetPackageResponse, error) {
+// ParseGetFleetEpmPackagesPkgnamePkgversionResponse parses an HTTP response from a GetFleetEpmPackagesPkgnamePkgversionWithResponse call
+func ParseGetFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*GetFleetEpmPackagesPkgnamePkgversionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetPackageResponse{
+	response := &GetFleetEpmPackagesPkgnamePkgversionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16622,7 +16622,7 @@ func ParseGetPackageResponse(rsp *http.Response) (*GetPackageResponse, error) {
 				HasPolicies bool `json:"has_policies"`
 			} `json:"metadata,omitempty"`
 			// Deprecated:
-			Response *GetPackage_200_Response `json:"response,omitempty"`
+			Response *GetFleetEpmPackagesPkgnamePkgversion_200_Response `json:"response,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16645,15 +16645,15 @@ func ParseGetPackageResponse(rsp *http.Response) (*GetPackageResponse, error) {
 	return response, nil
 }
 
-// ParseInstallPackageResponse parses an HTTP response from a InstallPackageWithResponse call
-func ParseInstallPackageResponse(rsp *http.Response) (*InstallPackageResponse, error) {
+// ParsePostFleetEpmPackagesPkgnamePkgversionResponse parses an HTTP response from a PostFleetEpmPackagesPkgnamePkgversionWithResponse call
+func ParsePostFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*PostFleetEpmPackagesPkgnamePkgversionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &InstallPackageResponse{
+	response := &PostFleetEpmPackagesPkgnamePkgversionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16664,9 +16664,9 @@ func ParseInstallPackageResponse(rsp *http.Response) (*InstallPackageResponse, e
 			Meta struct {
 				InstallSource string `json:"install_source"`
 			} `json:"_meta"`
-			Items []InstallPackage_200_Items_Item `json:"items"`
+			Items []PostFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
 			// Deprecated:
-			Response *[]InstallPackage_200_Response_Item `json:"response,omitempty"`
+			Response *[]PostFleetEpmPackagesPkgnamePkgversion_200_Response_Item `json:"response,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16689,15 +16689,15 @@ func ParseInstallPackageResponse(rsp *http.Response) (*InstallPackageResponse, e
 	return response, nil
 }
 
-// ParseGetFleetServerHostsResponse parses an HTTP response from a GetFleetServerHostsWithResponse call
-func ParseGetFleetServerHostsResponse(rsp *http.Response) (*GetFleetServerHostsResponse, error) {
+// ParseGetFleetFleetServerHostsResponse parses an HTTP response from a GetFleetFleetServerHostsWithResponse call
+func ParseGetFleetFleetServerHostsResponse(rsp *http.Response) (*GetFleetFleetServerHostsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetFleetServerHostsResponse{
+	response := &GetFleetFleetServerHostsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16731,15 +16731,15 @@ func ParseGetFleetServerHostsResponse(rsp *http.Response) (*GetFleetServerHostsR
 	return response, nil
 }
 
-// ParseCreateFleetServerHostResponse parses an HTTP response from a CreateFleetServerHostWithResponse call
-func ParseCreateFleetServerHostResponse(rsp *http.Response) (*CreateFleetServerHostResponse, error) {
+// ParsePostFleetFleetServerHostsResponse parses an HTTP response from a PostFleetFleetServerHostsWithResponse call
+func ParsePostFleetFleetServerHostsResponse(rsp *http.Response) (*PostFleetFleetServerHostsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateFleetServerHostResponse{
+	response := &PostFleetFleetServerHostsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16770,15 +16770,15 @@ func ParseCreateFleetServerHostResponse(rsp *http.Response) (*CreateFleetServerH
 	return response, nil
 }
 
-// ParseDeleteFleetServerHostResponse parses an HTTP response from a DeleteFleetServerHostWithResponse call
-func ParseDeleteFleetServerHostResponse(rsp *http.Response) (*DeleteFleetServerHostResponse, error) {
+// ParseDeleteFleetFleetServerHostsItemidResponse parses an HTTP response from a DeleteFleetFleetServerHostsItemidWithResponse call
+func ParseDeleteFleetFleetServerHostsItemidResponse(rsp *http.Response) (*DeleteFleetFleetServerHostsItemidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteFleetServerHostResponse{
+	response := &DeleteFleetFleetServerHostsItemidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16809,15 +16809,15 @@ func ParseDeleteFleetServerHostResponse(rsp *http.Response) (*DeleteFleetServerH
 	return response, nil
 }
 
-// ParseGetFleetServerHostResponse parses an HTTP response from a GetFleetServerHostWithResponse call
-func ParseGetFleetServerHostResponse(rsp *http.Response) (*GetFleetServerHostResponse, error) {
+// ParseGetFleetFleetServerHostsItemidResponse parses an HTTP response from a GetFleetFleetServerHostsItemidWithResponse call
+func ParseGetFleetFleetServerHostsItemidResponse(rsp *http.Response) (*GetFleetFleetServerHostsItemidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetFleetServerHostResponse{
+	response := &GetFleetFleetServerHostsItemidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16848,15 +16848,15 @@ func ParseGetFleetServerHostResponse(rsp *http.Response) (*GetFleetServerHostRes
 	return response, nil
 }
 
-// ParseUpdateFleetServerHostResponse parses an HTTP response from a UpdateFleetServerHostWithResponse call
-func ParseUpdateFleetServerHostResponse(rsp *http.Response) (*UpdateFleetServerHostResponse, error) {
+// ParsePutFleetFleetServerHostsItemidResponse parses an HTTP response from a PutFleetFleetServerHostsItemidWithResponse call
+func ParsePutFleetFleetServerHostsItemidResponse(rsp *http.Response) (*PutFleetFleetServerHostsItemidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateFleetServerHostResponse{
+	response := &PutFleetFleetServerHostsItemidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16887,15 +16887,15 @@ func ParseUpdateFleetServerHostResponse(rsp *http.Response) (*UpdateFleetServerH
 	return response, nil
 }
 
-// ParseGetOutputsResponse parses an HTTP response from a GetOutputsWithResponse call
-func ParseGetOutputsResponse(rsp *http.Response) (*GetOutputsResponse, error) {
+// ParseGetFleetOutputsResponse parses an HTTP response from a GetFleetOutputsWithResponse call
+func ParseGetFleetOutputsResponse(rsp *http.Response) (*GetFleetOutputsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetOutputsResponse{
+	response := &GetFleetOutputsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16929,15 +16929,15 @@ func ParseGetOutputsResponse(rsp *http.Response) (*GetOutputsResponse, error) {
 	return response, nil
 }
 
-// ParseCreateOutputResponse parses an HTTP response from a CreateOutputWithResponse call
-func ParseCreateOutputResponse(rsp *http.Response) (*CreateOutputResponse, error) {
+// ParsePostFleetOutputsResponse parses an HTTP response from a PostFleetOutputsWithResponse call
+func ParsePostFleetOutputsResponse(rsp *http.Response) (*PostFleetOutputsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateOutputResponse{
+	response := &PostFleetOutputsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -16968,15 +16968,15 @@ func ParseCreateOutputResponse(rsp *http.Response) (*CreateOutputResponse, error
 	return response, nil
 }
 
-// ParseDeleteOutputResponse parses an HTTP response from a DeleteOutputWithResponse call
-func ParseDeleteOutputResponse(rsp *http.Response) (*DeleteOutputResponse, error) {
+// ParseDeleteFleetOutputsOutputidResponse parses an HTTP response from a DeleteFleetOutputsOutputidWithResponse call
+func ParseDeleteFleetOutputsOutputidResponse(rsp *http.Response) (*DeleteFleetOutputsOutputidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteOutputResponse{
+	response := &DeleteFleetOutputsOutputidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17018,15 +17018,15 @@ func ParseDeleteOutputResponse(rsp *http.Response) (*DeleteOutputResponse, error
 	return response, nil
 }
 
-// ParseGetOutputResponse parses an HTTP response from a GetOutputWithResponse call
-func ParseGetOutputResponse(rsp *http.Response) (*GetOutputResponse, error) {
+// ParseGetFleetOutputsOutputidResponse parses an HTTP response from a GetFleetOutputsOutputidWithResponse call
+func ParseGetFleetOutputsOutputidResponse(rsp *http.Response) (*GetFleetOutputsOutputidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetOutputResponse{
+	response := &GetFleetOutputsOutputidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17057,15 +17057,15 @@ func ParseGetOutputResponse(rsp *http.Response) (*GetOutputResponse, error) {
 	return response, nil
 }
 
-// ParseUpdateOutputResponse parses an HTTP response from a UpdateOutputWithResponse call
-func ParseUpdateOutputResponse(rsp *http.Response) (*UpdateOutputResponse, error) {
+// ParsePutFleetOutputsOutputidResponse parses an HTTP response from a PutFleetOutputsOutputidWithResponse call
+func ParsePutFleetOutputsOutputidResponse(rsp *http.Response) (*PutFleetOutputsOutputidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateOutputResponse{
+	response := &PutFleetOutputsOutputidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17096,15 +17096,15 @@ func ParseUpdateOutputResponse(rsp *http.Response) (*UpdateOutputResponse, error
 	return response, nil
 }
 
-// ParseGetPackagePoliciesResponse parses an HTTP response from a GetPackagePoliciesWithResponse call
-func ParseGetPackagePoliciesResponse(rsp *http.Response) (*GetPackagePoliciesResponse, error) {
+// ParseGetFleetPackagePoliciesResponse parses an HTTP response from a GetFleetPackagePoliciesWithResponse call
+func ParseGetFleetPackagePoliciesResponse(rsp *http.Response) (*GetFleetPackagePoliciesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetPackagePoliciesResponse{
+	response := &GetFleetPackagePoliciesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17138,15 +17138,15 @@ func ParseGetPackagePoliciesResponse(rsp *http.Response) (*GetPackagePoliciesRes
 	return response, nil
 }
 
-// ParseCreatePackagePolicyResponse parses an HTTP response from a CreatePackagePolicyWithResponse call
-func ParseCreatePackagePolicyResponse(rsp *http.Response) (*CreatePackagePolicyResponse, error) {
+// ParsePostFleetPackagePoliciesResponse parses an HTTP response from a PostFleetPackagePoliciesWithResponse call
+func ParsePostFleetPackagePoliciesResponse(rsp *http.Response) (*PostFleetPackagePoliciesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreatePackagePolicyResponse{
+	response := &PostFleetPackagePoliciesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17188,15 +17188,15 @@ func ParseCreatePackagePolicyResponse(rsp *http.Response) (*CreatePackagePolicyR
 	return response, nil
 }
 
-// ParseDeletePackagePolicyResponse parses an HTTP response from a DeletePackagePolicyWithResponse call
-func ParseDeletePackagePolicyResponse(rsp *http.Response) (*DeletePackagePolicyResponse, error) {
+// ParseDeleteFleetPackagePoliciesPackagepolicyidResponse parses an HTTP response from a DeleteFleetPackagePoliciesPackagepolicyidWithResponse call
+func ParseDeleteFleetPackagePoliciesPackagepolicyidResponse(rsp *http.Response) (*DeleteFleetPackagePoliciesPackagepolicyidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeletePackagePolicyResponse{
+	response := &DeleteFleetPackagePoliciesPackagepolicyidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17227,15 +17227,15 @@ func ParseDeletePackagePolicyResponse(rsp *http.Response) (*DeletePackagePolicyR
 	return response, nil
 }
 
-// ParseGetPackagePolicyResponse parses an HTTP response from a GetPackagePolicyWithResponse call
-func ParseGetPackagePolicyResponse(rsp *http.Response) (*GetPackagePolicyResponse, error) {
+// ParseGetFleetPackagePoliciesPackagepolicyidResponse parses an HTTP response from a GetFleetPackagePoliciesPackagepolicyidWithResponse call
+func ParseGetFleetPackagePoliciesPackagepolicyidResponse(rsp *http.Response) (*GetFleetPackagePoliciesPackagepolicyidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetPackagePolicyResponse{
+	response := &GetFleetPackagePoliciesPackagepolicyidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17275,15 +17275,15 @@ func ParseGetPackagePolicyResponse(rsp *http.Response) (*GetPackagePolicyRespons
 	return response, nil
 }
 
-// ParseUpdatePackagePolicyResponse parses an HTTP response from a UpdatePackagePolicyWithResponse call
-func ParseUpdatePackagePolicyResponse(rsp *http.Response) (*UpdatePackagePolicyResponse, error) {
+// ParsePutFleetPackagePoliciesPackagepolicyidResponse parses an HTTP response from a PutFleetPackagePoliciesPackagepolicyidWithResponse call
+func ParsePutFleetPackagePoliciesPackagepolicyidResponse(rsp *http.Response) (*PutFleetPackagePoliciesPackagepolicyidResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdatePackagePolicyResponse{
+	response := &PutFleetPackagePoliciesPackagepolicyidResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17325,15 +17325,15 @@ func ParseUpdatePackagePolicyResponse(rsp *http.Response) (*UpdatePackagePolicyR
 	return response, nil
 }
 
-// ParseGetDataViewsResponse parses an HTTP response from a GetDataViewsWithResponse call
-func ParseGetDataViewsResponse(rsp *http.Response) (*GetDataViewsResponse, error) {
+// ParseGetAllDataViewsDefaultResponse parses an HTTP response from a GetAllDataViewsDefaultWithResponse call
+func ParseGetAllDataViewsDefaultResponse(rsp *http.Response) (*GetAllDataViewsDefaultResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetDataViewsResponse{
+	response := &GetAllDataViewsDefaultResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17360,15 +17360,15 @@ func ParseGetDataViewsResponse(rsp *http.Response) (*GetDataViewsResponse, error
 	return response, nil
 }
 
-// ParseCreateDataViewResponse parses an HTTP response from a CreateDataViewWithResponse call
-func ParseCreateDataViewResponse(rsp *http.Response) (*CreateDataViewResponse, error) {
+// ParseCreateDataViewDefaultwResponse parses an HTTP response from a CreateDataViewDefaultwWithResponse call
+func ParseCreateDataViewDefaultwResponse(rsp *http.Response) (*CreateDataViewDefaultwResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateDataViewResponse{
+	response := &CreateDataViewDefaultwResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17393,15 +17393,15 @@ func ParseCreateDataViewResponse(rsp *http.Response) (*CreateDataViewResponse, e
 	return response, nil
 }
 
-// ParseDeleteDataViewResponse parses an HTTP response from a DeleteDataViewWithResponse call
-func ParseDeleteDataViewResponse(rsp *http.Response) (*DeleteDataViewResponse, error) {
+// ParseDeleteDataViewDefaultResponse parses an HTTP response from a DeleteDataViewDefaultWithResponse call
+func ParseDeleteDataViewDefaultResponse(rsp *http.Response) (*DeleteDataViewDefaultResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteDataViewResponse{
+	response := &DeleteDataViewDefaultResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17419,15 +17419,15 @@ func ParseDeleteDataViewResponse(rsp *http.Response) (*DeleteDataViewResponse, e
 	return response, nil
 }
 
-// ParseGetDataViewResponse parses an HTTP response from a GetDataViewWithResponse call
-func ParseGetDataViewResponse(rsp *http.Response) (*GetDataViewResponse, error) {
+// ParseGetDataViewDefaultResponse parses an HTTP response from a GetDataViewDefaultWithResponse call
+func ParseGetDataViewDefaultResponse(rsp *http.Response) (*GetDataViewDefaultResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetDataViewResponse{
+	response := &GetDataViewDefaultResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -17452,15 +17452,15 @@ func ParseGetDataViewResponse(rsp *http.Response) (*GetDataViewResponse, error) 
 	return response, nil
 }
 
-// ParseUpdateDataViewResponse parses an HTTP response from a UpdateDataViewWithResponse call
-func ParseUpdateDataViewResponse(rsp *http.Response) (*UpdateDataViewResponse, error) {
+// ParseUpdateDataViewDefaultResponse parses an HTTP response from a UpdateDataViewDefaultWithResponse call
+func ParseUpdateDataViewDefaultResponse(rsp *http.Response) (*UpdateDataViewDefaultResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateDataViewResponse{
+	response := &UpdateDataViewDefaultResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

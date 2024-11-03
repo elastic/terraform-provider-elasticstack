@@ -542,7 +542,6 @@ var transformers = []TransformFunc{
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
-	transformOperationIDs,
 	transformAddMisingDescriptions,
 	transformKibanaPaths,
 	transformFleetPaths,
@@ -687,82 +686,6 @@ func transformSimplifyContentType(schema *Schema) {
 		for key := range responses {
 			resp := responses.MustGetMap(key)
 			simplifyContentType(resp)
-		}
-	}
-}
-
-// transformOperationIDs fixes each path's operationId.
-func transformOperationIDs(schema *Schema) {
-	operationIds := map[string]map[string]string{
-		"/api/data_views": {
-			"get": "get_data_views",
-		},
-		"/api/data_views/data_view": {
-			"post": "create_data_view",
-		},
-		"/api/data_views/data_view/{viewId}": {
-			"get":    "get_data_view",
-			"post":   "update_data_view",
-			"delete": "delete_data_view",
-		},
-		"/api/fleet/agent_policies": {
-			"get":  "get_agent_policies",
-			"post": "create_agent_policy",
-		},
-		"/api/fleet/agent_policies/delete": {
-			"post": "delete_agent_policy",
-		},
-		"/api/fleet/agent_policies/{agentPolicyId}": {
-			"get": "get_agent_policy",
-			"put": "update_agent_policy",
-		},
-		"/api/fleet/enrollment_api_keys": {
-			"get": "get_enrollment_api_keys",
-		},
-		"/api/fleet/epm/packages": {
-			"get":  "list_packages",
-			"post": "install_package_by_upload",
-		},
-		"/api/fleet/epm/packages/{pkgName}/{pkgVersion}": {
-			"get":    "get_package",
-			"post":   "install_package",
-			"delete": "delete_package",
-		},
-		"/api/fleet/fleet_server_hosts": {
-			"get":  "get_fleet_server_hosts",
-			"post": "create_fleet_server_host",
-		},
-		"/api/fleet/fleet_server_hosts/{itemId}": {
-			"get":    "get_fleet_server_host",
-			"put":    "update_fleet_server_host",
-			"delete": "delete_fleet_server_host",
-		},
-		"/api/fleet/outputs": {
-			"get":  "get_outputs",
-			"post": "create_output",
-		},
-		"/api/fleet/outputs/{outputId}": {
-			"get":    "get_output",
-			"put":    "update_output",
-			"delete": "delete_output",
-		},
-		"/api/fleet/package_policies": {
-			"get":  "get_package_policies",
-			"post": "create_package_policy",
-		},
-		"/api/fleet/package_policies/{packagePolicyId}": {
-			"get":    "get_package_policy",
-			"put":    "update_package_policy",
-			"delete": "delete_package_policy",
-		},
-	}
-
-	// Set each missing operationId
-	for path, methods := range operationIds {
-		pathInfo := schema.MustGetPath(path)
-		for method, operationId := range methods {
-			endpoint := pathInfo.GetEndpoint(method)
-			endpoint.Set("operationId", operationId)
 		}
 	}
 }
