@@ -147,8 +147,8 @@ func Test_ruleResponseToModel(t *testing.T) {
 							Throttle:   utils.Pointer("10s"),
 						},
 						AlertsFilter: &models.ActionAlertsFilter{
-							Kql: "foobar",
-							Timeframe: models.AlertsFilterTimeframe{
+							Kql: utils.Pointer("foobar"),
+							Timeframe: &models.AlertsFilterTimeframe{
 								Days:       []int32{3, 5, 7},
 								Timezone:   "UTC+1",
 								HoursStart: "00:00",

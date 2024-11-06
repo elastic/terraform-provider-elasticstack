@@ -47,8 +47,8 @@ type ActionFrequency struct {
 }
 
 type ActionAlertsFilter struct {
-	Kql       string
-	Timeframe AlertsFilterTimeframe
+	Kql       *string
+	Timeframe *AlertsFilterTimeframe
 }
 
 type AlertsFilterTimeframe struct {

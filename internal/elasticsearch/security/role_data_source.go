@@ -21,6 +21,11 @@ func DataSourceRole() *schema.Resource {
 			Type:        schema.TypeString,
 			Required:    true,
 		},
+		"description": {
+			Description: "The description of the role.",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
 		"applications": {
 			Description: "A list of application privilege entries.",
 			Type:        schema.TypeSet,

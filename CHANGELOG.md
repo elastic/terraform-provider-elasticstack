@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+- Support multiple group by fields in SLOs ([#870](https://github.com/elastic/terraform-provider-elasticstack/pull/878))
+- Use the auto-generated OAS schema from elastic/kibana for the Fleet API. ([#834](https://github.com/elastic/terraform-provider-elasticstack/issues/834))
+- Support description in `elasticstack_elasticsearch_security_role` data sources. ([#884](https://github.com/elastic/terraform-provider-elasticstack/pull/884))
+- Prevent spurious recreation of `elasticstack_fleet_agent_policy` resources due to 'changing' policy ids ([#885](https://github.com/elastic/terraform-provider-elasticstack/pull/885))
+- Support `elasticstack_kibana_alerting_rule` resources with only one of `kql` or `timeframe` attributes set ([#886](https://github.com/elastic/terraform-provider-elasticstack/pull/886))
+
+## [0.11.11] - 2024-10-25
+
+- Allow `elasticstack_kibana_alerting_rule` to be used without Elasticsearch being configured. ([#869](https://github.com/elastic/terraform-provider-elasticstack/pull/869))
+- Add resource `elasticstack_elasticsearch_data_stream_lifecycle` ([#838](https://github.com/elastic/terraform-provider-elasticstack/issues/838))
+- Ensure API keys are not replaced when upgrading from 0.11.9 or earlier. ([#875](https://github.com/elastic/terraform-provider-elasticstack/pull/875))
+
 ## [0.11.10] - 2024-10-23
 
 - Fix bug updating alert delay ([#859](https://github.com/elastic/terraform-provider-elasticstack/pull/859))
@@ -376,9 +388,10 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.10...HEAD
-[0.11.9]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.10
-[0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.11...HEAD
+[0.11.11]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.11
+[0.11.10]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.10
+[0.11.9]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
 [0.11.7]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6

@@ -16,12 +16,15 @@ import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
+const currentSchemaVersion int64 = 1
+
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = r.getSchema()
+	resp.Schema = r.getSchema(currentSchemaVersion)
 }
 
-func (r *Resource) getSchema() schema.Schema {
+func (r *Resource) getSchema(version int64) schema.Schema {
 	return schema.Schema{
+		Version:     version,
 		Description: "Creates an API key for access without requiring basic authentication. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),

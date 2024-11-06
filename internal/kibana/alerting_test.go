@@ -112,7 +112,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.summary", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.notify_when", "onActionGroupChange"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.throttle", "10m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.kql", `kibana.alert.action_group: "slo.burnRate.alert" OR kibana.alert.action_group : "slo.burnRate.high"`),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.kql", ""),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.days.0", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.days.1", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.days.2", "3"),
@@ -138,10 +138,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.notify_when", "onActionGroupChange"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.0.throttle", "10m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.kql", `kibana.alert.action_group: "slo.burnRate.alert"`),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.days.0", "7"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.timezone", "Pacific/Honolulu"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.hours_start", "02:00"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.0.hours_end", "03:00"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.0.timeframe.#", "0"),
 				),
 			},
 			{
@@ -189,7 +186,6 @@ func TestAccResourceAlertingRule(t *testing.T) {
 func testAccResourceAlertingRuleCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -221,7 +217,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -256,7 +251,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithFrequencyCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -314,7 +308,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithFrequencyUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -375,7 +368,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithAlertsFilterCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -433,13 +425,11 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
     }
 
     alerts_filter {
-      kql = "kibana.alert.action_group: \"slo.burnRate.alert\" OR kibana.alert.action_group : \"slo.burnRate.high\""
-
       timeframe {
         days        = [1,2,3]
-      timezone    = "Africa/Accra"
-      hours_start = "01:00"
-      hours_end   = "07:00"
+        timezone    = "Africa/Accra"
+        hours_start = "01:00"
+        hours_end   = "07:00"
       }
     }
   }
@@ -450,7 +440,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithAlertsFilterUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -509,13 +498,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 
     alerts_filter {
       kql = "kibana.alert.action_group: \"slo.burnRate.alert\""
-
-      timeframe {
-        days        = [7]
-      timezone    = "Pacific/Honolulu"
-      hours_start = "02:00"
-      hours_end   = "03:00"
-      }
     }
   }
 }
@@ -527,7 +509,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithAlertDelayCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 
@@ -587,7 +568,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
 func testAccResourceAlertingRuleWithAlertDelayUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
-  elasticsearch {}
   kibana {}
 }
 

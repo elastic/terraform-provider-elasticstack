@@ -2,6 +2,7 @@ package agent_policy_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -62,6 +63,7 @@ func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 
 func TestAccResourceAgentPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	var originalPolicyId string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -78,6 +80,15 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						originalPolicyId = value
+
+						if len(value) == 0 {
+							return errors.New("expected policy_id to be non empty")
+						}
+
+						return nil
+					}),
 				),
 			},
 			{
@@ -90,6 +101,13 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						if value != originalPolicyId {
+							return fmt.Errorf("expected policy_id to not change between test steps. Was [%s], now [%s]", originalPolicyId, value)
+						}
+
+						return nil
+					}),
 				),
 			},
 			{
@@ -188,7 +206,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		policy, diags := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 		if diags.HasError() {
 			return utils.FwDiagsAsError(diags)
 		}
@@ -214,7 +232,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		policy, diags := fleet.ReadAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 		if diags.HasError() {
 			return utils.FwDiagsAsError(diags)
 		}

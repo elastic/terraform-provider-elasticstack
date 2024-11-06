@@ -14,6 +14,6 @@ type Slo struct {
 	Objective       slo.Objective
 	Settings        *slo.Settings
 	SpaceID         string
-	GroupBy         *string
+	GroupBy         []string
 	Tags            []string
 }

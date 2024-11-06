@@ -147,7 +147,7 @@ func checkResourceFleetServerHostDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		host, diags := fleet.ReadFleetServerHost(context.Background(), fleetClient, rs.Primary.ID)
+		host, diags := fleet.GetFleetServerHost(context.Background(), fleetClient, rs.Primary.ID)
 		if diags.HasError() {
 			return utils.FwDiagsAsError(diags)
 		}
