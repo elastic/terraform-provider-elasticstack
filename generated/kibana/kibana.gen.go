@@ -103,13 +103,6 @@ const (
 	NewOutputKafkaSaslMechanismSCRAMSHA512 NewOutputKafkaSaslMechanism = "SCRAM-SHA-512"
 )
 
-// Defines values for NewOutputKafkaTopicsWhenType.
-const (
-	NewOutputKafkaTopicsWhenTypeContains NewOutputKafkaTopicsWhenType = "contains"
-	NewOutputKafkaTopicsWhenTypeEquals   NewOutputKafkaTopicsWhenType = "equals"
-	NewOutputKafkaTopicsWhenTypeRegexp   NewOutputKafkaTopicsWhenType = "regexp"
-)
-
 // Defines values for NewOutputKafkaType.
 const (
 	NewOutputKafkaTypeKafka NewOutputKafkaType = "kafka"
@@ -191,13 +184,6 @@ const (
 	OutputKafkaSaslMechanismPLAIN       OutputKafkaSaslMechanism = "PLAIN"
 	OutputKafkaSaslMechanismSCRAMSHA256 OutputKafkaSaslMechanism = "SCRAM-SHA-256"
 	OutputKafkaSaslMechanismSCRAMSHA512 OutputKafkaSaslMechanism = "SCRAM-SHA-512"
-)
-
-// Defines values for OutputKafkaTopicsWhenType.
-const (
-	OutputKafkaTopicsWhenTypeContains OutputKafkaTopicsWhenType = "contains"
-	OutputKafkaTopicsWhenTypeEquals   OutputKafkaTopicsWhenType = "equals"
-	OutputKafkaTopicsWhenTypeRegexp   OutputKafkaTopicsWhenType = "regexp"
 )
 
 // Defines values for OutputKafkaType.
@@ -455,13 +441,6 @@ const (
 	PLAIN       UpdateOutputKafkaSaslMechanism = "PLAIN"
 	SCRAMSHA256 UpdateOutputKafkaSaslMechanism = "SCRAM-SHA-256"
 	SCRAMSHA512 UpdateOutputKafkaSaslMechanism = "SCRAM-SHA-512"
-)
-
-// Defines values for UpdateOutputKafkaTopicsWhenType.
-const (
-	Contains UpdateOutputKafkaTopicsWhenType = "contains"
-	Equals   UpdateOutputKafkaTopicsWhenType = "equals"
-	Regexp   UpdateOutputKafkaTopicsWhenType = "regexp"
 )
 
 // Defines values for UpdateOutputKafkaType.
@@ -1122,17 +1101,10 @@ type NewOutputKafka struct {
 			Key NewOutputKafka_Secrets_Ssl_Key `json:"key"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *NewOutputShipper `json:"shipper,omitempty"`
-	Ssl     *NewOutputSsl     `json:"ssl,omitempty"`
-	Timeout *float32          `json:"timeout,omitempty"`
-	Topic   *string           `json:"topic,omitempty"`
-	Topics  *[]struct {
-		Topic string `json:"topic"`
-		When  *struct {
-			Condition *string                       `json:"condition,omitempty"`
-			Type      *NewOutputKafkaTopicsWhenType `json:"type,omitempty"`
-		} `json:"when,omitempty"`
-	} `json:"topics,omitempty"`
+	Shipper  *NewOutputShipper  `json:"shipper,omitempty"`
+	Ssl      *NewOutputSsl      `json:"ssl,omitempty"`
+	Timeout  *float32           `json:"timeout,omitempty"`
+	Topic    *string            `json:"topic,omitempty"`
 	Type     NewOutputKafkaType `json:"type"`
 	Username interface{}        `json:"username"`
 	Version  *string            `json:"version,omitempty"`
@@ -1178,9 +1150,6 @@ type NewOutputKafkaSecretsSslKey1 = string
 type NewOutputKafka_Secrets_Ssl_Key struct {
 	union json.RawMessage
 }
-
-// NewOutputKafkaTopicsWhenType defines model for NewOutputKafka.Topics.When.Type.
-type NewOutputKafkaTopicsWhenType string
 
 // NewOutputKafkaType defines model for NewOutputKafka.Type.
 type NewOutputKafkaType string
@@ -1359,7 +1328,6 @@ type OutputKafka struct {
 	Ssl                  *OutputSsl                  `json:"ssl"`
 	Timeout              *float32                    `json:"timeout,omitempty"`
 	Topic                *string                     `json:"topic,omitempty"`
-	Topics               *[]OutputKafka_Topics_Item  `json:"topics,omitempty"`
 	Type                 OutputKafkaType             `json:"type"`
 	Username             interface{}                 `json:"username"`
 	Version              *string                     `json:"version,omitempty"`
@@ -1452,23 +1420,6 @@ type OutputKafka_Secrets struct {
 	Password             *OutputKafka_Secrets_Password `json:"password,omitempty"`
 	Ssl                  *OutputKafka_Secrets_Ssl      `json:"ssl,omitempty"`
 	AdditionalProperties map[string]interface{}        `json:"-"`
-}
-
-// OutputKafkaTopicsWhenType defines model for OutputKafka.Topics.When.Type.
-type OutputKafkaTopicsWhenType string
-
-// OutputKafka_Topics_When defines model for OutputKafka.Topics.When.
-type OutputKafka_Topics_When struct {
-	Condition            *string                    `json:"condition,omitempty"`
-	Type                 *OutputKafkaTopicsWhenType `json:"type,omitempty"`
-	AdditionalProperties map[string]interface{}     `json:"-"`
-}
-
-// OutputKafka_Topics_Item defines model for output_kafka.topics.Item.
-type OutputKafka_Topics_Item struct {
-	Topic                string                   `json:"topic"`
-	When                 *OutputKafka_Topics_When `json:"when,omitempty"`
-	AdditionalProperties map[string]interface{}   `json:"-"`
 }
 
 // OutputKafkaType defines model for OutputKafka.Type.
@@ -1640,7 +1591,6 @@ type PackageInfo struct {
 	PolicyTemplates      *[]map[string]interface{}     `json:"policy_templates,omitempty"`
 	Readme               *string                       `json:"readme,omitempty"`
 	Release              *PackageInfoRelease           `json:"release,omitempty"`
-	SavedObject          interface{}                   `json:"savedObject"`
 	Screenshots          *[]struct {
 		DarkMode *bool   `json:"dark_mode,omitempty"`
 		Path     *string `json:"path,omitempty"`
@@ -1851,7 +1801,6 @@ type PackageListItem struct {
 	PolicyTemplates      *[]map[string]interface{}         `json:"policy_templates,omitempty"`
 	Readme               *string                           `json:"readme,omitempty"`
 	Release              *PackageListItemRelease           `json:"release,omitempty"`
-	SavedObject          interface{}                       `json:"savedObject"`
 	SignaturePath        *string                           `json:"signature_path,omitempty"`
 	Source               *PackageListItem_Source           `json:"source,omitempty"`
 	Status               *string                           `json:"status,omitempty"`
@@ -2264,17 +2213,10 @@ type UpdateOutputKafka struct {
 			Key UpdateOutputKafka_Secrets_Ssl_Key `json:"key"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *UpdateOutputShipper `json:"shipper,omitempty"`
-	Ssl     *UpdateOutputSsl     `json:"ssl,omitempty"`
-	Timeout *float32             `json:"timeout,omitempty"`
-	Topic   *string              `json:"topic,omitempty"`
-	Topics  *[]struct {
-		Topic string `json:"topic"`
-		When  *struct {
-			Condition *string                          `json:"condition,omitempty"`
-			Type      *UpdateOutputKafkaTopicsWhenType `json:"type,omitempty"`
-		} `json:"when,omitempty"`
-	} `json:"topics,omitempty"`
+	Shipper  *UpdateOutputShipper   `json:"shipper,omitempty"`
+	Ssl      *UpdateOutputSsl       `json:"ssl,omitempty"`
+	Timeout  *float32               `json:"timeout,omitempty"`
+	Topic    *string                `json:"topic,omitempty"`
 	Type     *UpdateOutputKafkaType `json:"type,omitempty"`
 	Username interface{}            `json:"username"`
 	Version  *string                `json:"version,omitempty"`
@@ -2320,9 +2262,6 @@ type UpdateOutputKafkaSecretsSslKey1 = string
 type UpdateOutputKafka_Secrets_Ssl_Key struct {
 	union json.RawMessage
 }
-
-// UpdateOutputKafkaTopicsWhenType defines model for UpdateOutputKafka.Topics.When.Type.
-type UpdateOutputKafkaTopicsWhenType string
 
 // UpdateOutputKafkaType defines model for UpdateOutputKafka.Type.
 type UpdateOutputKafkaType string
@@ -2674,7 +2613,6 @@ type GetFleetEnrollmentApiKeysParams struct {
 type GetFleetEpmPackagesParams struct {
 	Category             *string `form:"category,omitempty" json:"category,omitempty"`
 	Prerelease           *bool   `form:"prerelease,omitempty" json:"prerelease,omitempty"`
-	Experimental         *bool   `form:"experimental,omitempty" json:"experimental,omitempty"`
 	ExcludeInstallStatus *bool   `form:"excludeInstallStatus,omitempty" json:"excludeInstallStatus,omitempty"`
 }
 
@@ -2682,11 +2620,6 @@ type GetFleetEpmPackagesParams struct {
 type PostFleetEpmPackagesParams struct {
 	IgnoreMappingUpdateErrors *bool `form:"ignoreMappingUpdateErrors,omitempty" json:"ignoreMappingUpdateErrors,omitempty"`
 	SkipDataStreamRollover    *bool `form:"skipDataStreamRollover,omitempty" json:"skipDataStreamRollover,omitempty"`
-}
-
-// DeleteFleetEpmPackagesPkgnamePkgversionJSONBody defines parameters for DeleteFleetEpmPackagesPkgnamePkgversion.
-type DeleteFleetEpmPackagesPkgnamePkgversionJSONBody struct {
-	Force bool `json:"force"`
 }
 
 // DeleteFleetEpmPackagesPkgnamePkgversionParams defines parameters for DeleteFleetEpmPackagesPkgnamePkgversion.
@@ -2790,9 +2723,6 @@ type PostFleetAgentPoliciesDeleteJSONRequestBody PostFleetAgentPoliciesDeleteJSO
 
 // PutFleetAgentPoliciesAgentpolicyidJSONRequestBody defines body for PutFleetAgentPoliciesAgentpolicyid for application/json ContentType.
 type PutFleetAgentPoliciesAgentpolicyidJSONRequestBody PutFleetAgentPoliciesAgentpolicyidJSONBody
-
-// DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody defines body for DeleteFleetEpmPackagesPkgnamePkgversion for application/json ContentType.
-type DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody DeleteFleetEpmPackagesPkgnamePkgversionJSONBody
 
 // PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody defines body for PostFleetEpmPackagesPkgnamePkgversion for application/json ContentType.
 type PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody PostFleetEpmPackagesPkgnamePkgversionJSONBody
@@ -3525,14 +3455,6 @@ func (a *OutputKafka) UnmarshalJSON(b []byte) error {
 		delete(object, "topic")
 	}
 
-	if raw, found := object["topics"]; found {
-		err = json.Unmarshal(raw, &a.Topics)
-		if err != nil {
-			return fmt.Errorf("error reading 'topics': %w", err)
-		}
-		delete(object, "topics")
-	}
-
 	if raw, found := object["type"]; found {
 		err = json.Unmarshal(raw, &a.Type)
 		if err != nil {
@@ -3785,13 +3707,6 @@ func (a OutputKafka) MarshalJSON() ([]byte, error) {
 		object["topic"], err = json.Marshal(a.Topic)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'topic': %w", err)
-		}
-	}
-
-	if a.Topics != nil {
-		object["topics"], err = json.Marshal(a.Topics)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'topics': %w", err)
 		}
 	}
 
@@ -4456,170 +4371,6 @@ func (a OutputKafka_Secrets) MarshalJSON() ([]byte, error) {
 		object["ssl"], err = json.Marshal(a.Ssl)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'ssl': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for OutputKafka_Topics_When. Returns the specified
-// element and whether it was found
-func (a OutputKafka_Topics_When) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for OutputKafka_Topics_When
-func (a *OutputKafka_Topics_When) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for OutputKafka_Topics_When to handle AdditionalProperties
-func (a *OutputKafka_Topics_When) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["condition"]; found {
-		err = json.Unmarshal(raw, &a.Condition)
-		if err != nil {
-			return fmt.Errorf("error reading 'condition': %w", err)
-		}
-		delete(object, "condition")
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for OutputKafka_Topics_When to handle AdditionalProperties
-func (a OutputKafka_Topics_When) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Condition != nil {
-		object["condition"], err = json.Marshal(a.Condition)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'condition': %w", err)
-		}
-	}
-
-	if a.Type != nil {
-		object["type"], err = json.Marshal(a.Type)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'type': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for OutputKafka_Topics_Item. Returns the specified
-// element and whether it was found
-func (a OutputKafka_Topics_Item) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for OutputKafka_Topics_Item
-func (a *OutputKafka_Topics_Item) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for OutputKafka_Topics_Item to handle AdditionalProperties
-func (a *OutputKafka_Topics_Item) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["topic"]; found {
-		err = json.Unmarshal(raw, &a.Topic)
-		if err != nil {
-			return fmt.Errorf("error reading 'topic': %w", err)
-		}
-		delete(object, "topic")
-	}
-
-	if raw, found := object["when"]; found {
-		err = json.Unmarshal(raw, &a.When)
-		if err != nil {
-			return fmt.Errorf("error reading 'when': %w", err)
-		}
-		delete(object, "when")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for OutputKafka_Topics_Item to handle AdditionalProperties
-func (a OutputKafka_Topics_Item) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	object["topic"], err = json.Marshal(a.Topic)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'topic': %w", err)
-	}
-
-	if a.When != nil {
-		object["when"], err = json.Marshal(a.When)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'when': %w", err)
 		}
 	}
 
@@ -6095,14 +5846,6 @@ func (a *PackageInfo) UnmarshalJSON(b []byte) error {
 		delete(object, "release")
 	}
 
-	if raw, found := object["savedObject"]; found {
-		err = json.Unmarshal(raw, &a.SavedObject)
-		if err != nil {
-			return fmt.Errorf("error reading 'savedObject': %w", err)
-		}
-		delete(object, "savedObject")
-	}
-
 	if raw, found := object["screenshots"]; found {
 		err = json.Unmarshal(raw, &a.Screenshots)
 		if err != nil {
@@ -6355,11 +6098,6 @@ func (a PackageInfo) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'release': %w", err)
 		}
-	}
-
-	object["savedObject"], err = json.Marshal(a.SavedObject)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'savedObject': %w", err)
 	}
 
 	if a.Screenshots != nil {
@@ -8334,14 +8072,6 @@ func (a *PackageListItem) UnmarshalJSON(b []byte) error {
 		delete(object, "release")
 	}
 
-	if raw, found := object["savedObject"]; found {
-		err = json.Unmarshal(raw, &a.SavedObject)
-		if err != nil {
-			return fmt.Errorf("error reading 'savedObject': %w", err)
-		}
-		delete(object, "savedObject")
-	}
-
 	if raw, found := object["signature_path"]; found {
 		err = json.Unmarshal(raw, &a.SignaturePath)
 		if err != nil {
@@ -8544,11 +8274,6 @@ func (a PackageListItem) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'release': %w", err)
 		}
-	}
-
-	object["savedObject"], err = json.Marshal(a.SavedObject)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'savedObject': %w", err)
 	}
 
 	if a.SignaturePath != nil {
@@ -11823,10 +11548,8 @@ type ClientInterface interface {
 	// PostFleetEpmPackagesWithBody request with any body
 	PostFleetEpmPackagesWithBody(ctx context.Context, params *PostFleetEpmPackagesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteFleetEpmPackagesPkgnamePkgversionWithBody request with any body
-	DeleteFleetEpmPackagesPkgnamePkgversionWithBody(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	DeleteFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteFleetEpmPackagesPkgnamePkgversion request
+	DeleteFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetFleetEpmPackagesPkgnamePkgversion request
 	GetFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *GetFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12045,20 +11768,8 @@ func (c *Client) PostFleetEpmPackagesWithBody(ctx context.Context, params *PostF
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteFleetEpmPackagesPkgnamePkgversionWithBody(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody(c.Server, pkgName, pkgVersion, params, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteFleetEpmPackagesPkgnamePkgversionRequest(c.Server, pkgName, pkgVersion, params, body)
+func (c *Client) DeleteFleetEpmPackagesPkgnamePkgversion(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFleetEpmPackagesPkgnamePkgversionRequest(c.Server, pkgName, pkgVersion, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12996,22 +12707,6 @@ func NewGetFleetEpmPackagesRequest(server string, params *GetFleetEpmPackagesPar
 
 		}
 
-		if params.Experimental != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "experimental", runtime.ParamLocationQuery, *params.Experimental); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
 		if params.ExcludeInstallStatus != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "excludeInstallStatus", runtime.ParamLocationQuery, *params.ExcludeInstallStatus); err != nil {
@@ -13106,19 +12801,8 @@ func NewPostFleetEpmPackagesRequestWithBody(server string, params *PostFleetEpmP
 	return req, nil
 }
 
-// NewDeleteFleetEpmPackagesPkgnamePkgversionRequest calls the generic DeleteFleetEpmPackagesPkgnamePkgversion builder with application/json body
-func NewDeleteFleetEpmPackagesPkgnamePkgversionRequest(server string, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody(server, pkgName, pkgVersion, params, "application/json", bodyReader)
-}
-
-// NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody generates requests for DeleteFleetEpmPackagesPkgnamePkgversion with any type of body
-func NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody(server string, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewDeleteFleetEpmPackagesPkgnamePkgversionRequest generates requests for DeleteFleetEpmPackagesPkgnamePkgversion
+func NewDeleteFleetEpmPackagesPkgnamePkgversionRequest(server string, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13172,12 +12856,10 @@ func NewDeleteFleetEpmPackagesPkgnamePkgversionRequestWithBody(server string, pk
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
-	req, err := http.NewRequest("DELETE", queryURL.String(), body)
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -14459,10 +14141,8 @@ type ClientWithResponsesInterface interface {
 	// PostFleetEpmPackagesWithBodyWithResponse request with any body
 	PostFleetEpmPackagesWithBodyWithResponse(ctx context.Context, params *PostFleetEpmPackagesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostFleetEpmPackagesResponse, error)
 
-	// DeleteFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse request with any body
-	DeleteFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error)
-
-	DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error)
+	// DeleteFleetEpmPackagesPkgnamePkgversionWithResponse request
+	DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error)
 
 	// GetFleetEpmPackagesPkgnamePkgversionWithResponse request
 	GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *GetFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*GetFleetEpmPackagesPkgnamePkgversionResponse, error)
@@ -14702,29 +14382,10 @@ type GetFleetEnrollmentApiKeysResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items []EnrollmentApiKey `json:"items"`
-		// Deprecated:
-		List []struct {
-			// Active When false, the enrollment API key is revoked and cannot be used for enrolling Elastic Agents.
-			Active bool `json:"active"`
-
-			// ApiKey The enrollment API key (token) used for enrolling Elastic Agents.
-			ApiKey string `json:"api_key"`
-
-			// ApiKeyId The ID of the API key in the Security API.
-			ApiKeyId  string `json:"api_key_id"`
-			CreatedAt string `json:"created_at"`
-			Id        string `json:"id"`
-
-			// Name The name of the enrollment API key.
-			Name *string `json:"name,omitempty"`
-
-			// PolicyId The ID of the agent policy the Elastic Agent will be enrolled in.
-			PolicyId *string `json:"policy_id,omitempty"`
-		} `json:"list"`
-		Page    float32 `json:"page"`
-		PerPage float32 `json:"perPage"`
-		Total   float32 `json:"total"`
+		Items   []EnrollmentApiKey `json:"items"`
+		Page    float32            `json:"page"`
+		PerPage float32            `json:"perPage"`
+		Total   float32            `json:"total"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
@@ -14753,163 +14414,13 @@ type GetFleetEpmPackagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items    []PackageListItem                        `json:"items"`
-		Response *[]GetFleetEpmPackages_200_Response_Item `json:"response,omitempty"`
+		Items []PackageListItem `json:"items"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
 		Message    string   `json:"message"`
 		StatusCode *float32 `json:"statusCode,omitempty"`
 	}
-}
-type GetFleetEpmPackages_200_Response_Conditions_Elastic struct {
-	Capabilities         *[]string              `json:"capabilities,omitempty"`
-	Subscription         *string                `json:"subscription,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_Conditions_Kibana struct {
-	Version              *string                `json:"version,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_Conditions struct {
-	Elastic              *GetFleetEpmPackages_200_Response_Conditions_Elastic `json:"elastic,omitempty"`
-	Kibana               *GetFleetEpmPackages_200_Response_Conditions_Kibana  `json:"kibana,omitempty"`
-	AdditionalProperties map[string]interface{}                               `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_Discovery_Fields_Item struct {
-	Name                 string                 `json:"name"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_Discovery struct {
-	Fields               *[]GetFleetEpmPackages_200_Response_Discovery_Fields_Item `json:"fields,omitempty"`
-	AdditionalProperties map[string]interface{}                                    `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_Icons_Item struct {
-	DarkMode             *bool                  `json:"dark_mode,omitempty"`
-	Path                 *string                `json:"path,omitempty"`
-	Size                 *string                `json:"size,omitempty"`
-	Src                  string                 `json:"src"`
-	Title                *string                `json:"title,omitempty"`
-	Type                 *string                `json:"type,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackages200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType string
-type GetFleetEpmPackages_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item struct {
-	Id                   string                                                                            `json:"id"`
-	OriginId             *string                                                                           `json:"originId,omitempty"`
-	Type                 GetFleetEpmPackages200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                                            `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features struct {
-	DocValueOnlyNumeric  *bool                  `json:"doc_value_only_numeric,omitempty"`
-	DocValueOnlyOther    *bool                  `json:"doc_value_only_other,omitempty"`
-	SyntheticSource      *bool                  `json:"synthetic_source,omitempty"`
-	Tsdb                 *bool                  `json:"tsdb,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item struct {
-	DataStream           string                                                                                    `json:"data_stream"`
-	Features             GetFleetEpmPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features `json:"features"`
-	AdditionalProperties map[string]interface{}                                                                    `json:"-"`
-}
-type GetFleetEpmPackages200ResponseInstallationInfoInstallSource string
-type GetFleetEpmPackages200ResponseInstallationInfoInstallStatus string
-type GetFleetEpmPackages200ResponseInstallationInfoInstalledEsType string
-type GetFleetEpmPackages_200_Response_InstallationInfo_InstalledEs_Item struct {
-	Deferred             *bool                                                         `json:"deferred,omitempty"`
-	Id                   string                                                        `json:"id"`
-	Type                 GetFleetEpmPackages200ResponseInstallationInfoInstalledEsType `json:"type"`
-	Version              *string                                                       `json:"version,omitempty"`
-	AdditionalProperties map[string]interface{}                                        `json:"-"`
-}
-type GetFleetEpmPackages200ResponseInstallationInfoInstalledKibanaType string
-type GetFleetEpmPackages_200_Response_InstallationInfo_InstalledKibana_Item struct {
-	Id                   string                                                            `json:"id"`
-	OriginId             *string                                                           `json:"originId,omitempty"`
-	Type                 GetFleetEpmPackages200ResponseInstallationInfoInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                            `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_InstallationInfo_LatestExecutedState struct {
-	Error                *string                `json:"error,omitempty"`
-	Name                 string                 `json:"name"`
-	StartedAt            string                 `json:"started_at"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error struct {
-	Message              string                 `json:"message"`
-	Name                 string                 `json:"name"`
-	Stack                *string                `json:"stack,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item struct {
-	CreatedAt            string                                                                              `json:"created_at"`
-	Error                GetFleetEpmPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error `json:"error"`
-	TargetVersion        string                                                                              `json:"target_version"`
-	AdditionalProperties map[string]interface{}                                                              `json:"-"`
-}
-type GetFleetEpmPackages200ResponseInstallationInfoVerificationStatus string
-type GetFleetEpmPackages_200_Response_InstallationInfo struct {
-	AdditionalSpacesInstalledKibana *map[string][]GetFleetEpmPackages_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item `json:"additional_spaces_installed_kibana,omitempty"`
-	CreatedAt                       *string                                                                                              `json:"created_at,omitempty"`
-	ExperimentalDataStreamFeatures  *[]GetFleetEpmPackages_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item             `json:"experimental_data_stream_features,omitempty"`
-	InstallFormatSchemaVersion      *string                                                                                              `json:"install_format_schema_version,omitempty"`
-	InstallSource                   GetFleetEpmPackages200ResponseInstallationInfoInstallSource                                          `json:"install_source"`
-	InstallStatus                   GetFleetEpmPackages200ResponseInstallationInfoInstallStatus                                          `json:"install_status"`
-	InstalledEs                     []GetFleetEpmPackages_200_Response_InstallationInfo_InstalledEs_Item                                 `json:"installed_es"`
-	InstalledKibana                 []GetFleetEpmPackages_200_Response_InstallationInfo_InstalledKibana_Item                             `json:"installed_kibana"`
-	InstalledKibanaSpaceId          *string                                                                                              `json:"installed_kibana_space_id,omitempty"`
-	LatestExecutedState             *GetFleetEpmPackages_200_Response_InstallationInfo_LatestExecutedState                               `json:"latest_executed_state,omitempty"`
-	LatestInstallFailedAttempts     *[]GetFleetEpmPackages_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
-	Name                            string                                                                                               `json:"name"`
-	Namespaces                      *[]string                                                                                            `json:"namespaces,omitempty"`
-	Type                            string                                                                                               `json:"type"`
-	UpdatedAt                       *string                                                                                              `json:"updated_at,omitempty"`
-	VerificationKeyId               *string                                                                                              `json:"verification_key_id"`
-	VerificationStatus              GetFleetEpmPackages200ResponseInstallationInfoVerificationStatus                                     `json:"verification_status"`
-	Version                         string                                                                                               `json:"version"`
-	AdditionalProperties            map[string]interface{}                                                                               `json:"-"`
-}
-type GetFleetEpmPackages200ResponseOwnerType string
-type GetFleetEpmPackages_200_Response_Owner struct {
-	Github               *string                                  `json:"github,omitempty"`
-	Type                 *GetFleetEpmPackages200ResponseOwnerType `json:"type,omitempty"`
-	AdditionalProperties map[string]interface{}                   `json:"-"`
-}
-type GetFleetEpmPackages200ResponseRelease string
-type GetFleetEpmPackages_200_Response_Source struct {
-	License              string                 `json:"license"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackages200ResponseType string
-type GetFleetEpmPackages_200_Response_Item struct {
-	Categories           *[]string                                          `json:"categories,omitempty"`
-	Conditions           *GetFleetEpmPackages_200_Response_Conditions       `json:"conditions,omitempty"`
-	DataStreams          *[]map[string]interface{}                          `json:"data_streams,omitempty"`
-	Description          *string                                            `json:"description,omitempty"`
-	Discovery            *GetFleetEpmPackages_200_Response_Discovery        `json:"discovery,omitempty"`
-	Download             *string                                            `json:"download,omitempty"`
-	FormatVersion        *string                                            `json:"format_version,omitempty"`
-	Icons                *[]GetFleetEpmPackages_200_Response_Icons_Item     `json:"icons,omitempty"`
-	Id                   string                                             `json:"id"`
-	InstallationInfo     *GetFleetEpmPackages_200_Response_InstallationInfo `json:"installationInfo,omitempty"`
-	Integration          *string                                            `json:"integration,omitempty"`
-	Internal             *bool                                              `json:"internal,omitempty"`
-	LatestVersion        *string                                            `json:"latestVersion,omitempty"`
-	Name                 string                                             `json:"name"`
-	Owner                *GetFleetEpmPackages_200_Response_Owner            `json:"owner,omitempty"`
-	Path                 *string                                            `json:"path,omitempty"`
-	PolicyTemplates      *[]map[string]interface{}                          `json:"policy_templates,omitempty"`
-	Readme               *string                                            `json:"readme,omitempty"`
-	Release              *GetFleetEpmPackages200ResponseRelease             `json:"release,omitempty"`
-	SavedObject          interface{}                                        `json:"savedObject"`
-	SignaturePath        *string                                            `json:"signature_path,omitempty"`
-	Source               *GetFleetEpmPackages_200_Response_Source           `json:"source,omitempty"`
-	Status               *string                                            `json:"status,omitempty"`
-	Title                string                                             `json:"title"`
-	Type                 *GetFleetEpmPackages200ResponseType                `json:"type,omitempty"`
-	Vars                 *[]map[string]interface{}                          `json:"vars,omitempty"`
-	Version              string                                             `json:"version"`
-	AdditionalProperties map[string]interface{}                             `json:"-"`
 }
 
 // Status returns HTTPResponse.Status
@@ -14954,8 +14465,6 @@ type DeleteFleetEpmPackagesPkgnamePkgversionResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *struct {
 		Items []DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
-		// Deprecated:
-		Response *[]DeleteFleetEpmPackagesPkgnamePkgversion_200_Response_Item `json:"response,omitempty"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
@@ -14977,22 +14486,6 @@ type DeleteFleetEpmPackagesPkgnamePkgversion200Items1 struct {
 }
 type DeleteFleetEpmPackagesPkgnamePkgversion200Items1Type string
 type DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_Item struct {
-	union json.RawMessage
-}
-type DeleteFleetEpmPackagesPkgnamePkgversion200Response0 struct {
-	Id       string                                                  `json:"id"`
-	OriginId *string                                                 `json:"originId,omitempty"`
-	Type     DeleteFleetEpmPackagesPkgnamePkgversion200Response0Type `json:"type"`
-}
-type DeleteFleetEpmPackagesPkgnamePkgversion200Response0Type string
-type DeleteFleetEpmPackagesPkgnamePkgversion200Response1 struct {
-	Deferred *bool                                                   `json:"deferred,omitempty"`
-	Id       string                                                  `json:"id"`
-	Type     DeleteFleetEpmPackagesPkgnamePkgversion200Response1Type `json:"type"`
-	Version  *string                                                 `json:"version,omitempty"`
-}
-type DeleteFleetEpmPackagesPkgnamePkgversion200Response1Type string
-type DeleteFleetEpmPackagesPkgnamePkgversion_200_Response_Item struct {
 	union json.RawMessage
 }
 
@@ -15020,185 +14513,12 @@ type GetFleetEpmPackagesPkgnamePkgversionResponse struct {
 		Metadata *struct {
 			HasPolicies bool `json:"has_policies"`
 		} `json:"metadata,omitempty"`
-		// Deprecated:
-		Response *GetFleetEpmPackagesPkgnamePkgversion_200_Response `json:"response,omitempty"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
 		Message    string   `json:"message"`
 		StatusCode *float32 `json:"statusCode,omitempty"`
 	}
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions_Elastic struct {
-	Capabilities         *[]string              `json:"capabilities,omitempty"`
-	Subscription         *string                `json:"subscription,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions_Kibana struct {
-	Version              *string                `json:"version,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions struct {
-	Elastic              *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions_Elastic `json:"elastic,omitempty"`
-	Kibana               *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions_Kibana  `json:"kibana,omitempty"`
-	AdditionalProperties map[string]interface{}                                                `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Discovery_Fields_Item struct {
-	Name                 string                 `json:"name"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Discovery struct {
-	Fields               *[]GetFleetEpmPackagesPkgnamePkgversion_200_Response_Discovery_Fields_Item `json:"fields,omitempty"`
-	AdditionalProperties map[string]interface{}                                                     `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Icons_Item struct {
-	DarkMode             *bool                  `json:"dark_mode,omitempty"`
-	Path                 *string                `json:"path,omitempty"`
-	Size                 *string                `json:"size,omitempty"`
-	Src                  string                 `json:"src"`
-	Title                *string                `json:"title,omitempty"`
-	Type                 *string                `json:"type,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType string
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item struct {
-	Id                   string                                                                                             `json:"id"`
-	OriginId             *string                                                                                            `json:"originId,omitempty"`
-	Type                 GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoAdditionalSpacesInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                                                             `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features struct {
-	DocValueOnlyNumeric  *bool                  `json:"doc_value_only_numeric,omitempty"`
-	DocValueOnlyOther    *bool                  `json:"doc_value_only_other,omitempty"`
-	SyntheticSource      *bool                  `json:"synthetic_source,omitempty"`
-	Tsdb                 *bool                  `json:"tsdb,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item struct {
-	DataStream           string                                                                                                     `json:"data_stream"`
-	Features             GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Features `json:"features"`
-	AdditionalProperties map[string]interface{}                                                                                     `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstallSource string
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstallStatus string
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstalledEsType string
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_InstalledEs_Item struct {
-	Deferred             *bool                                                                          `json:"deferred,omitempty"`
-	Id                   string                                                                         `json:"id"`
-	Type                 GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstalledEsType `json:"type"`
-	Version              *string                                                                        `json:"version,omitempty"`
-	AdditionalProperties map[string]interface{}                                                         `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstalledKibanaType string
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_InstalledKibana_Item struct {
-	Id                   string                                                                             `json:"id"`
-	OriginId             *string                                                                            `json:"originId,omitempty"`
-	Type                 GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                                             `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestExecutedState struct {
-	Error                *string                `json:"error,omitempty"`
-	Name                 string                 `json:"name"`
-	StartedAt            string                 `json:"started_at"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error struct {
-	Message              string                 `json:"message"`
-	Name                 string                 `json:"name"`
-	Stack                *string                `json:"stack,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item struct {
-	CreatedAt            string                                                                                               `json:"created_at"`
-	Error                GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestInstallFailedAttempts_Error `json:"error"`
-	TargetVersion        string                                                                                               `json:"target_version"`
-	AdditionalProperties map[string]interface{}                                                                               `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoVerificationStatus string
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo struct {
-	AdditionalSpacesInstalledKibana *map[string][]GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_AdditionalSpacesInstalledKibana_Item `json:"additional_spaces_installed_kibana,omitempty"`
-	CreatedAt                       *string                                                                                                               `json:"created_at,omitempty"`
-	ExperimentalDataStreamFeatures  *[]GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_ExperimentalDataStreamFeatures_Item             `json:"experimental_data_stream_features,omitempty"`
-	InstallFormatSchemaVersion      *string                                                                                                               `json:"install_format_schema_version,omitempty"`
-	InstallSource                   GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstallSource                                          `json:"install_source"`
-	InstallStatus                   GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoInstallStatus                                          `json:"install_status"`
-	InstalledEs                     []GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_InstalledEs_Item                                 `json:"installed_es"`
-	InstalledKibana                 []GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_InstalledKibana_Item                             `json:"installed_kibana"`
-	InstalledKibanaSpaceId          *string                                                                                                               `json:"installed_kibana_space_id,omitempty"`
-	LatestExecutedState             *GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestExecutedState                               `json:"latest_executed_state,omitempty"`
-	LatestInstallFailedAttempts     *[]GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
-	Name                            string                                                                                                                `json:"name"`
-	Namespaces                      *[]string                                                                                                             `json:"namespaces,omitempty"`
-	Type                            string                                                                                                                `json:"type"`
-	UpdatedAt                       *string                                                                                                               `json:"updated_at,omitempty"`
-	VerificationKeyId               *string                                                                                                               `json:"verification_key_id"`
-	VerificationStatus              GetFleetEpmPackagesPkgnamePkgversion200ResponseInstallationInfoVerificationStatus                                     `json:"verification_status"`
-	Version                         string                                                                                                                `json:"version"`
-	AdditionalProperties            map[string]interface{}                                                                                                `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseOwnerType string
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Owner struct {
-	Github               *string                                                   `json:"github,omitempty"`
-	Type                 *GetFleetEpmPackagesPkgnamePkgversion200ResponseOwnerType `json:"type,omitempty"`
-	AdditionalProperties map[string]interface{}                                    `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseRelease string
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response_Source struct {
-	License              string                 `json:"license"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-type GetFleetEpmPackagesPkgnamePkgversion200ResponseType string
-type GetFleetEpmPackagesPkgnamePkgversion_200_Response struct {
-	Agent *struct {
-		Privileges *struct {
-			Root *bool `json:"root,omitempty"`
-		} `json:"privileges,omitempty"`
-	} `json:"agent,omitempty"`
-	AssetTags *[]struct {
-		AssetIds   *[]string `json:"asset_ids,omitempty"`
-		AssetTypes *[]string `json:"asset_types,omitempty"`
-		Text       string    `json:"text"`
-	} `json:"asset_tags,omitempty"`
-	Assets               map[string]interface{}                                              `json:"assets"`
-	Categories           *[]string                                                           `json:"categories,omitempty"`
-	Conditions           *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Conditions       `json:"conditions,omitempty"`
-	DataStreams          *[]map[string]interface{}                                           `json:"data_streams,omitempty"`
-	Description          *string                                                             `json:"description,omitempty"`
-	Discovery            *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Discovery        `json:"discovery,omitempty"`
-	Download             *string                                                             `json:"download,omitempty"`
-	Elasticsearch        *map[string]interface{}                                             `json:"elasticsearch,omitempty"`
-	FormatVersion        *string                                                             `json:"format_version,omitempty"`
-	Icons                *[]GetFleetEpmPackagesPkgnamePkgversion_200_Response_Icons_Item     `json:"icons,omitempty"`
-	InstallationInfo     *GetFleetEpmPackagesPkgnamePkgversion_200_Response_InstallationInfo `json:"installationInfo,omitempty"`
-	Internal             *bool                                                               `json:"internal,omitempty"`
-	KeepPoliciesUpToDate *bool                                                               `json:"keepPoliciesUpToDate,omitempty"`
-	LatestVersion        *string                                                             `json:"latestVersion,omitempty"`
-	License              *string                                                             `json:"license,omitempty"`
-	LicensePath          *string                                                             `json:"licensePath,omitempty"`
-	Name                 string                                                              `json:"name"`
-	Notice               *string                                                             `json:"notice,omitempty"`
-	Owner                *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Owner            `json:"owner,omitempty"`
-	Path                 *string                                                             `json:"path,omitempty"`
-	PolicyTemplates      *[]map[string]interface{}                                           `json:"policy_templates,omitempty"`
-	Readme               *string                                                             `json:"readme,omitempty"`
-	Release              *GetFleetEpmPackagesPkgnamePkgversion200ResponseRelease             `json:"release,omitempty"`
-	SavedObject          interface{}                                                         `json:"savedObject"`
-	Screenshots          *[]struct {
-		DarkMode *bool   `json:"dark_mode,omitempty"`
-		Path     *string `json:"path,omitempty"`
-		Size     *string `json:"size,omitempty"`
-		Src      string  `json:"src"`
-		Title    *string `json:"title,omitempty"`
-		Type     *string `json:"type,omitempty"`
-	} `json:"screenshots,omitempty"`
-	SignaturePath        *string                                                   `json:"signature_path,omitempty"`
-	Source               *GetFleetEpmPackagesPkgnamePkgversion_200_Response_Source `json:"source,omitempty"`
-	Status               *string                                                   `json:"status,omitempty"`
-	Title                string                                                    `json:"title"`
-	Type                 *GetFleetEpmPackagesPkgnamePkgversion200ResponseType      `json:"type,omitempty"`
-	Vars                 *[]map[string]interface{}                                 `json:"vars,omitempty"`
-	Version              string                                                    `json:"version"`
-	AdditionalProperties map[string]interface{}                                    `json:"-"`
 }
 
 // Status returns HTTPResponse.Status
@@ -15225,8 +14545,6 @@ type PostFleetEpmPackagesPkgnamePkgversionResponse struct {
 			InstallSource string `json:"install_source"`
 		} `json:"_meta"`
 		Items []PostFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
-		// Deprecated:
-		Response *[]PostFleetEpmPackagesPkgnamePkgversion_200_Response_Item `json:"response,omitempty"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
@@ -15248,22 +14566,6 @@ type PostFleetEpmPackagesPkgnamePkgversion200Items1 struct {
 }
 type PostFleetEpmPackagesPkgnamePkgversion200Items1Type string
 type PostFleetEpmPackagesPkgnamePkgversion_200_Items_Item struct {
-	union json.RawMessage
-}
-type PostFleetEpmPackagesPkgnamePkgversion200Response0 struct {
-	Id       string                                                `json:"id"`
-	OriginId *string                                               `json:"originId,omitempty"`
-	Type     PostFleetEpmPackagesPkgnamePkgversion200Response0Type `json:"type"`
-}
-type PostFleetEpmPackagesPkgnamePkgversion200Response0Type string
-type PostFleetEpmPackagesPkgnamePkgversion200Response1 struct {
-	Deferred *bool                                                 `json:"deferred,omitempty"`
-	Id       string                                                `json:"id"`
-	Type     PostFleetEpmPackagesPkgnamePkgversion200Response1Type `json:"type"`
-	Version  *string                                               `json:"version,omitempty"`
-}
-type PostFleetEpmPackagesPkgnamePkgversion200Response1Type string
-type PostFleetEpmPackagesPkgnamePkgversion_200_Response_Item struct {
 	union json.RawMessage
 }
 
@@ -15957,17 +15259,9 @@ func (c *ClientWithResponses) PostFleetEpmPackagesWithBodyWithResponse(ctx conte
 	return ParsePostFleetEpmPackagesResponse(rsp)
 }
 
-// DeleteFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse request with arbitrary body returning *DeleteFleetEpmPackagesPkgnamePkgversionResponse
-func (c *ClientWithResponses) DeleteFleetEpmPackagesPkgnamePkgversionWithBodyWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error) {
-	rsp, err := c.DeleteFleetEpmPackagesPkgnamePkgversionWithBody(ctx, pkgName, pkgVersion, params, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteFleetEpmPackagesPkgnamePkgversionResponse(rsp)
-}
-
-func (c *ClientWithResponses) DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, body DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error) {
-	rsp, err := c.DeleteFleetEpmPackagesPkgnamePkgversion(ctx, pkgName, pkgVersion, params, body, reqEditors...)
+// DeleteFleetEpmPackagesPkgnamePkgversionWithResponse request returning *DeleteFleetEpmPackagesPkgnamePkgversionResponse
+func (c *ClientWithResponses) DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx context.Context, pkgName string, pkgVersion string, params *DeleteFleetEpmPackagesPkgnamePkgversionParams, reqEditors ...RequestEditorFn) (*DeleteFleetEpmPackagesPkgnamePkgversionResponse, error) {
+	rsp, err := c.DeleteFleetEpmPackagesPkgnamePkgversion(ctx, pkgName, pkgVersion, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -16459,29 +15753,10 @@ func ParseGetFleetEnrollmentApiKeysResponse(rsp *http.Response) (*GetFleetEnroll
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items []EnrollmentApiKey `json:"items"`
-			// Deprecated:
-			List []struct {
-				// Active When false, the enrollment API key is revoked and cannot be used for enrolling Elastic Agents.
-				Active bool `json:"active"`
-
-				// ApiKey The enrollment API key (token) used for enrolling Elastic Agents.
-				ApiKey string `json:"api_key"`
-
-				// ApiKeyId The ID of the API key in the Security API.
-				ApiKeyId  string `json:"api_key_id"`
-				CreatedAt string `json:"created_at"`
-				Id        string `json:"id"`
-
-				// Name The name of the enrollment API key.
-				Name *string `json:"name,omitempty"`
-
-				// PolicyId The ID of the agent policy the Elastic Agent will be enrolled in.
-				PolicyId *string `json:"policy_id,omitempty"`
-			} `json:"list"`
-			Page    float32 `json:"page"`
-			PerPage float32 `json:"perPage"`
-			Total   float32 `json:"total"`
+			Items   []EnrollmentApiKey `json:"items"`
+			Page    float32            `json:"page"`
+			PerPage float32            `json:"perPage"`
+			Total   float32            `json:"total"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16520,8 +15795,7 @@ func ParseGetFleetEpmPackagesResponse(rsp *http.Response) (*GetFleetEpmPackagesR
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items    []PackageListItem                        `json:"items"`
-			Response *[]GetFleetEpmPackages_200_Response_Item `json:"response,omitempty"`
+			Items []PackageListItem `json:"items"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16577,8 +15851,6 @@ func ParseDeleteFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
 			Items []DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
-			// Deprecated:
-			Response *[]DeleteFleetEpmPackagesPkgnamePkgversion_200_Response_Item `json:"response,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16621,8 +15893,6 @@ func ParseGetFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*Get
 			Metadata *struct {
 				HasPolicies bool `json:"has_policies"`
 			} `json:"metadata,omitempty"`
-			// Deprecated:
-			Response *GetFleetEpmPackagesPkgnamePkgversion_200_Response `json:"response,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16665,8 +15935,6 @@ func ParsePostFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*Po
 				InstallSource string `json:"install_source"`
 			} `json:"_meta"`
 			Items []PostFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
-			// Deprecated:
-			Response *[]PostFleetEpmPackagesPkgnamePkgversion_200_Response_Item `json:"response,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err

@@ -370,11 +370,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 
 // Uninstall uninstalls a package.
 func Uninstall(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
-	body := kbapi.DeleteFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
-		Force: force,
-	}
-
-	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil, body)
+	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
