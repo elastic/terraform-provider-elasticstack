@@ -1,7 +1,7 @@
 package integration_ds
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
+	kbapi "github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 

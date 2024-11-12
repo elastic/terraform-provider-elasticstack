@@ -5,7 +5,7 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kibana"
+	kbapi "github.com/elastic/terraform-provider-elasticstack/generated/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -87,7 +87,7 @@ func TestHandleRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": kbapi.PackagePolicyInputStream{Vars: utils.Pointer(maps.Clone(tt.input))}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.input))}},
 						Vars:    utils.Pointer(maps.Clone(tt.input)),
 					},
 				},
@@ -96,7 +96,7 @@ func TestHandleRespSecrets(t *testing.T) {
 			wants := kbapi.PackagePolicy{
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": kbapi.PackagePolicyInputStream{Vars: utils.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
@@ -201,7 +201,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": kbapi.PackagePolicyInputStream{Vars: utils.Pointer(maps.Clone(tt.respInput))}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.respInput))}},
 						Vars:    utils.Pointer(maps.Clone(tt.respInput)),
 					},
 				},
@@ -210,7 +210,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			wants := kbapi.PackagePolicy{
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": kbapi.PackagePolicyInputStream{Vars: utils.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},

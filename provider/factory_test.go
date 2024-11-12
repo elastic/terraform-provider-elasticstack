@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -33,7 +32,7 @@ func TestMuxServer(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(providerConfig),
+				Config: providerConfig,
 			},
 		},
 	})
