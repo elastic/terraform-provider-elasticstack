@@ -7,7 +7,7 @@ toolchain go1.23.2
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.61.0
-	github.com/goreleaser/goreleaser/v2 v2.4.3
+	github.com/goreleaser/goreleaser/v2 v2.4.4
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	go.uber.org/mock v0.5.0
