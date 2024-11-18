@@ -14382,10 +14382,29 @@ type GetFleetEnrollmentApiKeysResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Items   []EnrollmentApiKey `json:"items"`
-		Page    float32            `json:"page"`
-		PerPage float32            `json:"perPage"`
-		Total   float32            `json:"total"`
+		Items []EnrollmentApiKey `json:"items"`
+		// Deprecated:
+		List []struct {
+			// Active When false, the enrollment API key is revoked and cannot be used for enrolling Elastic Agents.
+			Active bool `json:"active"`
+
+			// ApiKey The enrollment API key (token) used for enrolling Elastic Agents.
+			ApiKey string `json:"api_key"`
+
+			// ApiKeyId The ID of the API key in the Security API.
+			ApiKeyId  string `json:"api_key_id"`
+			CreatedAt string `json:"created_at"`
+			Id        string `json:"id"`
+
+			// Name The name of the enrollment API key.
+			Name *string `json:"name,omitempty"`
+
+			// PolicyId The ID of the agent policy the Elastic Agent will be enrolled in.
+			PolicyId *string `json:"policy_id,omitempty"`
+		} `json:"list"`
+		Page    float32 `json:"page"`
+		PerPage float32 `json:"perPage"`
+		Total   float32 `json:"total"`
 	}
 	JSON400 *struct {
 		Error      *string  `json:"error,omitempty"`
@@ -15753,10 +15772,29 @@ func ParseGetFleetEnrollmentApiKeysResponse(rsp *http.Response) (*GetFleetEnroll
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Items   []EnrollmentApiKey `json:"items"`
-			Page    float32            `json:"page"`
-			PerPage float32            `json:"perPage"`
-			Total   float32            `json:"total"`
+			Items []EnrollmentApiKey `json:"items"`
+			// Deprecated:
+			List []struct {
+				// Active When false, the enrollment API key is revoked and cannot be used for enrolling Elastic Agents.
+				Active bool `json:"active"`
+
+				// ApiKey The enrollment API key (token) used for enrolling Elastic Agents.
+				ApiKey string `json:"api_key"`
+
+				// ApiKeyId The ID of the API key in the Security API.
+				ApiKeyId  string `json:"api_key_id"`
+				CreatedAt string `json:"created_at"`
+				Id        string `json:"id"`
+
+				// Name The name of the enrollment API key.
+				Name *string `json:"name,omitempty"`
+
+				// PolicyId The ID of the agent policy the Elastic Agent will be enrolled in.
+				PolicyId *string `json:"policy_id,omitempty"`
+			} `json:"list"`
+			Page    float32 `json:"page"`
+			PerPage float32 `json:"perPage"`
+			Total   float32 `json:"total"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	kbapi "github.com/elastic/terraform-provider-elasticstack/generated/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
