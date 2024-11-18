@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3@sha256:01c1732062b4a846c5ca687b0094b89bad0bfed00c6d71626db32fb8f3131a78
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.0@sha256:93a9a7e1908f0c59ffce42ff494791bd785c36de40189759fc2a0ed7d6006c9d
     environment:
       cluster.name: test
       discovery.type: single-node
