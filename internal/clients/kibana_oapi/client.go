@@ -1,4 +1,4 @@
-package kibana2
+package kibana_oapi
 
 import (
 	"crypto/tls"

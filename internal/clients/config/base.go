@@ -77,8 +77,8 @@ func (b baseConfig) toKibanaConfig() kibanaConfig {
 	}
 }
 
-func (b baseConfig) toKibana2Config() kibana2Config {
-	return kibana2Config{
+func (b baseConfig) toKibanaOapiConfig() kibanaOapiConfig {
+	return kibanaOapiConfig{
 		Username: b.Username,
 		Password: b.Password,
 		APIKey:   b.ApiKey,

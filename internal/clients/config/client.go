@@ -4,13 +4,13 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana2"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 )
 
 type Client struct {
 	UserAgent     string
 	Kibana        *kibana.Config
-	Kibana2       *kibana2.Config
+	KibanaOapi    *kibana_oapi.Config
 	Elasticsearch *elasticsearch.Config
 	Fleet         *fleet.Config
 }

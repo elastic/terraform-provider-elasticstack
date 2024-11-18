@@ -6,19 +6,19 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana2"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type kibana2Config kibana2.Config
+type kibanaOapiConfig kibana_oapi.Config
 
-func newKibana2ConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibana2Config, sdkdiags.Diagnostics) {
+func newKibanaOapiConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaOapiConfig, sdkdiags.Diagnostics) {
 	var diags sdkdiags.Diagnostics
 
 	// Use ES details by default
-	config := base.toKibana2Config()
+	config := base.toKibanaOapiConfig()
 	kibConn, ok := d.GetOk("kibana")
 	if !ok {
 		return config, diags
@@ -62,8 +62,8 @@ func newKibana2ConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibana2Co
 	return config.withEnvironmentOverrides(), nil
 }
 
-func newKibana2ConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibana2Config, fwdiags.Diagnostics) {
-	config := base.toKibana2Config()
+func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	config := base.toKibanaOapiConfig()
 
 	if len(cfg.Kibana) > 0 {
 		kibConfig := cfg.Kibana[0]
@@ -82,7 +82,7 @@ func newKibana2ConfigFromFramework(ctx context.Context, cfg ProviderConfiguratio
 		var cas []string
 		diags.Append(kibConfig.CACerts.ElementsAs(ctx, &cas, true)...)
 		if diags.HasError() {
-			return kibana2Config{}, diags
+			return kibanaOapiConfig{}, diags
 		}
 
 		if len(endpoints) > 0 {
@@ -99,7 +99,7 @@ func newKibana2ConfigFromFramework(ctx context.Context, cfg ProviderConfiguratio
 	return config.withEnvironmentOverrides(), nil
 }
 
-func (k kibana2Config) withEnvironmentOverrides() kibana2Config {
+func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")
@@ -117,6 +117,6 @@ func (k kibana2Config) withEnvironmentOverrides() kibana2Config {
 	return k
 }
 
-func (k kibana2Config) toFleetConfig() fleetConfig {
+func (k kibanaOapiConfig) toFleetConfig() fleetConfig {
 	return fleetConfig(k)
 }

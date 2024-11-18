@@ -3,7 +3,7 @@ package data_view
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana2"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -16,7 +16,7 @@ func (r *DataViewResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	client, err := r.client.GetKibana2Client()
+	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -29,7 +29,7 @@ func (r *DataViewResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	viewID, spaceID := planModel.getViewIDAndSpaceID()
-	dataView, diags := kibana2.UpdateDataView(ctx, client, spaceID, viewID, body)
+	dataView, diags := kibana_oapi.UpdateDataView(ctx, client, spaceID, viewID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

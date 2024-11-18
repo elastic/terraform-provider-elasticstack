@@ -15,7 +15,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana2"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -72,7 +72,7 @@ type ApiClient struct {
 	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
-	kibana2                  *kibana2.Client
+	kibanaOapi               *kibana_oapi.Client
 	alerting                 alerting.AlertingAPI
 	connectors               *connectors.Client
 	slo                      slo.SloAPI
@@ -108,7 +108,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, fmt.Errorf("cannot create Kibana action connectors client: [%w]", err)
 	}
 
-	kibana2Client, err := kibana2.NewClient(*cfg.Kibana2)
+	kibOapi, err := kibana_oapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 	return &ApiClient{
 			elasticsearch: es,
 			kibana:        kib,
-			kibana2:       kibana2Client,
+			kibanaOapi:    kibOapi,
 			alerting:      buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI,
 			slo:           buildSloClient(cfg, kibanaHttpClient).SloAPI,
 			connectors:    actionConnectors,
@@ -244,12 +244,12 @@ func (a *ApiClient) GetKibanaClient() (*kibana.Client, error) {
 	return a.kibana, nil
 }
 
-func (a *ApiClient) GetKibana2Client() (*kibana2.Client, error) {
-	if a.kibana2 == nil {
-		return nil, errors.New("kibana2 client not found")
+func (a *ApiClient) GetKibanaOapiClient() (*kibana_oapi.Client, error) {
+	if a.kibanaOapi == nil {
+		return nil, errors.New("kibana_oapi client not found")
 	}
 
-	return a.kibana2, nil
+	return a.kibanaOapi, nil
 }
 
 func (a *ApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
@@ -470,10 +470,10 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 	return kib, nil
 }
 
-func buildKibana2Client(cfg config.Client) (*kibana2.Client, error) {
-	client, err := kibana2.NewClient(*cfg.Kibana2)
+func buildKibanaOapiClient(cfg config.Client) (*kibana_oapi.Client, error) {
+	client, err := kibana_oapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create Kibana2 client: %w", err)
+		return nil, fmt.Errorf("Unable to create KibanaOapi client: %w", err)
 	}
 
 	return client, nil
@@ -576,11 +576,11 @@ func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, erro
 		}
 		client.kibana = kibanaClient
 
-		kibana2Client, err := buildKibana2Client(cfg)
+		kibanaOapiClient, err := buildKibanaOapiClient(cfg)
 		if err != nil {
 			return nil, err
 		}
-		client.kibana2 = kibana2Client
+		client.kibanaOapi = kibanaOapiClient
 
 		kibanaHttpClient := kibanaClient.Client.GetClient()
 		connectorsClient, err := buildConnectorsClient(cfg, kibanaHttpClient)

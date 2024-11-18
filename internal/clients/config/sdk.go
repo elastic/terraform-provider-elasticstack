@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana2"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -49,14 +49,14 @@ func newFromSDK(d *schema.ResourceData, version, esConfigKey string) (Client, di
 
 	client.Kibana = (*kibana.Config)(&kibanaCfg)
 
-	kibana2Cfg, diags := newKibana2ConfigFromSDK(d, base)
+	kibanaOapiCfg, diags := newKibanaOapiConfigFromSDK(d, base)
 	if diags.HasError() {
 		return Client{}, diags
 	}
 
-	client.Kibana2 = (*kibana2.Config)(&kibana2Cfg)
+	client.KibanaOapi = (*kibana_oapi.Config)(&kibanaOapiCfg)
 
-	fleetCfg, diags := newFleetConfigFromSDK(d, kibana2Cfg)
+	fleetCfg, diags := newFleetConfigFromSDK(d, kibanaOapiCfg)
 	if diags.HasError() {
 		return Client{}, diags
 	}

@@ -3,7 +3,7 @@ package data_view
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana2"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -16,13 +16,13 @@ func (r *DataViewResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	client, err := r.client.GetKibana2Client()
+	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
 	viewID, spaceID := stateModel.getViewIDAndSpaceID()
-	diags = kibana2.DeleteDataView(ctx, client, spaceID, viewID)
+	diags = kibana_oapi.DeleteDataView(ctx, client, spaceID, viewID)
 	resp.Diagnostics.Append(diags...)
 }

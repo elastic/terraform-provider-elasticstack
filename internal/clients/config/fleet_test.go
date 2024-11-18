@@ -16,7 +16,7 @@ import (
 
 func Test_newFleetConfigFromSDK(t *testing.T) {
 	type args struct {
-		kibanaCfg      kibana2Config
+		kibanaCfg      kibanaOapiConfig
 		resourceData   map[string]interface{}
 		expectedConfig fleetConfig
 		expectedDiags  sdkdiags.Diagnostics
@@ -29,7 +29,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 		{
 			name: "should return kibana config if no fleet config defined",
 			args: func() args {
-				kibanaCfg := kibana2Config{
+				kibanaCfg := kibanaOapiConfig{
 					URL:      "example.com/kibana",
 					Username: "elastic",
 					Password: "changeme",
@@ -46,7 +46,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 		{
 			name: "should use the provided config optios",
 			args: func() args {
-				kibanaCfg := kibana2Config{
+				kibanaCfg := kibanaOapiConfig{
 					URL:      "example.com/kibana",
 					Username: "elastic",
 					Password: "changeme",
@@ -81,7 +81,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 		{
 			name: "should prefer environment variables",
 			args: func() args {
-				kibanaCfg := kibana2Config{
+				kibanaCfg := kibanaOapiConfig{
 					URL:      "example.com/kibana",
 					Username: "elastic",
 					Password: "changeme",
@@ -149,7 +149,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 
 func Test_newFleetConfigFromFramework(t *testing.T) {
 	type args struct {
-		kibanaCfg      kibana2Config
+		kibanaCfg      kibanaOapiConfig
 		providerConfig ProviderConfiguration
 		expectedConfig fleetConfig
 		expectedDiags  fwdiags.Diagnostics
@@ -162,7 +162,7 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 		{
 			name: "should return kibana config if no fleet config defined",
 			args: func() args {
-				kibanaCfg := kibana2Config{
+				kibanaCfg := kibanaOapiConfig{
 					URL:      "example.com/kibana",
 					Username: "elastic",
 					Password: "changeme",
@@ -179,7 +179,7 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 		{
 			name: "should use the provided config options",
 			args: func() args {
-				kibanaCfg := kibana2Config{
+				kibanaCfg := kibanaOapiConfig{
 					URL:      "example.com/kibana",
 					Username: "elastic",
 					Password: "changeme",
@@ -217,7 +217,7 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 		{
 			name: "should prefer environment variables",
 			args: func() args {
-				kibanaCfg := kibana2Config{
+				kibanaCfg := kibanaOapiConfig{
 					URL:      "example.com/kibana",
 					Username: "elastic",
 					Password: "changeme",

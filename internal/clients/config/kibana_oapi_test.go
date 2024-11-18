@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_newKibana2ConfigFromSDK(t *testing.T) {
+func Test_newKibanaOapiConfigFromSDK(t *testing.T) {
 	type args struct {
 		baseCfg        baseConfig
 		resourceData   map[string]interface{}
-		expectedConfig kibana2Config
+		expectedConfig kibanaOapiConfig
 		expectedDiags  sdkdiags.Diagnostics
 		env            map[string]string
 	}
@@ -37,7 +37,7 @@ func Test_newKibana2ConfigFromSDK(t *testing.T) {
 				return args{
 					baseCfg:        baseCfg,
 					resourceData:   map[string]interface{}{},
-					expectedConfig: baseCfg.toKibana2Config(),
+					expectedConfig: baseCfg.toKibanaOapiConfig(),
 				}
 			},
 		},
@@ -62,7 +62,7 @@ func Test_newKibana2ConfigFromSDK(t *testing.T) {
 							},
 						},
 					},
-					expectedConfig: kibana2Config{
+					expectedConfig: kibanaOapiConfig{
 						URL:      "example.com/kibana",
 						Username: "kibana",
 						Password: "baltic",
@@ -100,7 +100,7 @@ func Test_newKibana2ConfigFromSDK(t *testing.T) {
 						"KIBANA_INSECURE": "false",
 						"KIBANA_CA_CERTS": "black,sea",
 					},
-					expectedConfig: kibana2Config{
+					expectedConfig: kibanaOapiConfig{
 						URL:      "example.com/cabana",
 						Username: "elastic",
 						Password: "thin-lines",
@@ -130,7 +130,7 @@ func Test_newKibana2ConfigFromSDK(t *testing.T) {
 				os.Setenv(key, val)
 			}
 
-			kibanaCfg, diags := newKibana2ConfigFromSDK(rd, args.baseCfg)
+			kibanaCfg, diags := newKibanaOapiConfigFromSDK(rd, args.baseCfg)
 
 			require.Equal(t, args.expectedConfig, kibanaCfg)
 			require.Equal(t, args.expectedDiags, diags)
@@ -138,11 +138,11 @@ func Test_newKibana2ConfigFromSDK(t *testing.T) {
 	}
 }
 
-func Test_newkibana2ConfigFromFramework(t *testing.T) {
+func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 	type args struct {
 		baseCfg        baseConfig
 		providerConfig ProviderConfiguration
-		expectedConfig kibana2Config
+		expectedConfig kibanaOapiConfig
 		expectedDiags  fwdiags.Diagnostics
 		env            map[string]string
 	}
@@ -161,7 +161,7 @@ func Test_newkibana2ConfigFromFramework(t *testing.T) {
 				return args{
 					baseCfg:        baseCfg,
 					providerConfig: ProviderConfiguration{},
-					expectedConfig: baseCfg.toKibana2Config(),
+					expectedConfig: baseCfg.toKibanaOapiConfig(),
 				}
 			},
 		},
@@ -191,7 +191,7 @@ func Test_newkibana2ConfigFromFramework(t *testing.T) {
 							},
 						},
 					},
-					expectedConfig: kibana2Config{
+					expectedConfig: kibanaOapiConfig{
 						URL:      "example.com/kibana",
 						Username: "kibana",
 						Password: "baltic",
@@ -222,7 +222,7 @@ func Test_newkibana2ConfigFromFramework(t *testing.T) {
 							},
 						},
 					},
-					expectedConfig: kibana2Config{
+					expectedConfig: kibanaOapiConfig{
 						URL:      "example.com/kibana",
 						APIKey:   "test",
 						Insecure: true,
@@ -263,7 +263,7 @@ func Test_newkibana2ConfigFromFramework(t *testing.T) {
 						"KIBANA_INSECURE": "false",
 						"KIBANA_CA_CERTS": "black,sea",
 					},
-					expectedConfig: kibana2Config{
+					expectedConfig: kibanaOapiConfig{
 						URL:      "example.com/cabana",
 						Username: "elastic",
 						Password: "thin-lines",
@@ -290,7 +290,7 @@ func Test_newkibana2ConfigFromFramework(t *testing.T) {
 				os.Setenv(key, val)
 			}
 
-			kibanaCfg, diags := newKibana2ConfigFromFramework(context.Background(), args.providerConfig, args.baseCfg)
+			kibanaCfg, diags := newKibanaOapiConfigFromFramework(context.Background(), args.providerConfig, args.baseCfg)
 
 			require.Equal(t, args.expectedConfig, kibanaCfg)
 			require.Equal(t, args.expectedDiags, diags)
