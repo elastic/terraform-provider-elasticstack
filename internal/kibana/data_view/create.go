@@ -3,51 +3,44 @@ package data_view
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	dataviewClient, err := r.client.GetDataViewsClient()
+func (r *DataViewResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var planModel dataViewModel
+
+	diags := req.Plan.Get(ctx, &planModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	body, diags := planModel.toAPICreateModel(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
-		response.Diagnostics.AddError("unable to get data view client", err.Error())
+		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	var model tfModelV0
-	response.Diagnostics.Append(request.Plan.Get(ctx, &model)...)
-	if response.Diagnostics.HasError() {
+	spaceID := planModel.SpaceID.ValueString()
+	dataView, diags := kibana_oapi.CreateDataView(ctx, client, spaceID, body)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	apiModel, diags := model.ToCreateRequest(ctx)
-	response.Diagnostics.Append(diags...)
-	authCtx := r.client.SetDataviewAuthContext(ctx)
-	respModel, res, err := dataviewClient.CreateDataView(authCtx, model.SpaceID.ValueString()).CreateDataViewRequestObject(apiModel).KbnXsrf("true").Execute()
-	if err != nil && res == nil {
-		response.Diagnostics.AddError("Failed to create data view", err.Error())
+	diags = planModel.populateFromAPI(ctx, dataView)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	defer res.Body.Close()
-	response.Diagnostics.Append(utils.CheckHttpErrorFromFW(res, "Unable to create data view")...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	resourceID := clients.CompositeId{
-		ClusterId:  model.SpaceID.ValueString(),
-		ResourceId: *respModel.DataView.Id,
-	}
-
-	model.ID = types.StringValue(resourceID.String())
-	readModel, diags := r.read(ctx, model)
-	response.Diagnostics = append(response.Diagnostics, diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	response.Diagnostics.Append(response.State.Set(ctx, readModel)...)
+	diags = resp.State.Set(ctx, planModel)
+	resp.Diagnostics.Append(diags...)
 }

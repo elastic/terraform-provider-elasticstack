@@ -156,7 +156,7 @@ func Pointer[T any](value T) *T {
 // MapRef is similar to Pointer, in that it takes the reference of
 // the given value, however if the value is already nil then it returns
 // nil rather than a pointer to nil.
-func MapRef[T any](value map[string]T) *map[string]T {
+func MapRef[T any, M ~map[string]T](value M) *M {
 	if value == nil {
 		return nil
 	}
@@ -166,7 +166,7 @@ func MapRef[T any](value map[string]T) *map[string]T {
 // SliceRef is similar to Pointer, in that it takes the reference of
 // the given value, however if the value is already nil then it returns
 // nil rather than a pointer to nil.
-func SliceRef[T any](value []T) *[]T {
+func SliceRef[T any, S ~[]T](value S) *S {
 	if value == nil {
 		return nil
 	}
@@ -182,6 +182,22 @@ func Deref[T any](value *T) T {
 	} else {
 		return *value
 	}
+}
+
+// Itol converts *int to *in64.
+func Itol(value *int) *int64 {
+	if value == nil {
+		return nil
+	}
+	return Pointer(int64(*value))
+}
+
+// Ltoi converts *int64 to *int.
+func Ltoi(value *int64) *int {
+	if value == nil {
+		return nil
+	}
+	return Pointer(int(*value))
 }
 
 func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {

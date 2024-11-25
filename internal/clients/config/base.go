@@ -77,6 +77,14 @@ func (b baseConfig) toKibanaConfig() kibanaConfig {
 	}
 }
 
+func (b baseConfig) toKibanaOapiConfig() kibanaOapiConfig {
+	return kibanaOapiConfig{
+		Username: b.Username,
+		Password: b.Password,
+		APIKey:   b.ApiKey,
+	}
+}
+
 func (b baseConfig) toElasticsearchConfig() elasticsearchConfig {
 	return elasticsearchConfig{
 		config: elasticsearch.Config{

@@ -5,7 +5,7 @@ import (
 	"maps"
 	"testing"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,7 +35,7 @@ func TestHandleRespSecrets(t *testing.T) {
 	ctx := context.Background()
 	private := privateData{"secrets": `{"known-secret":"secret"}`}
 
-	secretRefs := &[]fleetapi.PackagePolicySecretRef{
+	secretRefs := &[]kbapi.PackagePolicySecretRef{
 		{Id: "known-secret"},
 	}
 
@@ -83,20 +83,20 @@ func TestHandleRespSecrets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp := fleetapi.PackagePolicy{
+			resp := kbapi.PackagePolicy{
 				SecretReferences: secretRefs,
-				Inputs: map[string]fleetapi.PackagePolicyInput{
+				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]fleetapi.PackagePolicyInputStream{"stream1": fleetapi.PackagePolicyInputStream{Vars: utils.Pointer(maps.Clone(tt.input))}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.input))}},
 						Vars:    utils.Pointer(maps.Clone(tt.input)),
 					},
 				},
 				Vars: utils.Pointer(maps.Clone(tt.input)),
 			}
-			wants := fleetapi.PackagePolicy{
-				Inputs: map[string]fleetapi.PackagePolicyInput{
+			wants := kbapi.PackagePolicy{
+				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]fleetapi.PackagePolicyInputStream{"stream1": fleetapi.PackagePolicyInputStream{Vars: utils.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
@@ -132,7 +132,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 
 	ctx := context.Background()
 
-	secretRefs := &[]fleetapi.PackagePolicySecretRef{
+	secretRefs := &[]kbapi.PackagePolicySecretRef{
 		{Id: "known-secret"},
 	}
 
@@ -188,29 +188,29 @@ func TestHandleReqRespSecrets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := fleetapi.PackagePolicyRequest{
-				Inputs: &map[string]fleetapi.PackagePolicyRequestInput{
+			req := kbapi.PackagePolicyRequest{
+				Inputs: &map[string]kbapi.PackagePolicyRequestInput{
 					"input1": {
-						Streams: &map[string]fleetapi.PackagePolicyRequestInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.reqInput))}},
+						Streams: &map[string]kbapi.PackagePolicyRequestInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.reqInput))}},
 						Vars:    utils.Pointer(maps.Clone(tt.reqInput)),
 					},
 				},
 				Vars: utils.Pointer(maps.Clone(tt.reqInput)),
 			}
-			resp := fleetapi.PackagePolicy{
+			resp := kbapi.PackagePolicy{
 				SecretReferences: secretRefs,
-				Inputs: map[string]fleetapi.PackagePolicyInput{
+				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]fleetapi.PackagePolicyInputStream{"stream1": fleetapi.PackagePolicyInputStream{Vars: utils.Pointer(maps.Clone(tt.respInput))}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.respInput))}},
 						Vars:    utils.Pointer(maps.Clone(tt.respInput)),
 					},
 				},
 				Vars: utils.Pointer(maps.Clone(tt.respInput)),
 			}
-			wants := fleetapi.PackagePolicy{
-				Inputs: map[string]fleetapi.PackagePolicyInput{
+			wants := kbapi.PackagePolicy{
+				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]fleetapi.PackagePolicyInputStream{"stream1": fleetapi.PackagePolicyInputStream{Vars: utils.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},

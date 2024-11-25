@@ -1,7 +1,7 @@
 package integration_ds
 
 import (
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -12,7 +12,7 @@ type integrationDataSourceModel struct {
 	Version    types.String `tfsdk:"version"`
 }
 
-func (m *integrationDataSourceModel) populateFromAPI(pkgName string, packages []fleetapi.PackageListItem) {
+func (m *integrationDataSourceModel) populateFromAPI(pkgName string, packages []kbapi.PackageListItem) {
 	m.Version = types.StringNull()
 	for _, pkg := range packages {
 		if pkg.Name == pkgName {

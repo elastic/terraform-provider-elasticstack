@@ -542,6 +542,8 @@ var transformers = []TransformFunc{
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
+	transformAddMisingDescriptions,
+	transformKibanaPaths,
 	transformFleetPaths,
 	// transformRemoveEnums,
 	// transformAddGoPointersFlag,
@@ -553,6 +555,9 @@ var transformers = []TransformFunc{
 // of endpoints and methods.
 func transformFilterPaths(schema *Schema) {
 	var includePaths = map[string][]string{
+		"/api/data_views":                                {"get"},
+		"/api/data_views/data_view":                      {"post"},
+		"/api/data_views/data_view/{viewId}":             {"get", "post", "delete"},
 		"/api/fleet/agent_policies":                      {"get", "post"},
 		"/api/fleet/agent_policies/delete":               {"post"},
 		"/api/fleet/agent_policies/{agentPolicyId}":      {"get", "put"},
@@ -685,71 +690,8 @@ func transformSimplifyContentType(schema *Schema) {
 	}
 }
 
-// transformFleetPaths fixes the fleet paths.
-func transformFleetPaths(schema *Schema) {
-	operationIds := map[string]map[string]string{
-		"/api/fleet/agent_policies": {
-			"get":  "get_agent_policies",
-			"post": "create_agent_policy",
-		},
-		"/api/fleet/agent_policies/delete": {
-			"post": "delete_agent_policy",
-		},
-		"/api/fleet/agent_policies/{agentPolicyId}": {
-			"get": "get_agent_policy",
-			"put": "update_agent_policy",
-		},
-		"/api/fleet/enrollment_api_keys": {
-			"get": "get_enrollment_api_keys",
-		},
-		"/api/fleet/epm/packages": {
-			"get":  "list_packages",
-			"post": "install_package_by_upload",
-		},
-		"/api/fleet/epm/packages/{pkgName}/{pkgVersion}": {
-			"get":    "get_package",
-			"post":   "install_package",
-			"delete": "delete_package",
-		},
-		"/api/fleet/fleet_server_hosts": {
-			"get":  "get_fleet_server_hosts",
-			"post": "create_fleet_server_host",
-		},
-		"/api/fleet/fleet_server_hosts/{itemId}": {
-			"get":    "get_fleet_server_host",
-			"put":    "update_fleet_server_host",
-			"delete": "delete_fleet_server_host",
-		},
-		"/api/fleet/outputs": {
-			"get":  "get_outputs",
-			"post": "create_output",
-		},
-		"/api/fleet/outputs/{outputId}": {
-			"get":    "get_output",
-			"put":    "update_output",
-			"delete": "delete_output",
-		},
-		"/api/fleet/package_policies": {
-			"get":  "get_package_policies",
-			"post": "create_package_policy",
-		},
-		"/api/fleet/package_policies/{packagePolicyId}": {
-			"get":    "get_package_policy",
-			"put":    "update_package_policy",
-			"delete": "delete_package_policy",
-		},
-	}
-
-	// Set each missing operationId
-	for path, methods := range operationIds {
-		pathInfo := schema.MustGetPath(path)
-		for method, operationId := range methods {
-			endpoint := pathInfo.GetEndpoint(method)
-			endpoint.Set("operationId", operationId)
-		}
-	}
-
-	// Fix OpenAPI error: set each missing description
+// transformAddMisingDescriptions adds descriptions to each path missing one.
+func transformAddMisingDescriptions(schema *Schema) {
 	for _, pathInfo := range schema.Paths {
 		for _, endpoint := range pathInfo.Endpoints {
 			responses := endpoint.MustGetMap("responses")
@@ -761,7 +703,82 @@ func transformFleetPaths(schema *Schema) {
 			}
 		}
 	}
+}
 
+// transformKibanaPaths fixes the Kibana paths.
+func transformKibanaPaths(schema *Schema) {
+	// Convert any paths needing it to /s/{spaceId} variants
+	spaceIdPaths := []string{
+		"/api/data_views",
+		"/api/data_views/data_view",
+		"/api/data_views/data_view/{viewId}",
+	}
+
+	// Add a spaceId parameter if not already present
+	if _, ok := schema.Components.Get("parameters.spaceId"); !ok {
+		schema.Components.Set("parameters.spaceId", Map{
+			"in":          "path",
+			"name":        "spaceId",
+			"description": "An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.",
+			"required":    true,
+			"schema":      Map{"type": "string", "example": "default"},
+		})
+	}
+
+	for _, path := range spaceIdPaths {
+		pathInfo := schema.Paths[path]
+		schema.Paths[fmt.Sprintf("/s/{spaceId}%s", path)] = pathInfo
+		delete(schema.Paths, path)
+
+		// Add the spaceId parameter
+		param := Map{"$ref": "#/components/parameters/spaceId"}
+		for _, endpoint := range pathInfo.Endpoints {
+			if params, ok := endpoint.GetSlice("parameters"); ok {
+				params = append(params, param)
+				endpoint.Set("parameters", params)
+			} else {
+				params = Slice{param}
+				endpoint.Set("parameters", params)
+			}
+		}
+	}
+
+	// Data views
+	// https://github.com/elastic/kibana/blob/main/src/plugins/data_views/server/rest_api_routes/schema.ts
+
+	dataViewsPath := schema.MustGetPath("/s/{spaceId}/api/data_views")
+
+	dataViewsPath.Get.CreateRef(schema, "get_data_views_response_item", "responses.200.content.application/json.schema.properties.data_view.items")
+
+	schema.Components.CreateRef(schema, "Data_views_data_view_response_object_inner", "schemas.Data_views_data_view_response_object.properties.data_view")
+	schema.Components.CreateRef(schema, "Data_views_sourcefilter_item", "schemas.Data_views_sourcefilters.items")
+	schema.Components.CreateRef(schema, "Data_views_runtimefieldmap_script", "schemas.Data_views_runtimefieldmap.properties.script")
+
+	schema.Components.Set("schemas.Data_views_fieldformats.additionalProperties", Map{
+		"$ref": "#/components/schemas/Data_views_fieldformat",
+	})
+	schema.Components.Set("schemas.Data_views_fieldformat", Map{
+		"type": "object",
+		"properties": Map{
+			"id":     Map{"type": "string"},
+			"params": Map{"$ref": "#/components/schemas/Data_views_fieldformat_params"},
+		},
+	})
+	schema.Components.Set("schemas.Data_views_fieldformat_params", Map{
+		"type": "object",
+		"properties": Map{
+			"pattern":       Map{"type": "string"},
+			"urlTemplate":   Map{"type": "string"},
+			"labelTemplate": Map{"type": "string"},
+		},
+	})
+
+	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
+	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
+}
+
+// transformFleetPaths fixes the fleet paths.
+func transformFleetPaths(schema *Schema) {
 	// Agent policies
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/agent_policy.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/agent_policy.ts

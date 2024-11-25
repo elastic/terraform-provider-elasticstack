@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -16,8 +16,8 @@ var (
 )
 
 // GetEnrollmentTokens reads all enrollment tokens from the API.
-func GetEnrollmentTokens(ctx context.Context, client *Client) ([]fleetapi.EnrollmentApiKey, diag.Diagnostics) {
-	resp, err := client.API.GetEnrollmentApiKeysWithResponse(ctx, nil)
+func GetEnrollmentTokens(ctx context.Context, client *Client) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -30,13 +30,13 @@ func GetEnrollmentTokens(ctx context.Context, client *Client) ([]fleetapi.Enroll
 	}
 }
 
-// GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID
-func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]fleetapi.EnrollmentApiKey, diag.Diagnostics) {
-	params := fleetapi.GetEnrollmentApiKeysParams{
+// GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID.
+func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+	params := kbapi.GetFleetEnrollmentApiKeysParams{
 		Kuery: utils.Pointer("policy_id:" + policyID),
 	}
 
-	resp, err := client.API.GetEnrollmentApiKeysWithResponse(ctx, &params)
+	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, &params)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -50,8 +50,8 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 }
 
 // GetAgentPolicy reads a specific agent policy from the API.
-func GetAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.GetAgentPolicyWithResponse(ctx, id, nil)
+func GetAgentPolicy(ctx context.Context, client *Client, id string) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -67,12 +67,12 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string) (*fleetapi.A
 }
 
 // CreateAgentPolicy creates a new agent policy.
-func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.CreateAgentPolicyJSONRequestBody, sysMonitoring bool) (*fleetapi.AgentPolicy, diag.Diagnostics) {
-	params := fleetapi.CreateAgentPolicyParams{
+func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetAgentPoliciesJSONRequestBody, sysMonitoring bool) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	params := kbapi.PostFleetAgentPoliciesParams{
 		SysMonitoring: utils.Pointer(sysMonitoring),
 	}
 
-	resp, err := client.API.CreateAgentPolicyWithResponse(ctx, &params, req)
+	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -86,8 +86,8 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req fleetapi.CreateA
 }
 
 // UpdateAgentPolicy updates an existing agent policy.
-func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req fleetapi.UpdateAgentPolicyJSONRequestBody) (*fleetapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.UpdateAgentPolicyWithResponse(ctx, id, nil, req)
+func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -100,13 +100,13 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req fleet
 	}
 }
 
-// DeleteAgentPolicy deletes an existing agent policy
+// DeleteAgentPolicy deletes an existing agent policy.
 func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diagnostics {
-	body := fleetapi.DeleteAgentPolicyJSONRequestBody{
+	body := kbapi.PostFleetAgentPoliciesDeleteJSONRequestBody{
 		AgentPolicyId: id,
 	}
 
-	resp, err := client.API.DeleteAgentPolicyWithResponse(ctx, body)
+	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
@@ -122,8 +122,8 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 }
 
 // GetOutput reads a specific output from the API.
-func GetOutput(ctx context.Context, client *Client, id string) (*fleetapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.GetOutputWithResponse(ctx, id)
+func GetOutput(ctx context.Context, client *Client, id string) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -139,8 +139,8 @@ func GetOutput(ctx context.Context, client *Client, id string) (*fleetapi.Output
 }
 
 // CreateOutput creates a new output.
-func CreateOutput(ctx context.Context, client *Client, req fleetapi.NewOutputUnion) (*fleetapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.CreateOutputWithResponse(ctx, req)
+func CreateOutput(ctx context.Context, client *Client, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -154,8 +154,8 @@ func CreateOutput(ctx context.Context, client *Client, req fleetapi.NewOutputUni
 }
 
 // UpdateOutput updates an existing output.
-func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.UpdateOutputUnion) (*fleetapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.UpdateOutputWithResponse(ctx, id, req)
+func UpdateOutput(ctx context.Context, client *Client, id string, req kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -168,9 +168,9 @@ func UpdateOutput(ctx context.Context, client *Client, id string, req fleetapi.U
 	}
 }
 
-// DeleteOutput deletes an existing output
+// DeleteOutput deletes an existing output.
 func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnostics {
-	resp, err := client.API.DeleteOutputWithResponse(ctx, id)
+	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
@@ -186,8 +186,8 @@ func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnosti
 }
 
 // GetFleetServerHost reads a specific fleet server host from the API.
-func GetFleetServerHost(ctx context.Context, client *Client, id string) (*fleetapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.GetFleetServerHostWithResponse(ctx, id)
+func GetFleetServerHost(ctx context.Context, client *Client, id string) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.GetFleetFleetServerHostsItemidWithResponse(ctx, id)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -203,8 +203,8 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string) (*fleeta
 }
 
 // CreateFleetServerHost creates a new fleet server host.
-func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.CreateFleetServerHostJSONRequestBody) (*fleetapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.CreateFleetServerHostWithResponse(ctx, req)
+func CreateFleetServerHost(ctx context.Context, client *Client, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.PostFleetFleetServerHostsWithResponse(ctx, req)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -218,8 +218,8 @@ func CreateFleetServerHost(ctx context.Context, client *Client, req fleetapi.Cre
 }
 
 // UpdateFleetServerHost updates an existing fleet server host.
-func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req fleetapi.UpdateFleetServerHostJSONRequestBody) (*fleetapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.UpdateFleetServerHostWithResponse(ctx, id, req)
+func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -234,7 +234,7 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req f
 
 // DeleteFleetServerHost deletes an existing fleet server host.
 func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetServerHostWithResponse(ctx, id)
+	resp, err := client.API.DeleteFleetFleetServerHostsItemidWithResponse(ctx, id)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
@@ -250,12 +250,12 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.
 }
 
 // GetPackagePolicy reads a specific package policy from the API.
-func GetPackagePolicy(ctx context.Context, client *Client, id string) (*fleetapi.PackagePolicy, diag.Diagnostics) {
-	params := fleetapi.GetPackagePolicyParams{
-		Format: utils.Pointer(fleetapi.GetPackagePolicyParamsFormatSimplified),
+func GetPackagePolicy(ctx context.Context, client *Client, id string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	params := kbapi.GetFleetPackagePoliciesPackagepolicyidParams{
+		Format: utils.Pointer(kbapi.GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
-	resp, err := client.API.GetPackagePolicyWithResponse(ctx, id, &params)
+	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -271,12 +271,12 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string) (*fleetapi
 }
 
 // CreatePackagePolicy creates a new package policy.
-func CreatePackagePolicy(ctx context.Context, client *Client, req fleetapi.CreatePackagePolicyJSONRequestBody) (*fleetapi.PackagePolicy, diag.Diagnostics) {
-	params := fleetapi.CreatePackagePolicyParams{
-		Format: utils.Pointer(fleetapi.CreatePackagePolicyParamsFormatSimplified),
+func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	params := kbapi.PostFleetPackagePoliciesParams{
+		Format: utils.Pointer(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
 	}
 
-	resp, err := client.API.CreatePackagePolicyWithResponse(ctx, &params, req)
+	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -290,12 +290,12 @@ func CreatePackagePolicy(ctx context.Context, client *Client, req fleetapi.Creat
 }
 
 // UpdatePackagePolicy updates an existing package policy.
-func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req fleetapi.UpdatePackagePolicyJSONRequestBody) (*fleetapi.PackagePolicy, diag.Diagnostics) {
-	params := fleetapi.UpdatePackagePolicyParams{
-		Format: utils.Pointer(fleetapi.Simplified),
+func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
+		Format: utils.Pointer(kbapi.Simplified),
 	}
 
-	resp, err := client.API.UpdatePackagePolicyWithResponse(ctx, id, &params, req)
+	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -310,11 +310,11 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req fle
 
 // DeletePackagePolicy deletes an existing package policy.
 func DeletePackagePolicy(ctx context.Context, client *Client, id string, force bool) diag.Diagnostics {
-	params := fleetapi.DeletePackagePolicyParams{
+	params := kbapi.DeleteFleetPackagePoliciesPackagepolicyidParams{
 		Force: &force,
 	}
 
-	resp, err := client.API.DeletePackagePolicyWithResponse(ctx, id, &params)
+	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
@@ -330,10 +330,10 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 }
 
 // GetPackage reads a specific package from the API.
-func GetPackage(ctx context.Context, client *Client, name, version string) (*fleetapi.PackageInfo, diag.Diagnostics) {
-	params := fleetapi.GetPackageParams{}
+func GetPackage(ctx context.Context, client *Client, name, version string) (*kbapi.PackageInfo, diag.Diagnostics) {
+	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}
 
-	resp, err := client.API.GetPackageWithResponse(ctx, name, version, &params)
+	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
@@ -350,12 +350,12 @@ func GetPackage(ctx context.Context, client *Client, name, version string) (*fle
 
 // InstallPackage installs a package.
 func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
-	params := fleetapi.InstallPackageParams{}
-	body := fleetapi.InstallPackageJSONRequestBody{
+	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{}
+	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
 		Force: &force,
 	}
 
-	resp, err := client.API.InstallPackageWithResponse(ctx, name, version, &params, body)
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
@@ -370,11 +370,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 
 // Uninstall uninstalls a package.
 func Uninstall(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
-	body := fleetapi.DeletePackageJSONRequestBody{
-		Force: force,
-	}
-
-	resp, err := client.API.DeletePackageWithResponse(ctx, name, version, nil, body)
+	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil)
 	if err != nil {
 		return utils.FrameworkDiagFromError(err)
 	}
@@ -397,12 +393,12 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 }
 
 // GetPackages returns information about the latest packages known to Fleet.
-func GetPackages(ctx context.Context, client *Client, prerelease bool) ([]fleetapi.PackageListItem, diag.Diagnostics) {
-	params := fleetapi.ListPackagesParams{
+func GetPackages(ctx context.Context, client *Client, prerelease bool) ([]kbapi.PackageListItem, diag.Diagnostics) {
+	params := kbapi.GetFleetEpmPackagesParams{
 		Prerelease: &prerelease,
 	}
 
-	resp, err := client.API.ListPackagesWithResponse(ctx, &params)
+	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params)
 	if err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}

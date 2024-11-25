@@ -3,7 +3,7 @@ package server_host
 import (
 	"context"
 
-	fleetapi "github.com/elastic/terraform-provider-elasticstack/generated/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -18,7 +18,7 @@ type serverHostModel struct {
 	Default types.Bool   `tfsdk:"default"`
 }
 
-func (model *serverHostModel) populateFromAPI(ctx context.Context, data *fleetapi.ServerHost) (diags diag.Diagnostics) {
+func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.ServerHost) (diags diag.Diagnostics) {
 	if data == nil {
 		return nil
 	}
@@ -32,8 +32,8 @@ func (model *serverHostModel) populateFromAPI(ctx context.Context, data *fleetap
 	return
 }
 
-func (model serverHostModel) toAPICreateModel(ctx context.Context) (body fleetapi.CreateFleetServerHostJSONRequestBody, diags diag.Diagnostics) {
-	body = fleetapi.CreateFleetServerHostJSONRequestBody{
+func (model serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.PostFleetFleetServerHostsJSONRequestBody, diags diag.Diagnostics) {
+	body = kbapi.PostFleetFleetServerHostsJSONRequestBody{
 		HostUrls:  utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
 		Id:        model.HostID.ValueStringPointer(),
 		IsDefault: model.Default.ValueBoolPointer(),
@@ -42,8 +42,8 @@ func (model serverHostModel) toAPICreateModel(ctx context.Context) (body fleetap
 	return
 }
 
-func (model serverHostModel) toAPIUpdateModel(ctx context.Context) (body fleetapi.UpdateFleetServerHostJSONRequestBody, diags diag.Diagnostics) {
-	body = fleetapi.UpdateFleetServerHostJSONRequestBody{
+func (model serverHostModel) toAPIUpdateModel(ctx context.Context) (body kbapi.PutFleetFleetServerHostsItemidJSONRequestBody, diags diag.Diagnostics) {
+	body = kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
 		HostUrls:  utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault: model.Default.ValueBoolPointer(),
 		Name:      model.Name.ValueStringPointer(),

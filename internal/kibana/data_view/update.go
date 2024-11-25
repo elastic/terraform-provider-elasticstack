@@ -3,48 +3,44 @@ package data_view
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	dataviewClient, err := r.client.GetDataViewsClient()
+func (r *DataViewResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var planModel dataViewModel
+
+	diags := req.Plan.Get(ctx, &planModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
-		response.Diagnostics.AddError("unable to get data view client", err.Error())
+		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	var model tfModelV0
-	response.Diagnostics.Append(request.Plan.Get(ctx, &model)...)
-	if response.Diagnostics.HasError() {
+	body, diags := planModel.toAPIUpdateModel(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	apiModel, diags := model.ToUpdateRequest(ctx)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
+	viewID, spaceID := planModel.getViewIDAndSpaceID()
+	dataView, diags := kibana_oapi.UpdateDataView(ctx, client, spaceID, viewID, body)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	id, spaceID := model.getIDAndSpaceID()
-	authCtx := r.client.SetDataviewAuthContext(ctx)
-	_, res, err := dataviewClient.UpdateDataView(authCtx, id, spaceID).UpdateDataViewRequestObject(apiModel).KbnXsrf("true").Execute()
-	if err != nil && res == nil {
-		response.Diagnostics.AddError("Failed to update data view", err.Error())
+	diags = planModel.populateFromAPI(ctx, dataView)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	defer res.Body.Close()
-	response.Diagnostics.Append(utils.CheckHttpErrorFromFW(res, "Unable to update data view")...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	readModel, diags := r.read(ctx, model)
-	response.Diagnostics = append(response.Diagnostics, diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	response.Diagnostics.Append(response.State.Set(ctx, readModel)...)
+	diags = resp.State.Set(ctx, planModel)
+	resp.Diagnostics.Append(diags...)
 }
