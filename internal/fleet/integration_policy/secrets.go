@@ -104,7 +104,7 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 	for _, input := range resp.Inputs {
 		handleVars(utils.Deref(input.Vars))
 		for _, stream := range utils.Deref(input.Streams) {
-			handleVars(*stream.Vars)
+			handleVars(utils.Deref(stream.Vars))
 		}
 	}
 
