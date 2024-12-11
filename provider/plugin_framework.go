@@ -18,6 +18,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/saved_object"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/private_location"
@@ -90,6 +91,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		func() resource.Resource { return &import_saved_objects.Resource{} },
 		data_view.NewResource,
+		func() resource.Resource { return &saved_object.Resource{} },
 		func() resource.Resource { return &private_location.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
 		func() resource.Resource { return &synthetics.Resource{} },
