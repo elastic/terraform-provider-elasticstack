@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.12] - 2024-12-16
+
 - Handle NPE in integration policy secrets ([#946](https://github.com/elastic/terraform-provider-elasticstack/pull/946))
 - Support multiple group by fields in SLOs ([#870](https://github.com/elastic/terraform-provider-elasticstack/pull/878))
 - Use the auto-generated OAS schema from elastic/kibana for the Fleet API. ([#834](https://github.com/elastic/terraform-provider-elasticstack/issues/834))
@@ -390,8 +392,9 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.11...HEAD
-[0.11.11]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.11
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.12...HEAD
+[0.11.12]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.11...v0.11.12
+[0.11.11]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.10...v0.11.11
 [0.11.10]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.9...v0.11.10
 [0.11.9]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.8...v0.11.9
 [0.11.8]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...v0.11.8
