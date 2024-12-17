@@ -2,8 +2,12 @@
 
 ## [0.11.12] - 2024-12-16
 
+### Breaking changes
+
+- Support multiple group by fields in SLOs ([#870](https://github.com/elastic/terraform-provider-elasticstack/pull/878)). This changes to type of the `group_by` attribute of the `elasticstack_kibana_slo` resource from a String to a list of Strings. Any existing SLO defintions will need to update `group_by = "field"` to `group_by = ["field"]`. 
+
+### Changes
 - Handle NPE in integration policy secrets ([#946](https://github.com/elastic/terraform-provider-elasticstack/pull/946))
-- Support multiple group by fields in SLOs ([#870](https://github.com/elastic/terraform-provider-elasticstack/pull/878))
 - Use the auto-generated OAS schema from elastic/kibana for the Fleet API. ([#834](https://github.com/elastic/terraform-provider-elasticstack/issues/834))
 - Support description in `elasticstack_elasticsearch_security_role` data sources. ([#884](https://github.com/elastic/terraform-provider-elasticstack/pull/884))
 - Prevent spurious recreation of `elasticstack_fleet_agent_policy` resources due to 'changing' policy ids ([#885](https://github.com/elastic/terraform-provider-elasticstack/pull/885))
