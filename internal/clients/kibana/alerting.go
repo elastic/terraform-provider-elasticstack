@@ -202,7 +202,7 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 
 	defer res.Body.Close()
 
-	diags := utils.CheckHttpError(res, "Unabled to create alerting rule")
+	diags := utils.CheckHttpError(res, "Unable to create alerting rule")
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -318,7 +318,7 @@ func GetAlertingRule(ctx context.Context, apiClient *clients.ApiClient, id, spac
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	return ruleResponseToModel(spaceID, ruleRes), utils.CheckHttpError(res, "Unabled to get alerting rule")
+	return ruleResponseToModel(spaceID, ruleRes), utils.CheckHttpError(res, "Unable to get alerting rule")
 }
 
 func DeleteAlertingRule(ctx context.Context, apiClient *clients.ApiClient, ruleId string, spaceId string) diag.Diagnostics {
@@ -335,5 +335,5 @@ func DeleteAlertingRule(ctx context.Context, apiClient *clients.ApiClient, ruleI
 	}
 
 	defer res.Body.Close()
-	return utils.CheckHttpError(res, "Unabled to delete alerting rule")
+	return utils.CheckHttpError(res, "Unable to delete alerting rule")
 }
