@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Support 8.15.5 in acc tests.
+
 ## [0.11.12] - 2024-12-16
 
 ### Breaking changes
