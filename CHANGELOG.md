@@ -13,6 +13,7 @@
 - Prevent spurious recreation of `elasticstack_fleet_agent_policy` resources due to 'changing' policy ids ([#885](https://github.com/elastic/terraform-provider-elasticstack/pull/885))
 - Support `elasticstack_kibana_alerting_rule` resources with only one of `kql` or `timeframe` attributes set ([#886](https://github.com/elastic/terraform-provider-elasticstack/pull/886))
 - Rename generated/fleet to generated/kibana, add data_view APIs. Keep libs/go-kibana-rest until migration can be completed. Clean and simplify the `elasticstack_kibana_data_view` resource to match the styling of Fleet resources. ([#881](https://github.com/elastic/terraform-provider-elasticstack/issues/881))
+- Exposes internal objects needed to build a Crossplane Elasticstack provider ([#949](https://github.com/elastic/terraform-provider-elasticstack/pull/949))
 
 ## [0.11.11] - 2024-10-25
 
