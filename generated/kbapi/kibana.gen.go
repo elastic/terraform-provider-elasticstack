@@ -766,11 +766,15 @@ type DataViewsUpdateDataViewRequestObjectInner struct {
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -816,7 +820,7 @@ type AgentPolicy struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -964,8 +968,11 @@ type AgentPolicyPackagePolicies1 = []struct {
 	SecretReferences *[]struct {
 		Id string `json:"id"`
 	} `json:"secret_references,omitempty"`
-	UpdatedAt string `json:"updated_at"`
-	UpdatedBy string `json:"updated_by"`
+
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool  `json:"supports_agentless"`
+	UpdatedAt         string `json:"updated_at"`
+	UpdatedBy         string `json:"updated_by"`
 
 	// Vars Package variable (see integration documentation for more information)
 	Vars *map[string]struct {
@@ -2036,10 +2043,13 @@ type PackagePolicy struct {
 	Revision         float32                   `json:"revision"`
 	SecretReferences *[]PackagePolicySecretRef `json:"secret_references,omitempty"`
 	SpaceIds         *[]string                 `json:"spaceIds,omitempty"`
-	UpdatedAt        string                    `json:"updated_at"`
-	UpdatedBy        string                    `json:"updated_by"`
-	Vars             *map[string]interface{}   `json:"vars,omitempty"`
-	Version          *string                   `json:"version,omitempty"`
+
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool                   `json:"supports_agentless"`
+	UpdatedAt         string                  `json:"updated_at"`
+	UpdatedBy         string                  `json:"updated_by"`
+	Vars              *map[string]interface{} `json:"vars,omitempty"`
+	Version           *string                 `json:"version,omitempty"`
 }
 
 // PackagePolicy_Elasticsearch_Privileges defines model for PackagePolicy.Elasticsearch.Privileges.
@@ -2085,7 +2095,10 @@ type PackagePolicyRequest struct {
 	Package   PackagePolicyRequestPackage           `json:"package"`
 	PolicyId  *string                               `json:"policy_id"`
 	PolicyIds *[]string                             `json:"policy_ids,omitempty"`
-	Vars      *map[string]interface{}               `json:"vars,omitempty"`
+
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool                   `json:"supports_agentless"`
+	Vars              *map[string]interface{} `json:"vars,omitempty"`
 }
 
 // PackagePolicyRequestInput defines model for package_policy_request_input.
@@ -2412,11 +2425,15 @@ type GetFleetAgentPoliciesParamsFormat string
 // PostFleetAgentPoliciesJSONBody defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -2459,7 +2476,7 @@ type PostFleetAgentPoliciesJSONBody struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -2515,11 +2532,15 @@ type GetFleetAgentPoliciesAgentpolicyidParamsFormat string
 // PutFleetAgentPoliciesAgentpolicyidJSONBody defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -2562,7 +2583,7 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
