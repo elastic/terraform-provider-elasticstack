@@ -75,6 +75,9 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
+	sdkConstrains, err := version.NewConstraint(">=8.10.0,<8.16.0")
+	require.NoError(t, err)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIntegrationPolicyDestroy,
@@ -86,7 +89,7 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.7",
 					},
 				},
-				SkipFunc:           versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				SkipFunc:           versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
 				Config:             testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
 				ExpectNonEmptyPlan: true, // secret churn
 				Check: resource.ComposeTestCheckFunc(
@@ -103,7 +106,7 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
 				Config:                   testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
