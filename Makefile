@@ -16,7 +16,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 8.15.5
+STACK_VERSION ?= 9.0.0-SNAPSHOT
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -168,7 +168,7 @@ docker-kibana-with-tls: docker-network docker-elasticsearch set-kibana-password
 		-e LOGGING_ROOT_LEVEL=debug \
 		--name $(KIBANA_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		--health-cmd="curl -k https://localhost:5601/api/status" \
+		--health-cmd=curl -k https://localhost:5601/api/status \
 		--health-interval=10s --health-timeout=5s --health-retries=10 \
 		docker.elastic.co/kibana/kibana:$(STACK_VERSION)
 	@ $(call wait_until_healthy, $(KIBANA_NAME))
