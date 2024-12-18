@@ -19,6 +19,7 @@ type KibanaRole struct {
 	TransientMedata *KibanaRoleTransientMetadata `json:"transient_metadata,omitempty"`
 	Elasticsearch   *KibanaRoleElasticsearch     `json:"elasticsearch,omitempty"`
 	Kibana          []KibanaRoleKibana           `json:"kibana,omitempty"`
+	CreateOnly      bool                         `json:"-"`
 }
 
 // KibanaRoleTransientMetadata is the API TransientMedata object
@@ -153,7 +154,11 @@ func newKibanaRoleManagementCreateOrUpdateFunc(c *resty.Client) KibanaRoleManage
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.R().SetBody(jsonData).Put(path)
+		r := c.R()
+		if kibanaRole.CreateOnly {
+			r = r.SetQueryParam("createOnly", "true")
+		}
+		resp, err := r.SetBody(jsonData).Put(path)
 		if err != nil {
 			return nil, err
 		}

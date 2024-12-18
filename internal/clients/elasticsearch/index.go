@@ -548,11 +548,14 @@ func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 		return nil, utils.FrameworkDiagsFromSDK(diags)
 	}
 
-	dStreams := make(map[string][]models.DataStreamLifecycle)
+	dStreams := struct {
+		DataStreams []models.DataStreamLifecycle `json:"data_streams,omitempty"`
+	}{}
+
 	if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
 		return nil, utils.FrameworkDiagFromError(err)
 	}
-	ds := dStreams["data_streams"]
+	ds := dStreams.DataStreams
 	return &ds, nil
 }
 

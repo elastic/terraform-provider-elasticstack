@@ -265,14 +265,11 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	queryParams := ""
-	if d.IsNewResource() {
-		queryParams = "?createOnly=true"
-	}
 	kibanaRole := kbapi.KibanaRole{
-		Name:          fmt.Sprintf("%s%s", d.Get("name").(string), queryParams),
+		Name:          d.Get("name").(string),
 		Kibana:        []kbapi.KibanaRoleKibana{},
 		Elasticsearch: &kbapi.KibanaRoleElasticsearch{},
+		CreateOnly:    d.IsNewResource(),
 	}
 
 	if v, ok := d.GetOk("kibana"); ok {

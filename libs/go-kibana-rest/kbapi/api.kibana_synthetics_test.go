@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
@@ -369,7 +368,6 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					monitor, err := syntheticsAPI.Monitor.Add(ctx, config, fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), monitor)
-					updateDueToKibanaAPIDiff(monitor)
 
 					get, err := syntheticsAPI.Monitor.Get(ctx, monitor.Id, space)
 					assert.NoError(s.T(), err)
@@ -382,11 +380,9 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					update, err := syntheticsAPI.Monitor.Update(ctx, monitor.Id, tc.update.config, tc.update.fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), update)
-					updateDueToKibanaAPIDiff(update)
 
 					get, err = syntheticsAPI.Monitor.Get(ctx, monitor.ConfigId, space)
 					assert.NoError(s.T(), err)
-					get.CreatedAt = time.Time{} // update response doesn't have created_at field
 					assert.Equal(s.T(), update, get)
 
 					deleted, err := syntheticsAPI.Monitor.Delete(ctx, space, monitor.ConfigId)
@@ -408,21 +404,6 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 			}
 		})
 	}
-}
-
-// see https://github.com/elastic/kibana/issues/189906
-func updateDueToKibanaAPIDiff(m *SyntheticsMonitor) {
-	m.Params = nil
-	m.Username = ""
-	m.Password = ""
-	m.ProxyHeaders = nil
-	m.CheckResponseBodyPositive = nil
-	m.CheckRequestBody = nil
-	m.CheckRequestHeaders = nil
-	m.CheckSend = ""
-	m.CheckReceive = ""
-	m.InlineScript = ""
-	m.SyntheticsArgs = nil
 }
 
 func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
