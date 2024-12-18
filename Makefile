@@ -214,6 +214,7 @@ create-es-bearer-token: ## Creates and outputs a new OAuth bearer token. This ex
 
 .PHONY: setup-kibana-fleet
 setup-kibana-fleet: ## Creates the agent and integration policies required to run Fleet. This expects Kibana to be available at localhost:5601
+	@ curl --retry 5 --retry-all-errors -s -o /dev/null -w '%{http_code}' http://localhost:5601/api/status | grep -q "200"
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/fleet_server_hosts -d '{"name":"default","host_urls":["$(FLEET_ENDPOINT)"],"is_default":true}'
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_policies -d '{"id":"fleet-server","name":"Fleet Server","namespace":"default","monitoring_enabled":["logs","metrics"]}'
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/package_policies -d '{"name":"fleet-server","namespace":"default","policy_id":"fleet-server","enabled":true,"inputs":[{"type":"fleet-server","enabled":true,"streams":[],"vars":{}}],"package":{"name":"fleet_server","version":"1.5.0"}}'
