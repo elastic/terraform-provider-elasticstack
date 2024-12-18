@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Support 8.15.5 in acc tests ([#963](https://github.com/elastic/terraform-provider-elasticstack/pull/963)).
+
 ## [0.11.12] - 2024-12-16
 
 ### Breaking changes
