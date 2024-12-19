@@ -2,12 +2,12 @@ package synthetics_test
 
 import (
 	"fmt"
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -15,7 +15,25 @@ var (
 	minKibanaVersion = version.Must(version.NewVersion("8.14.0"))
 )
 
+/*
+TODOs:
+- [ ] TF schema - fix https://github.com/elastic/terraform-provider-elasticstack/issues/965
+- [ ] TF schema - fix https://github.com/elastic/terraform-provider-elasticstack/issues/916
+- [ ] TF schema - test imports after 8.16 fixes
+- [ ] Update change log
+*/
+
 const (
+	httpMonitorMinConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorResource - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	http = {
+		url = "http://localhost:5601"
+	}
+}
+`
 	httpMonitorConfig = `
 
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
@@ -268,12 +286,25 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "http-monitor"
 	httpMonitorId, config := testMonitorConfig(id, httpMonitorConfig, name)
+	bmName := fmt.Sprintf("%s-", name)
+	bmHttpMonitorId, bmConfig := testMonitorConfig(fmt.Sprintf("%s-min", id), httpMonitorMinConfig, bmName)
 	_, configUpdated := testMonitorConfig(id, httpMonitorUpdated, name)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
+			// Create and Read http monitor with minimum fields
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   bmConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(bmHttpMonitorId, "id"),
+					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:5601"),
+				),
+			},
 			// Create and Read http monitor
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),

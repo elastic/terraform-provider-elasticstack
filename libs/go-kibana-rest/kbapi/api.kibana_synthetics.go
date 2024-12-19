@@ -109,7 +109,8 @@ type BrowserMonitorFields struct {
 }
 
 type TCPMonitorFields struct {
-	Host                  string   `json:"host"`
+	Host string `json:"host"`
+	//TODO: support certificate_authorities, certificate, key, key_passphrase
 	SslVerificationMode   string   `json:"ssl.verification_mode,omitempty"`
 	SslSupportedProtocols []string `json:"ssl.supported_protocols,omitempty"`
 	CheckSend             string   `json:"check.send,omitempty"`
@@ -119,7 +120,8 @@ type TCPMonitorFields struct {
 }
 
 type HTTPMonitorFields struct {
-	Url                   string          `json:"url"`
+	Url string `json:"url"`
+	//TODO: support certificate_authorities, certificate, key, key_passphrase
 	SslVerificationMode   string          `json:"ssl.verification_mode,omitempty"`
 	SslSupportedProtocols []string        `json:"ssl.supported_protocols,omitempty"`
 	MaxRedirects          string          `json:"max_redirects,omitempty"`
@@ -222,9 +224,12 @@ type SyntheticsMonitor struct {
 	CheckRequestHeaders         JsonObject      `json:"check.request.headers,omitempty"`
 	CheckRequestMethod          string          `json:"check.request.method,omitempty"`
 	//http and tcp
-	ProxyUrl              string   `json:"proxy_url,omitempty"`
+	ProxyUrl string `json:"proxy_url,omitempty"`
+	//TODO: support certificate_authorities, certificate, key, key_passphrase
+
 	SslVerificationMode   string   `json:"ssl.verification_mode"`
 	SslSupportedProtocols []string `json:"ssl.supported_protocols"`
+
 	//tcp and icmp
 	Host string `json:"host,omitempty"`
 	//tcp

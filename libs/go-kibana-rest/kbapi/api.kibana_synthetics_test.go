@@ -149,12 +149,21 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							Url:                   "http://localhost:5601",
 							SslSupportedProtocols: []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
 							SslVerificationMode:   "full",
-							MaxRedirects:          "2",
-							Mode:                  ModeAny,
-							Ipv4:                  t,
-							Ipv6:                  f,
-							Username:              "test-user-name",
-							Password:              "test-password",
+							//Ssl: map[string]interface{}{
+							//	"verification_mode":   "full",
+							//	"supported_protocols": []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
+							//
+							//	"certificate_authorities": []string{"ca1", "ca2"},
+							//	"certificate":             "cert",
+							//	"key":                     "key",
+							//	"key_passphrase":          "passphrase",
+							//},
+							MaxRedirects: "2",
+							Mode:         ModeAny,
+							Ipv4:         t,
+							Ipv6:         f,
+							Username:     "test-user-name",
+							Password:     "test-password",
 							ProxyHeader: map[string]interface{}{
 								"User-Agent": "test",
 							},
@@ -298,7 +307,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							Name:             fmt.Sprintf("test synthetics browser monitor %s", testUuid),
 							PrivateLocations: []string{location.Label},
 						},
-						fields: BrowserMonitorFields{
+						fields: BrowserMonitorFields{ //TODO: check that get returns it - inline_script
 							InlineScript: `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
 						},
 					},
