@@ -132,8 +132,10 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: "The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
 				},
+				Computed: true,
 			},
 			"schedule": schema.Int64Attribute{
 				Optional:            true,
@@ -141,6 +143,8 @@ func monitorConfigSchema() schema.Schema {
 				Validators: []validator.Int64{
 					int64validator.OneOf(1, 3, 5, 10, 15, 30, 60, 120, 240),
 				},
+				Computed:      true,
+				PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 			},
 			"locations": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -171,6 +175,8 @@ func monitorConfigSchema() schema.Schema {
 			"enabled": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Whether the monitor is enabled. Default: `true`",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 			"tags": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -181,10 +187,14 @@ func monitorConfigSchema() schema.Schema {
 			"service_name": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The APM service name.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"timeout": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The monitor timeout in seconds, monitor will fail if it doesn’t complete within this time. Default: `16`",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 			},
 			"params":  jsonObjectSchema("Monitor parameters"),
 			"http":    httpMonitorFieldsSchema(),
@@ -267,7 +277,9 @@ func statusConfigSchema() schema.Attribute {
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
 			"enabled": schema.BoolAttribute{
-				Optional: true,
+				Optional:      true,
+				Computed:      true,
+				PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 		},
 	}
@@ -281,6 +293,8 @@ func monitorAlertConfigSchema() schema.Attribute {
 			"status": statusConfigSchema(),
 			"tls":    statusConfigSchema(),
 		},
+		Computed: true,
+		//PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()}, //TODO: verify if that is correct
 	}
 }
 
@@ -319,14 +333,20 @@ func httpMonitorFieldsSchema() schema.Attribute {
 				Validators: []validator.String{
 					stringvalidator.OneOf("any", "all"),
 				},
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"ipv4": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Whether to ping using the ipv4 protocol.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 			"ipv6": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Whether to ping using the ipv6 protocol.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 			"username": schema.StringAttribute{
 				Optional:            true,
