@@ -312,11 +312,9 @@ type IndexAlias struct {
 }
 
 type LifecycleSettings struct {
-	DataRetention         string         `json:"data_retention,omitempty"`
-	Enabled               bool           `json:"enabled,omitempty"`
-	EffectiveRetention    string         `json:"effective_retention,omitempty"`
-	RetentionDeterminedBy string         `json:"retention_determined_by,omitempty"`
-	Downsampling          []Downsampling `json:"downsampling,omitempty"`
+	DataRetention string         `json:"data_retention,omitempty"`
+	Enabled       bool           `json:"enabled,omitempty"`
+	Downsampling  []Downsampling `json:"downsampling,omitempty"`
 }
 
 type Downsampling struct {
@@ -341,11 +339,6 @@ type DataStream struct {
 type DataStreamIndex struct {
 	IndexName string `json:"index_name"`
 	IndexUUID string `json:"index_uuid"`
-}
-
-type DataStreamGlobalRetention struct {
-	MaxRetention     string `json:"max_retention"`
-	DefaultRetention string `json:"default_retention"`
 }
 
 type DataStreamLifecycle struct {
