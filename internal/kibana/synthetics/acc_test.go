@@ -29,6 +29,14 @@ const (
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource - %s"
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	alert = {
+		status = {
+			enabled = false
+		}
+		tls = {
+			enabled = false
+		}
+	}
 	http = {
 		url = "http://localhost:5601"
 	}
@@ -286,8 +294,10 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "http-monitor"
 	httpMonitorId, config := testMonitorConfig(id, httpMonitorConfig, name)
-	bmName := fmt.Sprintf("%s-", name)
-	bmHttpMonitorId, bmConfig := testMonitorConfig(fmt.Sprintf("%s-min", id), httpMonitorMinConfig, bmName)
+
+	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	bmHttpMonitorId, bmConfig := testMonitorConfig("http-monitor-min", httpMonitorMinConfig, bmName)
+
 	_, configUpdated := testMonitorConfig(id, httpMonitorUpdated, name)
 
 	resource.Test(t, resource.TestCase{
@@ -300,9 +310,9 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				Config:   bmConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmHttpMonitorId, "id"),
-					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "default"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(bmHttpMonitorId, "name", "TestHttpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmHttpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmHttpMonitorId, "http.url", "http://localhost:5601"),
 				),
 			},
 			// Create and Read http monitor

@@ -293,7 +293,10 @@ func monitorAlertConfigSchema() schema.Attribute {
 			"status": statusConfigSchema(),
 			"tls":    statusConfigSchema(),
 		},
-		Computed: true,
+		//Computed: true,
+		// try object type and
+		//types.ObjectValueFrom()
+		//tfsdk.ValueAs()
 		//PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()}, //TODO: verify if that is correct
 	}
 }
