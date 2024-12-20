@@ -674,7 +674,8 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 	if api.CheckReceive != "" {
 		checkReceive = types.StringValue(api.CheckReceive)
 	}
-	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), &dg)
+	sslCfg, dg := toTFSSLConfig(ctx, dg, api, "tcp")
+
 	if dg.HasError() {
 		return nil
 	}
@@ -684,14 +685,7 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 		CheckReceive:          checkReceive,
 		ProxyURL:              types.StringValue(api.ProxyUrl),
 		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
-		tfSSLConfig: tfSSLConfig{
-			SslVerificationMode:       types.StringValue(api.SslVerificationMode),
-			SslSupportedProtocols:     sslSupportedProtocols,
-			SslCertificateAuthorities: StringSliceValue(api.SslCertificateAuthorities),
-			SslCertificate:            types.StringValue(api.SslCertificate),
-			SslKey:                    types.StringValue(api.SslKey),
-			SslKeyPassphrase:          types.StringValue(api.SslKeyPassphrase),
-		},
+		tfSSLConfig:           sslCfg,
 	}
 }
 
@@ -763,9 +757,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		return nil
 	}
 
-	//TODO: DRY with TCP
-	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
-
+	sslCfg, dg := toTFSSLConfig(ctx, dg, api, "http")
 	if dg.HasError() {
 		return nil
 	}
@@ -781,16 +773,20 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		ProxyURL:     types.StringValue(api.ProxyUrl),
 		Check:        v.Check,
 		Response:     v.Response,
-
-		tfSSLConfig: tfSSLConfig{
-			SslVerificationMode:       types.StringValue(api.SslVerificationMode),
-			SslSupportedProtocols:     sslSupportedProtocols,
-			SslCertificateAuthorities: StringSliceValue(api.SslCertificateAuthorities),
-			SslCertificate:            types.StringValue(api.SslCertificate),
-			SslKey:                    types.StringValue(api.SslKey),
-			SslKeyPassphrase:          types.StringValue(api.SslKeyPassphrase),
-		},
+		tfSSLConfig:  sslCfg,
 	}
+}
+
+func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor, p string) (tfSSLConfig, diag.Diagnostics) {
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
+	return tfSSLConfig{
+		SslVerificationMode:       types.StringValue(api.SslVerificationMode),
+		SslSupportedProtocols:     sslSupportedProtocols,
+		SslCertificateAuthorities: StringSliceValue(api.SslCertificateAuthorities),
+		SslCertificate:            types.StringValue(api.SslCertificate),
+		SslKey:                    types.StringValue(api.SslKey),
+		SslKeyPassphrase:          types.StringValue(api.SslKeyPassphrase),
+	}, dg
 }
 
 func toTfAlertConfigV0(ctx context.Context, alert *kbapi.MonitorAlertConfig) (basetypes.ObjectValue, diag.Diagnostics) {
