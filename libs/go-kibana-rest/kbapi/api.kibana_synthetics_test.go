@@ -310,7 +310,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							Name:             fmt.Sprintf("test synthetics browser monitor %s", testUuid),
 							PrivateLocations: []string{location.Label},
 						},
-						fields: BrowserMonitorFields{ //TODO: check that get returns it - inline_script
+						fields: BrowserMonitorFields{
 							InlineScript: `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
 						},
 					},
