@@ -22,14 +22,6 @@ const (
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource - %s"
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	alert = {
-		status = {
-			enabled = false
-		}
-		tls = {
-			enabled = false
-		}
-	}
 	http = {
 		url = "http://localhost:5601"
 	}
@@ -67,14 +59,6 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource - %s"
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
 	http = {
 		url = "http://localhost:5601"
 		ssl_verification_mode = "full"
@@ -152,14 +136,6 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestTcpMonitorResource - %s"
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
 	tcp = {
 		host = "http://localhost:5601"
 	}
@@ -171,14 +147,6 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource - %s"
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
 	tcp = {
 		host = "http://localhost:5601"
 		ssl_verification_mode = "full"
@@ -252,14 +220,6 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestIcmpMonitorResource - %s"
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
 	icmp = {
 		host = "localhost"
 	}
@@ -323,14 +283,6 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
 	tags = ["a", "b"]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
 	service_name = "test apm service"
 	timeout = 30
 	browser = {
@@ -412,6 +364,8 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
 					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestHttpMonitorResource - "+bmName),
 					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
 					resource.TestCheckResourceAttr(bmMonitorId, "http.url", "http://localhost:5601"),
 				),
 			},
@@ -557,6 +511,8 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestTcpMonitorResource - "+bmName),
 					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
 					resource.TestCheckResourceAttr(bmMonitorId, "tcp.host", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
 				),
 			},
 			// Create and Read tcp monitor with ssl fields, starting from ES 8.16.0
@@ -689,6 +645,8 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestIcmpMonitorResource - "+bmName),
 					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
 					resource.TestCheckResourceAttr(bmMonitorId, "icmp.host", "localhost"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
 				),
 			},
 
@@ -779,6 +737,8 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestBrowserMonitorResource - "+bmName),
 					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
 					resource.TestCheckResourceAttr(bmMonitorId, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
 				),
 			},
 			// Create and Read browser monitor

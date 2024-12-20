@@ -3,6 +3,7 @@ package synthetics
 import (
 	"context"
 	"encoding/json"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"testing"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
@@ -21,6 +22,16 @@ func boolPointer(v bool) *bool {
 	var res = new(bool)
 	*res = v
 	return res
+}
+
+func toAlertObject(t *testing.T, v tfAlertConfigV0) basetypes.ObjectValue {
+
+	alertAttributes := monitorAlertConfigSchema().GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	from, dg := types.ObjectValueFrom(context.Background(), alertAttributes, &v)
+	if dg.HasError() {
+		t.Fatalf("Failed to create Alert object: %v", dg)
+	}
+	return from
 }
 
 func TestToModelV0(t *testing.T) {
@@ -185,7 +196,7 @@ func TestToModelV0(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             []types.String{types.StringValue("tag1"), types.StringValue("tag2")},
-				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}, TLS: &tfStatusConfigV0{Enabled: types.BoolPointerValue(fBool)}},
+				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}, TLS: &tfStatusConfigV0{Enabled: types.BoolPointerValue(fBool)}}),
 				APMServiceName:   types.StringValue("test-service-http"),
 				TimeoutSeconds:   types.Int64Value(30),
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
@@ -255,7 +266,7 @@ func TestToModelV0(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             nil,
-				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}},
+				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
@@ -314,7 +325,7 @@ func TestToModelV0(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             nil,
-				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}},
+				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
@@ -369,7 +380,7 @@ func TestToModelV0(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             nil,
-				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}},
+				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
@@ -451,7 +462,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             []types.String{types.StringValue("tag1"), types.StringValue("tag2")},
-				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}, TLS: &tfStatusConfigV0{Enabled: types.BoolPointerValue(fBool)}},
+				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}, TLS: &tfStatusConfigV0{Enabled: types.BoolPointerValue(fBool)}}),
 				APMServiceName:   types.StringValue("test-service-http"),
 				TimeoutSeconds:   types.Int64Value(30),
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
@@ -527,7 +538,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				PrivateLocations: nil,
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             []types.String{types.StringValue("tag1"), types.StringValue("tag2")},
-				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}},
+				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
@@ -591,7 +602,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				PrivateLocations: nil,
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             []types.String{types.StringValue("tag1"), types.StringValue("tag2")},
-				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}},
+				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
@@ -631,7 +642,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				PrivateLocations: nil,
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             []types.String{types.StringValue("tag1"), types.StringValue("tag2")},
-				Alert:            &tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}},
+				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),

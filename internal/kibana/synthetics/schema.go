@@ -11,16 +11,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"strconv"
 )
 
@@ -99,7 +103,7 @@ type tfModelV0 struct {
 	PrivateLocations []types.String            `tfsdk:"private_locations"`
 	Enabled          types.Bool                `tfsdk:"enabled"`
 	Tags             []types.String            `tfsdk:"tags"`
-	Alert            *tfAlertConfigV0          `tfsdk:"alert"`
+	Alert            types.Object              `tfsdk:"alert"` //tfAlertConfigV0
 	APMServiceName   types.String              `tfsdk:"service_name"`
 	TimeoutSeconds   types.Int64               `tfsdk:"timeout"`
 	HTTP             *tfHTTPMonitorFieldsV0    `tfsdk:"http"`
@@ -302,11 +306,8 @@ func monitorAlertConfigSchema() schema.Attribute {
 			"status": statusConfigSchema(),
 			"tls":    statusConfigSchema(),
 		},
-		//Computed: true,
-		// try object type and
-		//types.ObjectValueFrom()
-		//tfsdk.ValueAs()
-		//PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()}, //TODO: verify if that is correct
+		Computed:      true,
+		PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()},
 	}
 }
 
@@ -638,6 +639,11 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 		ResourceId: string(api.Id),
 	}
 
+	alertV0, dg := toTfAlertConfigV0(ctx, api.Alert)
+	if dg.HasError() {
+		return nil, dg
+	}
+
 	return &tfModelV0{
 		ID:               types.StringValue(resourceID.String()),
 		Name:             types.StringValue(api.Name),
@@ -647,7 +653,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 		PrivateLocations: StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
 		Tags:             StringSliceValue(api.Tags),
-		Alert:            toTfAlertConfigV0(api.Alert),
+		Alert:            alertV0,
 		APMServiceName:   types.StringValue(api.APMServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
 		Params:           params,
@@ -787,14 +793,24 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 	}
 }
 
-func toTfAlertConfigV0(alert *kbapi.MonitorAlertConfig) *tfAlertConfigV0 {
+func toTfAlertConfigV0(ctx context.Context, alert *kbapi.MonitorAlertConfig) (basetypes.ObjectValue, diag.Diagnostics) {
+
+	dg := diag.Diagnostics{}
+
+	alertAttributes := monitorAlertConfigSchema().GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	var emptyAttr = map[string]attr.Type(nil)
+
 	if alert == nil {
-		return nil
+		return basetypes.NewObjectNull(emptyAttr), dg
 	}
-	return &tfAlertConfigV0{
+
+	tfAlertConfig := tfAlertConfigV0{
 		Status: toTfStatusConfigV0(alert.Status),
 		TLS:    toTfStatusConfigV0(alert.Tls),
 	}
+
+	return types.ObjectValueFrom(ctx, alertAttributes, &tfAlertConfig)
 }
 
 func toTfStatusConfigV0(status *kbapi.SyntheticsStatusConfig) *tfStatusConfigV0 {
@@ -812,7 +828,7 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaAPIRequest, 
 	if dg.HasError() {
 		return nil, dg
 	}
-	config, dg := v.toSyntheticsMonitorConfig()
+	config, dg := v.toSyntheticsMonitorConfig(ctx)
 	if dg.HasError() {
 		return nil, dg
 	}
@@ -839,16 +855,21 @@ func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, d
 	return nil, dg
 }
 
-func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
+func toTFAlertConfit(ctx context.Context, v basetypes.ObjectValue) *kbapi.MonitorAlertConfig {
+	var alert *kbapi.MonitorAlertConfig
+	if !(v.IsNull() || v.IsUnknown()) {
+		tfAlert := tfAlertConfigV0{}
+		tfsdk.ValueAs(ctx, v, &tfAlert)
+		alert = tfAlert.toTfAlertConfigV0()
+	}
+	return alert
+}
+
+func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
 	locations := Map[types.String, kbapi.MonitorLocation](v.Locations, func(s types.String) kbapi.MonitorLocation { return kbapi.MonitorLocation(s.ValueString()) })
 	params, dg := toJsonObject(v.Params)
 	if dg.HasError() {
 		return nil, dg
-	}
-
-	var alert *kbapi.MonitorAlertConfig
-	if v.Alert != nil {
-		alert = v.Alert.toTfAlertConfigV0()
 	}
 
 	return &kbapi.SyntheticsMonitorConfig{
@@ -858,7 +879,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig,
 		PrivateLocations: ValueStringSlice(v.PrivateLocations),
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Tags:             ValueStringSlice(v.Tags),
-		Alert:            alert,
+		Alert:            toTFAlertConfit(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
 		Namespace:        v.SpaceID.ValueString(),
