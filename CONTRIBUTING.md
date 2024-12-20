@@ -38,6 +38,11 @@ Format the code before pushing:
 make fmt
 ```
 
+Check if the linting:
+```bash
+make lint
+```
+
 Create a PR and check acceptance test matrix is green.
 
 ## Run provider with local terraform

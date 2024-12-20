@@ -42,6 +42,15 @@ type tfAlertConfigV0 struct {
 	TLS    *tfStatusConfigV0 `tfsdk:"tls"`
 }
 
+type tfSSLConfig struct {
+	SslVerificationMode       types.String   `tfsdk:"ssl_verification_mode"`
+	SslSupportedProtocols     types.List     `tfsdk:"ssl_supported_protocols"`
+	SslCertificateAuthorities []types.String `tfsdk:"ssl_certificate_authorities"`
+	SslCertificate            types.String   `tfsdk:"ssl_certificate"`
+	SslKey                    types.String   `tfsdk:"ssl_key"`
+	SslKeyPassphrase          types.String   `tfsdk:"ssl_key_passphrase"`
+}
+
 type tfHTTPMonitorFieldsV0 struct {
 	URL          types.String         `tfsdk:"url"`
 	MaxRedirects types.Int64          `tfsdk:"max_redirects"`
@@ -55,12 +64,7 @@ type tfHTTPMonitorFieldsV0 struct {
 	Response     jsontypes.Normalized `tfsdk:"response"`
 	Check        jsontypes.Normalized `tfsdk:"check"`
 
-	SslVerificationMode       types.String   `tfsdk:"ssl_verification_mode"`
-	SslSupportedProtocols     types.List     `tfsdk:"ssl_supported_protocols"`
-	SslCertificateAuthorities []types.String `tfsdk:"ssl_certificate_authorities"`
-	SslCertificate            types.String   `tfsdk:"ssl_certificate"`
-	SslKey                    types.String   `tfsdk:"ssl_key"`
-	SslKeyPassphrase          types.String   `tfsdk:"ssl_key_passphrase"`
+	tfSSLConfig
 }
 
 type tfTCPMonitorFieldsV0 struct {
@@ -70,12 +74,7 @@ type tfTCPMonitorFieldsV0 struct {
 	ProxyURL              types.String `tfsdk:"proxy_url"`
 	ProxyUseLocalResolver types.Bool   `tfsdk:"proxy_use_local_resolver"`
 
-	SslVerificationMode       types.String   `tfsdk:"ssl_verification_mode"`
-	SslSupportedProtocols     types.List     `tfsdk:"ssl_supported_protocols"`
-	SslCertificateAuthorities []types.String `tfsdk:"ssl_certificate_authorities"`
-	SslCertificate            types.String   `tfsdk:"ssl_certificate"`
-	SslKey                    types.String   `tfsdk:"ssl_key"`
-	SslKeyPassphrase          types.String   `tfsdk:"ssl_key_passphrase"`
+	tfSSLConfig
 }
 
 type tfICMPMonitorFieldsV0 struct {
@@ -342,14 +341,20 @@ func httpMonitorFieldsSchema() schema.Attribute {
 			"ssl_certificate": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Certificate.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"ssl_key": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Certificate key.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"ssl_key_passphrase": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Key passphrase.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"max_redirects": schema.Int64Attribute{
 				Optional:            true,
@@ -430,14 +435,20 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 			"ssl_certificate": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Certificate.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"ssl_key": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Certificate key.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"ssl_key_passphrase": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Key passphrase.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"check_send": schema.StringAttribute{
 				Optional:            true,
@@ -456,6 +467,8 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 			"proxy_use_local_resolver": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: " A Boolean value that determines whether hostnames are resolved locally instead of being resolved on the proxy server. The default value is false, which means that name resolution occurs on the proxy server.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 		},
 	}
@@ -660,16 +673,19 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 		return nil
 	}
 	return &tfTCPMonitorFieldsV0{
-		Host: types.StringValue(api.Host),
-
-		//TODO:
-		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
-		SslSupportedProtocols: sslSupportedProtocols,
-
+		Host:                  types.StringValue(api.Host),
 		CheckSend:             checkSend,
 		CheckReceive:          checkReceive,
 		ProxyURL:              types.StringValue(api.ProxyUrl),
 		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
+		tfSSLConfig: tfSSLConfig{
+			SslVerificationMode:       types.StringValue(api.SslVerificationMode),
+			SslSupportedProtocols:     sslSupportedProtocols,
+			SslCertificateAuthorities: StringSliceValue(api.SslCertificateAuthorities),
+			SslCertificate:            types.StringValue(api.SslCertificate),
+			SslKey:                    types.StringValue(api.SslKey),
+			SslKeyPassphrase:          types.StringValue(api.SslKeyPassphrase),
+		},
 	}
 }
 
@@ -741,18 +757,14 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		return nil
 	}
 
+	//TODO: DRY with TCP
 	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
 
 	if dg.HasError() {
 		return nil
 	}
 	return &tfHTTPMonitorFieldsV0{
-		URL: types.StringValue(api.Url),
-
-		//TODO
-		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
-		SslSupportedProtocols: sslSupportedProtocols,
-
+		URL:          types.StringValue(api.Url),
 		MaxRedirects: types.Int64Value(maxRedirects),
 		Mode:         types.StringValue(string(api.Mode)),
 		IPv4:         types.BoolPointerValue(api.Ipv4),
@@ -763,6 +775,15 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		ProxyURL:     types.StringValue(api.ProxyUrl),
 		Check:        v.Check,
 		Response:     v.Response,
+
+		tfSSLConfig: tfSSLConfig{
+			SslVerificationMode:       types.StringValue(api.SslVerificationMode),
+			SslSupportedProtocols:     sslSupportedProtocols,
+			SslCertificateAuthorities: StringSliceValue(api.SslCertificateAuthorities),
+			SslCertificate:            types.StringValue(api.SslCertificate),
+			SslKey:                    types.StringValue(api.SslKey),
+			SslKeyPassphrase:          types.StringValue(api.SslKeyPassphrase),
+		},
 	}
 }
 
@@ -854,6 +875,56 @@ func tfInt64ToString(v types.Int64) string {
 	return res
 }
 
+func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p string) (*kbapi.SSLConfig, diag.Diagnostics) {
+
+	var ssl *kbapi.SSLConfig
+	if !(v.SslSupportedProtocols.IsNull() || v.SslSupportedProtocols.IsUnknown()) {
+		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
+		if dg.HasError() {
+			return nil, dg
+		}
+		ssl = &kbapi.SSLConfig{}
+		ssl.SupportedProtocols = sslSupportedProtocols
+	}
+
+	if !(v.SslVerificationMode.IsNull() || v.SslVerificationMode.IsUnknown()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.VerificationMode = v.SslVerificationMode.ValueString()
+	}
+
+	certAuths := ValueStringSlice(v.SslCertificateAuthorities)
+	if len(certAuths) > 0 {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.CertificateAuthorities = certAuths
+	}
+
+	if !(v.SslCertificate.IsUnknown() || v.SslCertificate.IsNull()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.Certificate = v.SslCertificate.ValueString()
+	}
+
+	if !(v.SslKey.IsUnknown() || v.SslKey.IsNull()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.Key = v.SslKey.ValueString()
+	}
+
+	if !(v.SslKeyPassphrase.IsUnknown() || v.SslKeyPassphrase.IsNull()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.KeyPassphrase = v.SslKeyPassphrase.ValueString()
+	}
+	return ssl, dg
+}
+
 func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
 	http := v.HTTP
 	proxyHeaders, dg := toJsonObject(http.ProxyHeader)
@@ -869,22 +940,7 @@ func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorField
 		return nil, dg
 	}
 
-	var ssl *kbapi.SSLConfig
-	if !(http.SslSupportedProtocols.IsNull() || http.SslSupportedProtocols.IsUnknown()) {
-		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, http.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
-		if dg.HasError() {
-			return nil, dg
-		}
-		ssl = &kbapi.SSLConfig{}
-		ssl.SupportedProtocols = sslSupportedProtocols
-	}
-
-	if !(http.SslVerificationMode.IsNull() || http.SslVerificationMode.IsUnknown()) {
-		if ssl == nil {
-			ssl = &kbapi.SSLConfig{}
-		}
-		ssl.VerificationMode = http.SslVerificationMode.ValueString()
-	}
+	ssl, dg := toSSLConfig(ctx, dg, http.tfSSLConfig, "http")
 
 	maxRedirects := tfInt64ToString(http.MaxRedirects)
 	return kbapi.HTTPMonitorFields{
@@ -908,23 +964,7 @@ func (v *tfModelV0) toTCPMonitorFields(ctx context.Context) (kbapi.MonitorFields
 	tcp := v.TCP
 
 	dg := diag.Diagnostics{}
-	var ssl *kbapi.SSLConfig
-	if !(tcp.SslSupportedProtocols.IsNull() || tcp.SslSupportedProtocols.IsUnknown()) {
-		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, tcp.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), &dg)
-		if dg.HasError() {
-			return nil, dg
-		}
-		ssl = &kbapi.SSLConfig{}
-		ssl.SupportedProtocols = sslSupportedProtocols
-	}
-
-	if !(tcp.SslVerificationMode.IsNull() || tcp.SslVerificationMode.IsUnknown()) {
-		if ssl == nil {
-			ssl = &kbapi.SSLConfig{}
-		}
-		ssl.VerificationMode = tcp.SslVerificationMode.ValueString()
-	}
-	//TODO: ssl fields
+	ssl, dg := toSSLConfig(ctx, dg, tcp.tfSSLConfig, "tcp")
 
 	return kbapi.TCPMonitorFields{
 		Host:                  tcp.Host.ValueString(),

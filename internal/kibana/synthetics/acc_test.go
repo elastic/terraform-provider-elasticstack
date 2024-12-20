@@ -16,14 +16,6 @@ var (
 	kibana816Version = version.Must(version.NewVersion("8.16.0"))
 )
 
-/*
-TODOs:
-- [ ] TF schema - fix https://github.com/elastic/terraform-provider-elasticstack/issues/965
-- [ ] TF schema - fix https://github.com/elastic/terraform-provider-elasticstack/issues/916
-- [x] TF schema - test imports after 8.16 fixes
-- [ ] Update change log
-*/
-
 const (
 	httpMonitorMinConfig = `
 
@@ -129,6 +121,25 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	retest_on_failure = false
 }
 
+`
+
+	tcpMonitorMinConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestTcpMonitorResource - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = true
+		}
+	}
+	tcp = {
+		host = "http://localhost:5601"
+	}
+}
 `
 
 	tcpMonitorConfig = `
@@ -411,11 +422,24 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 	tcpMonitorId, config := testMonitorConfig(id, tcpMonitorConfig, name)
 	_, configUpdated := testMonitorConfig(id, tcpMonitorUpdated, name)
 
+	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	bmTcponitorId, bmConfig := testMonitorConfig("tcp-monitor-min", tcpMonitorMinConfig, bmName)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
-
+			// Create and Read tcp monitor with minimum fields
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   bmConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(bmTcponitorId, "id"),
+					resource.TestCheckResourceAttr(bmTcponitorId, "name", "TestTcpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmTcponitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmTcponitorId, "tcp.host", "http://localhost:5601"),
+				),
+			},
 			// Create and Read tcp monitor
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
