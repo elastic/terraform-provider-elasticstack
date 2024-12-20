@@ -1,3 +1,7 @@
+# Typical development workflow
+
+Fork the repo, work on an issue
+
 ## Acceptance tests
 
 ```bash
@@ -15,11 +19,27 @@ env TF_ACC_LOG_PATH=/tmp/tf.log TF_ACC_LOG=DEBUG TF_LOG=DEBUG make docker-testac
 ```
 
 
-## Typical development workflow
+## Update documentation
 
+Update documentation templates in `./templates` directory and re-generate docs via:
 ```bash
-
 make docs-generate
-
-make testacc
 ```
+
+## Update `./CHANGELOG.md`
+
+List of previous commits is a good example of what should be included in the changelog.
+
+
+## Pull request
+
+Format the code before pushing:
+```bash
+make fmt
+```
+
+Create a PR and check acceptance test matrix is green.
+
+## Run provider with local terraform
+
+TBD

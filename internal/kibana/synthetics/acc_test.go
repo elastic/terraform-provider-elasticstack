@@ -20,7 +20,7 @@ var (
 TODOs:
 - [ ] TF schema - fix https://github.com/elastic/terraform-provider-elasticstack/issues/965
 - [ ] TF schema - fix https://github.com/elastic/terraform-provider-elasticstack/issues/916
-- [ ] TF schema - test imports after 8.16 fixes
+- [x] TF schema - test imports after 8.16 fixes
 - [ ] Update change log
 */
 

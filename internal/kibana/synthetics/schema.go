@@ -43,29 +43,39 @@ type tfAlertConfigV0 struct {
 }
 
 type tfHTTPMonitorFieldsV0 struct {
-	URL                   types.String         `tfsdk:"url"`
-	SslVerificationMode   types.String         `tfsdk:"ssl_verification_mode"`
-	SslSupportedProtocols types.List           `tfsdk:"ssl_supported_protocols"`
-	MaxRedirects          types.Int64          `tfsdk:"max_redirects"`
-	Mode                  types.String         `tfsdk:"mode"`
-	IPv4                  types.Bool           `tfsdk:"ipv4"`
-	IPv6                  types.Bool           `tfsdk:"ipv6"`
-	ProxyURL              types.String         `tfsdk:"proxy_url"`
-	ProxyHeader           jsontypes.Normalized `tfsdk:"proxy_header"`
-	Username              types.String         `tfsdk:"username"`
-	Password              types.String         `tfsdk:"password"`
-	Response              jsontypes.Normalized `tfsdk:"response"`
-	Check                 jsontypes.Normalized `tfsdk:"check"`
+	URL          types.String         `tfsdk:"url"`
+	MaxRedirects types.Int64          `tfsdk:"max_redirects"`
+	Mode         types.String         `tfsdk:"mode"`
+	IPv4         types.Bool           `tfsdk:"ipv4"`
+	IPv6         types.Bool           `tfsdk:"ipv6"`
+	ProxyURL     types.String         `tfsdk:"proxy_url"`
+	ProxyHeader  jsontypes.Normalized `tfsdk:"proxy_header"`
+	Username     types.String         `tfsdk:"username"`
+	Password     types.String         `tfsdk:"password"`
+	Response     jsontypes.Normalized `tfsdk:"response"`
+	Check        jsontypes.Normalized `tfsdk:"check"`
+
+	SslVerificationMode       types.String   `tfsdk:"ssl_verification_mode"`
+	SslSupportedProtocols     types.List     `tfsdk:"ssl_supported_protocols"`
+	SslCertificateAuthorities []types.String `tfsdk:"ssl_certificate_authorities"`
+	SslCertificate            types.String   `tfsdk:"ssl_certificate"`
+	SslKey                    types.String   `tfsdk:"ssl_key"`
+	SslKeyPassphrase          types.String   `tfsdk:"ssl_key_passphrase"`
 }
 
 type tfTCPMonitorFieldsV0 struct {
 	Host                  types.String `tfsdk:"host"`
-	SslVerificationMode   types.String `tfsdk:"ssl_verification_mode"`
-	SslSupportedProtocols types.List   `tfsdk:"ssl_supported_protocols"`
 	CheckSend             types.String `tfsdk:"check_send"`
 	CheckReceive          types.String `tfsdk:"check_receive"`
 	ProxyURL              types.String `tfsdk:"proxy_url"`
 	ProxyUseLocalResolver types.Bool   `tfsdk:"proxy_use_local_resolver"`
+
+	SslVerificationMode       types.String   `tfsdk:"ssl_verification_mode"`
+	SslSupportedProtocols     types.List     `tfsdk:"ssl_supported_protocols"`
+	SslCertificateAuthorities []types.String `tfsdk:"ssl_certificate_authorities"`
+	SslCertificate            types.String   `tfsdk:"ssl_certificate"`
+	SslKey                    types.String   `tfsdk:"ssl_key"`
+	SslKeyPassphrase          types.String   `tfsdk:"ssl_key_passphrase"`
 }
 
 type tfICMPMonitorFieldsV0 struct {
@@ -324,6 +334,23 @@ func httpMonitorFieldsSchema() schema.Attribute {
 				Computed:            true,
 				PlanModifiers:       []planmodifier.List{listplanmodifier.UseStateForUnknown()},
 			},
+			"ssl_certificate_authorities": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "The list of root certificates for verifications is required.",
+			},
+			"ssl_certificate": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate.",
+			},
+			"ssl_key": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate key.",
+			},
+			"ssl_key_passphrase": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Key passphrase.",
+			},
 			"max_redirects": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
@@ -394,6 +421,23 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 				MarkdownDescription: "List of allowed SSL/TLS versions.",
 				Computed:            true,
 				PlanModifiers:       []planmodifier.List{listplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_certificate_authorities": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "The list of root certificates for verifications is required.",
+			},
+			"ssl_certificate": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate.",
+			},
+			"ssl_key": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate key.",
+			},
+			"ssl_key_passphrase": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Key passphrase.",
 			},
 			"check_send": schema.StringAttribute{
 				Optional:            true,
@@ -616,9 +660,12 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 		return nil
 	}
 	return &tfTCPMonitorFieldsV0{
-		Host:                  types.StringValue(api.Host),
+		Host: types.StringValue(api.Host),
+
+		//TODO:
 		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
 		SslSupportedProtocols: sslSupportedProtocols,
+
 		CheckSend:             checkSend,
 		CheckReceive:          checkReceive,
 		ProxyURL:              types.StringValue(api.ProxyUrl),
@@ -700,19 +747,22 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		return nil
 	}
 	return &tfHTTPMonitorFieldsV0{
-		URL:                   types.StringValue(api.Url),
+		URL: types.StringValue(api.Url),
+
+		//TODO
 		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
 		SslSupportedProtocols: sslSupportedProtocols,
-		MaxRedirects:          types.Int64Value(maxRedirects),
-		Mode:                  types.StringValue(string(api.Mode)),
-		IPv4:                  types.BoolPointerValue(api.Ipv4),
-		IPv6:                  types.BoolPointerValue(api.Ipv6),
-		Username:              username,
-		Password:              password,
-		ProxyHeader:           proxyHeaders,
-		ProxyURL:              types.StringValue(api.ProxyUrl),
-		Check:                 v.Check,
-		Response:              v.Response,
+
+		MaxRedirects: types.Int64Value(maxRedirects),
+		Mode:         types.StringValue(string(api.Mode)),
+		IPv4:         types.BoolPointerValue(api.Ipv4),
+		IPv6:         types.BoolPointerValue(api.Ipv6),
+		Username:     username,
+		Password:     password,
+		ProxyHeader:  proxyHeaders,
+		ProxyURL:     types.StringValue(api.ProxyUrl),
+		Check:        v.Check,
+		Response:     v.Response,
 	}
 }
 
@@ -805,57 +855,84 @@ func tfInt64ToString(v types.Int64) string {
 }
 
 func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
-	proxyHeaders, dg := toJsonObject(v.HTTP.ProxyHeader)
+	http := v.HTTP
+	proxyHeaders, dg := toJsonObject(http.ProxyHeader)
 	if dg.HasError() {
 		return nil, dg
 	}
-	response, dg := toJsonObject(v.HTTP.Response)
+	response, dg := toJsonObject(http.Response)
 	if dg.HasError() {
 		return nil, dg
 	}
-	check, dg := toJsonObject(v.HTTP.Check)
-	if dg.HasError() {
-		return nil, dg
-	}
-
-	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.HTTP.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
+	check, dg := toJsonObject(http.Check)
 	if dg.HasError() {
 		return nil, dg
 	}
 
-	maxRedirects := tfInt64ToString(v.HTTP.MaxRedirects)
+	var ssl *kbapi.SSLConfig
+	if !(http.SslSupportedProtocols.IsNull() || http.SslSupportedProtocols.IsUnknown()) {
+		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, http.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
+		if dg.HasError() {
+			return nil, dg
+		}
+		ssl = &kbapi.SSLConfig{}
+		ssl.SupportedProtocols = sslSupportedProtocols
+	}
+
+	if !(http.SslVerificationMode.IsNull() || http.SslVerificationMode.IsUnknown()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.VerificationMode = http.SslVerificationMode.ValueString()
+	}
+
+	maxRedirects := tfInt64ToString(http.MaxRedirects)
 	return kbapi.HTTPMonitorFields{
-		Url:                   v.HTTP.URL.ValueString(),
-		SslVerificationMode:   v.HTTP.SslVerificationMode.ValueString(),
-		SslSupportedProtocols: sslSupportedProtocols,
-		MaxRedirects:          maxRedirects,
-		Mode:                  kbapi.HttpMonitorMode(v.HTTP.Mode.ValueString()),
-		Ipv4:                  v.HTTP.IPv4.ValueBoolPointer(),
-		Ipv6:                  v.HTTP.IPv6.ValueBoolPointer(),
-		Username:              v.HTTP.Username.ValueString(),
-		Password:              v.HTTP.Password.ValueString(),
-		ProxyHeader:           proxyHeaders,
-		ProxyUrl:              v.HTTP.ProxyURL.ValueString(),
-		Response:              response,
-		Check:                 check,
+		Url:          http.URL.ValueString(),
+		Ssl:          ssl,
+		MaxRedirects: maxRedirects,
+		Mode:         kbapi.HttpMonitorMode(http.Mode.ValueString()),
+		Ipv4:         http.IPv4.ValueBoolPointer(),
+		Ipv6:         http.IPv6.ValueBoolPointer(),
+		Username:     http.Username.ValueString(),
+		Password:     http.Password.ValueString(),
+		ProxyHeader:  proxyHeaders,
+		ProxyUrl:     http.ProxyURL.ValueString(),
+		Response:     response,
+		Check:        check,
 	}, dg
 }
 
 func (v *tfModelV0) toTCPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
+
+	tcp := v.TCP
+
 	dg := diag.Diagnostics{}
-	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.TCP.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), &dg)
-	if dg.HasError() {
-		return nil, dg
+	var ssl *kbapi.SSLConfig
+	if !(tcp.SslSupportedProtocols.IsNull() || tcp.SslSupportedProtocols.IsUnknown()) {
+		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, tcp.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), &dg)
+		if dg.HasError() {
+			return nil, dg
+		}
+		ssl = &kbapi.SSLConfig{}
+		ssl.SupportedProtocols = sslSupportedProtocols
 	}
 
+	if !(tcp.SslVerificationMode.IsNull() || tcp.SslVerificationMode.IsUnknown()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.VerificationMode = tcp.SslVerificationMode.ValueString()
+	}
+	//TODO: ssl fields
+
 	return kbapi.TCPMonitorFields{
-		Host:                  v.TCP.Host.ValueString(),
-		SslVerificationMode:   v.TCP.SslVerificationMode.ValueString(),
-		SslSupportedProtocols: sslSupportedProtocols,
-		CheckSend:             v.TCP.CheckSend.ValueString(),
-		CheckReceive:          v.TCP.CheckReceive.ValueString(),
-		ProxyUrl:              v.TCP.ProxyURL.ValueString(),
-		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
+		Host:                  tcp.Host.ValueString(),
+		CheckSend:             tcp.CheckSend.ValueString(),
+		CheckReceive:          tcp.CheckReceive.ValueString(),
+		ProxyUrl:              tcp.ProxyURL.ValueString(),
+		ProxyUseLocalResolver: tcp.ProxyUseLocalResolver.ValueBoolPointer(),
+		Ssl:                   ssl,
 	}, dg
 }
 
