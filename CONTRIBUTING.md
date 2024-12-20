@@ -13,3 +13,13 @@ A way to forward debug logs to a file:
 ```bash
 env TF_ACC_LOG_PATH=/tmp/tf.log TF_ACC_LOG=DEBUG TF_LOG=DEBUG make docker-testacc
 ```
+
+
+## Typical development workflow
+
+```bash
+
+make docs-generate
+
+make testacc
+```

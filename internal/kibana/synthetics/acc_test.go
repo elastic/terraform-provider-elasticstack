@@ -13,6 +13,7 @@ import (
 
 var (
 	minKibanaVersion = version.Must(version.NewVersion("8.14.0"))
+	kibana816Version = version.Must(version.NewVersion("8.16.0"))
 )
 
 /*
@@ -603,15 +604,15 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 					resource.TestCheckResourceAttr(browserMonitorId, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
 				),
 			},
-			// ImportState testing - kibana doesn't return required parameter inline_script for browser monitor, so import state is not supported till the fix
-			/*			{
-							SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-							ResourceName:      browserMonitorId,
-							ImportState:       true,
-							ImportStateVerify: true,
-							Config:            config,
-						},
-			*/ // Update and Read browser monitor
+			// ImportState testing
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
+				ResourceName:      browserMonitorId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            config,
+			},
+			// Update and Read browser monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName: browserMonitorId,
