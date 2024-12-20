@@ -467,11 +467,15 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					ProxyURL:     types.StringValue("https://proxy.com"),
 					Response:     jsontypes.NewNormalizedValue(`{"response1":"value1"}`),
 					Check:        jsontypes.NewNormalizedValue(`{"check1":"value1"}`),
-					tfSSLConfig: tfSSLConfig{ //TODO: add fields
+					tfSSLConfig: tfSSLConfig{
 						SslVerificationMode: types.StringValue("full"),
 						SslSupportedProtocols: types.ListValueMust(types.StringType, []attr.Value{
 							types.StringValue("TLSv1.2"), types.StringValue("TLSv1.3"),
 						}),
+						SslCertificateAuthorities: []types.String{types.StringValue("cert1"), types.StringValue("cert2")},
+						SslCertificate:            types.StringValue("cert"),
+						SslKey:                    types.StringValue("key"),
+						SslKeyPassphrase:          types.StringValue("passphrase"),
 					},
 				},
 			},
@@ -491,9 +495,13 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				},
 				fields: kbapi.HTTPMonitorFields{
 					Url: "https://example.com",
-					Ssl: &kbapi.SSLConfig{ //TODO
-						VerificationMode:   "full",
-						SupportedProtocols: []string{"TLSv1.2", "TLSv1.3"},
+					Ssl: &kbapi.SSLConfig{
+						VerificationMode:       "full",
+						SupportedProtocols:     []string{"TLSv1.2", "TLSv1.3"},
+						CertificateAuthorities: []string{"cert1", "cert2"},
+						Certificate:            "cert",
+						Key:                    "key",
+						KeyPassphrase:          "passphrase",
 					},
 					MaxRedirects: "5",
 					Mode:         "all",
@@ -525,11 +533,15 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
 				TCP: &tfTCPMonitorFieldsV0{
 					Host: types.StringValue("example.com:9200"),
-					tfSSLConfig: tfSSLConfig{ //TODO: add fields
+					tfSSLConfig: tfSSLConfig{
 						SslVerificationMode: types.StringValue("full"),
 						SslSupportedProtocols: types.ListValueMust(types.StringType, []attr.Value{
 							types.StringValue("TLSv1.2"), types.StringValue("TLSv1.3"),
 						}),
+						SslCertificateAuthorities: []types.String{types.StringValue("cert1"), types.StringValue("cert2")},
+						SslCertificate:            types.StringValue("cert"),
+						SslKey:                    types.StringValue("key"),
+						SslKeyPassphrase:          types.StringValue("passphrase"),
 					},
 					CheckSend:             types.StringValue("hello"),
 					CheckReceive:          types.StringValue("world"),
@@ -554,8 +566,12 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				fields: kbapi.TCPMonitorFields{
 					Host: "example.com:9200",
 					Ssl: &kbapi.SSLConfig{
-						VerificationMode:   "full",
-						SupportedProtocols: []string{"TLSv1.2", "TLSv1.3"},
+						VerificationMode:       "full",
+						SupportedProtocols:     []string{"TLSv1.2", "TLSv1.3"},
+						CertificateAuthorities: []string{"cert1", "cert2"},
+						Certificate:            "cert",
+						Key:                    "key",
+						KeyPassphrase:          "passphrase",
 					},
 					CheckSend:             "hello",
 					CheckReceive:          "world",
