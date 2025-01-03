@@ -165,7 +165,7 @@ jobs:
 
       - id: force-install-synthetics
         name: Force install synthetics
-        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.2' || matrix.version == '8.17.0' || matrix.version == '9.0.0-SNAPSHOT'
+        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.2' || matrix.version == '8.17.0'
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
