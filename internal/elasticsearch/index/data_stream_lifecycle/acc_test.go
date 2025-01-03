@@ -273,12 +273,16 @@ func checkResourceDataStreamLifecycleDestroy(s *terraform.State) error {
 
 		defer res.Body.Close()
 
-		dStreams := make(map[string][]models.DataStreamLifecycle)
+		dStreams := struct {
+			DataStreams []models.DataStreamLifecycle `json:"data_streams,omitempty"`
+		}{}
+
 		if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
 			return err
 		}
+
 		// for lifecycle with wildcard empty array is returned
-		if len(dStreams["data_streams"]) > 0 {
+		if len(dStreams.DataStreams) > 0 {
 			return fmt.Errorf("Data Stream Lifecycle (%s) still exists", compId.ResourceId)
 		}
 	}
