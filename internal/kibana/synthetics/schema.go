@@ -350,12 +350,14 @@ func httpMonitorFieldsSchema() schema.Attribute {
 				MarkdownDescription: "Certificate key.",
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
 			},
 			"ssl_key_passphrase": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Key passphrase.",
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
 			},
 			"max_redirects": schema.Int64Attribute{
 				Optional:            true,
@@ -444,12 +446,14 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 				MarkdownDescription: "Certificate key.",
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
 			},
 			"ssl_key_passphrase": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Key passphrase.",
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
 			},
 			"check_send": schema.StringAttribute{
 				Optional:            true,
@@ -851,7 +855,7 @@ func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, d
 	return nil, dg
 }
 
-func toTFAlertConfit(ctx context.Context, v basetypes.ObjectValue) *kbapi.MonitorAlertConfig {
+func toTFAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kbapi.MonitorAlertConfig {
 	var alert *kbapi.MonitorAlertConfig
 	if !(v.IsNull() || v.IsUnknown()) {
 		tfAlert := tfAlertConfigV0{}
@@ -875,7 +879,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		PrivateLocations: ValueStringSlice(v.PrivateLocations),
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Tags:             ValueStringSlice(v.Tags),
-		Alert:            toTFAlertConfit(ctx, v.Alert),
+		Alert:            toTFAlertConfig(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
 		Namespace:        v.SpaceID.ValueString(),

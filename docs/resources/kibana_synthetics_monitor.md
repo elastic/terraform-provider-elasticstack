@@ -146,8 +146,8 @@ Optional:
 - `response` (String) Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field.. Raw JSON object, use `jsonencode` function to represent JSON
 - `ssl_certificate` (String) Certificate.
 - `ssl_certificate_authorities` (List of String) The list of root certificates for verifications is required.
-- `ssl_key` (String) Certificate key.
-- `ssl_key_passphrase` (String) Key passphrase.
+- `ssl_key` (String, Sensitive) Certificate key.
+- `ssl_key_passphrase` (String, Sensitive) Key passphrase.
 - `ssl_supported_protocols` (List of String) List of allowed SSL/TLS versions.
 - `ssl_verification_mode` (String) Controls the verification of server certificates.
 - `username` (String) The username for authenticating with the server. The credentials are passed with the request.
@@ -180,8 +180,8 @@ Optional:
 - `proxy_use_local_resolver` (Boolean) A Boolean value that determines whether hostnames are resolved locally instead of being resolved on the proxy server. The default value is false, which means that name resolution occurs on the proxy server.
 - `ssl_certificate` (String) Certificate.
 - `ssl_certificate_authorities` (List of String) The list of root certificates for verifications is required.
-- `ssl_key` (String) Certificate key.
-- `ssl_key_passphrase` (String) Key passphrase.
+- `ssl_key` (String, Sensitive) Certificate key.
+- `ssl_key_passphrase` (String, Sensitive) Key passphrase.
 - `ssl_supported_protocols` (List of String) List of allowed SSL/TLS versions.
 - `ssl_verification_mode` (String) Controls the verification of server certificates.
 
