@@ -897,42 +897,51 @@ func tfInt64ToString(v types.Int64) string {
 }
 
 func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p string) (*kbapi.SSLConfig, diag.Diagnostics) {
-	var ssl *kbapi.SSLConfig
-	
-	getSsl := func() *kbapi.SSLConfig {
-		if ssl == nil {
-			ssl = &kbapi.SSLConfig{}
-		}
-		return ssl
-	}
 
+	var ssl *kbapi.SSLConfig
 	if !(v.SslSupportedProtocols.IsNull() || v.SslSupportedProtocols.IsUnknown()) {
 		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
 		if dg.HasError() {
 			return nil, dg
 		}
-		getSsl().SupportedProtocols = sslSupportedProtocols
+		ssl = &kbapi.SSLConfig{}
+		ssl.SupportedProtocols = sslSupportedProtocols
 	}
 
 	if !(v.SslVerificationMode.IsNull() || v.SslVerificationMode.IsUnknown()) {
-		getSsl().VerificationMode = v.SslVerificationMode.ValueString()
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.VerificationMode = v.SslVerificationMode.ValueString()
 	}
 
 	certAuths := ValueStringSlice(v.SslCertificateAuthorities)
 	if len(certAuths) > 0 {
-		getSsl().CertificateAuthorities = certAuths
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.CertificateAuthorities = certAuths
 	}
 
 	if !(v.SslCertificate.IsUnknown() || v.SslCertificate.IsNull()) {
-		getSsl().Certificate = v.SslCertificate.ValueString()
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.Certificate = v.SslCertificate.ValueString()
 	}
 
 	if !(v.SslKey.IsUnknown() || v.SslKey.IsNull()) {
-		getSsl().Key = v.SslKey.ValueString()
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.Key = v.SslKey.ValueString()
 	}
 
 	if !(v.SslKeyPassphrase.IsUnknown() || v.SslKeyPassphrase.IsNull()) {
-		getSsl().KeyPassphrase = v.SslKeyPassphrase.ValueString()
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.KeyPassphrase = v.SslKeyPassphrase.ValueString()
 	}
 	return ssl, dg
 }
