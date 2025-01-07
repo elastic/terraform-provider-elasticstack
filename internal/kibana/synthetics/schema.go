@@ -11,16 +11,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"strconv"
 )
 
@@ -42,30 +46,39 @@ type tfAlertConfigV0 struct {
 	TLS    *tfStatusConfigV0 `tfsdk:"tls"`
 }
 
+type tfSSLConfig struct {
+	SslVerificationMode       types.String   `tfsdk:"ssl_verification_mode"`
+	SslSupportedProtocols     types.List     `tfsdk:"ssl_supported_protocols"`
+	SslCertificateAuthorities []types.String `tfsdk:"ssl_certificate_authorities"`
+	SslCertificate            types.String   `tfsdk:"ssl_certificate"`
+	SslKey                    types.String   `tfsdk:"ssl_key"`
+	SslKeyPassphrase          types.String   `tfsdk:"ssl_key_passphrase"`
+}
+
 type tfHTTPMonitorFieldsV0 struct {
-	URL                   types.String         `tfsdk:"url"`
-	SslVerificationMode   types.String         `tfsdk:"ssl_verification_mode"`
-	SslSupportedProtocols types.List           `tfsdk:"ssl_supported_protocols"`
-	MaxRedirects          types.Int64          `tfsdk:"max_redirects"`
-	Mode                  types.String         `tfsdk:"mode"`
-	IPv4                  types.Bool           `tfsdk:"ipv4"`
-	IPv6                  types.Bool           `tfsdk:"ipv6"`
-	ProxyURL              types.String         `tfsdk:"proxy_url"`
-	ProxyHeader           jsontypes.Normalized `tfsdk:"proxy_header"`
-	Username              types.String         `tfsdk:"username"`
-	Password              types.String         `tfsdk:"password"`
-	Response              jsontypes.Normalized `tfsdk:"response"`
-	Check                 jsontypes.Normalized `tfsdk:"check"`
+	URL          types.String         `tfsdk:"url"`
+	MaxRedirects types.Int64          `tfsdk:"max_redirects"`
+	Mode         types.String         `tfsdk:"mode"`
+	IPv4         types.Bool           `tfsdk:"ipv4"`
+	IPv6         types.Bool           `tfsdk:"ipv6"`
+	ProxyURL     types.String         `tfsdk:"proxy_url"`
+	ProxyHeader  jsontypes.Normalized `tfsdk:"proxy_header"`
+	Username     types.String         `tfsdk:"username"`
+	Password     types.String         `tfsdk:"password"`
+	Response     jsontypes.Normalized `tfsdk:"response"`
+	Check        jsontypes.Normalized `tfsdk:"check"`
+
+	tfSSLConfig
 }
 
 type tfTCPMonitorFieldsV0 struct {
 	Host                  types.String `tfsdk:"host"`
-	SslVerificationMode   types.String `tfsdk:"ssl_verification_mode"`
-	SslSupportedProtocols types.List   `tfsdk:"ssl_supported_protocols"`
 	CheckSend             types.String `tfsdk:"check_send"`
 	CheckReceive          types.String `tfsdk:"check_receive"`
 	ProxyURL              types.String `tfsdk:"proxy_url"`
 	ProxyUseLocalResolver types.Bool   `tfsdk:"proxy_use_local_resolver"`
+
+	tfSSLConfig
 }
 
 type tfICMPMonitorFieldsV0 struct {
@@ -90,7 +103,7 @@ type tfModelV0 struct {
 	PrivateLocations []types.String            `tfsdk:"private_locations"`
 	Enabled          types.Bool                `tfsdk:"enabled"`
 	Tags             []types.String            `tfsdk:"tags"`
-	Alert            *tfAlertConfigV0          `tfsdk:"alert"`
+	Alert            types.Object              `tfsdk:"alert"` //tfAlertConfigV0
 	APMServiceName   types.String              `tfsdk:"service_name"`
 	TimeoutSeconds   types.Int64               `tfsdk:"timeout"`
 	HTTP             *tfHTTPMonitorFieldsV0    `tfsdk:"http"`
@@ -132,8 +145,10 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: "The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
 				},
+				Computed: true,
 			},
 			"schedule": schema.Int64Attribute{
 				Optional:            true,
@@ -141,6 +156,8 @@ func monitorConfigSchema() schema.Schema {
 				Validators: []validator.Int64{
 					int64validator.OneOf(1, 3, 5, 10, 15, 30, 60, 120, 240),
 				},
+				Computed:      true,
+				PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 			},
 			"locations": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -171,6 +188,8 @@ func monitorConfigSchema() schema.Schema {
 			"enabled": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Whether the monitor is enabled. Default: `true`",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 			"tags": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -181,10 +200,14 @@ func monitorConfigSchema() schema.Schema {
 			"service_name": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The APM service name.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"timeout": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The monitor timeout in seconds, monitor will fail if it doesn’t complete within this time. Default: `16`",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 			},
 			"params":  jsonObjectSchema("Monitor parameters"),
 			"http":    httpMonitorFieldsSchema(),
@@ -267,7 +290,9 @@ func statusConfigSchema() schema.Attribute {
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
 			"enabled": schema.BoolAttribute{
-				Optional: true,
+				Optional:      true,
+				Computed:      true,
+				PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 		},
 	}
@@ -281,6 +306,8 @@ func monitorAlertConfigSchema() schema.Attribute {
 			"status": statusConfigSchema(),
 			"tls":    statusConfigSchema(),
 		},
+		Computed:      true,
+		PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()},
 	}
 }
 
@@ -307,6 +334,31 @@ func httpMonitorFieldsSchema() schema.Attribute {
 				Computed:            true,
 				PlanModifiers:       []planmodifier.List{listplanmodifier.UseStateForUnknown()},
 			},
+			"ssl_certificate_authorities": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "The list of root certificates for verifications is required.",
+			},
+			"ssl_certificate": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_key": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate key.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
+			},
+			"ssl_key_passphrase": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Key passphrase.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
+			},
 			"max_redirects": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
@@ -319,14 +371,20 @@ func httpMonitorFieldsSchema() schema.Attribute {
 				Validators: []validator.String{
 					stringvalidator.OneOf("any", "all"),
 				},
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"ipv4": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Whether to ping using the ipv4 protocol.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 			"ipv6": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Whether to ping using the ipv6 protocol.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 			"username": schema.StringAttribute{
 				Optional:            true,
@@ -372,6 +430,31 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 				Computed:            true,
 				PlanModifiers:       []planmodifier.List{listplanmodifier.UseStateForUnknown()},
 			},
+			"ssl_certificate_authorities": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "The list of root certificates for verifications is required.",
+			},
+			"ssl_certificate": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_key": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate key.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
+			},
+			"ssl_key_passphrase": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Key passphrase.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
+			},
 			"check_send": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "An optional payload string to send to the remote host.",
@@ -389,6 +472,8 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 			"proxy_use_local_resolver": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: " A Boolean value that determines whether hostnames are resolved locally instead of being resolved on the proxy server. The default value is false, which means that name resolution occurs on the proxy server.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 		},
 	}
@@ -558,6 +643,11 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 		ResourceId: string(api.Id),
 	}
 
+	alertV0, dg := toTfAlertConfigV0(ctx, api.Alert)
+	if dg.HasError() {
+		return nil, dg
+	}
+
 	return &tfModelV0{
 		ID:               types.StringValue(resourceID.String()),
 		Name:             types.StringValue(api.Name),
@@ -567,7 +657,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 		PrivateLocations: StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
 		Tags:             StringSliceValue(api.Tags),
-		Alert:            toTfAlertConfigV0(api.Alert),
+		Alert:            alertV0,
 		APMServiceName:   types.StringValue(api.APMServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
 		Params:           params,
@@ -588,18 +678,18 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 	if api.CheckReceive != "" {
 		checkReceive = types.StringValue(api.CheckReceive)
 	}
-	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), &dg)
+	sslCfg, dg := toTFSSLConfig(ctx, dg, api, "tcp")
+
 	if dg.HasError() {
 		return nil
 	}
 	return &tfTCPMonitorFieldsV0{
 		Host:                  types.StringValue(api.Host),
-		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
-		SslSupportedProtocols: sslSupportedProtocols,
 		CheckSend:             checkSend,
 		CheckReceive:          checkReceive,
 		ProxyURL:              types.StringValue(api.ProxyUrl),
 		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
+		tfSSLConfig:           sslCfg,
 	}
 }
 
@@ -671,36 +761,56 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		return nil
 	}
 
-	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
-
+	sslCfg, dg := toTFSSLConfig(ctx, dg, api, "http")
 	if dg.HasError() {
 		return nil
 	}
 	return &tfHTTPMonitorFieldsV0{
-		URL:                   types.StringValue(api.Url),
-		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
-		SslSupportedProtocols: sslSupportedProtocols,
-		MaxRedirects:          types.Int64Value(maxRedirects),
-		Mode:                  types.StringValue(string(api.Mode)),
-		IPv4:                  types.BoolPointerValue(api.Ipv4),
-		IPv6:                  types.BoolPointerValue(api.Ipv6),
-		Username:              username,
-		Password:              password,
-		ProxyHeader:           proxyHeaders,
-		ProxyURL:              types.StringValue(api.ProxyUrl),
-		Check:                 v.Check,
-		Response:              v.Response,
+		URL:          types.StringValue(api.Url),
+		MaxRedirects: types.Int64Value(maxRedirects),
+		Mode:         types.StringValue(string(api.Mode)),
+		IPv4:         types.BoolPointerValue(api.Ipv4),
+		IPv6:         types.BoolPointerValue(api.Ipv6),
+		Username:     username,
+		Password:     password,
+		ProxyHeader:  proxyHeaders,
+		ProxyURL:     types.StringValue(api.ProxyUrl),
+		Check:        v.Check,
+		Response:     v.Response,
+		tfSSLConfig:  sslCfg,
 	}
 }
 
-func toTfAlertConfigV0(alert *kbapi.MonitorAlertConfig) *tfAlertConfigV0 {
+func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor, p string) (tfSSLConfig, diag.Diagnostics) {
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
+	return tfSSLConfig{
+		SslVerificationMode:       types.StringValue(api.SslVerificationMode),
+		SslSupportedProtocols:     sslSupportedProtocols,
+		SslCertificateAuthorities: StringSliceValue(api.SslCertificateAuthorities),
+		SslCertificate:            types.StringValue(api.SslCertificate),
+		SslKey:                    types.StringValue(api.SslKey),
+		SslKeyPassphrase:          types.StringValue(api.SslKeyPassphrase),
+	}, dg
+}
+
+func toTfAlertConfigV0(ctx context.Context, alert *kbapi.MonitorAlertConfig) (basetypes.ObjectValue, diag.Diagnostics) {
+
+	dg := diag.Diagnostics{}
+
+	alertAttributes := monitorAlertConfigSchema().GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	var emptyAttr = map[string]attr.Type(nil)
+
 	if alert == nil {
-		return nil
+		return basetypes.NewObjectNull(emptyAttr), dg
 	}
-	return &tfAlertConfigV0{
+
+	tfAlertConfig := tfAlertConfigV0{
 		Status: toTfStatusConfigV0(alert.Status),
 		TLS:    toTfStatusConfigV0(alert.Tls),
 	}
+
+	return types.ObjectValueFrom(ctx, alertAttributes, &tfAlertConfig)
 }
 
 func toTfStatusConfigV0(status *kbapi.SyntheticsStatusConfig) *tfStatusConfigV0 {
@@ -718,7 +828,7 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaAPIRequest, 
 	if dg.HasError() {
 		return nil, dg
 	}
-	config, dg := v.toSyntheticsMonitorConfig()
+	config, dg := v.toSyntheticsMonitorConfig(ctx)
 	if dg.HasError() {
 		return nil, dg
 	}
@@ -745,16 +855,21 @@ func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, d
 	return nil, dg
 }
 
-func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
+func toTFAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kbapi.MonitorAlertConfig {
+	var alert *kbapi.MonitorAlertConfig
+	if !(v.IsNull() || v.IsUnknown()) {
+		tfAlert := tfAlertConfigV0{}
+		tfsdk.ValueAs(ctx, v, &tfAlert)
+		alert = tfAlert.toTfAlertConfigV0()
+	}
+	return alert
+}
+
+func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
 	locations := Map[types.String, kbapi.MonitorLocation](v.Locations, func(s types.String) kbapi.MonitorLocation { return kbapi.MonitorLocation(s.ValueString()) })
 	params, dg := toJsonObject(v.Params)
 	if dg.HasError() {
 		return nil, dg
-	}
-
-	var alert *kbapi.MonitorAlertConfig
-	if v.Alert != nil {
-		alert = v.Alert.toTfAlertConfigV0()
 	}
 
 	return &kbapi.SyntheticsMonitorConfig{
@@ -764,7 +879,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig,
 		PrivateLocations: ValueStringSlice(v.PrivateLocations),
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Tags:             ValueStringSlice(v.Tags),
-		Alert:            alert,
+		Alert:            toTFAlertConfig(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
 		Namespace:        v.SpaceID.ValueString(),
@@ -781,58 +896,104 @@ func tfInt64ToString(v types.Int64) string {
 	return res
 }
 
+func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p string) (*kbapi.SSLConfig, diag.Diagnostics) {
+
+	var ssl *kbapi.SSLConfig
+	if !(v.SslSupportedProtocols.IsNull() || v.SslSupportedProtocols.IsUnknown()) {
+		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
+		if dg.HasError() {
+			return nil, dg
+		}
+		ssl = &kbapi.SSLConfig{}
+		ssl.SupportedProtocols = sslSupportedProtocols
+	}
+
+	if !(v.SslVerificationMode.IsNull() || v.SslVerificationMode.IsUnknown()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.VerificationMode = v.SslVerificationMode.ValueString()
+	}
+
+	certAuths := ValueStringSlice(v.SslCertificateAuthorities)
+	if len(certAuths) > 0 {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.CertificateAuthorities = certAuths
+	}
+
+	if !(v.SslCertificate.IsUnknown() || v.SslCertificate.IsNull()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.Certificate = v.SslCertificate.ValueString()
+	}
+
+	if !(v.SslKey.IsUnknown() || v.SslKey.IsNull()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.Key = v.SslKey.ValueString()
+	}
+
+	if !(v.SslKeyPassphrase.IsUnknown() || v.SslKeyPassphrase.IsNull()) {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.KeyPassphrase = v.SslKeyPassphrase.ValueString()
+	}
+	return ssl, dg
+}
+
 func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
-	proxyHeaders, dg := toJsonObject(v.HTTP.ProxyHeader)
+	http := v.HTTP
+	proxyHeaders, dg := toJsonObject(http.ProxyHeader)
 	if dg.HasError() {
 		return nil, dg
 	}
-	response, dg := toJsonObject(v.HTTP.Response)
+	response, dg := toJsonObject(http.Response)
 	if dg.HasError() {
 		return nil, dg
 	}
-	check, dg := toJsonObject(v.HTTP.Check)
-	if dg.HasError() {
-		return nil, dg
-	}
-
-	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.HTTP.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), &dg)
+	check, dg := toJsonObject(http.Check)
 	if dg.HasError() {
 		return nil, dg
 	}
 
-	maxRedirects := tfInt64ToString(v.HTTP.MaxRedirects)
+	ssl, dg := toSSLConfig(ctx, dg, http.tfSSLConfig, "http")
+
+	maxRedirects := tfInt64ToString(http.MaxRedirects)
 	return kbapi.HTTPMonitorFields{
-		Url:                   v.HTTP.URL.ValueString(),
-		SslVerificationMode:   v.HTTP.SslVerificationMode.ValueString(),
-		SslSupportedProtocols: sslSupportedProtocols,
-		MaxRedirects:          maxRedirects,
-		Mode:                  kbapi.HttpMonitorMode(v.HTTP.Mode.ValueString()),
-		Ipv4:                  v.HTTP.IPv4.ValueBoolPointer(),
-		Ipv6:                  v.HTTP.IPv6.ValueBoolPointer(),
-		Username:              v.HTTP.Username.ValueString(),
-		Password:              v.HTTP.Password.ValueString(),
-		ProxyHeader:           proxyHeaders,
-		ProxyUrl:              v.HTTP.ProxyURL.ValueString(),
-		Response:              response,
-		Check:                 check,
+		Url:          http.URL.ValueString(),
+		Ssl:          ssl,
+		MaxRedirects: maxRedirects,
+		Mode:         kbapi.HttpMonitorMode(http.Mode.ValueString()),
+		Ipv4:         http.IPv4.ValueBoolPointer(),
+		Ipv6:         http.IPv6.ValueBoolPointer(),
+		Username:     http.Username.ValueString(),
+		Password:     http.Password.ValueString(),
+		ProxyHeader:  proxyHeaders,
+		ProxyUrl:     http.ProxyURL.ValueString(),
+		Response:     response,
+		Check:        check,
 	}, dg
 }
 
 func (v *tfModelV0) toTCPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
+
+	tcp := v.TCP
+
 	dg := diag.Diagnostics{}
-	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.TCP.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), &dg)
-	if dg.HasError() {
-		return nil, dg
-	}
+	ssl, dg := toSSLConfig(ctx, dg, tcp.tfSSLConfig, "tcp")
 
 	return kbapi.TCPMonitorFields{
-		Host:                  v.TCP.Host.ValueString(),
-		SslVerificationMode:   v.TCP.SslVerificationMode.ValueString(),
-		SslSupportedProtocols: sslSupportedProtocols,
-		CheckSend:             v.TCP.CheckSend.ValueString(),
-		CheckReceive:          v.TCP.CheckReceive.ValueString(),
-		ProxyUrl:              v.TCP.ProxyURL.ValueString(),
-		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
+		Host:                  tcp.Host.ValueString(),
+		CheckSend:             tcp.CheckSend.ValueString(),
+		CheckReceive:          tcp.CheckReceive.ValueString(),
+		ProxyUrl:              tcp.ProxyURL.ValueString(),
+		ProxyUseLocalResolver: tcp.ProxyUseLocalResolver.ValueBoolPointer(),
+		Ssl:                   ssl,
 	}, dg
 }
 

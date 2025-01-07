@@ -144,6 +144,10 @@ Optional:
 - `proxy_header` (String) Additional headers to send to proxies during CONNECT requests.. Raw JSON object, use `jsonencode` function to represent JSON
 - `proxy_url` (String) The URL of the proxy to use for this monitor.
 - `response` (String) Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field.. Raw JSON object, use `jsonencode` function to represent JSON
+- `ssl_certificate` (String) Certificate.
+- `ssl_certificate_authorities` (List of String) The list of root certificates for verifications is required.
+- `ssl_key` (String, Sensitive) Certificate key.
+- `ssl_key_passphrase` (String, Sensitive) Key passphrase.
 - `ssl_supported_protocols` (List of String) List of allowed SSL/TLS versions.
 - `ssl_verification_mode` (String) Controls the verification of server certificates.
 - `username` (String) The username for authenticating with the server. The credentials are passed with the request.
@@ -174,6 +178,10 @@ Optional:
 - `check_send` (String) An optional payload string to send to the remote host.
 - `proxy_url` (String) The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.
 - `proxy_use_local_resolver` (Boolean) A Boolean value that determines whether hostnames are resolved locally instead of being resolved on the proxy server. The default value is false, which means that name resolution occurs on the proxy server.
+- `ssl_certificate` (String) Certificate.
+- `ssl_certificate_authorities` (List of String) The list of root certificates for verifications is required.
+- `ssl_key` (String, Sensitive) Certificate key.
+- `ssl_key_passphrase` (String, Sensitive) Key passphrase.
 - `ssl_supported_protocols` (List of String) List of allowed SSL/TLS versions.
 - `ssl_verification_mode` (String) Controls the verification of server certificates.
 
@@ -184,8 +192,3 @@ Import is supported using the following syntax:
 ```shell
 terraform import elasticstack_kibana_synthetics_monitor.my_monitor <space id>/<monitor_id>
 ```
-
-**NOTE:** Not all monitor fields are supported during the import due-to API limitation.
-Full field support could be implemented after this [kibana issue](https://github.com/elastic/kibana/issues/189906) is resolved.
-
-Currently not supported fields during the import:  `params`, `retest_on_failure`, `locations`, `http.proxy_header`, `http.username`, `http.password`, `http.check`, `http.response`, `tcp.check_send`, `tcp.check_receive` and monitor type `browser`

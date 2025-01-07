@@ -2,20 +2,31 @@ package synthetics_test
 
 import (
 	"fmt"
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 var (
 	minKibanaVersion = version.Must(version.NewVersion("8.14.0"))
+	kibana816Version = version.Must(version.NewVersion("8.16.0"))
 )
 
 const (
+	httpMonitorMinConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorResource - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	http = {
+		url = "http://localhost:5601"
+	}
+}
+`
 	httpMonitorConfig = `
 
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
@@ -40,6 +51,22 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 		mode = "any"
 		ipv4 = true
 		ipv6 = false
+	}
+}
+`
+	httpMonitorSslConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorResource - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	http = {
+		url = "http://localhost:5601"
+		ssl_verification_mode = "full"
+		ssl_supported_protocols = ["TLSv1.2"]
+		ssl_certificate_authorities = ["ca1", "ca2"]
+		ssl_certificate = "cert"
+		ssl_key = "key"
+		ssl_key_passphrase = "pass"
 	}
 }
 `
@@ -104,6 +131,34 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 
 `
 
+	tcpMonitorMinConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestTcpMonitorResource - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	tcp = {
+		host = "http://localhost:5601"
+	}
+}
+`
+
+	tcpMonitorSslConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorResource - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	tcp = {
+		host = "http://localhost:5601"
+		ssl_verification_mode = "full"
+		ssl_supported_protocols = ["TLSv1.2"]
+		ssl_certificate_authorities = ["ca1", "ca2"]
+		ssl_certificate = "cert"
+		ssl_key = "key"
+		ssl_key_passphrase = "pass"
+	}
+}
+`
+
 	tcpMonitorConfig = `
 
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
@@ -160,6 +215,16 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 }
 `
 
+	icmpMonitorMinConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestIcmpMonitorResource - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	icmp = {
+		host = "localhost"
+	}
+}
+`
 	icmpMonitorConfig = `
 
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
@@ -218,6 +283,18 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
 	tags = ["a", "b"]
+	service_name = "test apm service"
+	timeout = 30
+	browser = {
+		inline_script = "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"
+	}
+}
+`
+	browserMonitorMinConfig = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestBrowserMonitorResource - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	alert = {
 		status = {
 			enabled = true
@@ -226,8 +303,6 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 			enabled = true
 		}
 	}
-	service_name = "test apm service"
-	timeout = 30
 	browser = {
 		inline_script = "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"
 	}
@@ -268,12 +343,60 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "http-monitor"
 	httpMonitorId, config := testMonitorConfig(id, httpMonitorConfig, name)
+
+	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	bmMonitorId, bmConfig := testMonitorConfig("http-monitor-min", httpMonitorMinConfig, bmName)
+
+	sslName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	sslHttpMonitorId, sslConfig := testMonitorConfig("http-monitor-ssl", httpMonitorSslConfig, sslName)
+
 	_, configUpdated := testMonitorConfig(id, httpMonitorUpdated, name)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
+			// Create and Read http monitor with minimum fields
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   bmConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
+					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestHttpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "http.url", "http://localhost:5601"),
+				),
+			},
+			// Create and Read http monitor with ssl fields, starting from ES 8.16.0
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibana816Version),
+				Config:   sslConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(sslHttpMonitorId, "id"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "name", "TestHttpMonitorResource - "+sslName),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.url", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_supported_protocols.#", "1"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_supported_protocols.0", "TLSv1.2"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_certificate_authorities.#", "2"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_certificate_authorities.0", "ca1"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_certificate_authorities.1", "ca2"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_certificate", "cert"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_key", "key"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_key_passphrase", "pass"),
+				),
+			},
+			// ImportState testing ssl fields
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
+				ResourceName:      sslHttpMonitorId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            sslConfig,
+			},
 			// Create and Read http monitor
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
@@ -369,11 +492,58 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 	tcpMonitorId, config := testMonitorConfig(id, tcpMonitorConfig, name)
 	_, configUpdated := testMonitorConfig(id, tcpMonitorUpdated, name)
 
+	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	bmMonitorId, bmConfig := testMonitorConfig("tcp-monitor-min", tcpMonitorMinConfig, bmName)
+
+	sslName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	sslTcpMonitorId, sslConfig := testMonitorConfig("tcp-monitor-ssl", tcpMonitorSslConfig, sslName)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
-
+			// Create and Read tcp monitor with minimum fields
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   bmConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
+					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestTcpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "tcp.host", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
+				),
+			},
+			// Create and Read tcp monitor with ssl fields, starting from ES 8.16.0
+			// Create and Read tcp monitor with ssl fields, starting from ES 8.16.0
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibana816Version),
+				Config:   sslConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(sslTcpMonitorId, "id"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "name", "TestHttpMonitorResource - "+sslName),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.host", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_supported_protocols.#", "1"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_supported_protocols.0", "TLSv1.2"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_certificate_authorities.#", "2"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_certificate_authorities.0", "ca1"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_certificate_authorities.1", "ca2"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_certificate", "cert"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_key", "key"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_key_passphrase", "pass"),
+				),
+			},
+			// ImportState testing ssl fields
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
+				ResourceName:      sslTcpMonitorId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            sslConfig,
+			},
 			// Create and Read tcp monitor
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
@@ -459,10 +629,26 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 	icmpMonitorId, config := testMonitorConfig(id, icmpMonitorConfig, name)
 	_, configUpdated := testMonitorConfig(id, icmpMonitorUpdated, name)
 
+	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	bmMonitorId, bmConfig := testMonitorConfig("icmp-monitor-min", icmpMonitorMinConfig, bmName)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
+			// Create and Read icmp monitor with minimum fields
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   bmConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
+					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestIcmpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "icmp.host", "localhost"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
+				),
+			},
 
 			// Create and Read icmp monitor
 			{
@@ -535,11 +721,26 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 	browserMonitorId, config := testMonitorConfig(id, browserMonitorConfig, name)
 	_, configUpdated := testMonitorConfig(id, browserMonitorUpdated, name)
 
+	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	bmMonitorId, bmConfig := testMonitorConfig("browser-monitor-min", browserMonitorMinConfig, bmName)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
-
+			// Create and Read browser monitor with minimum fields
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   bmConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
+					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestBrowserMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
+				),
+			},
 			// Create and Read browser monitor
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
@@ -562,15 +763,15 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 					resource.TestCheckResourceAttr(browserMonitorId, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
 				),
 			},
-			// ImportState testing - kibana doesn't return required parameter inline_script for browser monitor, so import state is not supported till the fix
-			/*			{
-							SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-							ResourceName:      browserMonitorId,
-							ImportState:       true,
-							ImportStateVerify: true,
-							Config:            config,
-						},
-			*/ // Update and Read browser monitor
+			// ImportState testing
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
+				ResourceName:      browserMonitorId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            config,
+			},
+			// Update and Read browser monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName: browserMonitorId,

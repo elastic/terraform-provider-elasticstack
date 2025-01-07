@@ -109,29 +109,36 @@ type BrowserMonitorFields struct {
 }
 
 type TCPMonitorFields struct {
-	Host                  string   `json:"host"`
-	SslVerificationMode   string   `json:"ssl.verification_mode,omitempty"`
-	SslSupportedProtocols []string `json:"ssl.supported_protocols,omitempty"`
-	CheckSend             string   `json:"check.send,omitempty"`
-	CheckReceive          string   `json:"check.receive,omitempty"`
-	ProxyUrl              string   `json:"proxy_url,omitempty"`
-	ProxyUseLocalResolver *bool    `json:"proxy_use_local_resolver,omitempty"`
+	Host                  string     `json:"host"`
+	Ssl                   *SSLConfig `json:"ssl,omitempty"`
+	CheckSend             string     `json:"check.send,omitempty"`
+	CheckReceive          string     `json:"check.receive,omitempty"`
+	ProxyUrl              string     `json:"proxy_url,omitempty"`
+	ProxyUseLocalResolver *bool      `json:"proxy_use_local_resolver,omitempty"`
+}
+
+type SSLConfig struct {
+	VerificationMode       string   `json:"verification_mode,omitempty"`
+	SupportedProtocols     []string `json:"supported_protocols,omitempty"`
+	CertificateAuthorities []string `json:"certificate_authorities,omitempty"`
+	Certificate            string   `json:"certificate,omitempty"`
+	Key                    string   `json:"key,omitempty"`
+	KeyPassphrase          string   `json:"key_passphrase,omitempty"`
 }
 
 type HTTPMonitorFields struct {
-	Url                   string          `json:"url"`
-	SslVerificationMode   string          `json:"ssl.verification_mode,omitempty"`
-	SslSupportedProtocols []string        `json:"ssl.supported_protocols,omitempty"`
-	MaxRedirects          string          `json:"max_redirects,omitempty"`
-	Mode                  HttpMonitorMode `json:"mode,omitempty"`
-	Ipv4                  *bool           `json:"ipv4,omitempty"`
-	Ipv6                  *bool           `json:"ipv6,omitempty"`
-	Username              string          `json:"username,omitempty"`
-	Password              string          `json:"password,omitempty"`
-	ProxyHeader           JsonObject      `json:"proxy_headers,omitempty"`
-	ProxyUrl              string          `json:"proxy_url,omitempty"`
-	Response              JsonObject      `json:"response,omitempty"`
-	Check                 JsonObject      `json:"check,omitempty"`
+	Url          string          `json:"url"`
+	Ssl          *SSLConfig      `json:"ssl,omitempty"`
+	MaxRedirects string          `json:"max_redirects,omitempty"`
+	Mode         HttpMonitorMode `json:"mode,omitempty"`
+	Ipv4         *bool           `json:"ipv4,omitempty"`
+	Ipv6         *bool           `json:"ipv6,omitempty"`
+	Username     string          `json:"username,omitempty"`
+	Password     string          `json:"password,omitempty"`
+	ProxyHeader  JsonObject      `json:"proxy_headers,omitempty"`
+	ProxyUrl     string          `json:"proxy_url,omitempty"`
+	Response     JsonObject      `json:"response,omitempty"`
+	Check        JsonObject      `json:"check,omitempty"`
 }
 
 type SyntheticsMonitorConfig struct {
@@ -222,9 +229,13 @@ type SyntheticsMonitor struct {
 	CheckRequestHeaders         JsonObject      `json:"check.request.headers,omitempty"`
 	CheckRequestMethod          string          `json:"check.request.method,omitempty"`
 	//http and tcp
-	ProxyUrl              string   `json:"proxy_url,omitempty"`
-	SslVerificationMode   string   `json:"ssl.verification_mode"`
-	SslSupportedProtocols []string `json:"ssl.supported_protocols"`
+	ProxyUrl                  string   `json:"proxy_url,omitempty"`
+	SslVerificationMode       string   `json:"ssl.verification_mode"`
+	SslSupportedProtocols     []string `json:"ssl.supported_protocols"`
+	SslCertificateAuthorities []string `json:"ssl.certificate_authorities,omitempty"`
+	SslCertificate            string   `json:"ssl.certificate,omitempty"`
+	SslKey                    string   `json:"ssl.key,omitempty"`
+	SslKeyPassphrase          string   `json:"ssl.key_passphrase,omitempty"`
 	//tcp and icmp
 	Host string `json:"host,omitempty"`
 	//tcp
