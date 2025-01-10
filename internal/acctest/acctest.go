@@ -42,8 +42,8 @@ func PreCheck(t *testing.T) {
 		t.Fatal("KIBANA_ENDPOINT must be set for acceptance tests to run")
 	}
 
-	usernamePasswordOk := (userOk && passOk) || (kbUserOk && kbPassOk) || apiKeyOk || kbApiKeyOk
-	if !usernamePasswordOk {
-		t.Fatal("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD or KIBANA_USERNAME and KIBANA_PASSWORD must be set for acceptance tests to run")
+	authOk := (userOk && passOk) || (kbUserOk && kbPassOk) || apiKeyOk || kbApiKeyOk
+	if !authOk {
+		t.Fatal("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD, or KIBANA_USERNAME and KIBANA_PASSWORD, or ELASTICSEARCH_API_KEY, or KIBANA_API_KEY must be set for acceptance tests to run")
 	}
 }
