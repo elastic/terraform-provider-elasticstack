@@ -567,7 +567,11 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 	return &phase, diags
 }
 
-var RolloverMinConditionsMinSupportedVersion = version.Must(version.NewVersion("8.4.0"))
+var (
+	RolloverMinConditionsMinSupportedVersion = version.Must(version.NewVersion("8.4.0"))
+	MaxPrimaryShardDocsMinSupportedVersion   = version.Must(version.NewVersion("8.2.0"))
+)
+
 var ilmActionSettingOptions = map[string]struct {
 	skipEmptyCheck bool
 	def            interface{}
@@ -576,7 +580,7 @@ var ilmActionSettingOptions = map[string]struct {
 	"allow_write_after_shrink": {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
 	"number_of_replicas":       {skipEmptyCheck: true},
 	"priority":                 {skipEmptyCheck: true},
-	"max_primary_shard_docs":   {minVersion: version.Must(version.NewVersion("8.2.0"))},
+	"max_primary_shard_docs":   {minVersion: MaxPrimaryShardDocsMinSupportedVersion},
 	"min_age":                  {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
 	"min_docs":                 {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
 	"min_size":                 {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
