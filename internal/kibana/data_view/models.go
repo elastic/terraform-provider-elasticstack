@@ -232,10 +232,16 @@ func convertSourceFilter(item string, meta utils.ListMeta) kbapi.DataViewsSource
 }
 
 func (model dataViewModel) getViewIDAndSpaceID() (viewID string, spaceID string) {
+	viewID = model.ID.ValueString()
+	spaceID = model.SpaceID.ValueString()
+
 	resourceID := model.ID.ValueString()
-	composite, _ := clients.CompositeIdFromStr(resourceID)
-	viewID = composite.ResourceId
-	spaceID = composite.ClusterId
+	maybeCompositeID, _ := clients.CompositeIdFromStr(resourceID)
+	if maybeCompositeID != nil {
+		viewID = maybeCompositeID.ResourceId
+		spaceID = maybeCompositeID.ClusterId
+	}
+
 	return
 }
 
