@@ -352,3 +352,38 @@ func TestToAPIUpdateModel(t *testing.T) {
 		})
 	}
 }
+
+func Test_dataViewModel_getViewIDAndSpaceID(t *testing.T) {
+	tests := []struct {
+		name            string
+		model           dataViewModel
+		expectedViewID  string
+		expectedSpaceID string
+	}{
+		{
+			name: "gets the view and space id from the composite id if set",
+			model: dataViewModel{
+				ID: types.StringValue("space-id/view-id"),
+			},
+			expectedViewID:  "view-id",
+			expectedSpaceID: "space-id",
+		},
+		{
+			name: "gets the view and space id from the data view if id is not a valid composite id",
+			model: dataViewModel{
+				ID:      types.StringValue("view-id"),
+				SpaceID: types.StringValue("space-id"),
+			},
+			expectedViewID:  "view-id",
+			expectedSpaceID: "space-id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			viewID, spaceID := tt.model.getViewIDAndSpaceID()
+			require.Equal(t, tt.expectedViewID, viewID)
+			require.Equal(t, tt.expectedSpaceID, spaceID)
+		})
+	}
+}

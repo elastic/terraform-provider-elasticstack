@@ -1,5 +1,6 @@
 ## [Unreleased]
 
+- Fix a provider crash when interacting with elasticstack_kibana_data_view resources created with 0.11.0. ([#979](https://github.com/elastic/terraform-provider-elasticstack/pull/979))
 - Add `max_primary_shard_docs` condition to ILM rollover ([#845](https://github.com/elastic/terraform-provider-elasticstack/pull/845))
 
 ## [0.11.13] - 2025-01-09
