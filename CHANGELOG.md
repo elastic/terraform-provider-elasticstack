@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add `max_primary_shard_docs` condition to ILM rollover ([#845](https://github.com/elastic/terraform-provider-elasticstack/pull/845))
+
 ## [0.11.13] - 2025-01-09
 
 - Support 8.15.5 in acc tests ([#963](https://github.com/elastic/terraform-provider-elasticstack/pull/963)).
@@ -11,7 +13,7 @@
 
 ### Breaking changes
 
-- Support multiple group by fields in SLOs ([#870](https://github.com/elastic/terraform-provider-elasticstack/pull/878)). This changes to type of the `group_by` attribute of the `elasticstack_kibana_slo` resource from a String to a list of Strings. Any existing SLO defintions will need to update `group_by = "field"` to `group_by = ["field"]`. 
+- Support multiple group by fields in SLOs ([#870](https://github.com/elastic/terraform-provider-elasticstack/pull/878)). This changes to type of the `group_by` attribute of the `elasticstack_kibana_slo` resource from a String to a list of Strings. Any existing SLO defintions will need to update `group_by = "field"` to `group_by = ["field"]`.
 
 ### Changes
 - Handle NPE in integration policy secrets ([#946](https://github.com/elastic/terraform-provider-elasticstack/pull/946))
