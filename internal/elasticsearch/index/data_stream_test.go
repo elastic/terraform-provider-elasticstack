@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccResourceDataStream(t *testing.T) {
-	// generate renadom name
+	// generate random name
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{

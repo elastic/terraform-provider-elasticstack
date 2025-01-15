@@ -205,7 +205,7 @@ Optional:
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
 - `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
-- `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the bearer token
+- `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the JWT token
 - `insecure` (Boolean) Disable TLS certificate validation
 - `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
@@ -288,6 +288,7 @@ Optional:
 
 - `max_age` (String) Triggers rollover after the maximum elapsed time from index creation is reached.
 - `max_docs` (Number) Triggers rollover after the specified maximum number of documents is reached.
+- `max_primary_shard_docs` (Number) Triggers rollover when the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.2**
 - `max_primary_shard_size` (String) Triggers rollover when the largest primary shard in the index reaches a certain size.
 - `max_size` (String) Triggers rollover when the index reaches a certain size.
 - `min_age` (String) Prevents rollover until after the minimum elapsed time from index creation is reached. Supported from Elasticsearch version **8.4**
