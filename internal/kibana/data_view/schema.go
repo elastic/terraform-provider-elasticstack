@@ -129,19 +129,115 @@ func getSchema() schema.Schema {
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"id": schema.StringAttribute{
-									Required: true,
+									Required:            true,
+									MarkdownDescription: "The ID of the field format. Valid values include: `boolean`, `color`, `date`, `duration`, `number`, `percent`, `relative_date`, `static_lookup`, `string`, `truncate`, `url`.",
 								},
 								"params": schema.SingleNestedAttribute{
 									Optional: true,
 									Attributes: map[string]schema.Attribute{
 										"pattern": schema.StringAttribute{
-											Optional: true,
+											Optional:            true,
+											MarkdownDescription: "Pattern for formatting the field value.",
 										},
 										"urltemplate": schema.StringAttribute{
-											Optional: true,
+											Optional:            true,
+											MarkdownDescription: "URL template for the field value.",
 										},
 										"labeltemplate": schema.StringAttribute{
-											Optional: true,
+											Optional:            true,
+											MarkdownDescription: "Label template for the field value.",
+										},
+										"input_format": schema.StringAttribute{
+											Optional:            true,
+											MarkdownDescription: "Input format for duration fields (e.g., `hours`, `minutes`).",
+										},
+										"output_format": schema.StringAttribute{
+											Optional:            true,
+											MarkdownDescription: "Output format for duration fields (e.g., `humanizePrecise`, `humanize`).",
+										},
+										"output_precision": schema.Int64Attribute{
+											Optional:            true,
+											MarkdownDescription: "Precision for duration output.",
+										},
+										"include_space_with_suffix": schema.BoolAttribute{
+											Optional:            true,
+											MarkdownDescription: "Whether to include a space before the suffix in duration format.",
+										},
+										"use_short_suffix": schema.BoolAttribute{
+											Optional:            true,
+											MarkdownDescription: "Whether to use short suffixes in duration format.",
+										},
+										"timezone": schema.StringAttribute{
+											Optional:            true,
+											MarkdownDescription: "Timezone for date formatting (e.g., `America/New_York`).",
+										},
+										"field_type": schema.StringAttribute{
+											Optional:            true,
+											MarkdownDescription: "Field type for color formatting (e.g., `string`, `number`).",
+										},
+										"colors": schema.ListNestedAttribute{
+											Optional:            true,
+											MarkdownDescription: "Color rules for the field.",
+											NestedObject: schema.NestedAttributeObject{
+												Attributes: map[string]schema.Attribute{
+													"range": schema.StringAttribute{
+														Optional:            true,
+														MarkdownDescription: "Range for the color rule (e.g., `-Infinity:Infinity`).",
+													},
+													"regex": schema.StringAttribute{
+														Optional:            true,
+														MarkdownDescription: "Regex pattern for the color rule.",
+													},
+													"text": schema.StringAttribute{
+														Optional:            true,
+														MarkdownDescription: "Text color in hex format.",
+													},
+													"background": schema.StringAttribute{
+														Optional:            true,
+														MarkdownDescription: "Background color in hex format.",
+													},
+												},
+											},
+										},
+										"field_length": schema.Int64Attribute{
+											Optional:            true,
+											MarkdownDescription: "Length to truncate the field value.",
+										},
+										"transform": schema.StringAttribute{
+											Optional:            true,
+											MarkdownDescription: "Transform to apply to string fields (e.g., `upper`, `lower`).",
+										},
+										"lookup_entries": schema.ListNestedAttribute{
+											Optional:            true,
+											MarkdownDescription: "Key-value pairs for static lookup.",
+											NestedObject: schema.NestedAttributeObject{
+												Attributes: map[string]schema.Attribute{
+													"key": schema.StringAttribute{
+														Required:            true,
+														MarkdownDescription: "Key for the lookup entry.",
+													},
+													"value": schema.StringAttribute{
+														Required:            true,
+														MarkdownDescription: "Value for the lookup entry.",
+													},
+												},
+											},
+										},
+										"unknown_key_value": schema.StringAttribute{
+											Optional:            true,
+											MarkdownDescription: "Value to display when key is not found in lookup.",
+										},
+										"type": schema.StringAttribute{
+											Optional:            true,
+											MarkdownDescription: "Type of URL format (e.g., `a`, `img`, `audio`).",
+										},
+										"width": schema.Int64Attribute{
+											Optional:            true,
+											MarkdownDescription: "Width for image type URLs.",
+										},
+										"height": schema.Int64Attribute{
+											Optional:            true,
+											MarkdownDescription: "Height for image type URLs.",
 										},
 									},
 								},

@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 )
 
 func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.DataViewsDataViewResponseObject) diag.Diagnostics {
@@ -121,6 +122,21 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 											Pattern:       types.StringPointerValue(item.Pattern),
 											UrlTemplate:   types.StringPointerValue(item.UrlTemplate),
 											LabelTemplate: types.StringPointerValue(item.LabelTemplate),
+											InputFormat:   types.StringPointerValue(item.InputFormat),
+											OutputFormat:  types.StringPointerValue(item.OutputFormat),
+											OutputPrecision: types.Int64PointerValue(item.OutputPrecision),
+											IncludeSpaceWithSuffix: types.BoolPointerValue(item.IncludeSpaceWithSuffix),
+											UseShortSuffix: types.BoolPointerValue(item.UseShortSuffix),
+											Timezone:     types.StringPointerValue(item.Timezone),
+											FieldType:    types.StringPointerValue(item.FieldType),
+											Colors:       convertColors(item.Colors),
+											FieldLength:  types.Int64PointerValue(item.FieldLength),
+											Transform:    types.StringPointerValue(item.Transform),
+											LookupEntries: convertLookupEntries(item.LookupEntries),
+											UnknownKeyValue: types.StringPointerValue(item.UnknownKeyValue),
+											Type:         types.StringPointerValue(item.Type),
+											Width:        types.Int64PointerValue(item.Width),
+											Height:       types.Int64PointerValue(item.Height),
 										}
 									}),
 							}
@@ -213,6 +229,21 @@ func convertFieldFormat(item fieldFormatModel, meta utils.MapMeta) kbapi.DataVie
 					LabelTemplate: item.LabelTemplate.ValueStringPointer(),
 					Pattern:       item.Pattern.ValueStringPointer(),
 					UrlTemplate:   item.UrlTemplate.ValueStringPointer(),
+					InputFormat:   item.InputFormat.ValueStringPointer(),
+					OutputFormat:  item.OutputFormat.ValueStringPointer(),
+					OutputPrecision: item.OutputPrecision.ValueInt64Pointer(),
+					IncludeSpaceWithSuffix: item.IncludeSpaceWithSuffix.ValueBoolPointer(),
+					UseShortSuffix: item.UseShortSuffix.ValueBoolPointer(),
+					Timezone:      item.Timezone.ValueStringPointer(),
+					FieldType:     item.FieldType.ValueStringPointer(),
+					Colors:        convertColors(item.Colors.ValueSlice(ctx)),
+					FieldLength:   item.FieldLength.ValueInt64Pointer(),
+					Transform:     item.Transform.ValueStringPointer(),
+					LookupEntries: convertLookupEntries(item.LookupEntries.ValueSlice(ctx)),
+					UnknownKeyValue: item.UnknownKeyValue.ValueStringPointer(),
+					Type:          item.Type.ValueStringPointer(),
+					Width:         item.Width.ValueInt64Pointer(),
+					Height:        item.Height.ValueInt64Pointer(),
 				}
 			}),
 	}
@@ -281,7 +312,133 @@ type fieldFormatModel struct {
 }
 
 type fieldFormatParamsModel struct {
+	// Common fields
 	Pattern       types.String `tfsdk:"pattern"`
 	UrlTemplate   types.String `tfsdk:"urltemplate"`
 	LabelTemplate types.String `tfsdk:"labeltemplate"`
+	
+	// Duration format fields
+	InputFormat            types.String `tfsdk:"input_format"`
+	OutputFormat           types.String `tfsdk:"output_format"`
+	OutputPrecision        types.Int64  `tfsdk:"output_precision"`
+	IncludeSpaceWithSuffix types.Bool   `tfsdk:"include_space_with_suffix"`
+	UseShortSuffix        types.Bool   `tfsdk:"use_short_suffix"`
+	
+	// Date format fields
+	Timezone     types.String `tfsdk:"timezone"`
+	
+	// Color format fields
+	FieldType    types.String `tfsdk:"field_type"`
+	Colors       types.List   `tfsdk:"colors"`
+	
+	// Truncate format fields
+	FieldLength  types.Int64  `tfsdk:"field_length"`
+	
+	// String format fields
+	Transform    types.String `tfsdk:"transform"`
+	
+	// Static lookup format fields
+	LookupEntries    types.List   `tfsdk:"lookup_entries"`
+	UnknownKeyValue  types.String `tfsdk:"unknown_key_value"`
+	
+	// URL format fields
+	Type             types.String `tfsdk:"type"`
+	Width            types.Int64  `tfsdk:"width"`
+	Height           types.Int64  `tfsdk:"height"`
+}
+
+// Add a new type for color configuration
+type colorConfigModel struct {
+	Range      types.String `tfsdk:"range"`
+	Regex      types.String `tfsdk:"regex"`
+	Text       types.String `tfsdk:"text"`
+	Background types.String `tfsdk:"background"`
+}
+
+// Add a new type for lookup entries
+type lookupEntryModel struct {
+	Key   types.String `tfsdk:"key"`
+	Value types.String `tfsdk:"value"`
+}
+
+func convertColors(colors []any) types.List {
+	if colors == nil {
+		return types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"range":      types.StringType,
+				"regex":      types.StringType,
+				"text":       types.StringType,
+				"background": types.StringType,
+			},
+		})
+	}
+
+	elements := make([]attr.Value, 0, len(colors))
+	for _, color := range colors {
+		if colorMap, ok := color.(map[string]interface{}); ok {
+			elements = append(elements, types.ObjectValueMust(
+				map[string]attr.Type{
+					"range":      types.StringType,
+					"regex":      types.StringType,
+					"text":       types.StringType,
+					"background": types.StringType,
+				},
+				map[string]attr.Value{
+					"range":      types.StringValue(utils.StringValue(colorMap["range"])),
+					"regex":      types.StringValue(utils.StringValue(colorMap["regex"])),
+					"text":       types.StringValue(utils.StringValue(colorMap["text"])),
+					"background": types.StringValue(utils.StringValue(colorMap["background"])),
+				},
+			))
+		}
+	}
+
+	return types.ListValueMust(
+		types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"range":      types.StringType,
+				"regex":      types.StringType,
+				"text":       types.StringType,
+				"background": types.StringType,
+			},
+		},
+		elements,
+	)
+}
+
+func convertLookupEntries(entries []any) types.List {
+	if entries == nil {
+		return types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"key":   types.StringType,
+				"value": types.StringType,
+			},
+		})
+	}
+
+	elements := make([]attr.Value, 0, len(entries))
+	for _, entry := range entries {
+		if entryMap, ok := entry.(map[string]interface{}); ok {
+			elements = append(elements, types.ObjectValueMust(
+				map[string]attr.Type{
+					"key":   types.StringType,
+					"value": types.StringType,
+				},
+				map[string]attr.Value{
+					"key":   types.StringValue(utils.StringValue(entryMap["key"])),
+					"value": types.StringValue(utils.StringValue(entryMap["value"])),
+				},
+			))
+		}
+	}
+
+	return types.ListValueMust(
+		types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"key":   types.StringType,
+				"value": types.StringType,
+			},
+		},
+		elements,
+	)
 }
