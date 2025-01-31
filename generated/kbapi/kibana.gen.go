@@ -2660,7 +2660,7 @@ type PostFleetAgentPoliciesJSONBody struct {
 
 		// Version Target version for automatic agent upgrade
 		Version string `json:"version"`
-	} `json:"required_versions"`
+	} `json:"required_versions,omitempty"`
 	SpaceIds *[]string `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
@@ -2782,7 +2782,7 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 
 		// Version Target version for automatic agent upgrade
 		Version string `json:"version"`
-	} `json:"required_versions"`
+	} `json:"required_versions,omitempty"`
 	SpaceIds *[]string `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.

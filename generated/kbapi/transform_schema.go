@@ -838,7 +838,8 @@ func transformFleetPaths(schema *Schema) {
 	// [request body.keep_monitoring_alive]: expected value of type [boolean] but got [null]
 	// [request body.supports_agentless]: expected value of type [boolean] but got [null]
 	// [request body.overrides]: expected value of type [boolean] but got [null]
-	for _, key := range []string{"keep_monitoring_alive", "supports_agentless", "overrides"} {
+	// [request body.required_versions]: definition for this key is missing"}
+	for _, key := range []string{"keep_monitoring_alive", "supports_agentless", "overrides", "required_versions"} {
 		agentPoliciesPath.Post.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
 		agentPolicyPath.Put.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
 	}
