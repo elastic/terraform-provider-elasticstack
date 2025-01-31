@@ -21,7 +21,7 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
     namespaces      = ["default"]
     field_formats = {
       "host.uptime" = {
-        id     = "duration",
+        id = "duration",
         params = {
           inputFormat            = "hours",
           outputFormat           = "humanizePrecise",
@@ -35,7 +35,7 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
         params = {}
       },
       "user.last_login" = {
-        id     = "date",
+        id = "date",
         params = {
           pattern  = "MMM D, YYYY @ HH:mm:ss.SSS",
           timezone = "America/New_York"
@@ -46,7 +46,7 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
         params = {}
       },
       "user.status" = {
-        id     = "color",
+        id = "color",
         params = {
           fieldType = "string",
           colors = [
@@ -60,19 +60,19 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
         }
       },
       "user.message" = {
-        id     = "truncate",
+        id = "truncate",
         params = {
           fieldLength = 10
         }
       },
       "host.name" = {
-        id     = "string",
+        id = "string",
         params = {
           transform = "upper"
         }
       },
       "response.code" = {
-        id     = "static_lookup",
+        id = "static_lookup",
         params = {
           lookupEntries = [
             {
@@ -88,7 +88,7 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
         }
       },
       "url.original" = {
-        id     = "url",
+        id = "url",
         params = {
           type          = "a",
           urlTemplate   = "URL TEMPLATE",
@@ -96,7 +96,7 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
         }
       },
       "user.profile_picture" = {
-        id     = "url",
+        id = "url",
         params = {
           type          = "img",
           urlTemplate   = "URL TEMPLATE",
@@ -106,7 +106,7 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
         }
       },
       "user.answering_message" = {
-        id     = "url",
+        id = "url",
         params = {
           type          = "audio",
           urlTemplate   = "URL TEMPLATE",
