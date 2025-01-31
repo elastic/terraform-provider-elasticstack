@@ -54,7 +54,8 @@ func TestPopulateFromAPI(t *testing.T) {
 					},
 					FieldFormats: &kbapi.DataViewsFieldformats{
 						"field1": kbapi.DataViewsFieldformat{
-							Id: utils.Pointer("field1"),
+							Id:     utils.Pointer("field1"),
+							Params: nil,
 						},
 					},
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
@@ -151,6 +152,8 @@ func TestToAPICreateModel(t *testing.T) {
 								Pattern:       types.StringValue("0.00"),
 								UrlTemplate:   types.StringValue("https://test.com/{{value}}"),
 								LabelTemplate: types.StringValue("{{value}}"),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("field1").AtName("params"), &diags),
 						},
 					}, getFieldFormatElemType(), path.Root("data_view").AtName("field_formats"), &diags),
@@ -277,6 +280,8 @@ func TestToAPIUpdateModel(t *testing.T) {
 								Pattern:       types.StringValue("0.00"),
 								UrlTemplate:   types.StringValue("https://test.com/{{value}}"),
 								LabelTemplate: types.StringValue("{{value}}"),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtMapKey("field1").AtName("params"), &diags),
 						},
 					}, getFieldFormatElemType(), path.Root("data_view").AtName("field_formats"), &diags),
