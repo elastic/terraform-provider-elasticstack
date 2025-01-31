@@ -767,47 +767,54 @@ func transformKibanaPaths(schema *Schema) {
 	schema.Components.Set("schemas.Data_views_fieldformat_params", Map{
 		"type": "object",
 		"properties": Map{
-			"pattern":       Map{"type": "string"},
-			"urlTemplate":   Map{"type": "string"},
-			"labelTemplate": Map{"type": "string"},
-
+			"pattern":                Map{"type": "string"},
+			"urlTemplate":            Map{"type": "string"},
+			"labelTemplate":          Map{"type": "string"},
 			"inputFormat":            Map{"type": "string"},
 			"outputFormat":           Map{"type": "string"},
 			"outputPrecision":        Map{"type": "integer"},
 			"includeSpaceWithSuffix": Map{"type": "boolean"},
-			"useShortSuffix":        Map{"type": "boolean"},
-			"timezone": Map{"type": "string"},
-			"fieldType": Map{"type": "string"},
+			"useShortSuffix":         Map{"type": "boolean"},
+			"timezone":               Map{"type": "string"},
+			"fieldType":              Map{"type": "string"},
 			"colors": Map{
-					"type": "array",
-					"items": Map{
-							"type": "object",
-							"properties": Map{
-									"range":      Map{"type": "string"},
-									"regex":      Map{"type": "string"},
-									"text":       Map{"type": "string"},
-									"background": Map{"type": "string"},
-							},
-					},
+				"type":  "array",
+				"items": Map{"$ref": "#/components/schemas/Data_views_fieldformat_params_color"},
 			},
 			"fieldLength": Map{"type": "integer"},
-			"transform": Map{"type": "string"},
+			"transform":   Map{"type": "string"},
 			"lookupEntries": Map{
-					"type": "array",
-					"items": Map{
-							"type": "object",
-							"properties": Map{
-									"key":   Map{"type": "string"},
-									"value": Map{"type": "string"},
-							},
-					},
+				"type":  "array",
+				"items": Map{"$ref": "#/components/schemas/Data_views_fieldformat_params_lookup"},
 			},
 			"unknownKeyValue": Map{"type": "string"},
-			"type":   Map{"type": "string"},
-			"width":  Map{"type": "integer"},
-			"height": Map{"type": "integer"},
+			"type":            Map{"type": "string"},
+			"width":           Map{"type": "integer"},
+			"height":          Map{"type": "integer"},
 		},
 	})
+	schema.Components.Set("schemas.Data_views_fieldformat_params_color", Map{
+		"type": "object",
+		"properties": Map{
+			"range":      Map{"type": "string"},
+			"regex":      Map{"type": "string"},
+			"text":       Map{"type": "string"},
+			"background": Map{"type": "string"},
+		},
+	})
+	schema.Components.Set("schemas.Data_views_fieldformat_params_lookup", Map{
+		"type": "object",
+		"properties": Map{
+			"key":   Map{"type": "string"},
+			"value": Map{"type": "string"},
+		},
+	})
+
+	/*
+
+
+
+	 */
 
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")

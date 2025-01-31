@@ -290,3 +290,11 @@ func getFieldFormatAttrTypes() map[string]attr.Type {
 func getFieldFormatParamsAttrTypes() map[string]attr.Type {
 	return getFieldFormatAttrTypes()["params"].(attr.TypeWithAttributeTypes).AttributeTypes()
 }
+
+func getFieldFormatParamsColorsElemType() attr.Type {
+	return getFieldFormatParamsAttrTypes()["colors"].(attr.TypeWithElementType).ElementType()
+}
+
+func getFieldFormatParamsLookupEntryElemType() attr.Type {
+	return getFieldFormatParamsAttrTypes()["lookup_entries"].(attr.TypeWithElementType).ElementType()
+}

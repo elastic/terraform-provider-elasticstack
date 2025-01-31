@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 )
 
 func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.DataViewsDataViewResponseObject) diag.Diagnostics {
@@ -119,24 +118,38 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 								Params: utils.StructToObjectType(ctx, item.Params, getFieldFormatParamsAttrTypes(), meta.Path.AtName("params"), &diags,
 									func(item kbapi.DataViewsFieldformatParams, meta utils.ObjectMeta) fieldFormatParamsModel {
 										return fieldFormatParamsModel{
-											Pattern:         types.StringPointerValue(item.Pattern),
-											UrlTemplate:     types.StringPointerValue(item.UrlTemplate),
-											LabelTemplate:   types.StringPointerValue(item.LabelTemplate),
-											InputFormat:     types.StringPointerValue(item.InputFormat),
-											OutputFormat:    types.StringPointerValue(item.OutputFormat),
-											OutputPrecision: types.Int64PointerValue(item.OutputPrecision),
+											Pattern:                types.StringPointerValue(item.Pattern),
+											UrlTemplate:            types.StringPointerValue(item.UrlTemplate),
+											LabelTemplate:          types.StringPointerValue(item.LabelTemplate),
+											InputFormat:            types.StringPointerValue(item.InputFormat),
+											OutputFormat:           types.StringPointerValue(item.OutputFormat),
+											OutputPrecision:        types.Int64PointerValue(utils.Itol(item.OutputPrecision)),
 											IncludeSpaceWithSuffix: types.BoolPointerValue(item.IncludeSpaceWithSuffix),
-											UseShortSuffix:  types.BoolPointerValue(item.UseShortSuffix),
-											Timezone:        types.StringPointerValue(item.Timezone),
-											FieldType:       types.StringPointerValue(item.FieldType),
-											Colors:          convertColors(item.Colors),
-											FieldLength:     types.Int64PointerValue(item.FieldLength),
-											Transform:       types.StringPointerValue(item.Transform),
-											LookupEntries:   convertLookupEntries(item.LookupEntries),
+											UseShortSuffix:         types.BoolPointerValue(item.UseShortSuffix),
+											Timezone:               types.StringPointerValue(item.Timezone),
+											FieldType:              types.StringPointerValue(item.FieldType),
+											Colors: utils.SliceToListType(ctx, utils.Deref(item.Colors), getFieldFormatParamsColorsElemType(), meta.Path.AtName("colors"), meta.Diags,
+												func(item kbapi.DataViewsFieldformatParamsColor, meta utils.ListMeta) colorConfigModel {
+													return colorConfigModel{
+														Range:      types.StringPointerValue(item.Range),
+														Regex:      types.StringPointerValue(item.Regex),
+														Text:       types.StringPointerValue(item.Text),
+														Background: types.StringPointerValue(item.Background),
+													}
+												}),
+											FieldLength: types.Int64PointerValue(utils.Itol(item.FieldLength)),
+											Transform:   types.StringPointerValue(item.Transform),
+											LookupEntries: utils.SliceToListType(ctx, utils.Deref(item.LookupEntries), getFieldFormatParamsLookupEntryElemType(), meta.Path.AtName("lookup_entries"), meta.Diags,
+												func(item kbapi.DataViewsFieldformatParamsLookup, meta utils.ListMeta) lookupEntryModel {
+													return lookupEntryModel{
+														Key:   types.StringPointerValue(item.Key),
+														Value: types.StringPointerValue(item.Value),
+													}
+												}),
 											UnknownKeyValue: types.StringPointerValue(item.UnknownKeyValue),
 											Type:            types.StringPointerValue(item.Type),
-											Width:           types.Int64PointerValue(item.Width),
-											Height:          types.Int64PointerValue(item.Height),
+											Width:           types.Int64PointerValue(utils.Itol(item.Width)),
+											Height:          types.Int64PointerValue(utils.Itol(item.Height)),
 										}
 									}),
 							}
@@ -226,24 +239,38 @@ func convertFieldFormat(item fieldFormatModel, meta utils.MapMeta) kbapi.DataVie
 		Params: utils.ObjectTypeToStruct(meta.Context, item.Params, meta.Path.AtName("params"), meta.Diags,
 			func(item fieldFormatParamsModel, meta utils.ObjectMeta) kbapi.DataViewsFieldformatParams {
 				return kbapi.DataViewsFieldformatParams{
-					LabelTemplate:   item.LabelTemplate.ValueStringPointer(),
-					Pattern:         item.Pattern.ValueStringPointer(),
-					UrlTemplate:     item.UrlTemplate.ValueStringPointer(),
-					InputFormat:     item.InputFormat.ValueStringPointer(),
-					OutputFormat:    item.OutputFormat.ValueStringPointer(),
-					OutputPrecision: item.OutputPrecision.ValueInt64Pointer(),
+					LabelTemplate:          item.LabelTemplate.ValueStringPointer(),
+					Pattern:                item.Pattern.ValueStringPointer(),
+					UrlTemplate:            item.UrlTemplate.ValueStringPointer(),
+					InputFormat:            item.InputFormat.ValueStringPointer(),
+					OutputFormat:           item.OutputFormat.ValueStringPointer(),
+					OutputPrecision:        utils.Ltoi(item.OutputPrecision.ValueInt64Pointer()),
 					IncludeSpaceWithSuffix: item.IncludeSpaceWithSuffix.ValueBoolPointer(),
-					UseShortSuffix:  item.UseShortSuffix.ValueBoolPointer(),
-					Timezone:        item.Timezone.ValueStringPointer(),
-					FieldType:       item.FieldType.ValueStringPointer(),
-					Colors:          convertColors(item.Colors.ValueSlice(ctx)),
-					FieldLength:     item.FieldLength.ValueInt64Pointer(),
-					Transform:       item.Transform.ValueStringPointer(),
-					LookupEntries:   convertLookupEntries(item.LookupEntries.ValueSlice(ctx)),
+					UseShortSuffix:         item.UseShortSuffix.ValueBoolPointer(),
+					Timezone:               item.Timezone.ValueStringPointer(),
+					FieldType:              item.FieldType.ValueStringPointer(),
+					Colors: utils.SliceRef(utils.ListTypeToSlice(meta.Context, item.Colors, meta.Path.AtName("colors"), meta.Diags,
+						func(item colorConfigModel, meta utils.ListMeta) kbapi.DataViewsFieldformatParamsColor {
+							return kbapi.DataViewsFieldformatParamsColor{
+								Background: item.Background.ValueStringPointer(),
+								Range:      item.Range.ValueStringPointer(),
+								Regex:      item.Regex.ValueStringPointer(),
+								Text:       item.Text.ValueStringPointer(),
+							}
+						})),
+					FieldLength: utils.Ltoi(item.FieldLength.ValueInt64Pointer()),
+					Transform:   item.Transform.ValueStringPointer(),
+					LookupEntries: utils.SliceRef(utils.ListTypeToSlice(meta.Context, item.LookupEntries, meta.Path.AtName("lookup_entries"), meta.Diags,
+						func(item lookupEntryModel, meta utils.ListMeta) kbapi.DataViewsFieldformatParamsLookup {
+							return kbapi.DataViewsFieldformatParamsLookup{
+								Key:   item.Key.ValueStringPointer(),
+								Value: item.Value.ValueStringPointer(),
+							}
+						})),
 					UnknownKeyValue: item.UnknownKeyValue.ValueStringPointer(),
 					Type:            item.Type.ValueStringPointer(),
-					Width:           item.Width.ValueInt64Pointer(),
-					Height:          item.Height.ValueInt64Pointer(),
+					Width:           utils.Ltoi(item.Width.ValueInt64Pointer()),
+					Height:          utils.Ltoi(item.Height.ValueInt64Pointer()),
 				}
 			}),
 	}
@@ -342,86 +369,4 @@ type colorConfigModel struct {
 type lookupEntryModel struct {
 	Key   types.String `tfsdk:"key"`
 	Value types.String `tfsdk:"value"`
-}
-
-func convertColors(colors []any) types.List {
-	if colors == nil {
-		return types.ListNull(types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"range":      types.StringType,
-				"regex":      types.StringType,
-				"text":       types.StringType,
-				"background": types.StringType,
-			},
-		})
-	}
-
-	elements := make([]attr.Value, 0, len(colors))
-	for _, color := range colors {
-		if colorMap, ok := color.(map[string]interface{}); ok {
-			elements = append(elements, types.ObjectValueMust(
-				map[string]attr.Type{
-					"range":      types.StringType,
-					"regex":      types.StringType,
-					"text":       types.StringType,
-					"background": types.StringType,
-				},
-				map[string]attr.Value{
-					"range":      types.StringValue(utils.StringValue(colorMap["range"])),
-					"regex":      types.StringValue(utils.StringValue(colorMap["regex"])),
-					"text":       types.StringValue(utils.StringValue(colorMap["text"])),
-					"background": types.StringValue(utils.StringValue(colorMap["background"])),
-				},
-			))
-		}
-	}
-
-	return types.ListValueMust(
-		types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"range":      types.StringType,
-				"regex":      types.StringType,
-				"text":       types.StringType,
-				"background": types.StringType,
-			},
-		},
-		elements,
-	)
-}
-
-func convertLookupEntries(entries []any) types.List {
-	if entries == nil {
-		return types.ListNull(types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"key":   types.StringType,
-				"value": types.StringType,
-			},
-		})
-	}
-
-	elements := make([]attr.Value, 0, len(entries))
-	for _, entry := range entries {
-		if entryMap, ok := entry.(map[string]interface{}); ok {
-			elements = append(elements, types.ObjectValueMust(
-				map[string]attr.Type{
-					"key":   types.StringType,
-					"value": types.StringType,
-				},
-				map[string]attr.Value{
-					"key":   types.StringValue(utils.StringValue(entryMap["key"])),
-					"value": types.StringValue(utils.StringValue(entryMap["value"])),
-				},
-			))
-		}
-	}
-
-	return types.ListValueMust(
-		types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"key":   types.StringType,
-				"value": types.StringType,
-			},
-		},
-		elements,
-	)
 }
