@@ -795,15 +795,11 @@ type DataViewsUpdateDataViewRequestObjectInner struct {
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
-		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
-		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
-		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
-		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
+		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -2445,15 +2441,11 @@ type GetFleetAgentPoliciesParamsFormat string
 // PostFleetAgentPoliciesJSONBody defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
-		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
-		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
-		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
-		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
+		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -2553,15 +2545,11 @@ type GetFleetAgentPoliciesAgentpolicyidParamsFormat string
 // PutFleetAgentPoliciesAgentpolicyidJSONBody defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
-		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
-		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
-		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
-		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
+		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
