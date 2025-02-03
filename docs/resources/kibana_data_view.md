@@ -36,104 +36,103 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
     namespaces      = ["default"]
     field_formats = {
       "host.uptime" = {
-        id = "duration",
+        id = "duration"
         params = {
-          inputFormat            = "hours",
-          outputFormat           = "humanizePrecise",
-          outputPrecision        = 2,
-          includeSpaceWithSuffix = true,
-          useShortSuffix         = true,
+          input_format              = "hours"
+          output_format             = "humanizePrecise"
+          output_precision          = 2
+          include_space_with_suffix = true
+          use_short_suffix          = true
         }
       }
       "user.last_password_change" = {
-        id     = "relative_date",
+        id     = "relative_date"
         params = {}
-      },
+      }
       "user.last_login" = {
-        id = "date",
+        id = "date"
         params = {
-          pattern  = "MMM D, YYYY @ HH:mm:ss.SSS",
+          pattern  = "MMM D, YYYY @ HH:mm:ss.SSS"
           timezone = "America/New_York"
         }
-      },
+      }
       "user.is_active" = {
-        id     = "boolean",
+        id     = "boolean"
         params = {}
-      },
+      }
       "user.status" = {
-        id = "color",
+        id = "color"
         params = {
-          fieldType = "string",
+          field_type = "string"
           colors = [
             {
-              range      = "-Infinity:Infinity",
-              regex      = "inactive*",
-              text       = "#000000",
+              range      = "-Infinity:Infinity"
+              regex      = "inactive*"
+              text       = "#000000"
               background = "#ffffff"
             }
           ]
         }
-      },
+      }
       "user.message" = {
-        id = "truncate",
+        id = "truncate"
         params = {
-          fieldLength = 10
+          field_length = 10
         }
-      },
+      }
       "host.name" = {
-        id = "string",
+        id = "string"
         params = {
           transform = "upper"
         }
-      },
+      }
       "response.code" = {
-        id = "static_lookup",
+        id = "static_lookup"
         params = {
-          lookupEntries = [
+          lookup_entries = [
             {
-              key   = "200",
+              key   = "200"
               value = "OK"
             },
             {
-              key   = "404",
+              key   = "404"
               value = "Not Found"
             }
-          ],
-          unknownKeyValue = "Unknown"
-        }
-      },
-      "url.original" = {
-        id = "url",
-        params = {
-          type          = "a",
-          urlTemplate   = "URL TEMPLATE",
-          labelTemplate = "LABEL TEMPLATE",
-        }
-      },
-      "user.profile_picture" = {
-        id = "url",
-        params = {
-          type          = "img",
-          urlTemplate   = "URL TEMPLATE",
-          labelTemplate = "LABEL TEMPLATE",
-          width         = 6,
-          height        = 4
-        }
-      },
-      "user.answering_message" = {
-        id = "url",
-        params = {
-          type          = "audio",
-          urlTemplate   = "URL TEMPLATE",
-          labelTemplate = "LABEL TEMPLATE"
+          ]
+          unknown_key_value = "Unknown"
         }
       }
-    },
-    fieldAttrs = {
+      "url.original" = {
+        id = "url"
+        params = {
+          type          = "a"
+          urltemplate   = "https://test.com/{{value}}"
+          labeltemplate = "{{value}}"
+        }
+      }
+      "user.profile_picture" = {
+        id = "url"
+        params = {
+          type          = "img"
+          urltemplate   = "https://test.com/{{value}}"
+          labeltemplate = "{{value}}"
+          width         = 6
+          height        = 4
+        }
+      }
+      "user.answering_message" = {
+        id = "url"
+        params = {
+          type          = "audio"
+          urltemplate   = "https://test.com/{{value}}"
+          labeltemplate = "{{value}}"
+        }
+      }
+    }
+    field_attrs = {
       "response.code" = {
-        customLabel       = "Response Code",
-        customDescription = "The response code from the server",
-        count             = 0
+        custom_label = "Response Code"
+        count        = 0
       }
     }
   }
