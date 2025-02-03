@@ -484,7 +484,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("field1").AtName("params"), &diags),
 						},
-            "host.uptime": {
+						"host.uptime": {
 							ID: types.StringValue("duration"),
 							Params: utils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
 								InputFormat:            types.StringValue("hours"),
@@ -503,9 +503,9 @@ func TestToAPIUpdateModel(t *testing.T) {
 						"user.last_login": {
 							ID: types.StringValue("date"),
 							Params: utils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
-								Pattern:  types.StringValue("MMM D, YYYY @ HH:mm:ss.SSS"),
-								Timezone: types.StringValue("America/New_York"),
-								Colors:   types.ListNull(getFieldFormatParamsColorsElemType()),
+								Pattern:       types.StringValue("MMM D, YYYY @ HH:mm:ss.SSS"),
+								Timezone:      types.StringValue("America/New_York"),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
 								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.last_login").AtName("params"), &diags),
 						},
@@ -531,16 +531,16 @@ func TestToAPIUpdateModel(t *testing.T) {
 						"user.message": {
 							ID: types.StringValue("truncate"),
 							Params: utils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
-								FieldLength: types.Int64Value(10),
-								Colors:      types.ListNull(getFieldFormatParamsColorsElemType()),
+								FieldLength:   types.Int64Value(10),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
 								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.message").AtName("params"), &diags),
 						},
 						"host.name": {
 							ID: types.StringValue("string"),
 							Params: utils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
-								Transform: types.StringValue("upper"),
-								Colors:    types.ListNull(getFieldFormatParamsColorsElemType()),
+								Transform:     types.StringValue("upper"),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
 								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("host.name").AtName("params"), &diags),
 						},
@@ -568,7 +568,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 								UrlTemplate:   types.StringValue("URL TEMPLATE"),
 								LabelTemplate: types.StringValue("LABEL TEMPLATE"),
 								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries:  types.ListNull(getFieldFormatParamsLookupEntryElemType()),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("url.original").AtName("params"), &diags),
 						},
 						"user.profile_picture": {
@@ -580,7 +580,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 								Width:         types.Int64Value(6),
 								Height:        types.Int64Value(4),
 								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries:  types.ListNull(getFieldFormatParamsLookupEntryElemType()),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.profile_picture").AtName("params"), &diags),
 						},
 						"user.answering_message": {
@@ -590,7 +590,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 								UrlTemplate:   types.StringValue("URL TEMPLATE"),
 								LabelTemplate: types.StringValue("LABEL TEMPLATE"),
 								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries:  types.ListNull(getFieldFormatParamsLookupEntryElemType()),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
 							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.answering_message").AtName("params"), &diags),
 						},
 					}, getFieldFormatElemType(), path.Root("data_view").AtName("field_formats"), &diags),
@@ -610,7 +610,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 								LabelTemplate: utils.Pointer("{{value}}"),
 							},
 						},
-            "host.uptime": {
+						"host.uptime": {
 							Id: utils.Pointer("duration"),
 							Params: &kbapi.DataViewsFieldformatParams{
 								InputFormat:            utils.Pointer("hours"),
