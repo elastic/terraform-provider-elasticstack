@@ -78,7 +78,7 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
             {
               key   = "200"
               value = "OK"
-            }
+            },
             {
               key   = "404"
               value = "Not Found"
@@ -108,9 +108,9 @@ resource "elasticstack_kibana_data_view" "custom_fields_data_view" {
       "user.answering_message" = {
         id = "url"
         params = {
-          type           = "audio"
-          urltemplate    = "https://test.com/{{value}}"
-          labeltemplate  = "{{value}}"
+          type          = "audio"
+          urltemplate   = "https://test.com/{{value}}"
+          labeltemplate = "{{value}}"
         }
       }
     }
