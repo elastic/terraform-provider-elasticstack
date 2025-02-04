@@ -58,7 +58,7 @@ func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 					},
 				},
 				"es_client_authentication": fwschema.StringAttribute{
-					MarkdownDescription: "ES Client Authentication field to be used with the bearer token",
+					MarkdownDescription: "ES Client Authentication field to be used with the JWT token",
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -296,7 +296,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 					ConflictsWith: []string{usernamePath, passwordPath, apiKeyPath},
 				},
 				"es_client_authentication": {
-					Description: "ES Client Authentication field to be used with the bearer token",
+					Description: "ES Client Authentication field to be used with the JWT token",
 					Type:        schema.TypeString,
 					Optional:    true,
 					Sensitive:   true,
