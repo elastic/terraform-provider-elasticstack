@@ -8,7 +8,8 @@
 - Support 8.15.5 in acc tests ([#963](https://github.com/elastic/terraform-provider-elasticstack/pull/963)).
 - Support 8.16.2 in acc tests ([#964](https://github.com/elastic/terraform-provider-elasticstack/pull/964)).
 - Support 8.17.0 in acc tests ([#969](https://github.com/elastic/terraform-provider-elasticstack/pull/969)).
-- Support several ssl fields in `elasticstack_kibana_synthetics_monitor` ([#967](https://github.com/elastic/terraform-provider-elasticstack/pull/967))
+- Support 9.0.0 in acc tests ([#954](https://github.com/elastic/terraform-provider-elasticstack/pull/954)).
+- Support several ssl fields in `elasticstack_kibana_synthetics_monitor` ([#967](https://github.com/elastic/terraform-provider-elasticstack/pull/967)).
 
 ## [0.11.12] - 2024-12-16
 
