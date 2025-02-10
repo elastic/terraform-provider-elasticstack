@@ -2,7 +2,7 @@ module github.com/disaster37/go-kibana-rest/v8
 
 go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.23.6
 
 require (
 	github.com/go-resty/resty/v2 v2.16.0
