@@ -667,9 +667,38 @@ type DataViewsFieldformat struct {
 
 // DataViewsFieldformatParams defines model for Data_views_fieldformat_params.
 type DataViewsFieldformatParams struct {
-	LabelTemplate *string `json:"labelTemplate,omitempty"`
-	Pattern       *string `json:"pattern,omitempty"`
-	UrlTemplate   *string `json:"urlTemplate,omitempty"`
+	Colors                 *[]DataViewsFieldformatParamsColor  `json:"colors,omitempty"`
+	FieldLength            *int                                `json:"fieldLength,omitempty"`
+	FieldType              *string                             `json:"fieldType,omitempty"`
+	Height                 *int                                `json:"height,omitempty"`
+	IncludeSpaceWithSuffix *bool                               `json:"includeSpaceWithSuffix,omitempty"`
+	InputFormat            *string                             `json:"inputFormat,omitempty"`
+	LabelTemplate          *string                             `json:"labelTemplate,omitempty"`
+	LookupEntries          *[]DataViewsFieldformatParamsLookup `json:"lookupEntries,omitempty"`
+	OutputFormat           *string                             `json:"outputFormat,omitempty"`
+	OutputPrecision        *int                                `json:"outputPrecision,omitempty"`
+	Pattern                *string                             `json:"pattern,omitempty"`
+	Timezone               *string                             `json:"timezone,omitempty"`
+	Transform              *string                             `json:"transform,omitempty"`
+	Type                   *string                             `json:"type,omitempty"`
+	UnknownKeyValue        *string                             `json:"unknownKeyValue,omitempty"`
+	UrlTemplate            *string                             `json:"urlTemplate,omitempty"`
+	UseShortSuffix         *bool                               `json:"useShortSuffix,omitempty"`
+	Width                  *int                                `json:"width,omitempty"`
+}
+
+// DataViewsFieldformatParamsColor defines model for Data_views_fieldformat_params_color.
+type DataViewsFieldformatParamsColor struct {
+	Background *string `json:"background,omitempty"`
+	Range      *string `json:"range,omitempty"`
+	Regex      *string `json:"regex,omitempty"`
+	Text       *string `json:"text,omitempty"`
+}
+
+// DataViewsFieldformatParamsLookup defines model for Data_views_fieldformat_params_lookup.
+type DataViewsFieldformatParamsLookup struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
 }
 
 // DataViewsFieldformats A map of field formats by field name.
@@ -2469,8 +2498,9 @@ type PostFleetAgentPoliciesJSONBody struct {
 	Namespace              string  `json:"namespace"`
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
-	Overrides *map[string]interface{} `json:"overrides,omitempty"`
-	SpaceIds  *[]string               `json:"space_ids,omitempty"`
+	Overrides        *map[string]interface{} `json:"overrides,omitempty"`
+	RequiredVersions *interface{}            `json:"required_versions,omitempty"`
+	SpaceIds         *[]string               `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless *bool    `json:"supports_agentless,omitempty"`
@@ -2572,8 +2602,9 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	Namespace              string  `json:"namespace"`
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
-	Overrides *map[string]interface{} `json:"overrides,omitempty"`
-	SpaceIds  *[]string               `json:"space_ids,omitempty"`
+	Overrides        *map[string]interface{} `json:"overrides,omitempty"`
+	RequiredVersions *interface{}            `json:"required_versions,omitempty"`
+	SpaceIds         *[]string               `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless *bool    `json:"supports_agentless,omitempty"`

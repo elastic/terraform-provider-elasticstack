@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-github_ref := refs/heads/main
+github_ref ?= refs/heads/main
 oas_url    := https://raw.githubusercontent.com/elastic/kibana/$(github_ref)/oas_docs/output/kibana.yaml
 
 .PHONY: all
@@ -13,7 +13,7 @@ all: download transform generate ## Fetch, bundle, transform, and generate the A
 download: oas.yaml ## Download the remote schema
 
 oas.yaml: 
-	curl -sSo oas.yaml "$(oas_url)"
+	curl -sSfo oas.yaml "$(oas_url)"
 
 .PHONY: transform
 transform: download ## Transform and filter the schema

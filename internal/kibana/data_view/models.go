@@ -118,9 +118,38 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 								Params: utils.StructToObjectType(ctx, item.Params, getFieldFormatParamsAttrTypes(), meta.Path.AtName("params"), &diags,
 									func(item kbapi.DataViewsFieldformatParams, meta utils.ObjectMeta) fieldFormatParamsModel {
 										return fieldFormatParamsModel{
-											Pattern:       types.StringPointerValue(item.Pattern),
-											UrlTemplate:   types.StringPointerValue(item.UrlTemplate),
-											LabelTemplate: types.StringPointerValue(item.LabelTemplate),
+											Pattern:                types.StringPointerValue(item.Pattern),
+											UrlTemplate:            types.StringPointerValue(item.UrlTemplate),
+											LabelTemplate:          types.StringPointerValue(item.LabelTemplate),
+											InputFormat:            types.StringPointerValue(item.InputFormat),
+											OutputFormat:           types.StringPointerValue(item.OutputFormat),
+											OutputPrecision:        types.Int64PointerValue(utils.Itol(item.OutputPrecision)),
+											IncludeSpaceWithSuffix: types.BoolPointerValue(item.IncludeSpaceWithSuffix),
+											UseShortSuffix:         types.BoolPointerValue(item.UseShortSuffix),
+											Timezone:               types.StringPointerValue(item.Timezone),
+											FieldType:              types.StringPointerValue(item.FieldType),
+											Colors: utils.SliceToListType(ctx, utils.Deref(item.Colors), getFieldFormatParamsColorsElemType(), meta.Path.AtName("colors"), meta.Diags,
+												func(item kbapi.DataViewsFieldformatParamsColor, meta utils.ListMeta) colorConfigModel {
+													return colorConfigModel{
+														Range:      types.StringPointerValue(item.Range),
+														Regex:      types.StringPointerValue(item.Regex),
+														Text:       types.StringPointerValue(item.Text),
+														Background: types.StringPointerValue(item.Background),
+													}
+												}),
+											FieldLength: types.Int64PointerValue(utils.Itol(item.FieldLength)),
+											Transform:   types.StringPointerValue(item.Transform),
+											LookupEntries: utils.SliceToListType(ctx, utils.Deref(item.LookupEntries), getFieldFormatParamsLookupEntryElemType(), meta.Path.AtName("lookup_entries"), meta.Diags,
+												func(item kbapi.DataViewsFieldformatParamsLookup, meta utils.ListMeta) lookupEntryModel {
+													return lookupEntryModel{
+														Key:   types.StringPointerValue(item.Key),
+														Value: types.StringPointerValue(item.Value),
+													}
+												}),
+											UnknownKeyValue: types.StringPointerValue(item.UnknownKeyValue),
+											Type:            types.StringPointerValue(item.Type),
+											Width:           types.Int64PointerValue(utils.Itol(item.Width)),
+											Height:          types.Int64PointerValue(utils.Itol(item.Height)),
 										}
 									}),
 							}
@@ -210,9 +239,38 @@ func convertFieldFormat(item fieldFormatModel, meta utils.MapMeta) kbapi.DataVie
 		Params: utils.ObjectTypeToStruct(meta.Context, item.Params, meta.Path.AtName("params"), meta.Diags,
 			func(item fieldFormatParamsModel, meta utils.ObjectMeta) kbapi.DataViewsFieldformatParams {
 				return kbapi.DataViewsFieldformatParams{
-					LabelTemplate: item.LabelTemplate.ValueStringPointer(),
-					Pattern:       item.Pattern.ValueStringPointer(),
-					UrlTemplate:   item.UrlTemplate.ValueStringPointer(),
+					LabelTemplate:          item.LabelTemplate.ValueStringPointer(),
+					Pattern:                item.Pattern.ValueStringPointer(),
+					UrlTemplate:            item.UrlTemplate.ValueStringPointer(),
+					InputFormat:            item.InputFormat.ValueStringPointer(),
+					OutputFormat:           item.OutputFormat.ValueStringPointer(),
+					OutputPrecision:        utils.Ltoi(item.OutputPrecision.ValueInt64Pointer()),
+					IncludeSpaceWithSuffix: item.IncludeSpaceWithSuffix.ValueBoolPointer(),
+					UseShortSuffix:         item.UseShortSuffix.ValueBoolPointer(),
+					Timezone:               item.Timezone.ValueStringPointer(),
+					FieldType:              item.FieldType.ValueStringPointer(),
+					Colors: utils.SliceRef(utils.ListTypeToSlice(meta.Context, item.Colors, meta.Path.AtName("colors"), meta.Diags,
+						func(item colorConfigModel, meta utils.ListMeta) kbapi.DataViewsFieldformatParamsColor {
+							return kbapi.DataViewsFieldformatParamsColor{
+								Background: item.Background.ValueStringPointer(),
+								Range:      item.Range.ValueStringPointer(),
+								Regex:      item.Regex.ValueStringPointer(),
+								Text:       item.Text.ValueStringPointer(),
+							}
+						})),
+					FieldLength: utils.Ltoi(item.FieldLength.ValueInt64Pointer()),
+					Transform:   item.Transform.ValueStringPointer(),
+					LookupEntries: utils.SliceRef(utils.ListTypeToSlice(meta.Context, item.LookupEntries, meta.Path.AtName("lookup_entries"), meta.Diags,
+						func(item lookupEntryModel, meta utils.ListMeta) kbapi.DataViewsFieldformatParamsLookup {
+							return kbapi.DataViewsFieldformatParamsLookup{
+								Key:   item.Key.ValueStringPointer(),
+								Value: item.Value.ValueStringPointer(),
+							}
+						})),
+					UnknownKeyValue: item.UnknownKeyValue.ValueStringPointer(),
+					Type:            item.Type.ValueStringPointer(),
+					Width:           utils.Ltoi(item.Width.ValueInt64Pointer()),
+					Height:          utils.Ltoi(item.Height.ValueInt64Pointer()),
 				}
 			}),
 	}
@@ -281,7 +339,34 @@ type fieldFormatModel struct {
 }
 
 type fieldFormatParamsModel struct {
-	Pattern       types.String `tfsdk:"pattern"`
-	UrlTemplate   types.String `tfsdk:"urltemplate"`
-	LabelTemplate types.String `tfsdk:"labeltemplate"`
+	Pattern                types.String `tfsdk:"pattern"`
+	UrlTemplate            types.String `tfsdk:"urltemplate"`
+	LabelTemplate          types.String `tfsdk:"labeltemplate"`
+	InputFormat            types.String `tfsdk:"input_format"`
+	OutputFormat           types.String `tfsdk:"output_format"`
+	OutputPrecision        types.Int64  `tfsdk:"output_precision"`
+	IncludeSpaceWithSuffix types.Bool   `tfsdk:"include_space_with_suffix"`
+	UseShortSuffix         types.Bool   `tfsdk:"use_short_suffix"`
+	Timezone               types.String `tfsdk:"timezone"`
+	FieldType              types.String `tfsdk:"field_type"`
+	Colors                 types.List   `tfsdk:"colors"` //> colorConfigModel
+	FieldLength            types.Int64  `tfsdk:"field_length"`
+	Transform              types.String `tfsdk:"transform"`
+	LookupEntries          types.List   `tfsdk:"lookup_entries"` //> lookupEntryModel
+	UnknownKeyValue        types.String `tfsdk:"unknown_key_value"`
+	Type                   types.String `tfsdk:"type"`
+	Width                  types.Int64  `tfsdk:"width"`
+	Height                 types.Int64  `tfsdk:"height"`
+}
+
+type colorConfigModel struct {
+	Range      types.String `tfsdk:"range"`
+	Regex      types.String `tfsdk:"regex"`
+	Text       types.String `tfsdk:"text"`
+	Background types.String `tfsdk:"background"`
+}
+
+type lookupEntryModel struct {
+	Key   types.String `tfsdk:"key"`
+	Value types.String `tfsdk:"value"`
 }
