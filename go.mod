@@ -6,7 +6,7 @@ toolchain go1.23.6
 
 require (
 	github.com/disaster37/go-kibana-rest/v8 v8.5.0
-	github.com/elastic/elastic-transport-go/v8 v8.6.0
+	github.com/elastic/elastic-transport-go/v8 v8.6.1
 	github.com/elastic/go-elasticsearch/v8 v8.17.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
