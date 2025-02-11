@@ -186,7 +186,7 @@ func TestPopulateFromAPI(t *testing.T) {
 			response: kbapi.DataViewsDataViewResponseObject{
 				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
 					Id:         utils.Pointer("placeholder"),
-					Namespaces: &[]string{"ns1", "ns2"},
+					Namespaces: &[]string{"test", "ns1", "ns2"},
 				},
 			},
 			expectedModel: dataViewModel{
