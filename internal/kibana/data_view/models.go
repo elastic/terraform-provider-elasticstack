@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.DataViewsDataViewResponseObject) diag.Diagnostics {
+func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.DataViewsDataViewResponseObject, spaceID string) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -60,10 +60,15 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 
 		// Keep the original ordering if equal but unordered
 		// The API response is ordered by name.
-		if len(existing) == len(incoming) {
+		// Additionally, allow for the response containing an extra namespace that is the current SpaceID
+		// If the SpaceID is not included in the `namespaces` field, when trying to GET the object it will 404
+		if (len(existing) == len(incoming)) || (len(existing) == len(incoming)-1) {
 			useExisting := true
 			for _, ns := range existing {
 				if !slices.Contains(incoming, ns) {
+					if ns == spaceID {
+						continue
+					}
 					useExisting = false
 					break
 				}

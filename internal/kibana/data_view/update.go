@@ -35,7 +35,7 @@ func (r *DataViewResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	diags = planModel.populateFromAPI(ctx, dataView)
+	diags = planModel.populateFromAPI(ctx, dataView, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
