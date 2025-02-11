@@ -3,6 +3,7 @@
 - Fix a provider crash when interacting with elasticstack_kibana_data_view resources created with 0.11.0. ([#979](https://github.com/elastic/terraform-provider-elasticstack/pull/979))
 - Add `max_primary_shard_docs` condition to ILM rollover ([#845](https://github.com/elastic/terraform-provider-elasticstack/pull/845))
 - Add missing entries to `data_view.field_formats.params` ([#1001](https://github.com/elastic/terraform-provider-elasticstack/pull/1001))
+- Fix namespaces inconsistency when creating elasticstack_kibana_data_view resources ([#1234](https://github.com/elastic/terraform-provider-elasticstack/pull/1234))
 
 ## [0.11.13] - 2025-01-09
 
@@ -19,6 +20,7 @@
 - Support multiple group by fields in SLOs ([#870](https://github.com/elastic/terraform-provider-elasticstack/pull/878)). This changes to type of the `group_by` attribute of the `elasticstack_kibana_slo` resource from a String to a list of Strings. Any existing SLO defintions will need to update `group_by = "field"` to `group_by = ["field"]`.
 
 ### Changes
+
 - Handle NPE in integration policy secrets ([#946](https://github.com/elastic/terraform-provider-elasticstack/pull/946))
 - Use the auto-generated OAS schema from elastic/kibana for the Fleet API. ([#834](https://github.com/elastic/terraform-provider-elasticstack/issues/834))
 - Support description in `elasticstack_elasticsearch_security_role` data sources. ([#884](https://github.com/elastic/terraform-provider-elasticstack/pull/884))
