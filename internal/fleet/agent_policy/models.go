@@ -87,12 +87,8 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	return
 }
 
-func (model agentPolicyModel) toAPICreateModel(ctx context.Context) kbapi.PostFleetAgentPoliciesJSONRequestBody {
+func (model agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
-	tags := make([]struct {
-		Name  string                                                    `json:"name"`
-		Value kbapi.PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value `json:"value"`
-	}, 0, len(model.GlobalDataTags.ElementsAs(ctx, getGlobalDataTagsType, false)))
 
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledLogs)
@@ -113,14 +109,23 @@ func (model agentPolicyModel) toAPICreateModel(ctx context.Context) kbapi.PostFl
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if len(tags) > 0 {
-		body.GlobalDataTags = &tags
+	if len(model.GlobalDataTags.Elements()) > 0 {
+		if serverVersion.LessThan(MinVersionGlobalDataTags) {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewErrorDiagnostic("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above"),
+			}
+
+		}
+		diags := model.GlobalDataTags.ElementsAs(ctx, body.GlobalDataTags, false)
+		if diags.HasError() {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
+		}
 	}
 
-	return body
+	return body, nil
 }
 
-func (model agentPolicyModel) toAPIUpdateModel(ctx context.Context) kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody {
+func (model agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.Logs)
@@ -128,11 +133,6 @@ func (model agentPolicyModel) toAPIUpdateModel(ctx context.Context) kbapi.PutFle
 	if model.MonitorMetrics.ValueBool() {
 		monitoring = append(monitoring, kbapi.Metrics)
 	}
-
-	tags := make([]struct {
-		Name  string                                                                `json:"name"`
-		Value kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value `json:"value"`
-	}, 0, len(model.GlobalDataTags.ElementsAs(ctx, getGlobalDataTagsType, false)))
 
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
@@ -145,9 +145,18 @@ func (model agentPolicyModel) toAPIUpdateModel(ctx context.Context) kbapi.PutFle
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if len(tags) > 0 {
-		body.GlobalDataTags = &tags
+	if len(model.GlobalDataTags.Elements()) > 0 {
+		if serverVersion.LessThan(MinVersionGlobalDataTags) {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewErrorDiagnostic("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above"),
+			}
+
+		}
+		diags := model.GlobalDataTags.ElementsAs(ctx, body.GlobalDataTags, false)
+		if diags.HasError() {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
+		}
 	}
 
-	return body
+	return body, nil
 }

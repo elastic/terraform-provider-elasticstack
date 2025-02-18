@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -14,6 +15,8 @@ var (
 	_ resource.ResourceWithConfigure   = &agentPolicyResource{}
 	_ resource.ResourceWithImportState = &agentPolicyResource{}
 )
+
+var MinVersionGlobalDataTags = version.Must(version.NewVersion("8.15.0"))
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
