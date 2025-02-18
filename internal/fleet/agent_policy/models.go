@@ -1,12 +1,38 @@
 package agent_policy
 
 import (
+	"context"
 	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+type globalDataTagModel struct {
+	Name  types.String `tfsdk:"name"`
+	Value types.String `tfsdk:"value"`
+}
+
+func newGlobalDataTagModel(data struct {
+	Name  string                                 "json:\"name\""
+	Value kbapi.AgentPolicy_GlobalDataTags_Value "json:\"value\""
+}, meta utils.ListMeta) globalDataTagModel {
+	val, err := data.Value.AsAgentPolicyGlobalDataTagsValue0()
+	if err != nil {
+		panic(err)
+	}
+	return globalDataTagModel{
+		Name:  types.StringValue(data.Name),
+		Value: types.StringValue(val),
+	}
+}
+
+var minVersionGlobalDataTags = version.Must(version.NewVersion("8.15.0"))
 
 type agentPolicyModel struct {
 	ID                 types.String `tfsdk:"id"`
@@ -22,9 +48,10 @@ type agentPolicyModel struct {
 	MonitorMetrics     types.Bool   `tfsdk:"monitor_metrics"`
 	SysMonitoring      types.Bool   `tfsdk:"sys_monitoring"`
 	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
+	GlobalDataTags     types.List   `tfsdk:"global_data_tags"`
 }
 
-func (model *agentPolicyModel) populateFromAPI(data *kbapi.AgentPolicy) {
+func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) (diags diag.Diagnostics) {
 	if data == nil {
 		return
 	}
@@ -54,10 +81,19 @@ func (model *agentPolicyModel) populateFromAPI(data *kbapi.AgentPolicy) {
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
+	if *data.GlobalDataTags != nil {
+		model.GlobalDataTags = utils.SliceToListType(ctx, *data.GlobalDataTags, getGlobalDataTagsType(), path.Root("global_data_tags"), &diags, newGlobalDataTagModel)
+	}
+	return
 }
 
-func (model agentPolicyModel) toAPICreateModel() kbapi.PostFleetAgentPoliciesJSONRequestBody {
+func (model agentPolicyModel) toAPICreateModel(ctx context.Context) kbapi.PostFleetAgentPoliciesJSONRequestBody {
 	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
+	tags := make([]struct {
+		Name  string                                                    `json:"name"`
+		Value kbapi.PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value `json:"value"`
+	}, 0, len(model.GlobalDataTags.ElementsAs(ctx, getGlobalDataTagsType, false)))
+
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledLogs)
 	}
@@ -77,10 +113,14 @@ func (model agentPolicyModel) toAPICreateModel() kbapi.PostFleetAgentPoliciesJSO
 		Namespace:          model.Namespace.ValueString(),
 	}
 
+	if len(tags) > 0 {
+		body.GlobalDataTags = &tags
+	}
+
 	return body
 }
 
-func (model agentPolicyModel) toAPIUpdateModel() kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody {
+func (model agentPolicyModel) toAPIUpdateModel(ctx context.Context) kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.Logs)
@@ -88,6 +128,11 @@ func (model agentPolicyModel) toAPIUpdateModel() kbapi.PutFleetAgentPoliciesAgen
 	if model.MonitorMetrics.ValueBool() {
 		monitoring = append(monitoring, kbapi.Metrics)
 	}
+
+	tags := make([]struct {
+		Name  string                                                                `json:"name"`
+		Value kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value `json:"value"`
+	}, 0, len(model.GlobalDataTags.ElementsAs(ctx, getGlobalDataTagsType, false)))
 
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
@@ -98,6 +143,10 @@ func (model agentPolicyModel) toAPIUpdateModel() kbapi.PutFleetAgentPoliciesAgen
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
+	}
+
+	if len(tags) > 0 {
+		body.GlobalDataTags = &tags
 	}
 
 	return body
