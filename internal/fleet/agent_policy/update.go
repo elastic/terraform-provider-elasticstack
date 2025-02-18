@@ -28,7 +28,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	body, diags := planModel.toAPIUpdateModel(ctx, sVersion)
-	
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

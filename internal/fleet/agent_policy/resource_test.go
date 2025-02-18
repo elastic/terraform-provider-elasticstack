@@ -18,6 +18,7 @@ import (
 )
 
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
+var minVersionGlobalDataTags = version.Must(version.NewVersion("8.15.0"))
 
 func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -63,6 +64,8 @@ func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 
 func TestAccResourceAgentPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	policyNameGlobalDataTags := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
 	var originalPolicyId string
 
 	resource.Test(t, resource.TestCase{
@@ -118,6 +121,51 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"skip_destroy"},
 			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
+				Config:   testAccResourceAgentPolicyCreateWithGlobalDataTags(policyNameGlobalDataTags, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyNameGlobalDataTags)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1", "value1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2", "value2"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag3", "value3"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
+				Config:   testAccResourceAgentPolicyUpdateWithGlobalDataTags(policyNameGlobalDataTags, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "This policy was updated"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1", "value1a"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2", "value2b"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag3"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
+				Config:   testAccResourceAgentPolicyUpdateWithNoGlobalDataTags(policyNameGlobalDataTags, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "This policy was updated without global data tags"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag3"),
+				),
+			},
 		},
 	})
 }
@@ -167,6 +215,81 @@ data "elasticstack_fleet_enrollment_tokens" "test_policy" {
 }
 
 `, fmt.Sprintf("Policy %s", id), skipDestroy)
+}
+func testAccResourceAgentPolicyCreateWithGlobalDataTags(id string, skipDestroy bool) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name        = "%s"
+  namespace   = "default"
+  description = "Test Agent Policy"
+  monitor_logs = true
+  monitor_metrics = false
+  skip_destroy = %t
+  global_data_tags = {
+    tag1 = "value1"
+    tag2 = "value2"
+    tag3 = "value3"
+  }
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+
+`, fmt.Sprintf("Policy %s", id), skipDestroy)
+}
+
+func testAccResourceAgentPolicyUpdateWithGlobalDataTags(id string, skipDestroy bool) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name        = "%s"
+  namespace   = "default"
+  description = "This policy was updated"
+  monitor_logs = false
+  monitor_metrics = true
+  skip_destroy = %t
+  global_data_tags = {
+    tag1 = "value1a"
+    tag2 = "value2b"
+  }
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
+}
+
+func testAccResourceAgentPolicyUpdateWithNoGlobalDataTags(id string, skipDestroy bool) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name        = "%s"
+  namespace   = "default"
+  description = "This policy was updated without global data tags"
+  monitor_logs = false
+  monitor_metrics = true
+  skip_destroy = %t
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
 }
 
 func testAccResourceAgentPolicyUpdate(id string, skipDestroy bool) string {
