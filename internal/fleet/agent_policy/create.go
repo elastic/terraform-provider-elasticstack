@@ -40,7 +40,7 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	planModel.populateFromAPI(ctx, policy)
+	planModel.populateFromAPI(ctx, policy, sVersion)
 
 	resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

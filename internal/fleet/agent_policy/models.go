@@ -32,8 +32,6 @@ func newGlobalDataTagModel(data struct {
 	}
 }
 
-var minVersionGlobalDataTags = version.Must(version.NewVersion("8.15.0"))
-
 type agentPolicyModel struct {
 	ID                 types.String `tfsdk:"id"`
 	PolicyID           types.String `tfsdk:"policy_id"`
@@ -51,7 +49,7 @@ type agentPolicyModel struct {
 	GlobalDataTags     types.List   `tfsdk:"global_data_tags"`
 }
 
-func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) (diags diag.Diagnostics) {
+func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy, serverVersion *version.Version) {
 	if data == nil {
 		return
 	}
@@ -81,13 +79,18 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
-	if *data.GlobalDataTags != nil {
-		model.GlobalDataTags = utils.SliceToListType(ctx, *data.GlobalDataTags, getGlobalDataTagsType(), path.Root("global_data_tags"), &diags, newGlobalDataTagModel)
+	if *data.GlobalDataTags != nil && serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) {
+		var diag diag.Diagnostics
+		gdt := utils.SliceToListType(ctx, *data.GlobalDataTags, getGlobalDataTagsType(), path.Root("global_data_tags"), &diag, newGlobalDataTagModel)
+		if diag.HasError() {
+			return
+		}
+		model.GlobalDataTags = gdt
 	}
 	return
 }
 
-func (model agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
 
 	if model.MonitorLogs.ValueBool() {
@@ -125,7 +128,7 @@ func (model agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersio
 	return body, nil
 }
 
-func (model agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.Logs)
