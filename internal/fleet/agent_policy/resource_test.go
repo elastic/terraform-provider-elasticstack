@@ -147,7 +147,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1", "value1a"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2", "value2b"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2", "value2a"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag3"),
 				),
 			},
@@ -230,11 +230,18 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = true
   monitor_metrics = false
   skip_destroy = %t
-  global_data_tags = {
-    tag1 = "value1"
-    tag2 = "value2"
-    tag3 = "value3"
-  }
+  global_data_tags = [
+    {
+      name = "tag1"
+      value = "value1"
+    },{
+      name = "tag2"
+      value = "value2"
+    },{
+      name = "tag3"
+      value = "value3"
+    }
+	]
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
@@ -258,10 +265,15 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = false
   monitor_metrics = true
   skip_destroy = %t
-  global_data_tags = {
-    tag1 = "value1a"
-    tag2 = "value2b"
-  }
+  global_data_tags = [
+  	{
+		  name = "tag1"
+		  value = "value1a"
+	  },{
+      name = "tag2"
+		  value = "value2a"
+	  }
+  ]
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
