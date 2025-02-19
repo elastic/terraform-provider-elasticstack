@@ -10,7 +10,6 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -22,7 +21,7 @@ type globalDataTagModel struct {
 func newGlobalDataTagModel(data struct {
 	Name  string                                 "json:\"name\""
 	Value kbapi.AgentPolicy_GlobalDataTags_Value "json:\"value\""
-}, meta utils.ListMeta) globalDataTagModel {
+}) globalDataTagModel {
 	val, err := data.Value.AsAgentPolicyGlobalDataTagsValue0()
 	if err != nil {
 		panic(err)
@@ -94,11 +93,18 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.Namespace = types.StringValue(data.Namespace)
 	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && hasKey(data, "GlobalDataTags") {
 		var diag diag.Diagnostics
-		gdt := utils.SliceToListType(ctx, *data.GlobalDataTags, getGlobalDataTagsType(), path.Root("global_data_tags"), &diag, newGlobalDataTagModel)
+		gdt := []globalDataTagModel{}
+		for _, val := range *data.GlobalDataTags {
+			gdt = append(gdt, newGlobalDataTagModel(val))
+		}
+		gdtList, diags := types.ListValueFrom(ctx, getGlobalDataTagsType(), gdt)
+		if diags.HasError() {
+			return
+		}
+		model.GlobalDataTags = gdtList
 		if diag.HasError() {
 			return
 		}
-		model.GlobalDataTags = gdt
 	}
 }
 
