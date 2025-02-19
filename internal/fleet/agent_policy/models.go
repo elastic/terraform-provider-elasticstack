@@ -87,7 +87,6 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		}
 		model.GlobalDataTags = gdt
 	}
-	return
 }
 
 func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
