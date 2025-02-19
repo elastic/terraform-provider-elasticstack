@@ -88,7 +88,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"global_data_tags": schema.ListNestedAttribute{
-				Description: "User defined data tags to apply to all inputs. Values can be strings, or numbers",
+				Description: "User defined data tags to apply to all inputs.",
 				Optional:    true,
 
 				NestedObject: schema.NestedAttributeObject{
@@ -98,7 +98,7 @@ func getSchema() schema.Schema {
 							Required:    true,
 						},
 						"value": schema.StringAttribute{
-							Description: "The value of the data tag.",
+							Description: "The string value of the data tag.",
 							Required:    true,
 						},
 					},
