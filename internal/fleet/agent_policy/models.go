@@ -79,7 +79,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
-	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && data.GlobalDataTags != nil {
+	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && len(*data.GlobalDataTags) > 0 {
 		var diag diag.Diagnostics
 		gdt := utils.SliceToListType(ctx, *data.GlobalDataTags, getGlobalDataTagsType(), path.Root("global_data_tags"), &diag, newGlobalDataTagModel)
 		if diag.HasError() {
