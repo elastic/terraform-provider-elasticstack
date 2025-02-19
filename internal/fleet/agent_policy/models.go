@@ -2,6 +2,7 @@ package agent_policy
 
 import (
 	"context"
+	"reflect"
 	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -30,6 +31,18 @@ func newGlobalDataTagModel(data struct {
 		Name:  types.StringValue(data.Name),
 		Value: types.StringValue(val),
 	}
+}
+
+func hasKey(s interface{}, key string) bool {
+	val := reflect.ValueOf(s)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	if val.Kind() != reflect.Struct {
+		return false
+	}
+	field := val.FieldByName(key)
+	return field.IsValid()
 }
 
 type agentPolicyModel struct {
@@ -79,7 +92,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
-	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && len(*data.GlobalDataTags) > 0 {
+	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && hasKey(data, "GlobalDataTags") {
 		var diag diag.Diagnostics
 		gdt := utils.SliceToListType(ctx, *data.GlobalDataTags, getGlobalDataTagsType(), path.Root("global_data_tags"), &diag, newGlobalDataTagModel)
 		if diag.HasError() {
