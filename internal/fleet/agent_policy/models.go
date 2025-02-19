@@ -2,7 +2,6 @@ package agent_policy
 
 import (
 	"context"
-	"reflect"
 	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -30,18 +29,6 @@ func newGlobalDataTagModel(data struct {
 		Name:  types.StringValue(data.Name),
 		Value: types.StringValue(val),
 	}
-}
-
-func hasKey(s interface{}, key string) bool {
-	val := reflect.ValueOf(s)
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	if val.Kind() != reflect.Struct {
-		return false
-	}
-	field := val.FieldByName(key)
-	return field.IsValid()
 }
 
 type agentPolicyModel struct {
@@ -91,10 +78,10 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
-	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && hasKey(data, "GlobalDataTags") {
-		var diag diag.Diagnostics
+	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && utils.Deref(data.GlobalDataTags) != nil {
+
 		gdt := []globalDataTagModel{}
-		for _, val := range *data.GlobalDataTags {
+		for _, val := range utils.Deref(data.GlobalDataTags) {
 			gdt = append(gdt, newGlobalDataTagModel(val))
 		}
 		gdtList, diags := types.ListValueFrom(ctx, getGlobalDataTagsType(), gdt)
@@ -102,9 +89,6 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 			return
 		}
 		model.GlobalDataTags = gdtList
-		if diag.HasError() {
-			return
-		}
 	}
 }
 
