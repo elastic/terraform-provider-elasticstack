@@ -1,5 +1,5 @@
 {
-	"image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+	"image": "mcr.microsoft.com/devcontainers/go",
 	"features": {
 		"ghcr.io/devcontainers/features/terraform:1": {}
 	}
