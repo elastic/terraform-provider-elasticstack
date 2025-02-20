@@ -6,7 +6,7 @@ toolchain go1.24.0
 
 require (
 	github.com/client9/misspell v0.3.4
-	github.com/golangci/golangci-lint v1.63.4
+	github.com/golangci/golangci-lint v1.64.5
 	github.com/goreleaser/goreleaser/v2 v2.6.1
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
