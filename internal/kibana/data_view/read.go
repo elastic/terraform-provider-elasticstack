@@ -34,7 +34,7 @@ func (r *DataViewResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	diags = stateModel.populateFromAPI(ctx, dataView)
+	diags = stateModel.populateFromAPI(ctx, dataView, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
