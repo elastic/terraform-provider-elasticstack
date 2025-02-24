@@ -100,13 +100,115 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 		},
+		{
+			// When sending no value, the response from Kibana is ["default"]
+			name: "handleNamespaces_null_default",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("default/id"),
+				SpaceID: types.StringValue("default"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("id"),
+					Namespaces:      utils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id:         utils.Pointer("id"),
+					Namespaces: &[]string{"default"},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("default/id"),
+				SpaceID: types.StringValue("default"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("id"),
+					Namespaces:      utils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
+		{
+			// When sending the SpaceID as the namespace, the response from Kibana should be the same
+			name: "handleNamespaces_populated_default",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("space_id/dataview_id"),
+				SpaceID: types.StringValue("space_id"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("dataview_id"),
+					Namespaces:      utils.ListValueFrom(ctx, []string{"space_id"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id:         utils.Pointer("dataview_id"),
+					Namespaces: &[]string{"space_id"},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("space_id/dataview_id"),
+				SpaceID: types.StringValue("space_id"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("dataview_id"),
+					Namespaces:      utils.ListValueFrom(ctx, []string{"space_id"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
+		{
+			// When sending a populated list, the response from Kibana should be the same list
+			name: "handleNamespaces_populated_default",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("test/placeholder"),
+				SpaceID: types.StringValue("test"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("placeholder"),
+					Namespaces:      utils.ListValueFrom(ctx, []string{"ns1", "ns2"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id:         utils.Pointer("placeholder"),
+					Namespaces: &[]string{"test", "ns1", "ns2"},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("test/placeholder"),
+				SpaceID: types.StringValue("test"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("placeholder"),
+					Namespaces:      utils.ListValueFrom(ctx, []string{"ns1", "ns2"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
 	}
 
 	require.Empty(t, diags)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diags := tt.existingModel.populateFromAPI(ctx, &tt.response)
+			diags := tt.existingModel.populateFromAPI(ctx, &tt.response, tt.existingModel.SpaceID.ValueString())
 
 			require.Equal(t, tt.expectedModel, tt.existingModel)
 			require.Empty(t, diags)
