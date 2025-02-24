@@ -219,7 +219,7 @@ Optional:
 - `width` (Number) Width for image type URLs.
 
 <a id="nestedatt--data_view--field_formats--params--colors"></a>
-### Nested Schema for `data_view.field_formats.params.colors`
+### Nested Schema for `data_view.field_formats.params.width`
 
 Optional:
 
@@ -230,7 +230,7 @@ Optional:
 
 
 <a id="nestedatt--data_view--field_formats--params--lookup_entries"></a>
-### Nested Schema for `data_view.field_formats.params.lookup_entries`
+### Nested Schema for `data_view.field_formats.params.width`
 
 Required:
 
