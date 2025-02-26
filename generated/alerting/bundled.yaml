@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Alerting
   description: OpenAPI schema for alerting endpoints
-  version: '0.2'
+  version: "0.2"
   contact:
     name: Alerting Team
   license:
@@ -26,55 +26,55 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/create_rule_request'
+              $ref: "#/components/schemas/create_rule_request"
             examples:
               createEsQueryEsqlRuleRequest:
-                $ref: '#/components/examples/create_es_query_esql_rule_request'
+                $ref: "#/components/examples/create_es_query_esql_rule_request"
               createEsQueryRuleRequest:
-                $ref: '#/components/examples/create_es_query_rule_request'
+                $ref: "#/components/examples/create_es_query_rule_request"
               createEsQueryKqlRuleRequest:
-                $ref: '#/components/examples/create_es_query_kql_rule_request'
+                $ref: "#/components/examples/create_es_query_kql_rule_request"
               createIndexThresholdRuleRequest:
-                $ref: '#/components/examples/create_index_threshold_rule_request'
+                $ref: "#/components/examples/create_index_threshold_rule_request"
               createTrackingContainmentRuleRequest:
-                $ref: '#/components/examples/create_tracking_containment_rule_request'
+                $ref: "#/components/examples/create_tracking_containment_rule_request"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/rule_response_properties'
+                $ref: "#/components/schemas/rule_response_properties"
               examples:
                 createEsQueryEsqlRuleResponse:
-                  $ref: '#/components/examples/create_es_query_esql_rule_response'
+                  $ref: "#/components/examples/create_es_query_esql_rule_response"
                 createEsQueryRuleResponse:
-                  $ref: '#/components/examples/create_es_query_rule_response'
+                  $ref: "#/components/examples/create_es_query_rule_response"
                 createEsQueryKqlRuleResponse:
-                  $ref: '#/components/examples/create_es_query_kql_rule_response'
+                  $ref: "#/components/examples/create_es_query_kql_rule_response"
                 createIndexThresholdRuleResponse:
-                  $ref: '#/components/examples/create_index_threshold_rule_response'
+                  $ref: "#/components/examples/create_index_threshold_rule_response"
                 createTrackingContainmentRuleResponse:
-                  $ref: '#/components/examples/create_tracking_containment_rule_response'
-        '401':
+                  $ref: "#/components/examples/create_tracking_containment_rule_response"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
-        '404':
+                $ref: "#/components/schemas/401_response"
+        "404":
           description: Object is not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/404_response'
+                $ref: "#/components/schemas/404_response"
   /s/{spaceId}/api/alerting/rule/{ruleId}:
     get:
       summary: Retrieves a rule by its identifier.
@@ -84,30 +84,30 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/rule_response_properties'
+                $ref: "#/components/schemas/rule_response_properties"
               examples:
                 getRuleResponse:
-                  $ref: '#/components/examples/get_rule_response'
-        '401':
+                  $ref: "#/components/examples/get_rule_response"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
-        '404':
+                $ref: "#/components/schemas/401_response"
+        "404":
           description: Object is not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/404_response'
+                $ref: "#/components/schemas/404_response"
     delete:
       summary: Deletes a rule.
       operationId: deleteRule
@@ -116,24 +116,24 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
-        '404':
+                $ref: "#/components/schemas/401_response"
+        "404":
           description: Object is not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/404_response'
+                $ref: "#/components/schemas/404_response"
     post:
       summary: Creates a rule with a specific rule identifier.
       operationId: createRuleId
@@ -142,8 +142,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: ruleId
           description: |
@@ -158,44 +158,44 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/create_rule_request'
+              $ref: "#/components/schemas/create_rule_request"
             examples:
               createEsQueryEsqlRuleIdRequest:
-                $ref: '#/components/examples/create_es_query_esql_rule_request'
+                $ref: "#/components/examples/create_es_query_esql_rule_request"
               createEsQueryRuleIdRequest:
-                $ref: '#/components/examples/create_es_query_rule_request'
+                $ref: "#/components/examples/create_es_query_rule_request"
               createEsQueryKqlRuleIdRequest:
-                $ref: '#/components/examples/create_es_query_kql_rule_request'
+                $ref: "#/components/examples/create_es_query_kql_rule_request"
               createIndexThreholdRuleIdRequest:
-                $ref: '#/components/examples/create_index_threshold_rule_request'
+                $ref: "#/components/examples/create_index_threshold_rule_request"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/rule_response_properties'
+                $ref: "#/components/schemas/rule_response_properties"
               examples:
                 createEsQueryEsqlRuleIdResponse:
-                  $ref: '#/components/examples/create_es_query_esql_rule_response'
+                  $ref: "#/components/examples/create_es_query_esql_rule_response"
                 createEsQueryRuleIdResponse:
-                  $ref: '#/components/examples/create_es_query_rule_response'
+                  $ref: "#/components/examples/create_es_query_rule_response"
                 createEsQueryKqlRuleIdResponse:
-                  $ref: '#/components/examples/create_es_query_kql_rule_response'
+                  $ref: "#/components/examples/create_es_query_kql_rule_response"
                 createIndexThresholdRuleIdResponse:
-                  $ref: '#/components/examples/create_index_threshold_rule_response'
-        '401':
+                  $ref: "#/components/examples/create_index_threshold_rule_response"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
-        '404':
+                $ref: "#/components/schemas/401_response"
+        "404":
           description: Object is not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/404_response'
+                $ref: "#/components/schemas/404_response"
     put:
       summary: Updates the attributes for a rule.
       operationId: updateRule
@@ -204,40 +204,40 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/update_rule_request'
+              $ref: "#/components/schemas/update_rule_request"
             examples:
               updateRuleRequest:
-                $ref: '#/components/examples/update_rule_request'
+                $ref: "#/components/examples/update_rule_request"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/rule_response_properties'
+                $ref: "#/components/schemas/rule_response_properties"
               examples:
                 updateRuleResponse:
-                  $ref: '#/components/examples/update_rule_response'
-        '401':
+                  $ref: "#/components/examples/update_rule_response"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
-        '404':
+                $ref: "#/components/schemas/401_response"
+        "404":
           description: Object is not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/404_response'
+                $ref: "#/components/schemas/404_response"
   /s/{spaceId}/api/alerting/rule/{ruleId}/_disable:
     post:
       summary: Disables a rule.
@@ -247,24 +247,24 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
-        '404':
+                $ref: "#/components/schemas/401_response"
+        "404":
           description: Object is not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/404_response'
+                $ref: "#/components/schemas/404_response"
   /s/{spaceId}/api/alerting/rule/{ruleId}/_enable:
     post:
       summary: Enables a rule.
@@ -274,24 +274,24 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
-        '404':
+                $ref: "#/components/schemas/401_response"
+        "404":
           description: Object is not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerting/rules/_find:
     get:
       summary: Retrieves information about rules.
@@ -301,7 +301,7 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/space_id"
         - name: default_search_operator
           in: query
           description: The default operator to use for the simple_query_string.
@@ -385,7 +385,7 @@ paths:
             examples:
               - asc
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
@@ -395,7 +395,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/rule_response_properties'
+                      $ref: "#/components/schemas/rule_response_properties"
                   page:
                     type: integer
                   per_page:
@@ -404,15 +404,15 @@ paths:
                     type: integer
               examples:
                 findRulesResponse:
-                  $ref: '#/components/examples/find_rules_response'
+                  $ref: "#/components/examples/find_rules_response"
                 findConditionalActionRulesResponse:
-                  $ref: '#/components/examples/find_rules_response_conditional_action'
-        '401':
+                  $ref: "#/components/examples/find_rules_response_conditional_action"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerting/_health:
     get:
       summary: Retrieves the health status of the alerting framework.
@@ -422,9 +422,9 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
@@ -452,7 +452,7 @@ paths:
                             type: string
                             format: date-time
                             examples:
-                              - '2023-01-13T01:28:00.280Z'
+                              - "2023-01-13T01:28:00.280Z"
                       execution_health:
                         type: object
                         description: The timestamp and status of the rule run.
@@ -469,7 +469,7 @@ paths:
                             type: string
                             format: date-time
                             examples:
-                              - '2023-01-13T01:28:00.280Z'
+                              - "2023-01-13T01:28:00.280Z"
                       read_health:
                         type: object
                         description: The timestamp and status of the rule reading events.
@@ -486,7 +486,7 @@ paths:
                             type: string
                             format: date-time
                             examples:
-                              - '2023-01-13T01:28:00.280Z'
+                              - "2023-01-13T01:28:00.280Z"
                   has_permanent_encryption_key:
                     type: boolean
                     description: If `false`, the encrypted saved object plugin does not have a permanent encryption key.
@@ -499,13 +499,13 @@ paths:
                       - true
               examples:
                 getAlertingHealthResponse:
-                  $ref: '#/components/examples/get_health_response'
-        '401':
+                  $ref: "#/components/examples/get_health_response"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerting/rule_types:
     get:
       summary: Retrieves a list of rule types.
@@ -515,9 +515,9 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
@@ -594,10 +594,10 @@ paths:
                           type: string
                           description: Indicates whether new fields are added dynamically.
                           enum:
-                            - 'false'
+                            - "false"
                             - runtime
                             - strict
-                            - 'true'
+                            - "true"
                         isSpaceAware:
                           type: boolean
                           description: |
@@ -610,7 +610,7 @@ paths:
                               description: |
                                 Mapping information for each field supported in alerts as data documents for this rule type. For more information about mapping parameters, refer to the Elasticsearch documentation.
                               additionalProperties:
-                                $ref: '#/components/schemas/fieldmap_properties'
+                                $ref: "#/components/schemas/fieldmap_properties"
                         secondaryAlias:
                           type: string
                           description: |
@@ -763,13 +763,13 @@ paths:
                         - 5m
               examples:
                 getRuleTypesResponse:
-                  $ref: '#/components/examples/get_rule_types_response'
-        '401':
+                  $ref: "#/components/examples/get_rule_types_response"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerting/rule/{ruleId}/_mute_all:
     post:
       summary: Mutes all alerts.
@@ -779,18 +779,18 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all:
     post:
       summary: Unmutes all alerts.
@@ -800,18 +800,18 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerting/rule/{ruleId}/_update_api_key:
     post:
       summary: Updates the API key for a rule.
@@ -820,18 +820,18 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
-        '400':
+        "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/400_response'
+                $ref: "#/components/schemas/400_response"
   /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_mute:
     post:
       summary: Mutes an alert.
@@ -841,19 +841,19 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/alert_id'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/alert_id"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute:
     post:
       summary: Unmutes an alert.
@@ -863,19 +863,19 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/alert_id'
-        - $ref: '#/components/parameters/rule_id'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/alert_id"
+        - $ref: "#/components/parameters/rule_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alert/{alertId}:
     delete:
       summary: Permanently removes an alert.
@@ -886,8 +886,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: The identifier for the alert.
@@ -897,14 +897,14 @@ paths:
             examples:
               - 41893910-6bca-11eb-9e0d-85d233e3ee35
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
     get:
       summary: Retrieves an alert by its identifier.
       operationId: legacyGetAlert
@@ -913,7 +913,7 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: The identifier for the alert.
@@ -923,18 +923,18 @@ paths:
             examples:
               - 41893910-6bca-11eb-9e0d-85d233e3ee35
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/alert_response_properties'
-        '401':
+                $ref: "#/components/schemas/alert_response_properties"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
     post:
       summary: Create an alert.
       operationId: legacyCreateAlert
@@ -943,7 +943,7 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: "#/components/parameters/kbn_xsrf"
         - in: path
           name: alertId
           description: An UUID v1 or v4 identifier for the alert. If this parameter is omitted, the identifier is randomly generated.
@@ -952,7 +952,7 @@ paths:
             type: string
             examples:
               - 41893910-6bca-11eb-9e0d-85d233e3ee35
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/space_id"
       requestBody:
         required: true
         content:
@@ -1034,18 +1034,18 @@ paths:
                   description: |
                     How often this alert should fire the same actions. This will prevent the alert from sending out the same notification over and over. For example, if an alert with a schedule of 1 minute stays in a triggered state for 90 minutes, setting a throttle of `10m` or `1h` will prevent it from sending 90 notifications during this period.
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/alert_response_properties'
-        '401':
+                $ref: "#/components/schemas/alert_response_properties"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
     put:
       summary: Updates the attributes for an alert.
       operationId: legacyUpdateAlert
@@ -1054,8 +1054,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: The identifier for the alert.
@@ -1134,18 +1134,18 @@ paths:
                   description: |
                     How often this alert should fire the same actions. This will prevent the alert from sending out the same notification over and over. For example, if an alert with a schedule of 1 minute stays in a triggered state for 90 minutes, setting a throttle of `10m` or `1h` will prevent it from sending 90 notifications during this period.
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/alert_response_properties'
-        '401':
+                $ref: "#/components/schemas/alert_response_properties"
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alert/{alertId}/_disable:
     post:
       summary: Disables an alert.
@@ -1155,8 +1155,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: The identifier for the alert.
@@ -1166,14 +1166,14 @@ paths:
             examples:
               - 41893910-6bca-11eb-9e0d-85d233e3ee35
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alert/{alertId}/_enable:
     post:
       summary: Enables an alert.
@@ -1183,8 +1183,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: The identifier for the alert.
@@ -1194,14 +1194,14 @@ paths:
             examples:
               - 41893910-6bca-11eb-9e0d-85d233e3ee35
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alert/{alertId}/_mute_all:
     post:
       summary: Mutes all alert instances.
@@ -1211,8 +1211,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: The identifier for the alert.
@@ -1222,14 +1222,14 @@ paths:
             examples:
               - 41893910-6bca-11eb-9e0d-85d233e3ee35
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alert/{alertId}/_unmute_all:
     post:
       summary: Unmutes all alert instances.
@@ -1239,8 +1239,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: The identifier for the alert.
@@ -1250,14 +1250,14 @@ paths:
             examples:
               - 41893910-6bca-11eb-9e0d-85d233e3ee35
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alerts/_find:
     get:
       summary: Retrieves a paginated set of alerts.
@@ -1268,7 +1268,7 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/space_id"
         - name: default_search_operator
           in: query
           description: The default operator to use for the `simple_query_string`.
@@ -1348,7 +1348,7 @@ paths:
             examples:
               - asc
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
@@ -1358,19 +1358,19 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/alert_response_properties'
+                      $ref: "#/components/schemas/alert_response_properties"
                   page:
                     type: integer
                   perPage:
                     type: integer
                   total:
                     type: integer
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alerts/_health:
     get:
       summary: Retrieves the health status of the alerting framework.
@@ -1380,9 +1380,9 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
@@ -1410,7 +1410,7 @@ paths:
                             type: string
                             format: date-time
                             examples:
-                              - '2023-01-13T01:28:00.280Z'
+                              - "2023-01-13T01:28:00.280Z"
                       executionHealth:
                         type: object
                         description: The timestamp and status of the alert execution.
@@ -1427,7 +1427,7 @@ paths:
                             type: string
                             format: date-time
                             examples:
-                              - '2023-01-13T01:28:00.280Z'
+                              - "2023-01-13T01:28:00.280Z"
                       readHealth:
                         type: object
                         description: The timestamp and status of the alert reading events.
@@ -1444,7 +1444,7 @@ paths:
                             type: string
                             format: date-time
                             examples:
-                              - '2023-01-13T01:28:00.280Z'
+                              - "2023-01-13T01:28:00.280Z"
                   hasPermanentEncryptionKey:
                     type: boolean
                     description: If `false`, the encrypted saved object plugin does not have a permanent encryption key.
@@ -1455,12 +1455,12 @@ paths:
                     description: If `false`, security is enabled but TLS is not.
                     examples:
                       - true
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alerts/list_alert_types:
     get:
       summary: Retrieves a list of alert types.
@@ -1470,9 +1470,9 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/space_id"
       responses:
-        '200':
+        "200":
           description: Indicates a successful call.
           content:
             application/json:
@@ -1557,12 +1557,12 @@ paths:
                           type: string
                         name:
                           type: string
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_mute:
     post:
       summary: Mutes an alert instance.
@@ -1572,8 +1572,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: An identifier for the alert.
@@ -1591,14 +1591,14 @@ paths:
             examples:
               - dceeb5d0-6b41-11eb-802b-85b0c1bc8ba2
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
   /s/{spaceId}/api/alerts/alert/{alertId}/alert_instance/{alertInstanceId}/_unmute:
     post:
       summary: Unmutes an alert instance.
@@ -1608,8 +1608,8 @@ paths:
       tags:
         - alerting
       parameters:
-        - $ref: '#/components/parameters/kbn_xsrf'
-        - $ref: '#/components/parameters/space_id'
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
         - in: path
           name: alertId
           description: An identifier for the alert.
@@ -1627,14 +1627,114 @@ paths:
             examples:
               - dceeb5d0-6b41-11eb-802b-85b0c1bc8ba2
       responses:
-        '204':
+        "204":
           description: Indicates a successful call.
-        '401':
+        "401":
           description: Authorization information is missing or invalid.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/401_response'
+                $ref: "#/components/schemas/401_response"
+  /api/alerting/maintenance_window:
+    post:
+      summary: Create a maintenance window with a random identifier
+      operationId: createMaintenanceWindow
+      description: |
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+      tags:
+        - alerting
+      parameters:
+        - $ref: "#/components/parameters/kbn_xsrf"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/create_maintenance_window_request"
+      responses:
+        "200":
+          description: Indicates a successful call.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/maintenance_window_response_properties"
+        "400":
+          description: Indicates an invalid schema or parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/400_response"
+        "403":
+          description: Indicates that this call is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/403_response"
+  /api/alerting/maintenance_window/{maintenanceWindowId}:
+    get:
+      summary: Get maintenance window details
+      operationId: getMaintenanceWindow
+      description: You must have `read` privileges for the appropriate Kibana features.
+      tags:
+        - alerting
+      parameters:
+        - $ref: "#/components/parameters/maintenance_window_id"
+      responses:
+        "200":
+          description: Indicates a successful call.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/maintenance_window_response_properties"
+        "400":
+          description: Indicates an invalid schema or parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/400_response"
+        "403":
+          description: Indicates that this call is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/403_response"
+        "404":
+          description: Object is not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/404_response"
+    delete:
+      summary: Delete a maintenance window
+      operationId: deleteMaintenanceWindow
+      description: |
+        To delete a rule, you must have `all` privileges for the appropriate Kibana features. WARNING: After you delete a maintenance window, you cannot recover it.
+      tags:
+        - alerting
+      parameters:
+        - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/maintenance_window_id"
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "400":
+          description: Indicates an invalid schema or parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/400_response"
+        "403":
+          description: Indicates that this call is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/403_response"
+        "404":
+          description: Object is not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/404_response"
 components:
   securitySchemes:
     basicAuth:
@@ -1644,7 +1744,7 @@ components:
       type: apiKey
       in: header
       name: Authorization
-      description: 'e.g. Authorization: ApiKey base64AccessApiKey'
+      description: "e.g. Authorization: ApiKey base64AccessApiKey"
   parameters:
     kbn_xsrf:
       schema:
@@ -1680,6 +1780,14 @@ components:
         type: string
         examples:
           - ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+    maintenance_window_id:
+      in: path
+      name: maintenanceWindowId
+      description: An identifier for the maintenance window.
+      required: true
+      schema:
+        type: string
+        example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
   schemas:
     filter:
       type: object
@@ -1691,7 +1799,7 @@ components:
             alias:
               type:
                 - string
-                - 'null'
+                - "null"
             controlledBy:
               type: string
             disabled:
@@ -1731,7 +1839,7 @@ components:
     throttle_action:
       type:
         - string
-        - 'null'
+        - "null"
       description: |
         The throttle interval, which defines how often an alert generates repeated actions. It is specified in seconds, minutes, hours, or days and is applicable only if `notify_when` is set to `onThrottleInterval`. NOTE: You cannot specify the throttle interval at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
       default: null
@@ -1740,7 +1848,7 @@ components:
     actions:
       type:
         - array
-        - 'null'
+        - "null"
       default: []
       items:
         type: object
@@ -1766,7 +1874,7 @@ components:
                   filters:
                     type: array
                     items:
-                      $ref: '#/components/schemas/filter'
+                      $ref: "#/components/schemas/filter"
               timeframe:
                 type: object
                 description: Defines a period that limits whether the action runs.
@@ -1791,12 +1899,12 @@ components:
                         type: string
                         description: The end of the time frame in 24-hour notation (`hh:mm`).
                         examples:
-                          - '17:00'
+                          - "17:00"
                       start:
                         type: string
                         description: The start of the time frame in 24-hour notation (`hh:mm`).
                         examples:
-                          - '08:00'
+                          - "08:00"
                   timezone:
                     type: string
                     description: |
@@ -1818,12 +1926,12 @@ components:
               - summary
             properties:
               notify_when:
-                $ref: '#/components/schemas/notify_when_action'
+                $ref: "#/components/schemas/notify_when_action"
               summary:
                 type: boolean
                 description: Indicates whether the action is a summary.
               throttle:
-                $ref: '#/components/schemas/throttle_action'
+                $ref: "#/components/schemas/throttle_action"
           group:
             type: string
             description: |
@@ -1872,7 +1980,7 @@ components:
     throttle:
       type:
         - string
-        - 'null'
+        - "null"
       description: |
         Deprecated in 8.13.0. Use the `throttle` property in the action `frequency` object instead. The throttle interval, which defines how often an alert generates repeated actions. NOTE: You cannot specify the throttle interval at both the rule and action level. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
       default: null
@@ -1901,7 +2009,7 @@ components:
         - schedule
       properties:
         actions:
-          $ref: '#/components/schemas/actions'
+          $ref: "#/components/schemas/actions"
         consumer:
           type: string
           description: |
@@ -1914,7 +2022,7 @@ components:
           description: The name of the rule. While this name does not have to be unique, a distinctive name can help you identify a rule.
           example: cluster_health_rule
         notify_when:
-          $ref: '#/components/schemas/notify_when'
+          $ref: "#/components/schemas/notify_when"
         params:
           type: object
           description: The parameters for the rule.
@@ -1924,13 +2032,13 @@ components:
           description: |
             The ID of the rule type that you want to call when the rule is scheduled to run. For example, `.es-query`, `.index-threshold`, `logs.alert.document.count`, `monitoring_alert_cluster_health`, `siem.thresholdRule`, or `xpack.ml.anomaly_detection_alert`.
         schedule:
-          $ref: '#/components/schemas/schedule'
+          $ref: "#/components/schemas/schedule"
         tags:
-          $ref: '#/components/schemas/tags'
+          $ref: "#/components/schemas/tags"
         throttle:
-          $ref: '#/components/schemas/throttle'
+          $ref: "#/components/schemas/throttle"
         alert_delay:
-          $ref: '#/components/schemas/alert_delay'
+          $ref: "#/components/schemas/alert_delay"
     rule_response_properties:
       title: Rule response properties
       type: object
@@ -1955,9 +2063,9 @@ components:
         - updated_by
       properties:
         actions:
-          $ref: '#/components/schemas/actions'
+          $ref: "#/components/schemas/actions"
         alert_delay:
-          $ref: '#/components/schemas/alert_delay'
+          $ref: "#/components/schemas/alert_delay"
         api_key_created_by_user:
           type: boolean
           description: Indicates whether the API key that is associated with the rule was created by the user.
@@ -1966,7 +2074,7 @@ components:
         api_key_owner:
           type:
             - string
-            - 'null'
+            - "null"
           description: |
             The owner of the API key that is associated with the rule and used to run background tasks.
           examples:
@@ -1981,11 +2089,11 @@ components:
           description: The date and time that the rule was created.
           format: date-time
           examples:
-            - '2022-12-05T23:36:58.284Z'
+            - "2022-12-05T23:36:58.284Z"
         created_by:
           type:
             - string
-            - 'null'
+            - "null"
           description: The identifier for the user that created the rule.
           examples:
             - elastic
@@ -2005,7 +2113,7 @@ components:
               type: string
               format: date-time
               examples:
-                - '2022-12-06T00:13:43.890Z'
+                - "2022-12-06T00:13:43.890Z"
             status:
               type: string
               examples:
@@ -2036,7 +2144,7 @@ components:
             outcome_msg:
               type:
                 - array
-                - 'null'
+                - "null"
               items:
                 type: string
             outcome_order:
@@ -2044,13 +2152,13 @@ components:
             warning:
               type:
                 - string
-                - 'null'
+                - "null"
               examples:
                 - null
         muted_alert_ids:
           type:
             - array
-            - 'null'
+            - "null"
           items:
             type: string
         mute_all:
@@ -2065,14 +2173,14 @@ components:
         next_run:
           type:
             - string
-            - 'null'
+            - "null"
           format: date-time
           examples:
-            - '2022-12-06T00:14:43.818Z'
+            - "2022-12-06T00:14:43.818Z"
         notify_when:
           type:
             - string
-            - 'null'
+            - "null"
           description: Indicates how often alerts generate actions.
         params:
           type: object
@@ -2091,24 +2199,24 @@ components:
           type: boolean
           description: Indicates whether the rule is running.
         schedule:
-          $ref: '#/components/schemas/schedule'
+          $ref: "#/components/schemas/schedule"
         scheduled_task_id:
           type: string
           examples:
             - b530fed0-74f5-11ed-9801-35303b735aef
         tags:
-          $ref: '#/components/schemas/tags'
+          $ref: "#/components/schemas/tags"
         throttle:
-          $ref: '#/components/schemas/throttle'
+          $ref: "#/components/schemas/throttle"
         updated_at:
           type: string
           description: The date and time that the rule was updated most recently.
           examples:
-            - '2022-12-05T23:36:58.284Z'
+            - "2022-12-05T23:36:58.284Z"
         updated_by:
           type:
             - string
-            - 'null'
+            - "null"
           description: The identifier for the user that updated this rule most recently.
           examples:
             - elastic
@@ -2160,26 +2268,26 @@ components:
         - schedule
       properties:
         actions:
-          $ref: '#/components/schemas/actions'
+          $ref: "#/components/schemas/actions"
         alert_delay:
-          $ref: '#/components/schemas/alert_delay'
+          $ref: "#/components/schemas/alert_delay"
         name:
           type: string
           description: The name of the rule.
           examples:
             - cluster_health_rule
         notify_when:
-          $ref: '#/components/schemas/notify_when'
+          $ref: "#/components/schemas/notify_when"
         params:
           type: object
           description: The parameters for the rule.
           additionalProperties: true
         schedule:
-          $ref: '#/components/schemas/schedule'
+          $ref: "#/components/schemas/schedule"
         tags:
-          $ref: '#/components/schemas/tags'
+          $ref: "#/components/schemas/tags"
         throttle:
-          $ref: '#/components/schemas/throttle'
+          $ref: "#/components/schemas/throttle"
     fieldmap_properties:
       title: Field map objects in the get rule types response
       type: object
@@ -2219,7 +2327,7 @@ components:
         scaling_factor:
           type: integer
           description: |
-            The scaling factor to use when encoding values. This property is applicable when `type` is `scaled_float`. Values will be multiplied by this factor at index time and rounded to the closest long value. 
+            The scaling factor to use when encoding values. This property is applicable when `type` is `scaled_float`. Values will be multiplied by this factor at index time and rounded to the closest long value.
         type:
           type: string
           description: Specifies the data type for the field.
@@ -2257,7 +2365,7 @@ components:
         apiKeyOwner:
           type:
             - string
-            - 'null'
+            - "null"
           examples:
             - elastic
         createdAt:
@@ -2265,7 +2373,7 @@ components:
           description: The date and time that the alert was created.
           format: date-time
           examples:
-            - '2022-12-05T23:36:58.284Z'
+            - "2022-12-05T23:36:58.284Z"
         createdBy:
           type: string
           description: The identifier for the user that created the alert.
@@ -2283,7 +2391,7 @@ components:
               type: string
               format: date-time
               examples:
-                - '2022-12-06T00:13:43.890Z'
+                - "2022-12-06T00:13:43.890Z"
             status:
               type: string
               examples:
@@ -2300,7 +2408,7 @@ components:
         mutedInstanceIds:
           type:
             - array
-            - 'null'
+            - "null"
           items:
             type: string
         name:
@@ -2331,18 +2439,110 @@ components:
         throttle:
           type:
             - string
-            - 'null'
+            - "null"
         updatedAt:
           type: string
           examples:
-            - '2022-12-05T23:36:58.284Z'
+            - "2022-12-05T23:36:58.284Z"
         updatedBy:
           type:
             - string
-            - 'null'
+            - "null"
           description: The identifier for the user that updated this alert most recently.
           examples:
             - elastic
+    create_maintenance_window_request:
+      title: Create maintenance window request body properties
+      description: The properties used to create a maintenance window.
+      type: object
+      required:
+        - title
+        - start
+        - duration
+      properties:
+        title:
+          type: string
+          description: |
+            The name of the maintenance window. While this name does not have to be unique, a distinctive name can help you identify a maintenance window.
+        enabled:
+          type: boolean
+          description: Indicates whether the maintenance window is currently enabled.
+          example: true
+        duration:
+          type: number
+        start:
+          type: string
+          description: An ISO date.
+    maintenance_window_response_properties:
+      title: Maintenance window response properties
+      type: object
+      required:
+        - id
+        - title
+        - enabled
+        - created_by
+        - created_at
+        - updated_by
+        - updated_at
+        - status
+        - start
+        - duration
+      properties:
+        id:
+          type: string
+          description: The identifier for the maintenance window.
+          example: b530fed0-74f5-11ed-9801-35303b735aef
+        title:
+          type: string
+          description: The name of the maintenance window.
+          example: ESQuery Maintenance Window
+        start:
+          type: string
+          description: The start date of the maintenance window.
+        duration:
+          type: number
+          description: The duration of the maintenance window.
+        enabled:
+          type: boolean
+          description: Indicates whether the maintenance window is currently enabled.
+          example: true
+        created_by:
+          type: string
+          description: The identifier for the user that created the maintenance window.
+          nullable: true
+          example: elastic
+        created_at:
+          type: string
+          description: The date and time in which the maintenance window was created.
+          format: date-time
+          example: "2022-12-05T23:36:58.284Z"
+        updated_by:
+          type: string
+          description: The identifier for the user that updated this maintenance window most recently.
+          nullable: true
+          example: elastic
+        updated_at:
+          type: string
+          description: The date and time that the maintenance window was updated most recently.
+          example: "2022-12-05T23:36:58.284Z"
+        status:
+          type: string
+          description: The status of the maintenance window. One of the following values `running`, `upcoming`, `finished` or `archived`.
+          example: running
+    403_response:
+      type: object
+      properties:
+        statusCode:
+          type: number
+          example: 403
+          description: Error status code
+        error:
+          type: string
+          example: Forbidden
+          description: Error type
+        message:
+          type: string
+          description: Error message
   examples:
     create_es_query_esql_rule_request:
       summary: Create an Elasticsearch query rule that uses Elasticsearch Query Language (ES|QL).
@@ -2352,11 +2552,11 @@ components:
           searchType: esqlQuery
           esqlQuery:
             esql: FROM kibana_sample_data_logs | KEEP bytes, clientip, host, geo.dest | where geo.dest != "GB" | STATS sumbytes = sum(bytes) by clientip, host | WHERE sumbytes > 5000 | SORT sumbytes desc | LIMIT 10
-          timeField: '@timestamp'
+          timeField: "@timestamp"
           timeWindowSize: 1
           timeWindowUnit: d
           size: 0
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           threshold:
             - 0
         consumer: stackAlerts
@@ -2404,8 +2604,8 @@ components:
           size: 100
           threshold:
             - 100
-          thresholdComparator: '>'
-          timeField: '@timestamp'
+          thresholdComparator: ">"
+          timeField: "@timestamp"
           timeWindowSize: 1
           timeWindowUnit: d
         rule_type_id: .es-query
@@ -2429,7 +2629,7 @@ components:
           size: 100
           threshold:
             - 1000
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           timeWindowSize: 5
           timeWindowUnit: m
         rule_type_id: .es-query
@@ -2459,7 +2659,7 @@ components:
         params:
           aggType: avg
           termSize: 6
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           timeWindowSize: 5
           timeWindowUnit: m
           groupBy: top
@@ -2467,7 +2667,7 @@ components:
             - 1000
           index:
             - .test-index
-          timeField: '@timestamp'
+          timeField: "@timestamp"
           aggField: sheet.version
           termField: name.keyword
         rule_type_id: .index-threshold
@@ -2482,7 +2682,7 @@ components:
         name: my tracking rule
         params:
           index: kibana_sample_data_logs
-          dateField": '@timestamp'
+          dateField": "@timestamp"
           geoField: geo.coordinates
           entity: agent.keyword
           boundaryType: entireIndex
@@ -2523,11 +2723,11 @@ components:
           searchType: esqlQuery
           esqlQuery:
             esql: FROM kibana_sample_data_logs | keep bytes, clientip, host, geo.dest | WHERE geo.dest != "GB" | stats sumbytes = sum(bytes) by clientip, host | WHERE sumbytes > 5000 | sort sumbytes desc | limit 10
-          timeField: '@timestamp'
+          timeField: "@timestamp"
           timeWindowSize: 1
           timeWindowUnit: d
           size: 0
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           threshold:
             - 0
           excludeHitsFromPreviousRun": true,
@@ -2536,8 +2736,8 @@ components:
         scheduled_task_id: e0d62360-78e8-11ee-9177-f7d404c8c945
         created_by: elastic
         updated_by: elastic",
-        created_at: '2023-11-01T19:00:10.453Z'
-        updated_at: '2023-11-01T19:00:10.453Z'
+        created_at: "2023-11-01T19:00:10.453Z"
+        updated_at: "2023-11-01T19:00:10.453Z"
         api_key_owner: elastic
         api_key_created_by_user: false
         throttle: null
@@ -2546,7 +2746,7 @@ components:
         muted_alert_ids: []
         execution_status:
           status: pending
-          last_execution_date: '2023-11-01T19:00:10.453Z'
+          last_execution_date: "2023-11-01T19:00:10.453Z"
         revision: 0
         running: false
     create_es_query_rule_response:
@@ -2584,13 +2784,13 @@ components:
               throttle: null
             uuid: 2324e45b-c0df-45c7-9d70-4993e30be758
         params:
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           timeWindowSize: 1
           timeWindowUnit: d
           threshold:
             - 100
           size: 100
-          timeField: '@timestamp'
+          timeField: "@timestamp"
           index:
             - kibana_sample_data_logs
           esQuery: '"""{"query":{"match_all" : {}}}"""'
@@ -2601,8 +2801,8 @@ components:
         scheduled_task_id: 58148c70-407f-11ee-850e-c71febc4ca7f
         created_by: elastic
         updated_by: elastic
-        created_at: '2023-08-22T00:03:38.263Z'
-        updated_at: '2023-08-22T00:03:38.263Z'
+        created_at: "2023-08-22T00:03:38.263Z"
+        updated_at: "2023-08-22T00:03:38.263Z"
         api_key_owner: elastic
         api_key_created_by_user: false
         throttle: null
@@ -2611,7 +2811,7 @@ components:
         muted_alert_ids: []
         execution_status:
           status: pending
-          last_execution_date: '2023-08-22T00:03:38.263Z'
+          last_execution_date: "2023-08-22T00:03:38.263Z"
         revision: 0
         running: false
     create_es_query_kql_rule_response:
@@ -2637,15 +2837,15 @@ components:
           timeWindowUnit: m
           threshold:
             - 1000
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           size: 100
           aggType: count
           groupBy: all
           excludeHitsFromPreviousRun: true
         created_by: elastic
         updated_by: elastic
-        created_at: '2023-07-14T20:24:50.729Z'
-        updated_at: '2023-07-14T20:24:50.729Z'
+        created_at: "2023-07-14T20:24:50.729Z"
+        updated_at: "2023-07-14T20:24:50.729Z"
         api_key_owner: elastic
         api_key_created_by_user: false
         throttle: null
@@ -2655,7 +2855,7 @@ components:
         scheduled_task_id: 7bd506d0-2284-11ee-8fad-6101956ced88
         execution_status:
           status: pending
-          last_execution_date: '2023-07-14T20:24:50.729Z'
+          last_execution_date: "2023-07-14T20:24:50.729Z"
         revision: 0
         running: false
     create_index_threshold_rule_response:
@@ -2683,11 +2883,11 @@ components:
         api_key_created_by_user: false
         api_key_owner: elastic
         consumer: alerts
-        created_at: '2022-06-08T17:20:31.632Z'
+        created_at: "2022-06-08T17:20:31.632Z"
         created_by: elastic
         enabled: true
         execution_status:
-          last_execution_date: '2022-06-08T17:20:31.632Z'
+          last_execution_date: "2022-06-08T17:20:31.632Z"
           status: pending
         id: 41893910-6bca-11eb-9e0d-85d233e3ee35
         muted_alert_ids: []
@@ -2697,7 +2897,7 @@ components:
         params:
           aggType: avg
           termSize: 6
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           timeWindowSize: 5
           timeWindowUnit: m
           groupBy: top
@@ -2705,7 +2905,7 @@ components:
             - 1000
           index:
             - .test-index
-          timeField: '@timestamp'
+          timeField: "@timestamp"
           aggField: sheet.version
           termField: name.keyword
         revision: 0
@@ -2717,7 +2917,7 @@ components:
         tags:
           - cpu
         throttle: null
-        updated_at: '2022-06-08T17:20:31.632Z'
+        updated_at: "2022-06-08T17:20:31.632Z"
         updated_by: elastic
     create_tracking_containment_rule_response:
       summary: The create rule API returns a JSON object that contains details about the rule.
@@ -2734,7 +2934,7 @@ components:
           interval: 1h
         params:
           index: kibana_sample_data_logs
-          dateField: '@timestamp'
+          dateField: "@timestamp"
           geoField: geo.coordinates
           entity: agent.keyword
           boundaryType: entireIndex
@@ -2746,8 +2946,8 @@ components:
         rule_type_id: .geo-containment
         created_by: elastic
         updated_by: elastic
-        created_at: '2024-02-14T19:52:55.920Z'
-        updated_at: '2024-02-15T03:24:32.574Z'
+        created_at: "2024-02-14T19:52:55.920Z"
+        updated_at: "2024-02-15T03:24:32.574Z"
         api_key_owner: elastic
         notify_when: null
         mute_all: false
@@ -2755,7 +2955,7 @@ components:
         scheduled_task_id: b6883f9d-5f70-4758-a66e-369d7c26012f
         execution_status:
           status: ok
-          last_execution_date: '2024-02-15T03:25:38.125Z'
+          last_execution_date: "2024-02-15T03:25:38.125Z"
           last_duration: 74
         actions: []
         last_run:
@@ -2768,7 +2968,7 @@ components:
           outcome_order: 0
           outcome: succeeded
           warning: null
-        next_run: '2024-02-15T03:26:38.033Z'
+        next_run: "2024-02-15T03:26:38.033Z"
         api_key_created_by_user: false
     get_rule_response:
       summary: The get rule API returns a JSON object that contains details about the rule.
@@ -2785,7 +2985,7 @@ components:
         params:
           aggType: avg
           termSize: 6
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           timeWindowSize: 5
           timeWindowUnit: m
           groupBy: top
@@ -2793,15 +2993,15 @@ components:
             - 1000
           index:
             - test-index
-          timeField: '@timestamp'
+          timeField: "@timestamp"
           aggField: sheet.version
           termField: name.keyword
         revision: 1
         rule_type_id: .index-threshold
         created_by: elastic
         updated_by: elastic
-        created_at: '2022-12-13T22:33:41.163Z'
-        updated_at: '2022-12-13T22:33:41.163Z'
+        created_at: "2022-12-13T22:33:41.163Z"
+        updated_at: "2022-12-13T22:33:41.163Z"
         api_key_owner: elastic
         notify_when: null
         muted_alert_ids: []
@@ -2809,7 +3009,7 @@ components:
         scheduled_task_id: 31697a40-7b36-11ed-aa79-f742c05329b2
         execution_status:
           status: ok
-          last_execution_date: '2022-12-13T22:33:44.388Z'
+          last_execution_date: "2022-12-13T22:33:44.388Z"
           last_duration: 83
         actions:
           - group: threshold met
@@ -2838,7 +3038,7 @@ components:
           outcome_msg: null
           warning: null
           outcome: succeeded
-        next_run: '2022-12-13T22:34:44.314Z'
+        next_run: "2022-12-13T22:34:44.314Z"
         api_key_created_by_user: false
     update_rule_request:
       summary: Update an index threshold rule.
@@ -2867,8 +3067,8 @@ components:
           termSize: 6
           threshold:
             - 1000
-          thresholdComparator: '>'
-          timeField: '@timestamp'
+          thresholdComparator: ">"
+          timeField: "@timestamp"
           timeWindowSize: 5
           timeWindowUnit: m
         name: new name
@@ -2891,12 +3091,12 @@ components:
         params:
           index:
             - .updated-index
-          timeField: '@timestamp'
+          timeField: "@timestamp"
           groupBy: top
           aggType: avg
           timeWindowSize: 5
           timeWindowUnit: m
-          thresholdComparator: '>'
+          thresholdComparator: ">"
           threshold:
             - 1000
           aggField: sheet.version
@@ -2907,13 +3107,13 @@ components:
         updated_by: elastic
         rule_type_id: .index-threshold
         scheduled_task_id: 4c5eda00-e74f-11ec-b72f-5b18752ff9ea
-        created_at: '2024-03-26T23:13:20.985Z'
-        updated_at: '2024-03-26T23:22:59.949Z'
+        created_at: "2024-03-26T23:13:20.985Z"
+        updated_at: "2024-03-26T23:22:59.949Z"
         mute_all: false
         muted_alert_ids: []
         execution_status:
           status: ok
-          last_execution_date: '2024-03-26T23:22:51.390Z'
+          last_execution_date: "2024-03-26T23:22:51.390Z"
           last_duration: 52
         actions:
           - group: threshold met
@@ -2941,7 +3141,7 @@ components:
           outcome_msg: null
           warning: null
           outcome: succeeded
-        next_run: '2024-03-26T23:23:51.316Z'
+        next_run: "2024-03-26T23:23:51.316Z"
         api_key_created_by_user: false
     find_rules_response:
       summary: Retrieve information about a rule.
@@ -2962,7 +3162,7 @@ components:
             params:
               aggType: avg
               termSize: 6
-              thresholdComparator: '>'
+              thresholdComparator: ">"
               timeWindowSize: 5
               timeWindowUnit: m
               groupBy: top
@@ -2970,22 +3170,22 @@ components:
                 - 1000
               index:
                 - test-index
-              timeField: '@timestamp'
+              timeField: "@timestamp"
               aggField: sheet.version
               termField: name.keyword
             revision: 1
             rule_type_id: .index-threshold
             created_by: elastic
             updated_by: elastic
-            created_at: '2022-12-05T23:40:33.132Z'
-            updated_at: '2022-12-05T23:40:33.132Z'
+            created_at: "2022-12-05T23:40:33.132Z"
+            updated_at: "2022-12-05T23:40:33.132Z"
             api_key_owner: elastic
             mute_all: false
             muted_alert_ids: []
             scheduled_task_id: 3583a470-74f6-11ed-9801-35303b735aef
             execution_status:
               status: ok
-              last_execution_date: '2022-12-06T01:44:23.983Z'
+              last_execution_date: "2022-12-06T01:44:23.983Z"
               last_duration: 48
             actions:
               - id: 9dca3e00-74f5-11ed-9801-35303b735aef
@@ -3013,7 +3213,7 @@ components:
               outcome_msg: null
               warning: null
               outcome: succeeded
-            next_run: '2022-12-06T01:45:23.912Z'
+            next_run: "2022-12-06T01:45:23.912Z"
             api_key_created_by_user: false
     find_rules_response_conditional_action:
       summary: Retrieve information about a rule that has conditional actions.
@@ -3039,8 +3239,8 @@ components:
               falsePositives: []
               from: now-3660s
               immutable: false
-              license: ''
-              outputIndex: ''
+              license: ""
+              outputIndex: ""
               meta:
                 from: 1h
                 kibana_siem_app_url: https://localhost:5601/app/security
@@ -3058,7 +3258,7 @@ components:
               language: kuery
               index:
                 - kibana_sample_data_logs
-              query: '*'
+              query: "*"
               filters: []
               threshold:
                 field:
@@ -3068,8 +3268,8 @@ components:
             rule_type_id: siem.thresholdRule
             created_by: elastic
             updated_by: elastic
-            created_at: '2023-05-16T15:50:28.358Z'
-            updated_at: '2023-05-16T20:25:42.559Z'
+            created_at: "2023-05-16T15:50:28.358Z"
+            updated_at: "2023-05-16T20:25:42.559Z"
             api_key_owner: elastic
             notify_when: null
             mute_all: false
@@ -3077,7 +3277,7 @@ components:
             scheduled_task_id: 6107a8f0-f401-11ed-9f8e-399c75a2deeb
             execution_status:
               status: ok
-              last_execution_date: '2023-05-16T20:26:49.590Z'
+              last_execution_date: "2023-05-16T20:26:49.590Z"
               last_duration: 166
             actions:
               - group: default
@@ -3085,13 +3285,13 @@ components:
                 params:
                   documents:
                     - rule_id:
-                        '[object Object]': null
+                        "[object Object]": null
                       rule_name:
-                        '[object Object]': null
+                        "[object Object]": null
                       alert_id:
-                        '[object Object]': null
+                        "[object Object]": null
                       context_message:
-                        '[object Object]': null
+                        "[object Object]": null
                 connector_type_id: .index
                 frequency:
                   summary: true
@@ -3104,10 +3304,10 @@ components:
                       - 7
                     timezone: UTC
                     hours:
-                      start: '08:00'
-                      end: '17:00'
+                      start: "08:00"
+                      end: "17:00"
                   query:
-                    kql: ''
+                    kql: ""
                     filters:
                       - meta:
                           disabled: false
@@ -3135,7 +3335,7 @@ components:
               outcome_order: 0
               warning: null
               outcome: succeeded
-            next_run: '2023-05-16T20:27:49.507Z'
+            next_run: "2023-05-16T20:27:49.507Z"
             api_key_created_by_user: false
     get_health_response:
       summary: Retrieve information about the health of the alerting framework.
@@ -3145,13 +3345,13 @@ components:
         alerting_framework_health:
           decryption_health:
             status: ok
-            timestamp: '2023-01-13T01:28:00.280Z'
+            timestamp: "2023-01-13T01:28:00.280Z"
           execution_health:
             status: ok
-            timestamp: '2023-01-13T01:28:00.280Z'
+            timestamp: "2023-01-13T01:28:00.280Z"
           read_health:
             status: ok
-            timestamp: '2023-01-13T01:28:00.280Z'
+            timestamp: "2023-01-13T01:28:00.280Z"
     get_rule_types_response:
       summary: Retrieve rule types associated with Kibana machine learning features
       value:

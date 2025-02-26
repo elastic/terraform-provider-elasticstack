@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **Path** | Pointer to **string** | TBD | [optional] 
 **Properties** | Pointer to  | Details about the object properties. This property is applicable when &#x60;type&#x60; is &#x60;object&#x60;.  | [optional] 
 **Required** | Pointer to **bool** | Indicates whether the field is required. | [optional] 
-**ScalingFactor** | Pointer to **int32** | The scaling factor to use when encoding values. This property is applicable when &#x60;type&#x60; is &#x60;scaled_float&#x60;. Values will be multiplied by this factor at index time and rounded to the closest long value.   | [optional] 
+**ScalingFactor** | Pointer to **int32** | The scaling factor to use when encoding values. This property is applicable when &#x60;type&#x60; is &#x60;scaled_float&#x60;. Values will be multiplied by this factor at index time and rounded to the closest long value.  | [optional] 
 **Type** | Pointer to **string** | Specifies the data type for the field. | [optional] 
 
 ## Methods

@@ -16,6 +16,7 @@ docs/AlertResponseProperties.md
 docs/AlertResponsePropertiesExecutionStatus.md
 docs/AlertResponsePropertiesSchedule.md
 docs/AlertingAPI.md
+docs/CreateMaintenanceWindowRequest.md
 docs/CreateRuleRequest.md
 docs/FieldmapProperties.md
 docs/FieldmapPropertiesPropertiesValue.md
@@ -54,10 +55,13 @@ docs/LegacyGetAlertingHealth200ResponseAlertingFrameworkHealthReadHealth.md
 docs/LegacyUpdateAlertRequestProperties.md
 docs/LegacyUpdateAlertRequestPropertiesActionsInner.md
 docs/LegacyUpdateAlertRequestPropertiesSchedule.md
+docs/MaintenanceWindowResponseProperties.md
 docs/Model400Response.md
 docs/Model401Response.md
+docs/Model403Response.md
 docs/Model404Response.md
 docs/NotifyWhen.md
+docs/NotifyWhenAction.md
 docs/RuleResponseProperties.md
 docs/RuleResponsePropertiesExecutionStatus.md
 docs/RuleResponsePropertiesLastRun.md
@@ -69,6 +73,7 @@ go.mod
 go.sum
 model_400_response.go
 model_401_response.go
+model_403_response.go
 model_404_response.go
 model_actions_inner.go
 model_actions_inner_alerts_filter.go
@@ -80,6 +85,7 @@ model_alert_delay.go
 model_alert_response_properties.go
 model_alert_response_properties_execution_status.go
 model_alert_response_properties_schedule.go
+model_create_maintenance_window_request.go
 model_create_rule_request.go
 model_fieldmap_properties.go
 model_fieldmap_properties_properties_value.go
@@ -118,6 +124,7 @@ model_legacy_get_alerting_health_200_response_alerting_framework_health_read_hea
 model_legacy_update_alert_request_properties.go
 model_legacy_update_alert_request_properties_actions_inner.go
 model_legacy_update_alert_request_properties_schedule.go
+model_maintenance_window_response_properties.go
 model_notify_when.go
 model_notify_when_action.go
 model_rule_response_properties.go

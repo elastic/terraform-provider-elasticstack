@@ -1065,6 +1065,106 @@ paths:
       summary: Unmutes an alert instance.
       tags:
       - alerting
+  /api/alerting/maintenance_window:
+    post:
+      description: |
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+      operationId: createMaintenanceWindow
+      parameters:
+      - $ref: '#/components/parameters/kbn_xsrf'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/create_maintenance_window_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/maintenance_window_response_properties'
+          description: Indicates a successful call.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+          description: Indicates an invalid schema or parameters.
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Indicates that this call is forbidden.
+      summary: Create a maintenance window with a random identifier
+      tags:
+      - alerting
+  /api/alerting/maintenance_window/{maintenanceWindowId}:
+    delete:
+      description: |
+        To delete a rule, you must have `all` privileges for the appropriate Kibana features. WARNING: After you delete a maintenance window, you cannot recover it.
+      operationId: deleteMaintenanceWindow
+      parameters:
+      - $ref: '#/components/parameters/kbn_xsrf'
+      - $ref: '#/components/parameters/maintenance_window_id'
+      responses:
+        "204":
+          description: Indicates a successful call.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+          description: Indicates an invalid schema or parameters.
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Indicates that this call is forbidden.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Object is not found.
+      summary: Delete a maintenance window
+      tags:
+      - alerting
+    get:
+      description: You must have `read` privileges for the appropriate Kibana features.
+      operationId: getMaintenanceWindow
+      parameters:
+      - $ref: '#/components/parameters/maintenance_window_id'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/maintenance_window_response_properties'
+          description: Indicates a successful call.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+          description: Indicates an invalid schema or parameters.
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Indicates that this call is forbidden.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Object is not found.
+      summary: Get maintenance window details
+      tags:
+      - alerting
 components:
   examples:
     create_es_query_esql_rule_request:
@@ -2148,6 +2248,15 @@ components:
       required: true
       schema: {}
       style: simple
+    maintenance_window_id:
+      description: An identifier for the maintenance window.
+      explode: false
+      in: path
+      name: maintenanceWindowId
+      required: true
+      schema:
+        example: ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74
+      style: simple
   schemas:
     filter:
       description: A filter written in Elasticsearch Query Domain Specific Language
@@ -2652,10 +2761,8 @@ components:
           description: Indicates whether the field is required.
           type: boolean
         scaling_factor:
-          description: "The scaling factor to use when encoding values. This property\
-            \ is applicable when `type` is `scaled_float`. Values will be multiplied\
-            \ by this factor at index time and rounded to the closest long value.\
-            \ \n"
+          description: |
+            The scaling factor to use when encoding values. This property is applicable when `type` is `scaled_float`. Values will be multiplied by this factor at index time and rounded to the closest long value.
           type: integer
         type:
           description: Specifies the data type for the field.
@@ -2767,6 +2874,109 @@ components:
           nullable: true
           type: string
       title: Legacy alert response properties
+    create_maintenance_window_request:
+      description: The properties used to create a maintenance window.
+      properties:
+        title:
+          description: |
+            The name of the maintenance window. While this name does not have to be unique, a distinctive name can help you identify a maintenance window.
+          type: string
+        enabled:
+          description: Indicates whether the maintenance window is currently enabled.
+          example: true
+          type: boolean
+        duration:
+          type: number
+        start:
+          description: An ISO date.
+          type: string
+      required:
+      - duration
+      - start
+      - title
+      title: Create maintenance window request body properties
+    maintenance_window_response_properties:
+      example:
+        duration: 0.8008281904610115
+        updated_at: 2022-12-05T23:36:58.284Z
+        start: start
+        updated_by: elastic
+        created_at: 2022-12-05T23:36:58.284Z
+        id: b530fed0-74f5-11ed-9801-35303b735aef
+        title: ESQuery Maintenance Window
+        created_by: elastic
+        enabled: true
+        status: running
+      properties:
+        id:
+          description: The identifier for the maintenance window.
+          example: b530fed0-74f5-11ed-9801-35303b735aef
+          type: string
+        title:
+          description: The name of the maintenance window.
+          example: ESQuery Maintenance Window
+          type: string
+        start:
+          description: The start date of the maintenance window.
+          type: string
+        duration:
+          description: The duration of the maintenance window.
+          type: number
+        enabled:
+          description: Indicates whether the maintenance window is currently enabled.
+          example: true
+          type: boolean
+        created_by:
+          description: The identifier for the user that created the maintenance window.
+          example: elastic
+          type: string
+          nullable: true
+        created_at:
+          description: The date and time in which the maintenance window was created.
+          example: 2022-12-05T23:36:58.284Z
+          format: date-time
+          type: string
+        updated_by:
+          description: The identifier for the user that updated this maintenance window
+            most recently.
+          example: elastic
+          type: string
+          nullable: true
+        updated_at:
+          description: The date and time that the maintenance window was updated most
+            recently.
+          example: 2022-12-05T23:36:58.284Z
+          type: string
+        status:
+          description: "The status of the maintenance window. One of the following\
+            \ values `running`, `upcoming`, `finished` or `archived`."
+          example: running
+          type: string
+      required:
+      - created_at
+      - created_by
+      - duration
+      - enabled
+      - id
+      - start
+      - status
+      - title
+      - updated_at
+      - updated_by
+      title: Maintenance window response properties
+    "403_response":
+      properties:
+        statusCode:
+          description: Error status code
+          example: 403
+          type: number
+        error:
+          description: Error type
+          example: Forbidden
+          type: string
+        message:
+          description: Error message
+          type: string
     findRules_has_reference_parameter:
       properties:
         id:
