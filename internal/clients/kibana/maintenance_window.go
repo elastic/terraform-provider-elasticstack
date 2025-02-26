@@ -19,6 +19,7 @@ func maintenanceWindowResponseToModel(res *alerting.MaintenanceWindowResponsePro
 	}
 
 	return &models.MaintenanceWindow{
+		Id:       res.Id,
 		Title:    res.Title,
 		Enabled:  res.Enabled,
 		Start:    res.Start,

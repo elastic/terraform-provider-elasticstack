@@ -110,7 +110,7 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 		if !alerting.IsNil(action.Frequency) {
 			frequency := alerting.ActionsInnerFrequency{
 				Summary:    action.Frequency.Summary,
-				NotifyWhen: (alerting.NotifyWhen)(action.Frequency.NotifyWhen),
+				NotifyWhen: (alerting.NotifyWhenAction)(action.Frequency.NotifyWhen),
 			}
 
 			if action.Frequency.Throttle != nil {
