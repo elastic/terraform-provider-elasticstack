@@ -4,13 +4,16 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**CreateMaintenanceWindow**](AlertingAPI.md#CreateMaintenanceWindow) | **Post** /api/alerting/maintenance_window | Create a maintenance window with a random identifier
 [**CreateRule**](AlertingAPI.md#CreateRule) | **Post** /s/{spaceId}/api/alerting/rule | Creates a rule with a randomly generated rule identifier.
 [**CreateRuleId**](AlertingAPI.md#CreateRuleId) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule with a specific rule identifier.
+[**DeleteMaintenanceWindow**](AlertingAPI.md#DeleteMaintenanceWindow) | **Delete** /api/alerting/maintenance_window/{maintenanceWindowId} | Delete a maintenance window
 [**DeleteRule**](AlertingAPI.md#DeleteRule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
 [**DisableRule**](AlertingAPI.md#DisableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
 [**EnableRule**](AlertingAPI.md#EnableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
 [**FindRules**](AlertingAPI.md#FindRules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
 [**GetAlertingHealth**](AlertingAPI.md#GetAlertingHealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
+[**GetMaintenanceWindow**](AlertingAPI.md#GetMaintenanceWindow) | **Get** /api/alerting/maintenance_window/{maintenanceWindowId} | Get maintenance window details
 [**GetRule**](AlertingAPI.md#GetRule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
 [**GetRuleTypes**](AlertingAPI.md#GetRuleTypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
 [**LegacyCreateAlert**](AlertingAPI.md#LegacyCreateAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.
@@ -33,6 +36,74 @@ Method | HTTP request | Description
 [**UpdateRule**](AlertingAPI.md#UpdateRule) | **Put** /s/{spaceId}/api/alerting/rule/{ruleId} | Updates the attributes for a rule.
 [**UpdateRuleAPIKey**](AlertingAPI.md#UpdateRuleAPIKey) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_update_api_key | Updates the API key for a rule.
 
+
+
+## CreateMaintenanceWindow
+
+> MaintenanceWindowResponseProperties CreateMaintenanceWindow(ctx).KbnXsrf(kbnXsrf).CreateMaintenanceWindowRequest(createMaintenanceWindowRequest).Execute()
+
+Create a maintenance window with a random identifier
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
+    createMaintenanceWindowRequest := *openapiclient.NewCreateMaintenanceWindowRequest("Title_example", float32(123), "Start_example") // CreateMaintenanceWindowRequest | 
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.AlertingAPI.CreateMaintenanceWindow(context.Background()).KbnXsrf(kbnXsrf).CreateMaintenanceWindowRequest(createMaintenanceWindowRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.CreateMaintenanceWindow``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `CreateMaintenanceWindow`: MaintenanceWindowResponseProperties
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.CreateMaintenanceWindow`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiCreateMaintenanceWindowRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+ **createMaintenanceWindowRequest** | [**CreateMaintenanceWindowRequest**](CreateMaintenanceWindowRequest.md) |  | 
+
+### Return type
+
+[**MaintenanceWindowResponseProperties**](MaintenanceWindowResponseProperties.md)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
 
 
 ## CreateRule
@@ -179,6 +250,76 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## DeleteMaintenanceWindow
+
+> DeleteMaintenanceWindow(ctx, maintenanceWindowId).KbnXsrf(kbnXsrf).Execute()
+
+Delete a maintenance window
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
+    maintenanceWindowId := TODO // interface{} | An identifier for the maintenance window.
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    r, err := apiClient.AlertingAPI.DeleteMaintenanceWindow(context.Background(), maintenanceWindowId).KbnXsrf(kbnXsrf).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.DeleteMaintenanceWindow``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**maintenanceWindowId** | [**interface{}**](.md) | An identifier for the maintenance window. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiDeleteMaintenanceWindowRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+
+
+### Return type
+
+ (empty response body)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
@@ -550,6 +691,76 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**GetAlertingHealth200Response**](GetAlertingHealth200Response.md)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## GetMaintenanceWindow
+
+> MaintenanceWindowResponseProperties GetMaintenanceWindow(ctx, maintenanceWindowId).Execute()
+
+Get maintenance window details
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    maintenanceWindowId := TODO // interface{} | An identifier for the maintenance window.
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.AlertingAPI.GetMaintenanceWindow(context.Background(), maintenanceWindowId).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.GetMaintenanceWindow``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `GetMaintenanceWindow`: MaintenanceWindowResponseProperties
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.GetMaintenanceWindow`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**maintenanceWindowId** | [**interface{}**](.md) | An identifier for the maintenance window. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiGetMaintenanceWindowRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+
+
+### Return type
+
+[**MaintenanceWindowResponseProperties**](MaintenanceWindowResponseProperties.md)
 
 ### Authorization
 
