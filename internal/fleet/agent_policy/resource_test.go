@@ -230,7 +230,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = true
   monitor_metrics = false
   skip_destroy = %t
-  global_data_tags = [
+  global_data_tags = jsonencode([
     {
       name = "tag1"
       value = "value1"
@@ -241,7 +241,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
       name = "tag3"
       value = "value3"
     }
-	]
+  ])
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
@@ -265,7 +265,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = false
   monitor_metrics = true
   skip_destroy = %t
-  global_data_tags = [
+  global_data_tags = jsonencode([
   	{
 		  name = "tag1"
 		  value = "value1a"
@@ -273,7 +273,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
       name = "tag2"
 		  value = "value2a"
 	  }
-  ]
+  ])
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {

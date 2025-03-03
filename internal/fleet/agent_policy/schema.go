@@ -3,7 +3,6 @@ package agent_policy
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -87,26 +86,9 @@ func getSchema() schema.Schema {
 					boolplanmodifier.RequiresReplace(),
 				},
 			},
-			"global_data_tags": schema.ListNestedAttribute{
-				Description: "User defined data tags to apply to all inputs.",
+			"global_data_tags": schema.StringAttribute{
+				Description: "JSON encoded defined data tags to apply to all inputs.",
 				Optional:    true,
-
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Description: "The name of the data tag.",
-							Required:    true,
-						},
-						"value": schema.StringAttribute{
-							Description: "The string value of the data tag.",
-							Required:    true,
-						},
-					},
-				},
 			},
 		}}
-}
-
-func getGlobalDataTagsType() attr.Type {
-	return getSchema().Attributes["global_data_tags"].GetType().(attr.TypeWithElementType).ElementType()
 }

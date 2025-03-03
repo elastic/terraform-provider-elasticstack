@@ -2,6 +2,7 @@ package agent_policy
 
 import (
 	"context"
+	"encoding/json"
 	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -12,24 +13,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type globalDataTagModel struct {
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
-}
+// type globalDataTagModel struct {
+// 	Name  types.String `tfsdk:"name"`
+// 	Value types.String `tfsdk:"value"`
+// }
 
-func newGlobalDataTagModel(data struct {
-	Name  string                                 "json:\"name\""
-	Value kbapi.AgentPolicy_GlobalDataTags_Value "json:\"value\""
-}) globalDataTagModel {
-	val, err := data.Value.AsAgentPolicyGlobalDataTagsValue0()
-	if err != nil {
-		panic(err)
-	}
-	return globalDataTagModel{
-		Name:  types.StringValue(data.Name),
-		Value: types.StringValue(val),
-	}
-}
+// func newGlobalDataTagModel(data struct {
+// 	Name  string                                 "json:\"name\""
+// 	Value kbapi.AgentPolicy_GlobalDataTags_Value "json:\"value\""
+// }) globalDataTagModel {
+// 	val, err := data.Value.AsAgentPolicyGlobalDataTagsValue0()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return globalDataTagModel{
+// 		Name:  types.StringValue(data.Name),
+// 		Value: types.StringValue(val),
+// 	}
+// }
 
 type agentPolicyModel struct {
 	ID                 types.String `tfsdk:"id"`
@@ -45,12 +46,12 @@ type agentPolicyModel struct {
 	MonitorMetrics     types.Bool   `tfsdk:"monitor_metrics"`
 	SysMonitoring      types.Bool   `tfsdk:"sys_monitoring"`
 	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
-	GlobalDataTags     types.List   `tfsdk:"global_data_tags"`
+	GlobalDataTags     types.String `tfsdk:"global_data_tags"`
 }
 
-func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy, serverVersion *version.Version) {
+func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy, serverVersion *version.Version) diag.Diagnostics {
 	if data == nil {
-		return
+		return nil
 	}
 
 	model.ID = types.StringValue(data.Id)
@@ -79,17 +80,16 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
 	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && utils.Deref(data.GlobalDataTags) != nil {
-
-		gdt := []globalDataTagModel{}
-		for _, val := range utils.Deref(data.GlobalDataTags) {
-			gdt = append(gdt, newGlobalDataTagModel(val))
+		diags := diag.Diagnostics{}
+		d, err := json.Marshal(data.GlobalDataTags)
+		if err != nil {
+			diags.AddError("Failed to marshal global data tags", err.Error())
+			return diags
 		}
-		gdtList, diags := types.ListValueFrom(ctx, getGlobalDataTagsType(), gdt)
-		if diags.HasError() {
-			return
-		}
-		model.GlobalDataTags = gdtList
+		model.GlobalDataTags = types.StringValue(string(d))
 	}
+
+	return nil
 }
 
 func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
@@ -114,19 +114,20 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if len(model.GlobalDataTags.Elements()) > 0 {
+	if len(model.GlobalDataTags.ValueString()) > 0 {
+		var diags diag.Diagnostics
 		if serverVersion.LessThan(MinVersionGlobalDataTags) {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above"),
-			}
-
+			diags.AddError("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above")
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 		}
-		diags := model.GlobalDataTags.ElementsAs(ctx, body.GlobalDataTags, false)
-		if diags.HasError() {
+
+		str := model.GlobalDataTags.ValueString()
+		err := json.Unmarshal([]byte(str), body.GlobalDataTags)
+		if err != nil {
+			diags.AddError(err.Error(), "")
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 		}
 	}
-
 	return body, nil
 }
 
@@ -150,17 +151,20 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if len(model.GlobalDataTags.Elements()) > 0 {
+	if len(model.GlobalDataTags.ValueString()) > 0 {
+		var diags diag.Diagnostics
 		if serverVersion.LessThan(MinVersionGlobalDataTags) {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above"),
-			}
-
-		}
-		diags := model.GlobalDataTags.ElementsAs(ctx, body.GlobalDataTags, false)
-		if diags.HasError() {
+			diags.AddError("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above")
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
+
+		str := model.GlobalDataTags.ValueString()
+		err := json.Unmarshal([]byte(str), body.GlobalDataTags)
+		if err != nil {
+			diags.AddError(err.Error(), "")
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
+		}
+
 	}
 
 	return body, nil
