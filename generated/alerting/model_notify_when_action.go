@@ -18,6 +18,13 @@ import (
 // NotifyWhenAction Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
 type NotifyWhenAction string
 
+// List of notify_when_action
+const (
+	ON_ACTION_GROUP_CHANGE NotifyWhenAction = "onActionGroupChange"
+	ON_ACTIVE_ALERT        NotifyWhenAction = "onActiveAlert"
+	ON_THROTTLE_INTERVAL   NotifyWhenAction = "onThrottleInterval"
+)
+
 // All allowed values of NotifyWhenAction enum
 var AllowedNotifyWhenActionEnumValues = []NotifyWhenAction{
 	"onActionGroupChange",

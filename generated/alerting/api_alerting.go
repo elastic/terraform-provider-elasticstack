@@ -29,9 +29,10 @@ type AlertingAPI interface {
 
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiCreateMaintenanceWindowRequest
 	*/
-	CreateMaintenanceWindow(ctx context.Context) ApiCreateMaintenanceWindowRequest
+	CreateMaintenanceWindow(ctx context.Context, spaceId interface{}) ApiCreateMaintenanceWindowRequest
 
 	// CreateMaintenanceWindowExecute executes the request
 	//  @return MaintenanceWindowResponseProperties
@@ -78,9 +79,10 @@ type AlertingAPI interface {
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param maintenanceWindowId An identifier for the maintenance window.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiDeleteMaintenanceWindowRequest
 	*/
-	DeleteMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}) ApiDeleteMaintenanceWindowRequest
+	DeleteMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}, spaceId interface{}) ApiDeleteMaintenanceWindowRequest
 
 	// DeleteMaintenanceWindowExecute executes the request
 	DeleteMaintenanceWindowExecute(r ApiDeleteMaintenanceWindowRequest) (*http.Response, error)
@@ -172,9 +174,10 @@ type AlertingAPI interface {
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param maintenanceWindowId An identifier for the maintenance window.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 		@return ApiGetMaintenanceWindowRequest
 	*/
-	GetMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}) ApiGetMaintenanceWindowRequest
+	GetMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}, spaceId interface{}) ApiGetMaintenanceWindowRequest
 
 	// GetMaintenanceWindowExecute executes the request
 	//  @return MaintenanceWindowResponseProperties
@@ -560,6 +563,7 @@ type ApiCreateMaintenanceWindowRequest struct {
 	ctx                            context.Context
 	ApiService                     AlertingAPI
 	kbnXsrf                        *interface{}
+	spaceId                        interface{}
 	createMaintenanceWindowRequest *CreateMaintenanceWindowRequest
 }
 
@@ -584,12 +588,14 @@ CreateMaintenanceWindow Create a maintenance window with a random identifier
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiCreateMaintenanceWindowRequest
 */
-func (a *AlertingAPIService) CreateMaintenanceWindow(ctx context.Context) ApiCreateMaintenanceWindowRequest {
+func (a *AlertingAPIService) CreateMaintenanceWindow(ctx context.Context, spaceId interface{}) ApiCreateMaintenanceWindowRequest {
 	return ApiCreateMaintenanceWindowRequest{
 		ApiService: a,
 		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
@@ -609,7 +615,8 @@ func (a *AlertingAPIService) CreateMaintenanceWindowExecute(r ApiCreateMaintenan
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/alerting/maintenance_window"
+	localVarPath := localBasePath + "/s/{spaceId}/api/alerting/maintenance_window"
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1044,6 +1051,7 @@ type ApiDeleteMaintenanceWindowRequest struct {
 	ApiService          AlertingAPI
 	kbnXsrf             *interface{}
 	maintenanceWindowId interface{}
+	spaceId             interface{}
 }
 
 // Cross-site request forgery protection
@@ -1063,13 +1071,15 @@ To delete a rule, you must have `all` privileges for the appropriate Kibana feat
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param maintenanceWindowId An identifier for the maintenance window.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiDeleteMaintenanceWindowRequest
 */
-func (a *AlertingAPIService) DeleteMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}) ApiDeleteMaintenanceWindowRequest {
+func (a *AlertingAPIService) DeleteMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}, spaceId interface{}) ApiDeleteMaintenanceWindowRequest {
 	return ApiDeleteMaintenanceWindowRequest{
 		ApiService:          a,
 		ctx:                 ctx,
 		maintenanceWindowId: maintenanceWindowId,
+		spaceId:             spaceId,
 	}
 }
 
@@ -1086,8 +1096,9 @@ func (a *AlertingAPIService) DeleteMaintenanceWindowExecute(r ApiDeleteMaintenan
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/alerting/maintenance_window/{maintenanceWindowId}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"maintenanceWindowId"+"}", url.PathEscape(parameterValueToString(r.maintenanceWindowId, "maintenanceWindowId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1994,6 +2005,7 @@ type ApiGetMaintenanceWindowRequest struct {
 	ctx                 context.Context
 	ApiService          AlertingAPI
 	maintenanceWindowId interface{}
+	spaceId             interface{}
 }
 
 func (r ApiGetMaintenanceWindowRequest) Execute() (*MaintenanceWindowResponseProperties, *http.Response, error) {
@@ -2007,13 +2019,15 @@ You must have `read` privileges for the appropriate Kibana features.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param maintenanceWindowId An identifier for the maintenance window.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 	@return ApiGetMaintenanceWindowRequest
 */
-func (a *AlertingAPIService) GetMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}) ApiGetMaintenanceWindowRequest {
+func (a *AlertingAPIService) GetMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}, spaceId interface{}) ApiGetMaintenanceWindowRequest {
 	return ApiGetMaintenanceWindowRequest{
 		ApiService:          a,
 		ctx:                 ctx,
 		maintenanceWindowId: maintenanceWindowId,
+		spaceId:             spaceId,
 	}
 }
 
@@ -2033,8 +2047,9 @@ func (a *AlertingAPIService) GetMaintenanceWindowExecute(r ApiGetMaintenanceWind
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/alerting/maintenance_window/{maintenanceWindowId}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"maintenanceWindowId"+"}", url.PathEscape(parameterValueToString(r.maintenanceWindowId, "maintenanceWindowId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}

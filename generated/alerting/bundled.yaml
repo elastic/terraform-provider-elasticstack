@@ -1635,7 +1635,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/401_response"
-  /api/alerting/maintenance_window:
+  /s/{spaceId}/api/alerting/maintenance_window:
     post:
       summary: Create a maintenance window with a random identifier
       operationId: createMaintenanceWindow
@@ -1645,6 +1645,7 @@ paths:
         - alerting
       parameters:
         - $ref: "#/components/parameters/kbn_xsrf"
+        - $ref: "#/components/parameters/space_id"
       requestBody:
         required: true
         content:
@@ -1670,7 +1671,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/403_response"
-  /api/alerting/maintenance_window/{maintenanceWindowId}:
+  /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}:
     get:
       summary: Get maintenance window details
       operationId: getMaintenanceWindow
@@ -1679,6 +1680,7 @@ paths:
         - alerting
       parameters:
         - $ref: "#/components/parameters/maintenance_window_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
         "200":
           description: Indicates a successful call.
@@ -1714,6 +1716,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/kbn_xsrf"
         - $ref: "#/components/parameters/maintenance_window_id"
+        - $ref: "#/components/parameters/space_id"
       responses:
         "204":
           description: Indicates a successful call.

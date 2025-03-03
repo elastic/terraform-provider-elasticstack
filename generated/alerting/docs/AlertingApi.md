@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**CreateMaintenanceWindow**](AlertingAPI.md#CreateMaintenanceWindow) | **Post** /api/alerting/maintenance_window | Create a maintenance window with a random identifier
+[**CreateMaintenanceWindow**](AlertingAPI.md#CreateMaintenanceWindow) | **Post** /s/{spaceId}/api/alerting/maintenance_window | Create a maintenance window with a random identifier
 [**CreateRule**](AlertingAPI.md#CreateRule) | **Post** /s/{spaceId}/api/alerting/rule | Creates a rule with a randomly generated rule identifier.
 [**CreateRuleId**](AlertingAPI.md#CreateRuleId) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule with a specific rule identifier.
-[**DeleteMaintenanceWindow**](AlertingAPI.md#DeleteMaintenanceWindow) | **Delete** /api/alerting/maintenance_window/{maintenanceWindowId} | Delete a maintenance window
+[**DeleteMaintenanceWindow**](AlertingAPI.md#DeleteMaintenanceWindow) | **Delete** /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId} | Delete a maintenance window
 [**DeleteRule**](AlertingAPI.md#DeleteRule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
 [**DisableRule**](AlertingAPI.md#DisableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
 [**EnableRule**](AlertingAPI.md#EnableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
 [**FindRules**](AlertingAPI.md#FindRules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
 [**GetAlertingHealth**](AlertingAPI.md#GetAlertingHealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
-[**GetMaintenanceWindow**](AlertingAPI.md#GetMaintenanceWindow) | **Get** /api/alerting/maintenance_window/{maintenanceWindowId} | Get maintenance window details
+[**GetMaintenanceWindow**](AlertingAPI.md#GetMaintenanceWindow) | **Get** /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId} | Get maintenance window details
 [**GetRule**](AlertingAPI.md#GetRule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
 [**GetRuleTypes**](AlertingAPI.md#GetRuleTypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
 [**LegacyCreateAlert**](AlertingAPI.md#LegacyCreateAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.
@@ -40,7 +40,7 @@ Method | HTTP request | Description
 
 ## CreateMaintenanceWindow
 
-> MaintenanceWindowResponseProperties CreateMaintenanceWindow(ctx).KbnXsrf(kbnXsrf).CreateMaintenanceWindowRequest(createMaintenanceWindowRequest).Execute()
+> MaintenanceWindowResponseProperties CreateMaintenanceWindow(ctx, spaceId).KbnXsrf(kbnXsrf).CreateMaintenanceWindowRequest(createMaintenanceWindowRequest).Execute()
 
 Create a maintenance window with a random identifier
 
@@ -60,11 +60,12 @@ import (
 
 func main() {
     kbnXsrf := TODO // interface{} | Cross-site request forgery protection
+    spaceId := TODO // interface{} | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     createMaintenanceWindowRequest := *openapiclient.NewCreateMaintenanceWindowRequest("Title_example", float32(123), "Start_example") // CreateMaintenanceWindowRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingAPI.CreateMaintenanceWindow(context.Background()).KbnXsrf(kbnXsrf).CreateMaintenanceWindowRequest(createMaintenanceWindowRequest).Execute()
+    resp, r, err := apiClient.AlertingAPI.CreateMaintenanceWindow(context.Background(), spaceId).KbnXsrf(kbnXsrf).CreateMaintenanceWindowRequest(createMaintenanceWindowRequest).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.CreateMaintenanceWindow``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -77,6 +78,10 @@ func main() {
 ### Path Parameters
 
 
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | [**interface{}**](.md) | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -86,6 +91,7 @@ Other parameters are passed through a pointer to a apiCreateMaintenanceWindowReq
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+
  **createMaintenanceWindowRequest** | [**CreateMaintenanceWindowRequest**](CreateMaintenanceWindowRequest.md) |  | 
 
 ### Return type
@@ -259,7 +265,7 @@ Name | Type | Description  | Notes
 
 ## DeleteMaintenanceWindow
 
-> DeleteMaintenanceWindow(ctx, maintenanceWindowId).KbnXsrf(kbnXsrf).Execute()
+> DeleteMaintenanceWindow(ctx, maintenanceWindowId, spaceId).KbnXsrf(kbnXsrf).Execute()
 
 Delete a maintenance window
 
@@ -280,10 +286,11 @@ import (
 func main() {
     kbnXsrf := TODO // interface{} | Cross-site request forgery protection
     maintenanceWindowId := TODO // interface{} | An identifier for the maintenance window.
+    spaceId := TODO // interface{} | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    r, err := apiClient.AlertingAPI.DeleteMaintenanceWindow(context.Background(), maintenanceWindowId).KbnXsrf(kbnXsrf).Execute()
+    r, err := apiClient.AlertingAPI.DeleteMaintenanceWindow(context.Background(), maintenanceWindowId, spaceId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.DeleteMaintenanceWindow``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -298,6 +305,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **maintenanceWindowId** | [**interface{}**](.md) | An identifier for the maintenance window. | 
+**spaceId** | [**interface{}**](.md) | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -307,6 +315,7 @@ Other parameters are passed through a pointer to a apiDeleteMaintenanceWindowReq
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+
 
 
 ### Return type
@@ -708,7 +717,7 @@ Name | Type | Description  | Notes
 
 ## GetMaintenanceWindow
 
-> MaintenanceWindowResponseProperties GetMaintenanceWindow(ctx, maintenanceWindowId).Execute()
+> MaintenanceWindowResponseProperties GetMaintenanceWindow(ctx, maintenanceWindowId, spaceId).Execute()
 
 Get maintenance window details
 
@@ -728,10 +737,11 @@ import (
 
 func main() {
     maintenanceWindowId := TODO // interface{} | An identifier for the maintenance window.
+    spaceId := TODO // interface{} | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingAPI.GetMaintenanceWindow(context.Background(), maintenanceWindowId).Execute()
+    resp, r, err := apiClient.AlertingAPI.GetMaintenanceWindow(context.Background(), maintenanceWindowId, spaceId).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.GetMaintenanceWindow``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -748,6 +758,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **maintenanceWindowId** | [**interface{}**](.md) | An identifier for the maintenance window. | 
+**spaceId** | [**interface{}**](.md) | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
 
 ### Other Parameters
 
@@ -756,6 +767,7 @@ Other parameters are passed through a pointer to a apiGetMaintenanceWindowReques
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+
 
 
 ### Return type

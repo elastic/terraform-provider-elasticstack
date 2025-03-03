@@ -77,16 +77,16 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*AlertingAPI* | [**CreateMaintenanceWindow**](docs/AlertingAPI.md#createmaintenancewindow) | **Post** /api/alerting/maintenance_window | Create a maintenance window with a random identifier
+*AlertingAPI* | [**CreateMaintenanceWindow**](docs/AlertingAPI.md#createmaintenancewindow) | **Post** /s/{spaceId}/api/alerting/maintenance_window | Create a maintenance window with a random identifier
 *AlertingAPI* | [**CreateRule**](docs/AlertingAPI.md#createrule) | **Post** /s/{spaceId}/api/alerting/rule | Creates a rule with a randomly generated rule identifier.
 *AlertingAPI* | [**CreateRuleId**](docs/AlertingAPI.md#createruleid) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule with a specific rule identifier.
-*AlertingAPI* | [**DeleteMaintenanceWindow**](docs/AlertingAPI.md#deletemaintenancewindow) | **Delete** /api/alerting/maintenance_window/{maintenanceWindowId} | Delete a maintenance window
+*AlertingAPI* | [**DeleteMaintenanceWindow**](docs/AlertingAPI.md#deletemaintenancewindow) | **Delete** /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId} | Delete a maintenance window
 *AlertingAPI* | [**DeleteRule**](docs/AlertingAPI.md#deleterule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
 *AlertingAPI* | [**DisableRule**](docs/AlertingAPI.md#disablerule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
 *AlertingAPI* | [**EnableRule**](docs/AlertingAPI.md#enablerule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
 *AlertingAPI* | [**FindRules**](docs/AlertingAPI.md#findrules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
 *AlertingAPI* | [**GetAlertingHealth**](docs/AlertingAPI.md#getalertinghealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
-*AlertingAPI* | [**GetMaintenanceWindow**](docs/AlertingAPI.md#getmaintenancewindow) | **Get** /api/alerting/maintenance_window/{maintenanceWindowId} | Get maintenance window details
+*AlertingAPI* | [**GetMaintenanceWindow**](docs/AlertingAPI.md#getmaintenancewindow) | **Get** /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId} | Get maintenance window details
 *AlertingAPI* | [**GetRule**](docs/AlertingAPI.md#getrule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
 *AlertingAPI* | [**GetRuleTypes**](docs/AlertingAPI.md#getruletypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
 *AlertingAPI* | [**LegacyCreateAlert**](docs/AlertingAPI.md#legacycreatealert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.

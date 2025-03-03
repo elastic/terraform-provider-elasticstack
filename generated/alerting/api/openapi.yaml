@@ -1065,13 +1065,14 @@ paths:
       summary: Unmutes an alert instance.
       tags:
       - alerting
-  /api/alerting/maintenance_window:
+  /s/{spaceId}/api/alerting/maintenance_window:
     post:
       description: |
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
       operationId: createMaintenanceWindow
       parameters:
       - $ref: '#/components/parameters/kbn_xsrf'
+      - $ref: '#/components/parameters/space_id'
       requestBody:
         content:
           application/json:
@@ -1100,7 +1101,7 @@ paths:
       summary: Create a maintenance window with a random identifier
       tags:
       - alerting
-  /api/alerting/maintenance_window/{maintenanceWindowId}:
+  /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}:
     delete:
       description: |
         To delete a rule, you must have `all` privileges for the appropriate Kibana features. WARNING: After you delete a maintenance window, you cannot recover it.
@@ -1108,6 +1109,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/kbn_xsrf'
       - $ref: '#/components/parameters/maintenance_window_id'
+      - $ref: '#/components/parameters/space_id'
       responses:
         "204":
           description: Indicates a successful call.
@@ -1137,6 +1139,7 @@ paths:
       operationId: getMaintenanceWindow
       parameters:
       - $ref: '#/components/parameters/maintenance_window_id'
+      - $ref: '#/components/parameters/space_id'
       responses:
         "200":
           content:

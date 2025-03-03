@@ -13,13 +13,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func maintenanceWindowResponseToModel(res *alerting.MaintenanceWindowResponseProperties) *models.MaintenanceWindow {
+func maintenanceWindowResponseToModel(spaceId string, res *alerting.MaintenanceWindowResponseProperties) *models.MaintenanceWindow {
 	if res == nil {
 		return nil
 	}
 
 	return &models.MaintenanceWindow{
 		Id:       res.Id,
+		SpaceId:  spaceId,
 		Title:    res.Title,
 		Enabled:  res.Enabled,
 		Start:    res.Start,
@@ -42,7 +43,7 @@ func CreateMaintenanceWindow(ctx context.Context, apiClient ApiClient, maintenan
 		Duration: float32(maintenanceWindow.Duration),
 	}
 
-	req := client.CreateMaintenanceWindow(ctxWithAuth).KbnXsrf("true").CreateMaintenanceWindowRequest(reqModel)
+	req := client.CreateMaintenanceWindow(ctxWithAuth, maintenanceWindow.SpaceId).KbnXsrf("true").CreateMaintenanceWindowRequest(reqModel)
 	maintenanceWindowRes, res, err := req.Execute()
 	if err != nil && res == nil {
 		return nil, diag.FromErr(err)
@@ -63,10 +64,12 @@ func CreateMaintenanceWindow(ctx context.Context, apiClient ApiClient, maintenan
 		}}
 	}
 
-	return maintenanceWindowResponseToModel(maintenanceWindowRes), nil
+	maintenanceWindow.Id = maintenanceWindowRes.Id
+
+	return maintenanceWindowResponseToModel(maintenanceWindow.SpaceId, maintenanceWindowRes), nil
 }
 
-func GetMaintenanceWindow(ctx context.Context, apiClient *clients.ApiClient, maintenanceWindowID string) (*models.MaintenanceWindow, diag.Diagnostics) {
+func GetMaintenanceWindow(ctx context.Context, apiClient *clients.ApiClient, maintenanceWindowId string, spaceId string) (*models.MaintenanceWindow, diag.Diagnostics) {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -74,7 +77,7 @@ func GetMaintenanceWindow(ctx context.Context, apiClient *clients.ApiClient, mai
 
 	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
-	req := client.GetMaintenanceWindow(ctxWithAuth, maintenanceWindowID)
+	req := client.GetMaintenanceWindow(ctxWithAuth, maintenanceWindowId, spaceId)
 	maintenanceWindowRes, res, err := req.Execute()
 
 	if err != nil && res == nil {
@@ -85,10 +88,10 @@ func GetMaintenanceWindow(ctx context.Context, apiClient *clients.ApiClient, mai
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	return maintenanceWindowResponseToModel(maintenanceWindowRes), utils.CheckHttpError(res, "Unable to get maintenance window")
+	return maintenanceWindowResponseToModel(spaceId, maintenanceWindowRes), utils.CheckHttpError(res, "Unable to get maintenance window")
 }
 
-func DeleteMaintenanceWindow(ctx context.Context, apiClient *clients.ApiClient, maintenanceWindowID string) diag.Diagnostics {
+func DeleteMaintenanceWindow(ctx context.Context, apiClient *clients.ApiClient, maintenanceWindowId string, spaceId string) diag.Diagnostics {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
 		return diag.FromErr(err)
@@ -96,7 +99,7 @@ func DeleteMaintenanceWindow(ctx context.Context, apiClient *clients.ApiClient, 
 
 	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
-	req := client.DeleteMaintenanceWindow(ctxWithAuth, maintenanceWindowID).KbnXsrf("true")
+	req := client.DeleteMaintenanceWindow(ctxWithAuth, maintenanceWindowId, spaceId).KbnXsrf("true")
 	res, err := req.Execute()
 	if err != nil && res == nil {
 		return diag.FromErr(err)
