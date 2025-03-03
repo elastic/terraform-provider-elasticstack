@@ -121,8 +121,8 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 		}
 
-		str := model.GlobalDataTags.ValueString()
-		err := json.Unmarshal([]byte(str), body.GlobalDataTags)
+		str := model.GlobalDataTags.ValueStringPointer()
+		err := json.Unmarshal([]byte(*str), &body.GlobalDataTags)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
@@ -158,8 +158,8 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
 
-		str := model.GlobalDataTags.ValueString()
-		err := json.Unmarshal([]byte(str), body.GlobalDataTags)
+		str := model.GlobalDataTags.ValueStringPointer()
+		err := json.Unmarshal([]byte(*str), &body.GlobalDataTags)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
