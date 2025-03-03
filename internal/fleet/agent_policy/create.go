@@ -40,7 +40,11 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	planModel.populateFromAPI(ctx, policy, sVersion)
+	diags = planModel.populateFromAPI(ctx, policy, sVersion)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
