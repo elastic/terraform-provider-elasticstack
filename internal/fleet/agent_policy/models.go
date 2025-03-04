@@ -122,11 +122,17 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 		}
 
 		str := model.GlobalDataTags.ValueStringPointer()
-		err := json.Unmarshal([]byte(*str), &body.GlobalDataTags)
+		var items []struct {
+			Name  string                                                    `json:"name"`
+			Value kbapi.PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value `json:"value"`
+		}
+
+		err := json.Unmarshal([]byte(utils.Deref(str)), &items)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 		}
+		*body.GlobalDataTags = items
 	}
 	return body, nil
 }
@@ -157,14 +163,17 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 			diags.AddError("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above")
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
-
 		str := model.GlobalDataTags.ValueStringPointer()
-		err := json.Unmarshal([]byte(*str), &body.GlobalDataTags)
+		var items []struct {
+			Name  string                                                                `json:"name"`
+			Value kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value `json:"value"`
+		}
+		err := json.Unmarshal([]byte(utils.Deref(str)), &items)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
-
+		*body.GlobalDataTags = items
 	}
 
 	return body, nil
