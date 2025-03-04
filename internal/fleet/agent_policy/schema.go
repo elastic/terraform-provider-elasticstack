@@ -87,8 +87,11 @@ func getSchema() schema.Schema {
 				},
 			},
 			"global_data_tags": schema.StringAttribute{
-				Description: "JSON encoded defined data tags to apply to all inputs.",
+				Description: "JSON encoded user-defined data tags to apply to all inputs.",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		}}
 }

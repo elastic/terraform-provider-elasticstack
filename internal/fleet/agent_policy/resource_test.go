@@ -131,9 +131,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1", "value1"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2", "value2"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag3", "value3"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags", `[{"name":"tag1","value":"value1"},{"name":"tag2","value":1.1}]`),
 				),
 			},
 			{
@@ -146,10 +144,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1", "value1a"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2", "value2a"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag3"),
-				),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags", `[{"name":"tag1","value":"value1a"}]`)),
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
@@ -161,9 +156,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag3"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags"),
 				),
 			},
 		},
@@ -231,17 +224,15 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_metrics = false
   skip_destroy = %t
   global_data_tags = jsonencode([
-    {
-      name = "tag1"
-      value = "value1"
-    },{
-      name = "tag2"
-      value = "value2"
-    },{
-      name = "tag3"
-      value = "value3"
-    }
-  ])
+		{
+			name = "tag1"
+			value = "value1"
+		},
+		{
+			name = "tag2"
+			value = 1.1
+		}
+	])
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
@@ -259,21 +250,18 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "This policy was updated"
-  monitor_logs = false
+  name            = "%s"
+  namespace       = "default"
+  description     = "This policy was updated"
+  monitor_logs    = false
   monitor_metrics = true
-  skip_destroy = %t
+  skip_destroy    = %t
   global_data_tags = jsonencode([
-  	{
-		  name = "tag1"
-		  value = "value1a"
-	  },{
-      name = "tag2"
-		  value = "value2a"
-	  }
-  ])
+		{
+			name = "tag1"
+			value = "value1a"
+		}
+	])
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
