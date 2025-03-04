@@ -39,11 +39,11 @@ const (
 	AgentPolicyMonitoringEnabledTraces  AgentPolicyMonitoringEnabled = "traces"
 )
 
-// Defines values for AgentPolicyPackagePolicies1InputsStreamsRelease.
+// Defines values for AgentPolicyPackagePolicies1Inputs0StreamsRelease.
 const (
-	AgentPolicyPackagePolicies1InputsStreamsReleaseBeta         AgentPolicyPackagePolicies1InputsStreamsRelease = "beta"
-	AgentPolicyPackagePolicies1InputsStreamsReleaseExperimental AgentPolicyPackagePolicies1InputsStreamsRelease = "experimental"
-	AgentPolicyPackagePolicies1InputsStreamsReleaseGa           AgentPolicyPackagePolicies1InputsStreamsRelease = "ga"
+	AgentPolicyPackagePolicies1Inputs0StreamsReleaseBeta         AgentPolicyPackagePolicies1Inputs0StreamsRelease = "beta"
+	AgentPolicyPackagePolicies1Inputs0StreamsReleaseExperimental AgentPolicyPackagePolicies1Inputs0StreamsRelease = "experimental"
+	AgentPolicyPackagePolicies1Inputs0StreamsReleaseGa           AgentPolicyPackagePolicies1Inputs0StreamsRelease = "ga"
 )
 
 // Defines values for AgentPolicyStatus.
@@ -795,16 +795,28 @@ type DataViewsUpdateDataViewRequestObjectInner struct {
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
+	Agentless *struct {
+		Resources *struct {
+			Requests *struct {
+				Cpu    *string `json:"cpu,omitempty"`
+				Memory *string `json:"memory,omitempty"`
+			} `json:"requests,omitempty"`
+		} `json:"resources,omitempty"`
+	} `json:"agentless,omitempty"`
 	Agents            *float32 `json:"agents,omitempty"`
 	DataOutputId      *string  `json:"data_output_id"`
 	Description       *string  `json:"description,omitempty"`
@@ -812,17 +824,14 @@ type AgentPolicy struct {
 	FleetServerHostId *string  `json:"fleet_server_host_id"`
 
 	// GlobalDataTags User defined data tags that are added to all of the inputs. The values can be strings or numbers.
-	GlobalDataTags *[]struct {
-		Name  string                           `json:"name"`
-		Value AgentPolicy_GlobalDataTags_Value `json:"value"`
-	} `json:"global_data_tags,omitempty"`
-	HasFleetServer       *bool    `json:"has_fleet_server,omitempty"`
-	Id                   string   `json:"id"`
-	InactivityTimeout    *float32 `json:"inactivity_timeout,omitempty"`
-	IsDefault            *bool    `json:"is_default,omitempty"`
-	IsDefaultFleetServer *bool    `json:"is_default_fleet_server,omitempty"`
-	IsManaged            bool     `json:"is_managed"`
-	IsPreconfigured      *bool    `json:"is_preconfigured,omitempty"`
+	GlobalDataTags       *[]AgentPolicyGlobalDataTagsItem `json:"global_data_tags,omitempty"`
+	HasFleetServer       *bool                            `json:"has_fleet_server,omitempty"`
+	Id                   string                           `json:"id"`
+	InactivityTimeout    *float32                         `json:"inactivity_timeout,omitempty"`
+	IsDefault            *bool                            `json:"is_default,omitempty"`
+	IsDefaultFleetServer *bool                            `json:"is_default_fleet_server,omitempty"`
+	IsManaged            bool                             `json:"is_managed"`
+	IsPreconfigured      *bool                            `json:"is_preconfigured,omitempty"`
 
 	// IsProtected Indicates whether the agent policy has tamper protection enabled. Default false.
 	IsProtected bool `json:"is_protected"`
@@ -845,7 +854,7 @@ type AgentPolicy struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -855,12 +864,19 @@ type AgentPolicy struct {
 	Namespace              string  `json:"namespace"`
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
-	Overrides       *map[string]interface{}      `json:"overrides"`
-	PackagePolicies *AgentPolicy_PackagePolicies `json:"package_policies,omitempty"`
-	Revision        float32                      `json:"revision"`
-	SchemaVersion   *string                      `json:"schema_version,omitempty"`
-	SpaceIds        *[]string                    `json:"space_ids,omitempty"`
-	Status          AgentPolicyStatus            `json:"status"`
+	Overrides        *map[string]interface{}      `json:"overrides"`
+	PackagePolicies  *AgentPolicy_PackagePolicies `json:"package_policies,omitempty"`
+	RequiredVersions *[]struct {
+		// Percentage Target percentage of agents to auto upgrade
+		Percentage float32 `json:"percentage"`
+
+		// Version Target version for automatic agent upgrade
+		Version string `json:"version"`
+	} `json:"required_versions"`
+	Revision      float32           `json:"revision"`
+	SchemaVersion *string           `json:"schema_version,omitempty"`
+	SpaceIds      *[]string         `json:"space_ids,omitempty"`
+	Status        AgentPolicyStatus `json:"status"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless  *bool    `json:"supports_agentless"`
@@ -871,17 +887,6 @@ type AgentPolicy struct {
 	Version            *string  `json:"version,omitempty"`
 }
 
-// AgentPolicyGlobalDataTagsValue0 defines model for .
-type AgentPolicyGlobalDataTagsValue0 = string
-
-// AgentPolicyGlobalDataTagsValue1 defines model for .
-type AgentPolicyGlobalDataTagsValue1 = float32
-
-// AgentPolicy_GlobalDataTags_Value defines model for AgentPolicy.GlobalDataTags.Value.
-type AgentPolicy_GlobalDataTags_Value struct {
-	union json.RawMessage
-}
-
 // AgentPolicyMonitoringEnabled defines model for AgentPolicy.MonitoringEnabled.
 type AgentPolicyMonitoringEnabled string
 
@@ -890,69 +895,17 @@ type AgentPolicyPackagePolicies0 = []string
 
 // AgentPolicyPackagePolicies1 This field is present only when retrieving a single agent policy, or when retrieving a list of agent policies with the ?full=true parameter
 type AgentPolicyPackagePolicies1 = []struct {
-	CreatedAt string `json:"created_at"`
-	CreatedBy string `json:"created_by"`
+	Agents    *float32 `json:"agents,omitempty"`
+	CreatedAt string   `json:"created_at"`
+	CreatedBy string   `json:"created_by"`
 
 	// Description Package policy description
 	Description   *string                                      `json:"description,omitempty"`
 	Elasticsearch *AgentPolicy_PackagePolicies_1_Elasticsearch `json:"elasticsearch,omitempty"`
 	Enabled       bool                                         `json:"enabled"`
 	Id            string                                       `json:"id"`
-	Inputs        []struct {
-		CompiledInput interface{} `json:"compiled_input"`
-
-		// Config Package variable (see integration documentation for more information)
-		Config *map[string]struct {
-			Frozen *bool       `json:"frozen,omitempty"`
-			Type   *string     `json:"type,omitempty"`
-			Value  interface{} `json:"value"`
-		} `json:"config,omitempty"`
-		Enabled        bool    `json:"enabled"`
-		Id             *string `json:"id,omitempty"`
-		KeepEnabled    *bool   `json:"keep_enabled,omitempty"`
-		PolicyTemplate *string `json:"policy_template,omitempty"`
-		Streams        []struct {
-			CompiledStream interface{} `json:"compiled_stream"`
-
-			// Config Package variable (see integration documentation for more information)
-			Config *map[string]struct {
-				Frozen *bool       `json:"frozen,omitempty"`
-				Type   *string     `json:"type,omitempty"`
-				Value  interface{} `json:"value"`
-			} `json:"config,omitempty"`
-			DataStream struct {
-				Dataset       string `json:"dataset"`
-				Elasticsearch *struct {
-					DynamicDataset   *bool `json:"dynamic_dataset,omitempty"`
-					DynamicNamespace *bool `json:"dynamic_namespace,omitempty"`
-					Privileges       *struct {
-						Indices *[]string `json:"indices,omitempty"`
-					} `json:"privileges,omitempty"`
-				} `json:"elasticsearch,omitempty"`
-				Type string `json:"type"`
-			} `json:"data_stream"`
-			Enabled     bool                                             `json:"enabled"`
-			Id          *string                                          `json:"id,omitempty"`
-			KeepEnabled *bool                                            `json:"keep_enabled,omitempty"`
-			Release     *AgentPolicyPackagePolicies1InputsStreamsRelease `json:"release,omitempty"`
-
-			// Vars Package variable (see integration documentation for more information)
-			Vars *map[string]struct {
-				Frozen *bool       `json:"frozen,omitempty"`
-				Type   *string     `json:"type,omitempty"`
-				Value  interface{} `json:"value"`
-			} `json:"vars,omitempty"`
-		} `json:"streams"`
-		Type string `json:"type"`
-
-		// Vars Package variable (see integration documentation for more information)
-		Vars *map[string]struct {
-			Frozen *bool       `json:"frozen,omitempty"`
-			Type   *string     `json:"type,omitempty"`
-			Value  interface{} `json:"value"`
-		} `json:"vars,omitempty"`
-	} `json:"inputs"`
-	IsManaged *bool `json:"is_managed,omitempty"`
+	Inputs        AgentPolicy_PackagePolicies_1_Inputs         `json:"inputs"`
+	IsManaged     *bool                                        `json:"is_managed,omitempty"`
 
 	// Name Package policy name (should be unique)
 	Name string `json:"name"`
@@ -993,16 +946,14 @@ type AgentPolicyPackagePolicies1 = []struct {
 	SecretReferences *[]struct {
 		Id string `json:"id"`
 	} `json:"secret_references,omitempty"`
-	UpdatedAt string `json:"updated_at"`
-	UpdatedBy string `json:"updated_by"`
+	SpaceIds *[]string `json:"spaceIds,omitempty"`
 
-	// Vars Package variable (see integration documentation for more information)
-	Vars *map[string]struct {
-		Frozen *bool       `json:"frozen,omitempty"`
-		Type   *string     `json:"type,omitempty"`
-		Value  interface{} `json:"value"`
-	} `json:"vars,omitempty"`
-	Version *string `json:"version,omitempty"`
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool                               `json:"supports_agentless"`
+	UpdatedAt         string                              `json:"updated_at"`
+	UpdatedBy         string                              `json:"updated_by"`
+	Vars              *AgentPolicy_PackagePolicies_1_Vars `json:"vars,omitempty"`
+	Version           *string                             `json:"version,omitempty"`
 }
 
 // AgentPolicy_PackagePolicies_1_Elasticsearch_Privileges defines model for AgentPolicy.PackagePolicies.1.Elasticsearch.Privileges.
@@ -1017,8 +968,180 @@ type AgentPolicy_PackagePolicies_1_Elasticsearch struct {
 	AdditionalProperties map[string]interface{}                                  `json:"-"`
 }
 
-// AgentPolicyPackagePolicies1InputsStreamsRelease defines model for AgentPolicy.PackagePolicies.1.Inputs.Streams.Release.
-type AgentPolicyPackagePolicies1InputsStreamsRelease string
+// AgentPolicyPackagePolicies1Inputs0 defines model for .
+type AgentPolicyPackagePolicies1Inputs0 = []struct {
+	CompiledInput interface{} `json:"compiled_input"`
+
+	// Config Package variable (see integration documentation for more information)
+	Config *map[string]struct {
+		Frozen *bool       `json:"frozen,omitempty"`
+		Type   *string     `json:"type,omitempty"`
+		Value  interface{} `json:"value"`
+	} `json:"config,omitempty"`
+	Enabled        bool    `json:"enabled"`
+	Id             *string `json:"id,omitempty"`
+	KeepEnabled    *bool   `json:"keep_enabled,omitempty"`
+	PolicyTemplate *string `json:"policy_template,omitempty"`
+	Streams        []struct {
+		CompiledStream interface{} `json:"compiled_stream"`
+
+		// Config Package variable (see integration documentation for more information)
+		Config *map[string]struct {
+			Frozen *bool       `json:"frozen,omitempty"`
+			Type   *string     `json:"type,omitempty"`
+			Value  interface{} `json:"value"`
+		} `json:"config,omitempty"`
+		DataStream struct {
+			Dataset       string `json:"dataset"`
+			Elasticsearch *struct {
+				DynamicDataset   *bool `json:"dynamic_dataset,omitempty"`
+				DynamicNamespace *bool `json:"dynamic_namespace,omitempty"`
+				Privileges       *struct {
+					Indices *[]string `json:"indices,omitempty"`
+				} `json:"privileges,omitempty"`
+			} `json:"elasticsearch,omitempty"`
+			Type string `json:"type"`
+		} `json:"data_stream"`
+		Enabled     bool                                              `json:"enabled"`
+		Id          *string                                           `json:"id,omitempty"`
+		KeepEnabled *bool                                             `json:"keep_enabled,omitempty"`
+		Release     *AgentPolicyPackagePolicies1Inputs0StreamsRelease `json:"release,omitempty"`
+
+		// Vars Package variable (see integration documentation for more information)
+		Vars *map[string]struct {
+			Frozen *bool       `json:"frozen,omitempty"`
+			Type   *string     `json:"type,omitempty"`
+			Value  interface{} `json:"value"`
+		} `json:"vars,omitempty"`
+	} `json:"streams"`
+	Type string `json:"type"`
+
+	// Vars Package variable (see integration documentation for more information)
+	Vars *map[string]struct {
+		Frozen *bool       `json:"frozen,omitempty"`
+		Type   *string     `json:"type,omitempty"`
+		Value  interface{} `json:"value"`
+	} `json:"vars,omitempty"`
+}
+
+// AgentPolicyPackagePolicies1Inputs0StreamsRelease defines model for AgentPolicy.PackagePolicies.1.Inputs.0.Streams.Release.
+type AgentPolicyPackagePolicies1Inputs0StreamsRelease string
+
+// AgentPolicyPackagePolicies1Inputs1 Package policy inputs (see integration documentation to know what inputs are available)
+type AgentPolicyPackagePolicies1Inputs1 map[string]struct {
+	// Enabled enable or disable that input, (default to true)
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Streams Input streams (see integration documentation to know what streams are available)
+	Streams *map[string]struct {
+		// Enabled enable or disable that stream, (default to true)
+		Enabled *bool `json:"enabled,omitempty"`
+
+		// Vars Input/stream level variable (see integration documentation for more information)
+		Vars *map[string]*AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties `json:"vars,omitempty"`
+	} `json:"streams,omitempty"`
+
+	// Vars Input/stream level variable (see integration documentation for more information)
+	Vars *map[string]*AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties `json:"vars,omitempty"`
+}
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars0 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars0 = bool
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars1 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars1 = string
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars2 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars2 = float32
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars3 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars3 = []string
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars4 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars4 = []float32
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars5 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars5 struct {
+	Id          string `json:"id"`
+	IsSecretRef bool   `json:"isSecretRef"`
+}
+
+// AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Inputs.1.Streams.Vars.AdditionalProperties.
+type AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// AgentPolicyPackagePolicies1Inputs1Vars0 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars0 = bool
+
+// AgentPolicyPackagePolicies1Inputs1Vars1 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars1 = string
+
+// AgentPolicyPackagePolicies1Inputs1Vars2 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars2 = float32
+
+// AgentPolicyPackagePolicies1Inputs1Vars3 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars3 = []string
+
+// AgentPolicyPackagePolicies1Inputs1Vars4 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars4 = []float32
+
+// AgentPolicyPackagePolicies1Inputs1Vars5 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars5 struct {
+	Id          string `json:"id"`
+	IsSecretRef bool   `json:"isSecretRef"`
+}
+
+// AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Inputs.1.Vars.AdditionalProperties.
+type AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// AgentPolicy_PackagePolicies_1_Inputs defines model for AgentPolicy.PackagePolicies.1.Inputs.
+type AgentPolicy_PackagePolicies_1_Inputs struct {
+	union json.RawMessage
+}
+
+// AgentPolicyPackagePolicies1Vars0 Package variable (see integration documentation for more information)
+type AgentPolicyPackagePolicies1Vars0 map[string]struct {
+	Frozen *bool       `json:"frozen,omitempty"`
+	Type   *string     `json:"type,omitempty"`
+	Value  interface{} `json:"value"`
+}
+
+// AgentPolicyPackagePolicies1Vars1 Input/stream level variable (see integration documentation for more information)
+type AgentPolicyPackagePolicies1Vars1 map[string]*AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties
+
+// AgentPolicyPackagePolicies1Vars10 defines model for .
+type AgentPolicyPackagePolicies1Vars10 = bool
+
+// AgentPolicyPackagePolicies1Vars11 defines model for .
+type AgentPolicyPackagePolicies1Vars11 = string
+
+// AgentPolicyPackagePolicies1Vars12 defines model for .
+type AgentPolicyPackagePolicies1Vars12 = float32
+
+// AgentPolicyPackagePolicies1Vars13 defines model for .
+type AgentPolicyPackagePolicies1Vars13 = []string
+
+// AgentPolicyPackagePolicies1Vars14 defines model for .
+type AgentPolicyPackagePolicies1Vars14 = []float32
+
+// AgentPolicyPackagePolicies1Vars15 defines model for .
+type AgentPolicyPackagePolicies1Vars15 struct {
+	Id          string `json:"id"`
+	IsSecretRef bool   `json:"isSecretRef"`
+}
+
+// AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Vars.1.AdditionalProperties.
+type AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// AgentPolicy_PackagePolicies_1_Vars defines model for AgentPolicy.PackagePolicies.1.Vars.
+type AgentPolicy_PackagePolicies_1_Vars struct {
+	union json.RawMessage
+}
 
 // AgentPolicy_PackagePolicies defines model for AgentPolicy.PackagePolicies.
 type AgentPolicy_PackagePolicies struct {
@@ -1027,6 +1150,23 @@ type AgentPolicy_PackagePolicies struct {
 
 // AgentPolicyStatus defines model for AgentPolicy.Status.
 type AgentPolicyStatus string
+
+// AgentPolicyGlobalDataTagsItem defines model for agent_policy_global_data_tags_item.
+type AgentPolicyGlobalDataTagsItem struct {
+	Name  string                              `json:"name"`
+	Value AgentPolicyGlobalDataTagsItem_Value `json:"value"`
+}
+
+// AgentPolicyGlobalDataTagsItemValue0 defines model for .
+type AgentPolicyGlobalDataTagsItemValue0 = string
+
+// AgentPolicyGlobalDataTagsItemValue1 defines model for .
+type AgentPolicyGlobalDataTagsItemValue1 = float32
+
+// AgentPolicyGlobalDataTagsItem_Value defines model for AgentPolicyGlobalDataTagsItem.Value.
+type AgentPolicyGlobalDataTagsItem_Value struct {
+	union json.RawMessage
+}
 
 // EnrollmentApiKey defines model for enrollment_api_key.
 type EnrollmentApiKey struct {
@@ -2065,10 +2205,13 @@ type PackagePolicy struct {
 	Revision         float32                   `json:"revision"`
 	SecretReferences *[]PackagePolicySecretRef `json:"secret_references,omitempty"`
 	SpaceIds         *[]string                 `json:"spaceIds,omitempty"`
-	UpdatedAt        string                    `json:"updated_at"`
-	UpdatedBy        string                    `json:"updated_by"`
-	Vars             *map[string]interface{}   `json:"vars,omitempty"`
-	Version          *string                   `json:"version,omitempty"`
+
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool                   `json:"supports_agentless"`
+	UpdatedAt         string                  `json:"updated_at"`
+	UpdatedBy         string                  `json:"updated_by"`
+	Vars              *map[string]interface{} `json:"vars,omitempty"`
+	Version           *string                 `json:"version,omitempty"`
 }
 
 // PackagePolicy_Elasticsearch_Privileges defines model for PackagePolicy.Elasticsearch.Privileges.
@@ -2114,7 +2257,10 @@ type PackagePolicyRequest struct {
 	Package   PackagePolicyRequestPackage           `json:"package"`
 	PolicyId  *string                               `json:"policy_id"`
 	PolicyIds *[]string                             `json:"policy_ids,omitempty"`
-	Vars      *map[string]interface{}               `json:"vars,omitempty"`
+
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool                   `json:"supports_agentless"`
+	Vars              *map[string]interface{} `json:"vars,omitempty"`
 }
 
 // PackagePolicyRequestInput defines model for package_policy_request_input.
@@ -2441,16 +2587,28 @@ type GetFleetAgentPoliciesParamsFormat string
 // PostFleetAgentPoliciesJSONBody defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
+	Agentless *struct {
+		Resources *struct {
+			Requests *struct {
+				Cpu    *string `json:"cpu,omitempty"`
+				Memory *string `json:"memory,omitempty"`
+			} `json:"requests,omitempty"`
+		} `json:"resources,omitempty"`
+	} `json:"agentless,omitempty"`
 	DataOutputId      *string `json:"data_output_id"`
 	Description       *string `json:"description,omitempty"`
 	DownloadSourceId  *string `json:"download_source_id"`
@@ -2458,17 +2616,14 @@ type PostFleetAgentPoliciesJSONBody struct {
 	Force             *bool   `json:"force,omitempty"`
 
 	// GlobalDataTags User defined data tags that are added to all of the inputs. The values can be strings or numbers.
-	GlobalDataTags *[]struct {
-		Name  string                                              `json:"name"`
-		Value PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value `json:"value"`
-	} `json:"global_data_tags,omitempty"`
-	HasFleetServer       *bool    `json:"has_fleet_server,omitempty"`
-	Id                   *string  `json:"id,omitempty"`
-	InactivityTimeout    *float32 `json:"inactivity_timeout,omitempty"`
-	IsDefault            *bool    `json:"is_default,omitempty"`
-	IsDefaultFleetServer *bool    `json:"is_default_fleet_server,omitempty"`
-	IsManaged            *bool    `json:"is_managed,omitempty"`
-	IsProtected          *bool    `json:"is_protected,omitempty"`
+	GlobalDataTags       *[]AgentPolicyGlobalDataTagsItem `json:"global_data_tags,omitempty"`
+	HasFleetServer       *bool                            `json:"has_fleet_server,omitempty"`
+	Id                   *string                          `json:"id,omitempty"`
+	InactivityTimeout    *float32                         `json:"inactivity_timeout,omitempty"`
+	IsDefault            *bool                            `json:"is_default,omitempty"`
+	IsDefaultFleetServer *bool                            `json:"is_default_fleet_server,omitempty"`
+	IsManaged            *bool                            `json:"is_managed,omitempty"`
+	IsProtected          *bool                            `json:"is_protected,omitempty"`
 
 	// KeepMonitoringAlive When set to true, monitoring will be enabled but logs/metrics collection will be disabled
 	KeepMonitoringAlive   *bool `json:"keep_monitoring_alive,omitempty"`
@@ -2488,7 +2643,7 @@ type PostFleetAgentPoliciesJSONBody struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -2499,8 +2654,14 @@ type PostFleetAgentPoliciesJSONBody struct {
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
 	Overrides        *map[string]interface{} `json:"overrides,omitempty"`
-	RequiredVersions *interface{}            `json:"required_versions,omitempty"`
-	SpaceIds         *[]string               `json:"space_ids,omitempty"`
+	RequiredVersions *[]struct {
+		// Percentage Target percentage of agents to auto upgrade
+		Percentage float32 `json:"percentage"`
+
+		// Version Target version for automatic agent upgrade
+		Version string `json:"version"`
+	} `json:"required_versions,omitempty"`
+	SpaceIds *[]string `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless *bool    `json:"supports_agentless,omitempty"`
@@ -2510,17 +2671,6 @@ type PostFleetAgentPoliciesJSONBody struct {
 // PostFleetAgentPoliciesParams defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesParams struct {
 	SysMonitoring *bool `form:"sys_monitoring,omitempty" json:"sys_monitoring,omitempty"`
-}
-
-// PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue0 defines parameters for PostFleetAgentPolicies.
-type PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue0 = string
-
-// PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue1 defines parameters for PostFleetAgentPolicies.
-type PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue1 = float32
-
-// PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value defines parameters for PostFleetAgentPolicies.
-type PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value struct {
-	union json.RawMessage
 }
 
 // PostFleetAgentPoliciesJSONBodyMonitoringEnabled defines parameters for PostFleetAgentPolicies.
@@ -2545,16 +2695,28 @@ type GetFleetAgentPoliciesAgentpolicyidParamsFormat string
 // PutFleetAgentPoliciesAgentpolicyidJSONBody defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
+	Agentless *struct {
+		Resources *struct {
+			Requests *struct {
+				Cpu    *string `json:"cpu,omitempty"`
+				Memory *string `json:"memory,omitempty"`
+			} `json:"requests,omitempty"`
+		} `json:"resources,omitempty"`
+	} `json:"agentless,omitempty"`
 	DataOutputId      *string `json:"data_output_id"`
 	Description       *string `json:"description,omitempty"`
 	DownloadSourceId  *string `json:"download_source_id"`
@@ -2562,17 +2724,14 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	Force             *bool   `json:"force,omitempty"`
 
 	// GlobalDataTags User defined data tags that are added to all of the inputs. The values can be strings or numbers.
-	GlobalDataTags *[]struct {
-		Name  string                                                          `json:"name"`
-		Value PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value `json:"value"`
-	} `json:"global_data_tags,omitempty"`
-	HasFleetServer       *bool    `json:"has_fleet_server,omitempty"`
-	Id                   *string  `json:"id,omitempty"`
-	InactivityTimeout    *float32 `json:"inactivity_timeout,omitempty"`
-	IsDefault            *bool    `json:"is_default,omitempty"`
-	IsDefaultFleetServer *bool    `json:"is_default_fleet_server,omitempty"`
-	IsManaged            *bool    `json:"is_managed,omitempty"`
-	IsProtected          *bool    `json:"is_protected,omitempty"`
+	GlobalDataTags       *[]AgentPolicyGlobalDataTagsItem `json:"global_data_tags,omitempty"`
+	HasFleetServer       *bool                            `json:"has_fleet_server,omitempty"`
+	Id                   *string                          `json:"id,omitempty"`
+	InactivityTimeout    *float32                         `json:"inactivity_timeout,omitempty"`
+	IsDefault            *bool                            `json:"is_default,omitempty"`
+	IsDefaultFleetServer *bool                            `json:"is_default_fleet_server,omitempty"`
+	IsManaged            *bool                            `json:"is_managed,omitempty"`
+	IsProtected          *bool                            `json:"is_protected,omitempty"`
 
 	// KeepMonitoringAlive When set to true, monitoring will be enabled but logs/metrics collection will be disabled
 	KeepMonitoringAlive   *bool `json:"keep_monitoring_alive,omitempty"`
@@ -2592,7 +2751,7 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -2603,8 +2762,14 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
 	Overrides        *map[string]interface{} `json:"overrides,omitempty"`
-	RequiredVersions *interface{}            `json:"required_versions,omitempty"`
-	SpaceIds         *[]string               `json:"space_ids,omitempty"`
+	RequiredVersions *[]struct {
+		// Percentage Target percentage of agents to auto upgrade
+		Percentage float32 `json:"percentage"`
+
+		// Version Target version for automatic agent upgrade
+		Version string `json:"version"`
+	} `json:"required_versions,omitempty"`
+	SpaceIds *[]string `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless *bool    `json:"supports_agentless,omitempty"`
@@ -2618,17 +2783,6 @@ type PutFleetAgentPoliciesAgentpolicyidParams struct {
 
 // PutFleetAgentPoliciesAgentpolicyidParamsFormat defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidParamsFormat string
-
-// PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue0 defines parameters for PutFleetAgentPoliciesAgentpolicyid.
-type PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue0 = string
-
-// PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue1 defines parameters for PutFleetAgentPoliciesAgentpolicyid.
-type PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue1 = float32
-
-// PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value defines parameters for PutFleetAgentPoliciesAgentpolicyid.
-type PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value struct {
-	union json.RawMessage
-}
 
 // PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled string
@@ -10231,22 +10385,22 @@ func (a PackagePolicy_Elasticsearch) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// AsAgentPolicyGlobalDataTagsValue0 returns the union data inside the AgentPolicy_GlobalDataTags_Value as a AgentPolicyGlobalDataTagsValue0
-func (t AgentPolicy_GlobalDataTags_Value) AsAgentPolicyGlobalDataTagsValue0() (AgentPolicyGlobalDataTagsValue0, error) {
-	var body AgentPolicyGlobalDataTagsValue0
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars0
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars0() (AgentPolicyPackagePolicies1Inputs1StreamsVars0, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromAgentPolicyGlobalDataTagsValue0 overwrites any union data inside the AgentPolicy_GlobalDataTags_Value as the provided AgentPolicyGlobalDataTagsValue0
-func (t *AgentPolicy_GlobalDataTags_Value) FromAgentPolicyGlobalDataTagsValue0(v AgentPolicyGlobalDataTagsValue0) error {
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars0
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars0(v AgentPolicyPackagePolicies1Inputs1StreamsVars0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeAgentPolicyGlobalDataTagsValue0 performs a merge with any union data inside the AgentPolicy_GlobalDataTags_Value, using the provided AgentPolicyGlobalDataTagsValue0
-func (t *AgentPolicy_GlobalDataTags_Value) MergeAgentPolicyGlobalDataTagsValue0(v AgentPolicyGlobalDataTagsValue0) error {
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars0
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars0(v AgentPolicyPackagePolicies1Inputs1StreamsVars0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10257,22 +10411,22 @@ func (t *AgentPolicy_GlobalDataTags_Value) MergeAgentPolicyGlobalDataTagsValue0(
 	return err
 }
 
-// AsAgentPolicyGlobalDataTagsValue1 returns the union data inside the AgentPolicy_GlobalDataTags_Value as a AgentPolicyGlobalDataTagsValue1
-func (t AgentPolicy_GlobalDataTags_Value) AsAgentPolicyGlobalDataTagsValue1() (AgentPolicyGlobalDataTagsValue1, error) {
-	var body AgentPolicyGlobalDataTagsValue1
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars1
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars1() (AgentPolicyPackagePolicies1Inputs1StreamsVars1, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromAgentPolicyGlobalDataTagsValue1 overwrites any union data inside the AgentPolicy_GlobalDataTags_Value as the provided AgentPolicyGlobalDataTagsValue1
-func (t *AgentPolicy_GlobalDataTags_Value) FromAgentPolicyGlobalDataTagsValue1(v AgentPolicyGlobalDataTagsValue1) error {
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars1
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars1(v AgentPolicyPackagePolicies1Inputs1StreamsVars1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeAgentPolicyGlobalDataTagsValue1 performs a merge with any union data inside the AgentPolicy_GlobalDataTags_Value, using the provided AgentPolicyGlobalDataTagsValue1
-func (t *AgentPolicy_GlobalDataTags_Value) MergeAgentPolicyGlobalDataTagsValue1(v AgentPolicyGlobalDataTagsValue1) error {
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars1
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars1(v AgentPolicyPackagePolicies1Inputs1StreamsVars1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10283,12 +10437,572 @@ func (t *AgentPolicy_GlobalDataTags_Value) MergeAgentPolicyGlobalDataTagsValue1(
 	return err
 }
 
-func (t AgentPolicy_GlobalDataTags_Value) MarshalJSON() ([]byte, error) {
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars2 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars2
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars2() (AgentPolicyPackagePolicies1Inputs1StreamsVars2, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars2 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars2
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars2(v AgentPolicyPackagePolicies1Inputs1StreamsVars2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars2 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars2
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars2(v AgentPolicyPackagePolicies1Inputs1StreamsVars2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars3 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars3
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars3() (AgentPolicyPackagePolicies1Inputs1StreamsVars3, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars3 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars3
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars3(v AgentPolicyPackagePolicies1Inputs1StreamsVars3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars3 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars3
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars3(v AgentPolicyPackagePolicies1Inputs1StreamsVars3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars4 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars4
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars4() (AgentPolicyPackagePolicies1Inputs1StreamsVars4, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars4
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars4 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars4
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars4(v AgentPolicyPackagePolicies1Inputs1StreamsVars4) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars4 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars4
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars4(v AgentPolicyPackagePolicies1Inputs1StreamsVars4) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars5 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars5
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars5() (AgentPolicyPackagePolicies1Inputs1StreamsVars5, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars5
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars5 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars5
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars5(v AgentPolicyPackagePolicies1Inputs1StreamsVars5) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars5 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars5
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars5(v AgentPolicyPackagePolicies1Inputs1StreamsVars5) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *AgentPolicy_GlobalDataTags_Value) UnmarshalJSON(b []byte) error {
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars0
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars0() (AgentPolicyPackagePolicies1Inputs1Vars0, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars0
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars0(v AgentPolicyPackagePolicies1Inputs1Vars0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars0
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars0(v AgentPolicyPackagePolicies1Inputs1Vars0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars1
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars1() (AgentPolicyPackagePolicies1Inputs1Vars1, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars1
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars1(v AgentPolicyPackagePolicies1Inputs1Vars1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars1
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars1(v AgentPolicyPackagePolicies1Inputs1Vars1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars2 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars2
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars2() (AgentPolicyPackagePolicies1Inputs1Vars2, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars2 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars2
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars2(v AgentPolicyPackagePolicies1Inputs1Vars2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars2 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars2
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars2(v AgentPolicyPackagePolicies1Inputs1Vars2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars3 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars3
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars3() (AgentPolicyPackagePolicies1Inputs1Vars3, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars3 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars3
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars3(v AgentPolicyPackagePolicies1Inputs1Vars3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars3 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars3
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars3(v AgentPolicyPackagePolicies1Inputs1Vars3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars4 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars4
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars4() (AgentPolicyPackagePolicies1Inputs1Vars4, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars4
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars4 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars4
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars4(v AgentPolicyPackagePolicies1Inputs1Vars4) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars4 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars4
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars4(v AgentPolicyPackagePolicies1Inputs1Vars4) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars5 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars5
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars5() (AgentPolicyPackagePolicies1Inputs1Vars5, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars5
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars5 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars5
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars5(v AgentPolicyPackagePolicies1Inputs1Vars5) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars5 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars5
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars5(v AgentPolicyPackagePolicies1Inputs1Vars5) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs as a AgentPolicyPackagePolicies1Inputs0
+func (t AgentPolicy_PackagePolicies_1_Inputs) AsAgentPolicyPackagePolicies1Inputs0() (AgentPolicyPackagePolicies1Inputs0, error) {
+	var body AgentPolicyPackagePolicies1Inputs0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs as the provided AgentPolicyPackagePolicies1Inputs0
+func (t *AgentPolicy_PackagePolicies_1_Inputs) FromAgentPolicyPackagePolicies1Inputs0(v AgentPolicyPackagePolicies1Inputs0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs, using the provided AgentPolicyPackagePolicies1Inputs0
+func (t *AgentPolicy_PackagePolicies_1_Inputs) MergeAgentPolicyPackagePolicies1Inputs0(v AgentPolicyPackagePolicies1Inputs0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs as a AgentPolicyPackagePolicies1Inputs1
+func (t AgentPolicy_PackagePolicies_1_Inputs) AsAgentPolicyPackagePolicies1Inputs1() (AgentPolicyPackagePolicies1Inputs1, error) {
+	var body AgentPolicyPackagePolicies1Inputs1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs as the provided AgentPolicyPackagePolicies1Inputs1
+func (t *AgentPolicy_PackagePolicies_1_Inputs) FromAgentPolicyPackagePolicies1Inputs1(v AgentPolicyPackagePolicies1Inputs1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs, using the provided AgentPolicyPackagePolicies1Inputs1
+func (t *AgentPolicy_PackagePolicies_1_Inputs) MergeAgentPolicyPackagePolicies1Inputs1(v AgentPolicyPackagePolicies1Inputs1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Inputs) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Inputs) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars10 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars10
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars10() (AgentPolicyPackagePolicies1Vars10, error) {
+	var body AgentPolicyPackagePolicies1Vars10
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars10 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars10
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars10(v AgentPolicyPackagePolicies1Vars10) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars10 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars10
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars10(v AgentPolicyPackagePolicies1Vars10) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars11 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars11
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars11() (AgentPolicyPackagePolicies1Vars11, error) {
+	var body AgentPolicyPackagePolicies1Vars11
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars11 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars11
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars11(v AgentPolicyPackagePolicies1Vars11) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars11 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars11
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars11(v AgentPolicyPackagePolicies1Vars11) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars12 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars12
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars12() (AgentPolicyPackagePolicies1Vars12, error) {
+	var body AgentPolicyPackagePolicies1Vars12
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars12 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars12
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars12(v AgentPolicyPackagePolicies1Vars12) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars12 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars12
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars12(v AgentPolicyPackagePolicies1Vars12) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars13 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars13
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars13() (AgentPolicyPackagePolicies1Vars13, error) {
+	var body AgentPolicyPackagePolicies1Vars13
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars13 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars13
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars13(v AgentPolicyPackagePolicies1Vars13) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars13 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars13
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars13(v AgentPolicyPackagePolicies1Vars13) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars14 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars14
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars14() (AgentPolicyPackagePolicies1Vars14, error) {
+	var body AgentPolicyPackagePolicies1Vars14
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars14 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars14
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars14(v AgentPolicyPackagePolicies1Vars14) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars14 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars14
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars14(v AgentPolicyPackagePolicies1Vars14) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars15 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars15
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars15() (AgentPolicyPackagePolicies1Vars15, error) {
+	var body AgentPolicyPackagePolicies1Vars15
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars15 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars15
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars15(v AgentPolicyPackagePolicies1Vars15) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars15 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars15
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars15(v AgentPolicyPackagePolicies1Vars15) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars as a AgentPolicyPackagePolicies1Vars0
+func (t AgentPolicy_PackagePolicies_1_Vars) AsAgentPolicyPackagePolicies1Vars0() (AgentPolicyPackagePolicies1Vars0, error) {
+	var body AgentPolicyPackagePolicies1Vars0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars as the provided AgentPolicyPackagePolicies1Vars0
+func (t *AgentPolicy_PackagePolicies_1_Vars) FromAgentPolicyPackagePolicies1Vars0(v AgentPolicyPackagePolicies1Vars0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars, using the provided AgentPolicyPackagePolicies1Vars0
+func (t *AgentPolicy_PackagePolicies_1_Vars) MergeAgentPolicyPackagePolicies1Vars0(v AgentPolicyPackagePolicies1Vars0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars as a AgentPolicyPackagePolicies1Vars1
+func (t AgentPolicy_PackagePolicies_1_Vars) AsAgentPolicyPackagePolicies1Vars1() (AgentPolicyPackagePolicies1Vars1, error) {
+	var body AgentPolicyPackagePolicies1Vars1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars as the provided AgentPolicyPackagePolicies1Vars1
+func (t *AgentPolicy_PackagePolicies_1_Vars) FromAgentPolicyPackagePolicies1Vars1(v AgentPolicyPackagePolicies1Vars1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars, using the provided AgentPolicyPackagePolicies1Vars1
+func (t *AgentPolicy_PackagePolicies_1_Vars) MergeAgentPolicyPackagePolicies1Vars1(v AgentPolicyPackagePolicies1Vars1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Vars) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Vars) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -10351,6 +11065,68 @@ func (t AgentPolicy_PackagePolicies) MarshalJSON() ([]byte, error) {
 }
 
 func (t *AgentPolicy_PackagePolicies) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyGlobalDataTagsItemValue0 returns the union data inside the AgentPolicyGlobalDataTagsItem_Value as a AgentPolicyGlobalDataTagsItemValue0
+func (t AgentPolicyGlobalDataTagsItem_Value) AsAgentPolicyGlobalDataTagsItemValue0() (AgentPolicyGlobalDataTagsItemValue0, error) {
+	var body AgentPolicyGlobalDataTagsItemValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyGlobalDataTagsItemValue0 overwrites any union data inside the AgentPolicyGlobalDataTagsItem_Value as the provided AgentPolicyGlobalDataTagsItemValue0
+func (t *AgentPolicyGlobalDataTagsItem_Value) FromAgentPolicyGlobalDataTagsItemValue0(v AgentPolicyGlobalDataTagsItemValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyGlobalDataTagsItemValue0 performs a merge with any union data inside the AgentPolicyGlobalDataTagsItem_Value, using the provided AgentPolicyGlobalDataTagsItemValue0
+func (t *AgentPolicyGlobalDataTagsItem_Value) MergeAgentPolicyGlobalDataTagsItemValue0(v AgentPolicyGlobalDataTagsItemValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyGlobalDataTagsItemValue1 returns the union data inside the AgentPolicyGlobalDataTagsItem_Value as a AgentPolicyGlobalDataTagsItemValue1
+func (t AgentPolicyGlobalDataTagsItem_Value) AsAgentPolicyGlobalDataTagsItemValue1() (AgentPolicyGlobalDataTagsItemValue1, error) {
+	var body AgentPolicyGlobalDataTagsItemValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyGlobalDataTagsItemValue1 overwrites any union data inside the AgentPolicyGlobalDataTagsItem_Value as the provided AgentPolicyGlobalDataTagsItemValue1
+func (t *AgentPolicyGlobalDataTagsItem_Value) FromAgentPolicyGlobalDataTagsItemValue1(v AgentPolicyGlobalDataTagsItemValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyGlobalDataTagsItemValue1 performs a merge with any union data inside the AgentPolicyGlobalDataTagsItem_Value, using the provided AgentPolicyGlobalDataTagsItemValue1
+func (t *AgentPolicyGlobalDataTagsItem_Value) MergeAgentPolicyGlobalDataTagsItemValue1(v AgentPolicyGlobalDataTagsItemValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicyGlobalDataTagsItem_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicyGlobalDataTagsItem_Value) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
