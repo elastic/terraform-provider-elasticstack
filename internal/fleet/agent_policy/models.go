@@ -1,7 +1,6 @@
 package agent_policy
 
 import (
-	"context"
 	"encoding/json"
 	"slices"
 
@@ -12,25 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// type globalDataTagModel struct {
-// 	Name  types.String `tfsdk:"name"`
-// 	Value types.String `tfsdk:"value"`
-// }
-
-// func newGlobalDataTagModel(data struct {
-// 	Name  string                                 "json:\"name\""
-// 	Value kbapi.AgentPolicy_GlobalDataTags_Value "json:\"value\""
-// }) globalDataTagModel {
-// 	val, err := data.Value.AsAgentPolicyGlobalDataTagsValue0()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return globalDataTagModel{
-// 		Name:  types.StringValue(data.Name),
-// 		Value: types.StringValue(val),
-// 	}
-// }
 
 type agentPolicyModel struct {
 	ID                 types.String `tfsdk:"id"`
@@ -49,7 +29,7 @@ type agentPolicyModel struct {
 	GlobalDataTags     types.String `tfsdk:"global_data_tags"`
 }
 
-func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy, serverVersion *version.Version) diag.Diagnostics {
+func (model *agentPolicyModel) populateFromAPI(data *kbapi.AgentPolicy, serverVersion *version.Version) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -81,18 +61,19 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.Namespace = types.StringValue(data.Namespace)
 	if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) && utils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
-		d, err := json.Marshal(data.GlobalDataTags)
+		d, err := json.Marshal(utils.Deref(data.GlobalDataTags))
 		if err != nil {
 			diags.AddError("Failed to marshal global data tags", err.Error())
 			return diags
 		}
-		model.GlobalDataTags = types.StringValue(string(d))
+		strD := string(d)
+		model.GlobalDataTags = types.StringPointerValue(&strD)
 	}
 
 	return nil
 }
 
-func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPICreateModel(serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
 
 	if model.MonitorLogs.ValueBool() {
@@ -122,22 +103,21 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 		}
 
 		str := model.GlobalDataTags.ValueStringPointer()
-		var items []struct {
-			Name  string                                                    `json:"name"`
-			Value kbapi.PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value `json:"value"`
-		}
+		var items []kbapi.AgentPolicyGlobalDataTagsItem
 
-		err := json.Unmarshal([]byte(utils.Deref(str)), &items)
+		err := json.Unmarshal([]byte(*str), &items)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 		}
-		*body.GlobalDataTags = items
+
+		body.GlobalDataTags = &items
 	}
+
 	return body, nil
 }
 
-func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPIUpdateModel(serverVersion *version.Version) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.Logs)
@@ -163,17 +143,17 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 			diags.AddError("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above")
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
+
 		str := model.GlobalDataTags.ValueStringPointer()
-		var items []struct {
-			Name  string                                                                `json:"name"`
-			Value kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value `json:"value"`
-		}
-		err := json.Unmarshal([]byte(utils.Deref(str)), &items)
+		var items []kbapi.AgentPolicyGlobalDataTagsItem
+
+		err := json.Unmarshal([]byte(*str), &items)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
-		*body.GlobalDataTags = items
+
+		body.GlobalDataTags = &items
 	}
 
 	return body, nil
