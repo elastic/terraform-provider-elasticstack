@@ -224,6 +224,8 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("data_stream"); ok {
 		// 8.x workaround
 		hasAllowCustomRouting := false
+		// 7.11.x workaround
+		hasHidden := false
 		if d.HasChange("data_stream") {
 			old, _ := d.GetChange("data_stream")
 
@@ -233,6 +235,9 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 					if acr, ok := setting["allow_custom_routing"]; ok && acr.(bool) {
 						hasAllowCustomRouting = true
 					}
+					if h, ok := setting["hidden"]; ok && h.(bool) {
+						hasHidden = true
+					}
 				}
 			}
 		}
@@ -241,7 +246,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		if v.([]interface{})[0] != nil {
 			stream := v.([]interface{})[0].(map[string]interface{})
 			dSettings := &models.DataStreamSettings{}
-			if s, ok := stream["hidden"]; ok {
+			if s, ok := stream["hidden"]; ok && (hasHidden || s.(bool)) {
 				hidden := s.(bool)
 				dSettings.Hidden = &hidden
 			}
