@@ -46,7 +46,7 @@ func ResourceTemplate() *schema.Resource {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"hidden": {
-						Description: "If true, the data stream is hidden.",
+						Description: "If true, the data stream is hidden. Defaults to `false`. Available only in **8.x**",
 						Type:        schema.TypeBool,
 						Default:     false,
 						Optional:    true,

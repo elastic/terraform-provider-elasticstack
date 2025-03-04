@@ -73,7 +73,7 @@ resource "elasticstack_elasticsearch_index_template" "my_data_stream" {
 Optional:
 
 - `allow_custom_routing` (Boolean) If `true`, the data stream supports custom routing. Defaults to `false`. Available only in **8.x**
-- `hidden` (Boolean) If true, the data stream is hidden.
+- `hidden` (Boolean) If true, the data stream is hidden. Defaults to `false`. Available only in **8.x**
 
 
 <a id="nestedblock--elasticsearch_connection"></a>
