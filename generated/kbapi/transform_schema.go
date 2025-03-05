@@ -837,10 +837,8 @@ func transformFleetPaths(schema *Schema) {
 		agentPoliciesPath.Post.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
 		agentPolicyPath.Put.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
 	}
-
-	// do global_data_tags refs
 	schema.Components.CreateRef(schema, "agent_policy_global_data_tags_item", "schemas.agent_policy.properties.global_data_tags.items")
-	// Define the value types for the GlobalDataTags
+
 	schema.Components.Set("schemas.agent_policy_global_data_tags_item", Map{
 		"type": "object",
 		"properties": Map{
@@ -855,6 +853,7 @@ func transformFleetPaths(schema *Schema) {
 		"required": []string{"name", "value"},
 	})
 
+	// Define the value types for the GlobalDataTags
 	agentPoliciesPath.Post.Set("requestBody.content.application/json.schema.properties.global_data_tags.items.$ref", "#/components/schemas/agent_policy_global_data_tags_item")
 	agentPolicyPath.Put.Set("requestBody.content.application/json.schema.properties.global_data_tags.items.$ref", "#/components/schemas/agent_policy_global_data_tags_item")
 
