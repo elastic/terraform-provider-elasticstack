@@ -31,7 +31,7 @@ spec:
       teams:
         control-plane-hosted-applications:
           access_level: MANAGE_BUILD_AND_READ
-        serverless-core-architecture:
+        serverless-core:
           access_level: MANAGE_BUILD_AND_READ
         everyone:
           access_level: READ_ONLY
