@@ -39,11 +39,11 @@ const (
 	AgentPolicyMonitoringEnabledTraces  AgentPolicyMonitoringEnabled = "traces"
 )
 
-// Defines values for AgentPolicyPackagePolicies1Inputs0StreamsRelease.
+// Defines values for AgentPolicyPackagePolicies1InputsStreamsRelease.
 const (
-	AgentPolicyPackagePolicies1Inputs0StreamsReleaseBeta         AgentPolicyPackagePolicies1Inputs0StreamsRelease = "beta"
-	AgentPolicyPackagePolicies1Inputs0StreamsReleaseExperimental AgentPolicyPackagePolicies1Inputs0StreamsRelease = "experimental"
-	AgentPolicyPackagePolicies1Inputs0StreamsReleaseGa           AgentPolicyPackagePolicies1Inputs0StreamsRelease = "ga"
+	AgentPolicyPackagePolicies1InputsStreamsReleaseBeta         AgentPolicyPackagePolicies1InputsStreamsRelease = "beta"
+	AgentPolicyPackagePolicies1InputsStreamsReleaseExperimental AgentPolicyPackagePolicies1InputsStreamsRelease = "experimental"
+	AgentPolicyPackagePolicies1InputsStreamsReleaseGa           AgentPolicyPackagePolicies1InputsStreamsRelease = "ga"
 )
 
 // Defines values for AgentPolicyStatus.
@@ -795,28 +795,16 @@ type DataViewsUpdateDataViewRequestObjectInner struct {
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
-		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
-		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
-		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
-		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
+		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
-	Agentless *struct {
-		Resources *struct {
-			Requests *struct {
-				Cpu    *string `json:"cpu,omitempty"`
-				Memory *string `json:"memory,omitempty"`
-			} `json:"requests,omitempty"`
-		} `json:"resources,omitempty"`
-	} `json:"agentless,omitempty"`
 	Agents            *float32 `json:"agents,omitempty"`
 	DataOutputId      *string  `json:"data_output_id"`
 	Description       *string  `json:"description,omitempty"`
@@ -854,7 +842,7 @@ type AgentPolicy struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled *bool    `json:"enabled,omitempty"`
+		Enabled bool     `json:"enabled"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -864,19 +852,12 @@ type AgentPolicy struct {
 	Namespace              string  `json:"namespace"`
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
-	Overrides        *map[string]interface{}      `json:"overrides"`
-	PackagePolicies  *AgentPolicy_PackagePolicies `json:"package_policies,omitempty"`
-	RequiredVersions *[]struct {
-		// Percentage Target percentage of agents to auto upgrade
-		Percentage float32 `json:"percentage"`
-
-		// Version Target version for automatic agent upgrade
-		Version string `json:"version"`
-	} `json:"required_versions"`
-	Revision      float32           `json:"revision"`
-	SchemaVersion *string           `json:"schema_version,omitempty"`
-	SpaceIds      *[]string         `json:"space_ids,omitempty"`
-	Status        AgentPolicyStatus `json:"status"`
+	Overrides       *map[string]interface{}      `json:"overrides"`
+	PackagePolicies *AgentPolicy_PackagePolicies `json:"package_policies,omitempty"`
+	Revision        float32                      `json:"revision"`
+	SchemaVersion   *string                      `json:"schema_version,omitempty"`
+	SpaceIds        *[]string                    `json:"space_ids,omitempty"`
+	Status          AgentPolicyStatus            `json:"status"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless  *bool    `json:"supports_agentless"`
@@ -895,17 +876,69 @@ type AgentPolicyPackagePolicies0 = []string
 
 // AgentPolicyPackagePolicies1 This field is present only when retrieving a single agent policy, or when retrieving a list of agent policies with the ?full=true parameter
 type AgentPolicyPackagePolicies1 = []struct {
-	Agents    *float32 `json:"agents,omitempty"`
-	CreatedAt string   `json:"created_at"`
-	CreatedBy string   `json:"created_by"`
+	CreatedAt string `json:"created_at"`
+	CreatedBy string `json:"created_by"`
 
 	// Description Package policy description
 	Description   *string                                      `json:"description,omitempty"`
 	Elasticsearch *AgentPolicy_PackagePolicies_1_Elasticsearch `json:"elasticsearch,omitempty"`
 	Enabled       bool                                         `json:"enabled"`
 	Id            string                                       `json:"id"`
-	Inputs        AgentPolicy_PackagePolicies_1_Inputs         `json:"inputs"`
-	IsManaged     *bool                                        `json:"is_managed,omitempty"`
+	Inputs        []struct {
+		CompiledInput interface{} `json:"compiled_input"`
+
+		// Config Package variable (see integration documentation for more information)
+		Config *map[string]struct {
+			Frozen *bool       `json:"frozen,omitempty"`
+			Type   *string     `json:"type,omitempty"`
+			Value  interface{} `json:"value"`
+		} `json:"config,omitempty"`
+		Enabled        bool    `json:"enabled"`
+		Id             *string `json:"id,omitempty"`
+		KeepEnabled    *bool   `json:"keep_enabled,omitempty"`
+		PolicyTemplate *string `json:"policy_template,omitempty"`
+		Streams        []struct {
+			CompiledStream interface{} `json:"compiled_stream"`
+
+			// Config Package variable (see integration documentation for more information)
+			Config *map[string]struct {
+				Frozen *bool       `json:"frozen,omitempty"`
+				Type   *string     `json:"type,omitempty"`
+				Value  interface{} `json:"value"`
+			} `json:"config,omitempty"`
+			DataStream struct {
+				Dataset       string `json:"dataset"`
+				Elasticsearch *struct {
+					DynamicDataset   *bool `json:"dynamic_dataset,omitempty"`
+					DynamicNamespace *bool `json:"dynamic_namespace,omitempty"`
+					Privileges       *struct {
+						Indices *[]string `json:"indices,omitempty"`
+					} `json:"privileges,omitempty"`
+				} `json:"elasticsearch,omitempty"`
+				Type string `json:"type"`
+			} `json:"data_stream"`
+			Enabled     bool                                             `json:"enabled"`
+			Id          *string                                          `json:"id,omitempty"`
+			KeepEnabled *bool                                            `json:"keep_enabled,omitempty"`
+			Release     *AgentPolicyPackagePolicies1InputsStreamsRelease `json:"release,omitempty"`
+
+			// Vars Package variable (see integration documentation for more information)
+			Vars *map[string]struct {
+				Frozen *bool       `json:"frozen,omitempty"`
+				Type   *string     `json:"type,omitempty"`
+				Value  interface{} `json:"value"`
+			} `json:"vars,omitempty"`
+		} `json:"streams"`
+		Type string `json:"type"`
+
+		// Vars Package variable (see integration documentation for more information)
+		Vars *map[string]struct {
+			Frozen *bool       `json:"frozen,omitempty"`
+			Type   *string     `json:"type,omitempty"`
+			Value  interface{} `json:"value"`
+		} `json:"vars,omitempty"`
+	} `json:"inputs"`
+	IsManaged *bool `json:"is_managed,omitempty"`
 
 	// Name Package policy name (should be unique)
 	Name string `json:"name"`
@@ -946,14 +979,16 @@ type AgentPolicyPackagePolicies1 = []struct {
 	SecretReferences *[]struct {
 		Id string `json:"id"`
 	} `json:"secret_references,omitempty"`
-	SpaceIds *[]string `json:"spaceIds,omitempty"`
+	UpdatedAt string `json:"updated_at"`
+	UpdatedBy string `json:"updated_by"`
 
-	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
-	SupportsAgentless *bool                               `json:"supports_agentless"`
-	UpdatedAt         string                              `json:"updated_at"`
-	UpdatedBy         string                              `json:"updated_by"`
-	Vars              *AgentPolicy_PackagePolicies_1_Vars `json:"vars,omitempty"`
-	Version           *string                             `json:"version,omitempty"`
+	// Vars Package variable (see integration documentation for more information)
+	Vars *map[string]struct {
+		Frozen *bool       `json:"frozen,omitempty"`
+		Type   *string     `json:"type,omitempty"`
+		Value  interface{} `json:"value"`
+	} `json:"vars,omitempty"`
+	Version *string `json:"version,omitempty"`
 }
 
 // AgentPolicy_PackagePolicies_1_Elasticsearch_Privileges defines model for AgentPolicy.PackagePolicies.1.Elasticsearch.Privileges.
@@ -968,180 +1003,8 @@ type AgentPolicy_PackagePolicies_1_Elasticsearch struct {
 	AdditionalProperties map[string]interface{}                                  `json:"-"`
 }
 
-// AgentPolicyPackagePolicies1Inputs0 defines model for .
-type AgentPolicyPackagePolicies1Inputs0 = []struct {
-	CompiledInput interface{} `json:"compiled_input"`
-
-	// Config Package variable (see integration documentation for more information)
-	Config *map[string]struct {
-		Frozen *bool       `json:"frozen,omitempty"`
-		Type   *string     `json:"type,omitempty"`
-		Value  interface{} `json:"value"`
-	} `json:"config,omitempty"`
-	Enabled        bool    `json:"enabled"`
-	Id             *string `json:"id,omitempty"`
-	KeepEnabled    *bool   `json:"keep_enabled,omitempty"`
-	PolicyTemplate *string `json:"policy_template,omitempty"`
-	Streams        []struct {
-		CompiledStream interface{} `json:"compiled_stream"`
-
-		// Config Package variable (see integration documentation for more information)
-		Config *map[string]struct {
-			Frozen *bool       `json:"frozen,omitempty"`
-			Type   *string     `json:"type,omitempty"`
-			Value  interface{} `json:"value"`
-		} `json:"config,omitempty"`
-		DataStream struct {
-			Dataset       string `json:"dataset"`
-			Elasticsearch *struct {
-				DynamicDataset   *bool `json:"dynamic_dataset,omitempty"`
-				DynamicNamespace *bool `json:"dynamic_namespace,omitempty"`
-				Privileges       *struct {
-					Indices *[]string `json:"indices,omitempty"`
-				} `json:"privileges,omitempty"`
-			} `json:"elasticsearch,omitempty"`
-			Type string `json:"type"`
-		} `json:"data_stream"`
-		Enabled     bool                                              `json:"enabled"`
-		Id          *string                                           `json:"id,omitempty"`
-		KeepEnabled *bool                                             `json:"keep_enabled,omitempty"`
-		Release     *AgentPolicyPackagePolicies1Inputs0StreamsRelease `json:"release,omitempty"`
-
-		// Vars Package variable (see integration documentation for more information)
-		Vars *map[string]struct {
-			Frozen *bool       `json:"frozen,omitempty"`
-			Type   *string     `json:"type,omitempty"`
-			Value  interface{} `json:"value"`
-		} `json:"vars,omitempty"`
-	} `json:"streams"`
-	Type string `json:"type"`
-
-	// Vars Package variable (see integration documentation for more information)
-	Vars *map[string]struct {
-		Frozen *bool       `json:"frozen,omitempty"`
-		Type   *string     `json:"type,omitempty"`
-		Value  interface{} `json:"value"`
-	} `json:"vars,omitempty"`
-}
-
-// AgentPolicyPackagePolicies1Inputs0StreamsRelease defines model for AgentPolicy.PackagePolicies.1.Inputs.0.Streams.Release.
-type AgentPolicyPackagePolicies1Inputs0StreamsRelease string
-
-// AgentPolicyPackagePolicies1Inputs1 Package policy inputs (see integration documentation to know what inputs are available)
-type AgentPolicyPackagePolicies1Inputs1 map[string]struct {
-	// Enabled enable or disable that input, (default to true)
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Streams Input streams (see integration documentation to know what streams are available)
-	Streams *map[string]struct {
-		// Enabled enable or disable that stream, (default to true)
-		Enabled *bool `json:"enabled,omitempty"`
-
-		// Vars Input/stream level variable (see integration documentation for more information)
-		Vars *map[string]*AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties `json:"vars,omitempty"`
-	} `json:"streams,omitempty"`
-
-	// Vars Input/stream level variable (see integration documentation for more information)
-	Vars *map[string]*AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties `json:"vars,omitempty"`
-}
-
-// AgentPolicyPackagePolicies1Inputs1StreamsVars0 defines model for .
-type AgentPolicyPackagePolicies1Inputs1StreamsVars0 = bool
-
-// AgentPolicyPackagePolicies1Inputs1StreamsVars1 defines model for .
-type AgentPolicyPackagePolicies1Inputs1StreamsVars1 = string
-
-// AgentPolicyPackagePolicies1Inputs1StreamsVars2 defines model for .
-type AgentPolicyPackagePolicies1Inputs1StreamsVars2 = float32
-
-// AgentPolicyPackagePolicies1Inputs1StreamsVars3 defines model for .
-type AgentPolicyPackagePolicies1Inputs1StreamsVars3 = []string
-
-// AgentPolicyPackagePolicies1Inputs1StreamsVars4 defines model for .
-type AgentPolicyPackagePolicies1Inputs1StreamsVars4 = []float32
-
-// AgentPolicyPackagePolicies1Inputs1StreamsVars5 defines model for .
-type AgentPolicyPackagePolicies1Inputs1StreamsVars5 struct {
-	Id          string `json:"id"`
-	IsSecretRef bool   `json:"isSecretRef"`
-}
-
-// AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Inputs.1.Streams.Vars.AdditionalProperties.
-type AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties struct {
-	union json.RawMessage
-}
-
-// AgentPolicyPackagePolicies1Inputs1Vars0 defines model for .
-type AgentPolicyPackagePolicies1Inputs1Vars0 = bool
-
-// AgentPolicyPackagePolicies1Inputs1Vars1 defines model for .
-type AgentPolicyPackagePolicies1Inputs1Vars1 = string
-
-// AgentPolicyPackagePolicies1Inputs1Vars2 defines model for .
-type AgentPolicyPackagePolicies1Inputs1Vars2 = float32
-
-// AgentPolicyPackagePolicies1Inputs1Vars3 defines model for .
-type AgentPolicyPackagePolicies1Inputs1Vars3 = []string
-
-// AgentPolicyPackagePolicies1Inputs1Vars4 defines model for .
-type AgentPolicyPackagePolicies1Inputs1Vars4 = []float32
-
-// AgentPolicyPackagePolicies1Inputs1Vars5 defines model for .
-type AgentPolicyPackagePolicies1Inputs1Vars5 struct {
-	Id          string `json:"id"`
-	IsSecretRef bool   `json:"isSecretRef"`
-}
-
-// AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Inputs.1.Vars.AdditionalProperties.
-type AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties struct {
-	union json.RawMessage
-}
-
-// AgentPolicy_PackagePolicies_1_Inputs defines model for AgentPolicy.PackagePolicies.1.Inputs.
-type AgentPolicy_PackagePolicies_1_Inputs struct {
-	union json.RawMessage
-}
-
-// AgentPolicyPackagePolicies1Vars0 Package variable (see integration documentation for more information)
-type AgentPolicyPackagePolicies1Vars0 map[string]struct {
-	Frozen *bool       `json:"frozen,omitempty"`
-	Type   *string     `json:"type,omitempty"`
-	Value  interface{} `json:"value"`
-}
-
-// AgentPolicyPackagePolicies1Vars1 Input/stream level variable (see integration documentation for more information)
-type AgentPolicyPackagePolicies1Vars1 map[string]*AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties
-
-// AgentPolicyPackagePolicies1Vars10 defines model for .
-type AgentPolicyPackagePolicies1Vars10 = bool
-
-// AgentPolicyPackagePolicies1Vars11 defines model for .
-type AgentPolicyPackagePolicies1Vars11 = string
-
-// AgentPolicyPackagePolicies1Vars12 defines model for .
-type AgentPolicyPackagePolicies1Vars12 = float32
-
-// AgentPolicyPackagePolicies1Vars13 defines model for .
-type AgentPolicyPackagePolicies1Vars13 = []string
-
-// AgentPolicyPackagePolicies1Vars14 defines model for .
-type AgentPolicyPackagePolicies1Vars14 = []float32
-
-// AgentPolicyPackagePolicies1Vars15 defines model for .
-type AgentPolicyPackagePolicies1Vars15 struct {
-	Id          string `json:"id"`
-	IsSecretRef bool   `json:"isSecretRef"`
-}
-
-// AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Vars.1.AdditionalProperties.
-type AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties struct {
-	union json.RawMessage
-}
-
-// AgentPolicy_PackagePolicies_1_Vars defines model for AgentPolicy.PackagePolicies.1.Vars.
-type AgentPolicy_PackagePolicies_1_Vars struct {
-	union json.RawMessage
-}
+// AgentPolicyPackagePolicies1InputsStreamsRelease defines model for AgentPolicy.PackagePolicies.1.Inputs.Streams.Release.
+type AgentPolicyPackagePolicies1InputsStreamsRelease string
 
 // AgentPolicy_PackagePolicies defines model for AgentPolicy.PackagePolicies.
 type AgentPolicy_PackagePolicies struct {
@@ -1375,37 +1238,20 @@ type NewOutputRemoteElasticsearch struct {
 	IsDefaultMonitoring  *bool                               `json:"is_default_monitoring,omitempty"`
 	IsInternal           *bool                               `json:"is_internal,omitempty"`
 	IsPreconfigured      *bool                               `json:"is_preconfigured,omitempty"`
-	KibanaApiKey         *string                             `json:"kibana_api_key"`
-	KibanaUrl            *string                             `json:"kibana_url"`
 	Name                 string                              `json:"name"`
 	Preset               *NewOutputRemoteElasticsearchPreset `json:"preset,omitempty"`
 	ProxyId              *string                             `json:"proxy_id,omitempty"`
 	Secrets              *struct {
-		KibanaApiKey *NewOutputRemoteElasticsearch_Secrets_KibanaApiKey `json:"kibana_api_key,omitempty"`
 		ServiceToken *NewOutputRemoteElasticsearch_Secrets_ServiceToken `json:"service_token,omitempty"`
 	} `json:"secrets,omitempty"`
-	ServiceToken     *string                          `json:"service_token"`
-	Shipper          *NewOutputShipper                `json:"shipper,omitempty"`
-	Ssl              *NewOutputSsl                    `json:"ssl,omitempty"`
-	SyncIntegrations *bool                            `json:"sync_integrations,omitempty"`
-	Type             NewOutputRemoteElasticsearchType `json:"type"`
+	ServiceToken *string                          `json:"service_token"`
+	Shipper      *NewOutputShipper                `json:"shipper,omitempty"`
+	Ssl          *NewOutputSsl                    `json:"ssl,omitempty"`
+	Type         NewOutputRemoteElasticsearchType `json:"type"`
 }
 
 // NewOutputRemoteElasticsearchPreset defines model for NewOutputRemoteElasticsearch.Preset.
 type NewOutputRemoteElasticsearchPreset string
-
-// NewOutputRemoteElasticsearchSecretsKibanaApiKey0 defines model for .
-type NewOutputRemoteElasticsearchSecretsKibanaApiKey0 struct {
-	Id string `json:"id"`
-}
-
-// NewOutputRemoteElasticsearchSecretsKibanaApiKey1 defines model for .
-type NewOutputRemoteElasticsearchSecretsKibanaApiKey1 = string
-
-// NewOutputRemoteElasticsearch_Secrets_KibanaApiKey defines model for NewOutputRemoteElasticsearch.Secrets.KibanaApiKey.
-type NewOutputRemoteElasticsearch_Secrets_KibanaApiKey struct {
-	union json.RawMessage
-}
 
 // NewOutputRemoteElasticsearchSecretsServiceToken0 defines model for .
 type NewOutputRemoteElasticsearchSecretsServiceToken0 struct {
@@ -1673,8 +1519,6 @@ type OutputRemoteElasticsearch struct {
 	IsDefaultMonitoring  *bool                              `json:"is_default_monitoring,omitempty"`
 	IsInternal           *bool                              `json:"is_internal,omitempty"`
 	IsPreconfigured      *bool                              `json:"is_preconfigured,omitempty"`
-	KibanaApiKey         *string                            `json:"kibana_api_key"`
-	KibanaUrl            *string                            `json:"kibana_url"`
 	Name                 string                             `json:"name"`
 	Preset               *OutputRemoteElasticsearchPreset   `json:"preset,omitempty"`
 	ProxyId              *string                            `json:"proxy_id"`
@@ -1682,27 +1526,12 @@ type OutputRemoteElasticsearch struct {
 	ServiceToken         *string                            `json:"service_token"`
 	Shipper              *OutputShipper                     `json:"shipper"`
 	Ssl                  *OutputSsl                         `json:"ssl"`
-	SyncIntegrations     *bool                              `json:"sync_integrations,omitempty"`
 	Type                 OutputRemoteElasticsearchType      `json:"type"`
 	AdditionalProperties map[string]interface{}             `json:"-"`
 }
 
 // OutputRemoteElasticsearchPreset defines model for OutputRemoteElasticsearch.Preset.
 type OutputRemoteElasticsearchPreset string
-
-// OutputRemoteElasticsearchSecretsKibanaApiKey0 defines model for .
-type OutputRemoteElasticsearchSecretsKibanaApiKey0 struct {
-	Id                   string                 `json:"id"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// OutputRemoteElasticsearchSecretsKibanaApiKey1 defines model for .
-type OutputRemoteElasticsearchSecretsKibanaApiKey1 = string
-
-// OutputRemoteElasticsearch_Secrets_KibanaApiKey defines model for OutputRemoteElasticsearch.Secrets.KibanaApiKey.
-type OutputRemoteElasticsearch_Secrets_KibanaApiKey struct {
-	union json.RawMessage
-}
 
 // OutputRemoteElasticsearchSecretsServiceToken0 defines model for .
 type OutputRemoteElasticsearchSecretsServiceToken0 struct {
@@ -1720,7 +1549,6 @@ type OutputRemoteElasticsearch_Secrets_ServiceToken struct {
 
 // OutputRemoteElasticsearch_Secrets defines model for OutputRemoteElasticsearch.Secrets.
 type OutputRemoteElasticsearch_Secrets struct {
-	KibanaApiKey         *OutputRemoteElasticsearch_Secrets_KibanaApiKey `json:"kibana_api_key,omitempty"`
 	ServiceToken         *OutputRemoteElasticsearch_Secrets_ServiceToken `json:"service_token,omitempty"`
 	AdditionalProperties map[string]interface{}                          `json:"-"`
 }
@@ -2240,13 +2068,10 @@ type PackagePolicy struct {
 	Revision         float32                   `json:"revision"`
 	SecretReferences *[]PackagePolicySecretRef `json:"secret_references,omitempty"`
 	SpaceIds         *[]string                 `json:"spaceIds,omitempty"`
-
-	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
-	SupportsAgentless *bool                   `json:"supports_agentless"`
-	UpdatedAt         string                  `json:"updated_at"`
-	UpdatedBy         string                  `json:"updated_by"`
-	Vars              *map[string]interface{} `json:"vars,omitempty"`
-	Version           *string                 `json:"version,omitempty"`
+	UpdatedAt        string                    `json:"updated_at"`
+	UpdatedBy        string                    `json:"updated_by"`
+	Vars             *map[string]interface{}   `json:"vars,omitempty"`
+	Version          *string                   `json:"version,omitempty"`
 }
 
 // PackagePolicy_Elasticsearch_Privileges defines model for PackagePolicy.Elasticsearch.Privileges.
@@ -2292,10 +2117,7 @@ type PackagePolicyRequest struct {
 	Package   PackagePolicyRequestPackage           `json:"package"`
 	PolicyId  *string                               `json:"policy_id"`
 	PolicyIds *[]string                             `json:"policy_ids,omitempty"`
-
-	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
-	SupportsAgentless *bool                   `json:"supports_agentless"`
-	Vars              *map[string]interface{} `json:"vars,omitempty"`
+	Vars      *map[string]interface{}               `json:"vars,omitempty"`
 }
 
 // PackagePolicyRequestInput defines model for package_policy_request_input.
@@ -2526,37 +2348,20 @@ type UpdateOutputRemoteElasticsearch struct {
 	IsDefaultMonitoring  *bool                                  `json:"is_default_monitoring,omitempty"`
 	IsInternal           *bool                                  `json:"is_internal,omitempty"`
 	IsPreconfigured      *bool                                  `json:"is_preconfigured,omitempty"`
-	KibanaApiKey         *string                                `json:"kibana_api_key"`
-	KibanaUrl            *string                                `json:"kibana_url"`
 	Name                 *string                                `json:"name,omitempty"`
 	Preset               *UpdateOutputRemoteElasticsearchPreset `json:"preset,omitempty"`
 	ProxyId              *string                                `json:"proxy_id,omitempty"`
 	Secrets              *struct {
-		KibanaApiKey *UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey `json:"kibana_api_key,omitempty"`
 		ServiceToken *UpdateOutputRemoteElasticsearch_Secrets_ServiceToken `json:"service_token,omitempty"`
 	} `json:"secrets,omitempty"`
-	ServiceToken     *string                              `json:"service_token"`
-	Shipper          *UpdateOutputShipper                 `json:"shipper,omitempty"`
-	Ssl              *UpdateOutputSsl                     `json:"ssl,omitempty"`
-	SyncIntegrations *bool                                `json:"sync_integrations,omitempty"`
-	Type             *UpdateOutputRemoteElasticsearchType `json:"type,omitempty"`
+	ServiceToken *string                              `json:"service_token"`
+	Shipper      *UpdateOutputShipper                 `json:"shipper,omitempty"`
+	Ssl          *UpdateOutputSsl                     `json:"ssl,omitempty"`
+	Type         *UpdateOutputRemoteElasticsearchType `json:"type,omitempty"`
 }
 
 // UpdateOutputRemoteElasticsearchPreset defines model for UpdateOutputRemoteElasticsearch.Preset.
 type UpdateOutputRemoteElasticsearchPreset string
-
-// UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0 defines model for .
-type UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0 struct {
-	Id string `json:"id"`
-}
-
-// UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1 defines model for .
-type UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1 = string
-
-// UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey defines model for UpdateOutputRemoteElasticsearch.Secrets.KibanaApiKey.
-type UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey struct {
-	union json.RawMessage
-}
 
 // UpdateOutputRemoteElasticsearchSecretsServiceToken0 defines model for .
 type UpdateOutputRemoteElasticsearchSecretsServiceToken0 struct {
@@ -2639,28 +2444,16 @@ type GetFleetAgentPoliciesParamsFormat string
 // PostFleetAgentPoliciesJSONBody defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
-		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
-		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
-		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
-		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
+		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
-	Agentless *struct {
-		Resources *struct {
-			Requests *struct {
-				Cpu    *string `json:"cpu,omitempty"`
-				Memory *string `json:"memory,omitempty"`
-			} `json:"requests,omitempty"`
-		} `json:"resources,omitempty"`
-	} `json:"agentless,omitempty"`
 	DataOutputId      *string `json:"data_output_id"`
 	Description       *string `json:"description,omitempty"`
 	DownloadSourceId  *string `json:"download_source_id"`
@@ -2695,7 +2488,7 @@ type PostFleetAgentPoliciesJSONBody struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled *bool    `json:"enabled,omitempty"`
+		Enabled bool     `json:"enabled"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -2706,14 +2499,8 @@ type PostFleetAgentPoliciesJSONBody struct {
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
 	Overrides        *map[string]interface{} `json:"overrides,omitempty"`
-	RequiredVersions *[]struct {
-		// Percentage Target percentage of agents to auto upgrade
-		Percentage float32 `json:"percentage"`
-
-		// Version Target version for automatic agent upgrade
-		Version string `json:"version"`
-	} `json:"required_versions,omitempty"`
-	SpaceIds *[]string `json:"space_ids,omitempty"`
+	RequiredVersions *interface{}            `json:"required_versions,omitempty"`
+	SpaceIds         *[]string               `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless *bool    `json:"supports_agentless,omitempty"`
@@ -2747,28 +2534,16 @@ type GetFleetAgentPoliciesAgentpolicyidParamsFormat string
 // PutFleetAgentPoliciesAgentpolicyidJSONBody defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
-		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
-		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
-		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
-		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
+		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
-	Agentless *struct {
-		Resources *struct {
-			Requests *struct {
-				Cpu    *string `json:"cpu,omitempty"`
-				Memory *string `json:"memory,omitempty"`
-			} `json:"requests,omitempty"`
-		} `json:"resources,omitempty"`
-	} `json:"agentless,omitempty"`
 	DataOutputId      *string `json:"data_output_id"`
 	Description       *string `json:"description,omitempty"`
 	DownloadSourceId  *string `json:"download_source_id"`
@@ -2803,7 +2578,7 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled *bool    `json:"enabled,omitempty"`
+		Enabled bool     `json:"enabled"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -2814,14 +2589,8 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
 	Overrides        *map[string]interface{} `json:"overrides,omitempty"`
-	RequiredVersions *[]struct {
-		// Percentage Target percentage of agents to auto upgrade
-		Percentage float32 `json:"percentage"`
-
-		// Version Target version for automatic agent upgrade
-		Version string `json:"version"`
-	} `json:"required_versions,omitempty"`
-	SpaceIds *[]string `json:"space_ids,omitempty"`
+	RequiredVersions *interface{}            `json:"required_versions,omitempty"`
+	SpaceIds         *[]string               `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless *bool    `json:"supports_agentless,omitempty"`
@@ -5214,22 +4983,6 @@ func (a *OutputRemoteElasticsearch) UnmarshalJSON(b []byte) error {
 		delete(object, "is_preconfigured")
 	}
 
-	if raw, found := object["kibana_api_key"]; found {
-		err = json.Unmarshal(raw, &a.KibanaApiKey)
-		if err != nil {
-			return fmt.Errorf("error reading 'kibana_api_key': %w", err)
-		}
-		delete(object, "kibana_api_key")
-	}
-
-	if raw, found := object["kibana_url"]; found {
-		err = json.Unmarshal(raw, &a.KibanaUrl)
-		if err != nil {
-			return fmt.Errorf("error reading 'kibana_url': %w", err)
-		}
-		delete(object, "kibana_url")
-	}
-
 	if raw, found := object["name"]; found {
 		err = json.Unmarshal(raw, &a.Name)
 		if err != nil {
@@ -5284,14 +5037,6 @@ func (a *OutputRemoteElasticsearch) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'ssl': %w", err)
 		}
 		delete(object, "ssl")
-	}
-
-	if raw, found := object["sync_integrations"]; found {
-		err = json.Unmarshal(raw, &a.SyncIntegrations)
-		if err != nil {
-			return fmt.Errorf("error reading 'sync_integrations': %w", err)
-		}
-		delete(object, "sync_integrations")
 	}
 
 	if raw, found := object["type"]; found {
@@ -5389,20 +5134,6 @@ func (a OutputRemoteElasticsearch) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.KibanaApiKey != nil {
-		object["kibana_api_key"], err = json.Marshal(a.KibanaApiKey)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'kibana_api_key': %w", err)
-		}
-	}
-
-	if a.KibanaUrl != nil {
-		object["kibana_url"], err = json.Marshal(a.KibanaUrl)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'kibana_url': %w", err)
-		}
-	}
-
 	object["name"], err = json.Marshal(a.Name)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'name': %w", err)
@@ -5450,82 +5181,9 @@ func (a OutputRemoteElasticsearch) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.SyncIntegrations != nil {
-		object["sync_integrations"], err = json.Marshal(a.SyncIntegrations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'sync_integrations': %w", err)
-		}
-	}
-
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for OutputRemoteElasticsearchSecretsKibanaApiKey0. Returns the specified
-// element and whether it was found
-func (a OutputRemoteElasticsearchSecretsKibanaApiKey0) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for OutputRemoteElasticsearchSecretsKibanaApiKey0
-func (a *OutputRemoteElasticsearchSecretsKibanaApiKey0) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for OutputRemoteElasticsearchSecretsKibanaApiKey0 to handle AdditionalProperties
-func (a *OutputRemoteElasticsearchSecretsKibanaApiKey0) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["id"]; found {
-		err = json.Unmarshal(raw, &a.Id)
-		if err != nil {
-			return fmt.Errorf("error reading 'id': %w", err)
-		}
-		delete(object, "id")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for OutputRemoteElasticsearchSecretsKibanaApiKey0 to handle AdditionalProperties
-func (a OutputRemoteElasticsearchSecretsKibanaApiKey0) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	object["id"], err = json.Marshal(a.Id)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'id': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -5628,14 +5286,6 @@ func (a *OutputRemoteElasticsearch_Secrets) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if raw, found := object["kibana_api_key"]; found {
-		err = json.Unmarshal(raw, &a.KibanaApiKey)
-		if err != nil {
-			return fmt.Errorf("error reading 'kibana_api_key': %w", err)
-		}
-		delete(object, "kibana_api_key")
-	}
-
 	if raw, found := object["service_token"]; found {
 		err = json.Unmarshal(raw, &a.ServiceToken)
 		if err != nil {
@@ -5662,13 +5312,6 @@ func (a *OutputRemoteElasticsearch_Secrets) UnmarshalJSON(b []byte) error {
 func (a OutputRemoteElasticsearch_Secrets) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
-
-	if a.KibanaApiKey != nil {
-		object["kibana_api_key"], err = json.Marshal(a.KibanaApiKey)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'kibana_api_key': %w", err)
-		}
-	}
 
 	if a.ServiceToken != nil {
 		object["service_token"], err = json.Marshal(a.ServiceToken)
@@ -10563,628 +10206,6 @@ func (a PackagePolicy_Elasticsearch) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// AsAgentPolicyPackagePolicies1Inputs1StreamsVars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars0
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars0() (AgentPolicyPackagePolicies1Inputs1StreamsVars0, error) {
-	var body AgentPolicyPackagePolicies1Inputs1StreamsVars0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1StreamsVars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars0
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars0(v AgentPolicyPackagePolicies1Inputs1StreamsVars0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars0
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars0(v AgentPolicyPackagePolicies1Inputs1StreamsVars0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1StreamsVars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars1
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars1() (AgentPolicyPackagePolicies1Inputs1StreamsVars1, error) {
-	var body AgentPolicyPackagePolicies1Inputs1StreamsVars1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1StreamsVars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars1
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars1(v AgentPolicyPackagePolicies1Inputs1StreamsVars1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars1
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars1(v AgentPolicyPackagePolicies1Inputs1StreamsVars1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1StreamsVars2 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars2
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars2() (AgentPolicyPackagePolicies1Inputs1StreamsVars2, error) {
-	var body AgentPolicyPackagePolicies1Inputs1StreamsVars2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1StreamsVars2 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars2
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars2(v AgentPolicyPackagePolicies1Inputs1StreamsVars2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars2 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars2
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars2(v AgentPolicyPackagePolicies1Inputs1StreamsVars2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1StreamsVars3 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars3
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars3() (AgentPolicyPackagePolicies1Inputs1StreamsVars3, error) {
-	var body AgentPolicyPackagePolicies1Inputs1StreamsVars3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1StreamsVars3 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars3
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars3(v AgentPolicyPackagePolicies1Inputs1StreamsVars3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars3 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars3
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars3(v AgentPolicyPackagePolicies1Inputs1StreamsVars3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1StreamsVars4 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars4
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars4() (AgentPolicyPackagePolicies1Inputs1StreamsVars4, error) {
-	var body AgentPolicyPackagePolicies1Inputs1StreamsVars4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1StreamsVars4 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars4
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars4(v AgentPolicyPackagePolicies1Inputs1StreamsVars4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars4 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars4
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars4(v AgentPolicyPackagePolicies1Inputs1StreamsVars4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1StreamsVars5 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars5
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars5() (AgentPolicyPackagePolicies1Inputs1StreamsVars5, error) {
-	var body AgentPolicyPackagePolicies1Inputs1StreamsVars5
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1StreamsVars5 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars5
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars5(v AgentPolicyPackagePolicies1Inputs1StreamsVars5) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars5 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars5
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars5(v AgentPolicyPackagePolicies1Inputs1StreamsVars5) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1Vars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars0
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars0() (AgentPolicyPackagePolicies1Inputs1Vars0, error) {
-	var body AgentPolicyPackagePolicies1Inputs1Vars0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1Vars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars0
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars0(v AgentPolicyPackagePolicies1Inputs1Vars0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1Vars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars0
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars0(v AgentPolicyPackagePolicies1Inputs1Vars0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1Vars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars1
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars1() (AgentPolicyPackagePolicies1Inputs1Vars1, error) {
-	var body AgentPolicyPackagePolicies1Inputs1Vars1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1Vars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars1
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars1(v AgentPolicyPackagePolicies1Inputs1Vars1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1Vars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars1
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars1(v AgentPolicyPackagePolicies1Inputs1Vars1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1Vars2 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars2
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars2() (AgentPolicyPackagePolicies1Inputs1Vars2, error) {
-	var body AgentPolicyPackagePolicies1Inputs1Vars2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1Vars2 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars2
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars2(v AgentPolicyPackagePolicies1Inputs1Vars2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1Vars2 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars2
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars2(v AgentPolicyPackagePolicies1Inputs1Vars2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1Vars3 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars3
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars3() (AgentPolicyPackagePolicies1Inputs1Vars3, error) {
-	var body AgentPolicyPackagePolicies1Inputs1Vars3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1Vars3 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars3
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars3(v AgentPolicyPackagePolicies1Inputs1Vars3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1Vars3 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars3
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars3(v AgentPolicyPackagePolicies1Inputs1Vars3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1Vars4 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars4
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars4() (AgentPolicyPackagePolicies1Inputs1Vars4, error) {
-	var body AgentPolicyPackagePolicies1Inputs1Vars4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1Vars4 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars4
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars4(v AgentPolicyPackagePolicies1Inputs1Vars4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1Vars4 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars4
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars4(v AgentPolicyPackagePolicies1Inputs1Vars4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1Vars5 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars5
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars5() (AgentPolicyPackagePolicies1Inputs1Vars5, error) {
-	var body AgentPolicyPackagePolicies1Inputs1Vars5
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1Vars5 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars5
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars5(v AgentPolicyPackagePolicies1Inputs1Vars5) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1Vars5 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars5
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars5(v AgentPolicyPackagePolicies1Inputs1Vars5) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs as a AgentPolicyPackagePolicies1Inputs0
-func (t AgentPolicy_PackagePolicies_1_Inputs) AsAgentPolicyPackagePolicies1Inputs0() (AgentPolicyPackagePolicies1Inputs0, error) {
-	var body AgentPolicyPackagePolicies1Inputs0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs as the provided AgentPolicyPackagePolicies1Inputs0
-func (t *AgentPolicy_PackagePolicies_1_Inputs) FromAgentPolicyPackagePolicies1Inputs0(v AgentPolicyPackagePolicies1Inputs0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs, using the provided AgentPolicyPackagePolicies1Inputs0
-func (t *AgentPolicy_PackagePolicies_1_Inputs) MergeAgentPolicyPackagePolicies1Inputs0(v AgentPolicyPackagePolicies1Inputs0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Inputs1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs as a AgentPolicyPackagePolicies1Inputs1
-func (t AgentPolicy_PackagePolicies_1_Inputs) AsAgentPolicyPackagePolicies1Inputs1() (AgentPolicyPackagePolicies1Inputs1, error) {
-	var body AgentPolicyPackagePolicies1Inputs1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Inputs1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs as the provided AgentPolicyPackagePolicies1Inputs1
-func (t *AgentPolicy_PackagePolicies_1_Inputs) FromAgentPolicyPackagePolicies1Inputs1(v AgentPolicyPackagePolicies1Inputs1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Inputs1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs, using the provided AgentPolicyPackagePolicies1Inputs1
-func (t *AgentPolicy_PackagePolicies_1_Inputs) MergeAgentPolicyPackagePolicies1Inputs1(v AgentPolicyPackagePolicies1Inputs1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t AgentPolicy_PackagePolicies_1_Inputs) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *AgentPolicy_PackagePolicies_1_Inputs) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Vars10 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars10
-func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars10() (AgentPolicyPackagePolicies1Vars10, error) {
-	var body AgentPolicyPackagePolicies1Vars10
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Vars10 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars10
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars10(v AgentPolicyPackagePolicies1Vars10) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Vars10 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars10
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars10(v AgentPolicyPackagePolicies1Vars10) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Vars11 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars11
-func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars11() (AgentPolicyPackagePolicies1Vars11, error) {
-	var body AgentPolicyPackagePolicies1Vars11
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Vars11 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars11
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars11(v AgentPolicyPackagePolicies1Vars11) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Vars11 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars11
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars11(v AgentPolicyPackagePolicies1Vars11) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Vars12 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars12
-func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars12() (AgentPolicyPackagePolicies1Vars12, error) {
-	var body AgentPolicyPackagePolicies1Vars12
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Vars12 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars12
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars12(v AgentPolicyPackagePolicies1Vars12) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Vars12 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars12
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars12(v AgentPolicyPackagePolicies1Vars12) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Vars13 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars13
-func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars13() (AgentPolicyPackagePolicies1Vars13, error) {
-	var body AgentPolicyPackagePolicies1Vars13
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Vars13 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars13
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars13(v AgentPolicyPackagePolicies1Vars13) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Vars13 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars13
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars13(v AgentPolicyPackagePolicies1Vars13) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Vars14 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars14
-func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars14() (AgentPolicyPackagePolicies1Vars14, error) {
-	var body AgentPolicyPackagePolicies1Vars14
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Vars14 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars14
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars14(v AgentPolicyPackagePolicies1Vars14) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Vars14 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars14
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars14(v AgentPolicyPackagePolicies1Vars14) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Vars15 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars15
-func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars15() (AgentPolicyPackagePolicies1Vars15, error) {
-	var body AgentPolicyPackagePolicies1Vars15
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Vars15 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars15
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars15(v AgentPolicyPackagePolicies1Vars15) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Vars15 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars15
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars15(v AgentPolicyPackagePolicies1Vars15) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Vars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars as a AgentPolicyPackagePolicies1Vars0
-func (t AgentPolicy_PackagePolicies_1_Vars) AsAgentPolicyPackagePolicies1Vars0() (AgentPolicyPackagePolicies1Vars0, error) {
-	var body AgentPolicyPackagePolicies1Vars0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Vars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars as the provided AgentPolicyPackagePolicies1Vars0
-func (t *AgentPolicy_PackagePolicies_1_Vars) FromAgentPolicyPackagePolicies1Vars0(v AgentPolicyPackagePolicies1Vars0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Vars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars, using the provided AgentPolicyPackagePolicies1Vars0
-func (t *AgentPolicy_PackagePolicies_1_Vars) MergeAgentPolicyPackagePolicies1Vars0(v AgentPolicyPackagePolicies1Vars0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyPackagePolicies1Vars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars as a AgentPolicyPackagePolicies1Vars1
-func (t AgentPolicy_PackagePolicies_1_Vars) AsAgentPolicyPackagePolicies1Vars1() (AgentPolicyPackagePolicies1Vars1, error) {
-	var body AgentPolicyPackagePolicies1Vars1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyPackagePolicies1Vars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars as the provided AgentPolicyPackagePolicies1Vars1
-func (t *AgentPolicy_PackagePolicies_1_Vars) FromAgentPolicyPackagePolicies1Vars1(v AgentPolicyPackagePolicies1Vars1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyPackagePolicies1Vars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars, using the provided AgentPolicyPackagePolicies1Vars1
-func (t *AgentPolicy_PackagePolicies_1_Vars) MergeAgentPolicyPackagePolicies1Vars1(v AgentPolicyPackagePolicies1Vars1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t AgentPolicy_PackagePolicies_1_Vars) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *AgentPolicy_PackagePolicies_1_Vars) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // AsAgentPolicyPackagePolicies0 returns the union data inside the AgentPolicy_PackagePolicies as a AgentPolicyPackagePolicies0
 func (t AgentPolicy_PackagePolicies) AsAgentPolicyPackagePolicies0() (AgentPolicyPackagePolicies0, error) {
 	var body AgentPolicyPackagePolicies0
@@ -11491,68 +10512,6 @@ func (t NewOutputLogstash_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
 }
 
 func (t *NewOutputLogstash_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsNewOutputRemoteElasticsearchSecretsKibanaApiKey0 returns the union data inside the NewOutputRemoteElasticsearch_Secrets_KibanaApiKey as a NewOutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t NewOutputRemoteElasticsearch_Secrets_KibanaApiKey) AsNewOutputRemoteElasticsearchSecretsKibanaApiKey0() (NewOutputRemoteElasticsearchSecretsKibanaApiKey0, error) {
-	var body NewOutputRemoteElasticsearchSecretsKibanaApiKey0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromNewOutputRemoteElasticsearchSecretsKibanaApiKey0 overwrites any union data inside the NewOutputRemoteElasticsearch_Secrets_KibanaApiKey as the provided NewOutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t *NewOutputRemoteElasticsearch_Secrets_KibanaApiKey) FromNewOutputRemoteElasticsearchSecretsKibanaApiKey0(v NewOutputRemoteElasticsearchSecretsKibanaApiKey0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeNewOutputRemoteElasticsearchSecretsKibanaApiKey0 performs a merge with any union data inside the NewOutputRemoteElasticsearch_Secrets_KibanaApiKey, using the provided NewOutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t *NewOutputRemoteElasticsearch_Secrets_KibanaApiKey) MergeNewOutputRemoteElasticsearchSecretsKibanaApiKey0(v NewOutputRemoteElasticsearchSecretsKibanaApiKey0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsNewOutputRemoteElasticsearchSecretsKibanaApiKey1 returns the union data inside the NewOutputRemoteElasticsearch_Secrets_KibanaApiKey as a NewOutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t NewOutputRemoteElasticsearch_Secrets_KibanaApiKey) AsNewOutputRemoteElasticsearchSecretsKibanaApiKey1() (NewOutputRemoteElasticsearchSecretsKibanaApiKey1, error) {
-	var body NewOutputRemoteElasticsearchSecretsKibanaApiKey1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromNewOutputRemoteElasticsearchSecretsKibanaApiKey1 overwrites any union data inside the NewOutputRemoteElasticsearch_Secrets_KibanaApiKey as the provided NewOutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t *NewOutputRemoteElasticsearch_Secrets_KibanaApiKey) FromNewOutputRemoteElasticsearchSecretsKibanaApiKey1(v NewOutputRemoteElasticsearchSecretsKibanaApiKey1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeNewOutputRemoteElasticsearchSecretsKibanaApiKey1 performs a merge with any union data inside the NewOutputRemoteElasticsearch_Secrets_KibanaApiKey, using the provided NewOutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t *NewOutputRemoteElasticsearch_Secrets_KibanaApiKey) MergeNewOutputRemoteElasticsearchSecretsKibanaApiKey1(v NewOutputRemoteElasticsearchSecretsKibanaApiKey1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t NewOutputRemoteElasticsearch_Secrets_KibanaApiKey) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *NewOutputRemoteElasticsearch_Secrets_KibanaApiKey) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -11915,68 +10874,6 @@ func (t OutputLogstash_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
 }
 
 func (t *OutputLogstash_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsOutputRemoteElasticsearchSecretsKibanaApiKey0 returns the union data inside the OutputRemoteElasticsearch_Secrets_KibanaApiKey as a OutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t OutputRemoteElasticsearch_Secrets_KibanaApiKey) AsOutputRemoteElasticsearchSecretsKibanaApiKey0() (OutputRemoteElasticsearchSecretsKibanaApiKey0, error) {
-	var body OutputRemoteElasticsearchSecretsKibanaApiKey0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromOutputRemoteElasticsearchSecretsKibanaApiKey0 overwrites any union data inside the OutputRemoteElasticsearch_Secrets_KibanaApiKey as the provided OutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t *OutputRemoteElasticsearch_Secrets_KibanaApiKey) FromOutputRemoteElasticsearchSecretsKibanaApiKey0(v OutputRemoteElasticsearchSecretsKibanaApiKey0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeOutputRemoteElasticsearchSecretsKibanaApiKey0 performs a merge with any union data inside the OutputRemoteElasticsearch_Secrets_KibanaApiKey, using the provided OutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t *OutputRemoteElasticsearch_Secrets_KibanaApiKey) MergeOutputRemoteElasticsearchSecretsKibanaApiKey0(v OutputRemoteElasticsearchSecretsKibanaApiKey0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsOutputRemoteElasticsearchSecretsKibanaApiKey1 returns the union data inside the OutputRemoteElasticsearch_Secrets_KibanaApiKey as a OutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t OutputRemoteElasticsearch_Secrets_KibanaApiKey) AsOutputRemoteElasticsearchSecretsKibanaApiKey1() (OutputRemoteElasticsearchSecretsKibanaApiKey1, error) {
-	var body OutputRemoteElasticsearchSecretsKibanaApiKey1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromOutputRemoteElasticsearchSecretsKibanaApiKey1 overwrites any union data inside the OutputRemoteElasticsearch_Secrets_KibanaApiKey as the provided OutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t *OutputRemoteElasticsearch_Secrets_KibanaApiKey) FromOutputRemoteElasticsearchSecretsKibanaApiKey1(v OutputRemoteElasticsearchSecretsKibanaApiKey1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeOutputRemoteElasticsearchSecretsKibanaApiKey1 performs a merge with any union data inside the OutputRemoteElasticsearch_Secrets_KibanaApiKey, using the provided OutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t *OutputRemoteElasticsearch_Secrets_KibanaApiKey) MergeOutputRemoteElasticsearchSecretsKibanaApiKey1(v OutputRemoteElasticsearchSecretsKibanaApiKey1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t OutputRemoteElasticsearch_Secrets_KibanaApiKey) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *OutputRemoteElasticsearch_Secrets_KibanaApiKey) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -12374,68 +11271,6 @@ func (t UpdateOutputLogstash_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
 }
 
 func (t *UpdateOutputLogstash_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsUpdateOutputRemoteElasticsearchSecretsKibanaApiKey0 returns the union data inside the UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey as a UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey) AsUpdateOutputRemoteElasticsearchSecretsKibanaApiKey0() (UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0, error) {
-	var body UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromUpdateOutputRemoteElasticsearchSecretsKibanaApiKey0 overwrites any union data inside the UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey as the provided UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t *UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey) FromUpdateOutputRemoteElasticsearchSecretsKibanaApiKey0(v UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeUpdateOutputRemoteElasticsearchSecretsKibanaApiKey0 performs a merge with any union data inside the UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey, using the provided UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0
-func (t *UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey) MergeUpdateOutputRemoteElasticsearchSecretsKibanaApiKey0(v UpdateOutputRemoteElasticsearchSecretsKibanaApiKey0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsUpdateOutputRemoteElasticsearchSecretsKibanaApiKey1 returns the union data inside the UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey as a UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey) AsUpdateOutputRemoteElasticsearchSecretsKibanaApiKey1() (UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1, error) {
-	var body UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromUpdateOutputRemoteElasticsearchSecretsKibanaApiKey1 overwrites any union data inside the UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey as the provided UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t *UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey) FromUpdateOutputRemoteElasticsearchSecretsKibanaApiKey1(v UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeUpdateOutputRemoteElasticsearchSecretsKibanaApiKey1 performs a merge with any union data inside the UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey, using the provided UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1
-func (t *UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey) MergeUpdateOutputRemoteElasticsearchSecretsKibanaApiKey1(v UpdateOutputRemoteElasticsearchSecretsKibanaApiKey1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *UpdateOutputRemoteElasticsearch_Secrets_KibanaApiKey) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
