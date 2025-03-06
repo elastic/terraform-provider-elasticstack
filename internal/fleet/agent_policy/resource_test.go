@@ -131,7 +131,8 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags", `[{"name":"tag1","value":"value1"},{"name":"tag2","value":1.1}]`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1.string_value", "value1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag2.number_value", "1.1"),
 				),
 			},
 			{
@@ -144,7 +145,8 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags", `[{"name":"tag1","value":"value1a"}]`)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags.tag1.string_value", "value1a"),
+				),
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
@@ -223,16 +225,14 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = true
   monitor_metrics = false
   skip_destroy = %t
-  global_data_tags = jsonencode([
-		{
-			name = "tag1"
-			value = "value1"
-		},
-		{
-			name = "tag2"
-			value = 1.1
+  global_data_tags = {
+		tag1 = {
+			string_value = "value1"
 		}
-	])
+		tag2 = {
+			number_value = 1.1
+		}
+	}
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
@@ -256,12 +256,11 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs    = false
   monitor_metrics = true
   skip_destroy    = %t
-  global_data_tags = jsonencode([
-		{
-			name = "tag1"
-			value = "value1a"
+   global_data_tags = {
+		tag1 = {
+			string_value = "value1a"
 		}
-	])
+	}
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
