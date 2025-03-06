@@ -27,7 +27,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(sVersion)
+	body, diags := planModel.toAPIUpdateModel(ctx, sVersion)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -41,7 +41,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	planModel.populateFromAPI(policy, sVersion)
+	planModel.populateFromAPI(ctx, policy, sVersion)
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

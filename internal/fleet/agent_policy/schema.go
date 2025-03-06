@@ -3,12 +3,17 @@ package agent_policy
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 func (r *agentPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -86,7 +91,30 @@ func getSchema() schema.Schema {
 					boolplanmodifier.RequiresReplace(),
 				},
 			},
-			"global_data_tags": schema.StringAttribute{
+			"global_data_tags": schema.MapNestedAttribute{
+				Description: "user-defined data tags to apply to all inputs. values can be strings (string_value) or numbers (number_value).",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"string_value": schema.StringAttribute{
+							Description: "Custom label for the field.",
+							Optional:    true,
+						},
+						"number_value": schema.Float32Attribute{
+							Description: "Popularity count for the field.",
+							Optional:    true,
+						},
+					},
+					Validators: []validator.Object{
+						objectvalidator.ExactlyOneOf(path.MatchRoot("string_value"), path.MatchRoot("number_value")),
+					},
+				},
+				Optional: true,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.RequiresReplace(),
+				},
+			},
+
+			"global_data_tags_old": schema.StringAttribute{
 				Description: "JSON encoded user-defined data tags to apply to all inputs.",
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
@@ -94,4 +122,8 @@ func getSchema() schema.Schema {
 				},
 			},
 		}}
+}
+
+func getGlobalDataTagsAttrType() attr.Type {
+	return getSchema().Attributes["global_data_tags"].GetType()
 }
