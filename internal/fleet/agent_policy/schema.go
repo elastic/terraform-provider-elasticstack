@@ -3,9 +3,7 @@ package agent_policy
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -13,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 func (r *agentPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -98,15 +95,21 @@ func getSchema() schema.Schema {
 						"string_value": schema.StringAttribute{
 							Description: "String value for the field. If this is set, number_value must not be defined.",
 							Optional:    true,
+							// Validators: []validator.String{
+							// 	stringvalidator.ExactlyOneOf(path.MatchRelative()),
+							// },
 						},
 						"number_value": schema.Float32Attribute{
 							Description: "Number value for the field. If this is set, string_value must not be defined.",
 							Optional:    true,
+							// Validators: []validator.Float32{
+							// 	float32validator.ExactlyOneOf(path.MatchRelative()),
+							// },
 						},
 					},
-					Validators: []validator.Object{
-						objectvalidator.ExactlyOneOf(path.MatchRoot("string_value"), path.MatchRoot("number_value")),
-					},
+					// Validators: []validator.Object{
+					// 	objectvalidator.ExactlyOneOf(path.MatchRelative().AtAnyMapKey())
+					// },
 				},
 				Optional: true,
 				PlanModifiers: []planmodifier.Map{
