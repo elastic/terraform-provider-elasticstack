@@ -92,15 +92,15 @@ func getSchema() schema.Schema {
 				},
 			},
 			"global_data_tags": schema.MapNestedAttribute{
-				Description: "user-defined data tags to apply to all inputs. values can be strings (string_value) or numbers (number_value).",
+				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"string_value": schema.StringAttribute{
-							Description: "Custom label for the field.",
+							Description: "String value for the field. If this is set, number_value must not be defined.",
 							Optional:    true,
 						},
 						"number_value": schema.Float32Attribute{
-							Description: "Popularity count for the field.",
+							Description: "Number value for the field. If this is set, string_value must not be defined.",
 							Optional:    true,
 						},
 					},
@@ -111,14 +111,6 @@ func getSchema() schema.Schema {
 				Optional: true,
 				PlanModifiers: []planmodifier.Map{
 					mapplanmodifier.RequiresReplace(),
-				},
-			},
-
-			"global_data_tags_old": schema.StringAttribute{
-				Description: "JSON encoded user-defined data tags to apply to all inputs.",
-				Optional:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
 				},
 			},
 		}}
