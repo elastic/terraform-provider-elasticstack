@@ -13,6 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type globalDataTagsItemModel struct {
+	StringValue types.String  `tfsdk:"string_value"`
+	NumberValue types.Float32 `tfsdk:"number_value"`
+}
+
 type agentPolicyModel struct {
 	ID                 types.String `tfsdk:"id"`
 	PolicyID           types.String `tfsdk:"policy_id"`
@@ -27,7 +32,7 @@ type agentPolicyModel struct {
 	MonitorMetrics     types.Bool   `tfsdk:"monitor_metrics"`
 	SysMonitoring      types.Bool   `tfsdk:"sys_monitoring"`
 	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
-	GlobalDataTags     types.Map    `tfsdk:"global_data_tags"`
+	GlobalDataTags     types.Map    `tfsdk:"global_data_tags"` //> globalDataTagsModel
 }
 
 func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy, serverVersion *version.Version) diag.Diagnostics {
@@ -62,7 +67,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.Namespace = types.StringValue(data.Namespace)
 	if utils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
-		var map0 = make(map[string]any)
+		var map0 = make(map[string]globalDataTagsItemModel)
 		for _, v := range utils.Deref(data.GlobalDataTags) {
 			maybeFloat, error := v.Value.AsAgentPolicyGlobalDataTagsItemValue1()
 			if error != nil {
@@ -70,12 +75,12 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 				if error != nil {
 					diags.AddError("Failed to unmarshal global data tags", error.Error())
 				}
-				map0[v.Name] = map[string]string{
-					"string_value": string(maybeString),
+				map0[v.Name] = globalDataTagsItemModel{
+					StringValue: types.StringValue(maybeString),
 				}
 			} else {
-				map0[v.Name] = map[string]float32{
-					"number_value": float32(maybeFloat),
+				map0[v.Name] = globalDataTagsItemModel{
+					NumberValue: types.Float32Value(float32(maybeFloat)),
 				}
 			}
 		}
@@ -118,37 +123,40 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 		}
 
-		var items []kbapi.AgentPolicyGlobalDataTagsItem
-		itemsMap := utils.MapTypeAs[struct {
-			string_value *string
-			number_value *float32
-		}](ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags)
+		items := utils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
+			func(item globalDataTagsItemModel, meta utils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
+				// do some checks
+				if item.StringValue.ValueStringPointer() == nil && item.NumberValue.ValueFloat32Pointer() == nil || item.StringValue.ValueStringPointer() != nil && item.NumberValue.ValueFloat32Pointer() != nil {
+					diags.AddError("global_data_tags validation_error", "Global data tags must have exactly one of string_value or number_value")
+					return kbapi.AgentPolicyGlobalDataTagsItem{}
+				}
+
+				var value kbapi.AgentPolicyGlobalDataTagsItem_Value
+				var err error
+				if item.StringValue.ValueStringPointer() != nil {
+					err = value.FromAgentPolicyGlobalDataTagsItemValue0(*item.StringValue.ValueStringPointer())
+				} else {
+					err = value.FromAgentPolicyGlobalDataTagsItemValue1(*item.NumberValue.ValueFloat32Pointer())
+				}
+				if err != nil {
+					diags.AddError("global_data_tags validation_error_converting_values", err.Error())
+					return kbapi.AgentPolicyGlobalDataTagsItem{}
+				}
+				return kbapi.AgentPolicyGlobalDataTagsItem{
+					Name:  meta.Key,
+					Value: value,
+				}
+			})
+
 		if diags.HasError() {
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 		}
-		for k, v := range itemsMap {
-			if (v.string_value != nil && v.number_value != nil) || (v.string_value == nil && v.number_value == nil) {
-				diags.AddError("global_data_tags ES version error", "Global data tags must have exactly one of string_value or number_value")
-				return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-			}
-			var value kbapi.AgentPolicyGlobalDataTagsItem_Value
-			var err error
-			if v.string_value != nil {
-				err = value.FromAgentPolicyGlobalDataTagsItemValue0(*v.string_value)
-			} else {
-				err = value.FromAgentPolicyGlobalDataTagsItemValue1(*v.number_value)
-			}
-			if err != nil {
-				diags.AddError("global_data_tags ES version error", "could not convert global data tags value")
-				return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-			}
-			items = append(items, kbapi.AgentPolicyGlobalDataTagsItem{
-				Name:  k,
-				Value: value,
-			})
-		}
 
-		body.GlobalDataTags = &items
+		itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0, len(items))
+		for _, v := range items {
+			itemsList = append(itemsList, v)
+		}
+		body.GlobalDataTags = &itemsList
 	}
 
 	return body, nil
@@ -181,38 +189,39 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
 
-		var items []kbapi.AgentPolicyGlobalDataTagsItem
-		itemsMap := utils.MapTypeAs[struct {
-			string_value *string
-			number_value *float32
-		}](ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags)
+		items := utils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
+			func(item globalDataTagsItemModel, meta utils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
+				// do some checks
+				if item.StringValue.ValueStringPointer() == nil && item.NumberValue.ValueFloat32Pointer() == nil || item.StringValue.ValueStringPointer() != nil && item.NumberValue.ValueFloat32Pointer() != nil {
+					diags.AddError("global_data_tags validation_error", "Global data tags must have exactly one of string_value or number_value")
+					return kbapi.AgentPolicyGlobalDataTagsItem{}
+				}
+
+				var value kbapi.AgentPolicyGlobalDataTagsItem_Value
+				var err error
+				if item.StringValue.ValueStringPointer() != nil {
+					err = value.FromAgentPolicyGlobalDataTagsItemValue0(*item.StringValue.ValueStringPointer())
+				} else {
+					err = value.FromAgentPolicyGlobalDataTagsItemValue1(*item.NumberValue.ValueFloat32Pointer())
+				}
+				if err != nil {
+					diags.AddError("global_data_tags validation_error_converting_values", err.Error())
+					return kbapi.AgentPolicyGlobalDataTagsItem{}
+				}
+				return kbapi.AgentPolicyGlobalDataTagsItem{
+					Name:  meta.Key,
+					Value: value,
+				}
+			})
 		if diags.HasError() {
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
-		for k, v := range itemsMap {
-			if (v.string_value != nil && v.number_value != nil) || (v.string_value == nil && v.number_value == nil) {
-				diags.AddError("global_data_tags ES version error", "Global data tags must have exactly one of string_value or number_value")
-				return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-			}
-			var value kbapi.AgentPolicyGlobalDataTagsItem_Value
-			var err error
-			if v.string_value != nil {
-				// s := *v.string_value
-				err = value.FromAgentPolicyGlobalDataTagsItemValue0(*v.string_value)
-			} else {
-				err = value.FromAgentPolicyGlobalDataTagsItemValue1(*v.number_value)
-			}
-			if err != nil {
-				diags.AddError("global_data_tags ES version error", "could not convert global data tags value")
-				return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-			}
-			items = append(items, kbapi.AgentPolicyGlobalDataTagsItem{
-				Name:  k,
-				Value: value,
-			})
-		}
 
-		body.GlobalDataTags = &items
+		itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0, len(items))
+		for _, v := range items {
+			itemsList = append(itemsList, v)
+		}
+		body.GlobalDataTags = &itemsList
 	}
 
 	return body, nil
