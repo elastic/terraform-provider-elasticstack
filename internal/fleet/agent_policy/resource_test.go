@@ -228,7 +228,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   global_data_tags = {
 		tag1 = {
 			string_value = "value1"
-		}
+		},
 		tag2 = {
 			number_value = 1.1
 		}

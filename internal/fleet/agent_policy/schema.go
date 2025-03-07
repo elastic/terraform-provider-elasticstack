@@ -89,7 +89,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"global_data_tags": schema.MapNestedAttribute{
-				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both.",
+				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42}",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"string_value": schema.StringAttribute{
