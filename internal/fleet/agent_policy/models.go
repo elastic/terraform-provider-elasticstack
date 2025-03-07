@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -84,11 +85,12 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 				}
 			}
 		}
-		gdt := utils.MapValueFrom(ctx, map0, getGlobalDataTagsAttrType(), path.Root("global_data_tags"), &diags)
+
+		model.GlobalDataTags = utils.MapValueFrom(ctx, map0, getGlobalDataTagsAttrTypes().(attr.TypeWithElementType).ElementType(), path.Root("global_data_tags"), &diags)
 		if diags.HasError() {
 			return diags
 		}
-		model.GlobalDataTags = gdt
+
 	}
 
 	return nil

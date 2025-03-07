@@ -95,21 +95,12 @@ func getSchema() schema.Schema {
 						"string_value": schema.StringAttribute{
 							Description: "String value for the field. If this is set, number_value must not be defined.",
 							Optional:    true,
-							// Validators: []validator.String{
-							// 	stringvalidator.ExactlyOneOf(path.MatchRelative()),
-							// },
 						},
 						"number_value": schema.Float32Attribute{
 							Description: "Number value for the field. If this is set, string_value must not be defined.",
 							Optional:    true,
-							// Validators: []validator.Float32{
-							// 	float32validator.ExactlyOneOf(path.MatchRelative()),
-							// },
 						},
 					},
-					// Validators: []validator.Object{
-					// 	objectvalidator.ExactlyOneOf(path.MatchRelative().AtAnyMapKey())
-					// },
 				},
 				Optional: true,
 				PlanModifiers: []planmodifier.Map{
@@ -118,7 +109,6 @@ func getSchema() schema.Schema {
 			},
 		}}
 }
-
-func getGlobalDataTagsAttrType() attr.Type {
+func getGlobalDataTagsAttrTypes() attr.Type {
 	return getSchema().Attributes["global_data_tags"].GetType()
 }
