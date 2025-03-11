@@ -154,11 +154,14 @@ func newKibanaRoleManagementCreateOrUpdateFunc(c *resty.Client) KibanaRoleManage
 		if err != nil {
 			return nil, err
 		}
-		r := c.R()
+		var resp *resty.Response
+		var err error
 		if kibanaRole.CreateOnly {
-			r = r.SetQueryParam("createOnly", "true")
+			resp, err = c.R().SetBody(jsonData).SetQueryParam("createOnly", "true").Put(path)
+		} else {
+			// The createOnly query param defaults to false, so no need to set it.
+			resp, err = c.R().SetBody(jsonData).Put(path)
 		}
-		resp, err := r.SetBody(jsonData).Put(path)
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +170,7 @@ func newKibanaRoleManagementCreateOrUpdateFunc(c *resty.Client) KibanaRoleManage
 			return nil, NewAPIError(resp.StatusCode(), resp.Status())
 		}
 
-		// Retrive the object to return it
+		// Retrieve the object to return it
 		kibanaRole, err = newKibanaRoleManagementGetFunc(c)(roleName)
 		if err != nil {
 			return nil, err
