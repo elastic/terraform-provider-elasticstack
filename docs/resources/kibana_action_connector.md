@@ -66,7 +66,7 @@ resource "elasticstack_kibana_action_connector" "slack-api-connector" {
 
 - `config` (String) The configuration for the connector. Configuration properties vary depending on the connector type.
 - `connector_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
-- `secrets` (String) The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.
+- `secrets` (String, Sensitive) The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
