@@ -11,7 +11,7 @@ metadata:
 
 spec:
   type: buildkite-pipeline
-  owner: group:control-plane-stateful-applications
+  owner: group:control-plane-hosted-applications
   system: buildkite
   implementation:
     apiVersion: buildkite.elastic.dev/v1
@@ -29,9 +29,9 @@ spec:
         filter_condition: 'build.tag =~ /^v[0-9.]+$/'
         filter_enabled: true
       teams:
-        control-plane-stateful-applications:
+        control-plane-hosted-applications:
           access_level: MANAGE_BUILD_AND_READ
-        serverless-core-architecture:
+        serverless-core:
           access_level: MANAGE_BUILD_AND_READ
         everyone:
           access_level: READ_ONLY

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
@@ -147,15 +146,21 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							RetestOnFailure: f,
 						},
 						fields: HTTPMonitorFields{
-							Url:                   "http://localhost:5601",
-							SslSupportedProtocols: []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
-							SslVerificationMode:   "full",
-							MaxRedirects:          "2",
-							Mode:                  ModeAny,
-							Ipv4:                  t,
-							Ipv6:                  f,
-							Username:              "test-user-name",
-							Password:              "test-password",
+							Url: "http://localhost:5601",
+							Ssl: &SSLConfig{
+								VerificationMode:       "full",
+								SupportedProtocols:     []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
+								CertificateAuthorities: []string{"ca1", "ca2"},
+								Certificate:            "cert",
+								Key:                    "key",
+								KeyPassphrase:          "passphrase",
+							},
+							MaxRedirects: "2",
+							Mode:         ModeAny,
+							Ipv4:         t,
+							Ipv6:         f,
+							Username:     "test-user-name",
+							Password:     "test-password",
 							ProxyHeader: map[string]interface{}{
 								"User-Agent": "test",
 							},
@@ -215,9 +220,15 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							RetestOnFailure: f,
 						},
 						fields: TCPMonitorFields{
-							Host:                  "localhost:5601",
-							SslSupportedProtocols: []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
-							SslVerificationMode:   "full",
+							Host: "localhost:5601",
+							Ssl: &SSLConfig{
+								VerificationMode:       "full",
+								SupportedProtocols:     []string{"TLSv1.0", "TLSv1.1", "TLSv1.2"},
+								CertificateAuthorities: []string{"ca1", "ca2"},
+								Certificate:            "cert",
+								Key:                    "key",
+								KeyPassphrase:          "passphrase",
+							},
 							ProxyUseLocalResolver: t,
 							ProxyUrl:              "http://localhost",
 							CheckSend:             "Hello World",
@@ -369,7 +380,6 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					monitor, err := syntheticsAPI.Monitor.Add(ctx, config, fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), monitor)
-					updateDueToKibanaAPIDiff(monitor)
 
 					get, err := syntheticsAPI.Monitor.Get(ctx, monitor.Id, space)
 					assert.NoError(s.T(), err)
@@ -382,11 +392,9 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 					update, err := syntheticsAPI.Monitor.Update(ctx, monitor.Id, tc.update.config, tc.update.fields, space)
 					assert.NoError(s.T(), err)
 					assert.NotNil(s.T(), update)
-					updateDueToKibanaAPIDiff(update)
 
 					get, err = syntheticsAPI.Monitor.Get(ctx, monitor.ConfigId, space)
 					assert.NoError(s.T(), err)
-					get.CreatedAt = time.Time{} // update response doesn't have created_at field
 					assert.Equal(s.T(), update, get)
 
 					deleted, err := syntheticsAPI.Monitor.Delete(ctx, space, monitor.ConfigId)
@@ -408,21 +416,6 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 			}
 		})
 	}
-}
-
-// see https://github.com/elastic/kibana/issues/189906
-func updateDueToKibanaAPIDiff(m *SyntheticsMonitor) {
-	m.Params = nil
-	m.Username = ""
-	m.Password = ""
-	m.ProxyHeaders = nil
-	m.CheckResponseBodyPositive = nil
-	m.CheckRequestBody = nil
-	m.CheckRequestHeaders = nil
-	m.CheckSend = ""
-	m.CheckReceive = ""
-	m.InlineScript = ""
-	m.SyntheticsArgs = nil
 }
 
 func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {

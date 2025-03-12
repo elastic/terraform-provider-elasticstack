@@ -458,7 +458,9 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 	}
 
 	if logging.IsDebugOrHigher() {
-		// Don't use kib.Client.SetDebug() here as we re-use the http client within the OpenAPI generated clients
+		// It is required to set debug mode even if we re-use the http client within the OpenAPI generated clients
+		// some of the clients are not relying on the OpenAPI generated clients and are using the http client directly
+		kib.Client.SetDebug(true)
 		transport, err := kib.Client.Transport()
 		if err != nil {
 			return nil, err
@@ -481,6 +483,7 @@ func buildKibanaOapiClient(cfg config.Client) (*kibana_oapi.Client, error) {
 
 func buildAlertingClient(cfg config.Client, httpClient *http.Client) *alerting.APIClient {
 	alertingConfig := alerting.Configuration{
+		Debug:     logging.IsDebugOrHigher(),
 		UserAgent: cfg.UserAgent,
 		Servers: alerting.ServerConfigurations{
 			{
@@ -521,6 +524,7 @@ func buildConnectorsClient(cfg config.Client, httpClient *http.Client) (*connect
 
 func buildSloClient(cfg config.Client, httpClient *http.Client) *slo.APIClient {
 	sloConfig := slo.Configuration{
+		Debug:     logging.IsDebugOrHigher(),
 		UserAgent: cfg.UserAgent,
 		Servers: slo.ServerConfigurations{
 			{

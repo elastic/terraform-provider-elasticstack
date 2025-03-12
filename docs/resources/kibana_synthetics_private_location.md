@@ -31,7 +31,6 @@ resource "elasticstack_fleet_agent_policy" "sample" {
 
 resource "elasticstack_kibana_synthetics_private_location" "example" {
   label           = "example label"
-  space_id        = "default"
   agent_policy_id = elasticstack_fleet_agent_policy.sample.policy_id
   tags            = ["tag-a", "tag-b"]
   geo = {

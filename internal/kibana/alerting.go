@@ -33,7 +33,7 @@ func stringIsAlertingDuration() schema.SchemaValidateFunc {
 func ResourceAlertingRule() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
 		"rule_id": {
-			Description: "A UUID v1 or v4 to use instead of a randomly generated ID.",
+			Description: "The identifier for the rule. Until Kibana version 8.17.0 this should be a UUID v1 or v4, for later versions any format can be used. If it is omitted, an ID is randomly generated.",
 			Type:        schema.TypeString,
 			Computed:    true,
 			Optional:    true,

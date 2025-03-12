@@ -268,6 +268,11 @@ var supportedActions = map[string]*schema.Schema{
 					Type:        schema.TypeString,
 					Optional:    true,
 				},
+				"max_primary_shard_docs": {
+					Description: "Triggers rollover when the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.2**",
+					Type:        schema.TypeInt,
+					Optional:    true,
+				},
 				"max_primary_shard_size": {
 					Description: "Triggers rollover when the largest primary shard in the index reaches a certain size.",
 					Type:        schema.TypeString,
@@ -288,14 +293,14 @@ var supportedActions = map[string]*schema.Schema{
 					Type:        schema.TypeString,
 					Optional:    true,
 				},
-				"min_primary_shard_size": {
-					Description: "Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**",
-					Type:        schema.TypeString,
-					Optional:    true,
-				},
 				"min_primary_shard_docs": {
 					Description: "Prevents rollover until the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.4**",
 					Type:        schema.TypeInt,
+					Optional:    true,
+				},
+				"min_primary_shard_size": {
+					Description: "Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**",
+					Type:        schema.TypeString,
 					Optional:    true,
 				},
 			},
@@ -529,7 +534,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 					}
 				}
 			case "rollover":
-				actions[actionName], diags = expandAction(a, serverVersion, "max_age", "max_docs", "max_size", "max_primary_shard_size", "min_age", "min_docs", "min_size", "min_primary_shard_size", "min_primary_shard_docs")
+				actions[actionName], diags = expandAction(a, serverVersion, "max_age", "max_docs", "max_size", "max_primary_shard_docs", "max_primary_shard_size", "min_age", "min_docs", "min_size", "min_primary_shard_docs", "min_primary_shard_size")
 			case "searchable_snapshot":
 				actions[actionName], diags = expandAction(a, serverVersion, "snapshot_repository", "force_merge_index")
 			case "set_priority":
@@ -562,21 +567,26 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 	return &phase, diags
 }
 
-var RolloverMinConditionsMinSupportedVersion = version.Must(version.NewVersion("8.4.0"))
+var (
+	RolloverMinConditionsMinSupportedVersion = version.Must(version.NewVersion("8.4.0"))
+	MaxPrimaryShardDocsMinSupportedVersion   = version.Must(version.NewVersion("8.2.0"))
+)
+
 var ilmActionSettingOptions = map[string]struct {
 	skipEmptyCheck bool
 	def            interface{}
 	minVersion     *version.Version
 }{
+	"allow_write_after_shrink": {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
 	"number_of_replicas":       {skipEmptyCheck: true},
-	"total_shards_per_node":    {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
 	"priority":                 {skipEmptyCheck: true},
+	"max_primary_shard_docs":   {def: 0, minVersion: MaxPrimaryShardDocsMinSupportedVersion},
 	"min_age":                  {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
 	"min_docs":                 {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
 	"min_size":                 {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_primary_shard_size":   {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
 	"min_primary_shard_docs":   {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
-	"allow_write_after_shrink": {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
+	"min_primary_shard_size":   {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	"total_shards_per_node":    {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
 }
 
 func expandAction(a []interface{}, serverVersion *version.Version, settings ...string) (map[string]interface{}, diag.Diagnostics) {

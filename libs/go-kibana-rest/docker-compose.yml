@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1@sha256:500b04e9282aeffd083fb8f917ee2c309c99f76c095c79681bd77ab37d6886e6
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1@sha256:4223122255afe54d5598c6728c035abdad5fba356889397e1f4339e706c4b14c
     environment:
       cluster.name: test
       discovery.type: single-node
@@ -11,7 +11,7 @@ services:
     ports:
       - "9200:9200/tcp"
   set-kibana-password:
-    image: docker.elastic.co/kibana/kibana:8.16.1@sha256:a22f9f9bb16fc7b01cfd03523a2d5a0d9873daefec6092368a8e2bb0b3380757
+    image: docker.elastic.co/kibana/kibana:8.17.1@sha256:d323d1a873cee12c76969462dfeca338cce1b893f62147934f1089c859f1b75f
     restart: on-failure
     links:
       - elasticsearch
@@ -22,14 +22,13 @@ services:
       elasticsearch:
         condition: service_started
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.16.1@sha256:a22f9f9bb16fc7b01cfd03523a2d5a0d9873daefec6092368a8e2bb0b3380757
+    image: docker.elastic.co/kibana/kibana:8.17.1@sha256:d323d1a873cee12c76969462dfeca338cce1b893f62147934f1089c859f1b75f
     environment:
       SERVER_NAME: kibana
       ELASTICSEARCH_HOSTS: http://es:9200
       ELASTICSEARCH_USERNAME: kibana_system
       ELASTICSEARCH_PASSWORD: changeme
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: min-32-byte-long-strong-encryption-key
-#      LOGGING_ROOT_LEVEL: debug
     links:
       - elasticsearch:es
     ports:
