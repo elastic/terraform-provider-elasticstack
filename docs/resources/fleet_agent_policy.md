@@ -24,6 +24,15 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   sys_monitoring  = true
   monitor_logs    = true
   monitor_metrics = true
+
+  global_data_tags = {
+    first_tag = {
+      string_value = "tag_value"
+    },
+    second_tag = {
+      number_value = 1.2
+    }
+  }
 }
 ```
 
@@ -41,6 +50,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `description` (String) The description of the agent policy.
 - `download_source_id` (String) The identifier for the Elastic Agent binary download server.
 - `fleet_server_host_id` (String) The identifier for the Fleet server host.
+- `global_data_tags` (Attributes Map) User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42} (see [below for nested schema](#nestedatt--global_data_tags))
 - `monitor_logs` (Boolean) Enable collection of agent logs.
 - `monitor_metrics` (Boolean) Enable collection of agent metrics.
 - `monitoring_output_id` (String) The identifier for monitoring output.
@@ -51,6 +61,14 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+
+<a id="nestedatt--global_data_tags"></a>
+### Nested Schema for `global_data_tags`
+
+Optional:
+
+- `number_value` (Number) Number value for the field. If this is set, string_value must not be defined.
+- `string_value` (String) String value for the field. If this is set, number_value must not be defined.
 
 ## Import
 
