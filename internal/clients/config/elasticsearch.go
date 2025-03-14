@@ -43,6 +43,18 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 			config.config.Addresses = addrs
 		}
 
+		if headers, ok := esConfig["headers"]; ok && len(headers.([]interface{})) > 0 {
+			var header_values []string
+			for _, e := range headers.([]interface{}) {
+				header_values = append(header_values, e.(string))
+			}
+
+			for _, header := range header_values {
+				headerParts := strings.Split(header, ":")
+				config.config.Header.Add(strings.TrimSpace(headerParts[0]), strings.TrimSpace(headerParts[1]))
+			}
+		}
+
 		if bearer_token, ok := esConfig["bearer_token"].(string); ok && bearer_token != "" {
 			config.bearerToken = bearer_token
 		}
