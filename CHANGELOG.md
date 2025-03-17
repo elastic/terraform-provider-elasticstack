@@ -7,7 +7,7 @@
 - Add missing entries to `data_view.field_formats.params` ([#1001](https://github.com/elastic/terraform-provider-elasticstack/pull/1001))
 - Fix namespaces inconsistency when creating elasticstack_kibana_data_view resources ([#1011](https://github.com/elastic/terraform-provider-elasticstack/pull/1011))
 - Update rule ID documentation. ([#1047](https://github.com/elastic/terraform-provider-elasticstack/pull/1047))
-- Mark `elasticstack_kibana_action_connector.secrets` as sensitive. ([#1045](https://github.com/elastic/terraform-provider-elasticstack/pull/1045)
+- Mark `elasticstack_kibana_action_connector.secrets` as sensitive. ([#1045](https://github.com/elastic/terraform-provider-elasticstack/pull/1045))
 
 ## [0.11.13] - 2025-01-09
 
