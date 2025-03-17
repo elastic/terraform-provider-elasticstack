@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.14] - 2025-03-17
+
 - Fix a provider crash when interacting with elasticstack_kibana_data_view resources created with 0.11.0. ([#979](https://github.com/elastic/terraform-provider-elasticstack/pull/979))
 - Add `max_primary_shard_docs` condition to ILM rollover ([#845](https://github.com/elastic/terraform-provider-elasticstack/pull/845))
 - Add missing entries to `data_view.field_formats.params` ([#1001](https://github.com/elastic/terraform-provider-elasticstack/pull/1001))
@@ -14,6 +16,7 @@
 - Support 8.17.0 in acc tests ([#969](https://github.com/elastic/terraform-provider-elasticstack/pull/969)).
 - Support 9.0.0 in acc tests ([#954](https://github.com/elastic/terraform-provider-elasticstack/pull/954)).
 - Support several ssl fields in `elasticstack_kibana_synthetics_monitor` ([#967](https://github.com/elastic/terraform-provider-elasticstack/pull/967)).
+- HTTP 400 Bad Request When Creating elasticstack_kibana_security_role ([933](https://github.com/elastic/terraform-provider-elasticstack/issues/933)).
 
 ## [0.11.12] - 2024-12-16
 
@@ -413,7 +416,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.13...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...HEAD
+[0.11.14]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.13...v0.11.14
 [0.11.13]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.12...v0.11.13
 [0.11.12]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.11...v0.11.12
 [0.11.11]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.10...v0.11.11
