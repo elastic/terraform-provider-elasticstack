@@ -1519,7 +1519,6 @@ components:
           type: string
       required:
       - aggregation
-      - field
       - name
       type: object
     indicator_properties_custom_metric_params_good:
@@ -1562,7 +1561,6 @@ components:
           type: string
       required:
       - aggregation
-      - field
       - name
       type: object
     indicator_properties_custom_metric_params_total:

@@ -24,7 +24,7 @@ type IndicatorPropertiesCustomMetricParamsTotalMetricsInner struct {
 	// The aggregation type of the metric. Only valid option is \"sum\"
 	Aggregation string `json:"aggregation"`
 	// The field of the metric.
-	Field string `json:"field"`
+	Field *string `json:"field,omitempty"`
 	// The filter to apply to the metric.
 	Filter *string `json:"filter,omitempty"`
 }
@@ -33,11 +33,10 @@ type IndicatorPropertiesCustomMetricParamsTotalMetricsInner struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewIndicatorPropertiesCustomMetricParamsTotalMetricsInner(name string, aggregation string, field string) *IndicatorPropertiesCustomMetricParamsTotalMetricsInner {
+func NewIndicatorPropertiesCustomMetricParamsTotalMetricsInner(name string, aggregation string) *IndicatorPropertiesCustomMetricParamsTotalMetricsInner {
 	this := IndicatorPropertiesCustomMetricParamsTotalMetricsInner{}
 	this.Name = name
 	this.Aggregation = aggregation
-	this.Field = field
 	return &this
 }
 
@@ -97,28 +96,36 @@ func (o *IndicatorPropertiesCustomMetricParamsTotalMetricsInner) SetAggregation(
 	o.Aggregation = v
 }
 
-// GetField returns the Field field value
+// GetField returns the Field field value if set, zero value otherwise.
 func (o *IndicatorPropertiesCustomMetricParamsTotalMetricsInner) GetField() string {
-	if o == nil {
+	if o == nil || IsNil(o.Field) {
 		var ret string
 		return ret
 	}
-
-	return o.Field
+	return *o.Field
 }
 
-// GetFieldOk returns a tuple with the Field field value
+// GetFieldOk returns a tuple with the Field field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *IndicatorPropertiesCustomMetricParamsTotalMetricsInner) GetFieldOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.Field) {
 		return nil, false
 	}
-	return &o.Field, true
+	return o.Field, true
 }
 
-// SetField sets field value
+// HasField returns a boolean if a field has been set.
+func (o *IndicatorPropertiesCustomMetricParamsTotalMetricsInner) HasField() bool {
+	if o != nil && !IsNil(o.Field) {
+		return true
+	}
+
+	return false
+}
+
+// SetField gets a reference to the given string and assigns it to the Field field.
 func (o *IndicatorPropertiesCustomMetricParamsTotalMetricsInner) SetField(v string) {
-	o.Field = v
+	o.Field = &v
 }
 
 // GetFilter returns the Filter field value if set, zero value otherwise.
@@ -165,7 +172,9 @@ func (o IndicatorPropertiesCustomMetricParamsTotalMetricsInner) ToMap() (map[str
 	toSerialize := map[string]interface{}{}
 	toSerialize["name"] = o.Name
 	toSerialize["aggregation"] = o.Aggregation
-	toSerialize["field"] = o.Field
+	if !IsNil(o.Field) {
+		toSerialize["field"] = o.Field
+	}
 	if !IsNil(o.Filter) {
 		toSerialize["filter"] = o.Filter
 	}
