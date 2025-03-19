@@ -599,7 +599,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 			idx := fmt.Sprint(n)
 			goodMetrics = append(goodMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
 				Name:        d.Get(indicatorType + ".0.good.0.metrics." + idx + ".name").(string),
-				Field:       d.Get(indicatorType + ".0.good.0.metrics." + idx + ".field").(string),
+				Field:       getOrNilString(indicatorType+".0.good.0.metrics."+idx+".field", d),
 				Aggregation: d.Get(indicatorType + ".0.good.0.metrics." + idx + ".aggregation").(string),
 				Filter:      getOrNilString(indicatorType+".0.good.0.metrics."+idx+".filter", d),
 			})
@@ -610,7 +610,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 			idx := fmt.Sprint(n)
 			totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{
 				Name:        d.Get(indicatorType + ".0.total.0.metrics." + idx + ".name").(string),
-				Field:       d.Get(indicatorType + ".0.total.0.metrics." + idx + ".field").(string),
+				Field:       getOrNilString(indicatorType+".0.total.0.metrics."+idx+".field", d),
 				Aggregation: d.Get(indicatorType + ".0.total.0.metrics." + idx + ".aggregation").(string),
 				Filter:      getOrNilString(indicatorType+".0.total.0.metrics."+idx+".filter", d),
 			})
