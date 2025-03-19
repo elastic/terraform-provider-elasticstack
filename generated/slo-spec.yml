@@ -1,3 +1,4 @@
+#retrieved from https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/slo/docs/openapi/slo/bundled.yaml
 openapi: 3.0.1
 info:
   title: SLOs
@@ -671,7 +672,6 @@ components:
                     required:
                       - name
                       - aggregation
-                      - field
                     properties:
                       name:
                         description: The name of the metric. Only valid options are A-Z
@@ -712,7 +712,6 @@ components:
                     required:
                       - name
                       - aggregation
-                      - field
                     properties:
                       name:
                         description: The name of the metric. Only valid options are A-Z
