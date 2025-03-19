@@ -11,6 +11,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -43,15 +44,10 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 			config.config.Addresses = addrs
 		}
 
-		if headers, ok := esConfig["headers"]; ok && len(headers.([]interface{})) > 0 {
-			var header_values []string
-			for _, e := range headers.([]interface{}) {
-				header_values = append(header_values, e.(string))
-			}
-
-			for _, header := range header_values {
-				headerParts := strings.Split(header, ":")
-				config.config.Header.Add(strings.TrimSpace(headerParts[0]), strings.TrimSpace(headerParts[1]))
+		if headers, ok := esConfig["headers"]; ok && len(headers.(map[string]interface{})) > 0 {
+			headersMap := headers.(map[string]interface{})
+			for header, value := range headersMap {
+				config.config.Header.Add(strings.TrimSpace(header), strings.TrimSpace(value.(string)))
 			}
 		}
 
@@ -157,22 +153,10 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 		config.config.Addresses = endpoints
 	}
 
-	var headers []string
-	headerDiags := esConfig.Headers.ElementsAs(ctx, &headers, true)
-	if headerDiags.HasError() {
-		return nil, diags
-	}
-
-	if len(headers) > 0 {
-		for _, header := range headers {
-			headerParts := strings.Split(header, ":")
-			if len(headerParts) != 2 {
-				diags.Append(fwdiags.NewErrorDiagnostic("Invalid header format", "Headers must be in the format 'key:value'"))
-				return nil, diags
-			}
-			// trim the strings to remove any leading/trailing whitespace
-			config.config.Header.Add(strings.TrimSpace(headerParts[0]), strings.TrimSpace(headerParts[1]))
-		}
+	for header, value := range esConfig.Headers.Elements() {
+		strValue := value.(basetypes.StringValue)
+		// trim the strings to remove any leading/trailing whitespace
+		config.config.Header.Add(strings.TrimSpace(header), strings.TrimSpace(strValue.ValueString()))
 	}
 
 	if esConfig.BearerToken.ValueString() != "" {
