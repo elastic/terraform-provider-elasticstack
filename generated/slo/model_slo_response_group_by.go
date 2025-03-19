@@ -18,7 +18,7 @@ import (
 // SloResponseGroupBy - optional group by field to use to generate an SLO per distinct value
 type SloResponseGroupBy struct {
 	ArrayOfString *[]string
-	String *string
+	String        *string
 }
 
 // []stringAsSloResponseGroupBy is a convenience function that returns []string wrapped in SloResponseGroupBy
@@ -35,7 +35,6 @@ func StringAsSloResponseGroupBy(v *string) SloResponseGroupBy {
 	}
 }
 
-
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *SloResponseGroupBy) UnmarshalJSON(data []byte) error {
 	var err error
@@ -43,8 +42,8 @@ func (dst *SloResponseGroupBy) UnmarshalJSON(data []byte) error {
 	// try to unmarshal data into ArrayOfString
 	err = json.Unmarshal(data, &dst.ArrayOfString)
 	if err == nil {
-		json[]string, _ := json.Marshal(dst.ArrayOfString)
-		if string(json[]string) == "{}" { // empty struct
+		jsonArraystring, _ := json.Marshal(dst.ArrayOfString)
+		if string(jsonArraystring) == "{}" { // empty struct
 			dst.ArrayOfString = nil
 		} else {
 			match++
@@ -93,7 +92,7 @@ func (src SloResponseGroupBy) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *SloResponseGroupBy) GetActualInstance() (interface{}) {
+func (obj *SloResponseGroupBy) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -144,5 +143,3 @@ func (v *NullableSloResponseGroupBy) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-
