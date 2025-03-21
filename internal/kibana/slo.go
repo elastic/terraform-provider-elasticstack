@@ -513,6 +513,14 @@ func getOrNilFloat(path string, d *schema.ResourceData) *float64 {
 	return nil
 }
 
+func getOrNilBool(path string, d *schema.ResourceData) *bool {
+	if v, ok := d.GetOk(path); ok {
+		b := v.(bool)
+		return &b
+	}
+	return nil
+}
+
 func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -655,8 +663,9 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 	}
 
 	settings := slo.Settings{
-		SyncDelay: getOrNilString("settings.0.sync_delay", d),
-		Frequency: getOrNilString("settings.0.frequency", d),
+		SyncDelay: 				getOrNilString("settings.0.sync_delay", d),
+		Frequency: 				getOrNilString("settings.0.frequency", d),
+		PreventInitialBackfill: getOrNilBool("settings.0.prevent_initial_backfill", d),
 	}
 
 	budgetingMethod := slo.BudgetingMethod(d.Get("budgeting_method").(string))
@@ -909,8 +918,9 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 
 	if err := d.Set("settings", []interface{}{
 		map[string]interface{}{
-			"sync_delay": s.Settings.SyncDelay,
-			"frequency":  s.Settings.Frequency,
+			"sync_delay": 				s.Settings.SyncDelay,
+			"frequency":  				s.Settings.Frequency,
+			"prevent_initial_backfill": s.Settings.PreventInitialBackfill,
 		},
 	}); err != nil {
 		return diag.FromErr(err)
