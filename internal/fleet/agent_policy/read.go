@@ -22,11 +22,6 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	sVersion, e := r.client.ServerVersion(ctx)
-	if e != nil {
-		return
-	}
-
 	policyID := stateModel.PolicyID.ValueString()
 	policy, diags := fleet.GetAgentPolicy(ctx, client, policyID)
 	resp.Diagnostics.Append(diags...)
@@ -39,7 +34,7 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	diags = stateModel.populateFromAPI(ctx, policy, sVersion)
+	diags = stateModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

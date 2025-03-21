@@ -41,7 +41,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	planModel.populateFromAPI(ctx, policy, sVersion)
+	planModel.populateFromAPI(ctx, policy)
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

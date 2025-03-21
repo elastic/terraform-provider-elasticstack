@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -161,6 +162,11 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags"),
 				),
 			},
+			{
+				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
+				Config:      testAccResourceAgentPolicyUpdateWithBadGlobalDataTags(policyNameGlobalDataTags, false),
+				ExpectError: regexp.MustCompile("conflicts with"),
+			},
 		},
 	})
 }
@@ -259,6 +265,34 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
    global_data_tags = {
 		tag1 = {
 			string_value = "value1a"
+		}
+	}
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
+}
+
+func testAccResourceAgentPolicyUpdateWithBadGlobalDataTags(id string, skipDestroy bool) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name            = "%s"
+  namespace       = "default"
+  description     = "This policy was updated"
+  monitor_logs    = false
+  monitor_metrics = true
+  skip_destroy    = %t
+   global_data_tags = {
+		tag1 = {
+			string_value = "value1a"
+			number_value = 1.2
 		}
 	}
 }

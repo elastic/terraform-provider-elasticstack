@@ -2,6 +2,7 @@ package agent_policy
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -36,7 +37,7 @@ type agentPolicyModel struct {
 	GlobalDataTags     types.Map    `tfsdk:"global_data_tags"` //> globalDataTagsModel
 }
 
-func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy, serverVersion *version.Version) diag.Diagnostics {
+func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -121,18 +122,12 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 	if len(model.GlobalDataTags.Elements()) > 0 {
 		var diags diag.Diagnostics
 		if serverVersion.LessThan(MinVersionGlobalDataTags) {
-			diags.AddError("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above")
+			diags.AddError("global_data_tags ES version error", fmt.Sprintf("Global data tags are only supported in Elastic Stack %s and above", MinVersionGlobalDataTags))
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 		}
 
 		items := utils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
 			func(item globalDataTagsItemModel, meta utils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
-				// do some checks
-				if item.StringValue.ValueStringPointer() == nil && item.NumberValue.ValueFloat32Pointer() == nil || item.StringValue.ValueStringPointer() != nil && item.NumberValue.ValueFloat32Pointer() != nil {
-					diags.AddError("global_data_tags validation_error", "Global data tags must have exactly one of string_value or number_value")
-					return kbapi.AgentPolicyGlobalDataTagsItem{}
-				}
-
 				var value kbapi.AgentPolicyGlobalDataTagsItem_Value
 				var err error
 				if item.StringValue.ValueStringPointer() != nil {
@@ -187,17 +182,12 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 	if len(model.GlobalDataTags.Elements()) > 0 {
 		var diags diag.Diagnostics
 		if serverVersion.LessThan(MinVersionGlobalDataTags) {
-			diags.AddError("global_data_tags ES version error", "Global data tags are only supported in Elastic Stack 8.15.0 and above")
+			diags.AddError("global_data_tags ES version error", fmt.Sprintf("Global data tags are only supported in Elastic Stack %s and above", MinVersionGlobalDataTags))
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 		}
 
 		items := utils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
 			func(item globalDataTagsItemModel, meta utils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
-				// do some checks
-				if item.StringValue.ValueStringPointer() == nil && item.NumberValue.ValueFloat32Pointer() == nil || item.StringValue.ValueStringPointer() != nil && item.NumberValue.ValueFloat32Pointer() != nil {
-					diags.AddError("global_data_tags validation_error", "Global data tags must have exactly one of string_value or number_value")
-					return kbapi.AgentPolicyGlobalDataTagsItem{}
-				}
 
 				var value kbapi.AgentPolicyGlobalDataTagsItem_Value
 				var err error
