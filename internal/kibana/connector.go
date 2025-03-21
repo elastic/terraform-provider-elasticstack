@@ -52,6 +52,7 @@ func ResourceActionConnector() *schema.Resource {
 			Optional:         true,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 			ValidateFunc:     validation.StringIsJSON,
+			Sensitive:        true,
 		},
 		"is_deprecated": {
 			Description: "Indicates whether the connector type is deprecated.",
