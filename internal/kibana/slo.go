@@ -542,7 +542,7 @@ func getSchema() map[string]*schema.Schema {
 						Optional: true,
 						Computed: true,
 					},
-					"preventInitialBackfill": {
+					"prevent_initial_backfill": {
 						Description: 	"Prevents the underlying ES transform from attempting to backfill data on start, which can sometimes be resource-intensive or time-consuming and unnecessary",
 						Type: 		schema.BoolAttribute,
 						Optional: 	true,
