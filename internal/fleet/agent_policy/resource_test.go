@@ -162,11 +162,6 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "global_data_tags"),
 				),
 			},
-			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
-				Config:      testAccResourceAgentPolicyUpdateWithBadGlobalDataTags(policyNameGlobalDataTags, true),
-				ExpectError: regexp.MustCompile(".*Error: Invalid Attribute Combination.*"),
-			},
 		},
 	})
 }
@@ -190,6 +185,23 @@ func TestAccResourceAgentPolicySkipDestroy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "true"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		// CheckDestroy:             func(s *state.State) { return nil },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
+				Config:      testAccResourceAgentPolicyUpdateWithBadGlobalDataTags(policyName, true),
+				ExpectError: regexp.MustCompile(".*Error: Invalid Attribute Combination.*"),
 			},
 		},
 	})
