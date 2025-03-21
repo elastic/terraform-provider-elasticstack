@@ -100,14 +100,14 @@ func getSchema() schema.Schema {
 							Description: "String value for the field. If this is set, number_value must not be defined.",
 							Optional:    true,
 							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtName("number_value")),
+								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("number_value")),
 							},
 						},
 						"number_value": schema.Float32Attribute{
 							Description: "Number value for the field. If this is set, string_value must not be defined.",
 							Optional:    true,
 							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtName("string_value")),
+								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName("string_value")),
 							},
 						},
 					},

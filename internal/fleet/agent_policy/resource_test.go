@@ -164,8 +164,8 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 			},
 			{
 				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
-				Config:      testAccResourceAgentPolicyUpdateWithBadGlobalDataTags(policyNameGlobalDataTags, false),
-				ExpectError: regexp.MustCompile("conflicts with"),
+				Config:      testAccResourceAgentPolicyUpdateWithBadGlobalDataTags(policyNameGlobalDataTags, true),
+				ExpectError: regexp.MustCompile(".*Error: Invalid Attribute Combination.*"),
 			},
 		},
 	})
