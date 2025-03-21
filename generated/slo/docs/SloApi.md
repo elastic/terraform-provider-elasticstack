@@ -1,18 +1,19 @@
 # \SloAPI
 
-All URIs are relative to *http://localhost:5601*
+All URIs are relative to *https://localhost:5601*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**CreateSloOp**](SloAPI.md#CreateSloOp) | **Post** /s/{spaceId}/api/observability/slos | Creates an SLO.
-[**DeleteSloInstancesOp**](SloAPI.md#DeleteSloInstancesOp) | **Post** /s/{spaceId}/api/observability/slos/_delete_instances | Batch delete rollup and summary data for the matching list of sloId and instanceId
-[**DeleteSloOp**](SloAPI.md#DeleteSloOp) | **Delete** /s/{spaceId}/api/observability/slos/{sloId} | Deletes an SLO
-[**DisableSloOp**](SloAPI.md#DisableSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/disable | Disables an SLO
-[**EnableSloOp**](SloAPI.md#EnableSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/enable | Enables an SLO
-[**FindSlosOp**](SloAPI.md#FindSlosOp) | **Get** /s/{spaceId}/api/observability/slos | Retrieves a paginated list of SLOs
-[**GetSloOp**](SloAPI.md#GetSloOp) | **Get** /s/{spaceId}/api/observability/slos/{sloId} | Retrieves a SLO
-[**HistoricalSummaryOp**](SloAPI.md#HistoricalSummaryOp) | **Post** /s/{spaceId}/internal/observability/slos/_historical_summary | Retrieves the historical summary for a list of SLOs
-[**UpdateSloOp**](SloAPI.md#UpdateSloOp) | **Put** /s/{spaceId}/api/observability/slos/{sloId} | Updates an SLO
+[**CreateSloOp**](SloAPI.md#CreateSloOp) | **Post** /s/{spaceId}/api/observability/slos | Create an SLO
+[**DeleteSloInstancesOp**](SloAPI.md#DeleteSloInstancesOp) | **Post** /s/{spaceId}/api/observability/slos/_delete_instances | Batch delete rollup and summary data
+[**DeleteSloOp**](SloAPI.md#DeleteSloOp) | **Delete** /s/{spaceId}/api/observability/slos/{sloId} | Delete an SLO
+[**DisableSloOp**](SloAPI.md#DisableSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/disable | Disable an SLO
+[**EnableSloOp**](SloAPI.md#EnableSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/enable | Enable an SLO
+[**FindSlosOp**](SloAPI.md#FindSlosOp) | **Get** /s/{spaceId}/api/observability/slos | Get a paginated list of SLOs
+[**GetDefinitionsOp**](SloAPI.md#GetDefinitionsOp) | **Get** /s/{spaceId}/internal/observability/slos/_definitions | Get the SLO definitions
+[**GetSloOp**](SloAPI.md#GetSloOp) | **Get** /s/{spaceId}/api/observability/slos/{sloId} | Get an SLO
+[**ResetSloOp**](SloAPI.md#ResetSloOp) | **Post** /s/{spaceId}/api/observability/slos/{sloId}/_reset | Reset an SLO
+[**UpdateSloOp**](SloAPI.md#UpdateSloOp) | **Put** /s/{spaceId}/api/observability/slos/{sloId} | Update an SLO
 
 
 
@@ -20,7 +21,7 @@ Method | HTTP request | Description
 
 > CreateSloResponse CreateSloOp(ctx, spaceId).KbnXsrf(kbnXsrf).CreateSloRequest(createSloRequest).Execute()
 
-Creates an SLO.
+Create an SLO
 
 
 
@@ -78,7 +79,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -94,7 +95,7 @@ Name | Type | Description  | Notes
 
 > DeleteSloInstancesOp(ctx, spaceId).KbnXsrf(kbnXsrf).DeleteSloInstancesRequest(deleteSloInstancesRequest).Execute()
 
-Batch delete rollup and summary data for the matching list of sloId and instanceId
+Batch delete rollup and summary data
 
 
 
@@ -150,7 +151,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -166,7 +167,7 @@ Name | Type | Description  | Notes
 
 > DeleteSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
 
-Deletes an SLO
+Delete an SLO
 
 
 
@@ -223,7 +224,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -239,7 +240,7 @@ Name | Type | Description  | Notes
 
 > DisableSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
 
-Disables an SLO
+Disable an SLO
 
 
 
@@ -296,7 +297,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -312,7 +313,7 @@ Name | Type | Description  | Notes
 
 > EnableSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
 
-Enables an SLO
+Enable an SLO
 
 
 
@@ -369,7 +370,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -383,9 +384,9 @@ Name | Type | Description  | Notes
 
 ## FindSlosOp
 
-> FindSloResponse FindSlosOp(ctx, spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
+> FindSloResponse FindSlosOp(ctx, spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Size(size).SearchAfter(searchAfter).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).HideStale(hideStale).Execute()
 
-Retrieves a paginated list of SLOs
+Get a paginated list of SLOs
 
 
 
@@ -405,14 +406,17 @@ func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
     kqlQuery := "slo.name:latency* and slo.tags : "prod"" // string | A valid kql query to filter the SLO with (optional)
-    page := int32(1) // int32 | The page number to return (optional) (default to 1)
-    perPage := int32(25) // int32 | The number of SLOs to return per page (optional) (default to 25)
+    size := int32(1) // int32 | The page size to use for cursor-based pagination, must be greater or equal than 1 (optional) (default to 1)
+    searchAfter := []string{"Inner_example"} // []string | The cursor to use for fetching the results from, when using a cursor-base pagination. (optional)
+    page := int32(1) // int32 | The page to use for pagination, must be greater or equal than 1 (optional) (default to 1)
+    perPage := int32(25) // int32 | Number of SLOs returned by page (optional) (default to 25)
     sortBy := "status" // string | Sort by field (optional) (default to "status")
     sortDirection := "asc" // string | Sort order (optional) (default to "asc")
+    hideStale := true // bool | Hide stale SLOs from the list as defined by stale SLO threshold in SLO settings (optional)
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SloAPI.FindSlosOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).Execute()
+    resp, r, err := apiClient.SloAPI.FindSlosOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Size(size).SearchAfter(searchAfter).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).HideStale(hideStale).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.FindSlosOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -440,10 +444,13 @@ Name | Type | Description  | Notes
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
  **kqlQuery** | **string** | A valid kql query to filter the SLO with | 
- **page** | **int32** | The page number to return | [default to 1]
- **perPage** | **int32** | The number of SLOs to return per page | [default to 25]
+ **size** | **int32** | The page size to use for cursor-based pagination, must be greater or equal than 1 | [default to 1]
+ **searchAfter** | **[]string** | The cursor to use for fetching the results from, when using a cursor-base pagination. | 
+ **page** | **int32** | The page to use for pagination, must be greater or equal than 1 | [default to 1]
+ **perPage** | **int32** | Number of SLOs returned by page | [default to 25]
  **sortBy** | **string** | Sort by field | [default to &quot;status&quot;]
  **sortDirection** | **string** | Sort order | [default to &quot;asc&quot;]
+ **hideStale** | **bool** | Hide stale SLOs from the list as defined by stale SLO threshold in SLO settings | 
 
 ### Return type
 
@@ -451,7 +458,87 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## GetDefinitionsOp
+
+> FindSloDefinitionsResponse GetDefinitionsOp(ctx, spaceId).KbnXsrf(kbnXsrf).IncludeOutdatedOnly(includeOutdatedOnly).Search(search).Page(page).PerPage(perPage).Execute()
+
+Get the SLO definitions
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
+)
+
+func main() {
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    includeOutdatedOnly := true // bool | Indicates if the API returns only outdated SLO or all SLO definitions (optional)
+    search := "my service availability" // string | Filters the SLOs by name (optional)
+    page := float64(1) // float64 | The page to use for pagination, must be greater or equal than 1 (optional)
+    perPage := int32(100) // int32 | Number of SLOs returned by page (optional) (default to 100)
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.GetDefinitionsOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).IncludeOutdatedOnly(includeOutdatedOnly).Search(search).Page(page).PerPage(perPage).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.GetDefinitionsOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `GetDefinitionsOp`: FindSloDefinitionsResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.GetDefinitionsOp`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiGetDefinitionsOpRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
+ **includeOutdatedOnly** | **bool** | Indicates if the API returns only outdated SLO or all SLO definitions | 
+ **search** | **string** | Filters the SLOs by name | 
+ **page** | **float64** | The page to use for pagination, must be greater or equal than 1 | 
+ **perPage** | **int32** | Number of SLOs returned by page | [default to 100]
+
+### Return type
+
+[**FindSloDefinitionsResponse**](FindSloDefinitionsResponse.md)
+
+### Authorization
+
+No authorization required
 
 ### HTTP request headers
 
@@ -465,9 +552,9 @@ Name | Type | Description  | Notes
 
 ## GetSloOp
 
-> SloResponse GetSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).InstanceId(instanceId).Execute()
+> SloWithSummaryResponse GetSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).InstanceId(instanceId).Execute()
 
-Retrieves a SLO
+Get an SLO
 
 
 
@@ -496,7 +583,7 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.GetSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `GetSloOp`: SloResponse
+    // response from `GetSloOp`: SloWithSummaryResponse
     fmt.Fprintf(os.Stdout, "Response from `SloAPI.GetSloOp`: %v\n", resp)
 }
 ```
@@ -524,11 +611,11 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**SloResponse**](SloResponse.md)
+[**SloWithSummaryResponse**](SloWithSummaryResponse.md)
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
 
 ### HTTP request headers
 
@@ -540,11 +627,11 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## HistoricalSummaryOp
+## ResetSloOp
 
-> map[string][]HistoricalSummaryResponseInner HistoricalSummaryOp(ctx, spaceId).KbnXsrf(kbnXsrf).HistoricalSummaryRequest(historicalSummaryRequest).Execute()
+> SloDefinitionResponse ResetSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
 
-Retrieves the historical summary for a list of SLOs
+Reset an SLO
 
 
 
@@ -563,17 +650,17 @@ import (
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
     spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    historicalSummaryRequest := *openapiclient.NewHistoricalSummaryRequest([]string{"8853df00-ae2e-11ed-90af-09bb6422b258"}) // HistoricalSummaryRequest | 
+    sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.SloAPI.HistoricalSummaryOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).HistoricalSummaryRequest(historicalSummaryRequest).Execute()
+    resp, r, err := apiClient.SloAPI.ResetSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.HistoricalSummaryOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.ResetSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `HistoricalSummaryOp`: map[string][]HistoricalSummaryResponseInner
-    fmt.Fprintf(os.Stdout, "Response from `SloAPI.HistoricalSummaryOp`: %v\n", resp)
+    // response from `ResetSloOp`: SloDefinitionResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.ResetSloOp`: %v\n", resp)
 }
 ```
 
@@ -584,29 +671,30 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+**sloId** | **string** | An identifier for the slo. | 
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiHistoricalSummaryOpRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiResetSloOpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **kbnXsrf** | **string** | Cross-site request forgery protection | 
 
- **historicalSummaryRequest** | [**HistoricalSummaryRequest**](HistoricalSummaryRequest.md) |  | 
+
 
 ### Return type
 
-[**map[string][]HistoricalSummaryResponseInner**](array.md)
+[**SloDefinitionResponse**](SloDefinitionResponse.md)
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
@@ -616,9 +704,9 @@ Name | Type | Description  | Notes
 
 ## UpdateSloOp
 
-> SloResponse UpdateSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).UpdateSloRequest(updateSloRequest).Execute()
+> SloDefinitionResponse UpdateSloOp(ctx, spaceId, sloId).KbnXsrf(kbnXsrf).UpdateSloRequest(updateSloRequest).Execute()
 
-Updates an SLO
+Update an SLO
 
 
 
@@ -647,7 +735,7 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.UpdateSloOp``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `UpdateSloOp`: SloResponse
+    // response from `UpdateSloOp`: SloDefinitionResponse
     fmt.Fprintf(os.Stdout, "Response from `SloAPI.UpdateSloOp`: %v\n", resp)
 }
 ```
@@ -675,11 +763,11 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**SloResponse**](SloResponse.md)
+[**SloDefinitionResponse**](SloDefinitionResponse.md)
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+No authorization required
 
 ### HTTP request headers
 

@@ -5,15 +5,15 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Name** | **string** | The name of the metric. Only valid options are A-Z | 
-**Aggregation** | **string** | The aggregation type of the metric. Only valid option is \&quot;sum\&quot; | 
-**Field** | Pointer to **string** | The field of the metric. | [optional] 
+**Aggregation** | **string** | The aggregation type of the metric. | 
+**Field** | **string** | The field of the metric. | 
 **Filter** | Pointer to **string** | The filter to apply to the metric. | [optional] 
 
 ## Methods
 
 ### NewIndicatorPropertiesCustomMetricParamsGoodMetricsInner
 
-`func NewIndicatorPropertiesCustomMetricParamsGoodMetricsInner(name string, aggregation string, ) *IndicatorPropertiesCustomMetricParamsGoodMetricsInner`
+`func NewIndicatorPropertiesCustomMetricParamsGoodMetricsInner(name string, aggregation string, field string, ) *IndicatorPropertiesCustomMetricParamsGoodMetricsInner`
 
 NewIndicatorPropertiesCustomMetricParamsGoodMetricsInner instantiates a new IndicatorPropertiesCustomMetricParamsGoodMetricsInner object
 This constructor will assign default values to properties that have it defined,
@@ -87,11 +87,6 @@ and a boolean to check if the value has been set.
 
 SetField sets Field field to given value.
 
-### HasField
-
-`func (o *IndicatorPropertiesCustomMetricParamsGoodMetricsInner) HasField() bool`
-
-HasField returns a boolean if a field has been set.
 
 ### GetFilter
 

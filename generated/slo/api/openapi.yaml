@@ -7,13 +7,12 @@ info:
     name: Elastic License 2.0
     url: https://www.elastic.co/licensing/elastic-license
   title: SLOs
-  version: "1.0"
+  version: "1.1"
 servers:
-- description: local
-  url: http://localhost:5601
-security:
-- basicAuth: []
-- apiKeyAuth: []
+- url: "https://{kibana_url}"
+  variables:
+    kibana_url:
+      default: localhost:5601
 tags:
 - description: "SLO APIs enable you to define, manage and track service-level objectives"
   name: slo
@@ -51,7 +50,30 @@ paths:
         schema:
           type: string
         style: form
-      - description: The page number to return
+      - description: "The page size to use for cursor-based pagination, must be greater\
+          \ or equal than 1"
+        example: 1
+        explode: true
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 1
+          type: integer
+        style: form
+      - description: "The cursor to use for fetching the results from, when using\
+          \ a cursor-base pagination."
+        explode: true
+        in: query
+        name: searchAfter
+        required: false
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: "The page to use for pagination, must be greater or equal than\
+          \ 1"
         example: 1
         explode: true
         in: query
@@ -61,7 +83,7 @@ paths:
           default: 1
           type: integer
         style: form
-      - description: The number of SLOs to return per page
+      - description: Number of SLOs returned by page
         example: 25
         explode: true
         in: query
@@ -100,6 +122,15 @@ paths:
           - desc
           type: string
         style: form
+      - description: Hide stale SLOs from the list as defined by stale SLO threshold
+          in SLO settings
+        explode: true
+        in: query
+        name: hideStale
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -131,7 +162,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/404_response'
           description: Not found response
-      summary: Retrieves a paginated list of SLOs
+      summary: Get a paginated list of SLOs
       tags:
       - slo
     post:
@@ -194,9 +225,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/409_response'
           description: Conflict - The SLO id already exists
-      servers:
-      - url: https://localhost:5601
-      summary: Creates an SLO.
+      summary: Create an SLO
       tags:
       - slo
   /s/{spaceId}/api/observability/slos/{sloId}:
@@ -259,7 +288,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/404_response'
           description: Not found response
-      summary: Deletes an SLO
+      summary: Delete an SLO
       tags:
       - slo
     get:
@@ -308,7 +337,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/slo_response'
+                $ref: '#/components/schemas/slo_with_summary_response'
           description: Successful request
         "400":
           content:
@@ -334,7 +363,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/404_response'
           description: Not found response
-      summary: Retrieves a SLO
+      summary: Get an SLO
       tags:
       - slo
     put:
@@ -380,7 +409,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/slo_response'
+                $ref: '#/components/schemas/slo_definition_response'
           description: Successful request
         "400":
           content:
@@ -406,7 +435,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/404_response'
           description: Not found response
-      summary: Updates an SLO
+      summary: Update an SLO
       tags:
       - slo
   /s/{spaceId}/api/observability/slos/{sloId}/enable:
@@ -469,7 +498,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/404_response'
           description: Not found response
-      summary: Enables an SLO
+      summary: Enable an SLO
       tags:
       - slo
   /s/{spaceId}/api/observability/slos/{sloId}/disable:
@@ -506,7 +535,7 @@ paths:
           type: string
         style: simple
       responses:
-        "200":
+        "204":
           description: Successful request
         "400":
           content:
@@ -532,14 +561,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/404_response'
           description: Not found response
-      summary: Disables an SLO
+      summary: Disable an SLO
       tags:
       - slo
-  /s/{spaceId}/internal/observability/slos/_historical_summary:
+  /s/{spaceId}/api/observability/slos/{sloId}/_reset:
     post:
       description: |
-        You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
-      operationId: historicalSummaryOp
+        You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+      operationId: resetSloOp
       parameters:
       - description: Cross-site request forgery protection
         explode: false
@@ -559,18 +588,21 @@ paths:
           example: default
           type: string
         style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/historical_summary_request'
+      - description: An identifier for the slo.
+        explode: false
+        in: path
+        name: sloId
         required: true
+        schema:
+          example: 9c235211-6834-11ea-a78c-6feb38a34414
+          type: string
+        style: simple
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/historical_summary_response'
+                $ref: '#/components/schemas/slo_definition_response'
           description: Successful request
         "400":
           content:
@@ -590,13 +622,110 @@ paths:
               schema:
                 $ref: '#/components/schemas/403_response'
           description: Unauthorized response
-      summary: Retrieves the historical summary for a list of SLOs
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+          description: Not found response
+      summary: Reset an SLO
+      tags:
+      - slo
+  /s/{spaceId}/internal/observability/slos/_definitions:
+    get:
+      description: |
+        You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+      operationId: getDefinitionsOp
+      parameters:
+      - description: Cross-site request forgery protection
+        explode: false
+        in: header
+        name: kbn-xsrf
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "An identifier for the space. If `/s/` and the identifier are\
+          \ omitted from the path, the default space is used."
+        explode: false
+        in: path
+        name: spaceId
+        required: true
+        schema:
+          example: default
+          type: string
+        style: simple
+      - description: Indicates if the API returns only outdated SLO or all SLO definitions
+        example: true
+        explode: true
+        in: query
+        name: includeOutdatedOnly
+        required: false
+        schema:
+          type: boolean
+        style: form
+      - description: Filters the SLOs by name
+        example: my service availability
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "The page to use for pagination, must be greater or equal than\
+          \ 1"
+        example: 1
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          type: number
+        style: form
+      - description: Number of SLOs returned by page
+        example: 100
+        explode: true
+        in: query
+        name: perPage
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_slo_definitions_response'
+          description: Successful request
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+          description: Bad request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+          description: Unauthorized response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+          description: Unauthorized response
+      summary: Get the SLO definitions
       tags:
       - slo
   /s/{spaceId}/api/observability/slos/_delete_instances:
     post:
       description: |
-        You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+        The deletion occurs for the specified list of `sloId` and `instanceId`. You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
       operationId: deleteSloInstancesOp
       parameters:
       - description: Cross-site request forgery protection
@@ -644,10 +773,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/403_response'
           description: Unauthorized response
-      servers:
-      - url: https://localhost:5601
-      summary: Batch delete rollup and summary data for the matching list of sloId
-        and instanceId
+      summary: Batch delete rollup and summary data
       tags:
       - slo
 components:
@@ -697,8 +823,71 @@ components:
       - type
       title: APM availability
       type: object
+    filter_meta:
+      description: Defines properties for a filter
+      properties:
+        alias:
+          nullable: true
+          type: string
+        disabled:
+          type: boolean
+        negate:
+          type: boolean
+        controlledBy:
+          type: string
+        group:
+          type: string
+        index:
+          type: string
+        isMultiIndex:
+          type: boolean
+        type:
+          type: string
+        key:
+          type: string
+        params:
+          type: object
+        value:
+          type: string
+        field:
+          type: string
+      title: FilterMeta
+      type: object
+    filter:
+      description: Defines properties for a filter
+      properties:
+        query:
+          type: object
+        meta:
+          $ref: '#/components/schemas/filter_meta'
+      title: Filter
+      type: object
+    kql_with_filters:
+      description: Defines properties for a filter
+      oneOf:
+      - description: the KQL query to filter the documents with.
+        example: "field.environment : \"production\" and service.name : \"my-service\""
+        type: string
+      - $ref: '#/components/schemas/kql_with_filters_oneOf'
+      title: KQL with filters
+    kql_with_filters_good:
+      description: The KQL query used to define the good events.
+      oneOf:
+      - description: the KQL query to filter the documents with.
+        example: "request.latency <= 150 and request.status_code : \"2xx\""
+        type: string
+      - $ref: '#/components/schemas/kql_with_filters_oneOf'
+      title: KQL query for good events
+    kql_with_filters_total:
+      description: The KQL query used to define all events.
+      oneOf:
+      - description: the KQL query to filter the documents with.
+        example: "field.environment : \"production\" and service.name : \"my-service\""
+        type: string
+      - $ref: '#/components/schemas/kql_with_filters_oneOf'
+      title: KQL query for all events
     indicator_properties_custom_kql:
-      description: Defines properties for a custom KQL indicator type
+      description: Defines properties for a custom query indicator type
       properties:
         params:
           $ref: '#/components/schemas/indicator_properties_custom_kql_params'
@@ -709,7 +898,7 @@ components:
       required:
       - params
       - type
-      title: Custom KQL
+      title: Custom Query
       type: object
     indicator_properties_apm_latency:
       description: Defines properties for the APM latency indicator type
@@ -897,11 +1086,17 @@ components:
         target:
           description: the target objective between 0 and 1 excluded
           example: 0.99
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+          maximum: 100
+          minimum: 0
           type: number
         timesliceTarget:
           description: the target objective for each slice when using a timeslices
             budgeting method
           example: 0.995
+          maximum: 100
+          minimum: 0
           type: number
         timesliceWindow:
           description: "the duration of each slice when using a timeslices budgeting\
@@ -915,17 +1110,40 @@ components:
     settings:
       description: Defines properties for SLO settings.
       example:
+        syncField: event.ingested
+        preventInitialBackfill: true
         syncDelay: 5m
         frequency: 5m
       properties:
+        syncField:
+          description: "The date field that is used to identify new documents in the\
+            \ source. It is strongly recommended to use a field that contains the\
+            \ ingest timestamp. If you use a different field, you might need to set\
+            \ the delay such that it accounts for data transmission delays. When unspecified,\
+            \ we use the indicator timestamp field."
+          example: event.ingested
+          type: string
         syncDelay:
-          description: The synch delay to apply to the transform. Default 1m
+          default: 1m
+          description: The time delay in minutes between the current time and the
+            latest source data time. Increasing the value will delay any alerting.
+            The default value is 1 minute. The minimum value is 1m and the maximum
+            is 359m. It should always be greater then source index refresh interval.
           example: 5m
           type: string
         frequency:
-          description: "Configure how often the transform runs, default 1m"
+          default: 1m
+          description: The interval between checks for changes in the source data.
+            The minimum value is 1m and the maximum is 59m. The default value is 1
+            minute.
           example: 5m
           type: string
+        preventInitialBackfill:
+          default: false
+          description: "Start aggregating data from the time the SLO is created, instead\
+            \ of backfilling data from the beginning of the time window."
+          example: true
+          type: boolean
       title: Settings
       type: object
     summary_status:
@@ -994,7 +1212,21 @@ components:
       - status
       title: Summary
       type: object
-    slo_response:
+    group_by:
+      description: optional group by field or fields to use to generate an SLO per
+        distinct value
+      example:
+      - - service.name
+      - service.name
+      - - service.name
+        - service.environment
+      oneOf:
+      - type: string
+      - items:
+          type: string
+        type: array
+      title: Group by
+    slo_with_summary_response:
       example:
         indicator: null
         summary:
@@ -1006,13 +1238,20 @@ components:
           status: HEALTHY
           sliValue: 0.9836
         settings:
+          syncField: event.ingested
+          preventInitialBackfill: true
           syncDelay: 5m
           frequency: 5m
         timeWindow:
           duration: 30d
           type: rolling
         description: My SLO description
-        groupBy: some.field
+        groupBy:
+        - - service.name
+        - service.name
+        - - service.name
+          - service.environment
+        version: 2
         enabled: true
         objective:
           timesliceWindow: 5m
@@ -1042,7 +1281,7 @@ components:
           example: My SLO description
           type: string
         indicator:
-          $ref: '#/components/schemas/slo_response_indicator'
+          $ref: '#/components/schemas/slo_with_summary_response_indicator'
         timeWindow:
           $ref: '#/components/schemas/time_window'
         budgetingMethod:
@@ -1062,7 +1301,7 @@ components:
           example: true
           type: boolean
         groupBy:
-          $ref: '#/components/schemas/slo_response_groupBy'
+          $ref: '#/components/schemas/group_by'
         instanceId:
           description: "the value derived from the groupBy field, if present, otherwise\
             \ '*'"
@@ -1081,6 +1320,10 @@ components:
           description: The last update date
           example: 2023-01-12T10:03:19.000Z
           type: string
+        version:
+          description: The internal SLO version
+          example: 2
+          type: number
       required:
       - budgetingMethod
       - createdAt
@@ -1098,6 +1341,7 @@ components:
       - tags
       - timeWindow
       - updatedAt
+      - version
       title: SLO response
       type: object
     find_slo_response:
@@ -1106,6 +1350,8 @@ components:
       example:
         total: 34
         perPage: 25
+        size: 25
+        searchAfter: searchAfter
         page: 1
         results:
         - indicator: null
@@ -1118,13 +1364,20 @@ components:
             status: HEALTHY
             sliValue: 0.9836
           settings:
+            syncField: event.ingested
+            preventInitialBackfill: true
             syncDelay: 5m
             frequency: 5m
           timeWindow:
             duration: 30d
             type: rolling
           description: My SLO description
-          groupBy: some.field
+          groupBy:
+          - - service.name
+          - service.name
+          - - service.name
+            - service.environment
+          version: 2
           enabled: true
           objective:
             timesliceWindow: 5m
@@ -1150,13 +1403,20 @@ components:
             status: HEALTHY
             sliValue: 0.9836
           settings:
+            syncField: event.ingested
+            preventInitialBackfill: true
             syncDelay: 5m
             frequency: 5m
           timeWindow:
             duration: 30d
             type: rolling
           description: My SLO description
-          groupBy: some.field
+          groupBy:
+          - - service.name
+          - service.name
+          - - service.name
+            - service.environment
+          version: 2
           enabled: true
           objective:
             timesliceWindow: 5m
@@ -1173,6 +1433,12 @@ components:
           budgetingMethod: occurrences
           updatedAt: 2023-01-12T10:03:19.000Z
       properties:
+        size:
+          description: Size provided for cursor based pagination
+          example: 25
+          type: number
+        searchAfter:
+          type: string
         page:
           example: 1
           type: number
@@ -1184,7 +1450,7 @@ components:
           type: number
         results:
           items:
-            $ref: '#/components/schemas/slo_response'
+            $ref: '#/components/schemas/slo_with_summary_response'
           type: array
       title: Find SLO response
       type: object
@@ -1286,7 +1552,7 @@ components:
         settings:
           $ref: '#/components/schemas/settings'
         groupBy:
-          $ref: '#/components/schemas/slo_response_groupBy'
+          $ref: '#/components/schemas/group_by'
         tags:
           description: List of tags
           items:
@@ -1350,7 +1616,7 @@ components:
         settings:
           $ref: '#/components/schemas/settings'
         groupBy:
-          $ref: '#/components/schemas/slo_response_groupBy'
+          $ref: '#/components/schemas/group_by'
         tags:
           description: List of tags
           items:
@@ -1358,24 +1624,113 @@ components:
           type: array
       title: Update SLO request
       type: object
-    historical_summary_request:
+    slo_definition_response:
+      example:
+        indicator: null
+        settings:
+          syncField: event.ingested
+          preventInitialBackfill: true
+          syncDelay: 5m
+          frequency: 5m
+        timeWindow:
+          duration: 30d
+          type: rolling
+        description: My SLO description
+        groupBy:
+        - - service.name
+        - service.name
+        - - service.name
+          - service.environment
+        version: 2
+        enabled: true
+        objective:
+          timesliceWindow: 5m
+          timesliceTarget: 0.995
+          target: 0.99
+        revision: 2
+        tags:
+        - tags
+        - tags
+        createdAt: 2023-01-12T10:03:19.000Z
+        name: My Service SLO
+        id: 8853df00-ae2e-11ed-90af-09bb6422b258
+        budgetingMethod: occurrences
+        updatedAt: 2023-01-12T10:03:19.000Z
       properties:
-        list:
-          description: The list of SLO identifiers to get the historical summary for
+        id:
+          description: The identifier of the SLO.
+          example: 8853df00-ae2e-11ed-90af-09bb6422b258
+          type: string
+        name:
+          description: The name of the SLO.
+          example: My Service SLO
+          type: string
+        description:
+          description: The description of the SLO.
+          example: My SLO description
+          type: string
+        indicator:
+          $ref: '#/components/schemas/slo_with_summary_response_indicator'
+        timeWindow:
+          $ref: '#/components/schemas/time_window'
+        budgetingMethod:
+          $ref: '#/components/schemas/budgeting_method'
+        objective:
+          $ref: '#/components/schemas/objective'
+        settings:
+          $ref: '#/components/schemas/settings'
+        revision:
+          description: The SLO revision
+          example: 2
+          type: number
+        enabled:
+          description: Indicate if the SLO is enabled
+          example: true
+          type: boolean
+        groupBy:
+          $ref: '#/components/schemas/group_by'
+        tags:
+          description: List of tags
           items:
-            example: 8853df00-ae2e-11ed-90af-09bb6422b258
             type: string
           type: array
+        createdAt:
+          description: The creation date
+          example: 2023-01-12T10:03:19.000Z
+          type: string
+        updatedAt:
+          description: The last update date
+          example: 2023-01-12T10:03:19.000Z
+          type: string
+        version:
+          description: The internal SLO version
+          example: 2
+          type: number
       required:
-      - list
-      title: Historical summary request
+      - budgetingMethod
+      - createdAt
+      - description
+      - enabled
+      - groupBy
+      - id
+      - indicator
+      - name
+      - objective
+      - revision
+      - settings
+      - tags
+      - timeWindow
+      - updatedAt
+      - version
+      title: SLO definition response
       type: object
-    historical_summary_response:
-      additionalProperties:
-        items:
-          $ref: '#/components/schemas/Historical_summary_response_inner'
-        type: array
-      title: Historical summary response
+    find_slo_definitions_response:
+      description: |
+        A paginated response of SLO definitions matching the query.
+      oneOf:
+      - $ref: '#/components/schemas/find_slo_definitions_response_oneOf'
+      - $ref: '#/components/schemas/find_slo_definitions_response_oneOf_1'
+      title: Find SLO definitions response
       type: object
     delete_slo_instances_request:
       description: |
@@ -1425,6 +1780,15 @@ components:
       - transactionName
       - transactionType
       type: object
+    kql_with_filters_oneOf:
+      properties:
+        kqlQuery:
+          type: string
+        filters:
+          items:
+            $ref: '#/components/schemas/filter'
+          type: array
+      type: object
     indicator_properties_custom_kql_params:
       description: An object containing the indicator parameters.
       nullable: false
@@ -1433,18 +1797,19 @@ components:
           description: The index or index pattern to use
           example: my-service-*
           type: string
+        dataViewId:
+          description: "The kibana data view id to use, primarily used to include\
+            \ data view runtime mappings. Make sure to save SLO again if you add/update\
+            \ run time fields to the data view and if those fields are being used\
+            \ in slo queries."
+          example: 03b80ab3-003d-498b-881c-3beedbaf1162
+          type: string
         filter:
-          description: the KQL query to filter the documents with.
-          example: "field.environment : \"production\" and service.name : \"my-service\""
-          type: string
+          $ref: '#/components/schemas/kql_with_filters'
         good:
-          description: the KQL query used to define the good events.
-          example: "request.latency <= 150 and request.status_code : \"2xx\""
-          type: string
+          $ref: '#/components/schemas/kql_with_filters_good'
         total:
-          description: the KQL query used to define all events.
-          example: ""
-          type: string
+          $ref: '#/components/schemas/kql_with_filters_total'
         timestampField:
           description: |
             The timestamp field used in the source indice.
@@ -1496,7 +1861,7 @@ components:
       - transactionName
       - transactionType
       type: object
-    indicator_properties_custom_metric_params_good_metrics_inner:
+    indicator_properties_custom_metric_params_good_metrics_inner_oneOf:
       properties:
         name:
           description: The name of the metric. Only valid options are A-Z
@@ -1504,7 +1869,7 @@ components:
           pattern: "^[A-Z]$"
           type: string
         aggregation:
-          description: The aggregation type of the metric. Only valid option is "sum"
+          description: The aggregation type of the metric.
           enum:
           - sum
           example: sum
@@ -1515,12 +1880,38 @@ components:
           type: string
         filter:
           description: The filter to apply to the metric.
-          example: "processor.outcome: \"success\""
+          example: "processor.outcome: *"
+          type: string
+      required:
+      - aggregation
+      - field
+      - name
+      type: object
+    indicator_properties_custom_metric_params_good_metrics_inner_oneOf_1:
+      properties:
+        name:
+          description: The name of the metric. Only valid options are A-Z
+          example: A
+          pattern: "^[A-Z]$"
+          type: string
+        aggregation:
+          description: The aggregation type of the metric.
+          enum:
+          - doc_count
+          example: doc_count
+          type: string
+        filter:
+          description: The filter to apply to the metric.
+          example: "processor.outcome: *"
           type: string
       required:
       - aggregation
       - name
       type: object
+    indicator_properties_custom_metric_params_good_metrics_inner:
+      oneOf:
+      - $ref: '#/components/schemas/indicator_properties_custom_metric_params_good_metrics_inner_oneOf'
+      - $ref: '#/components/schemas/indicator_properties_custom_metric_params_good_metrics_inner_oneOf_1'
     indicator_properties_custom_metric_params_good:
       description: |
         An object defining the "good" metrics and equation
@@ -1538,31 +1929,6 @@ components:
       - equation
       - metrics
       type: object
-    indicator_properties_custom_metric_params_total_metrics_inner:
-      properties:
-        name:
-          description: The name of the metric. Only valid options are A-Z
-          example: A
-          pattern: "^[A-Z]$"
-          type: string
-        aggregation:
-          description: The aggregation type of the metric. Only valid option is "sum"
-          enum:
-          - sum
-          example: sum
-          type: string
-        field:
-          description: The field of the metric.
-          example: processor.processed
-          type: string
-        filter:
-          description: The filter to apply to the metric.
-          example: "processor.outcome: *"
-          type: string
-      required:
-      - aggregation
-      - name
-      type: object
     indicator_properties_custom_metric_params_total:
       description: |
         An object defining the "total" metrics and equation
@@ -1570,7 +1936,7 @@ components:
         metrics:
           description: "List of metrics with their name, aggregation type, and field."
           items:
-            $ref: '#/components/schemas/indicator_properties_custom_metric_params_total_metrics_inner'
+            $ref: '#/components/schemas/indicator_properties_custom_metric_params_good_metrics_inner'
           type: array
         equation:
           description: The equation to calculate the "total" metric.
@@ -1587,6 +1953,13 @@ components:
         index:
           description: The index or index pattern to use
           example: my-service-*
+          type: string
+        dataViewId:
+          description: "The kibana data view id to use, primarily used to include\
+            \ data view runtime mappings. Make sure to save SLO again if you add/update\
+            \ run time fields to the data view and if those fields are being used\
+            \ in slo queries."
+          example: 03b80ab3-003d-498b-881c-3beedbaf1162
           type: string
         filter:
           description: the KQL query to filter the documents with.
@@ -1679,6 +2052,13 @@ components:
           description: The index or index pattern to use
           example: my-service-*
           type: string
+        dataViewId:
+          description: "The kibana data view id to use, primarily used to include\
+            \ data view runtime mappings. Make sure to save SLO again if you add/update\
+            \ run time fields to the data view and if those fields are being used\
+            \ in slo queries."
+          example: 03b80ab3-003d-498b-881c-3beedbaf1162
+          type: string
         filter:
           description: the KQL query to filter the documents with.
           example: "field.environment : \"production\" and service.name : \"my-service\""
@@ -1744,6 +2124,13 @@ components:
           description: The index or index pattern to use
           example: my-service-*
           type: string
+        dataViewId:
+          description: "The kibana data view id to use, primarily used to include\
+            \ data view runtime mappings. Make sure to save SLO again if you add/update\
+            \ run time fields to the data view and if those fields are being used\
+            \ in slo queries."
+          example: 03b80ab3-003d-498b-881c-3beedbaf1162
+          type: string
         filter:
           description: the KQL query to filter the documents with.
           example: "field.environment : \"production\" and service.name : \"my-service\""
@@ -1760,7 +2147,7 @@ components:
       - metric
       - timestampField
       type: object
-    slo_response_indicator:
+    slo_with_summary_response_indicator:
       discriminator:
         mapping:
           sli.apm.transactionErrorRate: '#/components/schemas/indicator_properties_apm_availability'
@@ -1777,15 +2164,6 @@ components:
       - $ref: '#/components/schemas/indicator_properties_custom_metric'
       - $ref: '#/components/schemas/indicator_properties_histogram'
       - $ref: '#/components/schemas/indicator_properties_timeslice_metric'
-    slo_response_groupBy:
-      description: optional group by field to use to generate an SLO per distinct
-        value
-      example: some.field
-      oneOf:
-      - type: string
-      - items:
-          type: string
-        type: array
     create_slo_request_indicator:
       oneOf:
       - $ref: '#/components/schemas/indicator_properties_custom_kql'
@@ -1794,18 +2172,50 @@ components:
       - $ref: '#/components/schemas/indicator_properties_custom_metric'
       - $ref: '#/components/schemas/indicator_properties_histogram'
       - $ref: '#/components/schemas/indicator_properties_timeslice_metric'
-    Historical_summary_response_inner:
+    find_slo_definitions_response_oneOf:
       properties:
-        date:
-          example: 2022-01-01T00:00:00.000Z
-          type: string
-        status:
-          $ref: '#/components/schemas/summary_status'
-        sliValue:
-          example: 0.9836
+        page:
+          example: 1
           type: number
-        errorBudget:
-          $ref: '#/components/schemas/error_budget'
+        perPage:
+          example: 25
+          type: number
+        total:
+          example: 34
+          type: number
+        results:
+          items:
+            $ref: '#/components/schemas/slo_with_summary_response'
+          type: array
+      type: object
+    find_slo_definitions_response_oneOf_1:
+      properties:
+        page:
+          default: 1
+          description: for backward compability
+          type: number
+        perPage:
+          description: for backward compability
+          example: 25
+          type: number
+        size:
+          example: 25
+          type: number
+        searchAfter:
+          description: the cursor to provide to get the next paged results
+          example:
+          - some-slo-id
+          - other-cursor-id
+          items:
+            type: string
+          type: array
+        total:
+          example: 34
+          type: number
+        results:
+          items:
+            $ref: '#/components/schemas/slo_with_summary_response'
+          type: array
       type: object
     delete_slo_instances_request_list_inner:
       properties:
@@ -1821,12 +2231,3 @@ components:
       - instanceId
       - sloId
       type: object
-  securitySchemes:
-    basicAuth:
-      scheme: basic
-      type: http
-    apiKeyAuth:
-      description: "e.g. Authorization: ApiKey base64AccessApiKey"
-      in: header
-      name: Authorization
-      type: apiKey
