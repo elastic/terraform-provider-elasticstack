@@ -195,7 +195,6 @@ func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
-		// CheckDestroy:             func(s *state.State) { return nil },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
