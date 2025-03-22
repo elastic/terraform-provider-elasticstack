@@ -199,7 +199,7 @@ func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionGlobalDataTags),
-				Config:      testAccResourceAgentPolicyUpdateWithBadGlobalDataTags(policyName, true),
+				Config:      testAccResourceAgentPolicyCreateWithBadGlobalDataTags(policyName, true),
 				ExpectError: regexp.MustCompile(".*Error: Invalid Attribute Combination.*"),
 			},
 		},
@@ -259,6 +259,34 @@ data "elasticstack_fleet_enrollment_tokens" "test_policy" {
 `, fmt.Sprintf("Policy %s", id), skipDestroy)
 }
 
+func testAccResourceAgentPolicyCreateWithBadGlobalDataTags(id string, skipDestroy bool) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name            = "%s"
+  namespace       = "default"
+  description     = "This policy was not created due to bad tags"
+  monitor_logs    = false
+  monitor_metrics = true
+  skip_destroy    = %t
+   global_data_tags = {
+		tag1 = {
+			string_value = "value1a"
+			number_value = 1.2
+		}
+	}
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
+}
+
 func testAccResourceAgentPolicyUpdateWithGlobalDataTags(id string, skipDestroy bool) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -276,34 +304,6 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
    global_data_tags = {
 		tag1 = {
 			string_value = "value1a"
-		}
-	}
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
-}
-
-func testAccResourceAgentPolicyUpdateWithBadGlobalDataTags(id string, skipDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "This policy was updated"
-  monitor_logs    = false
-  monitor_metrics = true
-  skip_destroy    = %t
-   global_data_tags = {
-		tag1 = {
-			string_value = "value1a"
-			number_value = 1.2
 		}
 	}
 }
