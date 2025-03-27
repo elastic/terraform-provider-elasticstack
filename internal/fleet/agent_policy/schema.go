@@ -112,9 +112,10 @@ func getSchema() schema.Schema {
 						},
 					},
 				},
+				Computed: true,
 				Optional: true,
 				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.RequiresReplace(),
+					mapplanmodifier.UseStateForUnknown(),
 				},
 			},
 		}}
