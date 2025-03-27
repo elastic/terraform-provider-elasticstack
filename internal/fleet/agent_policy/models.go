@@ -215,8 +215,10 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 		}
 		body.GlobalDataTags = &itemsList
 	} else {
-		itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0)
-		body.GlobalDataTags = &itemsList
+		if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) {
+			itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0)
+			body.GlobalDataTags = &itemsList
+		}
 	}
 
 	return body, nil
