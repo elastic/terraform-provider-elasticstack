@@ -214,6 +214,9 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 			itemsList = append(itemsList, v)
 		}
 		body.GlobalDataTags = &itemsList
+	} else {
+		itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0)
+		body.GlobalDataTags = &itemsList
 	}
 
 	return body, nil
