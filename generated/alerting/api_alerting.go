@@ -23,10 +23,9 @@ import (
 type AlertingAPI interface {
 
 	/*
-		CreateMaintenanceWindow Create a maintenance window with a random identifier
+		CreateMaintenanceWindow Create a maintenance window.
 
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
+		[Required authorization] Route required privileges: ALL of [write-maintenance-window].
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
@@ -74,8 +73,7 @@ type AlertingAPI interface {
 	/*
 		DeleteMaintenanceWindow Delete a maintenance window
 
-		To delete a rule, you must have `all` privileges for the appropriate Kibana features. WARNING: After you delete a maintenance window, you cannot recover it.
-
+		Delete a maintenance window by ID.<br/><br/>[Required authorization] Route required privileges: ALL of [write-maintenance-window].
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param maintenanceWindowId An identifier for the maintenance window.
@@ -168,9 +166,9 @@ type AlertingAPI interface {
 	GetAlertingHealthExecute(r ApiGetAlertingHealthRequest) (*GetAlertingHealth200Response, *http.Response, error)
 
 	/*
-		GetMaintenanceWindow Get maintenance window details
+		GetMaintenanceWindow Get a maintenance window
 
-		You must have `read` privileges for the appropriate Kibana features.
+		Get a maintenance window by ID.<br/><br/>[Required authorization] Route required privileges: ALL of [read-maintenance-window].
 
 		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 		@param maintenanceWindowId An identifier for the maintenance window.
@@ -524,6 +522,22 @@ type AlertingAPI interface {
 	UnmuteAllAlertsExecute(r ApiUnmuteAllAlertsRequest) (*http.Response, error)
 
 	/*
+		UpdateMaintenanceWindow Update a maintenance window.
+
+		[Required authorization] Route required privileges: ALL of [write-maintenance-window].
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param maintenanceWindowId An identifier for the maintenance window.
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@return ApiUpdateMaintenanceWindowRequest
+	*/
+	UpdateMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}, spaceId interface{}) ApiUpdateMaintenanceWindowRequest
+
+	// UpdateMaintenanceWindowExecute executes the request
+	//  @return MaintenanceWindowResponseProperties
+	UpdateMaintenanceWindowExecute(r ApiUpdateMaintenanceWindowRequest) (*MaintenanceWindowResponseProperties, *http.Response, error)
+
+	/*
 		UpdateRule Updates the attributes for a rule.
 
 		To update a rule, you must have `all` privileges for the appropriate Kibana features, depending on the `consumer` and `rule_type_id` of the rule you're updating. For example, you must have privileges for the **Management > Stack rules** feature, **Analytics > Discover** and **Machine Learning** features, **Observability** features, or **Security** features. If the rule has actions, you must also have `read` privileges for the **Management > Actions and Connectors** feature. This API supports both key- and token-based authentication. To use key-based authentication, create an API key in Kibana and use it in the header of the API call. To use token-based authentication, provide a username and password; an API key that matches the current privileges of the user is created automatically. In both cases, the API key is subsequently used for authorization when the rule runs. NOTE: If the API key has different privileges than the key that created or most recently updated the rule, the rule behavior might change. Though some properties are optional, when you update the rule the existing property values are overwritten with default values. Therefore, it is recommended to explicitly set all property values.
@@ -583,9 +597,9 @@ func (r ApiCreateMaintenanceWindowRequest) Execute() (*MaintenanceWindowResponse
 }
 
 /*
-CreateMaintenanceWindow Create a maintenance window with a random identifier
+CreateMaintenanceWindow Create a maintenance window.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+[Required authorization] Route required privileges: ALL of [write-maintenance-window].
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
@@ -623,9 +637,6 @@ func (a *AlertingAPIService) CreateMaintenanceWindowExecute(r ApiCreateMaintenan
 	localVarFormParams := url.Values{}
 	if r.kbnXsrf == nil {
 		return localVarReturnValue, nil, reportError("kbnXsrf is required and must be specified")
-	}
-	if r.createMaintenanceWindowRequest == nil {
-		return localVarReturnValue, nil, reportError("createMaintenanceWindowRequest is required and must be specified")
 	}
 
 	// to determine the Content-Type header
@@ -683,27 +694,6 @@ func (a *AlertingAPIService) CreateMaintenanceWindowExecute(r ApiCreateMaintenan
 		newErr := &GenericOpenAPIError{
 			body:  localVarBody,
 			error: localVarHTTPResponse.Status,
-		}
-		if localVarHTTPResponse.StatusCode == 400 {
-			var v Model400Response
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHTTPResponse, newErr
-			}
-			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-			newErr.model = v
-			return localVarReturnValue, localVarHTTPResponse, newErr
-		}
-		if localVarHTTPResponse.StatusCode == 403 {
-			var v Model403Response
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHTTPResponse, newErr
-			}
-			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -1067,7 +1057,7 @@ func (r ApiDeleteMaintenanceWindowRequest) Execute() (*http.Response, error) {
 /*
 DeleteMaintenanceWindow Delete a maintenance window
 
-To delete a rule, you must have `all` privileges for the appropriate Kibana features. WARNING: After you delete a maintenance window, you cannot recover it.
+Delete a maintenance window by ID.<br/><br/>[Required authorization] Route required privileges: ALL of [write-maintenance-window].
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param maintenanceWindowId An identifier for the maintenance window.
@@ -1117,7 +1107,7 @@ func (a *AlertingAPIService) DeleteMaintenanceWindowExecute(r ApiDeleteMaintenan
 	}
 
 	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/json"}
+	localVarHTTPHeaderAccepts := []string{}
 
 	// set Accept header
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
@@ -1160,38 +1150,6 @@ func (a *AlertingAPIService) DeleteMaintenanceWindowExecute(r ApiDeleteMaintenan
 		newErr := &GenericOpenAPIError{
 			body:  localVarBody,
 			error: localVarHTTPResponse.Status,
-		}
-		if localVarHTTPResponse.StatusCode == 400 {
-			var v Model400Response
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarHTTPResponse, newErr
-			}
-			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-			newErr.model = v
-			return localVarHTTPResponse, newErr
-		}
-		if localVarHTTPResponse.StatusCode == 403 {
-			var v Model403Response
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarHTTPResponse, newErr
-			}
-			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-			newErr.model = v
-			return localVarHTTPResponse, newErr
-		}
-		if localVarHTTPResponse.StatusCode == 404 {
-			var v Model404Response
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarHTTPResponse, newErr
-			}
-			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-			newErr.model = v
 		}
 		return localVarHTTPResponse, newErr
 	}
@@ -2013,9 +1971,9 @@ func (r ApiGetMaintenanceWindowRequest) Execute() (*MaintenanceWindowResponsePro
 }
 
 /*
-GetMaintenanceWindow Get maintenance window details
+GetMaintenanceWindow Get a maintenance window
 
-You must have `read` privileges for the appropriate Kibana features.
+Get a maintenance window by ID.<br/><br/>[Required authorization] Route required privileges: ALL of [read-maintenance-window].
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param maintenanceWindowId An identifier for the maintenance window.
@@ -2107,38 +2065,6 @@ func (a *AlertingAPIService) GetMaintenanceWindowExecute(r ApiGetMaintenanceWind
 		newErr := &GenericOpenAPIError{
 			body:  localVarBody,
 			error: localVarHTTPResponse.Status,
-		}
-		if localVarHTTPResponse.StatusCode == 400 {
-			var v Model400Response
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHTTPResponse, newErr
-			}
-			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-			newErr.model = v
-			return localVarReturnValue, localVarHTTPResponse, newErr
-		}
-		if localVarHTTPResponse.StatusCode == 403 {
-			var v Model403Response
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHTTPResponse, newErr
-			}
-			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-			newErr.model = v
-			return localVarReturnValue, localVarHTTPResponse, newErr
-		}
-		if localVarHTTPResponse.StatusCode == 404 {
-			var v Model404Response
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHTTPResponse, newErr
-			}
-			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -4870,6 +4796,147 @@ func (a *AlertingAPIService) UnmuteAllAlertsExecute(r ApiUnmuteAllAlertsRequest)
 	}
 
 	return localVarHTTPResponse, nil
+}
+
+type ApiUpdateMaintenanceWindowRequest struct {
+	ctx                            context.Context
+	ApiService                     AlertingAPI
+	kbnXsrf                        *interface{}
+	maintenanceWindowId            interface{}
+	spaceId                        interface{}
+	updateMaintenanceWindowRequest *UpdateMaintenanceWindowRequest
+}
+
+// Cross-site request forgery protection
+func (r ApiUpdateMaintenanceWindowRequest) KbnXsrf(kbnXsrf interface{}) ApiUpdateMaintenanceWindowRequest {
+	r.kbnXsrf = &kbnXsrf
+	return r
+}
+
+func (r ApiUpdateMaintenanceWindowRequest) UpdateMaintenanceWindowRequest(updateMaintenanceWindowRequest UpdateMaintenanceWindowRequest) ApiUpdateMaintenanceWindowRequest {
+	r.updateMaintenanceWindowRequest = &updateMaintenanceWindowRequest
+	return r
+}
+
+func (r ApiUpdateMaintenanceWindowRequest) Execute() (*MaintenanceWindowResponseProperties, *http.Response, error) {
+	return r.ApiService.UpdateMaintenanceWindowExecute(r)
+}
+
+/*
+UpdateMaintenanceWindow Update a maintenance window.
+
+[Required authorization] Route required privileges: ALL of [write-maintenance-window].
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param maintenanceWindowId An identifier for the maintenance window.
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@return ApiUpdateMaintenanceWindowRequest
+*/
+func (a *AlertingAPIService) UpdateMaintenanceWindow(ctx context.Context, maintenanceWindowId interface{}, spaceId interface{}) ApiUpdateMaintenanceWindowRequest {
+	return ApiUpdateMaintenanceWindowRequest{
+		ApiService:          a,
+		ctx:                 ctx,
+		maintenanceWindowId: maintenanceWindowId,
+		spaceId:             spaceId,
+	}
+}
+
+// Execute executes the request
+//
+//	@return MaintenanceWindowResponseProperties
+func (a *AlertingAPIService) UpdateMaintenanceWindowExecute(r ApiUpdateMaintenanceWindowRequest) (*MaintenanceWindowResponseProperties, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodPatch
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *MaintenanceWindowResponseProperties
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AlertingAPIService.UpdateMaintenanceWindow")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}"
+	localVarPath = strings.Replace(localVarPath, "{"+"maintenanceWindowId"+"}", url.PathEscape(parameterValueToString(r.maintenanceWindowId, "maintenanceWindowId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.kbnXsrf == nil {
+		return localVarReturnValue, nil, reportError("kbnXsrf is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
+	// body params
+	localVarPostBody = r.updateMaintenanceWindowRequest
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["apiKeyAuth"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
 type ApiUpdateRuleRequest struct {

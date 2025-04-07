@@ -17,26 +17,24 @@ import (
 // checks if the CreateMaintenanceWindowRequest type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &CreateMaintenanceWindowRequest{}
 
-// CreateMaintenanceWindowRequest The properties used to create a maintenance window.
+// CreateMaintenanceWindowRequest struct for CreateMaintenanceWindowRequest
 type CreateMaintenanceWindowRequest struct {
-	// The name of the maintenance window. While this name does not have to be unique, a distinctive name can help you identify a maintenance window.
+	// Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+	Enabled  *bool                                  `json:"enabled,omitempty"`
+	Schedule CreateMaintenanceWindowRequestSchedule `json:"schedule"`
+	Scope    *CreateMaintenanceWindowRequestScope   `json:"scope,omitempty"`
+	// The name of the maintenance window. While this name does not have to be unique, a distinctive name can help you identify a specific maintenance window.
 	Title string `json:"title"`
-	// Indicates whether the maintenance window is currently enabled.
-	Enabled  *bool   `json:"enabled,omitempty"`
-	Duration float32 `json:"duration"`
-	// An ISO date.
-	Start string `json:"start"`
 }
 
 // NewCreateMaintenanceWindowRequest instantiates a new CreateMaintenanceWindowRequest object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewCreateMaintenanceWindowRequest(title string, duration float32, start string) *CreateMaintenanceWindowRequest {
+func NewCreateMaintenanceWindowRequest(schedule CreateMaintenanceWindowRequestSchedule, title string) *CreateMaintenanceWindowRequest {
 	this := CreateMaintenanceWindowRequest{}
+	this.Schedule = schedule
 	this.Title = title
-	this.Duration = duration
-	this.Start = start
 	return &this
 }
 
@@ -46,30 +44,6 @@ func NewCreateMaintenanceWindowRequest(title string, duration float32, start str
 func NewCreateMaintenanceWindowRequestWithDefaults() *CreateMaintenanceWindowRequest {
 	this := CreateMaintenanceWindowRequest{}
 	return &this
-}
-
-// GetTitle returns the Title field value
-func (o *CreateMaintenanceWindowRequest) GetTitle() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.Title
-}
-
-// GetTitleOk returns a tuple with the Title field value
-// and a boolean to check if the value has been set.
-func (o *CreateMaintenanceWindowRequest) GetTitleOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Title, true
-}
-
-// SetTitle sets field value
-func (o *CreateMaintenanceWindowRequest) SetTitle(v string) {
-	o.Title = v
 }
 
 // GetEnabled returns the Enabled field value if set, zero value otherwise.
@@ -104,52 +78,84 @@ func (o *CreateMaintenanceWindowRequest) SetEnabled(v bool) {
 	o.Enabled = &v
 }
 
-// GetDuration returns the Duration field value
-func (o *CreateMaintenanceWindowRequest) GetDuration() float32 {
+// GetSchedule returns the Schedule field value
+func (o *CreateMaintenanceWindowRequest) GetSchedule() CreateMaintenanceWindowRequestSchedule {
 	if o == nil {
-		var ret float32
+		var ret CreateMaintenanceWindowRequestSchedule
 		return ret
 	}
 
-	return o.Duration
+	return o.Schedule
 }
 
-// GetDurationOk returns a tuple with the Duration field value
+// GetScheduleOk returns a tuple with the Schedule field value
 // and a boolean to check if the value has been set.
-func (o *CreateMaintenanceWindowRequest) GetDurationOk() (*float32, bool) {
+func (o *CreateMaintenanceWindowRequest) GetScheduleOk() (*CreateMaintenanceWindowRequestSchedule, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Duration, true
+	return &o.Schedule, true
 }
 
-// SetDuration sets field value
-func (o *CreateMaintenanceWindowRequest) SetDuration(v float32) {
-	o.Duration = v
+// SetSchedule sets field value
+func (o *CreateMaintenanceWindowRequest) SetSchedule(v CreateMaintenanceWindowRequestSchedule) {
+	o.Schedule = v
 }
 
-// GetStart returns the Start field value
-func (o *CreateMaintenanceWindowRequest) GetStart() string {
+// GetScope returns the Scope field value if set, zero value otherwise.
+func (o *CreateMaintenanceWindowRequest) GetScope() CreateMaintenanceWindowRequestScope {
+	if o == nil || IsNil(o.Scope) {
+		var ret CreateMaintenanceWindowRequestScope
+		return ret
+	}
+	return *o.Scope
+}
+
+// GetScopeOk returns a tuple with the Scope field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *CreateMaintenanceWindowRequest) GetScopeOk() (*CreateMaintenanceWindowRequestScope, bool) {
+	if o == nil || IsNil(o.Scope) {
+		return nil, false
+	}
+	return o.Scope, true
+}
+
+// HasScope returns a boolean if a field has been set.
+func (o *CreateMaintenanceWindowRequest) HasScope() bool {
+	if o != nil && !IsNil(o.Scope) {
+		return true
+	}
+
+	return false
+}
+
+// SetScope gets a reference to the given CreateMaintenanceWindowRequestScope and assigns it to the Scope field.
+func (o *CreateMaintenanceWindowRequest) SetScope(v CreateMaintenanceWindowRequestScope) {
+	o.Scope = &v
+}
+
+// GetTitle returns the Title field value
+func (o *CreateMaintenanceWindowRequest) GetTitle() string {
 	if o == nil {
 		var ret string
 		return ret
 	}
 
-	return o.Start
+	return o.Title
 }
 
-// GetStartOk returns a tuple with the Start field value
+// GetTitleOk returns a tuple with the Title field value
 // and a boolean to check if the value has been set.
-func (o *CreateMaintenanceWindowRequest) GetStartOk() (*string, bool) {
+func (o *CreateMaintenanceWindowRequest) GetTitleOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Start, true
+	return &o.Title, true
 }
 
-// SetStart sets field value
-func (o *CreateMaintenanceWindowRequest) SetStart(v string) {
-	o.Start = v
+// SetTitle sets field value
+func (o *CreateMaintenanceWindowRequest) SetTitle(v string) {
+	o.Title = v
 }
 
 func (o CreateMaintenanceWindowRequest) MarshalJSON() ([]byte, error) {
@@ -162,12 +168,14 @@ func (o CreateMaintenanceWindowRequest) MarshalJSON() ([]byte, error) {
 
 func (o CreateMaintenanceWindowRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["title"] = o.Title
 	if !IsNil(o.Enabled) {
 		toSerialize["enabled"] = o.Enabled
 	}
-	toSerialize["duration"] = o.Duration
-	toSerialize["start"] = o.Start
+	toSerialize["schedule"] = o.Schedule
+	if !IsNil(o.Scope) {
+		toSerialize["scope"] = o.Scope
+	}
+	toSerialize["title"] = o.Title
 	return toSerialize, nil
 }
 

@@ -1,11 +1,34 @@
 package models
 
 type MaintenanceWindow struct {
-	Id                  string
+	MaintenanceWindowId string
 	SpaceId             string
-	MaintenanceWindowID string
 	Title               string
 	Enabled             bool
-	Start               string
-	Duration            int
+	Scope               *MaintenanceWindowScope
+	CustomSchedule      MaintenanceWindowSchedule
+}
+
+type MaintenanceWindowScope struct {
+	Alerting *MaintenanceWindowAlertingScope
+}
+
+type MaintenanceWindowAlertingScope struct {
+	Kql string
+}
+
+type MaintenanceWindowSchedule struct {
+	Start     string
+	Duration  string
+	Timezone  *string
+	Recurring *MaintenanceWindowScheduleRecurring
+}
+
+type MaintenanceWindowScheduleRecurring struct {
+	End         *string
+	Every       *string
+	OnWeekDay   *[]string
+	OnMonthDay  *[]float32
+	OnMonth     *[]float32
+	Occurrences *float32
 }

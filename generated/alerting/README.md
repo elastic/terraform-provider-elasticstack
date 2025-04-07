@@ -77,7 +77,7 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*AlertingAPI* | [**CreateMaintenanceWindow**](docs/AlertingAPI.md#createmaintenancewindow) | **Post** /s/{spaceId}/api/alerting/maintenance_window | Create a maintenance window with a random identifier
+*AlertingAPI* | [**CreateMaintenanceWindow**](docs/AlertingAPI.md#createmaintenancewindow) | **Post** /s/{spaceId}/api/alerting/maintenance_window | Create a maintenance window.
 *AlertingAPI* | [**CreateRule**](docs/AlertingAPI.md#createrule) | **Post** /s/{spaceId}/api/alerting/rule | Creates a rule with a randomly generated rule identifier.
 *AlertingAPI* | [**CreateRuleId**](docs/AlertingAPI.md#createruleid) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule with a specific rule identifier.
 *AlertingAPI* | [**DeleteMaintenanceWindow**](docs/AlertingAPI.md#deletemaintenancewindow) | **Delete** /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId} | Delete a maintenance window
@@ -86,7 +86,7 @@ Class | Method | HTTP request | Description
 *AlertingAPI* | [**EnableRule**](docs/AlertingAPI.md#enablerule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
 *AlertingAPI* | [**FindRules**](docs/AlertingAPI.md#findrules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
 *AlertingAPI* | [**GetAlertingHealth**](docs/AlertingAPI.md#getalertinghealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
-*AlertingAPI* | [**GetMaintenanceWindow**](docs/AlertingAPI.md#getmaintenancewindow) | **Get** /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId} | Get maintenance window details
+*AlertingAPI* | [**GetMaintenanceWindow**](docs/AlertingAPI.md#getmaintenancewindow) | **Get** /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId} | Get a maintenance window
 *AlertingAPI* | [**GetRule**](docs/AlertingAPI.md#getrule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
 *AlertingAPI* | [**GetRuleTypes**](docs/AlertingAPI.md#getruletypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
 *AlertingAPI* | [**LegacyCreateAlert**](docs/AlertingAPI.md#legacycreatealert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.
@@ -106,6 +106,7 @@ Class | Method | HTTP request | Description
 *AlertingAPI* | [**MuteAllAlerts**](docs/AlertingAPI.md#muteallalerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_mute_all | Mutes all alerts.
 *AlertingAPI* | [**UnmuteAlert**](docs/AlertingAPI.md#unmutealert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute | Unmutes an alert.
 *AlertingAPI* | [**UnmuteAllAlerts**](docs/AlertingAPI.md#unmuteallalerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all | Unmutes all alerts.
+*AlertingAPI* | [**UpdateMaintenanceWindow**](docs/AlertingAPI.md#updatemaintenancewindow) | **Patch** /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId} | Update a maintenance window.
 *AlertingAPI* | [**UpdateRule**](docs/AlertingAPI.md#updaterule) | **Put** /s/{spaceId}/api/alerting/rule/{ruleId} | Updates the attributes for a rule.
 *AlertingAPI* | [**UpdateRuleAPIKey**](docs/AlertingAPI.md#updateruleapikey) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_update_api_key | Updates the API key for a rule.
 
@@ -123,6 +124,12 @@ Class | Method | HTTP request | Description
  - [AlertResponsePropertiesExecutionStatus](docs/AlertResponsePropertiesExecutionStatus.md)
  - [AlertResponsePropertiesSchedule](docs/AlertResponsePropertiesSchedule.md)
  - [CreateMaintenanceWindowRequest](docs/CreateMaintenanceWindowRequest.md)
+ - [CreateMaintenanceWindowRequestSchedule](docs/CreateMaintenanceWindowRequestSchedule.md)
+ - [CreateMaintenanceWindowRequestScheduleCustom](docs/CreateMaintenanceWindowRequestScheduleCustom.md)
+ - [CreateMaintenanceWindowRequestScheduleCustomRecurring](docs/CreateMaintenanceWindowRequestScheduleCustomRecurring.md)
+ - [CreateMaintenanceWindowRequestScope](docs/CreateMaintenanceWindowRequestScope.md)
+ - [CreateMaintenanceWindowRequestScopeAlerting](docs/CreateMaintenanceWindowRequestScopeAlerting.md)
+ - [CreateMaintenanceWindowRequestScopeAlertingQuery](docs/CreateMaintenanceWindowRequestScopeAlertingQuery.md)
  - [CreateRuleRequest](docs/CreateRuleRequest.md)
  - [FieldmapProperties](docs/FieldmapProperties.md)
  - [FieldmapPropertiesPropertiesValue](docs/FieldmapPropertiesPropertiesValue.md)
@@ -162,6 +169,12 @@ Class | Method | HTTP request | Description
  - [LegacyUpdateAlertRequestPropertiesActionsInner](docs/LegacyUpdateAlertRequestPropertiesActionsInner.md)
  - [LegacyUpdateAlertRequestPropertiesSchedule](docs/LegacyUpdateAlertRequestPropertiesSchedule.md)
  - [MaintenanceWindowResponseProperties](docs/MaintenanceWindowResponseProperties.md)
+ - [MaintenanceWindowResponsePropertiesSchedule](docs/MaintenanceWindowResponsePropertiesSchedule.md)
+ - [MaintenanceWindowResponsePropertiesScheduleCustom](docs/MaintenanceWindowResponsePropertiesScheduleCustom.md)
+ - [MaintenanceWindowResponsePropertiesScheduleCustomRecurring](docs/MaintenanceWindowResponsePropertiesScheduleCustomRecurring.md)
+ - [MaintenanceWindowResponsePropertiesScope](docs/MaintenanceWindowResponsePropertiesScope.md)
+ - [MaintenanceWindowResponsePropertiesScopeAlerting](docs/MaintenanceWindowResponsePropertiesScopeAlerting.md)
+ - [MaintenanceWindowResponsePropertiesScopeAlertingQuery](docs/MaintenanceWindowResponsePropertiesScopeAlertingQuery.md)
  - [Model400Response](docs/Model400Response.md)
  - [Model401Response](docs/Model401Response.md)
  - [Model403Response](docs/Model403Response.md)
@@ -173,6 +186,7 @@ Class | Method | HTTP request | Description
  - [RuleResponsePropertiesLastRun](docs/RuleResponsePropertiesLastRun.md)
  - [RuleResponsePropertiesLastRunAlertsCount](docs/RuleResponsePropertiesLastRunAlertsCount.md)
  - [Schedule](docs/Schedule.md)
+ - [UpdateMaintenanceWindowRequest](docs/UpdateMaintenanceWindowRequest.md)
  - [UpdateRuleRequest](docs/UpdateRuleRequest.md)
 
 

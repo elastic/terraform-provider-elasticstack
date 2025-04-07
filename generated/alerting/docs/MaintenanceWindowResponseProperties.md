@@ -4,22 +4,22 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Id** | **string** | The identifier for the maintenance window. | 
-**Title** | **string** | The name of the maintenance window. | 
-**Start** | **string** | The start date of the maintenance window. | 
-**Duration** | **float32** | The duration of the maintenance window. | 
-**Enabled** | **bool** | Indicates whether the maintenance window is currently enabled. | 
+**CreatedAt** | **string** | The date and time when the maintenance window was created. | 
 **CreatedBy** | **string** | The identifier for the user that created the maintenance window. | 
-**CreatedAt** | **time.Time** | The date and time in which the maintenance window was created. | 
-**UpdatedBy** | **string** | The identifier for the user that updated this maintenance window most recently. | 
-**UpdatedAt** | **string** | The date and time that the maintenance window was updated most recently. | 
-**Status** | **string** | The status of the maintenance window. One of the following values &#x60;running&#x60;, &#x60;upcoming&#x60;, &#x60;finished&#x60; or &#x60;archived&#x60;. | 
+**Enabled** | **bool** | Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications. | 
+**Id** | **string** | The identifier for the maintenance window. | 
+**Schedule** | [**MaintenanceWindowResponsePropertiesSchedule**](MaintenanceWindowResponsePropertiesSchedule.md) |  | 
+**Scope** | Pointer to [**MaintenanceWindowResponsePropertiesScope**](MaintenanceWindowResponsePropertiesScope.md) |  | [optional] 
+**Status** | **string** | The current status of the maintenance window. | 
+**Title** | **string** | The name of the maintenance window. | 
+**UpdatedAt** | **string** | The date and time when the maintenance window was last updated. | 
+**UpdatedBy** | **string** | The identifier for the user that last updated this maintenance window. | 
 
 ## Methods
 
 ### NewMaintenanceWindowResponseProperties
 
-`func NewMaintenanceWindowResponseProperties(id string, title string, start string, duration float32, enabled bool, createdBy string, createdAt time.Time, updatedBy string, updatedAt string, status string, ) *MaintenanceWindowResponseProperties`
+`func NewMaintenanceWindowResponseProperties(createdAt string, createdBy string, enabled bool, id string, schedule MaintenanceWindowResponsePropertiesSchedule, status string, title string, updatedAt string, updatedBy string, ) *MaintenanceWindowResponseProperties`
 
 NewMaintenanceWindowResponseProperties instantiates a new MaintenanceWindowResponseProperties object
 This constructor will assign default values to properties that have it defined,
@@ -34,104 +34,24 @@ NewMaintenanceWindowResponsePropertiesWithDefaults instantiates a new Maintenanc
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetId
+### GetCreatedAt
 
-`func (o *MaintenanceWindowResponseProperties) GetId() string`
+`func (o *MaintenanceWindowResponseProperties) GetCreatedAt() string`
 
-GetId returns the Id field if non-nil, zero value otherwise.
+GetCreatedAt returns the CreatedAt field if non-nil, zero value otherwise.
 
-### GetIdOk
+### GetCreatedAtOk
 
-`func (o *MaintenanceWindowResponseProperties) GetIdOk() (*string, bool)`
+`func (o *MaintenanceWindowResponseProperties) GetCreatedAtOk() (*string, bool)`
 
-GetIdOk returns a tuple with the Id field if it's non-nil, zero value otherwise
+GetCreatedAtOk returns a tuple with the CreatedAt field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetId
+### SetCreatedAt
 
-`func (o *MaintenanceWindowResponseProperties) SetId(v string)`
+`func (o *MaintenanceWindowResponseProperties) SetCreatedAt(v string)`
 
-SetId sets Id field to given value.
-
-
-### GetTitle
-
-`func (o *MaintenanceWindowResponseProperties) GetTitle() string`
-
-GetTitle returns the Title field if non-nil, zero value otherwise.
-
-### GetTitleOk
-
-`func (o *MaintenanceWindowResponseProperties) GetTitleOk() (*string, bool)`
-
-GetTitleOk returns a tuple with the Title field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetTitle
-
-`func (o *MaintenanceWindowResponseProperties) SetTitle(v string)`
-
-SetTitle sets Title field to given value.
-
-
-### GetStart
-
-`func (o *MaintenanceWindowResponseProperties) GetStart() string`
-
-GetStart returns the Start field if non-nil, zero value otherwise.
-
-### GetStartOk
-
-`func (o *MaintenanceWindowResponseProperties) GetStartOk() (*string, bool)`
-
-GetStartOk returns a tuple with the Start field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetStart
-
-`func (o *MaintenanceWindowResponseProperties) SetStart(v string)`
-
-SetStart sets Start field to given value.
-
-
-### GetDuration
-
-`func (o *MaintenanceWindowResponseProperties) GetDuration() float32`
-
-GetDuration returns the Duration field if non-nil, zero value otherwise.
-
-### GetDurationOk
-
-`func (o *MaintenanceWindowResponseProperties) GetDurationOk() (*float32, bool)`
-
-GetDurationOk returns a tuple with the Duration field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetDuration
-
-`func (o *MaintenanceWindowResponseProperties) SetDuration(v float32)`
-
-SetDuration sets Duration field to given value.
-
-
-### GetEnabled
-
-`func (o *MaintenanceWindowResponseProperties) GetEnabled() bool`
-
-GetEnabled returns the Enabled field if non-nil, zero value otherwise.
-
-### GetEnabledOk
-
-`func (o *MaintenanceWindowResponseProperties) GetEnabledOk() (*bool, bool)`
-
-GetEnabledOk returns a tuple with the Enabled field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetEnabled
-
-`func (o *MaintenanceWindowResponseProperties) SetEnabled(v bool)`
-
-SetEnabled sets Enabled field to given value.
+SetCreatedAt sets CreatedAt field to given value.
 
 
 ### GetCreatedBy
@@ -154,44 +74,129 @@ and a boolean to check if the value has been set.
 SetCreatedBy sets CreatedBy field to given value.
 
 
-### GetCreatedAt
+### GetEnabled
 
-`func (o *MaintenanceWindowResponseProperties) GetCreatedAt() time.Time`
+`func (o *MaintenanceWindowResponseProperties) GetEnabled() bool`
 
-GetCreatedAt returns the CreatedAt field if non-nil, zero value otherwise.
+GetEnabled returns the Enabled field if non-nil, zero value otherwise.
 
-### GetCreatedAtOk
+### GetEnabledOk
 
-`func (o *MaintenanceWindowResponseProperties) GetCreatedAtOk() (*time.Time, bool)`
+`func (o *MaintenanceWindowResponseProperties) GetEnabledOk() (*bool, bool)`
 
-GetCreatedAtOk returns a tuple with the CreatedAt field if it's non-nil, zero value otherwise
+GetEnabledOk returns a tuple with the Enabled field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetCreatedAt
+### SetEnabled
 
-`func (o *MaintenanceWindowResponseProperties) SetCreatedAt(v time.Time)`
+`func (o *MaintenanceWindowResponseProperties) SetEnabled(v bool)`
 
-SetCreatedAt sets CreatedAt field to given value.
+SetEnabled sets Enabled field to given value.
 
 
-### GetUpdatedBy
+### GetId
 
-`func (o *MaintenanceWindowResponseProperties) GetUpdatedBy() string`
+`func (o *MaintenanceWindowResponseProperties) GetId() string`
 
-GetUpdatedBy returns the UpdatedBy field if non-nil, zero value otherwise.
+GetId returns the Id field if non-nil, zero value otherwise.
 
-### GetUpdatedByOk
+### GetIdOk
 
-`func (o *MaintenanceWindowResponseProperties) GetUpdatedByOk() (*string, bool)`
+`func (o *MaintenanceWindowResponseProperties) GetIdOk() (*string, bool)`
 
-GetUpdatedByOk returns a tuple with the UpdatedBy field if it's non-nil, zero value otherwise
+GetIdOk returns a tuple with the Id field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetUpdatedBy
+### SetId
 
-`func (o *MaintenanceWindowResponseProperties) SetUpdatedBy(v string)`
+`func (o *MaintenanceWindowResponseProperties) SetId(v string)`
 
-SetUpdatedBy sets UpdatedBy field to given value.
+SetId sets Id field to given value.
+
+
+### GetSchedule
+
+`func (o *MaintenanceWindowResponseProperties) GetSchedule() MaintenanceWindowResponsePropertiesSchedule`
+
+GetSchedule returns the Schedule field if non-nil, zero value otherwise.
+
+### GetScheduleOk
+
+`func (o *MaintenanceWindowResponseProperties) GetScheduleOk() (*MaintenanceWindowResponsePropertiesSchedule, bool)`
+
+GetScheduleOk returns a tuple with the Schedule field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetSchedule
+
+`func (o *MaintenanceWindowResponseProperties) SetSchedule(v MaintenanceWindowResponsePropertiesSchedule)`
+
+SetSchedule sets Schedule field to given value.
+
+
+### GetScope
+
+`func (o *MaintenanceWindowResponseProperties) GetScope() MaintenanceWindowResponsePropertiesScope`
+
+GetScope returns the Scope field if non-nil, zero value otherwise.
+
+### GetScopeOk
+
+`func (o *MaintenanceWindowResponseProperties) GetScopeOk() (*MaintenanceWindowResponsePropertiesScope, bool)`
+
+GetScopeOk returns a tuple with the Scope field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetScope
+
+`func (o *MaintenanceWindowResponseProperties) SetScope(v MaintenanceWindowResponsePropertiesScope)`
+
+SetScope sets Scope field to given value.
+
+### HasScope
+
+`func (o *MaintenanceWindowResponseProperties) HasScope() bool`
+
+HasScope returns a boolean if a field has been set.
+
+### GetStatus
+
+`func (o *MaintenanceWindowResponseProperties) GetStatus() string`
+
+GetStatus returns the Status field if non-nil, zero value otherwise.
+
+### GetStatusOk
+
+`func (o *MaintenanceWindowResponseProperties) GetStatusOk() (*string, bool)`
+
+GetStatusOk returns a tuple with the Status field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetStatus
+
+`func (o *MaintenanceWindowResponseProperties) SetStatus(v string)`
+
+SetStatus sets Status field to given value.
+
+
+### GetTitle
+
+`func (o *MaintenanceWindowResponseProperties) GetTitle() string`
+
+GetTitle returns the Title field if non-nil, zero value otherwise.
+
+### GetTitleOk
+
+`func (o *MaintenanceWindowResponseProperties) GetTitleOk() (*string, bool)`
+
+GetTitleOk returns a tuple with the Title field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetTitle
+
+`func (o *MaintenanceWindowResponseProperties) SetTitle(v string)`
+
+SetTitle sets Title field to given value.
 
 
 ### GetUpdatedAt
@@ -214,24 +219,24 @@ and a boolean to check if the value has been set.
 SetUpdatedAt sets UpdatedAt field to given value.
 
 
-### GetStatus
+### GetUpdatedBy
 
-`func (o *MaintenanceWindowResponseProperties) GetStatus() string`
+`func (o *MaintenanceWindowResponseProperties) GetUpdatedBy() string`
 
-GetStatus returns the Status field if non-nil, zero value otherwise.
+GetUpdatedBy returns the UpdatedBy field if non-nil, zero value otherwise.
 
-### GetStatusOk
+### GetUpdatedByOk
 
-`func (o *MaintenanceWindowResponseProperties) GetStatusOk() (*string, bool)`
+`func (o *MaintenanceWindowResponseProperties) GetUpdatedByOk() (*string, bool)`
 
-GetStatusOk returns a tuple with the Status field if it's non-nil, zero value otherwise
+GetUpdatedByOk returns a tuple with the UpdatedBy field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetStatus
+### SetUpdatedBy
 
-`func (o *MaintenanceWindowResponseProperties) SetStatus(v string)`
+`func (o *MaintenanceWindowResponseProperties) SetUpdatedBy(v string)`
 
-SetStatus sets Status field to given value.
+SetUpdatedBy sets UpdatedBy field to given value.
 
 
 

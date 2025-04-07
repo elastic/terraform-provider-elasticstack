@@ -4,16 +4,16 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Title** | **string** | The name of the maintenance window. While this name does not have to be unique, a distinctive name can help you identify a maintenance window.  | 
-**Enabled** | Pointer to **bool** | Indicates whether the maintenance window is currently enabled. | [optional] 
-**Duration** | **float32** |  | 
-**Start** | **string** | An ISO date. | 
+**Enabled** | Pointer to **bool** | Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications. | [optional] 
+**Schedule** | [**CreateMaintenanceWindowRequestSchedule**](CreateMaintenanceWindowRequestSchedule.md) |  | 
+**Scope** | Pointer to [**CreateMaintenanceWindowRequestScope**](CreateMaintenanceWindowRequestScope.md) |  | [optional] 
+**Title** | **string** | The name of the maintenance window. While this name does not have to be unique, a distinctive name can help you identify a specific maintenance window. | 
 
 ## Methods
 
 ### NewCreateMaintenanceWindowRequest
 
-`func NewCreateMaintenanceWindowRequest(title string, duration float32, start string, ) *CreateMaintenanceWindowRequest`
+`func NewCreateMaintenanceWindowRequest(schedule CreateMaintenanceWindowRequestSchedule, title string, ) *CreateMaintenanceWindowRequest`
 
 NewCreateMaintenanceWindowRequest instantiates a new CreateMaintenanceWindowRequest object
 This constructor will assign default values to properties that have it defined,
@@ -27,26 +27,6 @@ will change when the set of required properties is changed
 NewCreateMaintenanceWindowRequestWithDefaults instantiates a new CreateMaintenanceWindowRequest object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
-
-### GetTitle
-
-`func (o *CreateMaintenanceWindowRequest) GetTitle() string`
-
-GetTitle returns the Title field if non-nil, zero value otherwise.
-
-### GetTitleOk
-
-`func (o *CreateMaintenanceWindowRequest) GetTitleOk() (*string, bool)`
-
-GetTitleOk returns a tuple with the Title field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetTitle
-
-`func (o *CreateMaintenanceWindowRequest) SetTitle(v string)`
-
-SetTitle sets Title field to given value.
-
 
 ### GetEnabled
 
@@ -73,44 +53,69 @@ SetEnabled sets Enabled field to given value.
 
 HasEnabled returns a boolean if a field has been set.
 
-### GetDuration
+### GetSchedule
 
-`func (o *CreateMaintenanceWindowRequest) GetDuration() float32`
+`func (o *CreateMaintenanceWindowRequest) GetSchedule() CreateMaintenanceWindowRequestSchedule`
 
-GetDuration returns the Duration field if non-nil, zero value otherwise.
+GetSchedule returns the Schedule field if non-nil, zero value otherwise.
 
-### GetDurationOk
+### GetScheduleOk
 
-`func (o *CreateMaintenanceWindowRequest) GetDurationOk() (*float32, bool)`
+`func (o *CreateMaintenanceWindowRequest) GetScheduleOk() (*CreateMaintenanceWindowRequestSchedule, bool)`
 
-GetDurationOk returns a tuple with the Duration field if it's non-nil, zero value otherwise
+GetScheduleOk returns a tuple with the Schedule field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetDuration
+### SetSchedule
 
-`func (o *CreateMaintenanceWindowRequest) SetDuration(v float32)`
+`func (o *CreateMaintenanceWindowRequest) SetSchedule(v CreateMaintenanceWindowRequestSchedule)`
 
-SetDuration sets Duration field to given value.
+SetSchedule sets Schedule field to given value.
 
 
-### GetStart
+### GetScope
 
-`func (o *CreateMaintenanceWindowRequest) GetStart() string`
+`func (o *CreateMaintenanceWindowRequest) GetScope() CreateMaintenanceWindowRequestScope`
 
-GetStart returns the Start field if non-nil, zero value otherwise.
+GetScope returns the Scope field if non-nil, zero value otherwise.
 
-### GetStartOk
+### GetScopeOk
 
-`func (o *CreateMaintenanceWindowRequest) GetStartOk() (*string, bool)`
+`func (o *CreateMaintenanceWindowRequest) GetScopeOk() (*CreateMaintenanceWindowRequestScope, bool)`
 
-GetStartOk returns a tuple with the Start field if it's non-nil, zero value otherwise
+GetScopeOk returns a tuple with the Scope field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetStart
+### SetScope
 
-`func (o *CreateMaintenanceWindowRequest) SetStart(v string)`
+`func (o *CreateMaintenanceWindowRequest) SetScope(v CreateMaintenanceWindowRequestScope)`
 
-SetStart sets Start field to given value.
+SetScope sets Scope field to given value.
+
+### HasScope
+
+`func (o *CreateMaintenanceWindowRequest) HasScope() bool`
+
+HasScope returns a boolean if a field has been set.
+
+### GetTitle
+
+`func (o *CreateMaintenanceWindowRequest) GetTitle() string`
+
+GetTitle returns the Title field if non-nil, zero value otherwise.
+
+### GetTitleOk
+
+`func (o *CreateMaintenanceWindowRequest) GetTitleOk() (*string, bool)`
+
+GetTitleOk returns a tuple with the Title field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetTitle
+
+`func (o *CreateMaintenanceWindowRequest) SetTitle(v string)`
+
+SetTitle sets Title field to given value.
 
 
 

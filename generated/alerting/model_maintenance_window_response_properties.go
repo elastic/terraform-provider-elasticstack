@@ -12,7 +12,6 @@ package alerting
 
 import (
 	"encoding/json"
-	"time"
 )
 
 // checks if the MaintenanceWindowResponseProperties type satisfies the MappedNullable interface at compile time
@@ -20,44 +19,41 @@ var _ MappedNullable = &MaintenanceWindowResponseProperties{}
 
 // MaintenanceWindowResponseProperties struct for MaintenanceWindowResponseProperties
 type MaintenanceWindowResponseProperties struct {
-	// The identifier for the maintenance window.
-	Id string `json:"id"`
-	// The name of the maintenance window.
-	Title string `json:"title"`
-	// The start date of the maintenance window.
-	Start string `json:"start"`
-	// The duration of the maintenance window.
-	Duration float32 `json:"duration"`
-	// Indicates whether the maintenance window is currently enabled.
-	Enabled bool `json:"enabled"`
+	// The date and time when the maintenance window was created.
+	CreatedAt string `json:"created_at"`
 	// The identifier for the user that created the maintenance window.
 	CreatedBy string `json:"created_by"`
-	// The date and time in which the maintenance window was created.
-	CreatedAt time.Time `json:"created_at"`
-	// The identifier for the user that updated this maintenance window most recently.
-	UpdatedBy string `json:"updated_by"`
-	// The date and time that the maintenance window was updated most recently.
-	UpdatedAt string `json:"updated_at"`
-	// The status of the maintenance window. One of the following values `running`, `upcoming`, `finished` or `archived`.
+	// Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+	Enabled bool `json:"enabled"`
+	// The identifier for the maintenance window.
+	Id       string                                      `json:"id"`
+	Schedule MaintenanceWindowResponsePropertiesSchedule `json:"schedule"`
+	Scope    *MaintenanceWindowResponsePropertiesScope   `json:"scope,omitempty"`
+	// The current status of the maintenance window.
 	Status string `json:"status"`
+	// The name of the maintenance window.
+	Title string `json:"title"`
+	// The date and time when the maintenance window was last updated.
+	UpdatedAt string `json:"updated_at"`
+	// The identifier for the user that last updated this maintenance window.
+	UpdatedBy string `json:"updated_by"`
 }
 
 // NewMaintenanceWindowResponseProperties instantiates a new MaintenanceWindowResponseProperties object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMaintenanceWindowResponseProperties(id string, title string, start string, duration float32, enabled bool, createdBy string, createdAt time.Time, updatedBy string, updatedAt string, status string) *MaintenanceWindowResponseProperties {
+func NewMaintenanceWindowResponseProperties(createdAt string, createdBy string, enabled bool, id string, schedule MaintenanceWindowResponsePropertiesSchedule, status string, title string, updatedAt string, updatedBy string) *MaintenanceWindowResponseProperties {
 	this := MaintenanceWindowResponseProperties{}
-	this.Id = id
-	this.Title = title
-	this.Start = start
-	this.Duration = duration
-	this.Enabled = enabled
-	this.CreatedBy = createdBy
 	this.CreatedAt = createdAt
-	this.UpdatedBy = updatedBy
-	this.UpdatedAt = updatedAt
+	this.CreatedBy = createdBy
+	this.Enabled = enabled
+	this.Id = id
+	this.Schedule = schedule
 	this.Status = status
+	this.Title = title
+	this.UpdatedAt = updatedAt
+	this.UpdatedBy = updatedBy
 	return &this
 }
 
@@ -69,124 +65,28 @@ func NewMaintenanceWindowResponsePropertiesWithDefaults() *MaintenanceWindowResp
 	return &this
 }
 
-// GetId returns the Id field value
-func (o *MaintenanceWindowResponseProperties) GetId() string {
+// GetCreatedAt returns the CreatedAt field value
+func (o *MaintenanceWindowResponseProperties) GetCreatedAt() string {
 	if o == nil {
 		var ret string
 		return ret
 	}
 
-	return o.Id
+	return o.CreatedAt
 }
 
-// GetIdOk returns a tuple with the Id field value
+// GetCreatedAtOk returns a tuple with the CreatedAt field value
 // and a boolean to check if the value has been set.
-func (o *MaintenanceWindowResponseProperties) GetIdOk() (*string, bool) {
+func (o *MaintenanceWindowResponseProperties) GetCreatedAtOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Id, true
+	return &o.CreatedAt, true
 }
 
-// SetId sets field value
-func (o *MaintenanceWindowResponseProperties) SetId(v string) {
-	o.Id = v
-}
-
-// GetTitle returns the Title field value
-func (o *MaintenanceWindowResponseProperties) GetTitle() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.Title
-}
-
-// GetTitleOk returns a tuple with the Title field value
-// and a boolean to check if the value has been set.
-func (o *MaintenanceWindowResponseProperties) GetTitleOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Title, true
-}
-
-// SetTitle sets field value
-func (o *MaintenanceWindowResponseProperties) SetTitle(v string) {
-	o.Title = v
-}
-
-// GetStart returns the Start field value
-func (o *MaintenanceWindowResponseProperties) GetStart() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.Start
-}
-
-// GetStartOk returns a tuple with the Start field value
-// and a boolean to check if the value has been set.
-func (o *MaintenanceWindowResponseProperties) GetStartOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Start, true
-}
-
-// SetStart sets field value
-func (o *MaintenanceWindowResponseProperties) SetStart(v string) {
-	o.Start = v
-}
-
-// GetDuration returns the Duration field value
-func (o *MaintenanceWindowResponseProperties) GetDuration() float32 {
-	if o == nil {
-		var ret float32
-		return ret
-	}
-
-	return o.Duration
-}
-
-// GetDurationOk returns a tuple with the Duration field value
-// and a boolean to check if the value has been set.
-func (o *MaintenanceWindowResponseProperties) GetDurationOk() (*float32, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Duration, true
-}
-
-// SetDuration sets field value
-func (o *MaintenanceWindowResponseProperties) SetDuration(v float32) {
-	o.Duration = v
-}
-
-// GetEnabled returns the Enabled field value
-func (o *MaintenanceWindowResponseProperties) GetEnabled() bool {
-	if o == nil {
-		var ret bool
-		return ret
-	}
-
-	return o.Enabled
-}
-
-// GetEnabledOk returns a tuple with the Enabled field value
-// and a boolean to check if the value has been set.
-func (o *MaintenanceWindowResponseProperties) GetEnabledOk() (*bool, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Enabled, true
-}
-
-// SetEnabled sets field value
-func (o *MaintenanceWindowResponseProperties) SetEnabled(v bool) {
-	o.Enabled = v
+// SetCreatedAt sets field value
+func (o *MaintenanceWindowResponseProperties) SetCreatedAt(v string) {
+	o.CreatedAt = v
 }
 
 // GetCreatedBy returns the CreatedBy field value
@@ -213,76 +113,108 @@ func (o *MaintenanceWindowResponseProperties) SetCreatedBy(v string) {
 	o.CreatedBy = v
 }
 
-// GetCreatedAt returns the CreatedAt field value
-func (o *MaintenanceWindowResponseProperties) GetCreatedAt() time.Time {
+// GetEnabled returns the Enabled field value
+func (o *MaintenanceWindowResponseProperties) GetEnabled() bool {
 	if o == nil {
-		var ret time.Time
+		var ret bool
 		return ret
 	}
 
-	return o.CreatedAt
+	return o.Enabled
 }
 
-// GetCreatedAtOk returns a tuple with the CreatedAt field value
+// GetEnabledOk returns a tuple with the Enabled field value
 // and a boolean to check if the value has been set.
-func (o *MaintenanceWindowResponseProperties) GetCreatedAtOk() (*time.Time, bool) {
+func (o *MaintenanceWindowResponseProperties) GetEnabledOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.CreatedAt, true
+	return &o.Enabled, true
 }
 
-// SetCreatedAt sets field value
-func (o *MaintenanceWindowResponseProperties) SetCreatedAt(v time.Time) {
-	o.CreatedAt = v
+// SetEnabled sets field value
+func (o *MaintenanceWindowResponseProperties) SetEnabled(v bool) {
+	o.Enabled = v
 }
 
-// GetUpdatedBy returns the UpdatedBy field value
-func (o *MaintenanceWindowResponseProperties) GetUpdatedBy() string {
+// GetId returns the Id field value
+func (o *MaintenanceWindowResponseProperties) GetId() string {
 	if o == nil {
 		var ret string
 		return ret
 	}
 
-	return o.UpdatedBy
+	return o.Id
 }
 
-// GetUpdatedByOk returns a tuple with the UpdatedBy field value
+// GetIdOk returns a tuple with the Id field value
 // and a boolean to check if the value has been set.
-func (o *MaintenanceWindowResponseProperties) GetUpdatedByOk() (*string, bool) {
+func (o *MaintenanceWindowResponseProperties) GetIdOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.UpdatedBy, true
+	return &o.Id, true
 }
 
-// SetUpdatedBy sets field value
-func (o *MaintenanceWindowResponseProperties) SetUpdatedBy(v string) {
-	o.UpdatedBy = v
+// SetId sets field value
+func (o *MaintenanceWindowResponseProperties) SetId(v string) {
+	o.Id = v
 }
 
-// GetUpdatedAt returns the UpdatedAt field value
-func (o *MaintenanceWindowResponseProperties) GetUpdatedAt() string {
+// GetSchedule returns the Schedule field value
+func (o *MaintenanceWindowResponseProperties) GetSchedule() MaintenanceWindowResponsePropertiesSchedule {
 	if o == nil {
-		var ret string
+		var ret MaintenanceWindowResponsePropertiesSchedule
 		return ret
 	}
 
-	return o.UpdatedAt
+	return o.Schedule
 }
 
-// GetUpdatedAtOk returns a tuple with the UpdatedAt field value
+// GetScheduleOk returns a tuple with the Schedule field value
 // and a boolean to check if the value has been set.
-func (o *MaintenanceWindowResponseProperties) GetUpdatedAtOk() (*string, bool) {
+func (o *MaintenanceWindowResponseProperties) GetScheduleOk() (*MaintenanceWindowResponsePropertiesSchedule, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.UpdatedAt, true
+	return &o.Schedule, true
 }
 
-// SetUpdatedAt sets field value
-func (o *MaintenanceWindowResponseProperties) SetUpdatedAt(v string) {
-	o.UpdatedAt = v
+// SetSchedule sets field value
+func (o *MaintenanceWindowResponseProperties) SetSchedule(v MaintenanceWindowResponsePropertiesSchedule) {
+	o.Schedule = v
+}
+
+// GetScope returns the Scope field value if set, zero value otherwise.
+func (o *MaintenanceWindowResponseProperties) GetScope() MaintenanceWindowResponsePropertiesScope {
+	if o == nil || IsNil(o.Scope) {
+		var ret MaintenanceWindowResponsePropertiesScope
+		return ret
+	}
+	return *o.Scope
+}
+
+// GetScopeOk returns a tuple with the Scope field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *MaintenanceWindowResponseProperties) GetScopeOk() (*MaintenanceWindowResponsePropertiesScope, bool) {
+	if o == nil || IsNil(o.Scope) {
+		return nil, false
+	}
+	return o.Scope, true
+}
+
+// HasScope returns a boolean if a field has been set.
+func (o *MaintenanceWindowResponseProperties) HasScope() bool {
+	if o != nil && !IsNil(o.Scope) {
+		return true
+	}
+
+	return false
+}
+
+// SetScope gets a reference to the given MaintenanceWindowResponsePropertiesScope and assigns it to the Scope field.
+func (o *MaintenanceWindowResponseProperties) SetScope(v MaintenanceWindowResponsePropertiesScope) {
+	o.Scope = &v
 }
 
 // GetStatus returns the Status field value
@@ -309,6 +241,78 @@ func (o *MaintenanceWindowResponseProperties) SetStatus(v string) {
 	o.Status = v
 }
 
+// GetTitle returns the Title field value
+func (o *MaintenanceWindowResponseProperties) GetTitle() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.Title
+}
+
+// GetTitleOk returns a tuple with the Title field value
+// and a boolean to check if the value has been set.
+func (o *MaintenanceWindowResponseProperties) GetTitleOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Title, true
+}
+
+// SetTitle sets field value
+func (o *MaintenanceWindowResponseProperties) SetTitle(v string) {
+	o.Title = v
+}
+
+// GetUpdatedAt returns the UpdatedAt field value
+func (o *MaintenanceWindowResponseProperties) GetUpdatedAt() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.UpdatedAt
+}
+
+// GetUpdatedAtOk returns a tuple with the UpdatedAt field value
+// and a boolean to check if the value has been set.
+func (o *MaintenanceWindowResponseProperties) GetUpdatedAtOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.UpdatedAt, true
+}
+
+// SetUpdatedAt sets field value
+func (o *MaintenanceWindowResponseProperties) SetUpdatedAt(v string) {
+	o.UpdatedAt = v
+}
+
+// GetUpdatedBy returns the UpdatedBy field value
+func (o *MaintenanceWindowResponseProperties) GetUpdatedBy() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.UpdatedBy
+}
+
+// GetUpdatedByOk returns a tuple with the UpdatedBy field value
+// and a boolean to check if the value has been set.
+func (o *MaintenanceWindowResponseProperties) GetUpdatedByOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.UpdatedBy, true
+}
+
+// SetUpdatedBy sets field value
+func (o *MaintenanceWindowResponseProperties) SetUpdatedBy(v string) {
+	o.UpdatedBy = v
+}
+
 func (o MaintenanceWindowResponseProperties) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -319,16 +323,18 @@ func (o MaintenanceWindowResponseProperties) MarshalJSON() ([]byte, error) {
 
 func (o MaintenanceWindowResponseProperties) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["id"] = o.Id
-	toSerialize["title"] = o.Title
-	toSerialize["start"] = o.Start
-	toSerialize["duration"] = o.Duration
-	toSerialize["enabled"] = o.Enabled
-	toSerialize["created_by"] = o.CreatedBy
 	toSerialize["created_at"] = o.CreatedAt
-	toSerialize["updated_by"] = o.UpdatedBy
-	toSerialize["updated_at"] = o.UpdatedAt
+	toSerialize["created_by"] = o.CreatedBy
+	toSerialize["enabled"] = o.Enabled
+	toSerialize["id"] = o.Id
+	toSerialize["schedule"] = o.Schedule
+	if !IsNil(o.Scope) {
+		toSerialize["scope"] = o.Scope
+	}
 	toSerialize["status"] = o.Status
+	toSerialize["title"] = o.Title
+	toSerialize["updated_at"] = o.UpdatedAt
+	toSerialize["updated_by"] = o.UpdatedBy
 	return toSerialize, nil
 }
 

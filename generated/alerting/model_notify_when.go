@@ -19,11 +19,11 @@ import (
 type NotifyWhen string
 
 // List of notify_when
-// const (
-// 	ON_ACTION_GROUP_CHANGE NotifyWhen = "onActionGroupChange"
-// 	ON_ACTIVE_ALERT        NotifyWhen = "onActiveAlert"
-// 	ON_THROTTLE_INTERVAL   NotifyWhen = "onThrottleInterval"
-// )
+const (
+	ON_ACTION_GROUP_CHANGE NotifyWhen = "onActionGroupChange"
+	ON_ACTIVE_ALERT        NotifyWhen = "onActiveAlert"
+	ON_THROTTLE_INTERVAL   NotifyWhen = "onThrottleInterval"
+)
 
 // All allowed values of NotifyWhen enum
 var AllowedNotifyWhenEnumValues = []NotifyWhen{

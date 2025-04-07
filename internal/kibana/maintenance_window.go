@@ -2,19 +2,20 @@ package kibana
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceMaintenanceWindow() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
-		"id": {
+		"maintenance_window_id": {
 			Description: "A UUID v1 or v4 to use instead of a randomly generated ID.",
 			Type:        schema.TypeString,
 			Computed:    true,
@@ -38,17 +39,114 @@ func ResourceMaintenanceWindow() *schema.Resource {
 			Type:        schema.TypeBool,
 			Optional:    true,
 		},
-		"start": {
-			Description: "The start date of the maintenance window.",
-			Type:        schema.TypeString,
+		"custom_schedule": {
+			Description: "A set schedule over which the maintenance window applies.",
+			Type:        schema.TypeList,
+			MaxItems:    1,
 			Required:    true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"start": {
+						Description: "The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.",
+						Type:        schema.TypeString,
+						Required:    true,
+					},
+					"duration": {
+						Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
+						Type:        schema.TypeString,
+						Required:    true,
+						// TODO
+						// ValidateFunc: ...,
+					},
+					"timezone": {
+						Description: "The timezone of the schedule. The default timezone is UTC.",
+						Type:        schema.TypeString,
+						Optional:    true,
+						// TODO
+						// ValidateFunc: ...,
+					},
+					"recurring": {
+						Type:     schema.TypeList,
+						MinItems: 0,
+						MaxItems: 1,
+						Optional: true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"end": {
+									Description: "The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.",
+									Type:        schema.TypeString,
+									Optional:    true,
+								},
+								"every": {
+									Description: "The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.",
+									Type:        schema.TypeString,
+									Optional:    true,
+									// TODO
+									// ValidateFunc: ...,
+								},
+								"on_week_day": {
+									Description: "The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.",
+									Type:        schema.TypeList,
+									Optional:    true,
+									Elem: &schema.Schema{
+										Type: schema.TypeString,
+										// TODO
+										// ValidateFunc: ...,
+									},
+								},
+								"on_month_day": {
+									Description: "The specific days of the month for a recurring schedule. Valid values are 1-31.",
+									Type:        schema.TypeList,
+									Optional:    true,
+									Elem: &schema.Schema{
+										Type:         schema.TypeInt,
+										ValidateFunc: validation.IntBetween(1, 31),
+									},
+								},
+								"on_month": {
+									Description: "The specific months for a recurring schedule. Valid values are 1-12.",
+									Type:        schema.TypeList,
+									Optional:    true,
+									Elem: &schema.Schema{
+										Type:         schema.TypeInt,
+										ValidateFunc: validation.IntBetween(1, 12),
+									},
+								},
+								"occurrences": {
+									Description: "The total number of recurrences of the schedule.",
+									Type:        schema.TypeInt,
+									Optional:    true,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
-		"duration": {
-			Description: "How long the maintenance window should run from the start date.",
-			Type:        schema.TypeInt,
+		"scope": {
+			Description: "An object that narrows the scope of what is affected by this maintenance window.",
+			Type:        schema.TypeList,
+			MinItems:    0,
+			MaxItems:    1,
 			Optional:    true,
-			Default:     "default",
-			ForceNew:    true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"alerting": {
+						Type:     schema.TypeList,
+						MaxItems: 1,
+						Optional: true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"kql": {
+									Description: "A filter written in Kibana Query Language (KQL).",
+									Type:        schema.TypeString,
+									Required:    true,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -71,19 +169,97 @@ func ResourceMaintenanceWindow() *schema.Resource {
 func getMaintenanceWindowFromResourceData(d *schema.ResourceData, serverVersion *version.Version) (models.MaintenanceWindow, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	maintenanceWindow := models.MaintenanceWindow{
-		SpaceId:  d.Get("space_id").(string),
-		Title:    d.Get("title").(string),
-		Enabled:  d.Get("enabled").(bool),
-		Start:    d.Get("start").(string),
-		Duration: d.Get("duration").(int),
+		MaintenanceWindowId: d.Get("maintenance_window_id").(string),
+		SpaceId:             d.Get("space_id").(string),
+		Title:               d.Get("title").(string),
+		Enabled:             d.Get("enabled").(bool),
 	}
 
+	if _, ok := d.GetOk("scope.alerting"); ok {
+
+		alerting := &models.MaintenanceWindowAlertingScope{
+			Kql: d.Get("scope.alerting.kql").(string),
+		}
+
+		maintenanceWindow.Scope = &models.MaintenanceWindowScope{
+			Alerting: alerting,
+		}
+	}
+
+	schedule, diags := getScheduleFromResourceData(d, serverVersion)
+
+	if diags.HasError() {
+		return models.MaintenanceWindow{}, diags
+	}
+
+	maintenanceWindow.CustomSchedule = schedule
+
 	// Explicitly set maintenance window id if provided, otherwise we'll use the autogenerated ID from the Kibana API response
-	if maintenanceWindowId := getOrNilString("id", d); maintenanceWindowId != nil && *maintenanceWindowId != "" {
-		maintenanceWindow.Id = *maintenanceWindowId
+	if maintenanceWindowId := getOrNilString("maintenance_window_id", d); maintenanceWindowId != nil && *maintenanceWindowId != "" {
+		maintenanceWindow.MaintenanceWindowId = *maintenanceWindowId
 	}
 
 	return maintenanceWindow, diags
+}
+
+func getScheduleFromResourceData(d *schema.ResourceData, serverVersion *version.Version) (models.MaintenanceWindowSchedule, diag.Diagnostics) {
+	schedule := models.MaintenanceWindowSchedule{
+		Start:    d.Get("custom_schedule.0.start").(string),
+		Duration: d.Get("custom_schedule.0.duration").(string),
+	}
+
+	// Explicitly set timezone if provided
+	if timezone := getOrNilString("custom_schedule.0.timezone", d); timezone != nil && *timezone != "" {
+		schedule.Timezone = timezone
+	}
+
+	if _, ok := d.GetOk("custom_schedule.0.recurring"); ok {
+		recurring := models.MaintenanceWindowScheduleRecurring{}
+
+		if v, ok := d.GetOk("custom_schedule.0.recurring.0.end"); ok {
+			end := v.(string)
+			recurring.End = &end
+		}
+
+		if v, ok := d.GetOk("custom_schedule.0.recurring.0.every"); ok {
+			every := v.(string)
+			recurring.Every = &every
+		}
+
+		if onWeekDay, ok := d.GetOk("custom_schedule.0.recurring.0.on_week_day"); ok {
+			weekDayArray := []string{}
+			for _, weekDay := range onWeekDay.([]interface{}) {
+				weekDayArray = append(weekDayArray, weekDay.(string))
+			}
+			recurring.OnWeekDay = &weekDayArray
+		}
+
+		if onMonthDay, ok := d.GetOk("custom_schedule.0.recurring.0.on_month_day"); ok {
+			monthDayArray := []float32{}
+			for _, monthDay := range onMonthDay.([]interface{}) {
+				monthDayArray = append(monthDayArray, monthDay.(float32))
+			}
+			recurring.OnMonthDay = &monthDayArray
+		}
+
+		if onMonth, ok := d.GetOk("custom_schedule.0.recurring.0.on_month"); ok {
+			monthArray := []float32{}
+			for _, month := range onMonth.([]interface{}) {
+				monthArray = append(monthArray, month.(float32))
+			}
+			recurring.OnMonth = &monthArray
+
+		}
+
+		if v, ok := d.GetOk("custom_schedule.0.recurring.0.occurrences"); ok {
+			occurrences := v.(int)
+			recurring.Occurrences = utils.Pointer(float32(occurrences))
+		}
+
+		schedule.Recurring = &recurring
+	}
+
+	return schedule, nil
 }
 
 func resourceMaintenanceWindowCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -98,6 +274,7 @@ func resourceMaintenanceWindowCreate(ctx context.Context, d *schema.ResourceData
 	}
 
 	maintenanceWindow, diags := getMaintenanceWindowFromResourceData(d, serverVersion)
+
 	if diags.HasError() {
 		return diags
 	}
@@ -108,9 +285,8 @@ func resourceMaintenanceWindowCreate(ctx context.Context, d *schema.ResourceData
 		return diags
 	}
 
-	compositeID := &clients.CompositeId{ClusterId: res.SpaceId, ResourceId: res.Id}
-	fmt.Println("compositeID")
-	fmt.Println(compositeID)
+	compositeID := &clients.CompositeId{ClusterId: res.SpaceId, ResourceId: res.MaintenanceWindowId}
+
 	d.SetId(compositeID.String())
 
 	return resourceMaintenanceWindowRead(ctx, d, meta)
@@ -132,9 +308,13 @@ func resourceMaintenanceWindowUpdate(ctx context.Context, d *schema.ResourceData
 		return diags
 	}
 
-	// DO NOTHING
-	// res, diags := kibana.UpdateMaintenanceWindow(ctx, client, maintenanceWindow)
-	d.SetId(maintenanceWindow.MaintenanceWindowID)
+	res, diags := kibana.UpdateMaintenanceWindow(ctx, client, maintenanceWindow)
+	if diags.HasError() {
+		return diags
+	}
+
+	compositeID := &clients.CompositeId{ClusterId: maintenanceWindow.SpaceId, ResourceId: res.MaintenanceWindowId}
+	d.SetId(compositeID.String())
 
 	return resourceMaintenanceWindowRead(ctx, d, meta)
 }
@@ -163,8 +343,7 @@ func resourceMaintenanceWindowRead(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
-	// set the fields
-	if err := d.Set("id", maintenanceWindow.Id); err != nil {
+	if err := d.Set("maintenance_window_id", maintenanceWindow.MaintenanceWindowId); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("space_id", maintenanceWindow.SpaceId); err != nil {
@@ -176,10 +355,47 @@ func resourceMaintenanceWindowRead(ctx context.Context, d *schema.ResourceData, 
 	if err := d.Set("enabled", maintenanceWindow.Enabled); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("start", maintenanceWindow.Start); err != nil {
-		return diag.FromErr(err)
+
+	if maintenanceWindow.Scope != nil && maintenanceWindow.Scope.Alerting != nil {
+		alertingScope := []interface{}{}
+		alertingScope = append(alertingScope, map[string]interface{}{
+			"kql": maintenanceWindow.Scope.Alerting.Kql,
+		})
+
+		scope := []interface{}{}
+		scope = append(scope, map[string]interface{}{
+			"alerting": alertingScope,
+		})
+
+		if err := d.Set("scope", scope); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	if err := d.Set("duration", maintenanceWindow.Duration); err != nil {
+
+	schedule := []interface{}{}
+	recurring := []interface{}{}
+
+	if maintenanceWindow.CustomSchedule.Recurring != nil {
+		recurring = append(recurring, map[string]interface{}{
+			"end":          maintenanceWindow.CustomSchedule.Recurring.End,
+			"every":        maintenanceWindow.CustomSchedule.Recurring.Every,
+			"on_week_day":  maintenanceWindow.CustomSchedule.Recurring.OnWeekDay,
+			"on_month_day": maintenanceWindow.CustomSchedule.Recurring.OnMonthDay,
+			"on_month":     maintenanceWindow.CustomSchedule.Recurring.OnMonth,
+			"occurrences":  maintenanceWindow.CustomSchedule.Recurring.Occurrences,
+		})
+	} else {
+		recurring = nil
+	}
+
+	schedule = append(schedule, map[string]interface{}{
+		"start":     maintenanceWindow.CustomSchedule.Start,
+		"duration":  maintenanceWindow.CustomSchedule.Duration,
+		"timezone":  maintenanceWindow.CustomSchedule.Timezone,
+		"recurring": recurring,
+	})
+
+	if err := d.Set("custom_schedule", schedule); err != nil {
 		return diag.FromErr(err)
 	}
 

@@ -42,17 +42,17 @@ func (m *MockAlertingAPI) EXPECT() *MockAlertingAPIMockRecorder {
 }
 
 // CreateMaintenanceWindow mocks base method.
-func (m *MockAlertingAPI) CreateMaintenanceWindow(ctx context.Context) ApiCreateMaintenanceWindowRequest {
+func (m *MockAlertingAPI) CreateMaintenanceWindow(ctx context.Context, spaceId any) ApiCreateMaintenanceWindowRequest {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateMaintenanceWindow", ctx)
+	ret := m.ctrl.Call(m, "CreateMaintenanceWindow", ctx, spaceId)
 	ret0, _ := ret[0].(ApiCreateMaintenanceWindowRequest)
 	return ret0
 }
 
 // CreateMaintenanceWindow indicates an expected call of CreateMaintenanceWindow.
-func (mr *MockAlertingAPIMockRecorder) CreateMaintenanceWindow(ctx any) *gomock.Call {
+func (mr *MockAlertingAPIMockRecorder) CreateMaintenanceWindow(ctx, spaceId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateMaintenanceWindow", reflect.TypeOf((*MockAlertingAPI)(nil).CreateMaintenanceWindow), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateMaintenanceWindow", reflect.TypeOf((*MockAlertingAPI)(nil).CreateMaintenanceWindow), ctx, spaceId)
 }
 
 // CreateMaintenanceWindowExecute mocks base method.
@@ -132,17 +132,17 @@ func (mr *MockAlertingAPIMockRecorder) CreateRuleIdExecute(r any) *gomock.Call {
 }
 
 // DeleteMaintenanceWindow mocks base method.
-func (m *MockAlertingAPI) DeleteMaintenanceWindow(ctx context.Context, maintenanceWindowId any) ApiDeleteMaintenanceWindowRequest {
+func (m *MockAlertingAPI) DeleteMaintenanceWindow(ctx context.Context, maintenanceWindowId, spaceId any) ApiDeleteMaintenanceWindowRequest {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteMaintenanceWindow", ctx, maintenanceWindowId)
+	ret := m.ctrl.Call(m, "DeleteMaintenanceWindow", ctx, maintenanceWindowId, spaceId)
 	ret0, _ := ret[0].(ApiDeleteMaintenanceWindowRequest)
 	return ret0
 }
 
 // DeleteMaintenanceWindow indicates an expected call of DeleteMaintenanceWindow.
-func (mr *MockAlertingAPIMockRecorder) DeleteMaintenanceWindow(ctx, maintenanceWindowId any) *gomock.Call {
+func (mr *MockAlertingAPIMockRecorder) DeleteMaintenanceWindow(ctx, maintenanceWindowId, spaceId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMaintenanceWindow", reflect.TypeOf((*MockAlertingAPI)(nil).DeleteMaintenanceWindow), ctx, maintenanceWindowId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMaintenanceWindow", reflect.TypeOf((*MockAlertingAPI)(nil).DeleteMaintenanceWindow), ctx, maintenanceWindowId, spaceId)
 }
 
 // DeleteMaintenanceWindowExecute mocks base method.
@@ -308,17 +308,17 @@ func (mr *MockAlertingAPIMockRecorder) GetAlertingHealthExecute(r any) *gomock.C
 }
 
 // GetMaintenanceWindow mocks base method.
-func (m *MockAlertingAPI) GetMaintenanceWindow(ctx context.Context, maintenanceWindowId any) ApiGetMaintenanceWindowRequest {
+func (m *MockAlertingAPI) GetMaintenanceWindow(ctx context.Context, maintenanceWindowId, spaceId any) ApiGetMaintenanceWindowRequest {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMaintenanceWindow", ctx, maintenanceWindowId)
+	ret := m.ctrl.Call(m, "GetMaintenanceWindow", ctx, maintenanceWindowId, spaceId)
 	ret0, _ := ret[0].(ApiGetMaintenanceWindowRequest)
 	return ret0
 }
 
 // GetMaintenanceWindow indicates an expected call of GetMaintenanceWindow.
-func (mr *MockAlertingAPIMockRecorder) GetMaintenanceWindow(ctx, maintenanceWindowId any) *gomock.Call {
+func (mr *MockAlertingAPIMockRecorder) GetMaintenanceWindow(ctx, maintenanceWindowId, spaceId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaintenanceWindow", reflect.TypeOf((*MockAlertingAPI)(nil).GetMaintenanceWindow), ctx, maintenanceWindowId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaintenanceWindow", reflect.TypeOf((*MockAlertingAPI)(nil).GetMaintenanceWindow), ctx, maintenanceWindowId, spaceId)
 }
 
 // GetMaintenanceWindowExecute mocks base method.
@@ -894,6 +894,36 @@ func (m *MockAlertingAPI) UnmuteAllAlertsExecute(r ApiUnmuteAllAlertsRequest) (*
 func (mr *MockAlertingAPIMockRecorder) UnmuteAllAlertsExecute(r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnmuteAllAlertsExecute", reflect.TypeOf((*MockAlertingAPI)(nil).UnmuteAllAlertsExecute), r)
+}
+
+// UpdateMaintenanceWindow mocks base method.
+func (m *MockAlertingAPI) UpdateMaintenanceWindow(ctx context.Context, maintenanceWindowId, spaceId any) ApiUpdateMaintenanceWindowRequest {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateMaintenanceWindow", ctx, maintenanceWindowId, spaceId)
+	ret0, _ := ret[0].(ApiUpdateMaintenanceWindowRequest)
+	return ret0
+}
+
+// UpdateMaintenanceWindow indicates an expected call of UpdateMaintenanceWindow.
+func (mr *MockAlertingAPIMockRecorder) UpdateMaintenanceWindow(ctx, maintenanceWindowId, spaceId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMaintenanceWindow", reflect.TypeOf((*MockAlertingAPI)(nil).UpdateMaintenanceWindow), ctx, maintenanceWindowId, spaceId)
+}
+
+// UpdateMaintenanceWindowExecute mocks base method.
+func (m *MockAlertingAPI) UpdateMaintenanceWindowExecute(r ApiUpdateMaintenanceWindowRequest) (*MaintenanceWindowResponseProperties, *http.Response, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateMaintenanceWindowExecute", r)
+	ret0, _ := ret[0].(*MaintenanceWindowResponseProperties)
+	ret1, _ := ret[1].(*http.Response)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// UpdateMaintenanceWindowExecute indicates an expected call of UpdateMaintenanceWindowExecute.
+func (mr *MockAlertingAPIMockRecorder) UpdateMaintenanceWindowExecute(r any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMaintenanceWindowExecute", reflect.TypeOf((*MockAlertingAPI)(nil).UpdateMaintenanceWindowExecute), r)
 }
 
 // UpdateRule mocks base method.
