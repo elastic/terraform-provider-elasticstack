@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"regexp"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 // StringIsDuration is a SchemaValidateFunc which tests to make sure the supplied string is valid duration.
@@ -59,4 +62,28 @@ func StringIsHours(i interface{}, k string) (warnings []string, errors []error) 
 	}
 
 	return nil, nil
+}
+
+// Avoid lint error on deprecated SchemaValidateFunc usage.
+//
+//nolint:staticcheck
+func StringIsAlertingDuration() schema.SchemaValidateFunc {
+	r := regexp.MustCompile(`^[1-9][0-9]*(?:d|h|m|s)$`)
+	return validation.StringMatch(r, "string is not a valid Alerting duration in seconds (s), minutes (m), hours (h), or days (d)")
+}
+
+// Avoid lint error on deprecated SchemaValidateFunc usage.
+//
+//nolint:staticcheck
+func StringIsMaintenanceWindowOnWeekDay() schema.SchemaValidateFunc {
+	r := regexp.MustCompile(`^(((\+|-)[1-5])?(MO|TU|WE|TH|FR|SA|SU))$`)
+	return validation.StringMatch(r, "string is not a valid OnWeekDay. Accepted values are specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`).")
+}
+
+// Avoid lint error on deprecated SchemaValidateFunc usage.
+//
+//nolint:staticcheck
+func StringIsMaintenanceWindowIntervalFrequency() schema.SchemaValidateFunc {
+	r := regexp.MustCompile(`^[1-9][0-9]*(?:d|w|M|y)$`)
+	return validation.StringMatch(r, "string is not a valid interval/frequency. Allowed values are in the `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.")
 }

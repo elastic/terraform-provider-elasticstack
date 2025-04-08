@@ -76,6 +76,7 @@ func CreateMaintenanceWindow(ctx context.Context, apiClient ApiClient, maintenan
 		Custom: alerting.CreateMaintenanceWindowRequestScheduleCustom{
 			Start:    maintenanceWindow.CustomSchedule.Start,
 			Duration: maintenanceWindow.CustomSchedule.Duration,
+			Timezone: maintenanceWindow.CustomSchedule.Timezone,
 		},
 	}
 
@@ -199,6 +200,7 @@ func UpdateMaintenanceWindow(ctx context.Context, apiClient ApiClient, maintenan
 		Custom: alerting.CreateMaintenanceWindowRequestScheduleCustom{
 			Start:    maintenanceWindow.CustomSchedule.Start,
 			Duration: maintenanceWindow.CustomSchedule.Duration,
+			Timezone: maintenanceWindow.CustomSchedule.Timezone,
 		},
 	}
 
