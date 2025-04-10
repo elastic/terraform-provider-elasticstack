@@ -440,7 +440,7 @@ func buildEsClient(cfg config.Client) (*elasticsearch.Client, error) {
 
 	es, err := elasticsearch.NewClient(*cfg.Elasticsearch)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create Elasticsearch client: %w", err)
+		return nil, fmt.Errorf("unable to create Elasticsearch client: %w", err)
 	}
 
 	return es, nil
@@ -475,7 +475,7 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 func buildKibanaOapiClient(cfg config.Client) (*kibana_oapi.Client, error) {
 	client, err := kibana_oapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create KibanaOapi client: %w", err)
+		return nil, fmt.Errorf("unable to create KibanaOapi client: %w", err)
 	}
 
 	return client, nil
@@ -539,7 +539,7 @@ func buildSloClient(cfg config.Client, httpClient *http.Client) *slo.APIClient {
 func buildFleetClient(cfg config.Client) (*fleet.Client, error) {
 	client, err := fleet.NewClient(*cfg.Fleet)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create Fleet client: %w", err)
+		return nil, fmt.Errorf("unable to create Fleet client: %w", err)
 	}
 
 	return client, nil

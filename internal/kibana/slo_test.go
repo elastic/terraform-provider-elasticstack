@@ -294,7 +294,7 @@ func TestAccResourceSloErrors(t *testing.T) {
 	}`
 
 	budgetingMethodFailConfig := getSLOConfig(sloVars{name: "budgetingmethodfail", indicatorType: "apm_latency_indicator"})
-	budgetingMethodFailConfig = strings.Replace(budgetingMethodFailConfig, "budgeting_method = \"timeslices\"", "budgeting_method = \"supdawg\"", -1)
+	budgetingMethodFailConfig = strings.ReplaceAll(budgetingMethodFailConfig, "budgeting_method = \"timeslices\"", "budgeting_method = \"supdawg\"")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
