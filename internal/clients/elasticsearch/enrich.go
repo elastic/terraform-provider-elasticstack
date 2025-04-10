@@ -36,7 +36,7 @@ func getPolicyType(m map[string]enrichPolicyResponse) (string, error) {
 			return policyType, nil
 		}
 	}
-	return "", fmt.Errorf("Did not find expected policy type.")
+	return "", fmt.Errorf("did not find expected policy type")
 }
 
 func GetEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, policyName string) (*models.EnrichPolicy, diag.Diagnostics) {
