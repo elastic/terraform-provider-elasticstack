@@ -431,13 +431,13 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 			case schema.TypeInt, schema.TypeFloat:
 				i, err := strconv.Atoi(v.(string))
 				if err != nil {
-					return nil, fmt.Errorf(`Failed to parse value = "%v" for setting = "%s"`, v, k)
+					return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
 				}
 				settings[k] = i
 			case schema.TypeBool:
 				b, err := strconv.ParseBool(v.(string))
 				if err != nil {
-					return nil, fmt.Errorf(`Failed to parse value = "%v" for setting = "%s"`, v, k)
+					return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
 				}
 				settings[k] = b
 			default:
