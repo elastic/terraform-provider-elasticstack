@@ -60,8 +60,8 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	if !utils.IsKnown(model.MonitorLogs) {
 		model.MonitorLogs = types.BoolValue(false)
 	}
-	if !utils.IsKnown(model.MonitorLogs) {
-		model.MonitorLogs = types.BoolValue(false)
+	if !utils.IsKnown(model.MonitorMetrics) {
+		model.MonitorMetrics = types.BoolValue(false)
 	}
 
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
@@ -97,6 +97,55 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	return nil
 }
 
+// convertGlobalDataTags converts the global data tags from terraform model to API model
+// and performs version validation
+func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, serverVersion *version.Version) (*[]kbapi.AgentPolicyGlobalDataTagsItem, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if len(model.GlobalDataTags.Elements()) == 0 {
+		if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) {
+			emptyList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0)
+			return &emptyList, diags
+		}
+		return nil, diags
+	}
+
+	if serverVersion.LessThan(MinVersionGlobalDataTags) {
+		diags.AddError("global_data_tags ES version error", fmt.Sprintf("Global data tags are only supported in Elastic Stack %s and above", MinVersionGlobalDataTags))
+		return nil, diags
+	}
+
+	items := utils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
+		func(item globalDataTagsItemModel, meta utils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
+			var value kbapi.AgentPolicyGlobalDataTagsItem_Value
+			var err error
+			if item.StringValue.ValueStringPointer() != nil {
+				err = value.FromAgentPolicyGlobalDataTagsItemValue0(*item.StringValue.ValueStringPointer())
+			} else {
+				err = value.FromAgentPolicyGlobalDataTagsItemValue1(*item.NumberValue.ValueFloat32Pointer())
+			}
+			if err != nil {
+				diags.AddError("global_data_tags validation_error_converting_values", err.Error())
+				return kbapi.AgentPolicyGlobalDataTagsItem{}
+			}
+			return kbapi.AgentPolicyGlobalDataTagsItem{
+				Name:  meta.Key,
+				Value: value,
+			}
+		})
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0, len(items))
+	for _, v := range items {
+		itemsList = append(itemsList, v)
+	}
+
+	return &itemsList, diags
+}
+
 func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
 
@@ -119,42 +168,11 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if len(model.GlobalDataTags.Elements()) > 0 {
-		var diags diag.Diagnostics
-		if serverVersion.LessThan(MinVersionGlobalDataTags) {
-			diags.AddError("global_data_tags ES version error", fmt.Sprintf("Global data tags are only supported in Elastic Stack %s and above", MinVersionGlobalDataTags))
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-
-		items := utils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
-			func(item globalDataTagsItemModel, meta utils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
-				var value kbapi.AgentPolicyGlobalDataTagsItem_Value
-				var err error
-				if item.StringValue.ValueStringPointer() != nil {
-					err = value.FromAgentPolicyGlobalDataTagsItemValue0(*item.StringValue.ValueStringPointer())
-				} else {
-					err = value.FromAgentPolicyGlobalDataTagsItemValue1(*item.NumberValue.ValueFloat32Pointer())
-				}
-				if err != nil {
-					diags.AddError("global_data_tags validation_error_converting_values", err.Error())
-					return kbapi.AgentPolicyGlobalDataTagsItem{}
-				}
-				return kbapi.AgentPolicyGlobalDataTagsItem{
-					Name:  meta.Key,
-					Value: value,
-				}
-			})
-
-		if diags.HasError() {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-
-		itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0, len(items))
-		for _, v := range items {
-			itemsList = append(itemsList, v)
-		}
-		body.GlobalDataTags = &itemsList
+	tags, diags := model.convertGlobalDataTags(ctx, serverVersion)
+	if diags.HasError() {
+		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 	}
+	body.GlobalDataTags = tags
 
 	return body, nil
 }
@@ -179,47 +197,11 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if len(model.GlobalDataTags.Elements()) > 0 {
-		var diags diag.Diagnostics
-		if serverVersion.LessThan(MinVersionGlobalDataTags) {
-			diags.AddError("global_data_tags ES version error", fmt.Sprintf("Global data tags are only supported in Elastic Stack %s and above", MinVersionGlobalDataTags))
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-
-		items := utils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
-			func(item globalDataTagsItemModel, meta utils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
-
-				var value kbapi.AgentPolicyGlobalDataTagsItem_Value
-				var err error
-				if item.StringValue.ValueStringPointer() != nil {
-					err = value.FromAgentPolicyGlobalDataTagsItemValue0(*item.StringValue.ValueStringPointer())
-				} else {
-					err = value.FromAgentPolicyGlobalDataTagsItemValue1(*item.NumberValue.ValueFloat32Pointer())
-				}
-				if err != nil {
-					diags.AddError("global_data_tags validation_error_converting_values", err.Error())
-					return kbapi.AgentPolicyGlobalDataTagsItem{}
-				}
-				return kbapi.AgentPolicyGlobalDataTagsItem{
-					Name:  meta.Key,
-					Value: value,
-				}
-			})
-		if diags.HasError() {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-
-		itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0, len(items))
-		for _, v := range items {
-			itemsList = append(itemsList, v)
-		}
-		body.GlobalDataTags = &itemsList
-	} else {
-		if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) {
-			itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0)
-			body.GlobalDataTags = &itemsList
-		}
+	tags, diags := model.convertGlobalDataTags(ctx, serverVersion)
+	if diags.HasError() {
+		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
+	body.GlobalDataTags = tags
 
 	return body, nil
 }
