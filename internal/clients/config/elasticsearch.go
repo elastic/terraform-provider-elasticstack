@@ -43,6 +43,18 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 			config.config.Addresses = addrs
 		}
 
+		if headers, ok := esConfig["headers"]; ok && len(headers.([]interface{})) > 0 {
+			var header_values []string
+			for _, e := range headers.([]interface{}) {
+				header_values = append(header_values, e.(string))
+			}
+
+			for _, header := range header_values {
+				headerParts := strings.Split(header, ":")
+				config.config.Header.Add(strings.TrimSpace(headerParts[0]), strings.TrimSpace(headerParts[1]))
+			}
+		}
+
 		if bearer_token, ok := esConfig["bearer_token"].(string); ok && bearer_token != "" {
 			config.bearerToken = bearer_token
 		}
@@ -143,6 +155,24 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 
 	if len(endpoints) > 0 {
 		config.config.Addresses = endpoints
+	}
+
+	var headers []string
+	headerDiags := esConfig.Headers.ElementsAs(ctx, &headers, true)
+	if headerDiags.HasError() {
+		return nil, diags
+	}
+
+	if len(headers) > 0 {
+		for _, header := range headers {
+			headerParts := strings.Split(header, ":")
+			if len(headerParts) != 2 {
+				diags.Append(fwdiags.NewErrorDiagnostic("Invalid header format", "Headers must be in the format 'key:value'"))
+				return nil, diags
+			}
+			// trim the strings to remove any leading/trailing whitespace
+			config.config.Header.Add(strings.TrimSpace(headerParts[0]), strings.TrimSpace(headerParts[1]))
+		}
 	}
 
 	if esConfig.BearerToken.ValueString() != "" {
