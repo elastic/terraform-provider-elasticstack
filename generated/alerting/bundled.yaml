@@ -1635,7 +1635,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/401_response"
-  /s/{spaceId}/api/alerting/maintenance_window:
+  /s/{spaceId}/api/maintenance_window:
     post:
       summary: Create a maintenance window.
       description: "[Required authorization] Route required privileges: ALL of [write-maintenance-window]."
@@ -1661,7 +1661,7 @@ paths:
           description: Indicates an invalid schema or parameters.
         "403":
           description: Indicates that this call is forbidden.
-  /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}:
+  /s/{spaceId}/api/maintenance_window/{maintenanceWindowId}:
     get:
       summary: Get a maintenance window
       description: "Get a maintenance window by ID.<br/><br/>[Required authorization] Route required privileges: ALL of [read-maintenance-window]."

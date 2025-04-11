@@ -629,7 +629,7 @@ func (a *AlertingAPIService) CreateMaintenanceWindowExecute(r ApiCreateMaintenan
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/s/{spaceId}/api/alerting/maintenance_window"
+	localVarPath := localBasePath + "/s/{spaceId}/api/maintenance_window"
 	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
@@ -1086,7 +1086,7 @@ func (a *AlertingAPIService) DeleteMaintenanceWindowExecute(r ApiDeleteMaintenan
 		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/maintenance_window/{maintenanceWindowId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"maintenanceWindowId"+"}", url.PathEscape(parameterValueToString(r.maintenanceWindowId, "maintenanceWindowId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
@@ -2005,7 +2005,7 @@ func (a *AlertingAPIService) GetMaintenanceWindowExecute(r ApiGetMaintenanceWind
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/maintenance_window/{maintenanceWindowId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"maintenanceWindowId"+"}", url.PathEscape(parameterValueToString(r.maintenanceWindowId, "maintenanceWindowId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 
@@ -4857,7 +4857,7 @@ func (a *AlertingAPIService) UpdateMaintenanceWindowExecute(r ApiUpdateMaintenan
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}"
+	localVarPath := localBasePath + "/s/{spaceId}/api/maintenance_window/{maintenanceWindowId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"maintenanceWindowId"+"}", url.PathEscape(parameterValueToString(r.maintenanceWindowId, "maintenanceWindowId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"spaceId"+"}", url.PathEscape(parameterValueToString(r.spaceId, "spaceId")), -1)
 

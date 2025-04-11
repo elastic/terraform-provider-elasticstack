@@ -1065,7 +1065,7 @@ paths:
       summary: Unmutes an alert instance.
       tags:
       - alerting
-  /s/{spaceId}/api/alerting/maintenance_window:
+  /s/{spaceId}/api/maintenance_window:
     post:
       description: "[Required authorization] Route required privileges: ALL of [write-maintenance-window]."
       operationId: createMaintenanceWindow
@@ -1091,7 +1091,7 @@ paths:
       summary: Create a maintenance window.
       tags:
       - alerting
-  /s/{spaceId}/api/alerting/maintenance_window/{maintenanceWindowId}:
+  /s/{spaceId}/api/maintenance_window/{maintenanceWindowId}:
     delete:
       description: "Delete a maintenance window by ID.<br/><br/>[Required authorization]\
         \ Route required privileges: ALL of [write-maintenance-window]."
