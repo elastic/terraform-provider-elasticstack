@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add `global_data_tags` to fleet agent policies. ([#1044](https://github.com/elastic/terraform-provider-elasticstack/pull/1044))
+
 ## [0.11.14] - 2025-03-17
 
 - Fix a provider crash when interacting with elasticstack_kibana_data_view resources created with 0.11.0. ([#979](https://github.com/elastic/terraform-provider-elasticstack/pull/979))

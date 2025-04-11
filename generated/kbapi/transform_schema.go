@@ -838,6 +838,12 @@ func transformFleetPaths(schema *Schema) {
 		agentPolicyPath.Put.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
 	}
 
+	schema.Components.CreateRef(schema, "agent_policy_global_data_tags_item", "schemas.agent_policy.properties.global_data_tags.items")
+
+	// Define the value types for the GlobalDataTags
+	agentPoliciesPath.Post.Set("requestBody.content.application/json.schema.properties.global_data_tags.items.$ref", "#/components/schemas/agent_policy_global_data_tags_item")
+	agentPolicyPath.Put.Set("requestBody.content.application/json.schema.properties.global_data_tags.items.$ref", "#/components/schemas/agent_policy_global_data_tags_item")
+
 	// Enrollment api keys
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/enrollment_api_key.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/enrollment_api_key.ts
