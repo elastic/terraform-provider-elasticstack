@@ -22,7 +22,16 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	body := planModel.toAPICreateModel()
+	sVersion, e := r.client.ServerVersion(ctx)
+	if e != nil {
+		return
+	}
+
+	body, diags := planModel.toAPICreateModel(ctx, sVersion)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	sysMonitoring := planModel.SysMonitoring.ValueBool()
 	policy, diags := fleet.CreateAgentPolicy(ctx, client, body, sysMonitoring)
@@ -31,7 +40,11 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	planModel.populateFromAPI(policy)
+	diags = planModel.populateFromAPI(ctx, policy)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

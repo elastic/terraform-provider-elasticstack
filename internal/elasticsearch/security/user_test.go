@@ -134,7 +134,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					}
 					body := fmt.Sprintf("{\"password\": \"%s\"}", userUpdatedPassword)
 
-					req := esClient.API.Security.ChangePassword.WithUsername(username)
+					req := esClient.Security.ChangePassword.WithUsername(username)
 					resp, err := esClient.Security.ChangePassword(strings.NewReader(body), req)
 					if err != nil {
 						return false, nil
@@ -175,7 +175,7 @@ func checkUserCanAuthenticate(username string, password string) func(*terraform.
 		credentials := fmt.Sprintf("%s:%s", username, password)
 		authHeader := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(credentials)))
 
-		req := esClient.API.Security.Authenticate.WithHeader(map[string]string{"Authorization": authHeader})
+		req := esClient.Security.Authenticate.WithHeader(map[string]string{"Authorization": authHeader})
 		resp, err := esClient.Security.Authenticate(req)
 		if err != nil {
 			return err

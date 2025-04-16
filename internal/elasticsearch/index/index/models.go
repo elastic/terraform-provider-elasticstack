@@ -444,7 +444,7 @@ func (model tfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (at
 }
 
 func convertSettingsKeyToTFFieldKey(settingKey string) string {
-	return strings.Replace(settingKey, ".", "_", -1)
+	return strings.ReplaceAll(settingKey, ".", "_")
 }
 
 func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
