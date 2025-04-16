@@ -72,7 +72,7 @@ func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
-				"headers": fwschema.ListAttribute{
+				"headers": fwschema.MapAttribute{
 					MarkdownDescription: "A list of headers to be sent with each request to Elasticsearch.",
 					Optional:            true,
 					Sensitive:           true,
@@ -319,7 +319,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 				},
 				"headers": {
 					Description: "A list of headers to be sent with each request to Elasticsearch.",
-					Type:        schema.TypeList,
+					Type:        schema.TypeMap,
 					Optional:    true,
 					Sensitive:   true,
 					Elem: &schema.Schema{
