@@ -22,7 +22,17 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	body := planModel.toAPIUpdateModel()
+	sVersion, e := r.client.ServerVersion(ctx)
+	if e != nil {
+		return
+	}
+
+	body, diags := planModel.toAPIUpdateModel(ctx, sVersion)
+
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	policyID := planModel.PolicyID.ValueString()
 	policy, diags := fleet.UpdateAgentPolicy(ctx, client, policyID, body)
@@ -31,7 +41,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	planModel.populateFromAPI(policy)
+	planModel.populateFromAPI(ctx, policy)
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

@@ -48,3 +48,16 @@ Create a PR and check acceptance test matrix is green.
 ## Run provider with local terraform
 
 TBD
+
+## Releasing
+
+Releasing is implemented in CI pipeline.
+
+To release a new provider version:
+
+* Create PR which
+- updates Makefile with the new provider VERSION (e.g. `VERSION ?= 0.11.13`);
+- updates CHANGELOG.md with the list of changes being released.
+[Example](https://github.com/elastic/terraform-provider-elasticstack/commit/be866ebc918184e843dc1dd2f6e2e1b963da386d).
+
+* Once the PR merged, the release CI pipeline can be started by pushing a new release tag to `main` branch.

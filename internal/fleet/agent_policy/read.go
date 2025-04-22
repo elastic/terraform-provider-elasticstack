@@ -34,7 +34,11 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	stateModel.populateFromAPI(policy)
+	diags = stateModel.populateFromAPI(ctx, policy)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)

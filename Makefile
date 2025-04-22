@@ -1,8 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-
-VERSION ?= 0.11.13
+VERSION ?= 0.11.14
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -246,13 +245,17 @@ install: build ## Install built provider into the local terraform cache
 
 
 .PHONY: tools
-tools: $(GOBIN) ## Install useful tools for linting, docs generation and development
+tools: $(GOBIN) tools-golangci-lint ## Install useful tools for linting, docs generation and development
 	@ cd tools && go install github.com/client9/misspell/cmd/misspell
 	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	@ cd tools && go install github.com/goreleaser/goreleaser/v2
 	@ cd tools && go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 	@ cd tools && go install go.uber.org/mock/mockgen
+
+.PHONY: tools-golangci-lint
+tools-golangci-lint: ## Download golangci-lint locally if necessary.
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.0.2
+
 
 .PHONY: misspell
 misspell:

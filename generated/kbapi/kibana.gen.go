@@ -812,17 +812,14 @@ type AgentPolicy struct {
 	FleetServerHostId *string  `json:"fleet_server_host_id"`
 
 	// GlobalDataTags User defined data tags that are added to all of the inputs. The values can be strings or numbers.
-	GlobalDataTags *[]struct {
-		Name  string                           `json:"name"`
-		Value AgentPolicy_GlobalDataTags_Value `json:"value"`
-	} `json:"global_data_tags,omitempty"`
-	HasFleetServer       *bool    `json:"has_fleet_server,omitempty"`
-	Id                   string   `json:"id"`
-	InactivityTimeout    *float32 `json:"inactivity_timeout,omitempty"`
-	IsDefault            *bool    `json:"is_default,omitempty"`
-	IsDefaultFleetServer *bool    `json:"is_default_fleet_server,omitempty"`
-	IsManaged            bool     `json:"is_managed"`
-	IsPreconfigured      *bool    `json:"is_preconfigured,omitempty"`
+	GlobalDataTags       *[]AgentPolicyGlobalDataTagsItem `json:"global_data_tags,omitempty"`
+	HasFleetServer       *bool                            `json:"has_fleet_server,omitempty"`
+	Id                   string                           `json:"id"`
+	InactivityTimeout    *float32                         `json:"inactivity_timeout,omitempty"`
+	IsDefault            *bool                            `json:"is_default,omitempty"`
+	IsDefaultFleetServer *bool                            `json:"is_default_fleet_server,omitempty"`
+	IsManaged            bool                             `json:"is_managed"`
+	IsPreconfigured      *bool                            `json:"is_preconfigured,omitempty"`
 
 	// IsProtected Indicates whether the agent policy has tamper protection enabled. Default false.
 	IsProtected bool `json:"is_protected"`
@@ -869,17 +866,6 @@ type AgentPolicy struct {
 	UpdatedAt          string   `json:"updated_at"`
 	UpdatedBy          string   `json:"updated_by"`
 	Version            *string  `json:"version,omitempty"`
-}
-
-// AgentPolicyGlobalDataTagsValue0 defines model for .
-type AgentPolicyGlobalDataTagsValue0 = string
-
-// AgentPolicyGlobalDataTagsValue1 defines model for .
-type AgentPolicyGlobalDataTagsValue1 = float32
-
-// AgentPolicy_GlobalDataTags_Value defines model for AgentPolicy.GlobalDataTags.Value.
-type AgentPolicy_GlobalDataTags_Value struct {
-	union json.RawMessage
 }
 
 // AgentPolicyMonitoringEnabled defines model for AgentPolicy.MonitoringEnabled.
@@ -1027,6 +1013,23 @@ type AgentPolicy_PackagePolicies struct {
 
 // AgentPolicyStatus defines model for AgentPolicy.Status.
 type AgentPolicyStatus string
+
+// AgentPolicyGlobalDataTagsItem defines model for agent_policy_global_data_tags_item.
+type AgentPolicyGlobalDataTagsItem struct {
+	Name  string                              `json:"name"`
+	Value AgentPolicyGlobalDataTagsItem_Value `json:"value"`
+}
+
+// AgentPolicyGlobalDataTagsItemValue0 defines model for .
+type AgentPolicyGlobalDataTagsItemValue0 = string
+
+// AgentPolicyGlobalDataTagsItemValue1 defines model for .
+type AgentPolicyGlobalDataTagsItemValue1 = float32
+
+// AgentPolicyGlobalDataTagsItem_Value defines model for AgentPolicyGlobalDataTagsItem.Value.
+type AgentPolicyGlobalDataTagsItem_Value struct {
+	union json.RawMessage
+}
 
 // EnrollmentApiKey defines model for enrollment_api_key.
 type EnrollmentApiKey struct {
@@ -2458,17 +2461,14 @@ type PostFleetAgentPoliciesJSONBody struct {
 	Force             *bool   `json:"force,omitempty"`
 
 	// GlobalDataTags User defined data tags that are added to all of the inputs. The values can be strings or numbers.
-	GlobalDataTags *[]struct {
-		Name  string                                              `json:"name"`
-		Value PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value `json:"value"`
-	} `json:"global_data_tags,omitempty"`
-	HasFleetServer       *bool    `json:"has_fleet_server,omitempty"`
-	Id                   *string  `json:"id,omitempty"`
-	InactivityTimeout    *float32 `json:"inactivity_timeout,omitempty"`
-	IsDefault            *bool    `json:"is_default,omitempty"`
-	IsDefaultFleetServer *bool    `json:"is_default_fleet_server,omitempty"`
-	IsManaged            *bool    `json:"is_managed,omitempty"`
-	IsProtected          *bool    `json:"is_protected,omitempty"`
+	GlobalDataTags       *[]AgentPolicyGlobalDataTagsItem `json:"global_data_tags,omitempty"`
+	HasFleetServer       *bool                            `json:"has_fleet_server,omitempty"`
+	Id                   *string                          `json:"id,omitempty"`
+	InactivityTimeout    *float32                         `json:"inactivity_timeout,omitempty"`
+	IsDefault            *bool                            `json:"is_default,omitempty"`
+	IsDefaultFleetServer *bool                            `json:"is_default_fleet_server,omitempty"`
+	IsManaged            *bool                            `json:"is_managed,omitempty"`
+	IsProtected          *bool                            `json:"is_protected,omitempty"`
 
 	// KeepMonitoringAlive When set to true, monitoring will be enabled but logs/metrics collection will be disabled
 	KeepMonitoringAlive   *bool `json:"keep_monitoring_alive,omitempty"`
@@ -2512,17 +2512,6 @@ type PostFleetAgentPoliciesParams struct {
 	SysMonitoring *bool `form:"sys_monitoring,omitempty" json:"sys_monitoring,omitempty"`
 }
 
-// PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue0 defines parameters for PostFleetAgentPolicies.
-type PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue0 = string
-
-// PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue1 defines parameters for PostFleetAgentPolicies.
-type PostFleetAgentPoliciesJSONBodyGlobalDataTagsValue1 = float32
-
-// PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value defines parameters for PostFleetAgentPolicies.
-type PostFleetAgentPoliciesJSONBody_GlobalDataTags_Value struct {
-	union json.RawMessage
-}
-
 // PostFleetAgentPoliciesJSONBodyMonitoringEnabled defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesJSONBodyMonitoringEnabled string
 
@@ -2562,17 +2551,14 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	Force             *bool   `json:"force,omitempty"`
 
 	// GlobalDataTags User defined data tags that are added to all of the inputs. The values can be strings or numbers.
-	GlobalDataTags *[]struct {
-		Name  string                                                          `json:"name"`
-		Value PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value `json:"value"`
-	} `json:"global_data_tags,omitempty"`
-	HasFleetServer       *bool    `json:"has_fleet_server,omitempty"`
-	Id                   *string  `json:"id,omitempty"`
-	InactivityTimeout    *float32 `json:"inactivity_timeout,omitempty"`
-	IsDefault            *bool    `json:"is_default,omitempty"`
-	IsDefaultFleetServer *bool    `json:"is_default_fleet_server,omitempty"`
-	IsManaged            *bool    `json:"is_managed,omitempty"`
-	IsProtected          *bool    `json:"is_protected,omitempty"`
+	GlobalDataTags       *[]AgentPolicyGlobalDataTagsItem `json:"global_data_tags,omitempty"`
+	HasFleetServer       *bool                            `json:"has_fleet_server,omitempty"`
+	Id                   *string                          `json:"id,omitempty"`
+	InactivityTimeout    *float32                         `json:"inactivity_timeout,omitempty"`
+	IsDefault            *bool                            `json:"is_default,omitempty"`
+	IsDefaultFleetServer *bool                            `json:"is_default_fleet_server,omitempty"`
+	IsManaged            *bool                            `json:"is_managed,omitempty"`
+	IsProtected          *bool                            `json:"is_protected,omitempty"`
 
 	// KeepMonitoringAlive When set to true, monitoring will be enabled but logs/metrics collection will be disabled
 	KeepMonitoringAlive   *bool `json:"keep_monitoring_alive,omitempty"`
@@ -2618,17 +2604,6 @@ type PutFleetAgentPoliciesAgentpolicyidParams struct {
 
 // PutFleetAgentPoliciesAgentpolicyidParamsFormat defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidParamsFormat string
-
-// PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue0 defines parameters for PutFleetAgentPoliciesAgentpolicyid.
-type PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue0 = string
-
-// PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue1 defines parameters for PutFleetAgentPoliciesAgentpolicyid.
-type PutFleetAgentPoliciesAgentpolicyidJSONBodyGlobalDataTagsValue1 = float32
-
-// PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value defines parameters for PutFleetAgentPoliciesAgentpolicyid.
-type PutFleetAgentPoliciesAgentpolicyidJSONBody_GlobalDataTags_Value struct {
-	union json.RawMessage
-}
 
 // PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled string
@@ -10231,68 +10206,6 @@ func (a PackagePolicy_Elasticsearch) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// AsAgentPolicyGlobalDataTagsValue0 returns the union data inside the AgentPolicy_GlobalDataTags_Value as a AgentPolicyGlobalDataTagsValue0
-func (t AgentPolicy_GlobalDataTags_Value) AsAgentPolicyGlobalDataTagsValue0() (AgentPolicyGlobalDataTagsValue0, error) {
-	var body AgentPolicyGlobalDataTagsValue0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyGlobalDataTagsValue0 overwrites any union data inside the AgentPolicy_GlobalDataTags_Value as the provided AgentPolicyGlobalDataTagsValue0
-func (t *AgentPolicy_GlobalDataTags_Value) FromAgentPolicyGlobalDataTagsValue0(v AgentPolicyGlobalDataTagsValue0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyGlobalDataTagsValue0 performs a merge with any union data inside the AgentPolicy_GlobalDataTags_Value, using the provided AgentPolicyGlobalDataTagsValue0
-func (t *AgentPolicy_GlobalDataTags_Value) MergeAgentPolicyGlobalDataTagsValue0(v AgentPolicyGlobalDataTagsValue0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentPolicyGlobalDataTagsValue1 returns the union data inside the AgentPolicy_GlobalDataTags_Value as a AgentPolicyGlobalDataTagsValue1
-func (t AgentPolicy_GlobalDataTags_Value) AsAgentPolicyGlobalDataTagsValue1() (AgentPolicyGlobalDataTagsValue1, error) {
-	var body AgentPolicyGlobalDataTagsValue1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromAgentPolicyGlobalDataTagsValue1 overwrites any union data inside the AgentPolicy_GlobalDataTags_Value as the provided AgentPolicyGlobalDataTagsValue1
-func (t *AgentPolicy_GlobalDataTags_Value) FromAgentPolicyGlobalDataTagsValue1(v AgentPolicyGlobalDataTagsValue1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeAgentPolicyGlobalDataTagsValue1 performs a merge with any union data inside the AgentPolicy_GlobalDataTags_Value, using the provided AgentPolicyGlobalDataTagsValue1
-func (t *AgentPolicy_GlobalDataTags_Value) MergeAgentPolicyGlobalDataTagsValue1(v AgentPolicyGlobalDataTagsValue1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t AgentPolicy_GlobalDataTags_Value) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *AgentPolicy_GlobalDataTags_Value) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // AsAgentPolicyPackagePolicies0 returns the union data inside the AgentPolicy_PackagePolicies as a AgentPolicyPackagePolicies0
 func (t AgentPolicy_PackagePolicies) AsAgentPolicyPackagePolicies0() (AgentPolicyPackagePolicies0, error) {
 	var body AgentPolicyPackagePolicies0
@@ -10351,6 +10264,68 @@ func (t AgentPolicy_PackagePolicies) MarshalJSON() ([]byte, error) {
 }
 
 func (t *AgentPolicy_PackagePolicies) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyGlobalDataTagsItemValue0 returns the union data inside the AgentPolicyGlobalDataTagsItem_Value as a AgentPolicyGlobalDataTagsItemValue0
+func (t AgentPolicyGlobalDataTagsItem_Value) AsAgentPolicyGlobalDataTagsItemValue0() (AgentPolicyGlobalDataTagsItemValue0, error) {
+	var body AgentPolicyGlobalDataTagsItemValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyGlobalDataTagsItemValue0 overwrites any union data inside the AgentPolicyGlobalDataTagsItem_Value as the provided AgentPolicyGlobalDataTagsItemValue0
+func (t *AgentPolicyGlobalDataTagsItem_Value) FromAgentPolicyGlobalDataTagsItemValue0(v AgentPolicyGlobalDataTagsItemValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyGlobalDataTagsItemValue0 performs a merge with any union data inside the AgentPolicyGlobalDataTagsItem_Value, using the provided AgentPolicyGlobalDataTagsItemValue0
+func (t *AgentPolicyGlobalDataTagsItem_Value) MergeAgentPolicyGlobalDataTagsItemValue0(v AgentPolicyGlobalDataTagsItemValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyGlobalDataTagsItemValue1 returns the union data inside the AgentPolicyGlobalDataTagsItem_Value as a AgentPolicyGlobalDataTagsItemValue1
+func (t AgentPolicyGlobalDataTagsItem_Value) AsAgentPolicyGlobalDataTagsItemValue1() (AgentPolicyGlobalDataTagsItemValue1, error) {
+	var body AgentPolicyGlobalDataTagsItemValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyGlobalDataTagsItemValue1 overwrites any union data inside the AgentPolicyGlobalDataTagsItem_Value as the provided AgentPolicyGlobalDataTagsItemValue1
+func (t *AgentPolicyGlobalDataTagsItem_Value) FromAgentPolicyGlobalDataTagsItemValue1(v AgentPolicyGlobalDataTagsItemValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyGlobalDataTagsItemValue1 performs a merge with any union data inside the AgentPolicyGlobalDataTagsItem_Value, using the provided AgentPolicyGlobalDataTagsItemValue1
+func (t *AgentPolicyGlobalDataTagsItem_Value) MergeAgentPolicyGlobalDataTagsItemValue1(v AgentPolicyGlobalDataTagsItemValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicyGlobalDataTagsItem_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicyGlobalDataTagsItem_Value) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
