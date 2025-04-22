@@ -15,7 +15,7 @@ import (
 )
 
 func validateMinMaintenanceWindowServerVersion(serverVersion *version.Version) diag.Diagnostics {
-	var maintenanceWindowPublicAPIMinSupportedVersion = version.Must(version.NewVersion("9.1.0"))
+	var maintenanceWindowPublicAPIMinSupportedVersion = version.Must(version.NewVersion("8.1.0"))
 	var diags diag.Diagnostics
 
 	if serverVersion.LessThan(maintenanceWindowPublicAPIMinSupportedVersion) {
