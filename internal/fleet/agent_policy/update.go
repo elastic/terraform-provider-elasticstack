@@ -24,6 +24,9 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 
 	sVersion, e := r.client.ServerVersion(ctx)
 	if e != nil {
+		for _, a := range e {
+			resp.Diagnostics.AddError(a.Summary, a.Detail)
+		}
 		return
 	}
 
