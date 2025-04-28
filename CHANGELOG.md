@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.15] - 2025-04-23
+
 - Add `global_data_tags` to fleet agent policies. ([#1044](https://github.com/elastic/terraform-provider-elasticstack/pull/1044))
 
 ## [0.11.14] - 2025-03-17

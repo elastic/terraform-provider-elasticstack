@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.11.14
+VERSION ?= 0.11.15
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -254,7 +254,7 @@ tools: $(GOBIN) tools-golangci-lint ## Install useful tools for linting, docs ge
 
 .PHONY: tools-golangci-lint
 tools-golangci-lint: ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.0.2
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.1.5
 
 
 .PHONY: misspell

@@ -363,12 +363,14 @@ func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.D
 func (a *ApiClient) versionFromKibana() (*version.Version, diag.Diagnostics) {
 	kibClient, err := a.GetKibanaClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diag.Errorf("failed to get version from Kibana API: %s, "+
+			"please ensure a working 'kibana' endpoint is configured", err.Error())
 	}
 
 	status, err := kibClient.KibanaStatus.Get()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diag.Errorf("failed to get version from Kibana API: %s, "+
+			"Please ensure a working 'kibana' endpoint is configured", err.Error())
 	}
 
 	vMap, ok := status["version"].(map[string]interface{})
