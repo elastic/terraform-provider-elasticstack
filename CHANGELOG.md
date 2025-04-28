@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add `headers` for the provider connection ([#1057](https://github.com/elastic/terraform-provider-elasticstack/pull/1057))
+
 ## [0.11.15] - 2025-04-23
 
 - Add `global_data_tags` to fleet agent policies. ([#1044](https://github.com/elastic/terraform-provider-elasticstack/pull/1044))
