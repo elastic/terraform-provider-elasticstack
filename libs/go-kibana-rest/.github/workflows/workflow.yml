@@ -36,7 +36,7 @@ jobs:
           until $(curl --output /dev/null --silent --head --fail -u elastic:changeme http://localhost:5601); do sleep 5; done
           sleep 10
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7
+        uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7
         with:
           version: latest
           args: --timeout 600s
