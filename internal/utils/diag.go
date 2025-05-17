@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/go-elasticsearch/v9/esapi"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
