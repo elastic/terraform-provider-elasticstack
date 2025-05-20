@@ -116,12 +116,6 @@ func ResourceMaintenanceWindow() *schema.Resource {
 										ValidateFunc: validation.IntBetween(1, 12),
 									},
 								},
-								"occurrences": {
-									Description:  "The total number of recurrences of the schedule.",
-									Type:         schema.TypeInt,
-									Optional:     true,
-									ValidateFunc: validation.IntAtLeast(0),
-								},
 							},
 						},
 					},
@@ -248,11 +242,6 @@ func getScheduleFromResourceData(d *schema.ResourceData) (models.MaintenanceWind
 			}
 			recurring.OnMonth = &monthArray
 
-		}
-
-		if v, ok := d.GetOk("custom_schedule.0.recurring.0.occurrences"); ok {
-			occurrences := v.(int)
-			recurring.Occurrences = utils.Pointer(float32(occurrences))
 		}
 
 		schedule.Recurring = &recurring
@@ -402,7 +391,6 @@ func resourceMaintenanceWindowRead(ctx context.Context, d *schema.ResourceData, 
 			"on_week_day":  maintenanceWindow.CustomSchedule.Recurring.OnWeekDay,
 			"on_month_day": maintenanceWindow.CustomSchedule.Recurring.OnMonthDay,
 			"on_month":     maintenanceWindow.CustomSchedule.Recurring.OnMonth,
-			"occurrences":  maintenanceWindow.CustomSchedule.Recurring.Occurrences,
 		})
 	} else {
 		recurring = nil

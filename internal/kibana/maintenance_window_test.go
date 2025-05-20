@@ -37,7 +37,6 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.0.recurring.0.end", "2029-05-17T05:05:00.000Z"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.0.recurring.0.on_week_day.0", "MO"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.0.recurring.0.on_week_day.1", "TU"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.0.recurring.0.occurrences", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "scope.0.alerting.0.kql", "_id: '1234'"),
 				),
 			},
@@ -57,7 +56,6 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.0.recurring.0.on_month_day.2", "3"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.0.recurring.0.on_month.0", "4"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.0.recurring.0.on_month.1", "5"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.0.recurring.0.occurrences", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "scope.0.alerting.0.kql", "_id: 'foobar'"),
 				),
 			},
@@ -82,7 +80,6 @@ resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
       every       = "20d"
       end         = "2029-05-17T05:05:00.000Z"
       on_week_day = ["MO", "TU"]
-	  occurrences = 0
     }
   }
 
@@ -111,7 +108,6 @@ resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
       every        = "21d"
 	  on_month_day = [1, 2, 3]
 	  on_month 	   = [4, 5]
-	  occurrences  = 10
     }
   }
 

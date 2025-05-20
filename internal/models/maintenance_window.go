@@ -25,10 +25,9 @@ type MaintenanceWindowSchedule struct {
 }
 
 type MaintenanceWindowScheduleRecurring struct {
-	End         *string
-	Every       *string
-	OnWeekDay   *[]string
-	OnMonthDay  *[]float32
-	OnMonth     *[]float32
-	Occurrences *float32
+	End        *string
+	Every      *string
+	OnWeekDay  *[]string
+	OnMonthDay *[]float32
+	OnMonth    *[]float32
 }

@@ -26,12 +26,11 @@ func maintenanceWindowResponseToModel(spaceId string, res *alerting.MaintenanceW
 		unwrappedRecurring := unwrapOptionalField(res.Schedule.Custom.Recurring)
 
 		recurring = &models.MaintenanceWindowScheduleRecurring{
-			End:         unwrappedRecurring.End,
-			Every:       unwrappedRecurring.Every,
-			Occurrences: unwrappedRecurring.Occurrences,
-			OnWeekDay:   &unwrappedRecurring.OnWeekDay,
-			OnMonthDay:  &unwrappedRecurring.OnMonthDay,
-			OnMonth:     &unwrappedRecurring.OnMonth,
+			End:        unwrappedRecurring.End,
+			Every:      unwrappedRecurring.Every,
+			OnWeekDay:  &unwrappedRecurring.OnWeekDay,
+			OnMonthDay: &unwrappedRecurring.OnMonthDay,
+			OnMonth:    &unwrappedRecurring.OnMonth,
 		}
 	}
 
@@ -91,12 +90,11 @@ func CreateMaintenanceWindow(ctx context.Context, apiClient ApiClient, maintenan
 		unwrappedOnMonth := unwrapOptionalField(unwrappedRecurring.OnMonth)
 
 		recurring = &alerting.CreateMaintenanceWindowRequestScheduleCustomRecurring{
-			End:         unwrappedRecurring.End,
-			Every:       unwrappedRecurring.Every,
-			Occurrences: unwrappedRecurring.Occurrences,
-			OnWeekDay:   unwrappedOnWeekDay,
-			OnMonthDay:  unwrappedOnMonthDay,
-			OnMonth:     unwrappedOnMonth,
+			End:        unwrappedRecurring.End,
+			Every:      unwrappedRecurring.Every,
+			OnWeekDay:  unwrappedOnWeekDay,
+			OnMonthDay: unwrappedOnMonthDay,
+			OnMonth:    unwrappedOnMonth,
 		}
 	}
 
@@ -215,12 +213,11 @@ func UpdateMaintenanceWindow(ctx context.Context, apiClient ApiClient, maintenan
 		unwrappedOnMonth := unwrapOptionalField(unwrappedRecurring.OnMonth)
 
 		recurring = &alerting.CreateMaintenanceWindowRequestScheduleCustomRecurring{
-			End:         unwrappedRecurring.End,
-			Every:       unwrappedRecurring.Every,
-			Occurrences: unwrappedRecurring.Occurrences,
-			OnWeekDay:   unwrappedOnWeekDay,
-			OnMonthDay:  unwrappedOnMonthDay,
-			OnMonth:     unwrappedOnMonth,
+			End:        unwrappedRecurring.End,
+			Every:      unwrappedRecurring.Every,
+			OnWeekDay:  unwrappedOnWeekDay,
+			OnMonthDay: unwrappedOnMonthDay,
+			OnMonth:    unwrappedOnMonth,
 		}
 	}
 
