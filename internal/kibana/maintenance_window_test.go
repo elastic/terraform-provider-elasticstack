@@ -14,9 +14,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccResourceMaintenanceWindow(t *testing.T) {
+func CheckMinVersionAndServerless() (bool, error) {
 	minSupportedVersion := version.Must(version.NewSemver("9.1.0"))
+	versionIsUnsupported, err := versionutils.CheckIfVersionIsUnsupported(minSupportedVersion)()
+	if err != nil {
+		return false, err
+	}
 
+	isServerless, err := versionutils.CheckIfServerless()()
+	if err != nil {
+		return false, err
+	}
+
+	return versionIsUnsupported && !isServerless, err
+}
+
+func TestAccResourceMaintenanceWindow(t *testing.T) {
 	t.Setenv("KIBANA_API_KEY", "")
 
 	resource.Test(t, resource.TestCase{
@@ -25,7 +38,7 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				SkipFunc: CheckMinVersionAndServerless,
 				Config:   testAccResourceMaintenanceWindowCreate,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window"),
@@ -41,7 +54,7 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				SkipFunc: CheckMinVersionAndServerless,
 				Config:   testAccResourceMaintenanceWindowUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window UPDATED"),
@@ -65,6 +78,7 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 
 const testAccResourceMaintenanceWindowCreate = `
 provider "elasticstack" {
+  elasticsearch {}
   kibana {}
 }
 
@@ -93,6 +107,7 @@ resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
 
 const testAccResourceMaintenanceWindowUpdate = `
 provider "elasticstack" {
+  elasticsearch {}
   kibana {}
 }
 

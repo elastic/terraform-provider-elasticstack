@@ -14,15 +14,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func validateMinMaintenanceWindowServerVersion(serverVersion *version.Version) diag.Diagnostics {
-	var maintenanceWindowPublicAPIMinSupportedVersion = version.Must(version.NewVersion("8.1.0"))
+func validateMaintenanceWindowServer(serverVersion *version.Version, serverFlavor string) diag.Diagnostics {
+	var serverlessFlavor = "serverless"
+	var maintenanceWindowPublicAPIMinSupportedVersion = version.Must(version.NewVersion("9.1.0"))
 	var diags diag.Diagnostics
 
-	if serverVersion.LessThan(maintenanceWindowPublicAPIMinSupportedVersion) {
+	if serverVersion.LessThan(maintenanceWindowPublicAPIMinSupportedVersion) && serverFlavor != serverlessFlavor {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Maintenance window API not supported",
-			Detail:   fmt.Sprintf(`The maintenance Window public API feature requires a minimum Elasticsearch version of "%s"`, maintenanceWindowPublicAPIMinSupportedVersion),
+			Detail:   fmt.Sprintf(`The maintenance Window public API feature requires a minimum Elasticsearch version of "%s" or a serverless Kibana instance.`, maintenanceWindowPublicAPIMinSupportedVersion),
 		})
 		return diags
 	}
@@ -261,7 +262,12 @@ func resourceMaintenanceWindowCreate(ctx context.Context, d *schema.ResourceData
 		return diags
 	}
 
-	diags = validateMinMaintenanceWindowServerVersion(serverVersion)
+	serverFlavor, diags := client.ServerFlavor(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
 	if diags.HasError() {
 		return diags
 	}
@@ -295,7 +301,12 @@ func resourceMaintenanceWindowUpdate(ctx context.Context, d *schema.ResourceData
 		return diags
 	}
 
-	diags = validateMinMaintenanceWindowServerVersion(serverVersion)
+	serverFlavor, diags := client.ServerFlavor(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
 	if diags.HasError() {
 		return diags
 	}
@@ -333,7 +344,12 @@ func resourceMaintenanceWindowRead(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
-	diags = validateMinMaintenanceWindowServerVersion(serverVersion)
+	serverFlavor, diags := client.ServerFlavor(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
 	if diags.HasError() {
 		return diags
 	}
@@ -421,7 +437,12 @@ func resourceMaintenanceWindowDelete(ctx context.Context, d *schema.ResourceData
 		return diags
 	}
 
-	diags = validateMinMaintenanceWindowServerVersion(serverVersion)
+	serverFlavor, diags := client.ServerFlavor(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
 	if diags.HasError() {
 		return diags
 	}
