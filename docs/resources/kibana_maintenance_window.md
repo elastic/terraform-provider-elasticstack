@@ -50,7 +50,6 @@ Optional:
 
 - `end` (String) The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
 - `every` (String) The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
-- `occurrences` (Number) The total number of recurrences of the schedule.
 - `on_month` (List of Number) The specific months for a recurring schedule. Valid values are 1-12.
 - `on_month_day` (List of Number) The specific days of the month for a recurring schedule. Valid values are 1-31.
 - `on_week_day` (List of String) The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
