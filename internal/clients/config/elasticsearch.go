@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v9"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
