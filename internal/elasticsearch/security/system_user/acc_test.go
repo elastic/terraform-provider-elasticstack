@@ -1,4 +1,4 @@
-package security_test
+package system_user_test
 
 import (
 	"regexp"
@@ -53,7 +53,8 @@ resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_us
   username  = "remote_monitoring_user"
   password  = "new_password"
 }
-	`
+`
+
 const testAccResourceSecuritySystemUserUpdate = `
 provider "elasticstack" {
   elasticsearch {}
