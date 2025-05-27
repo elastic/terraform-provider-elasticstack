@@ -5,9 +5,10 @@ import (
 )
 
 type SystemUserData struct {
-	Id           types.String `tfsdk:"id"`
-	Username     types.String `tfsdk:"username"`
-	Password     types.String `tfsdk:"password"`
-	PasswordHash types.String `tfsdk:"password_hash"`
-	Enabled      types.Bool   `tfsdk:"enabled"`
+	Id                      types.String `tfsdk:"id"`
+	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
+	Username                types.String `tfsdk:"username"`
+	Password                types.String `tfsdk:"password"`
+	PasswordHash            types.String `tfsdk:"password_hash"`
+	Enabled                 types.Bool   `tfsdk:"enabled"`
 }

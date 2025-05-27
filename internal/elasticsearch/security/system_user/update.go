@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -28,7 +29,13 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	user, sdkDiags := elasticsearch.GetUser(ctx, r.client, usernameId)
+	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameId)
 	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...) // Keep this one
 	if diags.HasError() {
 		return diags

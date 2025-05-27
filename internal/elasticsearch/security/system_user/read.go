@@ -26,7 +26,13 @@ func (r *systemUserResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 	usernameId := compId.ResourceId
 
-	user, sdkDiags := elasticsearch.GetUser(ctx, r.client, usernameId)
+	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameId)
 	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...) // Keep this one
 	if resp.Diagnostics.HasError() {
 		return
