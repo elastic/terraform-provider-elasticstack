@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -42,6 +43,7 @@ func GetSchema() schema.Schema {
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
+					stringvalidator.ConflictsWith(path.MatchRoot("password_hash")),
 				},
 			},
 			"password_hash": schema.StringAttribute{
@@ -50,6 +52,7 @@ func GetSchema() schema.Schema {
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
+					stringvalidator.ConflictsWith(path.MatchRoot("password")),
 				},
 			},
 			"enabled": schema.BoolAttribute{
