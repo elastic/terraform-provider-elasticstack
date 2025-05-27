@@ -14,7 +14,7 @@ import (
 
 func (r *systemUserResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data SystemUserData
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...) // Keep this one
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -33,7 +33,7 @@ func (r *systemUserResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameId)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...) // Keep this one
+	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -47,5 +47,5 @@ func (r *systemUserResource) Read(ctx context.Context, req resource.ReadRequest,
 	data.Username = types.StringValue(usernameId)
 	data.Enabled = types.BoolValue(user.Enabled)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...) // Keep this one
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

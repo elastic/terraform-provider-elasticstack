@@ -17,14 +17,14 @@ import (
 func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
 	var data SystemUserData
 	var diags diag.Diagnostics
-	diags.Append(plan.Get(ctx, &data)...) // Keep this one
+	diags.Append(plan.Get(ctx, &data)...)
 	if diags.HasError() {
 		return diags
 	}
 
 	usernameId := data.Username.ValueString()
 	id, sdkDiags := r.client.ID(ctx, usernameId)
-	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...) // Keep this one
+	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
@@ -36,7 +36,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameId)
-	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...) // Keep this one
+	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
@@ -54,7 +54,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 	if userPassword.Password != nil || userPassword.PasswordHash != nil {
 		sdkDiags := elasticsearch.ChangeUserPassword(ctx, r.client, usernameId, &userPassword)
-		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...) // Keep this one
+		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 		if diags.HasError() {
 			return diags
 		}
@@ -63,10 +63,10 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	if utils.IsKnown(data.Enabled) && !data.Enabled.IsNull() && data.Enabled.ValueBool() != user.Enabled {
 		if data.Enabled.ValueBool() {
 			sdkDiags := elasticsearch.EnableUser(ctx, r.client, usernameId)
-			diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...) // Keep this one
+			diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 		} else {
 			sdkDiags := elasticsearch.DisableUser(ctx, r.client, usernameId)
-			diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...) // Keep this one
+			diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 		}
 		if diags.HasError() {
 			return diags
@@ -74,7 +74,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	data.Id = types.StringValue(id.String())
-	diags.Append(state.Set(ctx, &data)...) // Keep this one
+	diags.Append(state.Set(ctx, &data)...)
 	return diags
 }
 

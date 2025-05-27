@@ -11,7 +11,7 @@ import (
 
 func (r *systemUserResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data SystemUserData
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...) // Keep this one
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
