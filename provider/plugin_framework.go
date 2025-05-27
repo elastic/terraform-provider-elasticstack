@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agent_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollment_tokens"
@@ -100,5 +101,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		integration_policy.NewResource,
 		output.NewResource,
 		server_host.NewResource,
+		security.NewSystemUserResource,
 	}
 }
