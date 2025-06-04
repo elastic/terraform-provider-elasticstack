@@ -1,0 +1,25 @@
+---
+subcategory: "Kibana"
+layout: ""
+page_title: "Elasticstack: elasticstack_kibana_synthetics_parameter Resource"
+description: |-
+  Creates or updates a Kibana synthetics parameter.
+---
+
+# Resource: elasticstack_kibana_synthetics_parameter
+
+Creates or updates a Kibana synthetics parameter.
+See [Working with secrets and sensitive values](https://www.elastic.co/docs/solutions/observability/synthetics/work-with-params-secrets)
+and [API docs](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-synthetics)
+
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_kibana_synthetics_parameter/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+Import is supported using the following syntax:
+
+{{ codefile "shell" "examples/resources/elasticstack_kibana_synthetics_parameter/import.sh" }}
