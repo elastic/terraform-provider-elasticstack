@@ -46,6 +46,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	var userPassword models.UserPassword
+	// TB TODO Fix up this logic. It should only set the password when it's set in config
 	if utils.IsKnown(data.Password) && (user.Password == nil || data.Password.ValueString() != *user.Password) {
 		userPassword.Password = data.Password.ValueStringPointer()
 	}
@@ -53,8 +54,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 		userPassword.PasswordHash = data.PasswordHash.ValueStringPointer()
 	}
 	if userPassword.Password != nil || userPassword.PasswordHash != nil {
-		sdkDiags := elasticsearch.ChangeUserPassword(ctx, r.client, usernameId, &userPassword)
-		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+		diags.Append(elasticsearch.ChangeUserPassword(ctx, r.client, usernameId, &userPassword)...)
 		if diags.HasError() {
 			return diags
 		}
@@ -62,11 +62,9 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 
 	if utils.IsKnown(data.Enabled) && !data.Enabled.IsNull() && data.Enabled.ValueBool() != user.Enabled {
 		if data.Enabled.ValueBool() {
-			sdkDiags := elasticsearch.EnableUser(ctx, r.client, usernameId)
-			diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+			diags.Append(elasticsearch.EnableUser(ctx, r.client, usernameId)...)
 		} else {
-			sdkDiags := elasticsearch.DisableUser(ctx, r.client, usernameId)
-			diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+			diags.Append(elasticsearch.DisableUser(ctx, r.client, usernameId)...)
 		}
 		if diags.HasError() {
 			return diags
