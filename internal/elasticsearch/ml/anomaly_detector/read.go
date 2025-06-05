@@ -85,6 +85,85 @@ func (r *anomalyDetectorResource) Read(ctx context.Context, req resource.ReadReq
 	}
 	data.Groups = groupsList
 
+	// Top-level optional fields
+	if jobDetails.ModelSnapshotRetentionDays != nil {
+		data.ModelSnapshotRetentionDays = types.Int64Value(*jobDetails.ModelSnapshotRetentionDays)
+	} else {
+		data.ModelSnapshotRetentionDays = types.Int64Null()
+	}
+	if jobDetails.ResultsRetentionDays != nil {
+		data.ResultsRetentionDays = types.Int64Value(*jobDetails.ResultsRetentionDays)
+	} else {
+		data.ResultsRetentionDays = types.Int64Null()
+	}
+	if jobDetails.AllowLazyOpen != nil {
+		data.AllowLazyOpen = types.BoolValue(*jobDetails.AllowLazyOpen)
+	} else {
+		data.AllowLazyOpen = types.BoolNull()
+	}
+
+	// DailyModelSnapshotRetentionAfterDays
+	if jobDetails.DailyModelSnapshotRetentionAfterDays != nil {
+		data.DailyModelSnapshotRetentionAfterDays = types.Int64Value(*jobDetails.DailyModelSnapshotRetentionAfterDays)
+	} else {
+		data.DailyModelSnapshotRetentionAfterDays = types.Int64Null()
+	}
+
+	// Analysis Limits
+	if jobDetails.AnalysisLimits != nil {
+		analysisLimitsValues := map[string]attr.Value{}
+		if jobDetails.AnalysisLimits.ModelMemoryLimit != nil {
+			analysisLimitsValues["model_memory_limit"] = types.StringValue(*jobDetails.AnalysisLimits.ModelMemoryLimit)
+		} else {
+			analysisLimitsValues["model_memory_limit"] = types.StringNull()
+		}
+		mml := ""
+		if jobDetails.AnalysisLimits.ModelMemoryLimit != nil {
+			mml = *jobDetails.AnalysisLimits.ModelMemoryLimit
+		}
+		// CategorizationExamplesLimit
+		var celVal types.Int64
+		if jobDetails.AnalysisLimits.CategorizationExamplesLimit != nil {
+			celVal = types.Int64Value(*jobDetails.AnalysisLimits.CategorizationExamplesLimit)
+		} else {
+			celVal = types.Int64Null()
+		}
+
+		data.AnalysisLimits, diags = types.ObjectValueFrom(ctx, analysisLimitsModel{}.attrTypes(ctx, resp.Diagnostics), analysisLimitsModel{
+			ModelMemoryLimit:            types.StringValue(mml),
+			CategorizationExamplesLimit: celVal,
+		})
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	} else {
+		data.AnalysisLimits = types.ObjectNull(analysisLimitsModel{}.attrTypes(ctx, resp.Diagnostics))
+	}
+
+	// CustomSettings
+	if jobDetails.CustomSettings != nil {
+		// The API returns map[string]interface{}, but TF schema is map[string]string.
+		// We need to convert. This might lose information if non-string values are present.
+		csMap := make(map[string]string)
+		for k, v := range jobDetails.CustomSettings {
+			if vStr, ok := v.(string); ok {
+				csMap[k] = vStr
+			} else {
+				// Optionally, add a diagnostic warning about non-string custom setting ignored
+				resp.Diagnostics.AddWarning("Non-string custom setting ignored", fmt.Sprintf("Custom setting '%s' has a non-string value and will be ignored.", k))
+			}
+		}
+		customSettingsVal, diags := types.MapValueFrom(ctx, types.StringType, csMap)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		data.CustomSettings = customSettingsVal
+	} else {
+		data.CustomSettings = types.MapNull(types.StringType)
+	}
+
 	// Analysis Config
 	if jobDetails.AnalysisConfig != nil {
 		var analysisConfigDetectors []detectorModel
@@ -107,6 +186,71 @@ func (r *anomalyDetectorResource) Read(ctx context.Context, req resource.ReadReq
 			} else {
 				detector.PartitionFieldName = types.StringNull()
 			}
+			if apiDet.DetectorDescription != nil {
+				detector.DetectorDescription = types.StringValue(*apiDet.DetectorDescription)
+			} else {
+				detector.DetectorDescription = types.StringNull()
+			}
+			if apiDet.UseNull != nil {
+				detector.UseNull = types.BoolValue(*apiDet.UseNull)
+			} else {
+				detector.UseNull = types.BoolNull()
+			}
+			if apiDet.ExcludeFrequent != nil {
+				detector.ExcludeFrequent = types.StringValue(*apiDet.ExcludeFrequent)
+			} else {
+				detector.ExcludeFrequent = types.StringNull()
+			}
+			if apiDet.CustomRules != nil {
+				var customRulesModelList []customRuleModel
+				for _, apiRule := range apiDet.CustomRules {
+					crm := customRuleModel{}
+					actionsVal, actDiags := types.ListValueFrom(ctx, types.StringType, apiRule.Actions)
+					resp.Diagnostics.Append(actDiags...)
+					if resp.Diagnostics.HasError() {
+						return
+					}
+					crm.Actions = actionsVal
+
+					// Populate rule-level scope from apiRule.Scope
+					if apiRule.Scope != nil {
+						crm.Scope = types.StringValue(*apiRule.Scope)
+					} else {
+						crm.Scope = types.StringNull()
+					}
+
+					if apiRule.Conditions != nil {
+						var ruleConditionsModelList []ruleConditionModel
+						for _, apiCond := range apiRule.Conditions {
+							rcm := ruleConditionModel{
+								// Scope is now part of apiCustomRule, not apiRuleCondition from API
+								Operator: types.StringValue(apiCond.Operator),
+								Value:    types.Float64Value(apiCond.Value),
+							}
+							ruleConditionsModelList = append(ruleConditionsModelList, rcm)
+						}
+						conditionObjectType := types.ObjectType{AttrTypes: ruleConditionModel{}.attrTypes(ctx, resp.Diagnostics)}
+						conditionsVal, condDiags := types.ListValueFrom(ctx, conditionObjectType, ruleConditionsModelList)
+						resp.Diagnostics.Append(condDiags...)
+						if resp.Diagnostics.HasError() {
+							return
+						}
+						crm.Conditions = conditionsVal
+					} else {
+						crm.Conditions = types.ListNull(types.ObjectType{AttrTypes: ruleConditionModel{}.attrTypes(ctx, resp.Diagnostics)})
+					}
+					customRulesModelList = append(customRulesModelList, crm)
+				}
+				customRuleObjectType := types.ObjectType{AttrTypes: customRuleModel{}.attrTypes(ctx, resp.Diagnostics)}
+				customRulesVal, crDiags := types.ListValueFrom(ctx, customRuleObjectType, customRulesModelList)
+				resp.Diagnostics.Append(crDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				detector.CustomRules = customRulesVal
+			} else {
+				detector.CustomRules = types.ListNull(types.ObjectType{AttrTypes: customRuleModel{}.attrTypes(ctx, resp.Diagnostics)})
+			}
 			analysisConfigDetectors = append(analysisConfigDetectors, detector)
 		}
 
@@ -124,11 +268,28 @@ func (r *anomalyDetectorResource) Read(ctx context.Context, req resource.ReadReq
 		}
 
 		analysisConfigAttrTypes := analysisConfigModel{}.attrTypes(ctx, resp.Diagnostics)
-		analysisConfigObj, diags := types.ObjectValue(analysisConfigAttrTypes, map[string]attr.Value{
+		acValues := map[string]attr.Value{
 			"bucket_span": types.StringValue(jobDetails.AnalysisConfig.BucketSpan),
 			"detectors":   detectorsList,
 			"influencers": influencersList,
-		})
+		}
+		if jobDetails.AnalysisConfig.CategorizationFieldName != nil {
+			acValues["categorization_field_name"] = types.StringValue(*jobDetails.AnalysisConfig.CategorizationFieldName)
+		} else {
+			acValues["categorization_field_name"] = types.StringNull()
+		}
+		if jobDetails.AnalysisConfig.SummaryCountFieldName != nil {
+			acValues["summary_count_field_name"] = types.StringValue(*jobDetails.AnalysisConfig.SummaryCountFieldName)
+		} else {
+			acValues["summary_count_field_name"] = types.StringNull()
+		}
+		if jobDetails.AnalysisConfig.Latency != nil {
+			acValues["latency"] = types.StringValue(*jobDetails.AnalysisConfig.Latency)
+		} else {
+			acValues["latency"] = types.StringNull()
+		}
+
+		analysisConfigObj, diags := types.ObjectValue(analysisConfigAttrTypes, acValues)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -141,9 +302,15 @@ func (r *anomalyDetectorResource) Read(ctx context.Context, req resource.ReadReq
 	// Data Description
 	if jobDetails.DataDescription != nil {
 		dataDescriptionAttrTypes := dataDescriptionModel{}.attrTypes(ctx, resp.Diagnostics)
-		dataDescriptionObj, diags := types.ObjectValue(dataDescriptionAttrTypes, map[string]attr.Value{
+		ddValues := map[string]attr.Value{
 			"time_field": types.StringValue(jobDetails.DataDescription.TimeField),
-		})
+		}
+		if jobDetails.DataDescription.TimeFormat != nil {
+			ddValues["time_format"] = types.StringValue(*jobDetails.DataDescription.TimeFormat)
+		} else {
+			ddValues["time_format"] = types.StringNull()
+		}
+		dataDescriptionObj, diags := types.ObjectValue(dataDescriptionAttrTypes, ddValues)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return

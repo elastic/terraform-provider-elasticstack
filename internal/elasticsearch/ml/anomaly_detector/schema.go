@@ -66,12 +66,69 @@ func (r *anomalyDetectorResource) Schema(ctx context.Context, req resource.Schem
 									Description: "The field used to segment the analysis. When you use this property, you have completely independent baselines for each value of this field.",
 									Optional:    true,
 								},
+								"detector_description": schema.StringAttribute{
+									Description: "A description of the detector.",
+									Optional:    true,
+								},
+								"use_null": schema.BoolAttribute{
+									Description: "If true, null values are not ignored when calculating the detector statistics.",
+									Optional:    true,
+								},
+								"exclude_frequent": schema.StringAttribute{
+									Description: "One of by, over, all, or none. If set, frequent entities are excluded from influencing the anomaly results. Entities can be considered frequent by virtue of their appearance in a by field or over field.",
+									Optional:    true,
+								},
+								"custom_rules": schema.ListNestedAttribute{
+									Description: "A list of custom rules that apply to this detector.",
+									Optional:    true,
+									NestedObject: schema.NestedAttributeObject{
+										Attributes: map[string]schema.Attribute{
+											"actions": schema.ListAttribute{
+												Description: "A list of actions to take when the conditions are met.",
+												ElementType: types.StringType,
+												Required:    true,
+											},
+											"scope": schema.StringAttribute{
+												Description: "The scope to which this rule applies (e.g., anomaly_score, typical, actual). This scope applies to all conditions under this rule.",
+												Optional:    true, // A rule might have no conditions, or scope might be implicit in some API versions/contexts
+											},
+											"conditions": schema.ListNestedAttribute{
+												Description: "A list of conditions that must be met for the actions to be taken.",
+												Optional:    true, // Can have rules with actions only, though rare
+												NestedObject: schema.NestedAttributeObject{
+													Attributes: map[string]schema.Attribute{
+														"operator": schema.StringAttribute{
+															Description: "The operator for the condition (e.g., gt, lt, eq).",
+															Required:    true,
+														},
+														"value": schema.Float64Attribute{
+															Description: "The value used in the condition (numeric, e.g., for anomaly_score).",
+															Required:    true,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 					},
 					"influencers": schema.ListAttribute{
 						Description: "A list of strings that influence the anomaly results.",
 						ElementType: types.StringType,
+						Optional:    true,
+					},
+					"categorization_field_name": schema.StringAttribute{
+						Description: "If the job is a categorization job, this field contains the name of the field that is used to segment the analysis.",
+						Optional:    true,
+					},
+					"summary_count_field_name": schema.StringAttribute{
+						Description: "The name of the field that contains the count of events for summarization.",
+						Optional:    true,
+					},
+					"latency": schema.StringAttribute{
+						Description: "The latency period during which data is not analyzed. After this period, the data is analyzed and potential anomalies are identified.",
 						Optional:    true,
 					},
 				},
@@ -84,17 +141,56 @@ func (r *anomalyDetectorResource) Schema(ctx context.Context, req resource.Schem
 						Description: "The name of the field that contains the timestamp.",
 						Required:    true,
 					},
-				},
-			},
-			"model_plot_config": schema.SingleNestedAttribute{
-				Description: "This advanced configuration option stores model information along with the results.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: "If true, model plot information is stored along with the results. This adds overhead to the performance of the system and is not generally needed.",
+					"time_format": schema.StringAttribute{
+						Description: "The time format that is used. Can be epoch, epoch_ms, or a Joda time format string.",
 						Optional:    true,
 					},
 				},
+			},
+			"model_plot_config": schema.SingleNestedAttribute{
+				Description: "Controls the locations of model plot documents. It is optional.",
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "If true, model plot is enabled.",
+						Required:    true,
+					},
+				},
+			},
+			"analysis_limits": schema.SingleNestedAttribute{
+				Description: "Limits can be applied to an anomaly detection job to fight memory outage. It is optional.",
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"model_memory_limit": schema.StringAttribute{
+						Description: "The approved memory usage limit, expressed as a string. For example, 100mb.",
+						Optional:    true, // Often has a default in ES, making it optional here
+					},
+					"categorization_examples_limit": schema.Int64Attribute{
+						Description: "A limit to the number of examples that are stored for categorization.",
+						Optional:    true,
+					},
+				},
+			},
+			"model_snapshot_retention_days": schema.Int64Attribute{
+				Description: "The number of days to keep model snapshots.",
+				Optional:    true,
+			},
+			"results_retention_days": schema.Int64Attribute{
+				Description: "The number of days to keep anomaly detection results.",
+				Optional:    true,
+			},
+			"allow_lazy_open": schema.BoolAttribute{
+				Description: "Advanced configuration option. Specifies whether this job can be opened lazily.",
+				Optional:    true,
+			},
+			"daily_model_snapshot_retention_after_days": schema.Int64Attribute{
+				Description: "The number of days after which old daily snapshots are deleted.",
+				Optional:    true,
+			},
+			"custom_settings": schema.MapAttribute{
+				Description: "Advanced configuration option. Contains custom meta data about the job.",
+				ElementType: types.StringType,
+				Optional:    true,
 			},
 			"results_index_name": schema.StringAttribute{
 				Description: "The name of the index in which to store the machine learning results.",
