@@ -7,13 +7,15 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccElasticsearchMLAnomalyDetector_Basic(t *testing.T) {
 	resourceName := "elasticstack_elasticsearch_ml_anomaly_detector.test_job"
-	jobId := "tf_acc_test_basic_job"
+	randSuffix := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	jobId := fmt.Sprintf("tf_acc_comprehensive_job_%s", randSuffix)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -21,50 +23,88 @@ func TestAccElasticsearchMLAnomalyDetector_Basic(t *testing.T) {
 		CheckDestroy:             checkResourceMLAnomalyDetectorDestroy(jobId),
 		Steps: []resource.TestStep{
 			{
-				// Step 1: Create basic job
-				Config: testAccElasticsearchMLAnomalyDetectorBasic(jobId, "Basic anomaly detector for acceptance testing."),
+				// Step 1: Create comprehensive job
+				Config: testAccElasticsearchMLAnomalyDetectorComprehensiveCreate(jobId),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "job_id", jobId),
-					resource.TestCheckResourceAttr(resourceName, "description", "Basic anomaly detector for acceptance testing."),
-					resource.TestCheckResourceAttr(resourceName, "analysis_config.0.bucket_span", "30m"),
-					resource.TestCheckResourceAttr(resourceName, "analysis_config.0.detectors.0.function", "count"),
-					resource.TestCheckResourceAttr(resourceName, "data_description.0.time_field", "@timestamp"),
-					resource.TestCheckResourceAttr(resourceName, "groups.#", "0"), // No groups initially
-				),
-			},
-			{
-				// Step 2: Update description and add a group
-				Config: testAccElasticsearchMLAnomalyDetectorUpdate(jobId, "Updated anomaly detector for acceptance testing.", []string{"tf-acc-group"}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "job_id", jobId),
-					resource.TestCheckResourceAttr(resourceName, "description", "Updated anomaly detector for acceptance testing."),
+					resource.TestCheckResourceAttr(resourceName, "description", "Comprehensive anomaly detector for testing."),
 					resource.TestCheckResourceAttr(resourceName, "groups.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "groups.0", "tf-acc-group"),
+					resource.TestCheckResourceAttr(resourceName, "groups.0", "acc-test-group"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.bucket_span", "30m"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.summary_count_field_name", "doc_count"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.latency", "3600s"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.function", "count"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.detector_description", "Count of documents"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.use_null", "true"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.exclude_frequent", "all"),
+					resource.TestCheckResourceAttr(resourceName, "data_description.time_field", "@timestamp"),
+					resource.TestCheckResourceAttr(resourceName, "data_description.time_format", "epoch_ms"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_limits.model_memory_limit", "128mb"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_limits.categorization_examples_limit", "5"),
+					resource.TestCheckResourceAttr(resourceName, "model_snapshot_retention_days", "10"),
+					resource.TestCheckResourceAttr(resourceName, "results_retention_days", "14"),
+					resource.TestCheckResourceAttr(resourceName, "allow_lazy_open", "true"),
+					resource.TestCheckResourceAttr(resourceName, "daily_model_snapshot_retention_after_days", "1"),
+					resource.TestCheckResourceAttr(resourceName, "custom_settings.my_custom_key", "my_custom_value"),
 				),
 			},
 			{
-				// Step 3: Add another group and change description again
-				Config: testAccElasticsearchMLAnomalyDetectorUpdate(jobId, "Final description.", []string{"tf-acc-group", "another-group"}),
+				// Step 2: Update various fields
+				Config: testAccElasticsearchMLAnomalyDetectorComprehensiveUpdateStep2(jobId),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "description", "Final description."),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated comprehensive detector."),
 					resource.TestCheckResourceAttr(resourceName, "groups.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "groups.0", "tf-acc-group"), // Order might not be guaranteed by API, adjust if needed
-					resource.TestCheckResourceAttr(resourceName, "groups.1", "another-group"),
+					resource.TestCheckResourceAttr(resourceName, "groups.0", "acc-test-group-updated"), // Order can vary, adjust if needed
+					resource.TestCheckResourceAttr(resourceName, "groups.1", "new-group"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_limits.model_memory_limit", "256mb"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_limits.categorization_examples_limit", "5"), // Check it's still there
+					resource.TestCheckResourceAttr(resourceName, "results_retention_days", "20"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.detector_description", "Updated count of documents"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.#", "2"), // Added a new rule
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.scope", "anomaly_score"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.1.actions.0", "skip_model_update"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.1.scope", "time"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.1.conditions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.1.conditions.0.operator", "lt"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.1.conditions.0.value", "1000.0"),
+					resource.TestCheckResourceAttr(resourceName, "custom_settings.my_custom_key", "updated_custom_value"),
+					resource.TestCheckResourceAttr(resourceName, "custom_settings.another_key", "another_value"), // Added new custom setting
 				),
 			},
 			{
-				// Step 4: Remove all groups
-				Config: testAccElasticsearchMLAnomalyDetectorUpdate(jobId, "Description with no groups.", []string{}),
+				// Step 3: Modify custom rules (remove one)
+				Config: testAccElasticsearchMLAnomalyDetectorComprehensiveUpdateStep3(jobId),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "description", "Description with no groups."),
+					resource.TestCheckResourceAttr(resourceName, "analysis_limits.categorization_examples_limit", "5"), // Check it's still there
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.actions.0", "skip_model_update"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.scope", "time"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.conditions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.conditions.0.operator", "lt"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.conditions.0.value", "1000.0"),
+					resource.TestCheckResourceAttr(resourceName, "allow_lazy_open", "false"),
+				),
+			},
+			{
+				// Step 4: Remove all custom settings and groups
+				Config: testAccElasticsearchMLAnomalyDetectorComprehensiveUpdateStep4(jobId),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "custom_settings.%", "0"),
 					resource.TestCheckResourceAttr(resourceName, "groups.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_limits.categorization_examples_limit", "5"), // Check it's still there
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.actions.0", "skip_model_update"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.scope", "time"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.conditions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.conditions.0.operator", "lt"),
+					resource.TestCheckResourceAttr(resourceName, "analysis_config.detectors.0.custom_rules.0.conditions.0.value", "1000.0"),
 				),
 			},
 		},
 	})
 }
 
-func testAccElasticsearchMLAnomalyDetectorBasic(jobId string, description string) string {
+func testAccElasticsearchMLAnomalyDetectorComprehensiveCreate(jobId string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -72,20 +112,40 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_ml_anomaly_detector" "test_job" {
   job_id      = "%s"
-  description = "%s"
+  description = "Comprehensive anomaly detector for testing."
+  groups      = ["acc-test-group"]
 
-  analysis_config {
-    bucket_span = "30m"
-    detectors {
-      function = "count"
-    }
+  analysis_limits = {
+    model_memory_limit = "128mb"
+    categorization_examples_limit = 5
+  }
+  model_snapshot_retention_days = 10
+  results_retention_days        = 14
+  allow_lazy_open               = true
+  daily_model_snapshot_retention_after_days = 1
+
+  custom_settings = {
+    my_custom_key = "my_custom_value"
   }
 
-  data_description {
+  analysis_config = {
+    bucket_span = "30m"
+    summary_count_field_name  = "doc_count"
+    latency                   = "3600s"
+    detectors = [{
+      function             = "count"
+      detector_description = "Count of documents"
+      use_null             = true
+      exclude_frequent     = "all"
+    }]
+  }
+
+  data_description = {
     time_field = "@timestamp"
+    time_format = "epoch_ms"
   }
 }
-`, jobId, description)
+`, jobId)
 }
 
 // checkResourceMLAnomalyDetectorDestroy verifies the job is deleted from Elasticsearch
@@ -133,19 +193,8 @@ func checkResourceMLAnomalyDetectorDestroy(jobId string) resource.TestCheckFunc 
 	}
 }
 
-func testAccElasticsearchMLAnomalyDetectorUpdate(jobId string, description string, groups []string) string {
-	groupsFormatted := ""
-	if len(groups) > 0 {
-		groupsFormatted = "groups = ["
-		for i, group := range groups {
-			groupsFormatted += fmt.Sprintf("\"%s\"", group)
-			if i < len(groups)-1 {
-				groupsFormatted += ", "
-			}
-		}
-		groupsFormatted += "]\n"
-	}
-
+// HCL for Step 2 of comprehensive test
+func testAccElasticsearchMLAnomalyDetectorComprehensiveUpdateStep2(jobId string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -153,26 +202,171 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_ml_anomaly_detector" "test_job" {
   job_id      = "%s"
-  description = "%s"
-  %s // This will insert the formatted groups string, or be empty if no groups
+  description = "Updated comprehensive detector."
+  groups      = ["acc-test-group-updated", "new-group"]
+
+  analysis_limits = {
+    model_memory_limit = "256mb" // Changed
+    categorization_examples_limit = 5 // Remains same
+  }
+  results_retention_days = 20 // Changed
+  model_snapshot_retention_days = 10 
+  allow_lazy_open               = true
+  daily_model_snapshot_retention_after_days = 1
+
+  custom_settings = {
+    my_custom_key    = "updated_custom_value" // Changed
+    another_key      = "another_value"      // Added
+  }
+
+  analysis_config = {
+    bucket_span = "30m" // Remains same
+    categorization_field_name = "mlcategory" // Remains same
+    summary_count_field_name  = "doc_count" // Remains same
+    latency                   = "3600s" // Remains same
+    detectors = [{
+      function             = "count" // Remains same
+      detector_description = "Updated count of documents" // Changed
+      use_null             = true // Remains same
+      exclude_frequent     = "all" // Remains same
+      custom_rules = [
+        {
+          actions = ["skip_result"]
+          scope   = "anomaly_score"
+          conditions = [{
+            operator = "gt"
+            value    = 50.0
+          }]
+        },
+        {
+          actions = ["skip_model_update"]
+          scope   = "time"
+          conditions = [{
+            operator = "lt"
+            value    = 1000.0
+          }]
+        }
+      ]
+    }]
+  }
+
+  data_description = {
+    time_field = "@timestamp" // Remains same
+    time_format = "epoch_ms" // Remains same
+  }
+}
+`, jobId)
+}
+
+// HCL for Step 3 of comprehensive test
+func testAccElasticsearchMLAnomalyDetectorComprehensiveUpdateStep3(jobId string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_ml_anomaly_detector" "test_job" {
+  job_id      = "%s"
+  description = "Updated comprehensive detector." // Same as step 2
+  groups      = ["acc-test-group-updated", "new-group"] // Same as step 2
+
+  analysis_limits = {
+    model_memory_limit = "256mb"
+    categorization_examples_limit = 5 // Remains same
+  }
+  results_retention_days = 20 
+  model_snapshot_retention_days = 10 
+  allow_lazy_open               = false // Changed
+  daily_model_snapshot_retention_after_days = 1
+
+  custom_settings = {
+    my_custom_key    = "updated_custom_value"
+    another_key      = "another_value"
+  }
 
   analysis_config {
-    bucket_span = "30m" // Assuming this doesn't change for the update test
+    bucket_span = "30m"
+    categorization_field_name = "mlcategory"
+    summary_count_field_name  = "doc_count"
+    latency                   = "3600s"
     detectors {
-      function = "count" // Assuming this doesn't change
-    }
+      function             = "count"
+      detector_description = "Updated count of documents"
+      use_null             = true
+      exclude_frequent     = "all"
+      custom_rules = [{ // Only the second rule from step 2 remains
+        actions = ["skip_model_update"]
+        scope   = "time"
+        conditions = [{
+          operator = "lt"
+          value    = 1000.0
+        }]
+      }]
+    }]
   }
 
   data_description {
-    time_field = "@timestamp" // Assuming this doesn't change
+    time_field = "@timestamp"
+    time_format = "epoch_ms"
   }
 }
-`, jobId, description, groupsFormatted)
+`, jobId)
+}
+
+// HCL for Step 4 of comprehensive test
+func testAccElasticsearchMLAnomalyDetectorComprehensiveUpdateStep4(jobId string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_ml_anomaly_detector" "test_job" {
+  job_id      = "%s"
+  description = "Final state, no groups or custom settings."
+  // groups are removed
+
+  analysis_limits = {
+    model_memory_limit = "256mb"
+    categorization_examples_limit = 5 // Remains same
+  }
+  results_retention_days = 20 
+  model_snapshot_retention_days = 10 
+  allow_lazy_open               = false
+  daily_model_snapshot_retention_after_days = 1
+
+  analysis_config {
+    bucket_span = "30m"
+    categorization_field_name = "mlcategory"
+    summary_count_field_name  = "doc_count"
+    latency                   = "3600s"
+    detectors {
+      function             = "count"
+      detector_description = "Updated count of documents"
+      use_null             = true
+      exclude_frequent     = "all"
+      custom_rules = [{ 
+        actions = ["skip_model_update"]
+        scope   = "time"
+        conditions = [{
+          operator = "lt"
+          value    = 1000.0
+        }]
+      }]
+    }]
+  }
+
+  data_description {
+    time_field = "@timestamp"
+    time_format = "epoch_ms"
+  }
+}
+`, jobId)
 }
 
 func TestAccElasticsearchMLAnomalyDetector_Import(t *testing.T) {
 	resourceName := "elasticstack_elasticsearch_ml_anomaly_detector.test_job_import"
-	jobId := "tf_acc_test_import_job"
+	randSuffix := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	jobId := fmt.Sprintf("tf_acc_import_job_%s", randSuffix)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -181,7 +375,7 @@ func TestAccElasticsearchMLAnomalyDetector_Import(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Step 1: Create the resource
-				Config: testAccElasticsearchMLAnomalyDetectorBasic(jobId, "Resource to be imported."),
+				Config: testAccElasticsearchMLAnomalyDetectorComprehensiveCreate(jobId),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "job_id", jobId),
 				),
