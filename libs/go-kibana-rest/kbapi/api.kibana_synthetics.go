@@ -88,10 +88,7 @@ type KibanaSyntheticsPrivateLocationAPI struct {
 }
 
 type KibanaSyntheticsParameterAPI struct {
-	Add    KibanaSyntheticsParameterAdd
 	Delete KibanaSyntheticsParameterDelete
-	Get    KibanaSyntheticsParameterGet
-	Update KibanaSyntheticsParameterUpdate
 }
 
 type SyntheticsStatusConfig struct {
@@ -264,20 +261,6 @@ type MonitorTypeConfig struct {
 	Type MonitorType `json:"type"`
 }
 
-type ParameterConfig struct {
-	Key               string   `json:"key"`
-	Value             string   `json:"value"`
-	Description       string   `json:"description,omitempty"`
-	Tags              []string `json:"tags,omitempty"`
-	ShareAcrossSpaces *bool    `json:"share_across_spaces,omitempty"`
-}
-
-type Parameter struct {
-	Id         string   `json:"id"`
-	Namespaces []string `json:"namespaces,omitempty"`
-	ParameterConfig
-}
-
 type ParameterDeleteStatus struct {
 	Id      string `json:"id"`
 	Deleted bool   `json:"deleted"`
@@ -357,13 +340,7 @@ type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel stri
 
 type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string) error
 
-type KibanaSyntheticsParameterAdd func(ctx context.Context, config ParameterConfig) (*Parameter, error)
-
 type KibanaSyntheticsParameterDelete func(ctx context.Context, id string) ([]ParameterDeleteStatus, error)
-
-type KibanaSyntheticsParameterGet func(ctx context.Context, id string) (*Parameter, error)
-
-type KibanaSyntheticsParameterUpdate func(ctx context.Context, id string, config ParameterConfig) (*Parameter, error)
 
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
 	return func(ctx context.Context, idOrLabel string) (*PrivateLocation, error) {
@@ -470,18 +447,6 @@ func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorA
 	}
 }
 
-func newKibanaSyntheticsParameterAddFunc(c *resty.Client) KibanaSyntheticsParameterAdd {
-	return func(ctx context.Context, config ParameterConfig) (*Parameter, error) {
-		path := basePath("", parametersSuffix)
-		log.Debugf("URL to create parameters: %s", path)
-		resp, err := c.R().SetContext(ctx).SetBody(config).Post(path)
-		if err = handleKibanaError(err, resp); err != nil {
-			return nil, err
-		}
-		return unmarshal(resp, Parameter{})
-	}
-}
-
 func newKibanaSyntheticsParameterDeleteFunc(c *resty.Client) KibanaSyntheticsParameterDelete {
 	// We're intentionally using the undocumented delete API call that the
 	// Kibana UI does. It's the only endpoint that works correctly across all
@@ -517,37 +482,6 @@ func newKibanaSyntheticsParameterDeleteFunc(c *resty.Client) KibanaSyntheticsPar
 
 		result, err := unmarshal(resp, []ParameterDeleteStatus{})
 		return *result, err
-	}
-}
-
-func newKibanaSyntheticsParameterGetFunc(c *resty.Client) KibanaSyntheticsParameterGet {
-	return func(ctx context.Context, id string) (*Parameter, error) {
-		if id == "" {
-			return nil, APIError{
-				Code:    404,
-				Message: "Parameter id is empty",
-			}
-		}
-
-		path := basePathWithId("", parametersSuffix, id)
-		log.Debugf("URL to get parameter: %s", path)
-		resp, err := c.R().SetContext(ctx).Get(path)
-		if err = handleKibanaError(err, resp); err != nil {
-			return nil, err
-		}
-		return unmarshal(resp, Parameter{})
-	}
-}
-
-func newKibanaSyntheticsParameterUpdateFunc(c *resty.Client) KibanaSyntheticsParameterUpdate {
-	return func(ctx context.Context, id string, config ParameterConfig) (*Parameter, error) {
-		path := basePathWithId("", parametersSuffix, id)
-		log.Debugf("URL to update parameter: %s", path)
-		resp, err := c.R().SetContext(ctx).SetBody(config).Put(path)
-		if err := handleKibanaError(err, resp); err != nil {
-			return nil, err
-		}
-		return unmarshal(resp, Parameter{})
 	}
 }
 

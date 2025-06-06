@@ -239,3 +239,24 @@ func ConvertToAttrDiags(diags fwdiag.Diagnostics, path path.Path) fwdiag.Diagnos
 	}
 	return nd
 }
+
+func DefaultIfNil[T any](value *T) T {
+	var result T
+
+	if value != nil {
+		result = *value
+	}
+
+	return result
+}
+
+// Returns an empty slice if s is a slice represented by nil (no backing array).
+// Guarantees that json.Marshal and terraform parameters will not treat the
+// empty slice as null.
+func NonNilSlice[T any](s []T) []T {
+	if s == nil {
+		return []T{}
+	}
+
+	return s
+}

@@ -130,10 +130,7 @@ func New(c *resty.Client) *API {
 				Get:    newKibanaSyntheticsPrivateLocationGetFunc(c),
 			},
 			Parameter: &KibanaSyntheticsParameterAPI{
-				Add:    newKibanaSyntheticsParameterAddFunc(c),
 				Delete: newKibanaSyntheticsParameterDeleteFunc(c),
-				Get:    newKibanaSyntheticsParameterGetFunc(c),
-				Update: newKibanaSyntheticsParameterUpdateFunc(c),
 			},
 		},
 	}

@@ -4,15 +4,19 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -57,6 +61,8 @@ func parameterSchema() schema.Schema {
 			},
 			"description": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString(""),
 				MarkdownDescription: "A description of the parameter.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -65,6 +71,8 @@ func parameterSchema() schema.Schema {
 			"tags": schema.ListAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
+				Computed:            true,
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 				MarkdownDescription: "An array of tags to categorize the parameter.",
 				PlanModifiers: []planmodifier.List{
 					listplanmodifier.UseStateForUnknown(),
@@ -84,7 +92,7 @@ func parameterSchema() schema.Schema {
 	}
 }
 
-func (m *tfModelV0) toParameterConfig(forUpdate bool) kbapi.ParameterConfig {
+func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {
 	// share_across_spaces is not allowed to be set when updating an existing
 	// global parameter.
 	var shareAcrossSpaces *bool = nil
@@ -92,11 +100,12 @@ func (m *tfModelV0) toParameterConfig(forUpdate bool) kbapi.ParameterConfig {
 		shareAcrossSpaces = m.ShareAcrossSpaces.ValueBoolPointer()
 	}
 
-	return kbapi.ParameterConfig{
-		Key:               m.Key.ValueString(),
-		Value:             m.Value.ValueString(),
-		Description:       m.Description.ValueString(),
-		Tags:              synthetics.ValueStringSlice(m.Tags),
+	return kboapi.SyntheticsParameterRequest{
+		Key:         m.Key.ValueString(),
+		Value:       m.Value.ValueString(),
+		Description: utils.Pointer(m.Description.ValueString()),
+		// We need this to marshal as an empty JSON array, not null.
+		Tags:              utils.Pointer(utils.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
 		ShareAcrossSpaces: shareAcrossSpaces,
 	}
 }
@@ -109,15 +118,17 @@ func tryReadCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
 	return nil, diag.Diagnostics{}
 }
 
-func toModelV0(param kbapi.Parameter) tfModelV0 {
-	allSpaces := slices.Equal(param.Namespaces, []string{"*"})
+func modelV0FromOAPI(param kboapi.SyntheticsGetParameterResponse) tfModelV0 {
+	allSpaces := slices.Equal(*param.Namespaces, []string{"*"})
 
 	return tfModelV0{
-		ID:                types.StringValue(param.Id),
-		Key:               types.StringValue(param.Key),
-		Value:             types.StringValue(param.Value),
-		Description:       types.StringValue(param.Description),
-		Tags:              synthetics.StringSliceValue(param.Tags),
+		ID:          types.StringPointerValue(param.Id),
+		Key:         types.StringPointerValue(param.Key),
+		Value:       types.StringPointerValue(param.Value),
+		Description: types.StringPointerValue(param.Description),
+		// Terraform, like json.Marshal, treats empty slices as null. We need an
+		// actual backing array of size 0.
+		Tags:              utils.NonNilSlice(synthetics.StringSliceValue(utils.DefaultIfNil(param.Tags))),
 		ShareAcrossSpaces: types.BoolValue(allSpaces),
 	}
 }
