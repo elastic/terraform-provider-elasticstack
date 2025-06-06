@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Add `headers` for the provider connection ([#1057](https://github.com/elastic/terraform-provider-elasticstack/pull/1057))
+- Add custom `endpoint` configuration support for snapshot repository setup ([#1158](https://github.com/elastic/terraform-provider-elasticstack/pull/1158))
 
 ## [0.11.15] - 2025-04-23
 
