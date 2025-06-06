@@ -5,8 +5,10 @@ import (
 	"strings"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -84,7 +86,7 @@ func parameterSchema() schema.Schema {
 	}
 }
 
-func (m *tfModelV0) toParameterConfig(forUpdate bool) kbapi.ParameterConfig {
+func (m *tfModelV0) toParameterConfig(forUpdate bool) kboapi.SyntheticsParameterRequest {
 	// share_across_spaces is not allowed to be set when updating an existing
 	// global parameter.
 	var shareAcrossSpaces *bool = nil
@@ -92,11 +94,11 @@ func (m *tfModelV0) toParameterConfig(forUpdate bool) kbapi.ParameterConfig {
 		shareAcrossSpaces = m.ShareAcrossSpaces.ValueBoolPointer()
 	}
 
-	return kbapi.ParameterConfig{
+	return kboapi.SyntheticsParameterRequest{
 		Key:               m.Key.ValueString(),
 		Value:             m.Value.ValueString(),
-		Description:       m.Description.ValueString(),
-		Tags:              synthetics.ValueStringSlice(m.Tags),
+		Description:       m.Description.ValueStringPointer(),
+		Tags:              utils.Pointer(synthetics.ValueStringSlice(m.Tags)),
 		ShareAcrossSpaces: shareAcrossSpaces,
 	}
 }
@@ -107,6 +109,19 @@ func tryReadCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
 		return compositeId, diagnostics
 	}
 	return nil, diag.Diagnostics{}
+}
+
+func modelV0FromOAPI(param kboapi.SyntheticsGetParameterResponse) tfModelV0 {
+	allSpaces := slices.Equal(*param.Namespaces, []string{"*"})
+
+	return tfModelV0{
+		ID:                types.StringPointerValue(param.Id),
+		Key:               types.StringPointerValue(param.Key),
+		Value:             types.StringPointerValue(param.Value),
+		Description:       types.StringPointerValue(param.Description),
+		Tags:              synthetics.StringSliceValue(*param.Tags),
+		ShareAcrossSpaces: types.BoolValue(allSpaces),
+	}
 }
 
 func toModelV0(param kbapi.Parameter) tfModelV0 {
