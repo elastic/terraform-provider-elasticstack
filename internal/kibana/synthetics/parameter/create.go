@@ -29,21 +29,8 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	resourceId := result.Id
-
-	// We can't trust the response from the POST request. At least with Kibana
-	// 9.0.0, it responds without the `value` field set.
-	result, err = kibanaClient.KibanaSynthetics.Parameter.Get(ctx, resourceId)
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to get parameter after creation `%s`", resourceId), err.Error())
-		return
-	}
-
-	plan = toModelV0(*result)
-
-	diags = response.State.Set(ctx, plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	// We can't trust the response from the POST request, so read the parameter
+	// again. At least with Kibana 9.0.0, the POST request responds without the
+	// `value` field set.
+	r.readState(ctx, kibanaClient, toModelV0(*result), &response.State, &response.Diagnostics)
 }
