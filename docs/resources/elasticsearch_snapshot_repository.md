@@ -166,6 +166,7 @@ Optional:
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `client` (String) The name of the S3 client to use to connect to S3.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `endpoint` (String) Custom S3 service endpoint, useful when using VPC endpoints or non-default S3 URLs.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
 - `path_style_access` (Boolean) If true, path style access pattern will be used.
