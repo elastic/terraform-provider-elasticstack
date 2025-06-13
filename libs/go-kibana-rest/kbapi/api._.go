@@ -72,6 +72,7 @@ type KibanaShortenURLAPI struct {
 type KibanaSyntheticsAPI struct {
 	Monitor         *KibanaSyntheticsMonitorAPI
 	PrivateLocation *KibanaSyntheticsPrivateLocationAPI
+	Parameter       *KibanaSyntheticsParameterAPI
 }
 
 // New initialise the API implementation
@@ -127,6 +128,9 @@ func New(c *resty.Client) *API {
 				Create: newKibanaSyntheticsPrivateLocationCreateFunc(c),
 				Delete: newKibanaSyntheticsPrivateLocationDeleteFunc(c),
 				Get:    newKibanaSyntheticsPrivateLocationGetFunc(c),
+			},
+			Parameter: &KibanaSyntheticsParameterAPI{
+				Delete: newKibanaSyntheticsParameterDeleteFunc(c),
 			},
 		},
 	}
