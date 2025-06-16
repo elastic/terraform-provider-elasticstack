@@ -7,13 +7,13 @@ Name | Type | Description | Notes
 **Metrics** | [**[]IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner**](IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner.md) | List of metrics with their name, aggregation type, and field. | 
 **Equation** | **string** | The equation to calculate the metric. | 
 **Comparator** | **string** | The comparator to use to compare the equation to the threshold. | 
-**Threshold** | **float64** | The threshold used to determine if the metric is a good slice or not. | 
+**Threshold** | **float32** | The threshold used to determine if the metric is a good slice or not. | 
 
 ## Methods
 
 ### NewIndicatorPropertiesTimesliceMetricParamsMetric
 
-`func NewIndicatorPropertiesTimesliceMetricParamsMetric(metrics []IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, equation string, comparator string, threshold float64, ) *IndicatorPropertiesTimesliceMetricParamsMetric`
+`func NewIndicatorPropertiesTimesliceMetricParamsMetric(metrics []IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, equation string, comparator string, threshold float32, ) *IndicatorPropertiesTimesliceMetricParamsMetric`
 
 NewIndicatorPropertiesTimesliceMetricParamsMetric instantiates a new IndicatorPropertiesTimesliceMetricParamsMetric object
 This constructor will assign default values to properties that have it defined,
@@ -90,20 +90,20 @@ SetComparator sets Comparator field to given value.
 
 ### GetThreshold
 
-`func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThreshold() float64`
+`func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThreshold() float32`
 
 GetThreshold returns the Threshold field if non-nil, zero value otherwise.
 
 ### GetThresholdOk
 
-`func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThresholdOk() (*float64, bool)`
+`func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThresholdOk() (*float32, bool)`
 
 GetThresholdOk returns a tuple with the Threshold field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetThreshold
 
-`func (o *IndicatorPropertiesTimesliceMetricParamsMetric) SetThreshold(v float64)`
+`func (o *IndicatorPropertiesTimesliceMetricParamsMetric) SetThreshold(v float32)`
 
 SetThreshold sets Threshold field to given value.
 

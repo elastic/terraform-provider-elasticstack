@@ -8,13 +8,13 @@ Name | Type | Description | Notes
 **Aggregation** | **string** | The aggregation type of the metric. Only valid option is \&quot;doc_count\&quot; | 
 **Field** | **string** | The field of the metric. | 
 **Filter** | Pointer to **string** | The filter to apply to the metric. | [optional] 
-**Percentile** | **float64** | The percentile value. | 
+**Percentile** | **float32** | The percentile value. | 
 
 ## Methods
 
 ### NewIndicatorPropertiesTimesliceMetricParamsMetricMetricsInner
 
-`func NewIndicatorPropertiesTimesliceMetricParamsMetricMetricsInner(name string, aggregation string, field string, percentile float64, ) *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner`
+`func NewIndicatorPropertiesTimesliceMetricParamsMetricMetricsInner(name string, aggregation string, field string, percentile float32, ) *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner`
 
 NewIndicatorPropertiesTimesliceMetricParamsMetricMetricsInner instantiates a new IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner object
 This constructor will assign default values to properties that have it defined,
@@ -116,20 +116,20 @@ HasFilter returns a boolean if a field has been set.
 
 ### GetPercentile
 
-`func (o *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) GetPercentile() float64`
+`func (o *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) GetPercentile() float32`
 
 GetPercentile returns the Percentile field if non-nil, zero value otherwise.
 
 ### GetPercentileOk
 
-`func (o *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) GetPercentileOk() (*float64, bool)`
+`func (o *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) GetPercentileOk() (*float32, bool)`
 
 GetPercentileOk returns a tuple with the Percentile field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPercentile
 
-`func (o *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) SetPercentile(v float64)`
+`func (o *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) SetPercentile(v float32)`
 
 SetPercentile sets Percentile field to given value.
 

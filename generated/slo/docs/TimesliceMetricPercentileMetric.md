@@ -7,14 +7,14 @@ Name | Type | Description | Notes
 **Name** | **string** | The name of the metric. Only valid options are A-Z | 
 **Aggregation** | **string** | The aggregation type of the metric. Only valid option is \&quot;percentile\&quot; | 
 **Field** | **string** | The field of the metric. | 
-**Percentile** | **float64** | The percentile value. | 
+**Percentile** | **float32** | The percentile value. | 
 **Filter** | Pointer to **string** | The filter to apply to the metric. | [optional] 
 
 ## Methods
 
 ### NewTimesliceMetricPercentileMetric
 
-`func NewTimesliceMetricPercentileMetric(name string, aggregation string, field string, percentile float64, ) *TimesliceMetricPercentileMetric`
+`func NewTimesliceMetricPercentileMetric(name string, aggregation string, field string, percentile float32, ) *TimesliceMetricPercentileMetric`
 
 NewTimesliceMetricPercentileMetric instantiates a new TimesliceMetricPercentileMetric object
 This constructor will assign default values to properties that have it defined,
@@ -91,20 +91,20 @@ SetField sets Field field to given value.
 
 ### GetPercentile
 
-`func (o *TimesliceMetricPercentileMetric) GetPercentile() float64`
+`func (o *TimesliceMetricPercentileMetric) GetPercentile() float32`
 
 GetPercentile returns the Percentile field if non-nil, zero value otherwise.
 
 ### GetPercentileOk
 
-`func (o *TimesliceMetricPercentileMetric) GetPercentileOk() (*float64, bool)`
+`func (o *TimesliceMetricPercentileMetric) GetPercentileOk() (*float32, bool)`
 
 GetPercentileOk returns a tuple with the Percentile field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPercentile
 
-`func (o *TimesliceMetricPercentileMetric) SetPercentile(v float64)`
+`func (o *TimesliceMetricPercentileMetric) SetPercentile(v float32)`
 
 SetPercentile sets Percentile field to given value.
 
