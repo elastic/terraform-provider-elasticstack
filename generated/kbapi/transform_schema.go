@@ -570,6 +570,8 @@ func transformFilterPaths(schema *Schema) {
 		"/api/fleet/outputs/{outputId}":                  {"get", "put", "delete"},
 		"/api/fleet/package_policies":                    {"get", "post"},
 		"/api/fleet/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
+		"/api/synthetics/params":                         {"post"},
+		"/api/synthetics/params/{id}":                    {"get", "put", "delete"},
 	}
 
 	for path, pathInfo := range schema.Paths {
@@ -694,7 +696,11 @@ func transformSimplifyContentType(schema *Schema) {
 func transformAddMisingDescriptions(schema *Schema) {
 	for _, pathInfo := range schema.Paths {
 		for _, endpoint := range pathInfo.Endpoints {
-			responses := endpoint.MustGetMap("responses")
+			responses, ok := endpoint.GetMap("responses")
+			if !ok {
+				return
+			}
+
 			for code := range responses {
 				response := responses.MustGetMap(code)
 				if _, ok := response["description"]; !ok {
@@ -749,6 +755,9 @@ func transformKibanaPaths(schema *Schema) {
 	dataViewsPath := schema.MustGetPath("/s/{spaceId}/api/data_views")
 
 	dataViewsPath.Get.CreateRef(schema, "get_data_views_response_item", "responses.200.content.application/json.schema.properties.data_view.items")
+
+	sytheticsParamsPath := schema.MustGetPath("/api/synthetics/params")
+	sytheticsParamsPath.Post.CreateRef(schema, "create_param_response", "responses.200.content.application/json.schema")
 
 	schema.Components.CreateRef(schema, "Data_views_data_view_response_object_inner", "schemas.Data_views_data_view_response_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_sourcefilter_item", "schemas.Data_views_sourcefilters.items")
