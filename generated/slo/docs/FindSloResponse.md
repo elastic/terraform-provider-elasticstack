@@ -4,10 +4,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Page** | Pointer to **float64** |  | [optional] 
-**PerPage** | Pointer to **float64** |  | [optional] 
-**Total** | Pointer to **float64** |  | [optional] 
-**Results** | Pointer to [**[]SloResponse**](SloResponse.md) |  | [optional] 
+**Size** | Pointer to **float32** | Size provided for cursor based pagination | [optional] 
+**SearchAfter** | Pointer to **string** |  | [optional] 
+**Page** | Pointer to **float32** |  | [optional] 
+**PerPage** | Pointer to **float32** |  | [optional] 
+**Total** | Pointer to **float32** |  | [optional] 
+**Results** | Pointer to [**[]SloWithSummaryResponse**](SloWithSummaryResponse.md) |  | [optional] 
 
 ## Methods
 
@@ -28,22 +30,72 @@ NewFindSloResponseWithDefaults instantiates a new FindSloResponse object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
+### GetSize
+
+`func (o *FindSloResponse) GetSize() float32`
+
+GetSize returns the Size field if non-nil, zero value otherwise.
+
+### GetSizeOk
+
+`func (o *FindSloResponse) GetSizeOk() (*float32, bool)`
+
+GetSizeOk returns a tuple with the Size field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetSize
+
+`func (o *FindSloResponse) SetSize(v float32)`
+
+SetSize sets Size field to given value.
+
+### HasSize
+
+`func (o *FindSloResponse) HasSize() bool`
+
+HasSize returns a boolean if a field has been set.
+
+### GetSearchAfter
+
+`func (o *FindSloResponse) GetSearchAfter() string`
+
+GetSearchAfter returns the SearchAfter field if non-nil, zero value otherwise.
+
+### GetSearchAfterOk
+
+`func (o *FindSloResponse) GetSearchAfterOk() (*string, bool)`
+
+GetSearchAfterOk returns a tuple with the SearchAfter field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetSearchAfter
+
+`func (o *FindSloResponse) SetSearchAfter(v string)`
+
+SetSearchAfter sets SearchAfter field to given value.
+
+### HasSearchAfter
+
+`func (o *FindSloResponse) HasSearchAfter() bool`
+
+HasSearchAfter returns a boolean if a field has been set.
+
 ### GetPage
 
-`func (o *FindSloResponse) GetPage() float64`
+`func (o *FindSloResponse) GetPage() float32`
 
 GetPage returns the Page field if non-nil, zero value otherwise.
 
 ### GetPageOk
 
-`func (o *FindSloResponse) GetPageOk() (*float64, bool)`
+`func (o *FindSloResponse) GetPageOk() (*float32, bool)`
 
 GetPageOk returns a tuple with the Page field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPage
 
-`func (o *FindSloResponse) SetPage(v float64)`
+`func (o *FindSloResponse) SetPage(v float32)`
 
 SetPage sets Page field to given value.
 
@@ -55,20 +107,20 @@ HasPage returns a boolean if a field has been set.
 
 ### GetPerPage
 
-`func (o *FindSloResponse) GetPerPage() float64`
+`func (o *FindSloResponse) GetPerPage() float32`
 
 GetPerPage returns the PerPage field if non-nil, zero value otherwise.
 
 ### GetPerPageOk
 
-`func (o *FindSloResponse) GetPerPageOk() (*float64, bool)`
+`func (o *FindSloResponse) GetPerPageOk() (*float32, bool)`
 
 GetPerPageOk returns a tuple with the PerPage field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPerPage
 
-`func (o *FindSloResponse) SetPerPage(v float64)`
+`func (o *FindSloResponse) SetPerPage(v float32)`
 
 SetPerPage sets PerPage field to given value.
 
@@ -80,20 +132,20 @@ HasPerPage returns a boolean if a field has been set.
 
 ### GetTotal
 
-`func (o *FindSloResponse) GetTotal() float64`
+`func (o *FindSloResponse) GetTotal() float32`
 
 GetTotal returns the Total field if non-nil, zero value otherwise.
 
 ### GetTotalOk
 
-`func (o *FindSloResponse) GetTotalOk() (*float64, bool)`
+`func (o *FindSloResponse) GetTotalOk() (*float32, bool)`
 
 GetTotalOk returns a tuple with the Total field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTotal
 
-`func (o *FindSloResponse) SetTotal(v float64)`
+`func (o *FindSloResponse) SetTotal(v float32)`
 
 SetTotal sets Total field to given value.
 
@@ -105,20 +157,20 @@ HasTotal returns a boolean if a field has been set.
 
 ### GetResults
 
-`func (o *FindSloResponse) GetResults() []SloResponse`
+`func (o *FindSloResponse) GetResults() []SloWithSummaryResponse`
 
 GetResults returns the Results field if non-nil, zero value otherwise.
 
 ### GetResultsOk
 
-`func (o *FindSloResponse) GetResultsOk() (*[]SloResponse, bool)`
+`func (o *FindSloResponse) GetResultsOk() (*[]SloWithSummaryResponse, bool)`
 
 GetResultsOk returns a tuple with the Results field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetResults
 
-`func (o *FindSloResponse) SetResults(v []SloResponse)`
+`func (o *FindSloResponse) SetResults(v []SloWithSummaryResponse)`
 
 SetResults sets Results field to given value.
 
