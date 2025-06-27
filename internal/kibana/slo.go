@@ -81,11 +81,12 @@ func getSchema() map[string]*schema.Schema {
 
 	return map[string]*schema.Schema{
 		"slo_id": {
-			Description: "An ID (8 and 36 characters). If omitted, a UUIDv1 will be generated server-side.",
-			Type:        schema.TypeString,
-			Optional:    true,
-			Computed:    true,
-			ForceNew:    true,
+			Description:  "An ID (8 and 48 characters). If omitted, a UUIDv1 will be generated server-side.",
+			Type:         schema.TypeString,
+			Optional:     true,
+			Computed:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringLenBetween(8, 48),
 		},
 		"name": {
 			Description: "The name of the SLO.",
