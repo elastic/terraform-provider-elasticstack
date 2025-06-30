@@ -11,6 +11,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -41,6 +42,13 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 				addrs = append(addrs, e.(string))
 			}
 			config.config.Addresses = addrs
+		}
+
+		if headers, ok := esConfig["headers"]; ok && len(headers.(map[string]interface{})) > 0 {
+			headersMap := headers.(map[string]interface{})
+			for header, value := range headersMap {
+				config.config.Header.Add(strings.TrimSpace(header), strings.TrimSpace(value.(string)))
+			}
 		}
 
 		if bearer_token, ok := esConfig["bearer_token"].(string); ok && bearer_token != "" {
@@ -143,6 +151,12 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 
 	if len(endpoints) > 0 {
 		config.config.Addresses = endpoints
+	}
+
+	for header, value := range esConfig.Headers.Elements() {
+		strValue := value.(basetypes.StringValue)
+		// trim the strings to remove any leading/trailing whitespace
+		config.config.Header.Add(strings.TrimSpace(header), strings.TrimSpace(strValue.ValueString()))
 	}
 
 	if esConfig.BearerToken.ValueString() != "" {

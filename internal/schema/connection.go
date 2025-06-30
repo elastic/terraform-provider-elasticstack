@@ -72,6 +72,12 @@ func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
+				"headers": fwschema.MapAttribute{
+					MarkdownDescription: "A list of headers to be sent with each request to Elasticsearch.",
+					Optional:            true,
+					Sensitive:           true,
+					ElementType:         types.StringType,
+				},
 				"insecure": fwschema.BoolAttribute{
 					MarkdownDescription: "Disable TLS certificate validation",
 					Optional:            true,
@@ -305,6 +311,15 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 				"endpoints": {
 					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Type:        schema.TypeList,
+					Optional:    true,
+					Sensitive:   true,
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
+				},
+				"headers": {
+					Description: "A list of headers to be sent with each request to Elasticsearch.",
+					Type:        schema.TypeMap,
 					Optional:    true,
 					Sensitive:   true,
 					Elem: &schema.Schema{
