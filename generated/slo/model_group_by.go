@@ -43,8 +43,8 @@ func (dst *GroupBy) UnmarshalJSON(data []byte) error {
 	// try to unmarshal data into ArrayOfString
 	err = json.Unmarshal(data, &dst.ArrayOfString)
 	if err == nil {
-		json[]string, _ := json.Marshal(dst.ArrayOfString)
-		if string(json[]string) == "{}" { // empty struct
+		jsonArraystring, _ := json.Marshal(dst.ArrayOfString)
+		if string(jsonArraystring) == "{}" { // empty struct
 			dst.ArrayOfString = nil
 		} else {
 			match++
