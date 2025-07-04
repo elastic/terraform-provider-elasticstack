@@ -19,9 +19,9 @@ var _ MappedNullable = &FindSloDefinitionsResponseOneOf{}
 
 // FindSloDefinitionsResponseOneOf struct for FindSloDefinitionsResponseOneOf
 type FindSloDefinitionsResponseOneOf struct {
-	Page *float32 `json:"page,omitempty"`
-	PerPage *float32 `json:"perPage,omitempty"`
-	Total *float32 `json:"total,omitempty"`
+	Page    *float64                 `json:"page,omitempty"`
+	PerPage *float64                 `json:"perPage,omitempty"`
+	Total   *float64                 `json:"total,omitempty"`
 	Results []SloWithSummaryResponse `json:"results,omitempty"`
 }
 
@@ -43,9 +43,9 @@ func NewFindSloDefinitionsResponseOneOfWithDefaults() *FindSloDefinitionsRespons
 }
 
 // GetPage returns the Page field value if set, zero value otherwise.
-func (o *FindSloDefinitionsResponseOneOf) GetPage() float32 {
+func (o *FindSloDefinitionsResponseOneOf) GetPage() float64 {
 	if o == nil || IsNil(o.Page) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.Page
@@ -53,7 +53,7 @@ func (o *FindSloDefinitionsResponseOneOf) GetPage() float32 {
 
 // GetPageOk returns a tuple with the Page field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *FindSloDefinitionsResponseOneOf) GetPageOk() (*float32, bool) {
+func (o *FindSloDefinitionsResponseOneOf) GetPageOk() (*float64, bool) {
 	if o == nil || IsNil(o.Page) {
 		return nil, false
 	}
@@ -69,15 +69,15 @@ func (o *FindSloDefinitionsResponseOneOf) HasPage() bool {
 	return false
 }
 
-// SetPage gets a reference to the given float32 and assigns it to the Page field.
-func (o *FindSloDefinitionsResponseOneOf) SetPage(v float32) {
+// SetPage gets a reference to the given float64 and assigns it to the Page field.
+func (o *FindSloDefinitionsResponseOneOf) SetPage(v float64) {
 	o.Page = &v
 }
 
 // GetPerPage returns the PerPage field value if set, zero value otherwise.
-func (o *FindSloDefinitionsResponseOneOf) GetPerPage() float32 {
+func (o *FindSloDefinitionsResponseOneOf) GetPerPage() float64 {
 	if o == nil || IsNil(o.PerPage) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.PerPage
@@ -85,7 +85,7 @@ func (o *FindSloDefinitionsResponseOneOf) GetPerPage() float32 {
 
 // GetPerPageOk returns a tuple with the PerPage field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *FindSloDefinitionsResponseOneOf) GetPerPageOk() (*float32, bool) {
+func (o *FindSloDefinitionsResponseOneOf) GetPerPageOk() (*float64, bool) {
 	if o == nil || IsNil(o.PerPage) {
 		return nil, false
 	}
@@ -101,15 +101,15 @@ func (o *FindSloDefinitionsResponseOneOf) HasPerPage() bool {
 	return false
 }
 
-// SetPerPage gets a reference to the given float32 and assigns it to the PerPage field.
-func (o *FindSloDefinitionsResponseOneOf) SetPerPage(v float32) {
+// SetPerPage gets a reference to the given float64 and assigns it to the PerPage field.
+func (o *FindSloDefinitionsResponseOneOf) SetPerPage(v float64) {
 	o.PerPage = &v
 }
 
 // GetTotal returns the Total field value if set, zero value otherwise.
-func (o *FindSloDefinitionsResponseOneOf) GetTotal() float32 {
+func (o *FindSloDefinitionsResponseOneOf) GetTotal() float64 {
 	if o == nil || IsNil(o.Total) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.Total
@@ -117,7 +117,7 @@ func (o *FindSloDefinitionsResponseOneOf) GetTotal() float32 {
 
 // GetTotalOk returns a tuple with the Total field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *FindSloDefinitionsResponseOneOf) GetTotalOk() (*float32, bool) {
+func (o *FindSloDefinitionsResponseOneOf) GetTotalOk() (*float64, bool) {
 	if o == nil || IsNil(o.Total) {
 		return nil, false
 	}
@@ -133,8 +133,8 @@ func (o *FindSloDefinitionsResponseOneOf) HasTotal() bool {
 	return false
 }
 
-// SetTotal gets a reference to the given float32 and assigns it to the Total field.
-func (o *FindSloDefinitionsResponseOneOf) SetTotal(v float32) {
+// SetTotal gets a reference to the given float64 and assigns it to the Total field.
+func (o *FindSloDefinitionsResponseOneOf) SetTotal(v float64) {
 	o.Total = &v
 }
 
@@ -171,7 +171,7 @@ func (o *FindSloDefinitionsResponseOneOf) SetResults(v []SloWithSummaryResponse)
 }
 
 func (o FindSloDefinitionsResponseOneOf) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -230,5 +230,3 @@ func (v *NullableFindSloDefinitionsResponseOneOf) UnmarshalJSON(src []byte) erro
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

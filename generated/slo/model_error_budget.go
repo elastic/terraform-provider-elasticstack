@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the ErrorBudget type satisfies the MappedNullable interface at compile time
@@ -22,22 +20,20 @@ var _ MappedNullable = &ErrorBudget{}
 // ErrorBudget struct for ErrorBudget
 type ErrorBudget struct {
 	// The initial error budget, as 1 - objective
-	Initial float32 `json:"initial"`
+	Initial float64 `json:"initial"`
 	// The error budget consummed, as a percentage of the initial value.
-	Consumed float32 `json:"consumed"`
+	Consumed float64 `json:"consumed"`
 	// The error budget remaining, as a percentage of the initial value.
-	Remaining float32 `json:"remaining"`
+	Remaining float64 `json:"remaining"`
 	// Only for SLO defined with occurrences budgeting method and calendar aligned time window.
 	IsEstimated bool `json:"isEstimated"`
 }
-
-type _ErrorBudget ErrorBudget
 
 // NewErrorBudget instantiates a new ErrorBudget object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewErrorBudget(initial float32, consumed float32, remaining float32, isEstimated bool) *ErrorBudget {
+func NewErrorBudget(initial float64, consumed float64, remaining float64, isEstimated bool) *ErrorBudget {
 	this := ErrorBudget{}
 	this.Initial = initial
 	this.Consumed = consumed
@@ -55,9 +51,9 @@ func NewErrorBudgetWithDefaults() *ErrorBudget {
 }
 
 // GetInitial returns the Initial field value
-func (o *ErrorBudget) GetInitial() float32 {
+func (o *ErrorBudget) GetInitial() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -66,7 +62,7 @@ func (o *ErrorBudget) GetInitial() float32 {
 
 // GetInitialOk returns a tuple with the Initial field value
 // and a boolean to check if the value has been set.
-func (o *ErrorBudget) GetInitialOk() (*float32, bool) {
+func (o *ErrorBudget) GetInitialOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -74,14 +70,14 @@ func (o *ErrorBudget) GetInitialOk() (*float32, bool) {
 }
 
 // SetInitial sets field value
-func (o *ErrorBudget) SetInitial(v float32) {
+func (o *ErrorBudget) SetInitial(v float64) {
 	o.Initial = v
 }
 
 // GetConsumed returns the Consumed field value
-func (o *ErrorBudget) GetConsumed() float32 {
+func (o *ErrorBudget) GetConsumed() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -90,7 +86,7 @@ func (o *ErrorBudget) GetConsumed() float32 {
 
 // GetConsumedOk returns a tuple with the Consumed field value
 // and a boolean to check if the value has been set.
-func (o *ErrorBudget) GetConsumedOk() (*float32, bool) {
+func (o *ErrorBudget) GetConsumedOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -98,14 +94,14 @@ func (o *ErrorBudget) GetConsumedOk() (*float32, bool) {
 }
 
 // SetConsumed sets field value
-func (o *ErrorBudget) SetConsumed(v float32) {
+func (o *ErrorBudget) SetConsumed(v float64) {
 	o.Consumed = v
 }
 
 // GetRemaining returns the Remaining field value
-func (o *ErrorBudget) GetRemaining() float32 {
+func (o *ErrorBudget) GetRemaining() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -114,7 +110,7 @@ func (o *ErrorBudget) GetRemaining() float32 {
 
 // GetRemainingOk returns a tuple with the Remaining field value
 // and a boolean to check if the value has been set.
-func (o *ErrorBudget) GetRemainingOk() (*float32, bool) {
+func (o *ErrorBudget) GetRemainingOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -122,7 +118,7 @@ func (o *ErrorBudget) GetRemainingOk() (*float32, bool) {
 }
 
 // SetRemaining sets field value
-func (o *ErrorBudget) SetRemaining(v float32) {
+func (o *ErrorBudget) SetRemaining(v float64) {
 	o.Remaining = v
 }
 
@@ -151,7 +147,7 @@ func (o *ErrorBudget) SetIsEstimated(v bool) {
 }
 
 func (o ErrorBudget) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -165,46 +161,6 @@ func (o ErrorBudget) ToMap() (map[string]interface{}, error) {
 	toSerialize["remaining"] = o.Remaining
 	toSerialize["isEstimated"] = o.IsEstimated
 	return toSerialize, nil
-}
-
-func (o *ErrorBudget) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"initial",
-		"consumed",
-		"remaining",
-		"isEstimated",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varErrorBudget := _ErrorBudget{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varErrorBudget)
-
-	if err != nil {
-		return err
-	}
-
-	*o = ErrorBudget(varErrorBudget)
-
-	return err
 }
 
 type NullableErrorBudget struct {
@@ -242,5 +198,3 @@ func (v *NullableErrorBudget) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -20,10 +20,10 @@ type SummaryStatus string
 
 // List of summary_status
 const (
-	NO_DATA SummaryStatus = "NO_DATA"
-	HEALTHY SummaryStatus = "HEALTHY"
+	NO_DATA   SummaryStatus = "NO_DATA"
+	HEALTHY   SummaryStatus = "HEALTHY"
 	DEGRADING SummaryStatus = "DEGRADING"
-	VIOLATED SummaryStatus = "VIOLATED"
+	VIOLATED  SummaryStatus = "VIOLATED"
 )
 
 // All allowed values of SummaryStatus enum
@@ -112,4 +112,3 @@ func (v *NullableSummaryStatus) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-

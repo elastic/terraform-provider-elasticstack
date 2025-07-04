@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the Model400Response type satisfies the MappedNullable interface at compile time
@@ -21,18 +19,16 @@ var _ MappedNullable = &Model400Response{}
 
 // Model400Response struct for Model400Response
 type Model400Response struct {
-	StatusCode float32 `json:"statusCode"`
-	Error string `json:"error"`
-	Message string `json:"message"`
+	StatusCode float64 `json:"statusCode"`
+	Error      string  `json:"error"`
+	Message    string  `json:"message"`
 }
-
-type _Model400Response Model400Response
 
 // NewModel400Response instantiates a new Model400Response object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewModel400Response(statusCode float32, error_ string, message string) *Model400Response {
+func NewModel400Response(statusCode float64, error_ string, message string) *Model400Response {
 	this := Model400Response{}
 	this.StatusCode = statusCode
 	this.Error = error_
@@ -49,9 +45,9 @@ func NewModel400ResponseWithDefaults() *Model400Response {
 }
 
 // GetStatusCode returns the StatusCode field value
-func (o *Model400Response) GetStatusCode() float32 {
+func (o *Model400Response) GetStatusCode() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -60,7 +56,7 @@ func (o *Model400Response) GetStatusCode() float32 {
 
 // GetStatusCodeOk returns a tuple with the StatusCode field value
 // and a boolean to check if the value has been set.
-func (o *Model400Response) GetStatusCodeOk() (*float32, bool) {
+func (o *Model400Response) GetStatusCodeOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -68,7 +64,7 @@ func (o *Model400Response) GetStatusCodeOk() (*float32, bool) {
 }
 
 // SetStatusCode sets field value
-func (o *Model400Response) SetStatusCode(v float32) {
+func (o *Model400Response) SetStatusCode(v float64) {
 	o.StatusCode = v
 }
 
@@ -121,7 +117,7 @@ func (o *Model400Response) SetMessage(v string) {
 }
 
 func (o Model400Response) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -134,45 +130,6 @@ func (o Model400Response) ToMap() (map[string]interface{}, error) {
 	toSerialize["error"] = o.Error
 	toSerialize["message"] = o.Message
 	return toSerialize, nil
-}
-
-func (o *Model400Response) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"statusCode",
-		"error",
-		"message",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varModel400Response := _Model400Response{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varModel400Response)
-
-	if err != nil {
-		return err
-	}
-
-	*o = Model400Response(varModel400Response)
-
-	return err
 }
 
 type NullableModel400Response struct {
@@ -210,5 +167,3 @@ func (v *NullableModel400Response) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

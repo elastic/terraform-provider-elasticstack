@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the IndicatorPropertiesCustomMetricParams type satisfies the MappedNullable interface at compile time
@@ -27,13 +25,11 @@ type IndicatorPropertiesCustomMetricParams struct {
 	DataViewId *string `json:"dataViewId,omitempty"`
 	// the KQL query to filter the documents with.
 	Filter *string `json:"filter,omitempty"`
-	// The timestamp field used in the source indice. 
-	TimestampField string `json:"timestampField"`
-	Good IndicatorPropertiesCustomMetricParamsGood `json:"good"`
-	Total IndicatorPropertiesCustomMetricParamsTotal `json:"total"`
+	// The timestamp field used in the source indice.
+	TimestampField string                                     `json:"timestampField"`
+	Good           IndicatorPropertiesCustomMetricParamsGood  `json:"good"`
+	Total          IndicatorPropertiesCustomMetricParamsTotal `json:"total"`
 }
-
-type _IndicatorPropertiesCustomMetricParams IndicatorPropertiesCustomMetricParams
 
 // NewIndicatorPropertiesCustomMetricParams instantiates a new IndicatorPropertiesCustomMetricParams object
 // This constructor will assign default values to properties that have it defined,
@@ -217,7 +213,7 @@ func (o *IndicatorPropertiesCustomMetricParams) SetTotal(v IndicatorPropertiesCu
 }
 
 func (o IndicatorPropertiesCustomMetricParams) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -237,46 +233,6 @@ func (o IndicatorPropertiesCustomMetricParams) ToMap() (map[string]interface{}, 
 	toSerialize["good"] = o.Good
 	toSerialize["total"] = o.Total
 	return toSerialize, nil
-}
-
-func (o *IndicatorPropertiesCustomMetricParams) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"index",
-		"timestampField",
-		"good",
-		"total",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varIndicatorPropertiesCustomMetricParams := _IndicatorPropertiesCustomMetricParams{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varIndicatorPropertiesCustomMetricParams)
-
-	if err != nil {
-		return err
-	}
-
-	*o = IndicatorPropertiesCustomMetricParams(varIndicatorPropertiesCustomMetricParams)
-
-	return err
 }
 
 type NullableIndicatorPropertiesCustomMetricParams struct {
@@ -314,5 +270,3 @@ func (v *NullableIndicatorPropertiesCustomMetricParams) UnmarshalJSON(src []byte
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

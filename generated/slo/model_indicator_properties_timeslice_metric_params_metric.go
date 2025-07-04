@@ -12,14 +12,12 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the IndicatorPropertiesTimesliceMetricParamsMetric type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &IndicatorPropertiesTimesliceMetricParamsMetric{}
 
-// IndicatorPropertiesTimesliceMetricParamsMetric An object defining the metrics, equation, and threshold to determine if it's a good slice or not 
+// IndicatorPropertiesTimesliceMetricParamsMetric An object defining the metrics, equation, and threshold to determine if it's a good slice or not
 type IndicatorPropertiesTimesliceMetricParamsMetric struct {
 	// List of metrics with their name, aggregation type, and field.
 	Metrics []IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner `json:"metrics"`
@@ -28,16 +26,14 @@ type IndicatorPropertiesTimesliceMetricParamsMetric struct {
 	// The comparator to use to compare the equation to the threshold.
 	Comparator string `json:"comparator"`
 	// The threshold used to determine if the metric is a good slice or not.
-	Threshold float32 `json:"threshold"`
+	Threshold float64 `json:"threshold"`
 }
-
-type _IndicatorPropertiesTimesliceMetricParamsMetric IndicatorPropertiesTimesliceMetricParamsMetric
 
 // NewIndicatorPropertiesTimesliceMetricParamsMetric instantiates a new IndicatorPropertiesTimesliceMetricParamsMetric object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewIndicatorPropertiesTimesliceMetricParamsMetric(metrics []IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, equation string, comparator string, threshold float32) *IndicatorPropertiesTimesliceMetricParamsMetric {
+func NewIndicatorPropertiesTimesliceMetricParamsMetric(metrics []IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, equation string, comparator string, threshold float64) *IndicatorPropertiesTimesliceMetricParamsMetric {
 	this := IndicatorPropertiesTimesliceMetricParamsMetric{}
 	this.Metrics = metrics
 	this.Equation = equation
@@ -127,9 +123,9 @@ func (o *IndicatorPropertiesTimesliceMetricParamsMetric) SetComparator(v string)
 }
 
 // GetThreshold returns the Threshold field value
-func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThreshold() float32 {
+func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThreshold() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -138,7 +134,7 @@ func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThreshold() float32 
 
 // GetThresholdOk returns a tuple with the Threshold field value
 // and a boolean to check if the value has been set.
-func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThresholdOk() (*float32, bool) {
+func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThresholdOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -146,12 +142,12 @@ func (o *IndicatorPropertiesTimesliceMetricParamsMetric) GetThresholdOk() (*floa
 }
 
 // SetThreshold sets field value
-func (o *IndicatorPropertiesTimesliceMetricParamsMetric) SetThreshold(v float32) {
+func (o *IndicatorPropertiesTimesliceMetricParamsMetric) SetThreshold(v float64) {
 	o.Threshold = v
 }
 
 func (o IndicatorPropertiesTimesliceMetricParamsMetric) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -165,46 +161,6 @@ func (o IndicatorPropertiesTimesliceMetricParamsMetric) ToMap() (map[string]inte
 	toSerialize["comparator"] = o.Comparator
 	toSerialize["threshold"] = o.Threshold
 	return toSerialize, nil
-}
-
-func (o *IndicatorPropertiesTimesliceMetricParamsMetric) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"metrics",
-		"equation",
-		"comparator",
-		"threshold",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varIndicatorPropertiesTimesliceMetricParamsMetric := _IndicatorPropertiesTimesliceMetricParamsMetric{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varIndicatorPropertiesTimesliceMetricParamsMetric)
-
-	if err != nil {
-		return err
-	}
-
-	*o = IndicatorPropertiesTimesliceMetricParamsMetric(varIndicatorPropertiesTimesliceMetricParamsMetric)
-
-	return err
 }
 
 type NullableIndicatorPropertiesTimesliceMetricParamsMetric struct {
@@ -242,5 +198,3 @@ func (v *NullableIndicatorPropertiesTimesliceMetricParamsMetric) UnmarshalJSON(s
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

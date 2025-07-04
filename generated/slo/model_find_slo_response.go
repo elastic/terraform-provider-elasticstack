@@ -17,15 +17,15 @@ import (
 // checks if the FindSloResponse type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &FindSloResponse{}
 
-// FindSloResponse A paginated response of SLOs matching the query. 
+// FindSloResponse A paginated response of SLOs matching the query.
 type FindSloResponse struct {
 	// Size provided for cursor based pagination
-	Size *float32 `json:"size,omitempty"`
-	SearchAfter *string `json:"searchAfter,omitempty"`
-	Page *float32 `json:"page,omitempty"`
-	PerPage *float32 `json:"perPage,omitempty"`
-	Total *float32 `json:"total,omitempty"`
-	Results []SloWithSummaryResponse `json:"results,omitempty"`
+	Size        *float64                 `json:"size,omitempty"`
+	SearchAfter *string                  `json:"searchAfter,omitempty"`
+	Page        *float64                 `json:"page,omitempty"`
+	PerPage     *float64                 `json:"perPage,omitempty"`
+	Total       *float64                 `json:"total,omitempty"`
+	Results     []SloWithSummaryResponse `json:"results,omitempty"`
 }
 
 // NewFindSloResponse instantiates a new FindSloResponse object
@@ -46,9 +46,9 @@ func NewFindSloResponseWithDefaults() *FindSloResponse {
 }
 
 // GetSize returns the Size field value if set, zero value otherwise.
-func (o *FindSloResponse) GetSize() float32 {
+func (o *FindSloResponse) GetSize() float64 {
 	if o == nil || IsNil(o.Size) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.Size
@@ -56,7 +56,7 @@ func (o *FindSloResponse) GetSize() float32 {
 
 // GetSizeOk returns a tuple with the Size field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *FindSloResponse) GetSizeOk() (*float32, bool) {
+func (o *FindSloResponse) GetSizeOk() (*float64, bool) {
 	if o == nil || IsNil(o.Size) {
 		return nil, false
 	}
@@ -72,8 +72,8 @@ func (o *FindSloResponse) HasSize() bool {
 	return false
 }
 
-// SetSize gets a reference to the given float32 and assigns it to the Size field.
-func (o *FindSloResponse) SetSize(v float32) {
+// SetSize gets a reference to the given float64 and assigns it to the Size field.
+func (o *FindSloResponse) SetSize(v float64) {
 	o.Size = &v
 }
 
@@ -110,9 +110,9 @@ func (o *FindSloResponse) SetSearchAfter(v string) {
 }
 
 // GetPage returns the Page field value if set, zero value otherwise.
-func (o *FindSloResponse) GetPage() float32 {
+func (o *FindSloResponse) GetPage() float64 {
 	if o == nil || IsNil(o.Page) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.Page
@@ -120,7 +120,7 @@ func (o *FindSloResponse) GetPage() float32 {
 
 // GetPageOk returns a tuple with the Page field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *FindSloResponse) GetPageOk() (*float32, bool) {
+func (o *FindSloResponse) GetPageOk() (*float64, bool) {
 	if o == nil || IsNil(o.Page) {
 		return nil, false
 	}
@@ -136,15 +136,15 @@ func (o *FindSloResponse) HasPage() bool {
 	return false
 }
 
-// SetPage gets a reference to the given float32 and assigns it to the Page field.
-func (o *FindSloResponse) SetPage(v float32) {
+// SetPage gets a reference to the given float64 and assigns it to the Page field.
+func (o *FindSloResponse) SetPage(v float64) {
 	o.Page = &v
 }
 
 // GetPerPage returns the PerPage field value if set, zero value otherwise.
-func (o *FindSloResponse) GetPerPage() float32 {
+func (o *FindSloResponse) GetPerPage() float64 {
 	if o == nil || IsNil(o.PerPage) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.PerPage
@@ -152,7 +152,7 @@ func (o *FindSloResponse) GetPerPage() float32 {
 
 // GetPerPageOk returns a tuple with the PerPage field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *FindSloResponse) GetPerPageOk() (*float32, bool) {
+func (o *FindSloResponse) GetPerPageOk() (*float64, bool) {
 	if o == nil || IsNil(o.PerPage) {
 		return nil, false
 	}
@@ -168,15 +168,15 @@ func (o *FindSloResponse) HasPerPage() bool {
 	return false
 }
 
-// SetPerPage gets a reference to the given float32 and assigns it to the PerPage field.
-func (o *FindSloResponse) SetPerPage(v float32) {
+// SetPerPage gets a reference to the given float64 and assigns it to the PerPage field.
+func (o *FindSloResponse) SetPerPage(v float64) {
 	o.PerPage = &v
 }
 
 // GetTotal returns the Total field value if set, zero value otherwise.
-func (o *FindSloResponse) GetTotal() float32 {
+func (o *FindSloResponse) GetTotal() float64 {
 	if o == nil || IsNil(o.Total) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.Total
@@ -184,7 +184,7 @@ func (o *FindSloResponse) GetTotal() float32 {
 
 // GetTotalOk returns a tuple with the Total field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *FindSloResponse) GetTotalOk() (*float32, bool) {
+func (o *FindSloResponse) GetTotalOk() (*float64, bool) {
 	if o == nil || IsNil(o.Total) {
 		return nil, false
 	}
@@ -200,8 +200,8 @@ func (o *FindSloResponse) HasTotal() bool {
 	return false
 }
 
-// SetTotal gets a reference to the given float32 and assigns it to the Total field.
-func (o *FindSloResponse) SetTotal(v float32) {
+// SetTotal gets a reference to the given float64 and assigns it to the Total field.
+func (o *FindSloResponse) SetTotal(v float64) {
 	o.Total = &v
 }
 
@@ -238,7 +238,7 @@ func (o *FindSloResponse) SetResults(v []SloWithSummaryResponse) {
 }
 
 func (o FindSloResponse) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -303,5 +303,3 @@ func (v *NullableFindSloResponse) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

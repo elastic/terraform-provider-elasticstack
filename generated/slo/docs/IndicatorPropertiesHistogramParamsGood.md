@@ -7,8 +7,8 @@ Name | Type | Description | Notes
 **Field** | **string** | The field use to aggregate the good events. | 
 **Aggregation** | **string** | The type of aggregation to use. | 
 **Filter** | Pointer to **string** | The filter for good events. | [optional] 
-**From** | Pointer to **float32** | The starting value of the range. Only required for \&quot;range\&quot; aggregations. | [optional] 
-**To** | Pointer to **float32** | The ending value of the range. Only required for \&quot;range\&quot; aggregations. | [optional] 
+**From** | Pointer to **float64** | The starting value of the range. Only required for \&quot;range\&quot; aggregations. | [optional] 
+**To** | Pointer to **float64** | The ending value of the range. Only required for \&quot;range\&quot; aggregations. | [optional] 
 
 ## Methods
 
@@ -96,20 +96,20 @@ HasFilter returns a boolean if a field has been set.
 
 ### GetFrom
 
-`func (o *IndicatorPropertiesHistogramParamsGood) GetFrom() float32`
+`func (o *IndicatorPropertiesHistogramParamsGood) GetFrom() float64`
 
 GetFrom returns the From field if non-nil, zero value otherwise.
 
 ### GetFromOk
 
-`func (o *IndicatorPropertiesHistogramParamsGood) GetFromOk() (*float32, bool)`
+`func (o *IndicatorPropertiesHistogramParamsGood) GetFromOk() (*float64, bool)`
 
 GetFromOk returns a tuple with the From field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetFrom
 
-`func (o *IndicatorPropertiesHistogramParamsGood) SetFrom(v float32)`
+`func (o *IndicatorPropertiesHistogramParamsGood) SetFrom(v float64)`
 
 SetFrom sets From field to given value.
 
@@ -121,20 +121,20 @@ HasFrom returns a boolean if a field has been set.
 
 ### GetTo
 
-`func (o *IndicatorPropertiesHistogramParamsGood) GetTo() float32`
+`func (o *IndicatorPropertiesHistogramParamsGood) GetTo() float64`
 
 GetTo returns the To field if non-nil, zero value otherwise.
 
 ### GetToOk
 
-`func (o *IndicatorPropertiesHistogramParamsGood) GetToOk() (*float32, bool)`
+`func (o *IndicatorPropertiesHistogramParamsGood) GetToOk() (*float64, bool)`
 
 GetToOk returns a tuple with the To field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTo
 
-`func (o *IndicatorPropertiesHistogramParamsGood) SetTo(v float32)`
+`func (o *IndicatorPropertiesHistogramParamsGood) SetTo(v float64)`
 
 SetTo sets To field to given value.
 

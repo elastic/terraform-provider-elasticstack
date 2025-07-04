@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the Summary type satisfies the MappedNullable interface at compile time
@@ -21,18 +19,16 @@ var _ MappedNullable = &Summary{}
 
 // Summary The SLO computed data
 type Summary struct {
-	Status SummaryStatus `json:"status"`
-	SliValue float32 `json:"sliValue"`
-	ErrorBudget ErrorBudget `json:"errorBudget"`
+	Status      SummaryStatus `json:"status"`
+	SliValue    float64       `json:"sliValue"`
+	ErrorBudget ErrorBudget   `json:"errorBudget"`
 }
-
-type _Summary Summary
 
 // NewSummary instantiates a new Summary object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewSummary(status SummaryStatus, sliValue float32, errorBudget ErrorBudget) *Summary {
+func NewSummary(status SummaryStatus, sliValue float64, errorBudget ErrorBudget) *Summary {
 	this := Summary{}
 	this.Status = status
 	this.SliValue = sliValue
@@ -73,9 +69,9 @@ func (o *Summary) SetStatus(v SummaryStatus) {
 }
 
 // GetSliValue returns the SliValue field value
-func (o *Summary) GetSliValue() float32 {
+func (o *Summary) GetSliValue() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -84,7 +80,7 @@ func (o *Summary) GetSliValue() float32 {
 
 // GetSliValueOk returns a tuple with the SliValue field value
 // and a boolean to check if the value has been set.
-func (o *Summary) GetSliValueOk() (*float32, bool) {
+func (o *Summary) GetSliValueOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -92,7 +88,7 @@ func (o *Summary) GetSliValueOk() (*float32, bool) {
 }
 
 // SetSliValue sets field value
-func (o *Summary) SetSliValue(v float32) {
+func (o *Summary) SetSliValue(v float64) {
 	o.SliValue = v
 }
 
@@ -121,7 +117,7 @@ func (o *Summary) SetErrorBudget(v ErrorBudget) {
 }
 
 func (o Summary) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -134,45 +130,6 @@ func (o Summary) ToMap() (map[string]interface{}, error) {
 	toSerialize["sliValue"] = o.SliValue
 	toSerialize["errorBudget"] = o.ErrorBudget
 	return toSerialize, nil
-}
-
-func (o *Summary) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"status",
-		"sliValue",
-		"errorBudget",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varSummary := _Summary{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varSummary)
-
-	if err != nil {
-		return err
-	}
-
-	*o = Summary(varSummary)
-
-	return err
 }
 
 type NullableSummary struct {
@@ -210,5 +167,3 @@ func (v *NullableSummary) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

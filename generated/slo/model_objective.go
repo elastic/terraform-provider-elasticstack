@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the Objective type satisfies the MappedNullable interface at compile time
@@ -22,20 +20,18 @@ var _ MappedNullable = &Objective{}
 // Objective Defines properties for the SLO objective
 type Objective struct {
 	// the target objective between 0 and 1 excluded
-	Target float32 `json:"target"`
+	Target float64 `json:"target"`
 	// the target objective for each slice when using a timeslices budgeting method
-	TimesliceTarget *float32 `json:"timesliceTarget,omitempty"`
+	TimesliceTarget *float64 `json:"timesliceTarget,omitempty"`
 	// the duration of each slice when using a timeslices budgeting method, as {duraton}{unit}
 	TimesliceWindow *string `json:"timesliceWindow,omitempty"`
 }
-
-type _Objective Objective
 
 // NewObjective instantiates a new Objective object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewObjective(target float32) *Objective {
+func NewObjective(target float64) *Objective {
 	this := Objective{}
 	this.Target = target
 	return &this
@@ -50,9 +46,9 @@ func NewObjectiveWithDefaults() *Objective {
 }
 
 // GetTarget returns the Target field value
-func (o *Objective) GetTarget() float32 {
+func (o *Objective) GetTarget() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -61,7 +57,7 @@ func (o *Objective) GetTarget() float32 {
 
 // GetTargetOk returns a tuple with the Target field value
 // and a boolean to check if the value has been set.
-func (o *Objective) GetTargetOk() (*float32, bool) {
+func (o *Objective) GetTargetOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -69,14 +65,14 @@ func (o *Objective) GetTargetOk() (*float32, bool) {
 }
 
 // SetTarget sets field value
-func (o *Objective) SetTarget(v float32) {
+func (o *Objective) SetTarget(v float64) {
 	o.Target = v
 }
 
 // GetTimesliceTarget returns the TimesliceTarget field value if set, zero value otherwise.
-func (o *Objective) GetTimesliceTarget() float32 {
+func (o *Objective) GetTimesliceTarget() float64 {
 	if o == nil || IsNil(o.TimesliceTarget) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.TimesliceTarget
@@ -84,7 +80,7 @@ func (o *Objective) GetTimesliceTarget() float32 {
 
 // GetTimesliceTargetOk returns a tuple with the TimesliceTarget field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *Objective) GetTimesliceTargetOk() (*float32, bool) {
+func (o *Objective) GetTimesliceTargetOk() (*float64, bool) {
 	if o == nil || IsNil(o.TimesliceTarget) {
 		return nil, false
 	}
@@ -100,8 +96,8 @@ func (o *Objective) HasTimesliceTarget() bool {
 	return false
 }
 
-// SetTimesliceTarget gets a reference to the given float32 and assigns it to the TimesliceTarget field.
-func (o *Objective) SetTimesliceTarget(v float32) {
+// SetTimesliceTarget gets a reference to the given float64 and assigns it to the TimesliceTarget field.
+func (o *Objective) SetTimesliceTarget(v float64) {
 	o.TimesliceTarget = &v
 }
 
@@ -138,7 +134,7 @@ func (o *Objective) SetTimesliceWindow(v string) {
 }
 
 func (o Objective) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -155,43 +151,6 @@ func (o Objective) ToMap() (map[string]interface{}, error) {
 		toSerialize["timesliceWindow"] = o.TimesliceWindow
 	}
 	return toSerialize, nil
-}
-
-func (o *Objective) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"target",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varObjective := _Objective{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varObjective)
-
-	if err != nil {
-		return err
-	}
-
-	*o = Objective(varObjective)
-
-	return err
 }
 
 type NullableObjective struct {
@@ -229,5 +188,3 @@ func (v *NullableObjective) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

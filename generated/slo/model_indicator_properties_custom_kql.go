@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the IndicatorPropertiesCustomKql type satisfies the MappedNullable interface at compile time
@@ -25,8 +23,6 @@ type IndicatorPropertiesCustomKql struct {
 	// The type of indicator.
 	Type string `json:"type"`
 }
-
-type _IndicatorPropertiesCustomKql IndicatorPropertiesCustomKql
 
 // NewIndicatorPropertiesCustomKql instantiates a new IndicatorPropertiesCustomKql object
 // This constructor will assign default values to properties that have it defined,
@@ -96,7 +92,7 @@ func (o *IndicatorPropertiesCustomKql) SetType(v string) {
 }
 
 func (o IndicatorPropertiesCustomKql) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -108,44 +104,6 @@ func (o IndicatorPropertiesCustomKql) ToMap() (map[string]interface{}, error) {
 	toSerialize["params"] = o.Params
 	toSerialize["type"] = o.Type
 	return toSerialize, nil
-}
-
-func (o *IndicatorPropertiesCustomKql) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"params",
-		"type",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varIndicatorPropertiesCustomKql := _IndicatorPropertiesCustomKql{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varIndicatorPropertiesCustomKql)
-
-	if err != nil {
-		return err
-	}
-
-	*o = IndicatorPropertiesCustomKql(varIndicatorPropertiesCustomKql)
-
-	return err
 }
 
 type NullableIndicatorPropertiesCustomKql struct {
@@ -183,5 +141,3 @@ func (v *NullableIndicatorPropertiesCustomKql) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

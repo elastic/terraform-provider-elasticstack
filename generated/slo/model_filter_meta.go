@@ -19,18 +19,18 @@ var _ MappedNullable = &FilterMeta{}
 
 // FilterMeta Defines properties for a filter
 type FilterMeta struct {
-	Alias NullableString `json:"alias,omitempty"`
-	Disabled *bool `json:"disabled,omitempty"`
-	Negate *bool `json:"negate,omitempty"`
-	ControlledBy *string `json:"controlledBy,omitempty"`
-	Group *string `json:"group,omitempty"`
-	Index *string `json:"index,omitempty"`
-	IsMultiIndex *bool `json:"isMultiIndex,omitempty"`
-	Type *string `json:"type,omitempty"`
-	Key *string `json:"key,omitempty"`
-	Params map[string]interface{} `json:"params,omitempty"`
-	Value *string `json:"value,omitempty"`
-	Field *string `json:"field,omitempty"`
+	Alias        NullableString         `json:"alias,omitempty"`
+	Disabled     *bool                  `json:"disabled,omitempty"`
+	Negate       *bool                  `json:"negate,omitempty"`
+	ControlledBy *string                `json:"controlledBy,omitempty"`
+	Group        *string                `json:"group,omitempty"`
+	Index        *string                `json:"index,omitempty"`
+	IsMultiIndex *bool                  `json:"isMultiIndex,omitempty"`
+	Type         *string                `json:"type,omitempty"`
+	Key          *string                `json:"key,omitempty"`
+	Params       map[string]interface{} `json:"params,omitempty"`
+	Value        *string                `json:"value,omitempty"`
+	Field        *string                `json:"field,omitempty"`
 }
 
 // NewFilterMeta instantiates a new FilterMeta object
@@ -82,6 +82,7 @@ func (o *FilterMeta) HasAlias() bool {
 func (o *FilterMeta) SetAlias(v string) {
 	o.Alias.Set(&v)
 }
+
 // SetAliasNil sets the value for Alias to be an explicit nil
 func (o *FilterMeta) SetAliasNil() {
 	o.Alias.Set(nil)
@@ -445,7 +446,7 @@ func (o *FilterMeta) SetField(v string) {
 }
 
 func (o FilterMeta) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -528,5 +529,3 @@ func (v *NullableFilterMeta) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

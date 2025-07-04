@@ -4,11 +4,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Page** | Pointer to **float32** | for backward compability | [optional] [default to 1]
-**PerPage** | Pointer to **float32** | for backward compability | [optional] 
-**Size** | Pointer to **float32** |  | [optional] 
+**Page** | Pointer to **float64** | for backward compability | [optional] [default to 1]
+**PerPage** | Pointer to **float64** | for backward compability | [optional] 
+**Size** | Pointer to **float64** |  | [optional] 
 **SearchAfter** | Pointer to **[]string** | the cursor to provide to get the next paged results | [optional] 
-**Total** | Pointer to **float32** |  | [optional] 
+**Total** | Pointer to **float64** |  | [optional] 
 **Results** | Pointer to [**[]SloWithSummaryResponse**](SloWithSummaryResponse.md) |  | [optional] 
 
 ## Methods
@@ -32,20 +32,20 @@ but it doesn't guarantee that properties required by API are set
 
 ### GetPage
 
-`func (o *FindSloDefinitionsResponseOneOf1) GetPage() float32`
+`func (o *FindSloDefinitionsResponseOneOf1) GetPage() float64`
 
 GetPage returns the Page field if non-nil, zero value otherwise.
 
 ### GetPageOk
 
-`func (o *FindSloDefinitionsResponseOneOf1) GetPageOk() (*float32, bool)`
+`func (o *FindSloDefinitionsResponseOneOf1) GetPageOk() (*float64, bool)`
 
 GetPageOk returns a tuple with the Page field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPage
 
-`func (o *FindSloDefinitionsResponseOneOf1) SetPage(v float32)`
+`func (o *FindSloDefinitionsResponseOneOf1) SetPage(v float64)`
 
 SetPage sets Page field to given value.
 
@@ -57,20 +57,20 @@ HasPage returns a boolean if a field has been set.
 
 ### GetPerPage
 
-`func (o *FindSloDefinitionsResponseOneOf1) GetPerPage() float32`
+`func (o *FindSloDefinitionsResponseOneOf1) GetPerPage() float64`
 
 GetPerPage returns the PerPage field if non-nil, zero value otherwise.
 
 ### GetPerPageOk
 
-`func (o *FindSloDefinitionsResponseOneOf1) GetPerPageOk() (*float32, bool)`
+`func (o *FindSloDefinitionsResponseOneOf1) GetPerPageOk() (*float64, bool)`
 
 GetPerPageOk returns a tuple with the PerPage field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPerPage
 
-`func (o *FindSloDefinitionsResponseOneOf1) SetPerPage(v float32)`
+`func (o *FindSloDefinitionsResponseOneOf1) SetPerPage(v float64)`
 
 SetPerPage sets PerPage field to given value.
 
@@ -82,20 +82,20 @@ HasPerPage returns a boolean if a field has been set.
 
 ### GetSize
 
-`func (o *FindSloDefinitionsResponseOneOf1) GetSize() float32`
+`func (o *FindSloDefinitionsResponseOneOf1) GetSize() float64`
 
 GetSize returns the Size field if non-nil, zero value otherwise.
 
 ### GetSizeOk
 
-`func (o *FindSloDefinitionsResponseOneOf1) GetSizeOk() (*float32, bool)`
+`func (o *FindSloDefinitionsResponseOneOf1) GetSizeOk() (*float64, bool)`
 
 GetSizeOk returns a tuple with the Size field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetSize
 
-`func (o *FindSloDefinitionsResponseOneOf1) SetSize(v float32)`
+`func (o *FindSloDefinitionsResponseOneOf1) SetSize(v float64)`
 
 SetSize sets Size field to given value.
 
@@ -132,20 +132,20 @@ HasSearchAfter returns a boolean if a field has been set.
 
 ### GetTotal
 
-`func (o *FindSloDefinitionsResponseOneOf1) GetTotal() float32`
+`func (o *FindSloDefinitionsResponseOneOf1) GetTotal() float64`
 
 GetTotal returns the Total field if non-nil, zero value otherwise.
 
 ### GetTotalOk
 
-`func (o *FindSloDefinitionsResponseOneOf1) GetTotalOk() (*float32, bool)`
+`func (o *FindSloDefinitionsResponseOneOf1) GetTotalOk() (*float64, bool)`
 
 GetTotalOk returns a tuple with the Total field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTotal
 
-`func (o *FindSloDefinitionsResponseOneOf1) SetTotal(v float32)`
+`func (o *FindSloDefinitionsResponseOneOf1) SetTotal(v float64)`
 
 SetTotal sets Total field to given value.
 

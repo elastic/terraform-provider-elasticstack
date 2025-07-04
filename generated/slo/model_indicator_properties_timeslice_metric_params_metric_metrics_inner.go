@@ -15,19 +15,18 @@ import (
 	"fmt"
 )
 
-
 // IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner struct for IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner
 type IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner struct {
 	TimesliceMetricBasicMetricWithField *TimesliceMetricBasicMetricWithField
-	TimesliceMetricDocCountMetric *TimesliceMetricDocCountMetric
-	TimesliceMetricPercentileMetric *TimesliceMetricPercentileMetric
+	TimesliceMetricDocCountMetric       *TimesliceMetricDocCountMetric
+	TimesliceMetricPercentileMetric     *TimesliceMetricPercentileMetric
 }
 
 // Unmarshal JSON data into any of the pointers in the struct
 func (dst *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) UnmarshalJSON(data []byte) error {
 	var err error
 	// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
-	err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField);
+	err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
 	if err == nil {
 		jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
 		if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
@@ -40,7 +39,7 @@ func (dst *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) Unmarshal
 	}
 
 	// try to unmarshal JSON data into TimesliceMetricDocCountMetric
-	err = json.Unmarshal(data, &dst.TimesliceMetricDocCountMetric);
+	err = json.Unmarshal(data, &dst.TimesliceMetricDocCountMetric)
 	if err == nil {
 		jsonTimesliceMetricDocCountMetric, _ := json.Marshal(dst.TimesliceMetricDocCountMetric)
 		if string(jsonTimesliceMetricDocCountMetric) == "{}" { // empty struct
@@ -53,7 +52,7 @@ func (dst *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) Unmarshal
 	}
 
 	// try to unmarshal JSON data into TimesliceMetricPercentileMetric
-	err = json.Unmarshal(data, &dst.TimesliceMetricPercentileMetric);
+	err = json.Unmarshal(data, &dst.TimesliceMetricPercentileMetric)
 	if err == nil {
 		jsonTimesliceMetricPercentileMetric, _ := json.Marshal(dst.TimesliceMetricPercentileMetric)
 		if string(jsonTimesliceMetricPercentileMetric) == "{}" { // empty struct
@@ -69,7 +68,7 @@ func (dst *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) Unmarshal
 }
 
 // Marshal data from the first non-nil pointers in the struct to JSON
-func (src IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) MarshalJSON() ([]byte, error) {
+func (src *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) MarshalJSON() ([]byte, error) {
 	if src.TimesliceMetricBasicMetricWithField != nil {
 		return json.Marshal(&src.TimesliceMetricBasicMetricWithField)
 	}
@@ -84,7 +83,6 @@ func (src IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) MarshalJSO
 
 	return nil, nil // no data in anyOf schemas
 }
-
 
 type NullableIndicatorPropertiesTimesliceMetricParamsMetricMetricsInner struct {
 	value *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner
@@ -121,5 +119,3 @@ func (v *NullableIndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) Unm
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

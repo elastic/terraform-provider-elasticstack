@@ -20,7 +20,7 @@ var _ MappedNullable = &Filter{}
 // Filter Defines properties for a filter
 type Filter struct {
 	Query map[string]interface{} `json:"query,omitempty"`
-	Meta *FilterMeta `json:"meta,omitempty"`
+	Meta  *FilterMeta            `json:"meta,omitempty"`
 }
 
 // NewFilter instantiates a new Filter object
@@ -105,7 +105,7 @@ func (o *Filter) SetMeta(v FilterMeta) {
 }
 
 func (o Filter) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -158,5 +158,3 @@ func (v *NullableFilter) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

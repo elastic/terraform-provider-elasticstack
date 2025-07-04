@@ -13,16 +13,15 @@ package slo
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/validator.v2"
 )
 
 // SloWithSummaryResponseIndicator - struct for SloWithSummaryResponseIndicator
 type SloWithSummaryResponseIndicator struct {
 	IndicatorPropertiesApmAvailability *IndicatorPropertiesApmAvailability
-	IndicatorPropertiesApmLatency *IndicatorPropertiesApmLatency
-	IndicatorPropertiesCustomKql *IndicatorPropertiesCustomKql
-	IndicatorPropertiesCustomMetric *IndicatorPropertiesCustomMetric
-	IndicatorPropertiesHistogram *IndicatorPropertiesHistogram
+	IndicatorPropertiesApmLatency      *IndicatorPropertiesApmLatency
+	IndicatorPropertiesCustomKql       *IndicatorPropertiesCustomKql
+	IndicatorPropertiesCustomMetric    *IndicatorPropertiesCustomMetric
+	IndicatorPropertiesHistogram       *IndicatorPropertiesHistogram
 	IndicatorPropertiesTimesliceMetric *IndicatorPropertiesTimesliceMetric
 }
 
@@ -68,128 +67,161 @@ func IndicatorPropertiesTimesliceMetricAsSloWithSummaryResponseIndicator(v *Indi
 	}
 }
 
-
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *SloWithSummaryResponseIndicator) UnmarshalJSON(data []byte) error {
 	var err error
-	match := 0
-	// try to unmarshal data into IndicatorPropertiesApmAvailability
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesApmAvailability)
-	if err == nil {
-		jsonIndicatorPropertiesApmAvailability, _ := json.Marshal(dst.IndicatorPropertiesApmAvailability)
-		if string(jsonIndicatorPropertiesApmAvailability) == "{}" { // empty struct
+	// use discriminator value to speed up the lookup
+	var jsonDict map[string]interface{}
+	err = newStrictDecoder(data).Decode(&jsonDict)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal JSON into map for the discriminator lookup")
+	}
+
+	// check if the discriminator value is 'indicator_properties_apm_availability'
+	if jsonDict["type"] == "indicator_properties_apm_availability" {
+		// try to unmarshal JSON data into IndicatorPropertiesApmAvailability
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesApmAvailability)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesApmAvailability, return on the first match
+		} else {
 			dst.IndicatorPropertiesApmAvailability = nil
-		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesApmAvailability); err != nil {
-				dst.IndicatorPropertiesApmAvailability = nil
-			} else {
-				match++
-			}
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesApmAvailability: %s", err.Error())
 		}
-	} else {
-		dst.IndicatorPropertiesApmAvailability = nil
 	}
 
-	// try to unmarshal data into IndicatorPropertiesApmLatency
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesApmLatency)
-	if err == nil {
-		jsonIndicatorPropertiesApmLatency, _ := json.Marshal(dst.IndicatorPropertiesApmLatency)
-		if string(jsonIndicatorPropertiesApmLatency) == "{}" { // empty struct
+	// check if the discriminator value is 'indicator_properties_apm_latency'
+	if jsonDict["type"] == "indicator_properties_apm_latency" {
+		// try to unmarshal JSON data into IndicatorPropertiesApmLatency
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesApmLatency)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesApmLatency, return on the first match
+		} else {
 			dst.IndicatorPropertiesApmLatency = nil
-		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesApmLatency); err != nil {
-				dst.IndicatorPropertiesApmLatency = nil
-			} else {
-				match++
-			}
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesApmLatency: %s", err.Error())
 		}
-	} else {
-		dst.IndicatorPropertiesApmLatency = nil
 	}
 
-	// try to unmarshal data into IndicatorPropertiesCustomKql
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesCustomKql)
-	if err == nil {
-		jsonIndicatorPropertiesCustomKql, _ := json.Marshal(dst.IndicatorPropertiesCustomKql)
-		if string(jsonIndicatorPropertiesCustomKql) == "{}" { // empty struct
+	// check if the discriminator value is 'indicator_properties_custom_kql'
+	if jsonDict["type"] == "indicator_properties_custom_kql" {
+		// try to unmarshal JSON data into IndicatorPropertiesCustomKql
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomKql)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesCustomKql, return on the first match
+		} else {
 			dst.IndicatorPropertiesCustomKql = nil
-		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesCustomKql); err != nil {
-				dst.IndicatorPropertiesCustomKql = nil
-			} else {
-				match++
-			}
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesCustomKql: %s", err.Error())
 		}
-	} else {
-		dst.IndicatorPropertiesCustomKql = nil
 	}
 
-	// try to unmarshal data into IndicatorPropertiesCustomMetric
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesCustomMetric)
-	if err == nil {
-		jsonIndicatorPropertiesCustomMetric, _ := json.Marshal(dst.IndicatorPropertiesCustomMetric)
-		if string(jsonIndicatorPropertiesCustomMetric) == "{}" { // empty struct
+	// check if the discriminator value is 'indicator_properties_custom_metric'
+	if jsonDict["type"] == "indicator_properties_custom_metric" {
+		// try to unmarshal JSON data into IndicatorPropertiesCustomMetric
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomMetric)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesCustomMetric, return on the first match
+		} else {
 			dst.IndicatorPropertiesCustomMetric = nil
-		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesCustomMetric); err != nil {
-				dst.IndicatorPropertiesCustomMetric = nil
-			} else {
-				match++
-			}
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesCustomMetric: %s", err.Error())
 		}
-	} else {
-		dst.IndicatorPropertiesCustomMetric = nil
 	}
 
-	// try to unmarshal data into IndicatorPropertiesHistogram
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesHistogram)
-	if err == nil {
-		jsonIndicatorPropertiesHistogram, _ := json.Marshal(dst.IndicatorPropertiesHistogram)
-		if string(jsonIndicatorPropertiesHistogram) == "{}" { // empty struct
+	// check if the discriminator value is 'indicator_properties_histogram'
+	if jsonDict["type"] == "indicator_properties_histogram" {
+		// try to unmarshal JSON data into IndicatorPropertiesHistogram
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesHistogram)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesHistogram, return on the first match
+		} else {
 			dst.IndicatorPropertiesHistogram = nil
-		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesHistogram); err != nil {
-				dst.IndicatorPropertiesHistogram = nil
-			} else {
-				match++
-			}
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesHistogram: %s", err.Error())
 		}
-	} else {
-		dst.IndicatorPropertiesHistogram = nil
 	}
 
-	// try to unmarshal data into IndicatorPropertiesTimesliceMetric
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesTimesliceMetric)
-	if err == nil {
-		jsonIndicatorPropertiesTimesliceMetric, _ := json.Marshal(dst.IndicatorPropertiesTimesliceMetric)
-		if string(jsonIndicatorPropertiesTimesliceMetric) == "{}" { // empty struct
+	// check if the discriminator value is 'indicator_properties_timeslice_metric'
+	if jsonDict["type"] == "indicator_properties_timeslice_metric" {
+		// try to unmarshal JSON data into IndicatorPropertiesTimesliceMetric
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesTimesliceMetric)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesTimesliceMetric, return on the first match
+		} else {
 			dst.IndicatorPropertiesTimesliceMetric = nil
-		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesTimesliceMetric); err != nil {
-				dst.IndicatorPropertiesTimesliceMetric = nil
-			} else {
-				match++
-			}
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesTimesliceMetric: %s", err.Error())
 		}
-	} else {
-		dst.IndicatorPropertiesTimesliceMetric = nil
 	}
 
-	if match > 1 { // more than 1 match
-		// reset to nil
-		dst.IndicatorPropertiesApmAvailability = nil
-		dst.IndicatorPropertiesApmLatency = nil
-		dst.IndicatorPropertiesCustomKql = nil
-		dst.IndicatorPropertiesCustomMetric = nil
-		dst.IndicatorPropertiesHistogram = nil
-		dst.IndicatorPropertiesTimesliceMetric = nil
-
-		return fmt.Errorf("data matches more than one schema in oneOf(SloWithSummaryResponseIndicator)")
-	} else if match == 1 {
-		return nil // exactly one match
-	} else { // no match
-		return fmt.Errorf("data failed to match schemas in oneOf(SloWithSummaryResponseIndicator)")
+	// check if the discriminator value is 'sli.apm.transactionDuration'
+	if jsonDict["type"] == "sli.apm.transactionDuration" {
+		// try to unmarshal JSON data into IndicatorPropertiesApmLatency
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesApmLatency)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesApmLatency, return on the first match
+		} else {
+			dst.IndicatorPropertiesApmLatency = nil
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesApmLatency: %s", err.Error())
+		}
 	}
+
+	// check if the discriminator value is 'sli.apm.transactionErrorRate'
+	if jsonDict["type"] == "sli.apm.transactionErrorRate" {
+		// try to unmarshal JSON data into IndicatorPropertiesApmAvailability
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesApmAvailability)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesApmAvailability, return on the first match
+		} else {
+			dst.IndicatorPropertiesApmAvailability = nil
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesApmAvailability: %s", err.Error())
+		}
+	}
+
+	// check if the discriminator value is 'sli.histogram.custom'
+	if jsonDict["type"] == "sli.histogram.custom" {
+		// try to unmarshal JSON data into IndicatorPropertiesHistogram
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesHistogram)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesHistogram, return on the first match
+		} else {
+			dst.IndicatorPropertiesHistogram = nil
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesHistogram: %s", err.Error())
+		}
+	}
+
+	// check if the discriminator value is 'sli.kql.custom'
+	if jsonDict["type"] == "sli.kql.custom" {
+		// try to unmarshal JSON data into IndicatorPropertiesCustomKql
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomKql)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesCustomKql, return on the first match
+		} else {
+			dst.IndicatorPropertiesCustomKql = nil
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesCustomKql: %s", err.Error())
+		}
+	}
+
+	// check if the discriminator value is 'sli.metric.custom'
+	if jsonDict["type"] == "sli.metric.custom" {
+		// try to unmarshal JSON data into IndicatorPropertiesCustomMetric
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomMetric)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesCustomMetric, return on the first match
+		} else {
+			dst.IndicatorPropertiesCustomMetric = nil
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesCustomMetric: %s", err.Error())
+		}
+	}
+
+	// check if the discriminator value is 'sli.metric.timeslice'
+	if jsonDict["type"] == "sli.metric.timeslice" {
+		// try to unmarshal JSON data into IndicatorPropertiesTimesliceMetric
+		err = json.Unmarshal(data, &dst.IndicatorPropertiesTimesliceMetric)
+		if err == nil {
+			return nil // data stored in dst.IndicatorPropertiesTimesliceMetric, return on the first match
+		} else {
+			dst.IndicatorPropertiesTimesliceMetric = nil
+			return fmt.Errorf("failed to unmarshal SloWithSummaryResponseIndicator as IndicatorPropertiesTimesliceMetric: %s", err.Error())
+		}
+	}
+
+	return nil
 }
 
 // Marshal data from the first non-nil pointers in the struct to JSON
@@ -222,7 +254,7 @@ func (src SloWithSummaryResponseIndicator) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *SloWithSummaryResponseIndicator) GetActualInstance() (interface{}) {
+func (obj *SloWithSummaryResponseIndicator) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -248,36 +280,6 @@ func (obj *SloWithSummaryResponseIndicator) GetActualInstance() (interface{}) {
 
 	if obj.IndicatorPropertiesTimesliceMetric != nil {
 		return obj.IndicatorPropertiesTimesliceMetric
-	}
-
-	// all schemas are nil
-	return nil
-}
-
-// Get the actual instance value
-func (obj SloWithSummaryResponseIndicator) GetActualInstanceValue() (interface{}) {
-	if obj.IndicatorPropertiesApmAvailability != nil {
-		return *obj.IndicatorPropertiesApmAvailability
-	}
-
-	if obj.IndicatorPropertiesApmLatency != nil {
-		return *obj.IndicatorPropertiesApmLatency
-	}
-
-	if obj.IndicatorPropertiesCustomKql != nil {
-		return *obj.IndicatorPropertiesCustomKql
-	}
-
-	if obj.IndicatorPropertiesCustomMetric != nil {
-		return *obj.IndicatorPropertiesCustomMetric
-	}
-
-	if obj.IndicatorPropertiesHistogram != nil {
-		return *obj.IndicatorPropertiesHistogram
-	}
-
-	if obj.IndicatorPropertiesTimesliceMetric != nil {
-		return *obj.IndicatorPropertiesTimesliceMetric
 	}
 
 	// all schemas are nil
@@ -319,5 +321,3 @@ func (v *NullableSloWithSummaryResponseIndicator) UnmarshalJSON(src []byte) erro
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the TimesliceMetricBasicMetricWithField type satisfies the MappedNullable interface at compile time
@@ -22,7 +20,7 @@ var _ MappedNullable = &TimesliceMetricBasicMetricWithField{}
 // TimesliceMetricBasicMetricWithField struct for TimesliceMetricBasicMetricWithField
 type TimesliceMetricBasicMetricWithField struct {
 	// The name of the metric. Only valid options are A-Z
-	Name string `json:"name" validate:"regexp=^[A-Z]$"`
+	Name string `json:"name"`
 	// The aggregation type of the metric.
 	Aggregation string `json:"aggregation"`
 	// The field of the metric.
@@ -30,8 +28,6 @@ type TimesliceMetricBasicMetricWithField struct {
 	// The filter to apply to the metric.
 	Filter *string `json:"filter,omitempty"`
 }
-
-type _TimesliceMetricBasicMetricWithField TimesliceMetricBasicMetricWithField
 
 // NewTimesliceMetricBasicMetricWithField instantiates a new TimesliceMetricBasicMetricWithField object
 // This constructor will assign default values to properties that have it defined,
@@ -158,7 +154,7 @@ func (o *TimesliceMetricBasicMetricWithField) SetFilter(v string) {
 }
 
 func (o TimesliceMetricBasicMetricWithField) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -174,45 +170,6 @@ func (o TimesliceMetricBasicMetricWithField) ToMap() (map[string]interface{}, er
 		toSerialize["filter"] = o.Filter
 	}
 	return toSerialize, nil
-}
-
-func (o *TimesliceMetricBasicMetricWithField) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"name",
-		"aggregation",
-		"field",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varTimesliceMetricBasicMetricWithField := _TimesliceMetricBasicMetricWithField{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTimesliceMetricBasicMetricWithField)
-
-	if err != nil {
-		return err
-	}
-
-	*o = TimesliceMetricBasicMetricWithField(varTimesliceMetricBasicMetricWithField)
-
-	return err
 }
 
 type NullableTimesliceMetricBasicMetricWithField struct {
@@ -250,5 +207,3 @@ func (v *NullableTimesliceMetricBasicMetricWithField) UnmarshalJSON(src []byte) 
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

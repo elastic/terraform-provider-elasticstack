@@ -13,7 +13,6 @@ package slo
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/validator.v2"
 )
 
 // GroupBy - optional group by field or fields to use to generate an SLO per distinct value
@@ -42,34 +41,26 @@ func (dst *GroupBy) UnmarshalJSON(data []byte) error {
 	var err error
 	match := 0
 	// try to unmarshal data into ArrayOfString
-	err = newStrictDecoder(data).Decode(&dst.ArrayOfString)
+	err = json.Unmarshal(data, &dst.ArrayOfString)
 	if err == nil {
-		jsonArrayOfString, _ := json.Marshal(dst.ArrayOfString)
-		if string(jsonArrayOfString) == "{}" { // empty struct
+		json[]string, _ := json.Marshal(dst.ArrayOfString)
+		if string(json[]string) == "{}" { // empty struct
 			dst.ArrayOfString = nil
 		} else {
-			if err = validator.Validate(dst.ArrayOfString); err != nil {
-				dst.ArrayOfString = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.ArrayOfString = nil
 	}
 
 	// try to unmarshal data into String
-	err = newStrictDecoder(data).Decode(&dst.String)
+	err = json.Unmarshal(data, &dst.String)
 	if err == nil {
-		jsonString, _ := json.Marshal(dst.String)
-		if string(jsonString) == "{}" { // empty struct
+		jsonstring, _ := json.Marshal(dst.String)
+		if string(jsonstring) == "{}" { // empty struct
 			dst.String = nil
 		} else {
-			if err = validator.Validate(dst.String); err != nil {
-				dst.String = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.String = nil
@@ -112,20 +103,6 @@ func (obj *GroupBy) GetActualInstance() (interface{}) {
 
 	if obj.String != nil {
 		return obj.String
-	}
-
-	// all schemas are nil
-	return nil
-}
-
-// Get the actual instance value
-func (obj GroupBy) GetActualInstanceValue() (interface{}) {
-	if obj.ArrayOfString != nil {
-		return *obj.ArrayOfString
-	}
-
-	if obj.String != nil {
-		return *obj.String
 	}
 
 	// all schemas are nil

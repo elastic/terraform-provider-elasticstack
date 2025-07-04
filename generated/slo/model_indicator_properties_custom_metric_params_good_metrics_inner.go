@@ -13,12 +13,11 @@ package slo
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/validator.v2"
 )
 
 // IndicatorPropertiesCustomMetricParamsGoodMetricsInner - struct for IndicatorPropertiesCustomMetricParamsGoodMetricsInner
 type IndicatorPropertiesCustomMetricParamsGoodMetricsInner struct {
-	IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf *IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf
+	IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf  *IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf
 	IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1 *IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1
 }
 
@@ -36,40 +35,31 @@ func IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1AsIndicatorPrope
 	}
 }
 
-
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *IndicatorPropertiesCustomMetricParamsGoodMetricsInner) UnmarshalJSON(data []byte) error {
 	var err error
 	match := 0
 	// try to unmarshal data into IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf)
+	err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf)
 	if err == nil {
 		jsonIndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf, _ := json.Marshal(dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf)
 		if string(jsonIndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf) == "{}" { // empty struct
 			dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf = nil
 		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf); err != nil {
-				dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf = nil
 	}
 
 	// try to unmarshal data into IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1)
+	err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1)
 	if err == nil {
 		jsonIndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1, _ := json.Marshal(dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1)
 		if string(jsonIndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1) == "{}" { // empty struct
 			dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1 = nil
 		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1); err != nil {
-				dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1 = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1 = nil
@@ -102,7 +92,7 @@ func (src IndicatorPropertiesCustomMetricParamsGoodMetricsInner) MarshalJSON() (
 }
 
 // Get the actual instance
-func (obj *IndicatorPropertiesCustomMetricParamsGoodMetricsInner) GetActualInstance() (interface{}) {
+func (obj *IndicatorPropertiesCustomMetricParamsGoodMetricsInner) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -112,20 +102,6 @@ func (obj *IndicatorPropertiesCustomMetricParamsGoodMetricsInner) GetActualInsta
 
 	if obj.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1 != nil {
 		return obj.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1
-	}
-
-	// all schemas are nil
-	return nil
-}
-
-// Get the actual instance value
-func (obj IndicatorPropertiesCustomMetricParamsGoodMetricsInner) GetActualInstanceValue() (interface{}) {
-	if obj.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf != nil {
-		return *obj.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf
-	}
-
-	if obj.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1 != nil {
-		return *obj.IndicatorPropertiesCustomMetricParamsGoodMetricsInnerOneOf1
 	}
 
 	// all schemas are nil
@@ -167,5 +143,3 @@ func (v *NullableIndicatorPropertiesCustomMetricParamsGoodMetricsInner) Unmarsha
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

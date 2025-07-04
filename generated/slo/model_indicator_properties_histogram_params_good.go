@@ -12,14 +12,12 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the IndicatorPropertiesHistogramParamsGood type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &IndicatorPropertiesHistogramParamsGood{}
 
-// IndicatorPropertiesHistogramParamsGood An object defining the \"good\" events 
+// IndicatorPropertiesHistogramParamsGood An object defining the \"good\" events
 type IndicatorPropertiesHistogramParamsGood struct {
 	// The field use to aggregate the good events.
 	Field string `json:"field"`
@@ -28,12 +26,10 @@ type IndicatorPropertiesHistogramParamsGood struct {
 	// The filter for good events.
 	Filter *string `json:"filter,omitempty"`
 	// The starting value of the range. Only required for \"range\" aggregations.
-	From *float32 `json:"from,omitempty"`
+	From *float64 `json:"from,omitempty"`
 	// The ending value of the range. Only required for \"range\" aggregations.
-	To *float32 `json:"to,omitempty"`
+	To *float64 `json:"to,omitempty"`
 }
-
-type _IndicatorPropertiesHistogramParamsGood IndicatorPropertiesHistogramParamsGood
 
 // NewIndicatorPropertiesHistogramParamsGood instantiates a new IndicatorPropertiesHistogramParamsGood object
 // This constructor will assign default values to properties that have it defined,
@@ -135,9 +131,9 @@ func (o *IndicatorPropertiesHistogramParamsGood) SetFilter(v string) {
 }
 
 // GetFrom returns the From field value if set, zero value otherwise.
-func (o *IndicatorPropertiesHistogramParamsGood) GetFrom() float32 {
+func (o *IndicatorPropertiesHistogramParamsGood) GetFrom() float64 {
 	if o == nil || IsNil(o.From) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.From
@@ -145,7 +141,7 @@ func (o *IndicatorPropertiesHistogramParamsGood) GetFrom() float32 {
 
 // GetFromOk returns a tuple with the From field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *IndicatorPropertiesHistogramParamsGood) GetFromOk() (*float32, bool) {
+func (o *IndicatorPropertiesHistogramParamsGood) GetFromOk() (*float64, bool) {
 	if o == nil || IsNil(o.From) {
 		return nil, false
 	}
@@ -161,15 +157,15 @@ func (o *IndicatorPropertiesHistogramParamsGood) HasFrom() bool {
 	return false
 }
 
-// SetFrom gets a reference to the given float32 and assigns it to the From field.
-func (o *IndicatorPropertiesHistogramParamsGood) SetFrom(v float32) {
+// SetFrom gets a reference to the given float64 and assigns it to the From field.
+func (o *IndicatorPropertiesHistogramParamsGood) SetFrom(v float64) {
 	o.From = &v
 }
 
 // GetTo returns the To field value if set, zero value otherwise.
-func (o *IndicatorPropertiesHistogramParamsGood) GetTo() float32 {
+func (o *IndicatorPropertiesHistogramParamsGood) GetTo() float64 {
 	if o == nil || IsNil(o.To) {
-		var ret float32
+		var ret float64
 		return ret
 	}
 	return *o.To
@@ -177,7 +173,7 @@ func (o *IndicatorPropertiesHistogramParamsGood) GetTo() float32 {
 
 // GetToOk returns a tuple with the To field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *IndicatorPropertiesHistogramParamsGood) GetToOk() (*float32, bool) {
+func (o *IndicatorPropertiesHistogramParamsGood) GetToOk() (*float64, bool) {
 	if o == nil || IsNil(o.To) {
 		return nil, false
 	}
@@ -193,13 +189,13 @@ func (o *IndicatorPropertiesHistogramParamsGood) HasTo() bool {
 	return false
 }
 
-// SetTo gets a reference to the given float32 and assigns it to the To field.
-func (o *IndicatorPropertiesHistogramParamsGood) SetTo(v float32) {
+// SetTo gets a reference to the given float64 and assigns it to the To field.
+func (o *IndicatorPropertiesHistogramParamsGood) SetTo(v float64) {
 	o.To = &v
 }
 
 func (o IndicatorPropertiesHistogramParamsGood) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -220,44 +216,6 @@ func (o IndicatorPropertiesHistogramParamsGood) ToMap() (map[string]interface{},
 		toSerialize["to"] = o.To
 	}
 	return toSerialize, nil
-}
-
-func (o *IndicatorPropertiesHistogramParamsGood) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"field",
-		"aggregation",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varIndicatorPropertiesHistogramParamsGood := _IndicatorPropertiesHistogramParamsGood{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varIndicatorPropertiesHistogramParamsGood)
-
-	if err != nil {
-		return err
-	}
-
-	*o = IndicatorPropertiesHistogramParamsGood(varIndicatorPropertiesHistogramParamsGood)
-
-	return err
 }
 
 type NullableIndicatorPropertiesHistogramParamsGood struct {
@@ -295,5 +253,3 @@ func (v *NullableIndicatorPropertiesHistogramParamsGood) UnmarshalJSON(src []byt
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -16,19 +16,232 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"reflect"
+	"strings"
 )
 
+type SloAPI interface {
+
+	/*
+		BulkDeleteOp Bulk delete SLO definitions and their associated summary and rollup data.
+
+		Bulk delete SLO definitions and their associated summary and rollup data.  This endpoint initiates a bulk deletion operation for SLOs, which may take some time to complete.  The status of the operation can be checked using the `GET /api/slo/_bulk_delete/{taskId}` endpoint.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@return ApiBulkDeleteOpRequest
+	*/
+	BulkDeleteOp(ctx context.Context, spaceId string) ApiBulkDeleteOpRequest
+
+	// BulkDeleteOpExecute executes the request
+	//  @return BulkDeleteResponse
+	BulkDeleteOpExecute(r ApiBulkDeleteOpRequest) (*BulkDeleteResponse, *http.Response, error)
+
+	/*
+		BulkDeleteStatusOp Retrieve the status of the bulk deletion
+
+		Retrieve the status of the bulk deletion operation for SLOs.  This endpoint returns the status of the bulk deletion operation, including whether it is completed and the results of the operation.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@param taskId The task id of the bulk delete operation
+		@return ApiBulkDeleteStatusOpRequest
+	*/
+	BulkDeleteStatusOp(ctx context.Context, spaceId string, taskId string) ApiBulkDeleteStatusOpRequest
+
+	// BulkDeleteStatusOpExecute executes the request
+	//  @return BulkDeleteStatusResponse
+	BulkDeleteStatusOpExecute(r ApiBulkDeleteStatusOpRequest) (*BulkDeleteStatusResponse, *http.Response, error)
+
+	/*
+		CreateSloOp Create an SLO
+
+		You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@return ApiCreateSloOpRequest
+	*/
+	CreateSloOp(ctx context.Context, spaceId string) ApiCreateSloOpRequest
+
+	// CreateSloOpExecute executes the request
+	//  @return CreateSloResponse
+	CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloResponse, *http.Response, error)
+
+	/*
+		DeleteRollupDataOp Batch delete rollup and summary data
+
+		The deletion occurs for the specified list of `sloId`. You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@return ApiDeleteRollupDataOpRequest
+	*/
+	DeleteRollupDataOp(ctx context.Context, spaceId string) ApiDeleteRollupDataOpRequest
+
+	// DeleteRollupDataOpExecute executes the request
+	//  @return BulkPurgeRollupResponse
+	DeleteRollupDataOpExecute(r ApiDeleteRollupDataOpRequest) (*BulkPurgeRollupResponse, *http.Response, error)
+
+	/*
+		DeleteSloInstancesOp Batch delete rollup and summary data
+
+		The deletion occurs for the specified list of `sloId` and `instanceId`. You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@return ApiDeleteSloInstancesOpRequest
+	*/
+	DeleteSloInstancesOp(ctx context.Context, spaceId string) ApiDeleteSloInstancesOpRequest
+
+	// DeleteSloInstancesOpExecute executes the request
+	DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpRequest) (*http.Response, error)
+
+	/*
+		DeleteSloOp Delete an SLO
+
+		You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@param sloId An identifier for the slo.
+		@return ApiDeleteSloOpRequest
+	*/
+	DeleteSloOp(ctx context.Context, spaceId string, sloId string) ApiDeleteSloOpRequest
+
+	// DeleteSloOpExecute executes the request
+	DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Response, error)
+
+	/*
+		DisableSloOp Disable an SLO
+
+		You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@param sloId An identifier for the slo.
+		@return ApiDisableSloOpRequest
+	*/
+	DisableSloOp(ctx context.Context, spaceId string, sloId string) ApiDisableSloOpRequest
+
+	// DisableSloOpExecute executes the request
+	DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Response, error)
+
+	/*
+		EnableSloOp Enable an SLO
+
+		You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@param sloId An identifier for the slo.
+		@return ApiEnableSloOpRequest
+	*/
+	EnableSloOp(ctx context.Context, spaceId string, sloId string) ApiEnableSloOpRequest
+
+	// EnableSloOpExecute executes the request
+	EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Response, error)
+
+	/*
+		FindSlosOp Get a paginated list of SLOs
+
+		You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@return ApiFindSlosOpRequest
+	*/
+	FindSlosOp(ctx context.Context, spaceId string) ApiFindSlosOpRequest
+
+	// FindSlosOpExecute executes the request
+	//  @return FindSloResponse
+	FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloResponse, *http.Response, error)
+
+	/*
+		GetDefinitionsOp Get the SLO definitions
+
+		You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@return ApiGetDefinitionsOpRequest
+	*/
+	GetDefinitionsOp(ctx context.Context, spaceId string) ApiGetDefinitionsOpRequest
+
+	// GetDefinitionsOpExecute executes the request
+	//  @return FindSloDefinitionsResponse
+	GetDefinitionsOpExecute(r ApiGetDefinitionsOpRequest) (*FindSloDefinitionsResponse, *http.Response, error)
+
+	/*
+		GetSloOp Get an SLO
+
+		You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@param sloId An identifier for the slo.
+		@return ApiGetSloOpRequest
+	*/
+	GetSloOp(ctx context.Context, spaceId string, sloId string) ApiGetSloOpRequest
+
+	// GetSloOpExecute executes the request
+	//  @return SloWithSummaryResponse
+	GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryResponse, *http.Response, error)
+
+	/*
+		ResetSloOp Reset an SLO
+
+		You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@param sloId An identifier for the slo.
+		@return ApiResetSloOpRequest
+	*/
+	ResetSloOp(ctx context.Context, spaceId string, sloId string) ApiResetSloOpRequest
+
+	// ResetSloOpExecute executes the request
+	//  @return SloDefinitionResponse
+	ResetSloOpExecute(r ApiResetSloOpRequest) (*SloDefinitionResponse, *http.Response, error)
+
+	/*
+		UpdateSloOp Update an SLO
+
+		You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+
+
+		@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+		@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+		@param sloId An identifier for the slo.
+		@return ApiUpdateSloOpRequest
+	*/
+	UpdateSloOp(ctx context.Context, spaceId string, sloId string) ApiUpdateSloOpRequest
+
+	// UpdateSloOpExecute executes the request
+	//  @return SloDefinitionResponse
+	UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloDefinitionResponse, *http.Response, error)
+}
 
 // SloAPIService SloAPI service
 type SloAPIService service
 
 type ApiBulkDeleteOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
+	ctx               context.Context
+	ApiService        SloAPI
+	kbnXsrf           *string
+	spaceId           string
 	bulkDeleteRequest *BulkDeleteRequest
 }
 
@@ -52,27 +265,27 @@ BulkDeleteOp Bulk delete SLO definitions and their associated summary and rollup
 
 Bulk delete SLO definitions and their associated summary and rollup data.  This endpoint initiates a bulk deletion operation for SLOs, which may take some time to complete.  The status of the operation can be checked using the `GET /api/slo/_bulk_delete/{taskId}` endpoint.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @return ApiBulkDeleteOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@return ApiBulkDeleteOpRequest
 */
 func (a *SloAPIService) BulkDeleteOp(ctx context.Context, spaceId string) ApiBulkDeleteOpRequest {
 	return ApiBulkDeleteOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
+		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
 // Execute executes the request
-//  @return BulkDeleteResponse
+//
+//	@return BulkDeleteResponse
 func (a *SloAPIService) BulkDeleteOpExecute(r ApiBulkDeleteOpRequest) (*BulkDeleteResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *BulkDeleteResponse
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *BulkDeleteResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.BulkDeleteOp")
@@ -110,7 +323,7 @@ func (a *SloAPIService) BulkDeleteOpExecute(r ApiBulkDeleteOpRequest) (*BulkDele
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	// body params
 	localVarPostBody = r.bulkDeleteRequest
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
@@ -142,8 +355,8 @@ func (a *SloAPIService) BulkDeleteOpExecute(r ApiBulkDeleteOpRequest) (*BulkDele
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -153,8 +366,8 @@ func (a *SloAPIService) BulkDeleteOpExecute(r ApiBulkDeleteOpRequest) (*BulkDele
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -164,8 +377,8 @@ func (a *SloAPIService) BulkDeleteOpExecute(r ApiBulkDeleteOpRequest) (*BulkDele
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -183,11 +396,11 @@ func (a *SloAPIService) BulkDeleteOpExecute(r ApiBulkDeleteOpRequest) (*BulkDele
 }
 
 type ApiBulkDeleteStatusOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
-	taskId string
+	ctx        context.Context
+	ApiService SloAPI
+	kbnXsrf    *string
+	spaceId    string
+	taskId     string
 }
 
 // Cross-site request forgery protection
@@ -205,29 +418,29 @@ BulkDeleteStatusOp Retrieve the status of the bulk deletion
 
 Retrieve the status of the bulk deletion operation for SLOs.  This endpoint returns the status of the bulk deletion operation, including whether it is completed and the results of the operation.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @param taskId The task id of the bulk delete operation
- @return ApiBulkDeleteStatusOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@param taskId The task id of the bulk delete operation
+	@return ApiBulkDeleteStatusOpRequest
 */
 func (a *SloAPIService) BulkDeleteStatusOp(ctx context.Context, spaceId string, taskId string) ApiBulkDeleteStatusOpRequest {
 	return ApiBulkDeleteStatusOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
-		taskId: taskId,
+		ctx:        ctx,
+		spaceId:    spaceId,
+		taskId:     taskId,
 	}
 }
 
 // Execute executes the request
-//  @return BulkDeleteStatusResponse
+//
+//	@return BulkDeleteStatusResponse
 func (a *SloAPIService) BulkDeleteStatusOpExecute(r ApiBulkDeleteStatusOpRequest) (*BulkDeleteStatusResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *BulkDeleteStatusResponse
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *BulkDeleteStatusResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.BulkDeleteStatusOp")
@@ -263,7 +476,7 @@ func (a *SloAPIService) BulkDeleteStatusOpExecute(r ApiBulkDeleteStatusOpRequest
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err
@@ -293,8 +506,8 @@ func (a *SloAPIService) BulkDeleteStatusOpExecute(r ApiBulkDeleteStatusOpRequest
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -304,8 +517,8 @@ func (a *SloAPIService) BulkDeleteStatusOpExecute(r ApiBulkDeleteStatusOpRequest
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -315,8 +528,8 @@ func (a *SloAPIService) BulkDeleteStatusOpExecute(r ApiBulkDeleteStatusOpRequest
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -334,10 +547,10 @@ func (a *SloAPIService) BulkDeleteStatusOpExecute(r ApiBulkDeleteStatusOpRequest
 }
 
 type ApiCreateSloOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
+	ctx              context.Context
+	ApiService       SloAPI
+	kbnXsrf          *string
+	spaceId          string
 	createSloRequest *CreateSloRequest
 }
 
@@ -361,27 +574,27 @@ CreateSloOp Create an SLO
 
 You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @return ApiCreateSloOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@return ApiCreateSloOpRequest
 */
 func (a *SloAPIService) CreateSloOp(ctx context.Context, spaceId string) ApiCreateSloOpRequest {
 	return ApiCreateSloOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
+		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
 // Execute executes the request
-//  @return CreateSloResponse
+//
+//	@return CreateSloResponse
 func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *CreateSloResponse
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *CreateSloResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.CreateSloOp")
@@ -419,7 +632,7 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	// body params
 	localVarPostBody = r.createSloRequest
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
@@ -451,8 +664,8 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -462,8 +675,8 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -473,8 +686,8 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 409 {
@@ -484,8 +697,8 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -503,10 +716,10 @@ func (a *SloAPIService) CreateSloOpExecute(r ApiCreateSloOpRequest) (*CreateSloR
 }
 
 type ApiDeleteRollupDataOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
+	ctx                    context.Context
+	ApiService             SloAPI
+	kbnXsrf                *string
+	spaceId                string
 	bulkPurgeRollupRequest *BulkPurgeRollupRequest
 }
 
@@ -530,27 +743,27 @@ DeleteRollupDataOp Batch delete rollup and summary data
 
 The deletion occurs for the specified list of `sloId`. You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @return ApiDeleteRollupDataOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@return ApiDeleteRollupDataOpRequest
 */
 func (a *SloAPIService) DeleteRollupDataOp(ctx context.Context, spaceId string) ApiDeleteRollupDataOpRequest {
 	return ApiDeleteRollupDataOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
+		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
 // Execute executes the request
-//  @return BulkPurgeRollupResponse
+//
+//	@return BulkPurgeRollupResponse
 func (a *SloAPIService) DeleteRollupDataOpExecute(r ApiDeleteRollupDataOpRequest) (*BulkPurgeRollupResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *BulkPurgeRollupResponse
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *BulkPurgeRollupResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.DeleteRollupDataOp")
@@ -588,7 +801,7 @@ func (a *SloAPIService) DeleteRollupDataOpExecute(r ApiDeleteRollupDataOpRequest
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	// body params
 	localVarPostBody = r.bulkPurgeRollupRequest
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
@@ -620,8 +833,8 @@ func (a *SloAPIService) DeleteRollupDataOpExecute(r ApiDeleteRollupDataOpRequest
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -631,8 +844,8 @@ func (a *SloAPIService) DeleteRollupDataOpExecute(r ApiDeleteRollupDataOpRequest
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -642,8 +855,8 @@ func (a *SloAPIService) DeleteRollupDataOpExecute(r ApiDeleteRollupDataOpRequest
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -661,10 +874,10 @@ func (a *SloAPIService) DeleteRollupDataOpExecute(r ApiDeleteRollupDataOpRequest
 }
 
 type ApiDeleteSloInstancesOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
+	ctx                       context.Context
+	ApiService                SloAPI
+	kbnXsrf                   *string
+	spaceId                   string
 	deleteSloInstancesRequest *DeleteSloInstancesRequest
 }
 
@@ -688,25 +901,24 @@ DeleteSloInstancesOp Batch delete rollup and summary data
 
 The deletion occurs for the specified list of `sloId` and `instanceId`. You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @return ApiDeleteSloInstancesOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@return ApiDeleteSloInstancesOpRequest
 */
 func (a *SloAPIService) DeleteSloInstancesOp(ctx context.Context, spaceId string) ApiDeleteSloInstancesOpRequest {
 	return ApiDeleteSloInstancesOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
+		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
 // Execute executes the request
 func (a *SloAPIService) DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpRequest) (*http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
+		localVarHTTPMethod = http.MethodPost
+		localVarPostBody   interface{}
+		formFiles          []formFile
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.DeleteSloInstancesOp")
@@ -744,7 +956,7 @@ func (a *SloAPIService) DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpReq
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	// body params
 	localVarPostBody = r.deleteSloInstancesRequest
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
@@ -776,8 +988,8 @@ func (a *SloAPIService) DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpReq
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -787,8 +999,8 @@ func (a *SloAPIService) DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpReq
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -798,8 +1010,8 @@ func (a *SloAPIService) DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpReq
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarHTTPResponse, newErr
 	}
@@ -808,11 +1020,11 @@ func (a *SloAPIService) DeleteSloInstancesOpExecute(r ApiDeleteSloInstancesOpReq
 }
 
 type ApiDeleteSloOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
-	sloId string
+	ctx        context.Context
+	ApiService SloAPI
+	kbnXsrf    *string
+	spaceId    string
+	sloId      string
 }
 
 // Cross-site request forgery protection
@@ -830,27 +1042,26 @@ DeleteSloOp Delete an SLO
 
 You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @param sloId An identifier for the slo.
- @return ApiDeleteSloOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@param sloId An identifier for the slo.
+	@return ApiDeleteSloOpRequest
 */
 func (a *SloAPIService) DeleteSloOp(ctx context.Context, spaceId string, sloId string) ApiDeleteSloOpRequest {
 	return ApiDeleteSloOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
-		sloId: sloId,
+		ctx:        ctx,
+		spaceId:    spaceId,
+		sloId:      sloId,
 	}
 }
 
 // Execute executes the request
 func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodDelete
-		localVarPostBody     interface{}
-		formFiles            []formFile
+		localVarHTTPMethod = http.MethodDelete
+		localVarPostBody   interface{}
+		formFiles          []formFile
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.DeleteSloOp")
@@ -886,7 +1097,7 @@ func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Respo
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return nil, err
@@ -916,8 +1127,8 @@ func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Respo
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -927,8 +1138,8 @@ func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Respo
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -938,8 +1149,8 @@ func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Respo
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 404 {
@@ -949,8 +1160,8 @@ func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Respo
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarHTTPResponse, newErr
 	}
@@ -959,11 +1170,11 @@ func (a *SloAPIService) DeleteSloOpExecute(r ApiDeleteSloOpRequest) (*http.Respo
 }
 
 type ApiDisableSloOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
-	sloId string
+	ctx        context.Context
+	ApiService SloAPI
+	kbnXsrf    *string
+	spaceId    string
+	sloId      string
 }
 
 // Cross-site request forgery protection
@@ -981,27 +1192,26 @@ DisableSloOp Disable an SLO
 
 You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @param sloId An identifier for the slo.
- @return ApiDisableSloOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@param sloId An identifier for the slo.
+	@return ApiDisableSloOpRequest
 */
 func (a *SloAPIService) DisableSloOp(ctx context.Context, spaceId string, sloId string) ApiDisableSloOpRequest {
 	return ApiDisableSloOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
-		sloId: sloId,
+		ctx:        ctx,
+		spaceId:    spaceId,
+		sloId:      sloId,
 	}
 }
 
 // Execute executes the request
 func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
+		localVarHTTPMethod = http.MethodPost
+		localVarPostBody   interface{}
+		formFiles          []formFile
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.DisableSloOp")
@@ -1037,7 +1247,7 @@ func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Res
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return nil, err
@@ -1067,8 +1277,8 @@ func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Res
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -1078,8 +1288,8 @@ func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Res
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -1089,8 +1299,8 @@ func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Res
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 404 {
@@ -1100,8 +1310,8 @@ func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Res
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarHTTPResponse, newErr
 	}
@@ -1110,11 +1320,11 @@ func (a *SloAPIService) DisableSloOpExecute(r ApiDisableSloOpRequest) (*http.Res
 }
 
 type ApiEnableSloOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
-	sloId string
+	ctx        context.Context
+	ApiService SloAPI
+	kbnXsrf    *string
+	spaceId    string
+	sloId      string
 }
 
 // Cross-site request forgery protection
@@ -1132,27 +1342,26 @@ EnableSloOp Enable an SLO
 
 You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @param sloId An identifier for the slo.
- @return ApiEnableSloOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@param sloId An identifier for the slo.
+	@return ApiEnableSloOpRequest
 */
 func (a *SloAPIService) EnableSloOp(ctx context.Context, spaceId string, sloId string) ApiEnableSloOpRequest {
 	return ApiEnableSloOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
-		sloId: sloId,
+		ctx:        ctx,
+		spaceId:    spaceId,
+		sloId:      sloId,
 	}
 }
 
 // Execute executes the request
 func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
+		localVarHTTPMethod = http.MethodPost
+		localVarPostBody   interface{}
+		formFiles          []formFile
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.EnableSloOp")
@@ -1188,7 +1397,7 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return nil, err
@@ -1218,8 +1427,8 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -1229,8 +1438,8 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -1240,8 +1449,8 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 404 {
@@ -1251,8 +1460,8 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 				newErr.error = err.Error()
 				return localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarHTTPResponse, newErr
 	}
@@ -1261,18 +1470,18 @@ func (a *SloAPIService) EnableSloOpExecute(r ApiEnableSloOpRequest) (*http.Respo
 }
 
 type ApiFindSlosOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
-	kqlQuery *string
-	size *int32
-	searchAfter *[]string
-	page *int32
-	perPage *int32
-	sortBy *string
+	ctx           context.Context
+	ApiService    SloAPI
+	kbnXsrf       *string
+	spaceId       string
+	kqlQuery      *string
+	size          *int32
+	searchAfter   *[]string
+	page          *int32
+	perPage       *int32
+	sortBy        *string
 	sortDirection *string
-	hideStale *bool
+	hideStale     *bool
 }
 
 // Cross-site request forgery protection
@@ -1338,27 +1547,27 @@ FindSlosOp Get a paginated list of SLOs
 
 You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @return ApiFindSlosOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@return ApiFindSlosOpRequest
 */
 func (a *SloAPIService) FindSlosOp(ctx context.Context, spaceId string) ApiFindSlosOpRequest {
 	return ApiFindSlosOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
+		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
 // Execute executes the request
-//  @return FindSloResponse
+//
+//	@return FindSloResponse
 func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *FindSloResponse
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *FindSloResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.FindSlosOp")
@@ -1377,10 +1586,10 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 	}
 
 	if r.kqlQuery != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "kqlQuery", r.kqlQuery, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "kqlQuery", r.kqlQuery, "")
 	}
 	if r.size != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "size", r.size, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "size", r.size, "")
 	} else {
 		var defaultValue int32 = 1
 		r.size = &defaultValue
@@ -1390,38 +1599,38 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 		if reflect.TypeOf(t).Kind() == reflect.Slice {
 			s := reflect.ValueOf(t)
 			for i := 0; i < s.Len(); i++ {
-				parameterAddToHeaderOrQuery(localVarQueryParams, "searchAfter", s.Index(i).Interface(), "form", "multi")
+				parameterAddToHeaderOrQuery(localVarQueryParams, "searchAfter", s.Index(i).Interface(), "multi")
 			}
 		} else {
-			parameterAddToHeaderOrQuery(localVarQueryParams, "searchAfter", t, "form", "multi")
+			parameterAddToHeaderOrQuery(localVarQueryParams, "searchAfter", t, "multi")
 		}
 	}
 	if r.page != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "page", r.page, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "page", r.page, "")
 	} else {
 		var defaultValue int32 = 1
 		r.page = &defaultValue
 	}
 	if r.perPage != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "perPage", r.perPage, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "perPage", r.perPage, "")
 	} else {
 		var defaultValue int32 = 25
 		r.perPage = &defaultValue
 	}
 	if r.sortBy != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "sortBy", r.sortBy, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "sortBy", r.sortBy, "")
 	} else {
 		var defaultValue string = "status"
 		r.sortBy = &defaultValue
 	}
 	if r.sortDirection != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "sortDirection", r.sortDirection, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "sortDirection", r.sortDirection, "")
 	} else {
 		var defaultValue string = "asc"
 		r.sortDirection = &defaultValue
 	}
 	if r.hideStale != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "hideStale", r.hideStale, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hideStale", r.hideStale, "")
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -1440,7 +1649,7 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err
@@ -1470,8 +1679,8 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -1481,8 +1690,8 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -1492,8 +1701,8 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 404 {
@@ -1503,8 +1712,8 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -1522,15 +1731,15 @@ func (a *SloAPIService) FindSlosOpExecute(r ApiFindSlosOpRequest) (*FindSloRespo
 }
 
 type ApiGetDefinitionsOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
+	ctx                 context.Context
+	ApiService          SloAPI
+	kbnXsrf             *string
+	spaceId             string
 	includeOutdatedOnly *bool
-	tags *string
-	search *string
-	page *float32
-	perPage *int32
+	tags                *string
+	search              *string
+	page                *float64
+	perPage             *int32
 }
 
 // Cross-site request forgery protection
@@ -1558,7 +1767,7 @@ func (r ApiGetDefinitionsOpRequest) Search(search string) ApiGetDefinitionsOpReq
 }
 
 // The page to use for pagination, must be greater or equal than 1
-func (r ApiGetDefinitionsOpRequest) Page(page float32) ApiGetDefinitionsOpRequest {
+func (r ApiGetDefinitionsOpRequest) Page(page float64) ApiGetDefinitionsOpRequest {
 	r.page = &page
 	return r
 }
@@ -1578,27 +1787,27 @@ GetDefinitionsOp Get the SLO definitions
 
 You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @return ApiGetDefinitionsOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@return ApiGetDefinitionsOpRequest
 */
 func (a *SloAPIService) GetDefinitionsOp(ctx context.Context, spaceId string) ApiGetDefinitionsOpRequest {
 	return ApiGetDefinitionsOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
+		ctx:        ctx,
+		spaceId:    spaceId,
 	}
 }
 
 // Execute executes the request
-//  @return FindSloDefinitionsResponse
+//
+//	@return FindSloDefinitionsResponse
 func (a *SloAPIService) GetDefinitionsOpExecute(r ApiGetDefinitionsOpRequest) (*FindSloDefinitionsResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *FindSloDefinitionsResponse
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *FindSloDefinitionsResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.GetDefinitionsOp")
@@ -1617,19 +1826,19 @@ func (a *SloAPIService) GetDefinitionsOpExecute(r ApiGetDefinitionsOpRequest) (*
 	}
 
 	if r.includeOutdatedOnly != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "includeOutdatedOnly", r.includeOutdatedOnly, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "includeOutdatedOnly", r.includeOutdatedOnly, "")
 	}
 	if r.tags != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "tags", r.tags, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "tags", r.tags, "")
 	}
 	if r.search != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
 	}
 	if r.page != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "page", r.page, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "page", r.page, "")
 	}
 	if r.perPage != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "perPage", r.perPage, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "perPage", r.perPage, "")
 	} else {
 		var defaultValue int32 = 100
 		r.perPage = &defaultValue
@@ -1651,7 +1860,7 @@ func (a *SloAPIService) GetDefinitionsOpExecute(r ApiGetDefinitionsOpRequest) (*
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err
@@ -1681,8 +1890,8 @@ func (a *SloAPIService) GetDefinitionsOpExecute(r ApiGetDefinitionsOpRequest) (*
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -1692,8 +1901,8 @@ func (a *SloAPIService) GetDefinitionsOpExecute(r ApiGetDefinitionsOpRequest) (*
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -1703,8 +1912,8 @@ func (a *SloAPIService) GetDefinitionsOpExecute(r ApiGetDefinitionsOpRequest) (*
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -1722,11 +1931,11 @@ func (a *SloAPIService) GetDefinitionsOpExecute(r ApiGetDefinitionsOpRequest) (*
 }
 
 type ApiGetSloOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
-	sloId string
+	ctx        context.Context
+	ApiService SloAPI
+	kbnXsrf    *string
+	spaceId    string
+	sloId      string
 	instanceId *string
 }
 
@@ -1751,29 +1960,29 @@ GetSloOp Get an SLO
 
 You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @param sloId An identifier for the slo.
- @return ApiGetSloOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@param sloId An identifier for the slo.
+	@return ApiGetSloOpRequest
 */
 func (a *SloAPIService) GetSloOp(ctx context.Context, spaceId string, sloId string) ApiGetSloOpRequest {
 	return ApiGetSloOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
-		sloId: sloId,
+		ctx:        ctx,
+		spaceId:    spaceId,
+		sloId:      sloId,
 	}
 }
 
 // Execute executes the request
-//  @return SloWithSummaryResponse
+//
+//	@return SloWithSummaryResponse
 func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *SloWithSummaryResponse
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *SloWithSummaryResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.GetSloOp")
@@ -1793,7 +2002,7 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryRe
 	}
 
 	if r.instanceId != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "instanceId", r.instanceId, "form", "")
+		parameterAddToHeaderOrQuery(localVarQueryParams, "instanceId", r.instanceId, "")
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -1812,7 +2021,7 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryRe
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err
@@ -1842,8 +2051,8 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryRe
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -1853,8 +2062,8 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryRe
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -1864,8 +2073,8 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryRe
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 404 {
@@ -1875,8 +2084,8 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryRe
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -1894,11 +2103,11 @@ func (a *SloAPIService) GetSloOpExecute(r ApiGetSloOpRequest) (*SloWithSummaryRe
 }
 
 type ApiResetSloOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
-	sloId string
+	ctx        context.Context
+	ApiService SloAPI
+	kbnXsrf    *string
+	spaceId    string
+	sloId      string
 }
 
 // Cross-site request forgery protection
@@ -1916,29 +2125,29 @@ ResetSloOp Reset an SLO
 
 You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @param sloId An identifier for the slo.
- @return ApiResetSloOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@param sloId An identifier for the slo.
+	@return ApiResetSloOpRequest
 */
 func (a *SloAPIService) ResetSloOp(ctx context.Context, spaceId string, sloId string) ApiResetSloOpRequest {
 	return ApiResetSloOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
-		sloId: sloId,
+		ctx:        ctx,
+		spaceId:    spaceId,
+		sloId:      sloId,
 	}
 }
 
 // Execute executes the request
-//  @return SloDefinitionResponse
+//
+//	@return SloDefinitionResponse
 func (a *SloAPIService) ResetSloOpExecute(r ApiResetSloOpRequest) (*SloDefinitionResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *SloDefinitionResponse
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *SloDefinitionResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.ResetSloOp")
@@ -1974,7 +2183,7 @@ func (a *SloAPIService) ResetSloOpExecute(r ApiResetSloOpRequest) (*SloDefinitio
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err
@@ -2004,8 +2213,8 @@ func (a *SloAPIService) ResetSloOpExecute(r ApiResetSloOpRequest) (*SloDefinitio
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -2015,8 +2224,8 @@ func (a *SloAPIService) ResetSloOpExecute(r ApiResetSloOpRequest) (*SloDefinitio
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -2026,8 +2235,8 @@ func (a *SloAPIService) ResetSloOpExecute(r ApiResetSloOpRequest) (*SloDefinitio
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 404 {
@@ -2037,8 +2246,8 @@ func (a *SloAPIService) ResetSloOpExecute(r ApiResetSloOpRequest) (*SloDefinitio
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}
@@ -2056,11 +2265,11 @@ func (a *SloAPIService) ResetSloOpExecute(r ApiResetSloOpRequest) (*SloDefinitio
 }
 
 type ApiUpdateSloOpRequest struct {
-	ctx context.Context
-	ApiService *SloAPIService
-	kbnXsrf *string
-	spaceId string
-	sloId string
+	ctx              context.Context
+	ApiService       SloAPI
+	kbnXsrf          *string
+	spaceId          string
+	sloId            string
 	updateSloRequest *UpdateSloRequest
 }
 
@@ -2084,29 +2293,29 @@ UpdateSloOp Update an SLO
 
 You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
- @param sloId An identifier for the slo.
- @return ApiUpdateSloOpRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param spaceId An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+	@param sloId An identifier for the slo.
+	@return ApiUpdateSloOpRequest
 */
 func (a *SloAPIService) UpdateSloOp(ctx context.Context, spaceId string, sloId string) ApiUpdateSloOpRequest {
 	return ApiUpdateSloOpRequest{
 		ApiService: a,
-		ctx: ctx,
-		spaceId: spaceId,
-		sloId: sloId,
+		ctx:        ctx,
+		spaceId:    spaceId,
+		sloId:      sloId,
 	}
 }
 
 // Execute executes the request
-//  @return SloDefinitionResponse
+//
+//	@return SloDefinitionResponse
 func (a *SloAPIService) UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloDefinitionResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPut
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *SloDefinitionResponse
+		localVarHTTPMethod  = http.MethodPut
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *SloDefinitionResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SloAPIService.UpdateSloOp")
@@ -2145,7 +2354,7 @@ func (a *SloAPIService) UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloDefinit
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "simple", "")
+	parameterAddToHeaderOrQuery(localVarHeaderParams, "kbn-xsrf", r.kbnXsrf, "")
 	// body params
 	localVarPostBody = r.updateSloRequest
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
@@ -2177,8 +2386,8 @@ func (a *SloAPIService) UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloDefinit
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -2188,8 +2397,8 @@ func (a *SloAPIService) UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloDefinit
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 403 {
@@ -2199,8 +2408,8 @@ func (a *SloAPIService) UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloDefinit
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 404 {
@@ -2210,8 +2419,8 @@ func (a *SloAPIService) UpdateSloOpExecute(r ApiUpdateSloOpRequest) (*SloDefinit
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}

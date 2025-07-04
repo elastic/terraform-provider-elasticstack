@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the TimesliceMetricDocCountMetric type satisfies the MappedNullable interface at compile time
@@ -22,14 +20,12 @@ var _ MappedNullable = &TimesliceMetricDocCountMetric{}
 // TimesliceMetricDocCountMetric struct for TimesliceMetricDocCountMetric
 type TimesliceMetricDocCountMetric struct {
 	// The name of the metric. Only valid options are A-Z
-	Name string `json:"name" validate:"regexp=^[A-Z]$"`
+	Name string `json:"name"`
 	// The aggregation type of the metric. Only valid option is \"doc_count\"
 	Aggregation string `json:"aggregation"`
 	// The filter to apply to the metric.
 	Filter *string `json:"filter,omitempty"`
 }
-
-type _TimesliceMetricDocCountMetric TimesliceMetricDocCountMetric
 
 // NewTimesliceMetricDocCountMetric instantiates a new TimesliceMetricDocCountMetric object
 // This constructor will assign default values to properties that have it defined,
@@ -131,7 +127,7 @@ func (o *TimesliceMetricDocCountMetric) SetFilter(v string) {
 }
 
 func (o TimesliceMetricDocCountMetric) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -146,44 +142,6 @@ func (o TimesliceMetricDocCountMetric) ToMap() (map[string]interface{}, error) {
 		toSerialize["filter"] = o.Filter
 	}
 	return toSerialize, nil
-}
-
-func (o *TimesliceMetricDocCountMetric) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"name",
-		"aggregation",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varTimesliceMetricDocCountMetric := _TimesliceMetricDocCountMetric{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTimesliceMetricDocCountMetric)
-
-	if err != nil {
-		return err
-	}
-
-	*o = TimesliceMetricDocCountMetric(varTimesliceMetricDocCountMetric)
-
-	return err
 }
 
 type NullableTimesliceMetricDocCountMetric struct {
@@ -221,5 +179,3 @@ func (v *NullableTimesliceMetricDocCountMetric) UnmarshalJSON(src []byte) error 
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

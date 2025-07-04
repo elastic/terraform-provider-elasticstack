@@ -13,16 +13,15 @@ package slo
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/validator.v2"
 )
 
 // CreateSloRequestIndicator - struct for CreateSloRequestIndicator
 type CreateSloRequestIndicator struct {
 	IndicatorPropertiesApmAvailability *IndicatorPropertiesApmAvailability
-	IndicatorPropertiesApmLatency *IndicatorPropertiesApmLatency
-	IndicatorPropertiesCustomKql *IndicatorPropertiesCustomKql
-	IndicatorPropertiesCustomMetric *IndicatorPropertiesCustomMetric
-	IndicatorPropertiesHistogram *IndicatorPropertiesHistogram
+	IndicatorPropertiesApmLatency      *IndicatorPropertiesApmLatency
+	IndicatorPropertiesCustomKql       *IndicatorPropertiesCustomKql
+	IndicatorPropertiesCustomMetric    *IndicatorPropertiesCustomMetric
+	IndicatorPropertiesHistogram       *IndicatorPropertiesHistogram
 	IndicatorPropertiesTimesliceMetric *IndicatorPropertiesTimesliceMetric
 }
 
@@ -68,108 +67,83 @@ func IndicatorPropertiesTimesliceMetricAsCreateSloRequestIndicator(v *IndicatorP
 	}
 }
 
-
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *CreateSloRequestIndicator) UnmarshalJSON(data []byte) error {
 	var err error
 	match := 0
 	// try to unmarshal data into IndicatorPropertiesApmAvailability
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesApmAvailability)
+	err = json.Unmarshal(data, &dst.IndicatorPropertiesApmAvailability)
 	if err == nil {
 		jsonIndicatorPropertiesApmAvailability, _ := json.Marshal(dst.IndicatorPropertiesApmAvailability)
 		if string(jsonIndicatorPropertiesApmAvailability) == "{}" { // empty struct
 			dst.IndicatorPropertiesApmAvailability = nil
 		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesApmAvailability); err != nil {
-				dst.IndicatorPropertiesApmAvailability = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.IndicatorPropertiesApmAvailability = nil
 	}
 
 	// try to unmarshal data into IndicatorPropertiesApmLatency
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesApmLatency)
+	err = json.Unmarshal(data, &dst.IndicatorPropertiesApmLatency)
 	if err == nil {
 		jsonIndicatorPropertiesApmLatency, _ := json.Marshal(dst.IndicatorPropertiesApmLatency)
 		if string(jsonIndicatorPropertiesApmLatency) == "{}" { // empty struct
 			dst.IndicatorPropertiesApmLatency = nil
 		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesApmLatency); err != nil {
-				dst.IndicatorPropertiesApmLatency = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.IndicatorPropertiesApmLatency = nil
 	}
 
 	// try to unmarshal data into IndicatorPropertiesCustomKql
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesCustomKql)
+	err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomKql)
 	if err == nil {
 		jsonIndicatorPropertiesCustomKql, _ := json.Marshal(dst.IndicatorPropertiesCustomKql)
 		if string(jsonIndicatorPropertiesCustomKql) == "{}" { // empty struct
 			dst.IndicatorPropertiesCustomKql = nil
 		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesCustomKql); err != nil {
-				dst.IndicatorPropertiesCustomKql = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.IndicatorPropertiesCustomKql = nil
 	}
 
 	// try to unmarshal data into IndicatorPropertiesCustomMetric
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesCustomMetric)
+	err = json.Unmarshal(data, &dst.IndicatorPropertiesCustomMetric)
 	if err == nil {
 		jsonIndicatorPropertiesCustomMetric, _ := json.Marshal(dst.IndicatorPropertiesCustomMetric)
 		if string(jsonIndicatorPropertiesCustomMetric) == "{}" { // empty struct
 			dst.IndicatorPropertiesCustomMetric = nil
 		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesCustomMetric); err != nil {
-				dst.IndicatorPropertiesCustomMetric = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.IndicatorPropertiesCustomMetric = nil
 	}
 
 	// try to unmarshal data into IndicatorPropertiesHistogram
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesHistogram)
+	err = json.Unmarshal(data, &dst.IndicatorPropertiesHistogram)
 	if err == nil {
 		jsonIndicatorPropertiesHistogram, _ := json.Marshal(dst.IndicatorPropertiesHistogram)
 		if string(jsonIndicatorPropertiesHistogram) == "{}" { // empty struct
 			dst.IndicatorPropertiesHistogram = nil
 		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesHistogram); err != nil {
-				dst.IndicatorPropertiesHistogram = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.IndicatorPropertiesHistogram = nil
 	}
 
 	// try to unmarshal data into IndicatorPropertiesTimesliceMetric
-	err = newStrictDecoder(data).Decode(&dst.IndicatorPropertiesTimesliceMetric)
+	err = json.Unmarshal(data, &dst.IndicatorPropertiesTimesliceMetric)
 	if err == nil {
 		jsonIndicatorPropertiesTimesliceMetric, _ := json.Marshal(dst.IndicatorPropertiesTimesliceMetric)
 		if string(jsonIndicatorPropertiesTimesliceMetric) == "{}" { // empty struct
 			dst.IndicatorPropertiesTimesliceMetric = nil
 		} else {
-			if err = validator.Validate(dst.IndicatorPropertiesTimesliceMetric); err != nil {
-				dst.IndicatorPropertiesTimesliceMetric = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.IndicatorPropertiesTimesliceMetric = nil
@@ -222,7 +196,7 @@ func (src CreateSloRequestIndicator) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *CreateSloRequestIndicator) GetActualInstance() (interface{}) {
+func (obj *CreateSloRequestIndicator) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -248,36 +222,6 @@ func (obj *CreateSloRequestIndicator) GetActualInstance() (interface{}) {
 
 	if obj.IndicatorPropertiesTimesliceMetric != nil {
 		return obj.IndicatorPropertiesTimesliceMetric
-	}
-
-	// all schemas are nil
-	return nil
-}
-
-// Get the actual instance value
-func (obj CreateSloRequestIndicator) GetActualInstanceValue() (interface{}) {
-	if obj.IndicatorPropertiesApmAvailability != nil {
-		return *obj.IndicatorPropertiesApmAvailability
-	}
-
-	if obj.IndicatorPropertiesApmLatency != nil {
-		return *obj.IndicatorPropertiesApmLatency
-	}
-
-	if obj.IndicatorPropertiesCustomKql != nil {
-		return *obj.IndicatorPropertiesCustomKql
-	}
-
-	if obj.IndicatorPropertiesCustomMetric != nil {
-		return *obj.IndicatorPropertiesCustomMetric
-	}
-
-	if obj.IndicatorPropertiesHistogram != nil {
-		return *obj.IndicatorPropertiesHistogram
-	}
-
-	if obj.IndicatorPropertiesTimesliceMetric != nil {
-		return *obj.IndicatorPropertiesTimesliceMetric
 	}
 
 	// all schemas are nil
@@ -319,5 +263,3 @@ func (v *NullableCreateSloRequestIndicator) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

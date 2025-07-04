@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**StatusCode** | **float32** |  | 
+**StatusCode** | **float64** |  | 
 **Error** | **string** |  | 
 **Message** | **string** |  | 
 
@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 
 ### NewModel400Response
 
-`func NewModel400Response(statusCode float32, error_ string, message string, ) *Model400Response`
+`func NewModel400Response(statusCode float64, error_ string, message string, ) *Model400Response`
 
 NewModel400Response instantiates a new Model400Response object
 This constructor will assign default values to properties that have it defined,
@@ -29,20 +29,20 @@ but it doesn't guarantee that properties required by API are set
 
 ### GetStatusCode
 
-`func (o *Model400Response) GetStatusCode() float32`
+`func (o *Model400Response) GetStatusCode() float64`
 
 GetStatusCode returns the StatusCode field if non-nil, zero value otherwise.
 
 ### GetStatusCodeOk
 
-`func (o *Model400Response) GetStatusCodeOk() (*float32, bool)`
+`func (o *Model400Response) GetStatusCodeOk() (*float64, bool)`
 
 GetStatusCodeOk returns a tuple with the StatusCode field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetStatusCode
 
-`func (o *Model400Response) SetStatusCode(v float32)`
+`func (o *Model400Response) SetStatusCode(v float64)`
 
 SetStatusCode sets StatusCode field to given value.
 

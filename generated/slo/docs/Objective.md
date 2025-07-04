@@ -4,15 +4,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Target** | **float32** | the target objective between 0 and 1 excluded | 
-**TimesliceTarget** | Pointer to **float32** | the target objective for each slice when using a timeslices budgeting method | [optional] 
+**Target** | **float64** | the target objective between 0 and 1 excluded | 
+**TimesliceTarget** | Pointer to **float64** | the target objective for each slice when using a timeslices budgeting method | [optional] 
 **TimesliceWindow** | Pointer to **string** | the duration of each slice when using a timeslices budgeting method, as {duraton}{unit} | [optional] 
 
 ## Methods
 
 ### NewObjective
 
-`func NewObjective(target float32, ) *Objective`
+`func NewObjective(target float64, ) *Objective`
 
 NewObjective instantiates a new Objective object
 This constructor will assign default values to properties that have it defined,
@@ -29,40 +29,40 @@ but it doesn't guarantee that properties required by API are set
 
 ### GetTarget
 
-`func (o *Objective) GetTarget() float32`
+`func (o *Objective) GetTarget() float64`
 
 GetTarget returns the Target field if non-nil, zero value otherwise.
 
 ### GetTargetOk
 
-`func (o *Objective) GetTargetOk() (*float32, bool)`
+`func (o *Objective) GetTargetOk() (*float64, bool)`
 
 GetTargetOk returns a tuple with the Target field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTarget
 
-`func (o *Objective) SetTarget(v float32)`
+`func (o *Objective) SetTarget(v float64)`
 
 SetTarget sets Target field to given value.
 
 
 ### GetTimesliceTarget
 
-`func (o *Objective) GetTimesliceTarget() float32`
+`func (o *Objective) GetTimesliceTarget() float64`
 
 GetTimesliceTarget returns the TimesliceTarget field if non-nil, zero value otherwise.
 
 ### GetTimesliceTargetOk
 
-`func (o *Objective) GetTimesliceTargetOk() (*float32, bool)`
+`func (o *Objective) GetTimesliceTargetOk() (*float64, bool)`
 
 GetTimesliceTargetOk returns a tuple with the TimesliceTarget field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTimesliceTarget
 
-`func (o *Objective) SetTimesliceTarget(v float32)`
+`func (o *Objective) SetTimesliceTarget(v float64)`
 
 SetTimesliceTarget sets TimesliceTarget field to given value.
 

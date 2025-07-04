@@ -13,12 +13,11 @@ package slo
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/validator.v2"
 )
 
 // BulkPurgeRollupRequestPurgePolicy - Policy that dictates which SLI documents to purge based on age
 type BulkPurgeRollupRequestPurgePolicy struct {
-	BulkPurgeRollupRequestPurgePolicyOneOf *BulkPurgeRollupRequestPurgePolicyOneOf
+	BulkPurgeRollupRequestPurgePolicyOneOf  *BulkPurgeRollupRequestPurgePolicyOneOf
 	BulkPurgeRollupRequestPurgePolicyOneOf1 *BulkPurgeRollupRequestPurgePolicyOneOf1
 }
 
@@ -36,40 +35,31 @@ func BulkPurgeRollupRequestPurgePolicyOneOf1AsBulkPurgeRollupRequestPurgePolicy(
 	}
 }
 
-
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *BulkPurgeRollupRequestPurgePolicy) UnmarshalJSON(data []byte) error {
 	var err error
 	match := 0
 	// try to unmarshal data into BulkPurgeRollupRequestPurgePolicyOneOf
-	err = newStrictDecoder(data).Decode(&dst.BulkPurgeRollupRequestPurgePolicyOneOf)
+	err = json.Unmarshal(data, &dst.BulkPurgeRollupRequestPurgePolicyOneOf)
 	if err == nil {
 		jsonBulkPurgeRollupRequestPurgePolicyOneOf, _ := json.Marshal(dst.BulkPurgeRollupRequestPurgePolicyOneOf)
 		if string(jsonBulkPurgeRollupRequestPurgePolicyOneOf) == "{}" { // empty struct
 			dst.BulkPurgeRollupRequestPurgePolicyOneOf = nil
 		} else {
-			if err = validator.Validate(dst.BulkPurgeRollupRequestPurgePolicyOneOf); err != nil {
-				dst.BulkPurgeRollupRequestPurgePolicyOneOf = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.BulkPurgeRollupRequestPurgePolicyOneOf = nil
 	}
 
 	// try to unmarshal data into BulkPurgeRollupRequestPurgePolicyOneOf1
-	err = newStrictDecoder(data).Decode(&dst.BulkPurgeRollupRequestPurgePolicyOneOf1)
+	err = json.Unmarshal(data, &dst.BulkPurgeRollupRequestPurgePolicyOneOf1)
 	if err == nil {
 		jsonBulkPurgeRollupRequestPurgePolicyOneOf1, _ := json.Marshal(dst.BulkPurgeRollupRequestPurgePolicyOneOf1)
 		if string(jsonBulkPurgeRollupRequestPurgePolicyOneOf1) == "{}" { // empty struct
 			dst.BulkPurgeRollupRequestPurgePolicyOneOf1 = nil
 		} else {
-			if err = validator.Validate(dst.BulkPurgeRollupRequestPurgePolicyOneOf1); err != nil {
-				dst.BulkPurgeRollupRequestPurgePolicyOneOf1 = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.BulkPurgeRollupRequestPurgePolicyOneOf1 = nil
@@ -102,7 +92,7 @@ func (src BulkPurgeRollupRequestPurgePolicy) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *BulkPurgeRollupRequestPurgePolicy) GetActualInstance() (interface{}) {
+func (obj *BulkPurgeRollupRequestPurgePolicy) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -112,20 +102,6 @@ func (obj *BulkPurgeRollupRequestPurgePolicy) GetActualInstance() (interface{}) 
 
 	if obj.BulkPurgeRollupRequestPurgePolicyOneOf1 != nil {
 		return obj.BulkPurgeRollupRequestPurgePolicyOneOf1
-	}
-
-	// all schemas are nil
-	return nil
-}
-
-// Get the actual instance value
-func (obj BulkPurgeRollupRequestPurgePolicy) GetActualInstanceValue() (interface{}) {
-	if obj.BulkPurgeRollupRequestPurgePolicyOneOf != nil {
-		return *obj.BulkPurgeRollupRequestPurgePolicyOneOf
-	}
-
-	if obj.BulkPurgeRollupRequestPurgePolicyOneOf1 != nil {
-		return *obj.BulkPurgeRollupRequestPurgePolicyOneOf1
 	}
 
 	// all schemas are nil
@@ -167,5 +143,3 @@ func (v *NullableBulkPurgeRollupRequestPurgePolicy) UnmarshalJSON(src []byte) er
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

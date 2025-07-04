@@ -5,14 +5,14 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Status** | [**SummaryStatus**](SummaryStatus.md) |  | 
-**SliValue** | **float32** |  | 
+**SliValue** | **float64** |  | 
 **ErrorBudget** | [**ErrorBudget**](ErrorBudget.md) |  | 
 
 ## Methods
 
 ### NewSummary
 
-`func NewSummary(status SummaryStatus, sliValue float32, errorBudget ErrorBudget, ) *Summary`
+`func NewSummary(status SummaryStatus, sliValue float64, errorBudget ErrorBudget, ) *Summary`
 
 NewSummary instantiates a new Summary object
 This constructor will assign default values to properties that have it defined,
@@ -49,20 +49,20 @@ SetStatus sets Status field to given value.
 
 ### GetSliValue
 
-`func (o *Summary) GetSliValue() float32`
+`func (o *Summary) GetSliValue() float64`
 
 GetSliValue returns the SliValue field if non-nil, zero value otherwise.
 
 ### GetSliValueOk
 
-`func (o *Summary) GetSliValueOk() (*float32, bool)`
+`func (o *Summary) GetSliValueOk() (*float64, bool)`
 
 GetSliValueOk returns a tuple with the SliValue field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetSliValue
 
-`func (o *Summary) SetSliValue(v float32)`
+`func (o *Summary) SetSliValue(v float64)`
 
 SetSliValue sets SliValue field to given value.
 

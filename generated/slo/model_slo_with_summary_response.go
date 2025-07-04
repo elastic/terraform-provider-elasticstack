@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the SloWithSummaryResponse type satisfies the MappedNullable interface at compile time
@@ -26,17 +24,17 @@ type SloWithSummaryResponse struct {
 	// The name of the SLO.
 	Name string `json:"name"`
 	// The description of the SLO.
-	Description string `json:"description"`
-	Indicator SloWithSummaryResponseIndicator `json:"indicator"`
-	TimeWindow TimeWindow `json:"timeWindow"`
-	BudgetingMethod BudgetingMethod `json:"budgetingMethod"`
-	Objective Objective `json:"objective"`
-	Settings Settings `json:"settings"`
+	Description     string                          `json:"description"`
+	Indicator       SloWithSummaryResponseIndicator `json:"indicator"`
+	TimeWindow      TimeWindow                      `json:"timeWindow"`
+	BudgetingMethod BudgetingMethod                 `json:"budgetingMethod"`
+	Objective       Objective                       `json:"objective"`
+	Settings        Settings                        `json:"settings"`
 	// The SLO revision
-	Revision float32 `json:"revision"`
-	Summary Summary `json:"summary"`
+	Revision float64 `json:"revision"`
+	Summary  Summary `json:"summary"`
 	// Indicate if the SLO is enabled
-	Enabled bool `json:"enabled"`
+	Enabled bool    `json:"enabled"`
 	GroupBy GroupBy `json:"groupBy"`
 	// the value derived from the groupBy field, if present, otherwise '*'
 	InstanceId string `json:"instanceId"`
@@ -47,16 +45,14 @@ type SloWithSummaryResponse struct {
 	// The last update date
 	UpdatedAt string `json:"updatedAt"`
 	// The internal SLO version
-	Version float32 `json:"version"`
+	Version float64 `json:"version"`
 }
-
-type _SloWithSummaryResponse SloWithSummaryResponse
 
 // NewSloWithSummaryResponse instantiates a new SloWithSummaryResponse object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewSloWithSummaryResponse(id string, name string, description string, indicator SloWithSummaryResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float32, summary Summary, enabled bool, groupBy GroupBy, instanceId string, tags []string, createdAt string, updatedAt string, version float32) *SloWithSummaryResponse {
+func NewSloWithSummaryResponse(id string, name string, description string, indicator SloWithSummaryResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, summary Summary, enabled bool, groupBy GroupBy, instanceId string, tags []string, createdAt string, updatedAt string, version float64) *SloWithSummaryResponse {
 	this := SloWithSummaryResponse{}
 	this.Id = id
 	this.Name = name
@@ -279,9 +275,9 @@ func (o *SloWithSummaryResponse) SetSettings(v Settings) {
 }
 
 // GetRevision returns the Revision field value
-func (o *SloWithSummaryResponse) GetRevision() float32 {
+func (o *SloWithSummaryResponse) GetRevision() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -290,7 +286,7 @@ func (o *SloWithSummaryResponse) GetRevision() float32 {
 
 // GetRevisionOk returns a tuple with the Revision field value
 // and a boolean to check if the value has been set.
-func (o *SloWithSummaryResponse) GetRevisionOk() (*float32, bool) {
+func (o *SloWithSummaryResponse) GetRevisionOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -298,7 +294,7 @@ func (o *SloWithSummaryResponse) GetRevisionOk() (*float32, bool) {
 }
 
 // SetRevision sets field value
-func (o *SloWithSummaryResponse) SetRevision(v float32) {
+func (o *SloWithSummaryResponse) SetRevision(v float64) {
 	o.Revision = v
 }
 
@@ -471,9 +467,9 @@ func (o *SloWithSummaryResponse) SetUpdatedAt(v string) {
 }
 
 // GetVersion returns the Version field value
-func (o *SloWithSummaryResponse) GetVersion() float32 {
+func (o *SloWithSummaryResponse) GetVersion() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -482,7 +478,7 @@ func (o *SloWithSummaryResponse) GetVersion() float32 {
 
 // GetVersionOk returns a tuple with the Version field value
 // and a boolean to check if the value has been set.
-func (o *SloWithSummaryResponse) GetVersionOk() (*float32, bool) {
+func (o *SloWithSummaryResponse) GetVersionOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -490,12 +486,12 @@ func (o *SloWithSummaryResponse) GetVersionOk() (*float32, bool) {
 }
 
 // SetVersion sets field value
-func (o *SloWithSummaryResponse) SetVersion(v float32) {
+func (o *SloWithSummaryResponse) SetVersion(v float64) {
 	o.Version = v
 }
 
 func (o SloWithSummaryResponse) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -522,59 +518,6 @@ func (o SloWithSummaryResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize["updatedAt"] = o.UpdatedAt
 	toSerialize["version"] = o.Version
 	return toSerialize, nil
-}
-
-func (o *SloWithSummaryResponse) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"id",
-		"name",
-		"description",
-		"indicator",
-		"timeWindow",
-		"budgetingMethod",
-		"objective",
-		"settings",
-		"revision",
-		"summary",
-		"enabled",
-		"groupBy",
-		"instanceId",
-		"tags",
-		"createdAt",
-		"updatedAt",
-		"version",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varSloWithSummaryResponse := _SloWithSummaryResponse{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varSloWithSummaryResponse)
-
-	if err != nil {
-		return err
-	}
-
-	*o = SloWithSummaryResponse(varSloWithSummaryResponse)
-
-	return err
 }
 
 type NullableSloWithSummaryResponse struct {
@@ -612,5 +555,3 @@ func (v *NullableSloWithSummaryResponse) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the IndicatorPropertiesCustomKqlParams type satisfies the MappedNullable interface at compile time
@@ -24,15 +22,13 @@ type IndicatorPropertiesCustomKqlParams struct {
 	// The index or index pattern to use
 	Index string `json:"index"`
 	// The kibana data view id to use, primarily used to include data view runtime mappings. Make sure to save SLO again if you add/update run time fields to the data view and if those fields are being used in slo queries.
-	DataViewId *string `json:"dataViewId,omitempty"`
-	Filter *KqlWithFilters `json:"filter,omitempty"`
-	Good KqlWithFiltersGood `json:"good"`
-	Total KqlWithFiltersTotal `json:"total"`
-	// The timestamp field used in the source indice. 
+	DataViewId *string             `json:"dataViewId,omitempty"`
+	Filter     *KqlWithFilters     `json:"filter,omitempty"`
+	Good       KqlWithFiltersGood  `json:"good"`
+	Total      KqlWithFiltersTotal `json:"total"`
+	// The timestamp field used in the source indice.
 	TimestampField string `json:"timestampField"`
 }
-
-type _IndicatorPropertiesCustomKqlParams IndicatorPropertiesCustomKqlParams
 
 // NewIndicatorPropertiesCustomKqlParams instantiates a new IndicatorPropertiesCustomKqlParams object
 // This constructor will assign default values to properties that have it defined,
@@ -216,7 +212,7 @@ func (o *IndicatorPropertiesCustomKqlParams) SetTimestampField(v string) {
 }
 
 func (o IndicatorPropertiesCustomKqlParams) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -236,46 +232,6 @@ func (o IndicatorPropertiesCustomKqlParams) ToMap() (map[string]interface{}, err
 	toSerialize["total"] = o.Total
 	toSerialize["timestampField"] = o.TimestampField
 	return toSerialize, nil
-}
-
-func (o *IndicatorPropertiesCustomKqlParams) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"index",
-		"good",
-		"total",
-		"timestampField",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varIndicatorPropertiesCustomKqlParams := _IndicatorPropertiesCustomKqlParams{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varIndicatorPropertiesCustomKqlParams)
-
-	if err != nil {
-		return err
-	}
-
-	*o = IndicatorPropertiesCustomKqlParams(varIndicatorPropertiesCustomKqlParams)
-
-	return err
 }
 
 type NullableIndicatorPropertiesCustomKqlParams struct {
@@ -313,5 +269,3 @@ func (v *NullableIndicatorPropertiesCustomKqlParams) UnmarshalJSON(src []byte) e
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

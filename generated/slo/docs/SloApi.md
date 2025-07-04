@@ -34,26 +34,26 @@ Bulk delete SLO definitions and their associated summary and rollup data.
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	bulkDeleteRequest := *openapiclient.NewBulkDeleteRequest([]string{"8853df00-ae2e-11ed-90af-09bb6422b258"}) // BulkDeleteRequest | 
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    bulkDeleteRequest := *openapiclient.NewBulkDeleteRequest([]string{"8853df00-ae2e-11ed-90af-09bb6422b258"}) // BulkDeleteRequest | 
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.BulkDeleteOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).BulkDeleteRequest(bulkDeleteRequest).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.BulkDeleteOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `BulkDeleteOp`: BulkDeleteResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.BulkDeleteOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.BulkDeleteOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).BulkDeleteRequest(bulkDeleteRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.BulkDeleteOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `BulkDeleteOp`: BulkDeleteResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.BulkDeleteOp`: %v\n", resp)
 }
 ```
 
@@ -108,26 +108,26 @@ Retrieve the status of the bulk deletion
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	taskId := "8853df00-ae2e-11ed-90af-09bb6422b258" // string | The task id of the bulk delete operation
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    taskId := "8853df00-ae2e-11ed-90af-09bb6422b258" // string | The task id of the bulk delete operation
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.BulkDeleteStatusOp(context.Background(), spaceId, taskId).KbnXsrf(kbnXsrf).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.BulkDeleteStatusOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `BulkDeleteStatusOp`: BulkDeleteStatusResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.BulkDeleteStatusOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.BulkDeleteStatusOp(context.Background(), spaceId, taskId).KbnXsrf(kbnXsrf).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.BulkDeleteStatusOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `BulkDeleteStatusOp`: BulkDeleteStatusResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.BulkDeleteStatusOp`: %v\n", resp)
 }
 ```
 
@@ -183,26 +183,26 @@ Create an SLO
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	createSloRequest := *openapiclient.NewCreateSloRequest("Name_example", "Description_example", openapiclient.create_slo_request_indicator{IndicatorPropertiesApmAvailability: openapiclient.NewIndicatorPropertiesApmAvailability(*openapiclient.NewIndicatorPropertiesApmAvailabilityParams("o11y-app", "production", "request", "GET /my/api", "metrics-apm*,apm*"), "sli.apm.transactionDuration")}, *openapiclient.NewTimeWindow("30d", "rolling"), openapiclient.budgeting_method("occurrences"), *openapiclient.NewObjective(float32(0.99))) // CreateSloRequest | 
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    createSloRequest := *openapiclient.NewCreateSloRequest("Name_example", "Description_example", openapiclient.create_slo_request_indicator{IndicatorPropertiesApmAvailability: openapiclient.NewIndicatorPropertiesApmAvailability(*openapiclient.NewIndicatorPropertiesApmAvailabilityParams("o11y-app", "production", "request", "GET /my/api", "metrics-apm*,apm*"), "sli.apm.transactionDuration")}, *openapiclient.NewTimeWindow("30d", "rolling"), openapiclient.budgeting_method("occurrences"), *openapiclient.NewObjective(float64(0.99))) // CreateSloRequest | 
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.CreateSloOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).CreateSloRequest(createSloRequest).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.CreateSloOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `CreateSloOp`: CreateSloResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.CreateSloOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.CreateSloOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).CreateSloRequest(createSloRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.CreateSloOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `CreateSloOp`: CreateSloResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.CreateSloOp`: %v\n", resp)
 }
 ```
 
@@ -257,26 +257,26 @@ Batch delete rollup and summary data
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	bulkPurgeRollupRequest := *openapiclient.NewBulkPurgeRollupRequest([]string{"8853df00-ae2e-11ed-90af-09bb6422b258"}, openapiclient.bulk_purge_rollup_request_purgePolicy{BulkPurgeRollupRequestPurgePolicyOneOf: openapiclient.NewBulkPurgeRollupRequestPurgePolicyOneOf()}) // BulkPurgeRollupRequest | 
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    bulkPurgeRollupRequest := *openapiclient.NewBulkPurgeRollupRequest([]string{"8853df00-ae2e-11ed-90af-09bb6422b258"}, openapiclient.bulk_purge_rollup_request_purgePolicy{BulkPurgeRollupRequestPurgePolicyOneOf: openapiclient.NewBulkPurgeRollupRequestPurgePolicyOneOf()}) // BulkPurgeRollupRequest | 
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.DeleteRollupDataOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).BulkPurgeRollupRequest(bulkPurgeRollupRequest).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DeleteRollupDataOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `DeleteRollupDataOp`: BulkPurgeRollupResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.DeleteRollupDataOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.DeleteRollupDataOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).BulkPurgeRollupRequest(bulkPurgeRollupRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DeleteRollupDataOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `DeleteRollupDataOp`: BulkPurgeRollupResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.DeleteRollupDataOp`: %v\n", resp)
 }
 ```
 
@@ -331,24 +331,24 @@ Batch delete rollup and summary data
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	deleteSloInstancesRequest := *openapiclient.NewDeleteSloInstancesRequest([]openapiclient.DeleteSloInstancesRequestListInner{*openapiclient.NewDeleteSloInstancesRequestListInner("8853df00-ae2e-11ed-90af-09bb6422b258", "8853df00-ae2e-11ed-90af-09bb6422b258")}) // DeleteSloInstancesRequest | 
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    deleteSloInstancesRequest := *openapiclient.NewDeleteSloInstancesRequest([]openapiclient.DeleteSloInstancesRequestListInner{*openapiclient.NewDeleteSloInstancesRequestListInner("8853df00-ae2e-11ed-90af-09bb6422b258", "8853df00-ae2e-11ed-90af-09bb6422b258")}) // DeleteSloInstancesRequest | 
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	r, err := apiClient.SloAPI.DeleteSloInstancesOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).DeleteSloInstancesRequest(deleteSloInstancesRequest).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DeleteSloInstancesOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    r, err := apiClient.SloAPI.DeleteSloInstancesOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).DeleteSloInstancesRequest(deleteSloInstancesRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DeleteSloInstancesOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
 }
 ```
 
@@ -403,24 +403,24 @@ Delete an SLO
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	r, err := apiClient.SloAPI.DeleteSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DeleteSloOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    r, err := apiClient.SloAPI.DeleteSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DeleteSloOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
 }
 ```
 
@@ -476,24 +476,24 @@ Disable an SLO
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	r, err := apiClient.SloAPI.DisableSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DisableSloOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    r, err := apiClient.SloAPI.DisableSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.DisableSloOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
 }
 ```
 
@@ -549,24 +549,24 @@ Enable an SLO
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	r, err := apiClient.SloAPI.EnableSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.EnableSloOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    r, err := apiClient.SloAPI.EnableSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.EnableSloOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
 }
 ```
 
@@ -622,33 +622,33 @@ Get a paginated list of SLOs
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	kqlQuery := "slo.name:latency* and slo.tags : "prod"" // string | A valid kql query to filter the SLO with (optional)
-	size := int32(1) // int32 | The page size to use for cursor-based pagination, must be greater or equal than 1 (optional) (default to 1)
-	searchAfter := []string{"Inner_example"} // []string | The cursor to use for fetching the results from, when using a cursor-base pagination. (optional)
-	page := int32(1) // int32 | The page to use for pagination, must be greater or equal than 1 (optional) (default to 1)
-	perPage := int32(25) // int32 | Number of SLOs returned by page (optional) (default to 25)
-	sortBy := "status" // string | Sort by field (optional) (default to "status")
-	sortDirection := "asc" // string | Sort order (optional) (default to "asc")
-	hideStale := true // bool | Hide stale SLOs from the list as defined by stale SLO threshold in SLO settings (optional)
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    kqlQuery := "slo.name:latency* and slo.tags : "prod"" // string | A valid kql query to filter the SLO with (optional)
+    size := int32(1) // int32 | The page size to use for cursor-based pagination, must be greater or equal than 1 (optional) (default to 1)
+    searchAfter := []string{"Inner_example"} // []string | The cursor to use for fetching the results from, when using a cursor-base pagination. (optional)
+    page := int32(1) // int32 | The page to use for pagination, must be greater or equal than 1 (optional) (default to 1)
+    perPage := int32(25) // int32 | Number of SLOs returned by page (optional) (default to 25)
+    sortBy := "status" // string | Sort by field (optional) (default to "status")
+    sortDirection := "asc" // string | Sort order (optional) (default to "asc")
+    hideStale := true // bool | Hide stale SLOs from the list as defined by stale SLO threshold in SLO settings (optional)
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.FindSlosOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Size(size).SearchAfter(searchAfter).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).HideStale(hideStale).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.FindSlosOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `FindSlosOp`: FindSloResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.FindSlosOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.FindSlosOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).KqlQuery(kqlQuery).Size(size).SearchAfter(searchAfter).Page(page).PerPage(perPage).SortBy(sortBy).SortDirection(sortDirection).HideStale(hideStale).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.FindSlosOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `FindSlosOp`: FindSloResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.FindSlosOp`: %v\n", resp)
 }
 ```
 
@@ -710,30 +710,30 @@ Get the SLO definitions
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	includeOutdatedOnly := true // bool | Indicates if the API returns only outdated SLO or all SLO definitions (optional)
-	tags := "tags_example" // string | Filters the SLOs by tag (optional)
-	search := "my service availability" // string | Filters the SLOs by name (optional)
-	page := float32(1) // float32 | The page to use for pagination, must be greater or equal than 1 (optional)
-	perPage := int32(100) // int32 | Number of SLOs returned by page (optional) (default to 100)
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    includeOutdatedOnly := true // bool | Indicates if the API returns only outdated SLO or all SLO definitions (optional)
+    tags := "tags_example" // string | Filters the SLOs by tag (optional)
+    search := "my service availability" // string | Filters the SLOs by name (optional)
+    page := float64(1) // float64 | The page to use for pagination, must be greater or equal than 1 (optional)
+    perPage := int32(100) // int32 | Number of SLOs returned by page (optional) (default to 100)
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.GetDefinitionsOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).IncludeOutdatedOnly(includeOutdatedOnly).Tags(tags).Search(search).Page(page).PerPage(perPage).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.GetDefinitionsOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `GetDefinitionsOp`: FindSloDefinitionsResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.GetDefinitionsOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.GetDefinitionsOp(context.Background(), spaceId).KbnXsrf(kbnXsrf).IncludeOutdatedOnly(includeOutdatedOnly).Tags(tags).Search(search).Page(page).PerPage(perPage).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.GetDefinitionsOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `GetDefinitionsOp`: FindSloDefinitionsResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.GetDefinitionsOp`: %v\n", resp)
 }
 ```
 
@@ -757,7 +757,7 @@ Name | Type | Description  | Notes
  **includeOutdatedOnly** | **bool** | Indicates if the API returns only outdated SLO or all SLO definitions | 
  **tags** | **string** | Filters the SLOs by tag | 
  **search** | **string** | Filters the SLOs by name | 
- **page** | **float32** | The page to use for pagination, must be greater or equal than 1 | 
+ **page** | **float64** | The page to use for pagination, must be greater or equal than 1 | 
  **perPage** | **int32** | Number of SLOs returned by page | [default to 100]
 
 ### Return type
@@ -792,27 +792,27 @@ Get an SLO
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
-	instanceId := "host-abcde" // string | the specific instanceId used by the summary calculation (optional)
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
+    instanceId := "host-abcde" // string | the specific instanceId used by the summary calculation (optional)
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.GetSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).InstanceId(instanceId).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.GetSloOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `GetSloOp`: SloWithSummaryResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.GetSloOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.GetSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).InstanceId(instanceId).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.GetSloOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `GetSloOp`: SloWithSummaryResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.GetSloOp`: %v\n", resp)
 }
 ```
 
@@ -869,26 +869,26 @@ Reset an SLO
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.ResetSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.ResetSloOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `ResetSloOp`: SloDefinitionResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.ResetSloOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.ResetSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.ResetSloOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `ResetSloOp`: SloDefinitionResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.ResetSloOp`: %v\n", resp)
 }
 ```
 
@@ -944,27 +944,27 @@ Update an SLO
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/slo"
 )
 
 func main() {
-	kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-	spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-	sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
-	updateSloRequest := *openapiclient.NewUpdateSloRequest() // UpdateSloRequest | 
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    sloId := "9c235211-6834-11ea-a78c-6feb38a34414" // string | An identifier for the slo.
+    updateSloRequest := *openapiclient.NewUpdateSloRequest() // UpdateSloRequest | 
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SloAPI.UpdateSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).UpdateSloRequest(updateSloRequest).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.UpdateSloOp``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-	}
-	// response from `UpdateSloOp`: SloDefinitionResponse
-	fmt.Fprintf(os.Stdout, "Response from `SloAPI.UpdateSloOp`: %v\n", resp)
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.SloAPI.UpdateSloOp(context.Background(), spaceId, sloId).KbnXsrf(kbnXsrf).UpdateSloRequest(updateSloRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `SloAPI.UpdateSloOp``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `UpdateSloOp`: SloDefinitionResponse
+    fmt.Fprintf(os.Stdout, "Response from `SloAPI.UpdateSloOp`: %v\n", resp)
 }
 ```
 

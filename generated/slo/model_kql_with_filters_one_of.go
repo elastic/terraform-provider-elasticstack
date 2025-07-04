@@ -19,8 +19,8 @@ var _ MappedNullable = &KqlWithFiltersOneOf{}
 
 // KqlWithFiltersOneOf struct for KqlWithFiltersOneOf
 type KqlWithFiltersOneOf struct {
-	KqlQuery *string `json:"kqlQuery,omitempty"`
-	Filters []Filter `json:"filters,omitempty"`
+	KqlQuery *string  `json:"kqlQuery,omitempty"`
+	Filters  []Filter `json:"filters,omitempty"`
 }
 
 // NewKqlWithFiltersOneOf instantiates a new KqlWithFiltersOneOf object
@@ -105,7 +105,7 @@ func (o *KqlWithFiltersOneOf) SetFilters(v []Filter) {
 }
 
 func (o KqlWithFiltersOneOf) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -158,5 +158,3 @@ func (v *NullableKqlWithFiltersOneOf) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

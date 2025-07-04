@@ -13,13 +13,12 @@ package slo
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/validator.v2"
 )
 
 // KqlWithFilters - Defines properties for a filter
 type KqlWithFilters struct {
 	KqlWithFiltersOneOf *KqlWithFiltersOneOf
-	String *string
+	String              *string
 }
 
 // KqlWithFiltersOneOfAsKqlWithFilters is a convenience function that returns KqlWithFiltersOneOf wrapped in KqlWithFilters
@@ -36,40 +35,31 @@ func StringAsKqlWithFilters(v *string) KqlWithFilters {
 	}
 }
 
-
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *KqlWithFilters) UnmarshalJSON(data []byte) error {
 	var err error
 	match := 0
 	// try to unmarshal data into KqlWithFiltersOneOf
-	err = newStrictDecoder(data).Decode(&dst.KqlWithFiltersOneOf)
+	err = json.Unmarshal(data, &dst.KqlWithFiltersOneOf)
 	if err == nil {
 		jsonKqlWithFiltersOneOf, _ := json.Marshal(dst.KqlWithFiltersOneOf)
 		if string(jsonKqlWithFiltersOneOf) == "{}" { // empty struct
 			dst.KqlWithFiltersOneOf = nil
 		} else {
-			if err = validator.Validate(dst.KqlWithFiltersOneOf); err != nil {
-				dst.KqlWithFiltersOneOf = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.KqlWithFiltersOneOf = nil
 	}
 
 	// try to unmarshal data into String
-	err = newStrictDecoder(data).Decode(&dst.String)
+	err = json.Unmarshal(data, &dst.String)
 	if err == nil {
-		jsonString, _ := json.Marshal(dst.String)
-		if string(jsonString) == "{}" { // empty struct
+		jsonstring, _ := json.Marshal(dst.String)
+		if string(jsonstring) == "{}" { // empty struct
 			dst.String = nil
 		} else {
-			if err = validator.Validate(dst.String); err != nil {
-				dst.String = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.String = nil
@@ -102,7 +92,7 @@ func (src KqlWithFilters) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *KqlWithFilters) GetActualInstance() (interface{}) {
+func (obj *KqlWithFilters) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -112,20 +102,6 @@ func (obj *KqlWithFilters) GetActualInstance() (interface{}) {
 
 	if obj.String != nil {
 		return obj.String
-	}
-
-	// all schemas are nil
-	return nil
-}
-
-// Get the actual instance value
-func (obj KqlWithFilters) GetActualInstanceValue() (interface{}) {
-	if obj.KqlWithFiltersOneOf != nil {
-		return *obj.KqlWithFiltersOneOf
-	}
-
-	if obj.String != nil {
-		return *obj.String
 	}
 
 	// all schemas are nil
@@ -167,5 +143,3 @@ func (v *NullableKqlWithFilters) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

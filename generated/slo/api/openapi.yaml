@@ -1074,15 +1074,6 @@ components:
       title: KQL query for all events
     indicator_properties_custom_kql:
       description: Defines properties for a custom query indicator type
-      example:
-        params:
-          filter: "field.environment : \"production\" and service.name : \"my-service\""
-          dataViewId: 03b80ab3-003d-498b-881c-3beedbaf1162
-          total: "field.environment : \"production\" and service.name : \"my-service\""
-          index: my-service-*
-          timestampField: timestamp
-          good: "request.latency <= 150 and request.status_code : \"2xx\""
-        type: sli.kql.custom
       properties:
         params:
           $ref: '#/components/schemas/indicator_properties_custom_kql_params'
@@ -1423,15 +1414,7 @@ components:
       title: Group by
     slo_with_summary_response:
       example:
-        indicator:
-          params:
-            filter: "field.environment : \"production\" and service.name : \"my-service\""
-            dataViewId: 03b80ab3-003d-498b-881c-3beedbaf1162
-            total: "field.environment : \"production\" and service.name : \"my-service\""
-            index: my-service-*
-            timestampField: timestamp
-            good: "request.latency <= 150 and request.status_code : \"2xx\""
-          type: sli.kql.custom
+        indicator: null
         summary:
           errorBudget:
             consumed: 0.8
@@ -1557,15 +1540,7 @@ components:
         searchAfter: searchAfter
         page: 1
         results:
-        - indicator:
-            params:
-              filter: "field.environment : \"production\" and service.name : \"my-service\""
-              dataViewId: 03b80ab3-003d-498b-881c-3beedbaf1162
-              total: "field.environment : \"production\" and service.name : \"my-service\""
-              index: my-service-*
-              timestampField: timestamp
-              good: "request.latency <= 150 and request.status_code : \"2xx\""
-            type: sli.kql.custom
+        - indicator: null
           summary:
             errorBudget:
               consumed: 0.8
@@ -1604,15 +1579,7 @@ components:
           id: 8853df00-ae2e-11ed-90af-09bb6422b258
           budgetingMethod: occurrences
           updatedAt: 2023-01-12T10:03:19.000Z
-        - indicator:
-            params:
-              filter: "field.environment : \"production\" and service.name : \"my-service\""
-              dataViewId: 03b80ab3-003d-498b-881c-3beedbaf1162
-              total: "field.environment : \"production\" and service.name : \"my-service\""
-              index: my-service-*
-              timestampField: timestamp
-              good: "request.latency <= 150 and request.status_code : \"2xx\""
-            type: sli.kql.custom
+        - indicator: null
           summary:
             errorBudget:
               consumed: 0.8
@@ -1674,10 +1641,6 @@ components:
       title: Find SLO response
       type: object
     "400_response":
-      example:
-        error: Bad Request
-        message: "Invalid value 'foo' supplied to: [...]"
-        statusCode: 400
       properties:
         statusCode:
           example: 400
@@ -1695,12 +1658,6 @@ components:
       title: Bad request
       type: object
     "401_response":
-      example:
-        error: Unauthorized
-        message: "[security_exception\n\tRoot causes:\n\t\tsecurity_exception: unable\
-          \ to authenticate user [elastics] for REST request [/_security/_authenticate]]:\
-          \ unable to authenticate user [elastics] for REST request [/_security/_authenticate]"
-        statusCode: 401
       properties:
         statusCode:
           example: 401
@@ -1720,12 +1677,6 @@ components:
       title: Unauthorized
       type: object
     "403_response":
-      example:
-        error: Unauthorized
-        message: "[security_exception\n\tRoot causes:\n\t\tsecurity_exception: unable\
-          \ to authenticate user [elastics] for REST request [/_security/_authenticate]]:\
-          \ unable to authenticate user [elastics] for REST request [/_security/_authenticate]"
-        statusCode: 403
       properties:
         statusCode:
           example: 403
@@ -1745,10 +1696,6 @@ components:
       title: Unauthorized
       type: object
     "404_response":
-      example:
-        error: Not Found
-        message: "SLO [3749f390-03a3-11ee-8139-c7ff60a1692d] not found"
-        statusCode: 404
       properties:
         statusCode:
           example: 404
@@ -1818,10 +1765,6 @@ components:
       title: Create SLO response
       type: object
     "409_response":
-      example:
-        error: Conflict
-        message: "SLO [d077e940-1515-11ee-9c50-9d096392f520] already exists"
-        statusCode: 409
       properties:
         statusCode:
           example: 409
@@ -1869,15 +1812,7 @@ components:
       type: object
     slo_definition_response:
       example:
-        indicator:
-          params:
-            filter: "field.environment : \"production\" and service.name : \"my-service\""
-            dataViewId: 03b80ab3-003d-498b-881c-3beedbaf1162
-            total: "field.environment : \"production\" and service.name : \"my-service\""
-            index: my-service-*
-            timestampField: timestamp
-            good: "request.latency <= 150 and request.status_code : \"2xx\""
-          type: sli.kql.custom
+        indicator: null
         settings:
           syncField: event.ingested
           preventInitialBackfill: true
@@ -2129,13 +2064,6 @@ components:
       type: object
     indicator_properties_custom_kql_params:
       description: An object containing the indicator parameters.
-      example:
-        filter: "field.environment : \"production\" and service.name : \"my-service\""
-        dataViewId: 03b80ab3-003d-498b-881c-3beedbaf1162
-        total: "field.environment : \"production\" and service.name : \"my-service\""
-        index: my-service-*
-        timestampField: timestamp
-        good: "request.latency <= 150 and request.status_code : \"2xx\""
       nullable: false
       properties:
         index:
@@ -2554,105 +2482,6 @@ components:
       - $ref: '#/components/schemas/bulk_purge_rollup_request_purgePolicy_oneOf_1'
       type: object
     find_slo_definitions_response_oneOf:
-      example:
-        total: 34
-        perPage: 25
-        page: 1
-        results:
-        - indicator:
-            params:
-              filter: "field.environment : \"production\" and service.name : \"my-service\""
-              dataViewId: 03b80ab3-003d-498b-881c-3beedbaf1162
-              total: "field.environment : \"production\" and service.name : \"my-service\""
-              index: my-service-*
-              timestampField: timestamp
-              good: "request.latency <= 150 and request.status_code : \"2xx\""
-            type: sli.kql.custom
-          summary:
-            errorBudget:
-              consumed: 0.8
-              isEstimated: true
-              initial: 0.02
-              remaining: 0.2
-            status: HEALTHY
-            sliValue: 0.9836
-          settings:
-            syncField: event.ingested
-            preventInitialBackfill: true
-            syncDelay: 5m
-            frequency: 5m
-          timeWindow:
-            duration: 30d
-            type: rolling
-          description: My SLO description
-          groupBy:
-          - - service.name
-          - service.name
-          - - service.name
-            - service.environment
-          version: 2
-          enabled: true
-          objective:
-            timesliceWindow: 5m
-            timesliceTarget: 0.995
-            target: 0.99
-          revision: 2
-          tags:
-          - tags
-          - tags
-          createdAt: 2023-01-12T10:03:19.000Z
-          instanceId: host-abcde
-          name: My Service SLO
-          id: 8853df00-ae2e-11ed-90af-09bb6422b258
-          budgetingMethod: occurrences
-          updatedAt: 2023-01-12T10:03:19.000Z
-        - indicator:
-            params:
-              filter: "field.environment : \"production\" and service.name : \"my-service\""
-              dataViewId: 03b80ab3-003d-498b-881c-3beedbaf1162
-              total: "field.environment : \"production\" and service.name : \"my-service\""
-              index: my-service-*
-              timestampField: timestamp
-              good: "request.latency <= 150 and request.status_code : \"2xx\""
-            type: sli.kql.custom
-          summary:
-            errorBudget:
-              consumed: 0.8
-              isEstimated: true
-              initial: 0.02
-              remaining: 0.2
-            status: HEALTHY
-            sliValue: 0.9836
-          settings:
-            syncField: event.ingested
-            preventInitialBackfill: true
-            syncDelay: 5m
-            frequency: 5m
-          timeWindow:
-            duration: 30d
-            type: rolling
-          description: My SLO description
-          groupBy:
-          - - service.name
-          - service.name
-          - - service.name
-            - service.environment
-          version: 2
-          enabled: true
-          objective:
-            timesliceWindow: 5m
-            timesliceTarget: 0.995
-            target: 0.99
-          revision: 2
-          tags:
-          - tags
-          - tags
-          createdAt: 2023-01-12T10:03:19.000Z
-          instanceId: host-abcde
-          name: My Service SLO
-          id: 8853df00-ae2e-11ed-90af-09bb6422b258
-          budgetingMethod: occurrences
-          updatedAt: 2023-01-12T10:03:19.000Z
       properties:
         page:
           example: 1

@@ -17,7 +17,7 @@ import (
 // checks if the BulkDeleteResponse type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &BulkDeleteResponse{}
 
-// BulkDeleteResponse The bulk delete SLO response returns a taskId that can be used to poll for its status 
+// BulkDeleteResponse The bulk delete SLO response returns a taskId that can be used to poll for its status
 type BulkDeleteResponse struct {
 	// The taskId of the bulk delete operation
 	TaskId *string `json:"taskId,omitempty"`
@@ -73,7 +73,7 @@ func (o *BulkDeleteResponse) SetTaskId(v string) {
 }
 
 func (o BulkDeleteResponse) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -123,5 +123,3 @@ func (v *NullableBulkDeleteResponse) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

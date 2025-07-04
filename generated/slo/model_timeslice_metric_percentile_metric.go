@@ -12,8 +12,6 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the TimesliceMetricPercentileMetric type satisfies the MappedNullable interface at compile time
@@ -22,24 +20,22 @@ var _ MappedNullable = &TimesliceMetricPercentileMetric{}
 // TimesliceMetricPercentileMetric struct for TimesliceMetricPercentileMetric
 type TimesliceMetricPercentileMetric struct {
 	// The name of the metric. Only valid options are A-Z
-	Name string `json:"name" validate:"regexp=^[A-Z]$"`
+	Name string `json:"name"`
 	// The aggregation type of the metric. Only valid option is \"percentile\"
 	Aggregation string `json:"aggregation"`
 	// The field of the metric.
 	Field string `json:"field"`
 	// The percentile value.
-	Percentile float32 `json:"percentile"`
+	Percentile float64 `json:"percentile"`
 	// The filter to apply to the metric.
 	Filter *string `json:"filter,omitempty"`
 }
-
-type _TimesliceMetricPercentileMetric TimesliceMetricPercentileMetric
 
 // NewTimesliceMetricPercentileMetric instantiates a new TimesliceMetricPercentileMetric object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewTimesliceMetricPercentileMetric(name string, aggregation string, field string, percentile float32) *TimesliceMetricPercentileMetric {
+func NewTimesliceMetricPercentileMetric(name string, aggregation string, field string, percentile float64) *TimesliceMetricPercentileMetric {
 	this := TimesliceMetricPercentileMetric{}
 	this.Name = name
 	this.Aggregation = aggregation
@@ -129,9 +125,9 @@ func (o *TimesliceMetricPercentileMetric) SetField(v string) {
 }
 
 // GetPercentile returns the Percentile field value
-func (o *TimesliceMetricPercentileMetric) GetPercentile() float32 {
+func (o *TimesliceMetricPercentileMetric) GetPercentile() float64 {
 	if o == nil {
-		var ret float32
+		var ret float64
 		return ret
 	}
 
@@ -140,7 +136,7 @@ func (o *TimesliceMetricPercentileMetric) GetPercentile() float32 {
 
 // GetPercentileOk returns a tuple with the Percentile field value
 // and a boolean to check if the value has been set.
-func (o *TimesliceMetricPercentileMetric) GetPercentileOk() (*float32, bool) {
+func (o *TimesliceMetricPercentileMetric) GetPercentileOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -148,7 +144,7 @@ func (o *TimesliceMetricPercentileMetric) GetPercentileOk() (*float32, bool) {
 }
 
 // SetPercentile sets field value
-func (o *TimesliceMetricPercentileMetric) SetPercentile(v float32) {
+func (o *TimesliceMetricPercentileMetric) SetPercentile(v float64) {
 	o.Percentile = v
 }
 
@@ -185,7 +181,7 @@ func (o *TimesliceMetricPercentileMetric) SetFilter(v string) {
 }
 
 func (o TimesliceMetricPercentileMetric) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -202,46 +198,6 @@ func (o TimesliceMetricPercentileMetric) ToMap() (map[string]interface{}, error)
 		toSerialize["filter"] = o.Filter
 	}
 	return toSerialize, nil
-}
-
-func (o *TimesliceMetricPercentileMetric) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"name",
-		"aggregation",
-		"field",
-		"percentile",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varTimesliceMetricPercentileMetric := _TimesliceMetricPercentileMetric{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTimesliceMetricPercentileMetric)
-
-	if err != nil {
-		return err
-	}
-
-	*o = TimesliceMetricPercentileMetric(varTimesliceMetricPercentileMetric)
-
-	return err
 }
 
 type NullableTimesliceMetricPercentileMetric struct {
@@ -279,5 +235,3 @@ func (v *NullableTimesliceMetricPercentileMetric) UnmarshalJSON(src []byte) erro
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -12,19 +12,19 @@ Name | Type | Description | Notes
 **BudgetingMethod** | [**BudgetingMethod**](BudgetingMethod.md) |  | 
 **Objective** | [**Objective**](Objective.md) |  | 
 **Settings** | [**Settings**](Settings.md) |  | 
-**Revision** | **float32** | The SLO revision | 
+**Revision** | **float64** | The SLO revision | 
 **Enabled** | **bool** | Indicate if the SLO is enabled | 
 **GroupBy** | [**GroupBy**](GroupBy.md) |  | 
 **Tags** | **[]string** | List of tags | 
 **CreatedAt** | **string** | The creation date | 
 **UpdatedAt** | **string** | The last update date | 
-**Version** | **float32** | The internal SLO version | 
+**Version** | **float64** | The internal SLO version | 
 
 ## Methods
 
 ### NewSloDefinitionResponse
 
-`func NewSloDefinitionResponse(id string, name string, description string, indicator SloWithSummaryResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float32, enabled bool, groupBy GroupBy, tags []string, createdAt string, updatedAt string, version float32, ) *SloDefinitionResponse`
+`func NewSloDefinitionResponse(id string, name string, description string, indicator SloWithSummaryResponseIndicator, timeWindow TimeWindow, budgetingMethod BudgetingMethod, objective Objective, settings Settings, revision float64, enabled bool, groupBy GroupBy, tags []string, createdAt string, updatedAt string, version float64, ) *SloDefinitionResponse`
 
 NewSloDefinitionResponse instantiates a new SloDefinitionResponse object
 This constructor will assign default values to properties that have it defined,
@@ -201,20 +201,20 @@ SetSettings sets Settings field to given value.
 
 ### GetRevision
 
-`func (o *SloDefinitionResponse) GetRevision() float32`
+`func (o *SloDefinitionResponse) GetRevision() float64`
 
 GetRevision returns the Revision field if non-nil, zero value otherwise.
 
 ### GetRevisionOk
 
-`func (o *SloDefinitionResponse) GetRevisionOk() (*float32, bool)`
+`func (o *SloDefinitionResponse) GetRevisionOk() (*float64, bool)`
 
 GetRevisionOk returns a tuple with the Revision field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetRevision
 
-`func (o *SloDefinitionResponse) SetRevision(v float32)`
+`func (o *SloDefinitionResponse) SetRevision(v float64)`
 
 SetRevision sets Revision field to given value.
 
@@ -321,20 +321,20 @@ SetUpdatedAt sets UpdatedAt field to given value.
 
 ### GetVersion
 
-`func (o *SloDefinitionResponse) GetVersion() float32`
+`func (o *SloDefinitionResponse) GetVersion() float64`
 
 GetVersion returns the Version field if non-nil, zero value otherwise.
 
 ### GetVersionOk
 
-`func (o *SloDefinitionResponse) GetVersionOk() (*float32, bool)`
+`func (o *SloDefinitionResponse) GetVersionOk() (*float64, bool)`
 
 GetVersionOk returns a tuple with the Version field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetVersion
 
-`func (o *SloDefinitionResponse) SetVersion(v float32)`
+`func (o *SloDefinitionResponse) SetVersion(v float64)`
 
 SetVersion sets Version field to given value.
 

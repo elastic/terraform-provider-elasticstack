@@ -13,12 +13,11 @@ package slo
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/validator.v2"
 )
 
-// FindSloDefinitionsResponse - A paginated response of SLO definitions matching the query. 
+// FindSloDefinitionsResponse - A paginated response of SLO definitions matching the query.
 type FindSloDefinitionsResponse struct {
-	FindSloDefinitionsResponseOneOf *FindSloDefinitionsResponseOneOf
+	FindSloDefinitionsResponseOneOf  *FindSloDefinitionsResponseOneOf
 	FindSloDefinitionsResponseOneOf1 *FindSloDefinitionsResponseOneOf1
 }
 
@@ -36,40 +35,31 @@ func FindSloDefinitionsResponseOneOf1AsFindSloDefinitionsResponse(v *FindSloDefi
 	}
 }
 
-
 // Unmarshal JSON data into one of the pointers in the struct
 func (dst *FindSloDefinitionsResponse) UnmarshalJSON(data []byte) error {
 	var err error
 	match := 0
 	// try to unmarshal data into FindSloDefinitionsResponseOneOf
-	err = newStrictDecoder(data).Decode(&dst.FindSloDefinitionsResponseOneOf)
+	err = json.Unmarshal(data, &dst.FindSloDefinitionsResponseOneOf)
 	if err == nil {
 		jsonFindSloDefinitionsResponseOneOf, _ := json.Marshal(dst.FindSloDefinitionsResponseOneOf)
 		if string(jsonFindSloDefinitionsResponseOneOf) == "{}" { // empty struct
 			dst.FindSloDefinitionsResponseOneOf = nil
 		} else {
-			if err = validator.Validate(dst.FindSloDefinitionsResponseOneOf); err != nil {
-				dst.FindSloDefinitionsResponseOneOf = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.FindSloDefinitionsResponseOneOf = nil
 	}
 
 	// try to unmarshal data into FindSloDefinitionsResponseOneOf1
-	err = newStrictDecoder(data).Decode(&dst.FindSloDefinitionsResponseOneOf1)
+	err = json.Unmarshal(data, &dst.FindSloDefinitionsResponseOneOf1)
 	if err == nil {
 		jsonFindSloDefinitionsResponseOneOf1, _ := json.Marshal(dst.FindSloDefinitionsResponseOneOf1)
 		if string(jsonFindSloDefinitionsResponseOneOf1) == "{}" { // empty struct
 			dst.FindSloDefinitionsResponseOneOf1 = nil
 		} else {
-			if err = validator.Validate(dst.FindSloDefinitionsResponseOneOf1); err != nil {
-				dst.FindSloDefinitionsResponseOneOf1 = nil
-			} else {
-				match++
-			}
+			match++
 		}
 	} else {
 		dst.FindSloDefinitionsResponseOneOf1 = nil
@@ -102,7 +92,7 @@ func (src FindSloDefinitionsResponse) MarshalJSON() ([]byte, error) {
 }
 
 // Get the actual instance
-func (obj *FindSloDefinitionsResponse) GetActualInstance() (interface{}) {
+func (obj *FindSloDefinitionsResponse) GetActualInstance() interface{} {
 	if obj == nil {
 		return nil
 	}
@@ -112,20 +102,6 @@ func (obj *FindSloDefinitionsResponse) GetActualInstance() (interface{}) {
 
 	if obj.FindSloDefinitionsResponseOneOf1 != nil {
 		return obj.FindSloDefinitionsResponseOneOf1
-	}
-
-	// all schemas are nil
-	return nil
-}
-
-// Get the actual instance value
-func (obj FindSloDefinitionsResponse) GetActualInstanceValue() (interface{}) {
-	if obj.FindSloDefinitionsResponseOneOf != nil {
-		return *obj.FindSloDefinitionsResponseOneOf
-	}
-
-	if obj.FindSloDefinitionsResponseOneOf1 != nil {
-		return *obj.FindSloDefinitionsResponseOneOf1
 	}
 
 	// all schemas are nil
@@ -167,5 +143,3 @@ func (v *NullableFindSloDefinitionsResponse) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

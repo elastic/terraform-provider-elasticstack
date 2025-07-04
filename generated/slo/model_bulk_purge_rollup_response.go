@@ -17,7 +17,7 @@ import (
 // checks if the BulkPurgeRollupResponse type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &BulkPurgeRollupResponse{}
 
-// BulkPurgeRollupResponse The bulk purge rollup data response returns a task id from the elasticsearch deleteByQuery response. 
+// BulkPurgeRollupResponse The bulk purge rollup data response returns a task id from the elasticsearch deleteByQuery response.
 type BulkPurgeRollupResponse struct {
 	// The task id of the purge operation
 	TaskId *string `json:"taskId,omitempty"`
@@ -73,7 +73,7 @@ func (o *BulkPurgeRollupResponse) SetTaskId(v string) {
 }
 
 func (o BulkPurgeRollupResponse) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -123,5 +123,3 @@ func (v *NullableBulkPurgeRollupResponse) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

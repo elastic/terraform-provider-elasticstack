@@ -12,32 +12,28 @@ package slo
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the CreateSloRequest type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &CreateSloRequest{}
 
-// CreateSloRequest The create SLO API request body varies depending on the type of indicator, time window and budgeting method. 
+// CreateSloRequest The create SLO API request body varies depending on the type of indicator, time window and budgeting method.
 type CreateSloRequest struct {
 	// A optional and unique identifier for the SLO. Must be between 8 and 36 chars
 	Id *string `json:"id,omitempty"`
 	// A name for the SLO.
 	Name string `json:"name"`
 	// A description for the SLO.
-	Description string `json:"description"`
-	Indicator CreateSloRequestIndicator `json:"indicator"`
-	TimeWindow TimeWindow `json:"timeWindow"`
-	BudgetingMethod BudgetingMethod `json:"budgetingMethod"`
-	Objective Objective `json:"objective"`
-	Settings *Settings `json:"settings,omitempty"`
-	GroupBy *GroupBy `json:"groupBy,omitempty"`
+	Description     string                    `json:"description"`
+	Indicator       CreateSloRequestIndicator `json:"indicator"`
+	TimeWindow      TimeWindow                `json:"timeWindow"`
+	BudgetingMethod BudgetingMethod           `json:"budgetingMethod"`
+	Objective       Objective                 `json:"objective"`
+	Settings        *Settings                 `json:"settings,omitempty"`
+	GroupBy         *GroupBy                  `json:"groupBy,omitempty"`
 	// List of tags
 	Tags []string `json:"tags,omitempty"`
 }
-
-type _CreateSloRequest CreateSloRequest
 
 // NewCreateSloRequest instantiates a new CreateSloRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -335,7 +331,7 @@ func (o *CreateSloRequest) SetTags(v []string) {
 }
 
 func (o CreateSloRequest) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -363,48 +359,6 @@ func (o CreateSloRequest) ToMap() (map[string]interface{}, error) {
 		toSerialize["tags"] = o.Tags
 	}
 	return toSerialize, nil
-}
-
-func (o *CreateSloRequest) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"name",
-		"description",
-		"indicator",
-		"timeWindow",
-		"budgetingMethod",
-		"objective",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varCreateSloRequest := _CreateSloRequest{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varCreateSloRequest)
-
-	if err != nil {
-		return err
-	}
-
-	*o = CreateSloRequest(varCreateSloRequest)
-
-	return err
 }
 
 type NullableCreateSloRequest struct {
@@ -442,5 +396,3 @@ func (v *NullableCreateSloRequest) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-
