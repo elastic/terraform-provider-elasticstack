@@ -46,7 +46,6 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	var userPassword models.UserPassword
-	// TB TODO Fix up this logic. It should only set the password when it's set in config
 	if utils.IsKnown(data.Password) && (user.Password == nil || data.Password.ValueString() != *user.Password) {
 		userPassword.Password = data.Password.ValueStringPointer()
 	}

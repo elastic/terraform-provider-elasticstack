@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -24,7 +25,8 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 				Config: testAccResourceSecuritySystemUserUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
+					checks.CheckUserCanAuthenticate("remote_monitoring_user", "new_password"),
 				),
 			},
 		},
@@ -56,8 +58,7 @@ func TestAccResourceSecuritySystemUserFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.15",
 					},
 				},
-				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccResourceSecuritySystemUserCreate,
+				Config: testAccResourceSecuritySystemUserCreate,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
@@ -82,7 +83,6 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_user" {
   username  = "remote_monitoring_user"
-  password  = "new_password"
 }
 `
 
@@ -94,7 +94,6 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_user" {
   username  = "remote_monitoring_user"
   password  = "new_password"
-  enabled   = false
 }
 	`
 const testAccResourceSecuritySystemUserNotFound = `
