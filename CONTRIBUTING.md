@@ -4,7 +4,7 @@ Fork the repo, work on an issue
 
 ## Updating the generated Kibana client.
 
-If you're work involved the Kibana API, the endpoints may or may not be included in the generated client.
+If your work involves the Kibana API, the endpoints may or may not be included in the generated client.
 Check [generated/kbapi](./generated/kbapi/) for more details.
 
 ## Acceptance tests
@@ -65,4 +65,4 @@ To release a new provider version:
 - updates CHANGELOG.md with the list of changes being released.
 [Example](https://github.com/elastic/terraform-provider-elasticstack/commit/be866ebc918184e843dc1dd2f6e2e1b963da386d).
 
-* Once the PR merged, the release CI pipeline can be started by pushing a new release tag to `main` branch.
+* Once the PRis merged, the release CI pipeline can be started by pushing a new release tag to the `main` branch.
