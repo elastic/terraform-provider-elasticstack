@@ -246,7 +246,6 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN) tools-golangci-lint ## Install useful tools for linting, docs generation and development
-	@ cd tools && go install github.com/client9/misspell/cmd/misspell
 	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 	@ cd tools && go install github.com/goreleaser/goreleaser/v2
 	@ cd tools && go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
@@ -256,20 +255,13 @@ tools: $(GOBIN) tools-golangci-lint ## Install useful tools for linting, docs ge
 tools-golangci-lint: ## Download golangci-lint locally if necessary.
 	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.2.1
 
-
-.PHONY: misspell
-misspell:
-	@ $(GOBIN)/misspell -error -source go ./internal/
-	@ $(GOBIN)/misspell -error -source text ./templates/
-
-
 .PHONY: golangci-lint
 golangci-lint:
 	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
 
 .PHONY: lint
-lint: setup misspell golangci-lint check-fmt check-docs ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint check-fmt check-docs ## Run lints to check the spelling and common go patterns
 
 .PHONY: fmt
 fmt: ## Format code
