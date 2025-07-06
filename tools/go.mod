@@ -7,7 +7,7 @@ toolchain go1.24.4
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/goreleaser/goreleaser/v2 v2.10.2
-	github.com/hashicorp/terraform-plugin-docs v0.21.0
+	github.com/hashicorp/terraform-plugin-docs v0.22.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	go.uber.org/mock v0.5.2
 	gopkg.in/yaml.v3 v3.0.1
@@ -116,7 +116,7 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589 // indirect
-	github.com/cloudflare/circl v1.6.0 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cncf/xds/go v0.0.0-20250326154945-ae57f3c0d45f // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
@@ -201,9 +201,9 @@ require (
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
-	github.com/hashicorp/hc-install v0.9.1 // indirect
-	github.com/hashicorp/terraform-exec v0.22.0 // indirect
-	github.com/hashicorp/terraform-json v0.24.0 // indirect
+	github.com/hashicorp/hc-install v0.9.2 // indirect
+	github.com/hashicorp/terraform-exec v0.23.0 // indirect
+	github.com/hashicorp/terraform-json v0.25.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/in-toto/attestation v1.1.1 // indirect
 	github.com/in-toto/in-toto-golang v0.9.0 // indirect
@@ -321,7 +321,7 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/yuin/goldmark v1.7.7 // indirect
 	github.com/yuin/goldmark-meta v1.1.0 // indirect
-	github.com/zclconf/go-cty v1.16.2 // indirect
+	github.com/zclconf/go-cty v1.16.3 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
 	gitlab.com/gitlab-org/api/client-go v0.129.0 // indirect
 	go.abhg.dev/goldmark/frontmatter v0.2.0 // indirect
