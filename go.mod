@@ -88,3 +88,5 @@ require (
 )
 
 replace github.com/disaster37/go-kibana-rest/v8 => ./libs/go-kibana-rest
+
+tool go.uber.org/mock/mockgen

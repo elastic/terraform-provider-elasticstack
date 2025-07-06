@@ -250,7 +250,6 @@ tools: $(GOBIN) tools-golangci-lint ## Install useful tools for linting, docs ge
 	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 	@ cd tools && go install github.com/goreleaser/goreleaser/v2
 	@ cd tools && go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
-	@ cd tools && go install go.uber.org/mock/mockgen
 
 .PHONY: tools-golangci-lint
 tools-golangci-lint: ## Download golangci-lint locally if necessary.
