@@ -7,7 +7,6 @@ toolchain go1.24.4
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/goreleaser/goreleaser/v2 v2.10.2
-	github.com/hashicorp/terraform-plugin-docs v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -48,7 +47,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.51.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.51.0 // indirect
-	github.com/Kunde21/markdownfmt/v3 v3.1.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
@@ -59,8 +57,6 @@ require (
 	github.com/anchore/go-logger v0.0.0-20241005132348-65b4486fbb28 // indirect
 	github.com/anchore/go-macholibre v0.0.0-20220308212642-53e6d0aaf6fb // indirect
 	github.com/anchore/quill v0.5.1 // indirect
-	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
-	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/atc0005/go-teams-notify/v2 v2.13.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
@@ -89,13 +85,11 @@ require (
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.9.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
-	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/blacktop/go-dwarf v1.0.10 // indirect
 	github.com/blacktop/go-macho v1.1.238 // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bluesky-social/indigo v0.0.0-20240813042137-4006c0eca043 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/caarlos0/ctrlc v1.2.0 // indirect
 	github.com/caarlos0/env/v11 v11.3.1 // indirect
@@ -188,18 +182,12 @@ require (
 	github.com/goreleaser/fileglob v1.3.0 // indirect
 	github.com/goreleaser/nfpm/v2 v2.43.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/hashicorp/cli v1.1.7 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-checkpoint v0.5.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
-	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
-	github.com/hashicorp/hc-install v0.9.1 // indirect
-	github.com/hashicorp/terraform-exec v0.22.0 // indirect
-	github.com/hashicorp/terraform-json v0.24.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/in-toto/attestation v1.1.1 // indirect
 	github.com/in-toto/in-toto-golang v0.9.0 // indirect
@@ -268,7 +256,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/polydawn/refmt v0.89.1-0.20221221234430-40501e09de1f // indirect
-	github.com/posener/complete v1.2.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.9.0 // indirect
@@ -309,12 +296,8 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	github.com/yuin/goldmark v1.7.7 // indirect
-	github.com/yuin/goldmark-meta v1.1.0 // indirect
-	github.com/zclconf/go-cty v1.16.2 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
 	gitlab.com/gitlab-org/api/client-go v0.129.0 // indirect
-	go.abhg.dev/goldmark/frontmatter v0.2.0 // indirect
 	go.mongodb.org/mongo-driver v1.17.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
@@ -352,7 +335,6 @@ require (
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 	sigs.k8s.io/kind v0.27.0 // indirect

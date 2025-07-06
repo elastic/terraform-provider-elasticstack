@@ -225,7 +225,7 @@ docker-clean: ## Try to remove provisioned nodes and assigned network
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ $(GOBIN)/tfplugindocs
+	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
 
 .PHONY: gen
@@ -247,7 +247,6 @@ install: build ## Install built provider into the local terraform cache
 .PHONY: tools
 tools: $(GOBIN) tools-golangci-lint ## Install useful tools for linting, docs generation and development
 	@ cd tools && go install github.com/client9/misspell/cmd/misspell
-	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 	@ cd tools && go install github.com/goreleaser/goreleaser/v2
 
 .PHONY: tools-golangci-lint
