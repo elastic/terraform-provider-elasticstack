@@ -2,6 +2,11 @@
 
 Fork the repo, work on an issue
 
+## Updating the generated Kibana client.
+
+If you're work involved the Kibana API, the endpoints may or may not be included in the generated client.
+Check [generated/kbapi](./generated/kbapi/) for more details.
+
 ## Acceptance tests
 
 ```bash
