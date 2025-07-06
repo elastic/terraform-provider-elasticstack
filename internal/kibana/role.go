@@ -15,7 +15,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var minSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
+var (
+	minSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
+	minSupportedDescriptionVersion   = version.Must(version.NewVersion("8.15.0"))
+)
 
 func ResourceRole() *schema.Resource {
 	roleSchema := map[string]*schema.Schema{
@@ -232,6 +235,11 @@ func ResourceRole() *schema.Resource {
 			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 		},
+		"description": {
+			Description: "Optional description for the role",
+			Type:        schema.TypeString,
+			Optional:    true,
+		},
 	}
 
 	return &schema.Resource{
@@ -293,6 +301,14 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 		}
 	}
 
+	if v, ok := d.GetOk("description"); ok {
+		if serverVersion.LessThan(minSupportedDescriptionVersion) {
+			return diag.FromErr(fmt.Errorf("'description' is supported only for Kibana v%s and above", minSupportedDescriptionVersion.String()))
+		}
+
+		kibanaRole.Description = v.(string)
+	}
+
 	roleManageResponse, err := kibana.KibanaRoleManagement.CreateOrUpdate(&kibanaRole)
 	if err != nil {
 		return diag.FromErr(err)
@@ -332,6 +348,9 @@ func resourceRoleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.FromErr(err)
 	}
 	if err := d.Set("kibana", flattenKibanaRoleKibanaData(&role.Kibana)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("description", role.Description); err != nil {
 		return diag.FromErr(err)
 	}
 	if role.Metadata != nil {
