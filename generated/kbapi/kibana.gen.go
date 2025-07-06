@@ -498,6 +498,26 @@ const (
 	UpdateOutputSslVerificationModeStrict      UpdateOutputSslVerificationMode = "strict"
 )
 
+// Defines values for APMUIElasticApiVersion.
+const (
+	APMUIElasticApiVersionN20231031 APMUIElasticApiVersion = "2023-10-31"
+)
+
+// Defines values for DeleteAgentConfigurationParamsElasticApiVersion.
+const (
+	DeleteAgentConfigurationParamsElasticApiVersionN20231031 DeleteAgentConfigurationParamsElasticApiVersion = "2023-10-31"
+)
+
+// Defines values for GetAgentConfigurationsParamsElasticApiVersion.
+const (
+	GetAgentConfigurationsParamsElasticApiVersionN20231031 GetAgentConfigurationsParamsElasticApiVersion = "2023-10-31"
+)
+
+// Defines values for CreateUpdateAgentConfigurationParamsElasticApiVersion.
+const (
+	CreateUpdateAgentConfigurationParamsElasticApiVersionN20231031 CreateUpdateAgentConfigurationParamsElasticApiVersion = "2023-10-31"
+)
+
 // Defines values for GetFleetAgentPoliciesParamsSortOrder.
 const (
 	GetFleetAgentPoliciesParamsSortOrderAsc  GetFleetAgentPoliciesParamsSortOrder = "asc"
@@ -579,6 +599,111 @@ const (
 	Legacy     PutFleetPackagePoliciesPackagepolicyidParamsFormat = "legacy"
 	Simplified PutFleetPackagePoliciesPackagepolicyidParamsFormat = "simplified"
 )
+
+// APMUI400Response defines model for APM_UI_400_response.
+type APMUI400Response struct {
+	// Error Error type
+	Error *string `json:"error,omitempty"`
+
+	// Message Error message
+	Message *string `json:"message,omitempty"`
+
+	// StatusCode Error status code
+	StatusCode *float32 `json:"statusCode,omitempty"`
+}
+
+// APMUI401Response defines model for APM_UI_401_response.
+type APMUI401Response struct {
+	// Error Error type
+	Error *string `json:"error,omitempty"`
+
+	// Message Error message
+	Message *string `json:"message,omitempty"`
+
+	// StatusCode Error status code
+	StatusCode *float32 `json:"statusCode,omitempty"`
+}
+
+// APMUI403Response defines model for APM_UI_403_response.
+type APMUI403Response struct {
+	// Error Error type
+	Error *string `json:"error,omitempty"`
+
+	// Message Error message
+	Message *string `json:"message,omitempty"`
+
+	// StatusCode Error status code
+	StatusCode *float32 `json:"statusCode,omitempty"`
+}
+
+// APMUI404Response defines model for APM_UI_404_response.
+type APMUI404Response struct {
+	// Error Error type
+	Error *string `json:"error,omitempty"`
+
+	// Message Error message
+	Message *string `json:"message,omitempty"`
+
+	// StatusCode Error status code
+	StatusCode *float32 `json:"statusCode,omitempty"`
+}
+
+// APMUIAgentConfigurationIntakeObject defines model for APM_UI_agent_configuration_intake_object.
+type APMUIAgentConfigurationIntakeObject struct {
+	// AgentName The agent name is used by the UI to determine which settings to display.
+	AgentName *string `json:"agent_name,omitempty"`
+
+	// Service Service
+	Service APMUIServiceObject `json:"service"`
+
+	// Settings Agent configuration settings
+	Settings APMUISettingsObject `json:"settings"`
+}
+
+// APMUIAgentConfigurationObject Agent configuration
+type APMUIAgentConfigurationObject struct {
+	// Timestamp Timestamp
+	Timestamp float32 `json:"@timestamp"`
+
+	// AgentName Agent name
+	AgentName *string `json:"agent_name,omitempty"`
+
+	// AppliedByAgent Applied by agent
+	AppliedByAgent *bool `json:"applied_by_agent,omitempty"`
+
+	// Etag `etag` is sent by the APM agent to indicate the `etag` of the last successfully applied configuration. If the `etag` matches an existing configuration its `applied_by_agent` property will be set to `true`. Every time a configuration is edited `applied_by_agent` is reset to `false`.
+	Etag string `json:"etag"`
+
+	// Service Service
+	Service APMUIServiceObject `json:"service"`
+
+	// Settings Agent configuration settings
+	Settings APMUISettingsObject `json:"settings"`
+}
+
+// APMUIAgentConfigurationsResponse defines model for APM_UI_agent_configurations_response.
+type APMUIAgentConfigurationsResponse struct {
+	// Configurations Agent configuration
+	Configurations *[]APMUIAgentConfigurationObject `json:"configurations,omitempty"`
+}
+
+// APMUIDeleteAgentConfigurationsResponse defines model for APM_UI_delete_agent_configurations_response.
+type APMUIDeleteAgentConfigurationsResponse struct {
+	// Result Result
+	Result *string `json:"result,omitempty"`
+}
+
+// APMUIServiceObject Service
+type APMUIServiceObject struct {
+	// Environment The environment of the service.
+	Environment *string `json:"environment,omitempty"`
+
+	// Name The name of the service.
+	Name *string `json:"name,omitempty"`
+}
+
+// APMUISettingsObject Agent configuration settings
+type APMUISettingsObject map[string]string
 
 // DataViews400Response defines model for Data_views_400_response.
 type DataViews400Response struct {
@@ -2900,11 +3025,44 @@ type UpdateOutputUnion struct {
 	union json.RawMessage
 }
 
+// APMUIElasticApiVersion defines model for APM_UI_elastic_api_version.
+type APMUIElasticApiVersion string
+
 // DataViewsViewId defines model for Data_views_view_id.
 type DataViewsViewId = string
 
 // SpaceId defines model for spaceId.
 type SpaceId = string
+
+// DeleteAgentConfigurationParams defines parameters for DeleteAgentConfiguration.
+type DeleteAgentConfigurationParams struct {
+	// ElasticApiVersion The version of the API to use
+	ElasticApiVersion DeleteAgentConfigurationParamsElasticApiVersion `json:"elastic-api-version"`
+}
+
+// DeleteAgentConfigurationParamsElasticApiVersion defines parameters for DeleteAgentConfiguration.
+type DeleteAgentConfigurationParamsElasticApiVersion string
+
+// GetAgentConfigurationsParams defines parameters for GetAgentConfigurations.
+type GetAgentConfigurationsParams struct {
+	// ElasticApiVersion The version of the API to use
+	ElasticApiVersion GetAgentConfigurationsParamsElasticApiVersion `json:"elastic-api-version"`
+}
+
+// GetAgentConfigurationsParamsElasticApiVersion defines parameters for GetAgentConfigurations.
+type GetAgentConfigurationsParamsElasticApiVersion string
+
+// CreateUpdateAgentConfigurationParams defines parameters for CreateUpdateAgentConfiguration.
+type CreateUpdateAgentConfigurationParams struct {
+	// Overwrite If the config exists ?overwrite=true is required
+	Overwrite *bool `form:"overwrite,omitempty" json:"overwrite,omitempty"`
+
+	// ElasticApiVersion The version of the API to use
+	ElasticApiVersion CreateUpdateAgentConfigurationParamsElasticApiVersion `json:"elastic-api-version"`
+}
+
+// CreateUpdateAgentConfigurationParamsElasticApiVersion defines parameters for CreateUpdateAgentConfiguration.
+type CreateUpdateAgentConfigurationParamsElasticApiVersion string
 
 // GetFleetAgentPoliciesParams defines parameters for GetFleetAgentPolicies.
 type GetFleetAgentPoliciesParams struct {
@@ -3368,6 +3526,12 @@ type PutParameterJSONBody struct {
 	// Value The updated value associated with the parameter.
 	Value *string `json:"value,omitempty"`
 }
+
+// DeleteAgentConfigurationJSONRequestBody defines body for DeleteAgentConfiguration for application/json ContentType.
+type DeleteAgentConfigurationJSONRequestBody = APMUIServiceObject
+
+// CreateUpdateAgentConfigurationJSONRequestBody defines body for CreateUpdateAgentConfiguration for application/json ContentType.
+type CreateUpdateAgentConfigurationJSONRequestBody = APMUIAgentConfigurationIntakeObject
 
 // PostFleetAgentPoliciesJSONRequestBody defines body for PostFleetAgentPolicies for application/json ContentType.
 type PostFleetAgentPoliciesJSONRequestBody PostFleetAgentPoliciesJSONBody
@@ -14268,6 +14432,19 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// DeleteAgentConfigurationWithBody request with any body
+	DeleteAgentConfigurationWithBody(ctx context.Context, params *DeleteAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	DeleteAgentConfiguration(ctx context.Context, params *DeleteAgentConfigurationParams, body DeleteAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAgentConfigurations request
+	GetAgentConfigurations(ctx context.Context, params *GetAgentConfigurationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateUpdateAgentConfigurationWithBody request with any body
+	CreateUpdateAgentConfigurationWithBody(ctx context.Context, params *CreateUpdateAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateUpdateAgentConfiguration(ctx context.Context, params *CreateUpdateAgentConfigurationParams, body CreateUpdateAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetFleetAgentPolicies request
 	GetFleetAgentPolicies(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14400,6 +14577,66 @@ type ClientInterface interface {
 	UpdateDataViewDefaultWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) DeleteAgentConfigurationWithBody(ctx context.Context, params *DeleteAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAgentConfigurationRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteAgentConfiguration(ctx context.Context, params *DeleteAgentConfigurationParams, body DeleteAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAgentConfigurationRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAgentConfigurations(ctx context.Context, params *GetAgentConfigurationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentConfigurationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateUpdateAgentConfigurationWithBody(ctx context.Context, params *CreateUpdateAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUpdateAgentConfigurationRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateUpdateAgentConfiguration(ctx context.Context, params *CreateUpdateAgentConfigurationParams, body CreateUpdateAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUpdateAgentConfigurationRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetFleetAgentPolicies(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -14988,6 +15225,174 @@ func (c *Client) UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, vie
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewDeleteAgentConfigurationRequest calls the generic DeleteAgentConfiguration builder with application/json body
+func NewDeleteAgentConfigurationRequest(server string, params *DeleteAgentConfigurationParams, body DeleteAgentConfigurationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDeleteAgentConfigurationRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewDeleteAgentConfigurationRequestWithBody generates requests for DeleteAgentConfiguration with any type of body
+func NewDeleteAgentConfigurationRequestWithBody(server string, params *DeleteAgentConfigurationParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/apm/settings/agent-configuration")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithLocation("simple", false, "elastic-api-version", runtime.ParamLocationHeader, params.ElasticApiVersion)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("elastic-api-version", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetAgentConfigurationsRequest generates requests for GetAgentConfigurations
+func NewGetAgentConfigurationsRequest(server string, params *GetAgentConfigurationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/apm/settings/agent-configuration")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithLocation("simple", false, "elastic-api-version", runtime.ParamLocationHeader, params.ElasticApiVersion)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("elastic-api-version", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewCreateUpdateAgentConfigurationRequest calls the generic CreateUpdateAgentConfiguration builder with application/json body
+func NewCreateUpdateAgentConfigurationRequest(server string, params *CreateUpdateAgentConfigurationParams, body CreateUpdateAgentConfigurationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateUpdateAgentConfigurationRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreateUpdateAgentConfigurationRequestWithBody generates requests for CreateUpdateAgentConfiguration with any type of body
+func NewCreateUpdateAgentConfigurationRequestWithBody(server string, params *CreateUpdateAgentConfigurationParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/apm/settings/agent-configuration")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Overwrite != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "overwrite", runtime.ParamLocationQuery, *params.Overwrite); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithLocation("simple", false, "elastic-api-version", runtime.ParamLocationHeader, params.ElasticApiVersion)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("elastic-api-version", headerParam0)
+
+	}
+
+	return req, nil
 }
 
 // NewGetFleetAgentPoliciesRequest generates requests for GetFleetAgentPolicies
@@ -17120,6 +17525,19 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// DeleteAgentConfigurationWithBodyWithResponse request with any body
+	DeleteAgentConfigurationWithBodyWithResponse(ctx context.Context, params *DeleteAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAgentConfigurationResponse, error)
+
+	DeleteAgentConfigurationWithResponse(ctx context.Context, params *DeleteAgentConfigurationParams, body DeleteAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteAgentConfigurationResponse, error)
+
+	// GetAgentConfigurationsWithResponse request
+	GetAgentConfigurationsWithResponse(ctx context.Context, params *GetAgentConfigurationsParams, reqEditors ...RequestEditorFn) (*GetAgentConfigurationsResponse, error)
+
+	// CreateUpdateAgentConfigurationWithBodyWithResponse request with any body
+	CreateUpdateAgentConfigurationWithBodyWithResponse(ctx context.Context, params *CreateUpdateAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUpdateAgentConfigurationResponse, error)
+
+	CreateUpdateAgentConfigurationWithResponse(ctx context.Context, params *CreateUpdateAgentConfigurationParams, body CreateUpdateAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUpdateAgentConfigurationResponse, error)
+
 	// GetFleetAgentPoliciesWithResponse request
 	GetFleetAgentPoliciesWithResponse(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesResponse, error)
 
@@ -17252,6 +17670,83 @@ type ClientWithResponsesInterface interface {
 	UpdateDataViewDefaultWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
 
 	UpdateDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
+}
+
+type DeleteAgentConfigurationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *APMUIDeleteAgentConfigurationsResponse
+	JSON400      *APMUI400Response
+	JSON401      *APMUI401Response
+	JSON403      *APMUI403Response
+	JSON404      *APMUI404Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteAgentConfigurationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteAgentConfigurationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAgentConfigurationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *APMUIAgentConfigurationsResponse
+	JSON400      *APMUI400Response
+	JSON401      *APMUI401Response
+	JSON404      *APMUI404Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentConfigurationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentConfigurationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateUpdateAgentConfigurationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]interface{}
+	JSON400      *APMUI400Response
+	JSON401      *APMUI401Response
+	JSON403      *APMUI403Response
+	JSON404      *APMUI404Response
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateUpdateAgentConfigurationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateUpdateAgentConfigurationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetFleetAgentPoliciesResponse struct {
@@ -18360,6 +18855,49 @@ func (r UpdateDataViewDefaultResponse) StatusCode() int {
 	return 0
 }
 
+// DeleteAgentConfigurationWithBodyWithResponse request with arbitrary body returning *DeleteAgentConfigurationResponse
+func (c *ClientWithResponses) DeleteAgentConfigurationWithBodyWithResponse(ctx context.Context, params *DeleteAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAgentConfigurationResponse, error) {
+	rsp, err := c.DeleteAgentConfigurationWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAgentConfigurationResponse(rsp)
+}
+
+func (c *ClientWithResponses) DeleteAgentConfigurationWithResponse(ctx context.Context, params *DeleteAgentConfigurationParams, body DeleteAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteAgentConfigurationResponse, error) {
+	rsp, err := c.DeleteAgentConfiguration(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAgentConfigurationResponse(rsp)
+}
+
+// GetAgentConfigurationsWithResponse request returning *GetAgentConfigurationsResponse
+func (c *ClientWithResponses) GetAgentConfigurationsWithResponse(ctx context.Context, params *GetAgentConfigurationsParams, reqEditors ...RequestEditorFn) (*GetAgentConfigurationsResponse, error) {
+	rsp, err := c.GetAgentConfigurations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentConfigurationsResponse(rsp)
+}
+
+// CreateUpdateAgentConfigurationWithBodyWithResponse request with arbitrary body returning *CreateUpdateAgentConfigurationResponse
+func (c *ClientWithResponses) CreateUpdateAgentConfigurationWithBodyWithResponse(ctx context.Context, params *CreateUpdateAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUpdateAgentConfigurationResponse, error) {
+	rsp, err := c.CreateUpdateAgentConfigurationWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUpdateAgentConfigurationResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateUpdateAgentConfigurationWithResponse(ctx context.Context, params *CreateUpdateAgentConfigurationParams, body CreateUpdateAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUpdateAgentConfigurationResponse, error) {
+	rsp, err := c.CreateUpdateAgentConfiguration(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUpdateAgentConfigurationResponse(rsp)
+}
+
 // GetFleetAgentPoliciesWithResponse request returning *GetFleetAgentPoliciesResponse
 func (c *ClientWithResponses) GetFleetAgentPoliciesWithResponse(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesResponse, error) {
 	rsp, err := c.GetFleetAgentPolicies(ctx, params, reqEditors...)
@@ -18785,6 +19323,161 @@ func (c *ClientWithResponses) UpdateDataViewDefaultWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseUpdateDataViewDefaultResponse(rsp)
+}
+
+// ParseDeleteAgentConfigurationResponse parses an HTTP response from a DeleteAgentConfigurationWithResponse call
+func ParseDeleteAgentConfigurationResponse(rsp *http.Response) (*DeleteAgentConfigurationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteAgentConfigurationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest APMUIDeleteAgentConfigurationsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest APMUI400Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest APMUI401Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest APMUI403Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest APMUI404Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAgentConfigurationsResponse parses an HTTP response from a GetAgentConfigurationsWithResponse call
+func ParseGetAgentConfigurationsResponse(rsp *http.Response) (*GetAgentConfigurationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentConfigurationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest APMUIAgentConfigurationsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest APMUI400Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest APMUI401Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest APMUI404Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateUpdateAgentConfigurationResponse parses an HTTP response from a CreateUpdateAgentConfigurationWithResponse call
+func ParseCreateUpdateAgentConfigurationResponse(rsp *http.Response) (*CreateUpdateAgentConfigurationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateUpdateAgentConfigurationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest APMUI400Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest APMUI401Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest APMUI403Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest APMUI404Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetFleetAgentPoliciesResponse parses an HTTP response from a GetFleetAgentPoliciesWithResponse call
