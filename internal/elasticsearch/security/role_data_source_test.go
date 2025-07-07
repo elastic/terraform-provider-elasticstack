@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -21,11 +21,11 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
-					utils.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.names", []string{"index1", "index2"}),
+					checks.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.names", []string{"index1", "index2"}),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.privileges.*", "all"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.application", "myapp"),
-					utils.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.privileges", []string{"admin", "read"}),
+					checks.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.privileges", []string{"admin", "read"}),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.resources.*", "*"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "run_as.*", "other_user"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
@@ -37,11 +37,11 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
-					utils.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.names", []string{"index1", "index2"}),
+					checks.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.names", []string{"index1", "index2"}),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.privileges.*", "all"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.application", "myapp"),
-					utils.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.privileges", []string{"admin", "read"}),
+					checks.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.privileges", []string{"admin", "read"}),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.resources.*", "*"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "run_as.*", "other_user"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
@@ -55,11 +55,11 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
-					utils.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.names", []string{"index1", "index2"}),
+					checks.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.names", []string{"index1", "index2"}),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.privileges.*", "all"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.application", "myapp"),
-					utils.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.privileges", []string{"admin", "read"}),
+					checks.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.privileges", []string{"admin", "read"}),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "applications.0.resources.*", "*"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "run_as.*", "other_user"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
