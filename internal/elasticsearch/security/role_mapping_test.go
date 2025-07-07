@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -25,7 +25,7 @@ func TestResourceRoleMapping(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
-					utils.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin"}),
+					checks.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin"}),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{"version":1}`),
 				),
@@ -35,7 +35,7 @@ func TestResourceRoleMapping(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
-					utils.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin", "user"}),
+					checks.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin", "user"}),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
 				),
