@@ -225,7 +225,7 @@ docker-clean: ## Try to remove provisioned nodes and assigned network
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ $(GOBIN)/tfplugindocs
+	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
 
 .PHONY: gen
@@ -247,10 +247,6 @@ install: build ## Install built provider into the local terraform cache
 .PHONY: tools
 tools: $(GOBIN) tools-golangci-lint ## Install useful tools for linting, docs generation and development
 	@ cd tools && go install github.com/client9/misspell/cmd/misspell
-	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-	@ cd tools && go install github.com/goreleaser/goreleaser/v2
-	@ cd tools && go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
-	@ cd tools && go install go.uber.org/mock/mockgen
 
 .PHONY: tools-golangci-lint
 tools-golangci-lint: ## Download golangci-lint locally if necessary.
@@ -290,22 +286,21 @@ check-docs: docs-generate  ## Check uncommitted changes on docs
 
 
 .PHONY: setup
-setup: tools ## Setup the dev environment
-
+setup: tools vendor ## Setup the dev environment
 
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
-	@ $(GOBIN)/goreleaser release --snapshot --clean
+	@ go tool github.com/goreleaser/goreleaser/v2 release --snapshot --clean
 
 
 .PHONY: release-no-publish
 release-no-publish: tools check-sign-release ## Make a release without publishing artifacts
-	@ $(GOBIN)/goreleaser release --skip=publish,announce,validate  --parallelism=2
+	@ go tool github.com/goreleaser/goreleaser/v2 release --skip=publish,announce,validate  --parallelism=2
 
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ $(GOBIN)/goreleaser release --clean  --parallelism=4
+	@ go tool github.com/goreleaser/goreleaser/v2 release --clean  --parallelism=4
 
 
 .PHONY: check-sign-release
