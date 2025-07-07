@@ -1,9 +1,7 @@
 package agent_configuration
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -12,13 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
-
-type deleteAgentConfigurationRequestBody struct {
-	Service struct {
-		Name        string  `json:"name"`
-		Environment *string `json:"environment,omitempty"`
-	} `json:"service"`
-}
 
 func (r *resourceAgentConfiguration) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state AgentConfiguration
@@ -40,17 +31,13 @@ func (r *resourceAgentConfiguration) Delete(ctx context.Context, req resource.De
 		serviceEnv = &idParts[1]
 	}
 
-	deleteReqBody := deleteAgentConfigurationRequestBody{}
-	deleteReqBody.Service.Name = serviceName
-	deleteReqBody.Service.Environment = serviceEnv
-
-	bodyBytes, err := json.Marshal(deleteReqBody)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to serialize delete request body", err.Error())
-		return
+	deleteReqBody := kbapi.APMUIDeleteServiceObject{
+		Service: &kbapi.APMUIServiceObject{
+			Name:        &serviceName,
+			Environment: serviceEnv,
+		},
 	}
-
-	apiResp, err := kibana.API.DeleteAgentConfigurationWithBody(ctx, &kbapi.DeleteAgentConfigurationParams{}, "application/json", bytes.NewReader(bodyBytes))
+	apiResp, err := kibana.API.DeleteAgentConfiguration(ctx, &kbapi.DeleteAgentConfigurationParams{}, deleteReqBody)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to delete APM agent configuration", err.Error())
 		return

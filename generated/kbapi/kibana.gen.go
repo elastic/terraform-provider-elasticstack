@@ -693,6 +693,12 @@ type APMUIDeleteAgentConfigurationsResponse struct {
 	Result *string `json:"result,omitempty"`
 }
 
+// APMUIDeleteServiceObject defines model for APM_UI_delete_service_object.
+type APMUIDeleteServiceObject struct {
+	// Service Service
+	Service *APMUIServiceObject `json:"service,omitempty"`
+}
+
 // APMUIServiceObject Service
 type APMUIServiceObject struct {
 	// Environment The environment of the service.
@@ -3528,7 +3534,7 @@ type PutParameterJSONBody struct {
 }
 
 // DeleteAgentConfigurationJSONRequestBody defines body for DeleteAgentConfiguration for application/json ContentType.
-type DeleteAgentConfigurationJSONRequestBody = APMUIServiceObject
+type DeleteAgentConfigurationJSONRequestBody = APMUIDeleteServiceObject
 
 // CreateUpdateAgentConfigurationJSONRequestBody defines body for CreateUpdateAgentConfiguration for application/json ContentType.
 type CreateUpdateAgentConfigurationJSONRequestBody = APMUIAgentConfigurationIntakeObject
