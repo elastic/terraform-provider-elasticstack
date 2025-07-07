@@ -65,4 +65,4 @@ To release a new provider version:
 - updates CHANGELOG.md with the list of changes being released.
 [Example](https://github.com/elastic/terraform-provider-elasticstack/commit/be866ebc918184e843dc1dd2f6e2e1b963da386d).
 
-* Once the PRis merged, the release CI pipeline can be started by pushing a new release tag to the `main` branch.
+* Once the PR is merged, the release CI pipeline can be started by pushing a new release tag to the `main` branch.
