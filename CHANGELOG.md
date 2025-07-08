@@ -4,6 +4,7 @@
 - Migrate `elasticstack_elasticsearch_system_user` resource to Terraform plugin framework ([#1154](https://github.com/elastic/terraform-provider-elasticstack/pull/1154))
 - Add custom `endpoint` configuration support for snapshot repository setup ([#1158](https://github.com/elastic/terraform-provider-elasticstack/pull/1158))
 - Add `description` to `elasticstack_kibana_security_role` ([#1172](https://github.com/elastic/terraform-provider-elasticstack/issues/1172))
+- Add `elasticstack_kibana_synthetics_parameter` resource ([#1155](https://github.com/elastic/terraform-provider-elasticstack/pull/1155))
 
 ## [0.11.15] - 2025-04-23
 
@@ -425,7 +426,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...HEAD
+[0.11.15]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...v0.11.15
 [0.11.14]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.13...v0.11.14
 [0.11.13]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.12...v0.11.13
 [0.11.12]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.11...v0.11.12

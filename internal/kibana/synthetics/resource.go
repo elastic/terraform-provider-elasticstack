@@ -2,8 +2,10 @@ package synthetics
 
 import (
 	"context"
+
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -37,6 +39,25 @@ func GetKibanaClient(c ESApiClient, dg diag.Diagnostics) *kibana.Client {
 	kibanaClient, err := client.GetKibanaClient()
 	if err != nil {
 		dg.AddError("unable to get kibana client", err.Error())
+		return nil
+	}
+	return kibanaClient
+}
+
+func GetKibanaOAPIClient(c ESApiClient, dg diag.Diagnostics) *kibana_oapi.Client {
+
+	client := c.GetClient()
+	if client == nil {
+		dg.AddError(
+			"Unconfigured Client",
+			"Expected configured client. Please report this issue to the provider developers.",
+		)
+		return nil
+	}
+
+	kibanaClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		dg.AddError("unable to get kibana oapi client", err.Error())
 		return nil
 	}
 	return kibanaClient

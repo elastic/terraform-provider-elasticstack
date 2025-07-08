@@ -829,6 +829,66 @@ type DataViewsUpdateDataViewRequestObjectInner struct {
 	TypeMeta *DataViewsTypemeta `json:"typeMeta,omitempty"`
 }
 
+// SyntheticsGetParameterResponse defines model for Synthetics_getParameterResponse.
+type SyntheticsGetParameterResponse struct {
+	// Description The description of the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+	Description *string `json:"description,omitempty"`
+
+	// Id The unique identifier of the parameter.
+	Id *string `json:"id,omitempty"`
+
+	// Key The key of the parameter.
+	Key *string `json:"key,omitempty"`
+
+	// Namespaces The namespaces associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+	Namespaces *[]string `json:"namespaces,omitempty"`
+
+	// Tags An array of tags associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Value The value associated with the parameter. It will be included in the response if the user has write permissions.
+	Value *string `json:"value,omitempty"`
+}
+
+// SyntheticsParameterRequest defines model for Synthetics_parameterRequest.
+type SyntheticsParameterRequest struct {
+	// Description A description of the parameter.
+	Description *string `json:"description,omitempty"`
+
+	// Key The key of the parameter.
+	Key string `json:"key"`
+
+	// ShareAcrossSpaces Specify whether the parameter should be shared across spaces.
+	ShareAcrossSpaces *bool `json:"share_across_spaces,omitempty"`
+
+	// Tags An array of tags to categorize the parameter.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Value The value associated with the parameter.
+	Value string `json:"value"`
+}
+
+// SyntheticsPostParameterResponse defines model for Synthetics_postParameterResponse.
+type SyntheticsPostParameterResponse struct {
+	// Description A description of the parameter.
+	Description *string `json:"description,omitempty"`
+
+	// Id The unique identifier for the parameter.
+	Id *string `json:"id,omitempty"`
+
+	// Key The parameter key.
+	Key *string `json:"key,omitempty"`
+
+	// ShareAcrossSpaces Indicates whether the parameter is shared across spaces.
+	ShareAcrossSpaces *bool `json:"share_across_spaces,omitempty"`
+
+	// Tags An array of tags associated with the parameter.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Value The value associated with the parameter.
+	Value *string `json:"value,omitempty"`
+}
+
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
@@ -1210,6 +1270,14 @@ type AgentPolicyGlobalDataTagsItemValue1 = float32
 type AgentPolicyGlobalDataTagsItem_Value struct {
 	union json.RawMessage
 }
+
+// CreateParamResponse defines model for create_param_response.
+type CreateParamResponse struct {
+	union json.RawMessage
+}
+
+// CreateParamResponse0 defines model for .
+type CreateParamResponse0 = []SyntheticsPostParameterResponse
 
 // EnrollmentApiKey defines model for enrollment_api_key.
 type EnrollmentApiKey struct {
@@ -3278,6 +3346,29 @@ type PutFleetPackagePoliciesPackagepolicyidParams struct {
 // PutFleetPackagePoliciesPackagepolicyidParamsFormat defines parameters for PutFleetPackagePoliciesPackagepolicyid.
 type PutFleetPackagePoliciesPackagepolicyidParamsFormat string
 
+// PostParametersJSONBody defines parameters for PostParameters.
+type PostParametersJSONBody struct {
+	union json.RawMessage
+}
+
+// PostParametersJSONBody0 defines parameters for PostParameters.
+type PostParametersJSONBody0 = []SyntheticsParameterRequest
+
+// PutParameterJSONBody defines parameters for PutParameter.
+type PutParameterJSONBody struct {
+	// Description The updated description of the parameter.
+	Description *string `json:"description,omitempty"`
+
+	// Key The key of the parameter.
+	Key *string `json:"key,omitempty"`
+
+	// Tags An array of updated tags to categorize the parameter.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Value The updated value associated with the parameter.
+	Value *string `json:"value,omitempty"`
+}
+
 // PostFleetAgentPoliciesJSONRequestBody defines body for PostFleetAgentPolicies for application/json ContentType.
 type PostFleetAgentPoliciesJSONRequestBody PostFleetAgentPoliciesJSONBody
 
@@ -3307,6 +3398,12 @@ type PostFleetPackagePoliciesJSONRequestBody = PackagePolicyRequest
 
 // PutFleetPackagePoliciesPackagepolicyidJSONRequestBody defines body for PutFleetPackagePoliciesPackagepolicyid for application/json ContentType.
 type PutFleetPackagePoliciesPackagepolicyidJSONRequestBody = PackagePolicyRequest
+
+// PostParametersJSONRequestBody defines body for PostParameters for application/json ContentType.
+type PostParametersJSONRequestBody PostParametersJSONBody
+
+// PutParameterJSONRequestBody defines body for PutParameter for application/json ContentType.
+type PutParameterJSONRequestBody PutParameterJSONBody
 
 // CreateDataViewDefaultwJSONRequestBody defines body for CreateDataViewDefaultw for application/json ContentType.
 type CreateDataViewDefaultwJSONRequestBody = DataViewsCreateDataViewRequestObject
@@ -11943,6 +12040,68 @@ func (t *AgentPolicyGlobalDataTagsItem_Value) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsCreateParamResponse0 returns the union data inside the CreateParamResponse as a CreateParamResponse0
+func (t CreateParamResponse) AsCreateParamResponse0() (CreateParamResponse0, error) {
+	var body CreateParamResponse0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateParamResponse0 overwrites any union data inside the CreateParamResponse as the provided CreateParamResponse0
+func (t *CreateParamResponse) FromCreateParamResponse0(v CreateParamResponse0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateParamResponse0 performs a merge with any union data inside the CreateParamResponse, using the provided CreateParamResponse0
+func (t *CreateParamResponse) MergeCreateParamResponse0(v CreateParamResponse0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSyntheticsPostParameterResponse returns the union data inside the CreateParamResponse as a SyntheticsPostParameterResponse
+func (t CreateParamResponse) AsSyntheticsPostParameterResponse() (SyntheticsPostParameterResponse, error) {
+	var body SyntheticsPostParameterResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSyntheticsPostParameterResponse overwrites any union data inside the CreateParamResponse as the provided SyntheticsPostParameterResponse
+func (t *CreateParamResponse) FromSyntheticsPostParameterResponse(v SyntheticsPostParameterResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSyntheticsPostParameterResponse performs a merge with any union data inside the CreateParamResponse, using the provided SyntheticsPostParameterResponse
+func (t *CreateParamResponse) MergeSyntheticsPostParameterResponse(v SyntheticsPostParameterResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateParamResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateParamResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsNewOutputElasticsearchSecretsSslKey0 returns the union data inside the NewOutputElasticsearch_Secrets_Ssl_Key as a NewOutputElasticsearchSecretsSslKey0
 func (t NewOutputElasticsearch_Secrets_Ssl_Key) AsNewOutputElasticsearchSecretsSslKey0() (NewOutputElasticsearchSecretsSslKey0, error) {
 	var body NewOutputElasticsearchSecretsSslKey0
@@ -14207,6 +14366,22 @@ type ClientInterface interface {
 
 	PutFleetPackagePoliciesPackagepolicyid(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, body PutFleetPackagePoliciesPackagepolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PostParametersWithBody request with any body
+	PostParametersWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostParameters(ctx context.Context, body PostParametersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteParameter request
+	DeleteParameter(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetParameter request
+	GetParameter(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutParameterWithBody request with any body
+	PutParameterWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PutParameter(ctx context.Context, id string, body PutParameterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAllDataViewsDefault request
 	GetAllDataViewsDefault(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14649,6 +14824,78 @@ func (c *Client) PutFleetPackagePoliciesPackagepolicyidWithBody(ctx context.Cont
 
 func (c *Client) PutFleetPackagePoliciesPackagepolicyid(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, body PutFleetPackagePoliciesPackagepolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPutFleetPackagePoliciesPackagepolicyidRequest(c.Server, packagePolicyId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostParametersWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostParametersRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostParameters(ctx context.Context, body PostParametersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostParametersRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteParameter(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteParameterRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetParameter(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetParameterRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutParameterWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutParameterRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutParameter(ctx context.Context, id string, body PutParameterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutParameterRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16458,6 +16705,161 @@ func NewPutFleetPackagePoliciesPackagepolicyidRequestWithBody(server string, pac
 	return req, nil
 }
 
+// NewPostParametersRequest calls the generic PostParameters builder with application/json body
+func NewPostParametersRequest(server string, body PostParametersJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostParametersRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostParametersRequestWithBody generates requests for PostParameters with any type of body
+func NewPostParametersRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/synthetics/params")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteParameterRequest generates requests for DeleteParameter
+func NewDeleteParameterRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/synthetics/params/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetParameterRequest generates requests for GetParameter
+func NewGetParameterRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/synthetics/params/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutParameterRequest calls the generic PutParameter builder with application/json body
+func NewPutParameterRequest(server string, id string, body PutParameterJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutParameterRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPutParameterRequestWithBody generates requests for PutParameter with any type of body
+func NewPutParameterRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/synthetics/params/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetAllDataViewsDefaultRequest generates requests for GetAllDataViewsDefault
 func NewGetAllDataViewsDefaultRequest(server string, spaceId SpaceId) (*http.Request, error) {
 	var err error
@@ -16815,6 +17217,22 @@ type ClientWithResponsesInterface interface {
 	PutFleetPackagePoliciesPackagepolicyidWithBodyWithResponse(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFleetPackagePoliciesPackagepolicyidResponse, error)
 
 	PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx context.Context, packagePolicyId string, params *PutFleetPackagePoliciesPackagepolicyidParams, body PutFleetPackagePoliciesPackagepolicyidJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFleetPackagePoliciesPackagepolicyidResponse, error)
+
+	// PostParametersWithBodyWithResponse request with any body
+	PostParametersWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostParametersResponse, error)
+
+	PostParametersWithResponse(ctx context.Context, body PostParametersJSONRequestBody, reqEditors ...RequestEditorFn) (*PostParametersResponse, error)
+
+	// DeleteParameterWithResponse request
+	DeleteParameterWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteParameterResponse, error)
+
+	// GetParameterWithResponse request
+	GetParameterWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetParameterResponse, error)
+
+	// PutParameterWithBodyWithResponse request with any body
+	PutParameterWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutParameterResponse, error)
+
+	PutParameterWithResponse(ctx context.Context, id string, body PutParameterJSONRequestBody, reqEditors ...RequestEditorFn) (*PutParameterResponse, error)
 
 	// GetAllDataViewsDefaultWithResponse request
 	GetAllDataViewsDefaultWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetAllDataViewsDefaultResponse, error)
@@ -17739,6 +18157,93 @@ func (r PutFleetPackagePoliciesPackagepolicyidResponse) StatusCode() int {
 	return 0
 }
 
+type PostParametersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *CreateParamResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostParametersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostParametersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteParameterResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteParameterResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteParameterResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetParameterResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SyntheticsGetParameterResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetParameterResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetParameterResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PutParameterResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]interface{}
+}
+
+// Status returns HTTPResponse.Status
+func (r PutParameterResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutParameterResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetAllDataViewsDefaultResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -18167,6 +18672,58 @@ func (c *ClientWithResponses) PutFleetPackagePoliciesPackagepolicyidWithResponse
 		return nil, err
 	}
 	return ParsePutFleetPackagePoliciesPackagepolicyidResponse(rsp)
+}
+
+// PostParametersWithBodyWithResponse request with arbitrary body returning *PostParametersResponse
+func (c *ClientWithResponses) PostParametersWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostParametersResponse, error) {
+	rsp, err := c.PostParametersWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostParametersResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostParametersWithResponse(ctx context.Context, body PostParametersJSONRequestBody, reqEditors ...RequestEditorFn) (*PostParametersResponse, error) {
+	rsp, err := c.PostParameters(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostParametersResponse(rsp)
+}
+
+// DeleteParameterWithResponse request returning *DeleteParameterResponse
+func (c *ClientWithResponses) DeleteParameterWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteParameterResponse, error) {
+	rsp, err := c.DeleteParameter(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteParameterResponse(rsp)
+}
+
+// GetParameterWithResponse request returning *GetParameterResponse
+func (c *ClientWithResponses) GetParameterWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetParameterResponse, error) {
+	rsp, err := c.GetParameter(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetParameterResponse(rsp)
+}
+
+// PutParameterWithBodyWithResponse request with arbitrary body returning *PutParameterResponse
+func (c *ClientWithResponses) PutParameterWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutParameterResponse, error) {
+	rsp, err := c.PutParameterWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutParameterResponse(rsp)
+}
+
+func (c *ClientWithResponses) PutParameterWithResponse(ctx context.Context, id string, body PutParameterJSONRequestBody, reqEditors ...RequestEditorFn) (*PutParameterResponse, error) {
+	rsp, err := c.PutParameter(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutParameterResponse(rsp)
 }
 
 // GetAllDataViewsDefaultWithResponse request returning *GetAllDataViewsDefaultResponse
@@ -19356,6 +19913,100 @@ func ParsePutFleetPackagePoliciesPackagepolicyidResponse(rsp *http.Response) (*P
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostParametersResponse parses an HTTP response from a PostParametersWithResponse call
+func ParsePostParametersResponse(rsp *http.Response) (*PostParametersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostParametersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CreateParamResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteParameterResponse parses an HTTP response from a DeleteParameterWithResponse call
+func ParseDeleteParameterResponse(rsp *http.Response) (*DeleteParameterResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteParameterResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetParameterResponse parses an HTTP response from a GetParameterWithResponse call
+func ParseGetParameterResponse(rsp *http.Response) (*GetParameterResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetParameterResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SyntheticsGetParameterResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutParameterResponse parses an HTTP response from a PutParameterWithResponse call
+func ParsePutParameterResponse(rsp *http.Response) (*PutParameterResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutParameterResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 
