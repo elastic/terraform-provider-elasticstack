@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -51,7 +52,7 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 			},
 			{
 				Config:   testAccDataSourceSecurityRoleWithDescription,
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
