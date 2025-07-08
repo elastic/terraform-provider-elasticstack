@@ -40,7 +40,8 @@ func (r *resourceAgentConfiguration) Update(ctx context.Context, req resource.Up
 
 	overwrite := true
 	params := &kbapi.CreateUpdateAgentConfigurationParams{
-		Overwrite: &overwrite,
+		Overwrite:         &overwrite,
+		ElasticApiVersion: elasticAPIVersion,
 	}
 
 	apiResp, err := kibana.API.CreateUpdateAgentConfiguration(ctx, params, agentConfig)

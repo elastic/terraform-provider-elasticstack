@@ -37,7 +37,13 @@ func (r *resourceAgentConfiguration) Delete(ctx context.Context, req resource.De
 			Environment: serviceEnv,
 		},
 	}
-	apiResp, err := kibana.API.DeleteAgentConfiguration(ctx, &kbapi.DeleteAgentConfigurationParams{}, deleteReqBody)
+	apiResp, err := kibana.API.DeleteAgentConfiguration(
+		ctx,
+		&kbapi.DeleteAgentConfigurationParams{
+			ElasticApiVersion: elasticAPIVersion,
+		},
+		deleteReqBody,
+	)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to delete APM agent configuration", err.Error())
 		return

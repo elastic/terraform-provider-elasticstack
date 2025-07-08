@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const elasticAPIVersion = "2023-10-31"
+
 func (r *resourceAgentConfiguration) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan AgentConfiguration
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -38,7 +40,13 @@ func (r *resourceAgentConfiguration) Create(ctx context.Context, req resource.Cr
 		Settings: settings,
 	}
 
-	apiResp, err := kibana.API.CreateUpdateAgentConfiguration(ctx, &kbapi.CreateUpdateAgentConfigurationParams{}, agentConfig)
+	apiResp, err := kibana.API.CreateUpdateAgentConfiguration(
+		ctx,
+		&kbapi.CreateUpdateAgentConfigurationParams{
+			ElasticApiVersion: elasticAPIVersion,
+		},
+		agentConfig,
+	)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create APM agent configuration", err.Error())
 		return
