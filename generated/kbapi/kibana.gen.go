@@ -39,11 +39,11 @@ const (
 	AgentPolicyMonitoringEnabledTraces  AgentPolicyMonitoringEnabled = "traces"
 )
 
-// Defines values for AgentPolicyPackagePolicies1InputsStreamsRelease.
+// Defines values for AgentPolicyPackagePolicies1Inputs0StreamsRelease.
 const (
-	AgentPolicyPackagePolicies1InputsStreamsReleaseBeta         AgentPolicyPackagePolicies1InputsStreamsRelease = "beta"
-	AgentPolicyPackagePolicies1InputsStreamsReleaseExperimental AgentPolicyPackagePolicies1InputsStreamsRelease = "experimental"
-	AgentPolicyPackagePolicies1InputsStreamsReleaseGa           AgentPolicyPackagePolicies1InputsStreamsRelease = "ga"
+	AgentPolicyPackagePolicies1Inputs0StreamsReleaseBeta         AgentPolicyPackagePolicies1Inputs0StreamsRelease = "beta"
+	AgentPolicyPackagePolicies1Inputs0StreamsReleaseExperimental AgentPolicyPackagePolicies1Inputs0StreamsRelease = "experimental"
+	AgentPolicyPackagePolicies1Inputs0StreamsReleaseGa           AgentPolicyPackagePolicies1Inputs0StreamsRelease = "ga"
 )
 
 // Defines values for AgentPolicyStatus.
@@ -218,20 +218,20 @@ const (
 	OutputSslVerificationModeStrict      OutputSslVerificationMode = "strict"
 )
 
-// Defines values for PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType.
+// Defines values for PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0.
 const (
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeCspRuleTemplate   PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "csp-rule-template"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeDashboard         PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "dashboard"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeIndexPattern      PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "index-pattern"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeLens              PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "lens"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeMap               PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "map"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeMlModule          PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "ml-module"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeOsqueryPackAsset  PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "osquery-pack-asset"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeOsquerySavedQuery PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "osquery-saved-query"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeSearch            PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "search"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeSecurityRule      PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "security-rule"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeTag               PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "tag"
-	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaTypeVisualization     PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType = "visualization"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0CspRuleTemplate   PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "csp-rule-template"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0Dashboard         PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "dashboard"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0IndexPattern      PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "index-pattern"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0Lens              PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "lens"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0Map               PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "map"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0MlModule          PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "ml-module"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0OsqueryPackAsset  PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "osquery-pack-asset"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0OsquerySavedQuery PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "osquery-saved-query"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0Search            PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "search"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0SecurityRule      PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "security-rule"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0Tag               PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "tag"
+	PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0Visualization     PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 = "visualization"
 )
 
 // Defines values for PackageInfoInstallationInfoInstallSource.
@@ -261,20 +261,20 @@ const (
 	PackageInfoInstallationInfoInstalledEsTypeTransform           PackageInfoInstallationInfoInstalledEsType = "transform"
 )
 
-// Defines values for PackageInfoInstallationInfoInstalledKibanaType.
+// Defines values for PackageInfoInstallationInfoInstalledKibanaType0.
 const (
-	PackageInfoInstallationInfoInstalledKibanaTypeCspRuleTemplate   PackageInfoInstallationInfoInstalledKibanaType = "csp-rule-template"
-	PackageInfoInstallationInfoInstalledKibanaTypeDashboard         PackageInfoInstallationInfoInstalledKibanaType = "dashboard"
-	PackageInfoInstallationInfoInstalledKibanaTypeIndexPattern      PackageInfoInstallationInfoInstalledKibanaType = "index-pattern"
-	PackageInfoInstallationInfoInstalledKibanaTypeLens              PackageInfoInstallationInfoInstalledKibanaType = "lens"
-	PackageInfoInstallationInfoInstalledKibanaTypeMap               PackageInfoInstallationInfoInstalledKibanaType = "map"
-	PackageInfoInstallationInfoInstalledKibanaTypeMlModule          PackageInfoInstallationInfoInstalledKibanaType = "ml-module"
-	PackageInfoInstallationInfoInstalledKibanaTypeOsqueryPackAsset  PackageInfoInstallationInfoInstalledKibanaType = "osquery-pack-asset"
-	PackageInfoInstallationInfoInstalledKibanaTypeOsquerySavedQuery PackageInfoInstallationInfoInstalledKibanaType = "osquery-saved-query"
-	PackageInfoInstallationInfoInstalledKibanaTypeSearch            PackageInfoInstallationInfoInstalledKibanaType = "search"
-	PackageInfoInstallationInfoInstalledKibanaTypeSecurityRule      PackageInfoInstallationInfoInstalledKibanaType = "security-rule"
-	PackageInfoInstallationInfoInstalledKibanaTypeTag               PackageInfoInstallationInfoInstalledKibanaType = "tag"
-	PackageInfoInstallationInfoInstalledKibanaTypeVisualization     PackageInfoInstallationInfoInstalledKibanaType = "visualization"
+	PackageInfoInstallationInfoInstalledKibanaType0CspRuleTemplate   PackageInfoInstallationInfoInstalledKibanaType0 = "csp-rule-template"
+	PackageInfoInstallationInfoInstalledKibanaType0Dashboard         PackageInfoInstallationInfoInstalledKibanaType0 = "dashboard"
+	PackageInfoInstallationInfoInstalledKibanaType0IndexPattern      PackageInfoInstallationInfoInstalledKibanaType0 = "index-pattern"
+	PackageInfoInstallationInfoInstalledKibanaType0Lens              PackageInfoInstallationInfoInstalledKibanaType0 = "lens"
+	PackageInfoInstallationInfoInstalledKibanaType0Map               PackageInfoInstallationInfoInstalledKibanaType0 = "map"
+	PackageInfoInstallationInfoInstalledKibanaType0MlModule          PackageInfoInstallationInfoInstalledKibanaType0 = "ml-module"
+	PackageInfoInstallationInfoInstalledKibanaType0OsqueryPackAsset  PackageInfoInstallationInfoInstalledKibanaType0 = "osquery-pack-asset"
+	PackageInfoInstallationInfoInstalledKibanaType0OsquerySavedQuery PackageInfoInstallationInfoInstalledKibanaType0 = "osquery-saved-query"
+	PackageInfoInstallationInfoInstalledKibanaType0Search            PackageInfoInstallationInfoInstalledKibanaType0 = "search"
+	PackageInfoInstallationInfoInstalledKibanaType0SecurityRule      PackageInfoInstallationInfoInstalledKibanaType0 = "security-rule"
+	PackageInfoInstallationInfoInstalledKibanaType0Tag               PackageInfoInstallationInfoInstalledKibanaType0 = "tag"
+	PackageInfoInstallationInfoInstalledKibanaType0Visualization     PackageInfoInstallationInfoInstalledKibanaType0 = "visualization"
 )
 
 // Defines values for PackageInfoInstallationInfoVerificationStatus.
@@ -298,27 +298,35 @@ const (
 	PackageInfoReleaseGa           PackageInfoRelease = "ga"
 )
 
-// Defines values for PackageInfoType.
+// Defines values for PackageInfoType0.
 const (
-	PackageInfoTypeContent     PackageInfoType = "content"
-	PackageInfoTypeInput       PackageInfoType = "input"
-	PackageInfoTypeIntegration PackageInfoType = "integration"
+	PackageInfoType0Integration PackageInfoType0 = "integration"
 )
 
-// Defines values for PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType.
+// Defines values for PackageInfoType1.
 const (
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeCspRuleTemplate   PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "csp-rule-template"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeDashboard         PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "dashboard"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeIndexPattern      PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "index-pattern"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeLens              PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "lens"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeMap               PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "map"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeMlModule          PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "ml-module"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeOsqueryPackAsset  PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "osquery-pack-asset"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeOsquerySavedQuery PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "osquery-saved-query"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeSearch            PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "search"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeSecurityRule      PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "security-rule"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeTag               PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "tag"
-	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaTypeVisualization     PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType = "visualization"
+	PackageInfoType1Input PackageInfoType1 = "input"
+)
+
+// Defines values for PackageInfoType2.
+const (
+	PackageInfoType2Content PackageInfoType2 = "content"
+)
+
+// Defines values for PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0.
+const (
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0CspRuleTemplate   PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "csp-rule-template"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0Dashboard         PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "dashboard"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0IndexPattern      PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "index-pattern"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0Lens              PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "lens"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0Map               PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "map"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0MlModule          PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "ml-module"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0OsqueryPackAsset  PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "osquery-pack-asset"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0OsquerySavedQuery PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "osquery-saved-query"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0Search            PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "search"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0SecurityRule      PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "security-rule"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0Tag               PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "tag"
+	PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0Visualization     PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 = "visualization"
 )
 
 // Defines values for PackageListItemInstallationInfoInstallSource.
@@ -348,20 +356,20 @@ const (
 	PackageListItemInstallationInfoInstalledEsTypeTransform           PackageListItemInstallationInfoInstalledEsType = "transform"
 )
 
-// Defines values for PackageListItemInstallationInfoInstalledKibanaType.
+// Defines values for PackageListItemInstallationInfoInstalledKibanaType0.
 const (
-	PackageListItemInstallationInfoInstalledKibanaTypeCspRuleTemplate   PackageListItemInstallationInfoInstalledKibanaType = "csp-rule-template"
-	PackageListItemInstallationInfoInstalledKibanaTypeDashboard         PackageListItemInstallationInfoInstalledKibanaType = "dashboard"
-	PackageListItemInstallationInfoInstalledKibanaTypeIndexPattern      PackageListItemInstallationInfoInstalledKibanaType = "index-pattern"
-	PackageListItemInstallationInfoInstalledKibanaTypeLens              PackageListItemInstallationInfoInstalledKibanaType = "lens"
-	PackageListItemInstallationInfoInstalledKibanaTypeMap               PackageListItemInstallationInfoInstalledKibanaType = "map"
-	PackageListItemInstallationInfoInstalledKibanaTypeMlModule          PackageListItemInstallationInfoInstalledKibanaType = "ml-module"
-	PackageListItemInstallationInfoInstalledKibanaTypeOsqueryPackAsset  PackageListItemInstallationInfoInstalledKibanaType = "osquery-pack-asset"
-	PackageListItemInstallationInfoInstalledKibanaTypeOsquerySavedQuery PackageListItemInstallationInfoInstalledKibanaType = "osquery-saved-query"
-	PackageListItemInstallationInfoInstalledKibanaTypeSearch            PackageListItemInstallationInfoInstalledKibanaType = "search"
-	PackageListItemInstallationInfoInstalledKibanaTypeSecurityRule      PackageListItemInstallationInfoInstalledKibanaType = "security-rule"
-	PackageListItemInstallationInfoInstalledKibanaTypeTag               PackageListItemInstallationInfoInstalledKibanaType = "tag"
-	PackageListItemInstallationInfoInstalledKibanaTypeVisualization     PackageListItemInstallationInfoInstalledKibanaType = "visualization"
+	PackageListItemInstallationInfoInstalledKibanaType0CspRuleTemplate   PackageListItemInstallationInfoInstalledKibanaType0 = "csp-rule-template"
+	PackageListItemInstallationInfoInstalledKibanaType0Dashboard         PackageListItemInstallationInfoInstalledKibanaType0 = "dashboard"
+	PackageListItemInstallationInfoInstalledKibanaType0IndexPattern      PackageListItemInstallationInfoInstalledKibanaType0 = "index-pattern"
+	PackageListItemInstallationInfoInstalledKibanaType0Lens              PackageListItemInstallationInfoInstalledKibanaType0 = "lens"
+	PackageListItemInstallationInfoInstalledKibanaType0Map               PackageListItemInstallationInfoInstalledKibanaType0 = "map"
+	PackageListItemInstallationInfoInstalledKibanaType0MlModule          PackageListItemInstallationInfoInstalledKibanaType0 = "ml-module"
+	PackageListItemInstallationInfoInstalledKibanaType0OsqueryPackAsset  PackageListItemInstallationInfoInstalledKibanaType0 = "osquery-pack-asset"
+	PackageListItemInstallationInfoInstalledKibanaType0OsquerySavedQuery PackageListItemInstallationInfoInstalledKibanaType0 = "osquery-saved-query"
+	PackageListItemInstallationInfoInstalledKibanaType0Search            PackageListItemInstallationInfoInstalledKibanaType0 = "search"
+	PackageListItemInstallationInfoInstalledKibanaType0SecurityRule      PackageListItemInstallationInfoInstalledKibanaType0 = "security-rule"
+	PackageListItemInstallationInfoInstalledKibanaType0Tag               PackageListItemInstallationInfoInstalledKibanaType0 = "tag"
+	PackageListItemInstallationInfoInstalledKibanaType0Visualization     PackageListItemInstallationInfoInstalledKibanaType0 = "visualization"
 )
 
 // Defines values for PackageListItemInstallationInfoVerificationStatus.
@@ -385,11 +393,26 @@ const (
 	Ga           PackageListItemRelease = "ga"
 )
 
-// Defines values for PackageListItemType.
+// Defines values for PackageListItemType0.
 const (
-	PackageListItemTypeContent     PackageListItemType = "content"
-	PackageListItemTypeInput       PackageListItemType = "input"
-	PackageListItemTypeIntegration PackageListItemType = "integration"
+	PackageListItemType0Integration PackageListItemType0 = "integration"
+)
+
+// Defines values for PackageListItemType1.
+const (
+	PackageListItemType1Input PackageListItemType1 = "input"
+)
+
+// Defines values for PackageListItemType2.
+const (
+	PackageListItemType2Content PackageListItemType2 = "content"
+)
+
+// Defines values for ServerHostSslClientAuth.
+const (
+	ServerHostSslClientAuthNone     ServerHostSslClientAuth = "none"
+	ServerHostSslClientAuthOptional ServerHostSslClientAuth = "optional"
+	ServerHostSslClientAuthRequired ServerHostSslClientAuth = "required"
 )
 
 // Defines values for UpdateOutputElasticsearchPreset.
@@ -469,10 +492,10 @@ const (
 
 // Defines values for UpdateOutputSslVerificationMode.
 const (
-	Certificate UpdateOutputSslVerificationMode = "certificate"
-	Full        UpdateOutputSslVerificationMode = "full"
-	None        UpdateOutputSslVerificationMode = "none"
-	Strict      UpdateOutputSslVerificationMode = "strict"
+	UpdateOutputSslVerificationModeCertificate UpdateOutputSslVerificationMode = "certificate"
+	UpdateOutputSslVerificationModeFull        UpdateOutputSslVerificationMode = "full"
+	UpdateOutputSslVerificationModeNone        UpdateOutputSslVerificationMode = "none"
+	UpdateOutputSslVerificationModeStrict      UpdateOutputSslVerificationMode = "strict"
 )
 
 // Defines values for GetFleetAgentPoliciesParamsSortOrder.
@@ -511,6 +534,20 @@ const (
 	Logs    PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled = "logs"
 	Metrics PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled = "metrics"
 	Traces  PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled = "traces"
+)
+
+// Defines values for PostFleetFleetServerHostsJSONBodySslClientAuth.
+const (
+	PostFleetFleetServerHostsJSONBodySslClientAuthNone     PostFleetFleetServerHostsJSONBodySslClientAuth = "none"
+	PostFleetFleetServerHostsJSONBodySslClientAuthOptional PostFleetFleetServerHostsJSONBodySslClientAuth = "optional"
+	PostFleetFleetServerHostsJSONBodySslClientAuthRequired PostFleetFleetServerHostsJSONBodySslClientAuth = "required"
+)
+
+// Defines values for PutFleetFleetServerHostsItemidJSONBodySslClientAuth.
+const (
+	PutFleetFleetServerHostsItemidJSONBodySslClientAuthNone     PutFleetFleetServerHostsItemidJSONBodySslClientAuth = "none"
+	PutFleetFleetServerHostsItemidJSONBodySslClientAuthOptional PutFleetFleetServerHostsItemidJSONBodySslClientAuth = "optional"
+	PutFleetFleetServerHostsItemidJSONBodySslClientAuthRequired PutFleetFleetServerHostsItemidJSONBodySslClientAuth = "required"
 )
 
 // Defines values for GetFleetPackagePoliciesParamsSortOrder.
@@ -795,16 +832,32 @@ type DataViewsUpdateDataViewRequestObjectInner struct {
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
+	Agentless *struct {
+		CloudConnectors *struct {
+			Enabled   bool    `json:"enabled"`
+			TargetCsp *string `json:"target_csp,omitempty"`
+		} `json:"cloud_connectors,omitempty"`
+		Resources *struct {
+			Requests *struct {
+				Cpu    *string `json:"cpu,omitempty"`
+				Memory *string `json:"memory,omitempty"`
+			} `json:"requests,omitempty"`
+		} `json:"resources,omitempty"`
+	} `json:"agentless,omitempty"`
 	Agents            *float32 `json:"agents,omitempty"`
 	DataOutputId      *string  `json:"data_output_id"`
 	Description       *string  `json:"description,omitempty"`
@@ -842,7 +895,7 @@ type AgentPolicy struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -852,12 +905,19 @@ type AgentPolicy struct {
 	Namespace              string  `json:"namespace"`
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
-	Overrides       *map[string]interface{}      `json:"overrides"`
-	PackagePolicies *AgentPolicy_PackagePolicies `json:"package_policies,omitempty"`
-	Revision        float32                      `json:"revision"`
-	SchemaVersion   *string                      `json:"schema_version,omitempty"`
-	SpaceIds        *[]string                    `json:"space_ids,omitempty"`
-	Status          AgentPolicyStatus            `json:"status"`
+	Overrides        *map[string]interface{}      `json:"overrides"`
+	PackagePolicies  *AgentPolicy_PackagePolicies `json:"package_policies,omitempty"`
+	RequiredVersions *[]struct {
+		// Percentage Target percentage of agents to auto upgrade
+		Percentage float32 `json:"percentage"`
+
+		// Version Target version for automatic agent upgrade
+		Version string `json:"version"`
+	} `json:"required_versions"`
+	Revision      float32           `json:"revision"`
+	SchemaVersion *string           `json:"schema_version,omitempty"`
+	SpaceIds      *[]string         `json:"space_ids,omitempty"`
+	Status        AgentPolicyStatus `json:"status"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless  *bool    `json:"supports_agentless"`
@@ -876,69 +936,19 @@ type AgentPolicyPackagePolicies0 = []string
 
 // AgentPolicyPackagePolicies1 This field is present only when retrieving a single agent policy, or when retrieving a list of agent policies with the ?full=true parameter
 type AgentPolicyPackagePolicies1 = []struct {
-	CreatedAt string `json:"created_at"`
-	CreatedBy string `json:"created_by"`
+	// AdditionalDatastreamsPermissions Additional datastream permissions, that will be added to the agent policy.
+	AdditionalDatastreamsPermissions *[]string `json:"additional_datastreams_permissions"`
+	Agents                           *float32  `json:"agents,omitempty"`
+	CreatedAt                        string    `json:"created_at"`
+	CreatedBy                        string    `json:"created_by"`
 
 	// Description Package policy description
 	Description   *string                                      `json:"description,omitempty"`
 	Elasticsearch *AgentPolicy_PackagePolicies_1_Elasticsearch `json:"elasticsearch,omitempty"`
 	Enabled       bool                                         `json:"enabled"`
 	Id            string                                       `json:"id"`
-	Inputs        []struct {
-		CompiledInput interface{} `json:"compiled_input"`
-
-		// Config Package variable (see integration documentation for more information)
-		Config *map[string]struct {
-			Frozen *bool       `json:"frozen,omitempty"`
-			Type   *string     `json:"type,omitempty"`
-			Value  interface{} `json:"value"`
-		} `json:"config,omitempty"`
-		Enabled        bool    `json:"enabled"`
-		Id             *string `json:"id,omitempty"`
-		KeepEnabled    *bool   `json:"keep_enabled,omitempty"`
-		PolicyTemplate *string `json:"policy_template,omitempty"`
-		Streams        []struct {
-			CompiledStream interface{} `json:"compiled_stream"`
-
-			// Config Package variable (see integration documentation for more information)
-			Config *map[string]struct {
-				Frozen *bool       `json:"frozen,omitempty"`
-				Type   *string     `json:"type,omitempty"`
-				Value  interface{} `json:"value"`
-			} `json:"config,omitempty"`
-			DataStream struct {
-				Dataset       string `json:"dataset"`
-				Elasticsearch *struct {
-					DynamicDataset   *bool `json:"dynamic_dataset,omitempty"`
-					DynamicNamespace *bool `json:"dynamic_namespace,omitempty"`
-					Privileges       *struct {
-						Indices *[]string `json:"indices,omitempty"`
-					} `json:"privileges,omitempty"`
-				} `json:"elasticsearch,omitempty"`
-				Type string `json:"type"`
-			} `json:"data_stream"`
-			Enabled     bool                                             `json:"enabled"`
-			Id          *string                                          `json:"id,omitempty"`
-			KeepEnabled *bool                                            `json:"keep_enabled,omitempty"`
-			Release     *AgentPolicyPackagePolicies1InputsStreamsRelease `json:"release,omitempty"`
-
-			// Vars Package variable (see integration documentation for more information)
-			Vars *map[string]struct {
-				Frozen *bool       `json:"frozen,omitempty"`
-				Type   *string     `json:"type,omitempty"`
-				Value  interface{} `json:"value"`
-			} `json:"vars,omitempty"`
-		} `json:"streams"`
-		Type string `json:"type"`
-
-		// Vars Package variable (see integration documentation for more information)
-		Vars *map[string]struct {
-			Frozen *bool       `json:"frozen,omitempty"`
-			Type   *string     `json:"type,omitempty"`
-			Value  interface{} `json:"value"`
-		} `json:"vars,omitempty"`
-	} `json:"inputs"`
-	IsManaged *bool `json:"is_managed,omitempty"`
+	Inputs        AgentPolicy_PackagePolicies_1_Inputs         `json:"inputs"`
+	IsManaged     *bool                                        `json:"is_managed,omitempty"`
 
 	// Name Package policy name (should be unique)
 	Name string `json:"name"`
@@ -979,16 +989,14 @@ type AgentPolicyPackagePolicies1 = []struct {
 	SecretReferences *[]struct {
 		Id string `json:"id"`
 	} `json:"secret_references,omitempty"`
-	UpdatedAt string `json:"updated_at"`
-	UpdatedBy string `json:"updated_by"`
+	SpaceIds *[]string `json:"spaceIds,omitempty"`
 
-	// Vars Package variable (see integration documentation for more information)
-	Vars *map[string]struct {
-		Frozen *bool       `json:"frozen,omitempty"`
-		Type   *string     `json:"type,omitempty"`
-		Value  interface{} `json:"value"`
-	} `json:"vars,omitempty"`
-	Version *string `json:"version,omitempty"`
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool                               `json:"supports_agentless"`
+	UpdatedAt         string                              `json:"updated_at"`
+	UpdatedBy         string                              `json:"updated_by"`
+	Vars              *AgentPolicy_PackagePolicies_1_Vars `json:"vars,omitempty"`
+	Version           *string                             `json:"version,omitempty"`
 }
 
 // AgentPolicy_PackagePolicies_1_Elasticsearch_Privileges defines model for AgentPolicy.PackagePolicies.1.Elasticsearch.Privileges.
@@ -1003,8 +1011,180 @@ type AgentPolicy_PackagePolicies_1_Elasticsearch struct {
 	AdditionalProperties map[string]interface{}                                  `json:"-"`
 }
 
-// AgentPolicyPackagePolicies1InputsStreamsRelease defines model for AgentPolicy.PackagePolicies.1.Inputs.Streams.Release.
-type AgentPolicyPackagePolicies1InputsStreamsRelease string
+// AgentPolicyPackagePolicies1Inputs0 defines model for .
+type AgentPolicyPackagePolicies1Inputs0 = []struct {
+	CompiledInput interface{} `json:"compiled_input"`
+
+	// Config Package variable (see integration documentation for more information)
+	Config *map[string]struct {
+		Frozen *bool       `json:"frozen,omitempty"`
+		Type   *string     `json:"type,omitempty"`
+		Value  interface{} `json:"value"`
+	} `json:"config,omitempty"`
+	Enabled        bool    `json:"enabled"`
+	Id             *string `json:"id,omitempty"`
+	KeepEnabled    *bool   `json:"keep_enabled,omitempty"`
+	PolicyTemplate *string `json:"policy_template,omitempty"`
+	Streams        []struct {
+		CompiledStream interface{} `json:"compiled_stream"`
+
+		// Config Package variable (see integration documentation for more information)
+		Config *map[string]struct {
+			Frozen *bool       `json:"frozen,omitempty"`
+			Type   *string     `json:"type,omitempty"`
+			Value  interface{} `json:"value"`
+		} `json:"config,omitempty"`
+		DataStream struct {
+			Dataset       string `json:"dataset"`
+			Elasticsearch *struct {
+				DynamicDataset   *bool `json:"dynamic_dataset,omitempty"`
+				DynamicNamespace *bool `json:"dynamic_namespace,omitempty"`
+				Privileges       *struct {
+					Indices *[]string `json:"indices,omitempty"`
+				} `json:"privileges,omitempty"`
+			} `json:"elasticsearch,omitempty"`
+			Type string `json:"type"`
+		} `json:"data_stream"`
+		Enabled     bool                                              `json:"enabled"`
+		Id          *string                                           `json:"id,omitempty"`
+		KeepEnabled *bool                                             `json:"keep_enabled,omitempty"`
+		Release     *AgentPolicyPackagePolicies1Inputs0StreamsRelease `json:"release,omitempty"`
+
+		// Vars Package variable (see integration documentation for more information)
+		Vars *map[string]struct {
+			Frozen *bool       `json:"frozen,omitempty"`
+			Type   *string     `json:"type,omitempty"`
+			Value  interface{} `json:"value"`
+		} `json:"vars,omitempty"`
+	} `json:"streams"`
+	Type string `json:"type"`
+
+	// Vars Package variable (see integration documentation for more information)
+	Vars *map[string]struct {
+		Frozen *bool       `json:"frozen,omitempty"`
+		Type   *string     `json:"type,omitempty"`
+		Value  interface{} `json:"value"`
+	} `json:"vars,omitempty"`
+}
+
+// AgentPolicyPackagePolicies1Inputs0StreamsRelease defines model for AgentPolicy.PackagePolicies.1.Inputs.0.Streams.Release.
+type AgentPolicyPackagePolicies1Inputs0StreamsRelease string
+
+// AgentPolicyPackagePolicies1Inputs1 Package policy inputs (see integration documentation to know what inputs are available)
+type AgentPolicyPackagePolicies1Inputs1 map[string]struct {
+	// Enabled enable or disable that input, (default to true)
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Streams Input streams (see integration documentation to know what streams are available)
+	Streams *map[string]struct {
+		// Enabled enable or disable that stream, (default to true)
+		Enabled *bool `json:"enabled,omitempty"`
+
+		// Vars Input/stream level variable (see integration documentation for more information)
+		Vars *map[string]*AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties `json:"vars,omitempty"`
+	} `json:"streams,omitempty"`
+
+	// Vars Input/stream level variable (see integration documentation for more information)
+	Vars *map[string]*AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties `json:"vars,omitempty"`
+}
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars0 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars0 = bool
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars1 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars1 = string
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars2 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars2 = float32
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars3 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars3 = []string
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars4 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars4 = []float32
+
+// AgentPolicyPackagePolicies1Inputs1StreamsVars5 defines model for .
+type AgentPolicyPackagePolicies1Inputs1StreamsVars5 struct {
+	Id          string `json:"id"`
+	IsSecretRef bool   `json:"isSecretRef"`
+}
+
+// AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Inputs.1.Streams.Vars.AdditionalProperties.
+type AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// AgentPolicyPackagePolicies1Inputs1Vars0 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars0 = bool
+
+// AgentPolicyPackagePolicies1Inputs1Vars1 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars1 = string
+
+// AgentPolicyPackagePolicies1Inputs1Vars2 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars2 = float32
+
+// AgentPolicyPackagePolicies1Inputs1Vars3 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars3 = []string
+
+// AgentPolicyPackagePolicies1Inputs1Vars4 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars4 = []float32
+
+// AgentPolicyPackagePolicies1Inputs1Vars5 defines model for .
+type AgentPolicyPackagePolicies1Inputs1Vars5 struct {
+	Id          string `json:"id"`
+	IsSecretRef bool   `json:"isSecretRef"`
+}
+
+// AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Inputs.1.Vars.AdditionalProperties.
+type AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// AgentPolicy_PackagePolicies_1_Inputs defines model for AgentPolicy.PackagePolicies.1.Inputs.
+type AgentPolicy_PackagePolicies_1_Inputs struct {
+	union json.RawMessage
+}
+
+// AgentPolicyPackagePolicies1Vars0 Package variable (see integration documentation for more information)
+type AgentPolicyPackagePolicies1Vars0 map[string]struct {
+	Frozen *bool       `json:"frozen,omitempty"`
+	Type   *string     `json:"type,omitempty"`
+	Value  interface{} `json:"value"`
+}
+
+// AgentPolicyPackagePolicies1Vars1 Input/stream level variable (see integration documentation for more information)
+type AgentPolicyPackagePolicies1Vars1 map[string]*AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties
+
+// AgentPolicyPackagePolicies1Vars10 defines model for .
+type AgentPolicyPackagePolicies1Vars10 = bool
+
+// AgentPolicyPackagePolicies1Vars11 defines model for .
+type AgentPolicyPackagePolicies1Vars11 = string
+
+// AgentPolicyPackagePolicies1Vars12 defines model for .
+type AgentPolicyPackagePolicies1Vars12 = float32
+
+// AgentPolicyPackagePolicies1Vars13 defines model for .
+type AgentPolicyPackagePolicies1Vars13 = []string
+
+// AgentPolicyPackagePolicies1Vars14 defines model for .
+type AgentPolicyPackagePolicies1Vars14 = []float32
+
+// AgentPolicyPackagePolicies1Vars15 defines model for .
+type AgentPolicyPackagePolicies1Vars15 struct {
+	Id          string `json:"id"`
+	IsSecretRef bool   `json:"isSecretRef"`
+}
+
+// AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties defines model for AgentPolicy.PackagePolicies.1.Vars.1.AdditionalProperties.
+type AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// AgentPolicy_PackagePolicies_1_Vars defines model for AgentPolicy.PackagePolicies.1.Vars.
+type AgentPolicy_PackagePolicies_1_Vars struct {
+	union json.RawMessage
+}
 
 // AgentPolicy_PackagePolicies defines model for AgentPolicy.PackagePolicies.
 type AgentPolicy_PackagePolicies struct {
@@ -1042,6 +1222,7 @@ type EnrollmentApiKey struct {
 	// ApiKeyId The ID of the API key in the Security API.
 	ApiKeyId  string `json:"api_key_id"`
 	CreatedAt string `json:"created_at"`
+	Hidden    *bool  `json:"hidden,omitempty"`
 	Id        string `json:"id"`
 
 	// Name The name of the enrollment API key.
@@ -1075,13 +1256,31 @@ type NewOutputElasticsearch struct {
 	Name                 string                        `json:"name"`
 	Preset               *NewOutputElasticsearchPreset `json:"preset,omitempty"`
 	ProxyId              *string                       `json:"proxy_id,omitempty"`
-	Shipper              *NewOutputShipper             `json:"shipper,omitempty"`
-	Ssl                  *NewOutputSsl                 `json:"ssl,omitempty"`
-	Type                 NewOutputElasticsearchType    `json:"type"`
+	Secrets              *struct {
+		Ssl *struct {
+			Key *NewOutputElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
+		} `json:"ssl,omitempty"`
+	} `json:"secrets,omitempty"`
+	Shipper *NewOutputShipper          `json:"shipper,omitempty"`
+	Ssl     *NewOutputSsl              `json:"ssl,omitempty"`
+	Type    NewOutputElasticsearchType `json:"type"`
 }
 
 // NewOutputElasticsearchPreset defines model for NewOutputElasticsearch.Preset.
 type NewOutputElasticsearchPreset string
+
+// NewOutputElasticsearchSecretsSslKey0 defines model for .
+type NewOutputElasticsearchSecretsSslKey0 struct {
+	Id string `json:"id"`
+}
+
+// NewOutputElasticsearchSecretsSslKey1 defines model for .
+type NewOutputElasticsearchSecretsSslKey1 = string
+
+// NewOutputElasticsearch_Secrets_Ssl_Key defines model for NewOutputElasticsearch.Secrets.Ssl.Key.
+type NewOutputElasticsearch_Secrets_Ssl_Key struct {
+	union json.RawMessage
+}
 
 // NewOutputElasticsearchType defines model for NewOutputElasticsearch.Type.
 type NewOutputElasticsearchType string
@@ -1238,16 +1437,23 @@ type NewOutputRemoteElasticsearch struct {
 	IsDefaultMonitoring  *bool                               `json:"is_default_monitoring,omitempty"`
 	IsInternal           *bool                               `json:"is_internal,omitempty"`
 	IsPreconfigured      *bool                               `json:"is_preconfigured,omitempty"`
+	KibanaApiKey         *string                             `json:"kibana_api_key"`
+	KibanaUrl            *string                             `json:"kibana_url"`
 	Name                 string                              `json:"name"`
 	Preset               *NewOutputRemoteElasticsearchPreset `json:"preset,omitempty"`
 	ProxyId              *string                             `json:"proxy_id,omitempty"`
 	Secrets              *struct {
 		ServiceToken *NewOutputRemoteElasticsearch_Secrets_ServiceToken `json:"service_token,omitempty"`
+		Ssl          *struct {
+			Key *NewOutputRemoteElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
+		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	ServiceToken *string                          `json:"service_token"`
-	Shipper      *NewOutputShipper                `json:"shipper,omitempty"`
-	Ssl          *NewOutputSsl                    `json:"ssl,omitempty"`
-	Type         NewOutputRemoteElasticsearchType `json:"type"`
+	ServiceToken                *string                          `json:"service_token"`
+	Shipper                     *NewOutputShipper                `json:"shipper,omitempty"`
+	Ssl                         *NewOutputSsl                    `json:"ssl,omitempty"`
+	SyncIntegrations            *bool                            `json:"sync_integrations,omitempty"`
+	SyncUninstalledIntegrations *bool                            `json:"sync_uninstalled_integrations,omitempty"`
+	Type                        NewOutputRemoteElasticsearchType `json:"type"`
 }
 
 // NewOutputRemoteElasticsearchPreset defines model for NewOutputRemoteElasticsearch.Preset.
@@ -1263,6 +1469,19 @@ type NewOutputRemoteElasticsearchSecretsServiceToken1 = string
 
 // NewOutputRemoteElasticsearch_Secrets_ServiceToken defines model for NewOutputRemoteElasticsearch.Secrets.ServiceToken.
 type NewOutputRemoteElasticsearch_Secrets_ServiceToken struct {
+	union json.RawMessage
+}
+
+// NewOutputRemoteElasticsearchSecretsSslKey0 defines model for .
+type NewOutputRemoteElasticsearchSecretsSslKey0 struct {
+	Id string `json:"id"`
+}
+
+// NewOutputRemoteElasticsearchSecretsSslKey1 defines model for .
+type NewOutputRemoteElasticsearchSecretsSslKey1 = string
+
+// NewOutputRemoteElasticsearch_Secrets_Ssl_Key defines model for NewOutputRemoteElasticsearch.Secrets.Ssl.Key.
+type NewOutputRemoteElasticsearch_Secrets_Ssl_Key struct {
 	union json.RawMessage
 }
 
@@ -1301,27 +1520,54 @@ type NewOutputUnion struct {
 
 // OutputElasticsearch defines model for output_elasticsearch.
 type OutputElasticsearch struct {
-	AllowEdit            *[]string                  `json:"allow_edit,omitempty"`
-	CaSha256             *string                    `json:"ca_sha256"`
-	CaTrustedFingerprint *string                    `json:"ca_trusted_fingerprint"`
-	ConfigYaml           *string                    `json:"config_yaml"`
-	Hosts                []string                   `json:"hosts"`
-	Id                   *string                    `json:"id,omitempty"`
-	IsDefault            *bool                      `json:"is_default,omitempty"`
-	IsDefaultMonitoring  *bool                      `json:"is_default_monitoring,omitempty"`
-	IsInternal           *bool                      `json:"is_internal,omitempty"`
-	IsPreconfigured      *bool                      `json:"is_preconfigured,omitempty"`
-	Name                 string                     `json:"name"`
-	Preset               *OutputElasticsearchPreset `json:"preset,omitempty"`
-	ProxyId              *string                    `json:"proxy_id"`
-	Shipper              *OutputShipper             `json:"shipper"`
-	Ssl                  *OutputSsl                 `json:"ssl"`
-	Type                 OutputElasticsearchType    `json:"type"`
-	AdditionalProperties map[string]interface{}     `json:"-"`
+	AllowEdit            *[]string                    `json:"allow_edit,omitempty"`
+	CaSha256             *string                      `json:"ca_sha256"`
+	CaTrustedFingerprint *string                      `json:"ca_trusted_fingerprint"`
+	ConfigYaml           *string                      `json:"config_yaml"`
+	Hosts                []string                     `json:"hosts"`
+	Id                   *string                      `json:"id,omitempty"`
+	IsDefault            *bool                        `json:"is_default,omitempty"`
+	IsDefaultMonitoring  *bool                        `json:"is_default_monitoring,omitempty"`
+	IsInternal           *bool                        `json:"is_internal,omitempty"`
+	IsPreconfigured      *bool                        `json:"is_preconfigured,omitempty"`
+	Name                 string                       `json:"name"`
+	Preset               *OutputElasticsearchPreset   `json:"preset,omitempty"`
+	ProxyId              *string                      `json:"proxy_id"`
+	Secrets              *OutputElasticsearch_Secrets `json:"secrets,omitempty"`
+	Shipper              *OutputShipper               `json:"shipper"`
+	Ssl                  *OutputSsl                   `json:"ssl"`
+	Type                 OutputElasticsearchType      `json:"type"`
+	AdditionalProperties map[string]interface{}       `json:"-"`
 }
 
 // OutputElasticsearchPreset defines model for OutputElasticsearch.Preset.
 type OutputElasticsearchPreset string
+
+// OutputElasticsearchSecretsSslKey0 defines model for .
+type OutputElasticsearchSecretsSslKey0 struct {
+	Id                   string                 `json:"id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// OutputElasticsearchSecretsSslKey1 defines model for .
+type OutputElasticsearchSecretsSslKey1 = string
+
+// OutputElasticsearch_Secrets_Ssl_Key defines model for OutputElasticsearch.Secrets.Ssl.Key.
+type OutputElasticsearch_Secrets_Ssl_Key struct {
+	union json.RawMessage
+}
+
+// OutputElasticsearch_Secrets_Ssl defines model for OutputElasticsearch.Secrets.Ssl.
+type OutputElasticsearch_Secrets_Ssl struct {
+	Key                  *OutputElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
+	AdditionalProperties map[string]interface{}               `json:"-"`
+}
+
+// OutputElasticsearch_Secrets defines model for OutputElasticsearch.Secrets.
+type OutputElasticsearch_Secrets struct {
+	Ssl                  *OutputElasticsearch_Secrets_Ssl `json:"ssl,omitempty"`
+	AdditionalProperties map[string]interface{}           `json:"-"`
+}
 
 // OutputElasticsearchType defines model for OutputElasticsearch.Type.
 type OutputElasticsearchType string
@@ -1509,25 +1755,29 @@ type OutputLogstashType string
 
 // OutputRemoteElasticsearch defines model for output_remote_elasticsearch.
 type OutputRemoteElasticsearch struct {
-	AllowEdit            *[]string                          `json:"allow_edit,omitempty"`
-	CaSha256             *string                            `json:"ca_sha256"`
-	CaTrustedFingerprint *string                            `json:"ca_trusted_fingerprint"`
-	ConfigYaml           *string                            `json:"config_yaml"`
-	Hosts                []string                           `json:"hosts"`
-	Id                   *string                            `json:"id,omitempty"`
-	IsDefault            *bool                              `json:"is_default,omitempty"`
-	IsDefaultMonitoring  *bool                              `json:"is_default_monitoring,omitempty"`
-	IsInternal           *bool                              `json:"is_internal,omitempty"`
-	IsPreconfigured      *bool                              `json:"is_preconfigured,omitempty"`
-	Name                 string                             `json:"name"`
-	Preset               *OutputRemoteElasticsearchPreset   `json:"preset,omitempty"`
-	ProxyId              *string                            `json:"proxy_id"`
-	Secrets              *OutputRemoteElasticsearch_Secrets `json:"secrets,omitempty"`
-	ServiceToken         *string                            `json:"service_token"`
-	Shipper              *OutputShipper                     `json:"shipper"`
-	Ssl                  *OutputSsl                         `json:"ssl"`
-	Type                 OutputRemoteElasticsearchType      `json:"type"`
-	AdditionalProperties map[string]interface{}             `json:"-"`
+	AllowEdit                   *[]string                          `json:"allow_edit,omitempty"`
+	CaSha256                    *string                            `json:"ca_sha256"`
+	CaTrustedFingerprint        *string                            `json:"ca_trusted_fingerprint"`
+	ConfigYaml                  *string                            `json:"config_yaml"`
+	Hosts                       []string                           `json:"hosts"`
+	Id                          *string                            `json:"id,omitempty"`
+	IsDefault                   *bool                              `json:"is_default,omitempty"`
+	IsDefaultMonitoring         *bool                              `json:"is_default_monitoring,omitempty"`
+	IsInternal                  *bool                              `json:"is_internal,omitempty"`
+	IsPreconfigured             *bool                              `json:"is_preconfigured,omitempty"`
+	KibanaApiKey                *string                            `json:"kibana_api_key"`
+	KibanaUrl                   *string                            `json:"kibana_url"`
+	Name                        string                             `json:"name"`
+	Preset                      *OutputRemoteElasticsearchPreset   `json:"preset,omitempty"`
+	ProxyId                     *string                            `json:"proxy_id"`
+	Secrets                     *OutputRemoteElasticsearch_Secrets `json:"secrets,omitempty"`
+	ServiceToken                *string                            `json:"service_token"`
+	Shipper                     *OutputShipper                     `json:"shipper"`
+	Ssl                         *OutputSsl                         `json:"ssl"`
+	SyncIntegrations            *bool                              `json:"sync_integrations,omitempty"`
+	SyncUninstalledIntegrations *bool                              `json:"sync_uninstalled_integrations,omitempty"`
+	Type                        OutputRemoteElasticsearchType      `json:"type"`
+	AdditionalProperties        map[string]interface{}             `json:"-"`
 }
 
 // OutputRemoteElasticsearchPreset defines model for OutputRemoteElasticsearch.Preset.
@@ -1547,9 +1797,30 @@ type OutputRemoteElasticsearch_Secrets_ServiceToken struct {
 	union json.RawMessage
 }
 
+// OutputRemoteElasticsearchSecretsSslKey0 defines model for .
+type OutputRemoteElasticsearchSecretsSslKey0 struct {
+	Id                   string                 `json:"id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// OutputRemoteElasticsearchSecretsSslKey1 defines model for .
+type OutputRemoteElasticsearchSecretsSslKey1 = string
+
+// OutputRemoteElasticsearch_Secrets_Ssl_Key defines model for OutputRemoteElasticsearch.Secrets.Ssl.Key.
+type OutputRemoteElasticsearch_Secrets_Ssl_Key struct {
+	union json.RawMessage
+}
+
+// OutputRemoteElasticsearch_Secrets_Ssl defines model for OutputRemoteElasticsearch.Secrets.Ssl.
+type OutputRemoteElasticsearch_Secrets_Ssl struct {
+	Key                  *OutputRemoteElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
+	AdditionalProperties map[string]interface{}                     `json:"-"`
+}
+
 // OutputRemoteElasticsearch_Secrets defines model for OutputRemoteElasticsearch.Secrets.
 type OutputRemoteElasticsearch_Secrets struct {
 	ServiceToken         *OutputRemoteElasticsearch_Secrets_ServiceToken `json:"service_token,omitempty"`
+	Ssl                  *OutputRemoteElasticsearch_Secrets_Ssl          `json:"ssl,omitempty"`
 	AdditionalProperties map[string]interface{}                          `json:"-"`
 }
 
@@ -1635,7 +1906,7 @@ type PackageInfo struct {
 	Source               *PackageInfo_Source       `json:"source,omitempty"`
 	Status               *string                   `json:"status,omitempty"`
 	Title                string                    `json:"title"`
-	Type                 *PackageInfoType          `json:"type,omitempty"`
+	Type                 *PackageInfo_Type         `json:"type,omitempty"`
 	Vars                 *[]map[string]interface{} `json:"vars,omitempty"`
 	Version              string                    `json:"version"`
 	AdditionalProperties map[string]interface{}    `json:"-"`
@@ -1684,15 +1955,23 @@ type PackageInfo_Icons_Item struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType defines model for PackageInfo.InstallationInfo.AdditionalSpacesInstalledKibana.Type.
-type PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType string
+// PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 defines model for PackageInfo.InstallationInfo.AdditionalSpacesInstalledKibana.Type.0.
+type PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 string
+
+// PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1 defines model for .
+type PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1 = string
+
+// PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type defines model for PackageInfo.InstallationInfo.AdditionalSpacesInstalledKibana.Type.
+type PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type struct {
+	union json.RawMessage
+}
 
 // PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Item defines model for PackageInfo.InstallationInfo.AdditionalSpacesInstalledKibana.Item.
 type PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Item struct {
-	Id                   string                                                         `json:"id"`
-	OriginId             *string                                                        `json:"originId,omitempty"`
-	Type                 PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                         `json:"-"`
+	Id                   string                                                            `json:"id"`
+	OriginId             *string                                                           `json:"originId,omitempty"`
+	Type                 PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type `json:"type"`
+	AdditionalProperties map[string]interface{}                                            `json:"-"`
 }
 
 // PackageInfo_InstallationInfo_ExperimentalDataStreamFeatures_Features defines model for PackageInfo.InstallationInfo.ExperimentalDataStreamFeatures.Features.
@@ -1729,22 +2008,30 @@ type PackageInfo_InstallationInfo_InstalledEs_Item struct {
 	AdditionalProperties map[string]interface{}                     `json:"-"`
 }
 
-// PackageInfoInstallationInfoInstalledKibanaType defines model for PackageInfo.InstallationInfo.InstalledKibana.Type.
-type PackageInfoInstallationInfoInstalledKibanaType string
+// PackageInfoInstallationInfoInstalledKibanaType0 defines model for PackageInfo.InstallationInfo.InstalledKibana.Type.0.
+type PackageInfoInstallationInfoInstalledKibanaType0 string
+
+// PackageInfoInstallationInfoInstalledKibanaType1 defines model for .
+type PackageInfoInstallationInfoInstalledKibanaType1 = string
+
+// PackageInfo_InstallationInfo_InstalledKibana_Type defines model for PackageInfo.InstallationInfo.InstalledKibana.Type.
+type PackageInfo_InstallationInfo_InstalledKibana_Type struct {
+	union json.RawMessage
+}
 
 // PackageInfo_InstallationInfo_InstalledKibana_Item defines model for PackageInfo.InstallationInfo.InstalledKibana.Item.
 type PackageInfo_InstallationInfo_InstalledKibana_Item struct {
-	Id                   string                                         `json:"id"`
-	OriginId             *string                                        `json:"originId,omitempty"`
-	Type                 PackageInfoInstallationInfoInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                         `json:"-"`
+	Id                   string                                            `json:"id"`
+	OriginId             *string                                           `json:"originId,omitempty"`
+	Type                 PackageInfo_InstallationInfo_InstalledKibana_Type `json:"type"`
+	AdditionalProperties map[string]interface{}                            `json:"-"`
 }
 
 // PackageInfo_InstallationInfo_LatestExecutedState defines model for PackageInfo.InstallationInfo.LatestExecutedState.
 type PackageInfo_InstallationInfo_LatestExecutedState struct {
 	Error                *string                `json:"error,omitempty"`
-	Name                 string                 `json:"name"`
-	StartedAt            string                 `json:"started_at"`
+	Name                 *string                `json:"name,omitempty"`
+	StartedAt            *string                `json:"started_at,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -1809,8 +2096,22 @@ type PackageInfo_Source struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// PackageInfoType defines model for PackageInfo.Type.
-type PackageInfoType string
+// PackageInfoType0 defines model for PackageInfo.Type.0.
+type PackageInfoType0 string
+
+// PackageInfoType1 defines model for PackageInfo.Type.1.
+type PackageInfoType1 string
+
+// PackageInfoType2 defines model for PackageInfo.Type.2.
+type PackageInfoType2 string
+
+// PackageInfoType3 defines model for .
+type PackageInfoType3 = string
+
+// PackageInfo_Type defines model for PackageInfo.Type.
+type PackageInfo_Type struct {
+	union json.RawMessage
+}
 
 // PackageListItem defines model for package_list_item.
 type PackageListItem struct {
@@ -1837,7 +2138,7 @@ type PackageListItem struct {
 	Source               *PackageListItem_Source           `json:"source,omitempty"`
 	Status               *string                           `json:"status,omitempty"`
 	Title                string                            `json:"title"`
-	Type                 *PackageListItemType              `json:"type,omitempty"`
+	Type                 *PackageListItem_Type             `json:"type,omitempty"`
 	Vars                 *[]map[string]interface{}         `json:"vars,omitempty"`
 	Version              string                            `json:"version"`
 	AdditionalProperties map[string]interface{}            `json:"-"`
@@ -1886,15 +2187,23 @@ type PackageListItem_Icons_Item struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType defines model for PackageListItem.InstallationInfo.AdditionalSpacesInstalledKibana.Type.
-type PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType string
+// PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 defines model for PackageListItem.InstallationInfo.AdditionalSpacesInstalledKibana.Type.0.
+type PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 string
+
+// PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1 defines model for .
+type PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1 = string
+
+// PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type defines model for PackageListItem.InstallationInfo.AdditionalSpacesInstalledKibana.Type.
+type PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type struct {
+	union json.RawMessage
+}
 
 // PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Item defines model for PackageListItem.InstallationInfo.AdditionalSpacesInstalledKibana.Item.
 type PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Item struct {
-	Id                   string                                                             `json:"id"`
-	OriginId             *string                                                            `json:"originId,omitempty"`
-	Type                 PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                                             `json:"-"`
+	Id                   string                                                                `json:"id"`
+	OriginId             *string                                                               `json:"originId,omitempty"`
+	Type                 PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type `json:"type"`
+	AdditionalProperties map[string]interface{}                                                `json:"-"`
 }
 
 // PackageListItem_InstallationInfo_ExperimentalDataStreamFeatures_Features defines model for PackageListItem.InstallationInfo.ExperimentalDataStreamFeatures.Features.
@@ -1931,22 +2240,30 @@ type PackageListItem_InstallationInfo_InstalledEs_Item struct {
 	AdditionalProperties map[string]interface{}                         `json:"-"`
 }
 
-// PackageListItemInstallationInfoInstalledKibanaType defines model for PackageListItem.InstallationInfo.InstalledKibana.Type.
-type PackageListItemInstallationInfoInstalledKibanaType string
+// PackageListItemInstallationInfoInstalledKibanaType0 defines model for PackageListItem.InstallationInfo.InstalledKibana.Type.0.
+type PackageListItemInstallationInfoInstalledKibanaType0 string
+
+// PackageListItemInstallationInfoInstalledKibanaType1 defines model for .
+type PackageListItemInstallationInfoInstalledKibanaType1 = string
+
+// PackageListItem_InstallationInfo_InstalledKibana_Type defines model for PackageListItem.InstallationInfo.InstalledKibana.Type.
+type PackageListItem_InstallationInfo_InstalledKibana_Type struct {
+	union json.RawMessage
+}
 
 // PackageListItem_InstallationInfo_InstalledKibana_Item defines model for PackageListItem.InstallationInfo.InstalledKibana.Item.
 type PackageListItem_InstallationInfo_InstalledKibana_Item struct {
-	Id                   string                                             `json:"id"`
-	OriginId             *string                                            `json:"originId,omitempty"`
-	Type                 PackageListItemInstallationInfoInstalledKibanaType `json:"type"`
-	AdditionalProperties map[string]interface{}                             `json:"-"`
+	Id                   string                                                `json:"id"`
+	OriginId             *string                                               `json:"originId,omitempty"`
+	Type                 PackageListItem_InstallationInfo_InstalledKibana_Type `json:"type"`
+	AdditionalProperties map[string]interface{}                                `json:"-"`
 }
 
 // PackageListItem_InstallationInfo_LatestExecutedState defines model for PackageListItem.InstallationInfo.LatestExecutedState.
 type PackageListItem_InstallationInfo_LatestExecutedState struct {
 	Error                *string                `json:"error,omitempty"`
-	Name                 string                 `json:"name"`
-	StartedAt            string                 `json:"started_at"`
+	Name                 *string                `json:"name,omitempty"`
+	StartedAt            *string                `json:"started_at,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -2011,14 +2328,30 @@ type PackageListItem_Source struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// PackageListItemType defines model for PackageListItem.Type.
-type PackageListItemType string
+// PackageListItemType0 defines model for PackageListItem.Type.0.
+type PackageListItemType0 string
+
+// PackageListItemType1 defines model for PackageListItem.Type.1.
+type PackageListItemType1 string
+
+// PackageListItemType2 defines model for PackageListItem.Type.2.
+type PackageListItemType2 string
+
+// PackageListItemType3 defines model for .
+type PackageListItemType3 = string
+
+// PackageListItem_Type defines model for PackageListItem.Type.
+type PackageListItem_Type struct {
+	union json.RawMessage
+}
 
 // PackagePolicy defines model for package_policy.
 type PackagePolicy struct {
-	Agents    *float32 `json:"agents,omitempty"`
-	CreatedAt string   `json:"created_at"`
-	CreatedBy string   `json:"created_by"`
+	// AdditionalDatastreamsPermissions Additional datastream permissions, that will be added to the agent policy.
+	AdditionalDatastreamsPermissions *[]string `json:"additional_datastreams_permissions"`
+	Agents                           *float32  `json:"agents,omitempty"`
+	CreatedAt                        string    `json:"created_at"`
+	CreatedBy                        string    `json:"created_by"`
 
 	// Description Package policy description
 	Description   *string                      `json:"description,omitempty"`
@@ -2068,10 +2401,13 @@ type PackagePolicy struct {
 	Revision         float32                   `json:"revision"`
 	SecretReferences *[]PackagePolicySecretRef `json:"secret_references,omitempty"`
 	SpaceIds         *[]string                 `json:"spaceIds,omitempty"`
-	UpdatedAt        string                    `json:"updated_at"`
-	UpdatedBy        string                    `json:"updated_by"`
-	Vars             *map[string]interface{}   `json:"vars,omitempty"`
-	Version          *string                   `json:"version,omitempty"`
+
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool                   `json:"supports_agentless"`
+	UpdatedAt         string                  `json:"updated_at"`
+	UpdatedBy         string                  `json:"updated_by"`
+	Vars              *map[string]interface{} `json:"vars,omitempty"`
+	Version           *string                 `json:"version,omitempty"`
 }
 
 // PackagePolicy_Elasticsearch_Privileges defines model for PackagePolicy.Elasticsearch.Privileges.
@@ -2105,9 +2441,11 @@ type PackagePolicyInputStream struct {
 
 // PackagePolicyRequest defines model for package_policy_request.
 type PackagePolicyRequest struct {
-	Description *string `json:"description,omitempty"`
-	Force       *bool   `json:"force,omitempty"`
-	Id          *string `json:"id,omitempty"`
+	// AdditionalDatastreamsPermissions Additional datastream permissions, that will be added to the agent policy.
+	AdditionalDatastreamsPermissions *[]string `json:"additional_datastreams_permissions,omitempty"`
+	Description                      *string   `json:"description,omitempty"`
+	Force                            *bool     `json:"force,omitempty"`
+	Id                               *string   `json:"id,omitempty"`
 
 	// Inputs Package policy inputs (see integration documentation to know what inputs are available)
 	Inputs    *map[string]PackagePolicyRequestInput `json:"inputs,omitempty"`
@@ -2117,7 +2455,10 @@ type PackagePolicyRequest struct {
 	Package   PackagePolicyRequestPackage           `json:"package"`
 	PolicyId  *string                               `json:"policy_id"`
 	PolicyIds *[]string                             `json:"policy_ids,omitempty"`
-	Vars      *map[string]interface{}               `json:"vars,omitempty"`
+
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
+	SupportsAgentless *bool                   `json:"supports_agentless,omitempty"`
+	Vars              *map[string]interface{} `json:"vars,omitempty"`
 }
 
 // PackagePolicyRequestInput defines model for package_policy_request_input.
@@ -2172,7 +2513,51 @@ type ServerHost struct {
 	IsPreconfigured *bool    `json:"is_preconfigured,omitempty"`
 	Name            string   `json:"name"`
 	ProxyId         *string  `json:"proxy_id"`
+	Secrets         *struct {
+		Ssl *struct {
+			EsKey *ServerHost_Secrets_Ssl_EsKey `json:"es_key,omitempty"`
+			Key   *ServerHost_Secrets_Ssl_Key   `json:"key,omitempty"`
+		} `json:"ssl,omitempty"`
+	} `json:"secrets,omitempty"`
+	Ssl *struct {
+		Certificate              *string                  `json:"certificate,omitempty"`
+		CertificateAuthorities   *[]string                `json:"certificate_authorities,omitempty"`
+		ClientAuth               *ServerHostSslClientAuth `json:"client_auth,omitempty"`
+		EsCertificate            *string                  `json:"es_certificate,omitempty"`
+		EsCertificateAuthorities *[]string                `json:"es_certificate_authorities,omitempty"`
+		EsKey                    *string                  `json:"es_key,omitempty"`
+		Key                      *string                  `json:"key,omitempty"`
+	} `json:"ssl"`
 }
+
+// ServerHostSecretsSslEsKey0 defines model for .
+type ServerHostSecretsSslEsKey0 struct {
+	Id string `json:"id"`
+}
+
+// ServerHostSecretsSslEsKey1 defines model for .
+type ServerHostSecretsSslEsKey1 = string
+
+// ServerHost_Secrets_Ssl_EsKey defines model for ServerHost.Secrets.Ssl.EsKey.
+type ServerHost_Secrets_Ssl_EsKey struct {
+	union json.RawMessage
+}
+
+// ServerHostSecretsSslKey0 defines model for .
+type ServerHostSecretsSslKey0 struct {
+	Id string `json:"id"`
+}
+
+// ServerHostSecretsSslKey1 defines model for .
+type ServerHostSecretsSslKey1 = string
+
+// ServerHost_Secrets_Ssl_Key defines model for ServerHost.Secrets.Ssl.Key.
+type ServerHost_Secrets_Ssl_Key struct {
+	union json.RawMessage
+}
+
+// ServerHostSslClientAuth defines model for ServerHost.Ssl.ClientAuth.
+type ServerHostSslClientAuth string
 
 // UpdateOutputElasticsearch defines model for update_output_elasticsearch.
 type UpdateOutputElasticsearch struct {
@@ -2188,13 +2573,31 @@ type UpdateOutputElasticsearch struct {
 	Name                 *string                          `json:"name,omitempty"`
 	Preset               *UpdateOutputElasticsearchPreset `json:"preset,omitempty"`
 	ProxyId              *string                          `json:"proxy_id,omitempty"`
-	Shipper              *UpdateOutputShipper             `json:"shipper,omitempty"`
-	Ssl                  *UpdateOutputSsl                 `json:"ssl,omitempty"`
-	Type                 *UpdateOutputElasticsearchType   `json:"type,omitempty"`
+	Secrets              *struct {
+		Ssl *struct {
+			Key *UpdateOutputElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
+		} `json:"ssl,omitempty"`
+	} `json:"secrets,omitempty"`
+	Shipper *UpdateOutputShipper           `json:"shipper,omitempty"`
+	Ssl     *UpdateOutputSsl               `json:"ssl,omitempty"`
+	Type    *UpdateOutputElasticsearchType `json:"type,omitempty"`
 }
 
 // UpdateOutputElasticsearchPreset defines model for UpdateOutputElasticsearch.Preset.
 type UpdateOutputElasticsearchPreset string
+
+// UpdateOutputElasticsearchSecretsSslKey0 defines model for .
+type UpdateOutputElasticsearchSecretsSslKey0 struct {
+	Id string `json:"id"`
+}
+
+// UpdateOutputElasticsearchSecretsSslKey1 defines model for .
+type UpdateOutputElasticsearchSecretsSslKey1 = string
+
+// UpdateOutputElasticsearch_Secrets_Ssl_Key defines model for UpdateOutputElasticsearch.Secrets.Ssl.Key.
+type UpdateOutputElasticsearch_Secrets_Ssl_Key struct {
+	union json.RawMessage
+}
 
 // UpdateOutputElasticsearchType defines model for UpdateOutputElasticsearch.Type.
 type UpdateOutputElasticsearchType string
@@ -2348,16 +2751,23 @@ type UpdateOutputRemoteElasticsearch struct {
 	IsDefaultMonitoring  *bool                                  `json:"is_default_monitoring,omitempty"`
 	IsInternal           *bool                                  `json:"is_internal,omitempty"`
 	IsPreconfigured      *bool                                  `json:"is_preconfigured,omitempty"`
+	KibanaApiKey         *string                                `json:"kibana_api_key"`
+	KibanaUrl            *string                                `json:"kibana_url"`
 	Name                 *string                                `json:"name,omitempty"`
 	Preset               *UpdateOutputRemoteElasticsearchPreset `json:"preset,omitempty"`
 	ProxyId              *string                                `json:"proxy_id,omitempty"`
 	Secrets              *struct {
 		ServiceToken *UpdateOutputRemoteElasticsearch_Secrets_ServiceToken `json:"service_token,omitempty"`
+		Ssl          *struct {
+			Key *UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
+		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	ServiceToken *string                              `json:"service_token"`
-	Shipper      *UpdateOutputShipper                 `json:"shipper,omitempty"`
-	Ssl          *UpdateOutputSsl                     `json:"ssl,omitempty"`
-	Type         *UpdateOutputRemoteElasticsearchType `json:"type,omitempty"`
+	ServiceToken                *string                              `json:"service_token"`
+	Shipper                     *UpdateOutputShipper                 `json:"shipper,omitempty"`
+	Ssl                         *UpdateOutputSsl                     `json:"ssl,omitempty"`
+	SyncIntegrations            *bool                                `json:"sync_integrations,omitempty"`
+	SyncUninstalledIntegrations *bool                                `json:"sync_uninstalled_integrations,omitempty"`
+	Type                        *UpdateOutputRemoteElasticsearchType `json:"type,omitempty"`
 }
 
 // UpdateOutputRemoteElasticsearchPreset defines model for UpdateOutputRemoteElasticsearch.Preset.
@@ -2373,6 +2783,19 @@ type UpdateOutputRemoteElasticsearchSecretsServiceToken1 = string
 
 // UpdateOutputRemoteElasticsearch_Secrets_ServiceToken defines model for UpdateOutputRemoteElasticsearch.Secrets.ServiceToken.
 type UpdateOutputRemoteElasticsearch_Secrets_ServiceToken struct {
+	union json.RawMessage
+}
+
+// UpdateOutputRemoteElasticsearchSecretsSslKey0 defines model for .
+type UpdateOutputRemoteElasticsearchSecretsSslKey0 struct {
+	Id string `json:"id"`
+}
+
+// UpdateOutputRemoteElasticsearchSecretsSslKey1 defines model for .
+type UpdateOutputRemoteElasticsearchSecretsSslKey1 = string
+
+// UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key defines model for UpdateOutputRemoteElasticsearch.Secrets.Ssl.Key.
+type UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key struct {
 	union json.RawMessage
 }
 
@@ -2444,16 +2867,32 @@ type GetFleetAgentPoliciesParamsFormat string
 // PostFleetAgentPoliciesJSONBody defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
+	Agentless *struct {
+		CloudConnectors *struct {
+			Enabled   bool    `json:"enabled"`
+			TargetCsp *string `json:"target_csp,omitempty"`
+		} `json:"cloud_connectors,omitempty"`
+		Resources *struct {
+			Requests *struct {
+				Cpu    *string `json:"cpu,omitempty"`
+				Memory *string `json:"memory,omitempty"`
+			} `json:"requests,omitempty"`
+		} `json:"resources,omitempty"`
+	} `json:"agentless,omitempty"`
 	DataOutputId      *string `json:"data_output_id"`
 	Description       *string `json:"description,omitempty"`
 	DownloadSourceId  *string `json:"download_source_id"`
@@ -2488,7 +2927,7 @@ type PostFleetAgentPoliciesJSONBody struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -2499,8 +2938,14 @@ type PostFleetAgentPoliciesJSONBody struct {
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
 	Overrides        *map[string]interface{} `json:"overrides,omitempty"`
-	RequiredVersions *interface{}            `json:"required_versions,omitempty"`
-	SpaceIds         *[]string               `json:"space_ids,omitempty"`
+	RequiredVersions *[]struct {
+		// Percentage Target percentage of agents to auto upgrade
+		Percentage float32 `json:"percentage"`
+
+		// Version Target version for automatic agent upgrade
+		Version string `json:"version"`
+	} `json:"required_versions,omitempty"`
+	SpaceIds *[]string `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless *bool    `json:"supports_agentless,omitempty"`
@@ -2534,16 +2979,33 @@ type GetFleetAgentPoliciesAgentpolicyidParamsFormat string
 // PutFleetAgentPoliciesAgentpolicyidJSONBody defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory *interface{} `json:"agent_download_target_directory"`
-		AgentDownloadTimeout         *interface{} `json:"agent_download_timeout"`
-		AgentLimitsGoMaxProcs        *interface{} `json:"agent_limits_go_max_procs"`
-		AgentLoggingLevel            *interface{} `json:"agent_logging_level"`
-		AgentLoggingMetricsPeriod    *interface{} `json:"agent_logging_metrics_period"`
+		AgentDownloadTargetDirectory      *interface{} `json:"agent_download_target_directory"`
+		AgentDownloadTimeout              *interface{} `json:"agent_download_timeout"`
+		AgentLimitsGoMaxProcs             *interface{} `json:"agent_limits_go_max_procs"`
+		AgentLoggingFilesInterval         *interface{} `json:"agent_logging_files_interval"`
+		AgentLoggingFilesKeepfiles        *interface{} `json:"agent_logging_files_keepfiles"`
+		AgentLoggingFilesRotateeverybytes *interface{} `json:"agent_logging_files_rotateeverybytes"`
+		AgentLoggingLevel                 *interface{} `json:"agent_logging_level"`
+		AgentLoggingMetricsPeriod         *interface{} `json:"agent_logging_metrics_period"`
+		AgentLoggingToFiles               *interface{} `json:"agent_logging_to_files"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
 		Name    string `json:"name"`
 	} `json:"agent_features,omitempty"`
+	Agentless *struct {
+		CloudConnectors *struct {
+			Enabled   bool    `json:"enabled"`
+			TargetCsp *string `json:"target_csp,omitempty"`
+		} `json:"cloud_connectors,omitempty"`
+		Resources *struct {
+			Requests *struct {
+				Cpu    *string `json:"cpu,omitempty"`
+				Memory *string `json:"memory,omitempty"`
+			} `json:"requests,omitempty"`
+		} `json:"resources,omitempty"`
+	} `json:"agentless,omitempty"`
+	BumpRevision      *bool   `json:"bumpRevision,omitempty"`
 	DataOutputId      *string `json:"data_output_id"`
 	Description       *string `json:"description,omitempty"`
 	DownloadSourceId  *string `json:"download_source_id"`
@@ -2578,7 +3040,7 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 		Buffer *struct {
 			Enabled *bool `json:"enabled,omitempty"`
 		} `json:"buffer,omitempty"`
-		Enabled bool     `json:"enabled"`
+		Enabled *bool    `json:"enabled,omitempty"`
 		Host    *string  `json:"host,omitempty"`
 		Port    *float32 `json:"port,omitempty"`
 	} `json:"monitoring_http,omitempty"`
@@ -2589,8 +3051,14 @@ type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 
 	// Overrides Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.
 	Overrides        *map[string]interface{} `json:"overrides,omitempty"`
-	RequiredVersions *interface{}            `json:"required_versions,omitempty"`
-	SpaceIds         *[]string               `json:"space_ids,omitempty"`
+	RequiredVersions *[]struct {
+		// Percentage Target percentage of agents to auto upgrade
+		Percentage float32 `json:"percentage"`
+
+		// Version Target version for automatic agent upgrade
+		Version string `json:"version"`
+	} `json:"required_versions,omitempty"`
+	SpaceIds *[]string `json:"space_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the agent policy supports agentless integrations.
 	SupportsAgentless *bool    `json:"supports_agentless,omitempty"`
@@ -2617,9 +3085,10 @@ type GetFleetEnrollmentApiKeysParams struct {
 
 // GetFleetEpmPackagesParams defines parameters for GetFleetEpmPackages.
 type GetFleetEpmPackagesParams struct {
-	Category             *string `form:"category,omitempty" json:"category,omitempty"`
-	Prerelease           *bool   `form:"prerelease,omitempty" json:"prerelease,omitempty"`
-	ExcludeInstallStatus *bool   `form:"excludeInstallStatus,omitempty" json:"excludeInstallStatus,omitempty"`
+	Category                 *string `form:"category,omitempty" json:"category,omitempty"`
+	Prerelease               *bool   `form:"prerelease,omitempty" json:"prerelease,omitempty"`
+	ExcludeInstallStatus     *bool   `form:"excludeInstallStatus,omitempty" json:"excludeInstallStatus,omitempty"`
+	WithPackagePoliciesCount *bool   `form:"withPackagePoliciesCount,omitempty" json:"withPackagePoliciesCount,omitempty"`
 }
 
 // PostFleetEpmPackagesParams defines parameters for PostFleetEpmPackages.
@@ -2663,7 +3132,51 @@ type PostFleetFleetServerHostsJSONBody struct {
 	IsPreconfigured *bool    `json:"is_preconfigured,omitempty"`
 	Name            string   `json:"name"`
 	ProxyId         *string  `json:"proxy_id,omitempty"`
+	Secrets         *struct {
+		Ssl *struct {
+			EsKey *PostFleetFleetServerHostsJSONBody_Secrets_Ssl_EsKey `json:"es_key,omitempty"`
+			Key   *PostFleetFleetServerHostsJSONBody_Secrets_Ssl_Key   `json:"key,omitempty"`
+		} `json:"ssl,omitempty"`
+	} `json:"secrets,omitempty"`
+	Ssl *struct {
+		Certificate              *string                                         `json:"certificate,omitempty"`
+		CertificateAuthorities   *[]string                                       `json:"certificate_authorities,omitempty"`
+		ClientAuth               *PostFleetFleetServerHostsJSONBodySslClientAuth `json:"client_auth,omitempty"`
+		EsCertificate            *string                                         `json:"es_certificate,omitempty"`
+		EsCertificateAuthorities *[]string                                       `json:"es_certificate_authorities,omitempty"`
+		EsKey                    *string                                         `json:"es_key,omitempty"`
+		Key                      *string                                         `json:"key,omitempty"`
+	} `json:"ssl,omitempty"`
 }
+
+// PostFleetFleetServerHostsJSONBodySecretsSslEsKey0 defines parameters for PostFleetFleetServerHosts.
+type PostFleetFleetServerHostsJSONBodySecretsSslEsKey0 struct {
+	Id string `json:"id"`
+}
+
+// PostFleetFleetServerHostsJSONBodySecretsSslEsKey1 defines parameters for PostFleetFleetServerHosts.
+type PostFleetFleetServerHostsJSONBodySecretsSslEsKey1 = string
+
+// PostFleetFleetServerHostsJSONBody_Secrets_Ssl_EsKey defines parameters for PostFleetFleetServerHosts.
+type PostFleetFleetServerHostsJSONBody_Secrets_Ssl_EsKey struct {
+	union json.RawMessage
+}
+
+// PostFleetFleetServerHostsJSONBodySecretsSslKey0 defines parameters for PostFleetFleetServerHosts.
+type PostFleetFleetServerHostsJSONBodySecretsSslKey0 struct {
+	Id string `json:"id"`
+}
+
+// PostFleetFleetServerHostsJSONBodySecretsSslKey1 defines parameters for PostFleetFleetServerHosts.
+type PostFleetFleetServerHostsJSONBodySecretsSslKey1 = string
+
+// PostFleetFleetServerHostsJSONBody_Secrets_Ssl_Key defines parameters for PostFleetFleetServerHosts.
+type PostFleetFleetServerHostsJSONBody_Secrets_Ssl_Key struct {
+	union json.RawMessage
+}
+
+// PostFleetFleetServerHostsJSONBodySslClientAuth defines parameters for PostFleetFleetServerHosts.
+type PostFleetFleetServerHostsJSONBodySslClientAuth string
 
 // PutFleetFleetServerHostsItemidJSONBody defines parameters for PutFleetFleetServerHostsItemid.
 type PutFleetFleetServerHostsItemidJSONBody struct {
@@ -2672,7 +3185,51 @@ type PutFleetFleetServerHostsItemidJSONBody struct {
 	IsInternal *bool     `json:"is_internal,omitempty"`
 	Name       *string   `json:"name,omitempty"`
 	ProxyId    *string   `json:"proxy_id,omitempty"`
+	Secrets    *struct {
+		Ssl *struct {
+			EsKey *PutFleetFleetServerHostsItemidJSONBody_Secrets_Ssl_EsKey `json:"es_key,omitempty"`
+			Key   *PutFleetFleetServerHostsItemidJSONBody_Secrets_Ssl_Key   `json:"key,omitempty"`
+		} `json:"ssl,omitempty"`
+	} `json:"secrets,omitempty"`
+	Ssl *struct {
+		Certificate              *string                                              `json:"certificate,omitempty"`
+		CertificateAuthorities   *[]string                                            `json:"certificate_authorities,omitempty"`
+		ClientAuth               *PutFleetFleetServerHostsItemidJSONBodySslClientAuth `json:"client_auth,omitempty"`
+		EsCertificate            *string                                              `json:"es_certificate,omitempty"`
+		EsCertificateAuthorities *[]string                                            `json:"es_certificate_authorities,omitempty"`
+		EsKey                    *string                                              `json:"es_key,omitempty"`
+		Key                      *string                                              `json:"key,omitempty"`
+	} `json:"ssl,omitempty"`
 }
+
+// PutFleetFleetServerHostsItemidJSONBodySecretsSslEsKey0 defines parameters for PutFleetFleetServerHostsItemid.
+type PutFleetFleetServerHostsItemidJSONBodySecretsSslEsKey0 struct {
+	Id string `json:"id"`
+}
+
+// PutFleetFleetServerHostsItemidJSONBodySecretsSslEsKey1 defines parameters for PutFleetFleetServerHostsItemid.
+type PutFleetFleetServerHostsItemidJSONBodySecretsSslEsKey1 = string
+
+// PutFleetFleetServerHostsItemidJSONBody_Secrets_Ssl_EsKey defines parameters for PutFleetFleetServerHostsItemid.
+type PutFleetFleetServerHostsItemidJSONBody_Secrets_Ssl_EsKey struct {
+	union json.RawMessage
+}
+
+// PutFleetFleetServerHostsItemidJSONBodySecretsSslKey0 defines parameters for PutFleetFleetServerHostsItemid.
+type PutFleetFleetServerHostsItemidJSONBodySecretsSslKey0 struct {
+	Id string `json:"id"`
+}
+
+// PutFleetFleetServerHostsItemidJSONBodySecretsSslKey1 defines parameters for PutFleetFleetServerHostsItemid.
+type PutFleetFleetServerHostsItemidJSONBodySecretsSslKey1 = string
+
+// PutFleetFleetServerHostsItemidJSONBody_Secrets_Ssl_Key defines parameters for PutFleetFleetServerHostsItemid.
+type PutFleetFleetServerHostsItemidJSONBody_Secrets_Ssl_Key struct {
+	union json.RawMessage
+}
+
+// PutFleetFleetServerHostsItemidJSONBodySslClientAuth defines parameters for PutFleetFleetServerHostsItemid.
+type PutFleetFleetServerHostsItemidJSONBodySslClientAuth string
 
 // GetFleetPackagePoliciesParams defines parameters for GetFleetPackagePolicies.
 type GetFleetPackagePoliciesParams struct {
@@ -3022,6 +3579,14 @@ func (a *OutputElasticsearch) UnmarshalJSON(b []byte) error {
 		delete(object, "proxy_id")
 	}
 
+	if raw, found := object["secrets"]; found {
+		err = json.Unmarshal(raw, &a.Secrets)
+		if err != nil {
+			return fmt.Errorf("error reading 'secrets': %w", err)
+		}
+		delete(object, "secrets")
+	}
+
 	if raw, found := object["shipper"]; found {
 		err = json.Unmarshal(raw, &a.Shipper)
 		if err != nil {
@@ -3152,6 +3717,13 @@ func (a OutputElasticsearch) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.Secrets != nil {
+		object["secrets"], err = json.Marshal(a.Secrets)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'secrets': %w", err)
+		}
+	}
+
 	if a.Shipper != nil {
 		object["shipper"], err = json.Marshal(a.Shipper)
 		if err != nil {
@@ -3169,6 +3741,208 @@ func (a OutputElasticsearch) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for OutputElasticsearchSecretsSslKey0. Returns the specified
+// element and whether it was found
+func (a OutputElasticsearchSecretsSslKey0) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OutputElasticsearchSecretsSslKey0
+func (a *OutputElasticsearchSecretsSslKey0) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OutputElasticsearchSecretsSslKey0 to handle AdditionalProperties
+func (a *OutputElasticsearchSecretsSslKey0) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OutputElasticsearchSecretsSslKey0 to handle AdditionalProperties
+func (a OutputElasticsearchSecretsSslKey0) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for OutputElasticsearch_Secrets_Ssl. Returns the specified
+// element and whether it was found
+func (a OutputElasticsearch_Secrets_Ssl) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OutputElasticsearch_Secrets_Ssl
+func (a *OutputElasticsearch_Secrets_Ssl) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OutputElasticsearch_Secrets_Ssl to handle AdditionalProperties
+func (a *OutputElasticsearch_Secrets_Ssl) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["key"]; found {
+		err = json.Unmarshal(raw, &a.Key)
+		if err != nil {
+			return fmt.Errorf("error reading 'key': %w", err)
+		}
+		delete(object, "key")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OutputElasticsearch_Secrets_Ssl to handle AdditionalProperties
+func (a OutputElasticsearch_Secrets_Ssl) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Key != nil {
+		object["key"], err = json.Marshal(a.Key)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'key': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for OutputElasticsearch_Secrets. Returns the specified
+// element and whether it was found
+func (a OutputElasticsearch_Secrets) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OutputElasticsearch_Secrets
+func (a *OutputElasticsearch_Secrets) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OutputElasticsearch_Secrets to handle AdditionalProperties
+func (a *OutputElasticsearch_Secrets) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["ssl"]; found {
+		err = json.Unmarshal(raw, &a.Ssl)
+		if err != nil {
+			return fmt.Errorf("error reading 'ssl': %w", err)
+		}
+		delete(object, "ssl")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OutputElasticsearch_Secrets to handle AdditionalProperties
+func (a OutputElasticsearch_Secrets) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Ssl != nil {
+		object["ssl"], err = json.Marshal(a.Ssl)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ssl': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -4983,6 +5757,22 @@ func (a *OutputRemoteElasticsearch) UnmarshalJSON(b []byte) error {
 		delete(object, "is_preconfigured")
 	}
 
+	if raw, found := object["kibana_api_key"]; found {
+		err = json.Unmarshal(raw, &a.KibanaApiKey)
+		if err != nil {
+			return fmt.Errorf("error reading 'kibana_api_key': %w", err)
+		}
+		delete(object, "kibana_api_key")
+	}
+
+	if raw, found := object["kibana_url"]; found {
+		err = json.Unmarshal(raw, &a.KibanaUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'kibana_url': %w", err)
+		}
+		delete(object, "kibana_url")
+	}
+
 	if raw, found := object["name"]; found {
 		err = json.Unmarshal(raw, &a.Name)
 		if err != nil {
@@ -5037,6 +5827,22 @@ func (a *OutputRemoteElasticsearch) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'ssl': %w", err)
 		}
 		delete(object, "ssl")
+	}
+
+	if raw, found := object["sync_integrations"]; found {
+		err = json.Unmarshal(raw, &a.SyncIntegrations)
+		if err != nil {
+			return fmt.Errorf("error reading 'sync_integrations': %w", err)
+		}
+		delete(object, "sync_integrations")
+	}
+
+	if raw, found := object["sync_uninstalled_integrations"]; found {
+		err = json.Unmarshal(raw, &a.SyncUninstalledIntegrations)
+		if err != nil {
+			return fmt.Errorf("error reading 'sync_uninstalled_integrations': %w", err)
+		}
+		delete(object, "sync_uninstalled_integrations")
 	}
 
 	if raw, found := object["type"]; found {
@@ -5134,6 +5940,20 @@ func (a OutputRemoteElasticsearch) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.KibanaApiKey != nil {
+		object["kibana_api_key"], err = json.Marshal(a.KibanaApiKey)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'kibana_api_key': %w", err)
+		}
+	}
+
+	if a.KibanaUrl != nil {
+		object["kibana_url"], err = json.Marshal(a.KibanaUrl)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'kibana_url': %w", err)
+		}
+	}
+
 	object["name"], err = json.Marshal(a.Name)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'name': %w", err)
@@ -5178,6 +5998,20 @@ func (a OutputRemoteElasticsearch) MarshalJSON() ([]byte, error) {
 		object["ssl"], err = json.Marshal(a.Ssl)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'ssl': %w", err)
+		}
+	}
+
+	if a.SyncIntegrations != nil {
+		object["sync_integrations"], err = json.Marshal(a.SyncIntegrations)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sync_integrations': %w", err)
+		}
+	}
+
+	if a.SyncUninstalledIntegrations != nil {
+		object["sync_uninstalled_integrations"], err = json.Marshal(a.SyncUninstalledIntegrations)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sync_uninstalled_integrations': %w", err)
 		}
 	}
 
@@ -5261,6 +6095,140 @@ func (a OutputRemoteElasticsearchSecretsServiceToken0) MarshalJSON() ([]byte, er
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for OutputRemoteElasticsearchSecretsSslKey0. Returns the specified
+// element and whether it was found
+func (a OutputRemoteElasticsearchSecretsSslKey0) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OutputRemoteElasticsearchSecretsSslKey0
+func (a *OutputRemoteElasticsearchSecretsSslKey0) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OutputRemoteElasticsearchSecretsSslKey0 to handle AdditionalProperties
+func (a *OutputRemoteElasticsearchSecretsSslKey0) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OutputRemoteElasticsearchSecretsSslKey0 to handle AdditionalProperties
+func (a OutputRemoteElasticsearchSecretsSslKey0) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for OutputRemoteElasticsearch_Secrets_Ssl. Returns the specified
+// element and whether it was found
+func (a OutputRemoteElasticsearch_Secrets_Ssl) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OutputRemoteElasticsearch_Secrets_Ssl
+func (a *OutputRemoteElasticsearch_Secrets_Ssl) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OutputRemoteElasticsearch_Secrets_Ssl to handle AdditionalProperties
+func (a *OutputRemoteElasticsearch_Secrets_Ssl) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["key"]; found {
+		err = json.Unmarshal(raw, &a.Key)
+		if err != nil {
+			return fmt.Errorf("error reading 'key': %w", err)
+		}
+		delete(object, "key")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OutputRemoteElasticsearch_Secrets_Ssl to handle AdditionalProperties
+func (a OutputRemoteElasticsearch_Secrets_Ssl) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Key != nil {
+		object["key"], err = json.Marshal(a.Key)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'key': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for OutputRemoteElasticsearch_Secrets. Returns the specified
 // element and whether it was found
 func (a OutputRemoteElasticsearch_Secrets) Get(fieldName string) (value interface{}, found bool) {
@@ -5294,6 +6262,14 @@ func (a *OutputRemoteElasticsearch_Secrets) UnmarshalJSON(b []byte) error {
 		delete(object, "service_token")
 	}
 
+	if raw, found := object["ssl"]; found {
+		err = json.Unmarshal(raw, &a.Ssl)
+		if err != nil {
+			return fmt.Errorf("error reading 'ssl': %w", err)
+		}
+		delete(object, "ssl")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -5317,6 +6293,13 @@ func (a OutputRemoteElasticsearch_Secrets) MarshalJSON() ([]byte, error) {
 		object["service_token"], err = json.Marshal(a.ServiceToken)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'service_token': %w", err)
+		}
+	}
+
+	if a.Ssl != nil {
+		object["ssl"], err = json.Marshal(a.Ssl)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ssl': %w", err)
 		}
 	}
 
@@ -7240,14 +8223,18 @@ func (a PackageInfo_InstallationInfo_LatestExecutedState) MarshalJSON() ([]byte,
 		}
 	}
 
-	object["name"], err = json.Marshal(a.Name)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
 	}
 
-	object["started_at"], err = json.Marshal(a.StartedAt)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -9409,14 +10396,18 @@ func (a PackageListItem_InstallationInfo_LatestExecutedState) MarshalJSON() ([]b
 		}
 	}
 
-	object["name"], err = json.Marshal(a.Name)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
 	}
 
-	object["started_at"], err = json.Marshal(a.StartedAt)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -10206,6 +11197,628 @@ func (a PackagePolicy_Elasticsearch) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars0
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars0() (AgentPolicyPackagePolicies1Inputs1StreamsVars0, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars0
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars0(v AgentPolicyPackagePolicies1Inputs1StreamsVars0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars0
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars0(v AgentPolicyPackagePolicies1Inputs1StreamsVars0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars1
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars1() (AgentPolicyPackagePolicies1Inputs1StreamsVars1, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars1
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars1(v AgentPolicyPackagePolicies1Inputs1StreamsVars1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars1
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars1(v AgentPolicyPackagePolicies1Inputs1StreamsVars1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars2 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars2
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars2() (AgentPolicyPackagePolicies1Inputs1StreamsVars2, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars2 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars2
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars2(v AgentPolicyPackagePolicies1Inputs1StreamsVars2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars2 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars2
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars2(v AgentPolicyPackagePolicies1Inputs1StreamsVars2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars3 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars3
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars3() (AgentPolicyPackagePolicies1Inputs1StreamsVars3, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars3 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars3
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars3(v AgentPolicyPackagePolicies1Inputs1StreamsVars3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars3 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars3
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars3(v AgentPolicyPackagePolicies1Inputs1StreamsVars3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars4 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars4
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars4() (AgentPolicyPackagePolicies1Inputs1StreamsVars4, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars4
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars4 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars4
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars4(v AgentPolicyPackagePolicies1Inputs1StreamsVars4) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars4 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars4
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars4(v AgentPolicyPackagePolicies1Inputs1StreamsVars4) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1StreamsVars5 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars5
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1StreamsVars5() (AgentPolicyPackagePolicies1Inputs1StreamsVars5, error) {
+	var body AgentPolicyPackagePolicies1Inputs1StreamsVars5
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1StreamsVars5 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1StreamsVars5
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1StreamsVars5(v AgentPolicyPackagePolicies1Inputs1StreamsVars5) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1StreamsVars5 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1StreamsVars5
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1StreamsVars5(v AgentPolicyPackagePolicies1Inputs1StreamsVars5) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars0
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars0() (AgentPolicyPackagePolicies1Inputs1Vars0, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars0
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars0(v AgentPolicyPackagePolicies1Inputs1Vars0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars0
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars0(v AgentPolicyPackagePolicies1Inputs1Vars0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars1
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars1() (AgentPolicyPackagePolicies1Inputs1Vars1, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars1
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars1(v AgentPolicyPackagePolicies1Inputs1Vars1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars1
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars1(v AgentPolicyPackagePolicies1Inputs1Vars1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars2 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars2
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars2() (AgentPolicyPackagePolicies1Inputs1Vars2, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars2 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars2
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars2(v AgentPolicyPackagePolicies1Inputs1Vars2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars2 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars2
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars2(v AgentPolicyPackagePolicies1Inputs1Vars2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars3 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars3
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars3() (AgentPolicyPackagePolicies1Inputs1Vars3, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars3 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars3
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars3(v AgentPolicyPackagePolicies1Inputs1Vars3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars3 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars3
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars3(v AgentPolicyPackagePolicies1Inputs1Vars3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars4 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars4
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars4() (AgentPolicyPackagePolicies1Inputs1Vars4, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars4
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars4 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars4
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars4(v AgentPolicyPackagePolicies1Inputs1Vars4) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars4 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars4
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars4(v AgentPolicyPackagePolicies1Inputs1Vars4) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1Vars5 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1Vars5
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) AsAgentPolicyPackagePolicies1Inputs1Vars5() (AgentPolicyPackagePolicies1Inputs1Vars5, error) {
+	var body AgentPolicyPackagePolicies1Inputs1Vars5
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1Vars5 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties as the provided AgentPolicyPackagePolicies1Inputs1Vars5
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) FromAgentPolicyPackagePolicies1Inputs1Vars5(v AgentPolicyPackagePolicies1Inputs1Vars5) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1Vars5 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Inputs1Vars5
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MergeAgentPolicyPackagePolicies1Inputs1Vars5(v AgentPolicyPackagePolicies1Inputs1Vars5) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Inputs_1_Vars_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs as a AgentPolicyPackagePolicies1Inputs0
+func (t AgentPolicy_PackagePolicies_1_Inputs) AsAgentPolicyPackagePolicies1Inputs0() (AgentPolicyPackagePolicies1Inputs0, error) {
+	var body AgentPolicyPackagePolicies1Inputs0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs as the provided AgentPolicyPackagePolicies1Inputs0
+func (t *AgentPolicy_PackagePolicies_1_Inputs) FromAgentPolicyPackagePolicies1Inputs0(v AgentPolicyPackagePolicies1Inputs0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs, using the provided AgentPolicyPackagePolicies1Inputs0
+func (t *AgentPolicy_PackagePolicies_1_Inputs) MergeAgentPolicyPackagePolicies1Inputs0(v AgentPolicyPackagePolicies1Inputs0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Inputs1 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs as a AgentPolicyPackagePolicies1Inputs1
+func (t AgentPolicy_PackagePolicies_1_Inputs) AsAgentPolicyPackagePolicies1Inputs1() (AgentPolicyPackagePolicies1Inputs1, error) {
+	var body AgentPolicyPackagePolicies1Inputs1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Inputs1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Inputs as the provided AgentPolicyPackagePolicies1Inputs1
+func (t *AgentPolicy_PackagePolicies_1_Inputs) FromAgentPolicyPackagePolicies1Inputs1(v AgentPolicyPackagePolicies1Inputs1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Inputs1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Inputs, using the provided AgentPolicyPackagePolicies1Inputs1
+func (t *AgentPolicy_PackagePolicies_1_Inputs) MergeAgentPolicyPackagePolicies1Inputs1(v AgentPolicyPackagePolicies1Inputs1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Inputs) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Inputs) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars10 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars10
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars10() (AgentPolicyPackagePolicies1Vars10, error) {
+	var body AgentPolicyPackagePolicies1Vars10
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars10 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars10
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars10(v AgentPolicyPackagePolicies1Vars10) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars10 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars10
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars10(v AgentPolicyPackagePolicies1Vars10) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars11 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars11
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars11() (AgentPolicyPackagePolicies1Vars11, error) {
+	var body AgentPolicyPackagePolicies1Vars11
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars11 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars11
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars11(v AgentPolicyPackagePolicies1Vars11) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars11 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars11
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars11(v AgentPolicyPackagePolicies1Vars11) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars12 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars12
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars12() (AgentPolicyPackagePolicies1Vars12, error) {
+	var body AgentPolicyPackagePolicies1Vars12
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars12 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars12
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars12(v AgentPolicyPackagePolicies1Vars12) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars12 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars12
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars12(v AgentPolicyPackagePolicies1Vars12) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars13 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars13
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars13() (AgentPolicyPackagePolicies1Vars13, error) {
+	var body AgentPolicyPackagePolicies1Vars13
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars13 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars13
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars13(v AgentPolicyPackagePolicies1Vars13) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars13 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars13
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars13(v AgentPolicyPackagePolicies1Vars13) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars14 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars14
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars14() (AgentPolicyPackagePolicies1Vars14, error) {
+	var body AgentPolicyPackagePolicies1Vars14
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars14 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars14
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars14(v AgentPolicyPackagePolicies1Vars14) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars14 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars14
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars14(v AgentPolicyPackagePolicies1Vars14) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars15 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as a AgentPolicyPackagePolicies1Vars15
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) AsAgentPolicyPackagePolicies1Vars15() (AgentPolicyPackagePolicies1Vars15, error) {
+	var body AgentPolicyPackagePolicies1Vars15
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars15 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties as the provided AgentPolicyPackagePolicies1Vars15
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) FromAgentPolicyPackagePolicies1Vars15(v AgentPolicyPackagePolicies1Vars15) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars15 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties, using the provided AgentPolicyPackagePolicies1Vars15
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MergeAgentPolicyPackagePolicies1Vars15(v AgentPolicyPackagePolicies1Vars15) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Vars_1_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars as a AgentPolicyPackagePolicies1Vars0
+func (t AgentPolicy_PackagePolicies_1_Vars) AsAgentPolicyPackagePolicies1Vars0() (AgentPolicyPackagePolicies1Vars0, error) {
+	var body AgentPolicyPackagePolicies1Vars0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars0 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars as the provided AgentPolicyPackagePolicies1Vars0
+func (t *AgentPolicy_PackagePolicies_1_Vars) FromAgentPolicyPackagePolicies1Vars0(v AgentPolicyPackagePolicies1Vars0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars0 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars, using the provided AgentPolicyPackagePolicies1Vars0
+func (t *AgentPolicy_PackagePolicies_1_Vars) MergeAgentPolicyPackagePolicies1Vars0(v AgentPolicyPackagePolicies1Vars0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAgentPolicyPackagePolicies1Vars1 returns the union data inside the AgentPolicy_PackagePolicies_1_Vars as a AgentPolicyPackagePolicies1Vars1
+func (t AgentPolicy_PackagePolicies_1_Vars) AsAgentPolicyPackagePolicies1Vars1() (AgentPolicyPackagePolicies1Vars1, error) {
+	var body AgentPolicyPackagePolicies1Vars1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAgentPolicyPackagePolicies1Vars1 overwrites any union data inside the AgentPolicy_PackagePolicies_1_Vars as the provided AgentPolicyPackagePolicies1Vars1
+func (t *AgentPolicy_PackagePolicies_1_Vars) FromAgentPolicyPackagePolicies1Vars1(v AgentPolicyPackagePolicies1Vars1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAgentPolicyPackagePolicies1Vars1 performs a merge with any union data inside the AgentPolicy_PackagePolicies_1_Vars, using the provided AgentPolicyPackagePolicies1Vars1
+func (t *AgentPolicy_PackagePolicies_1_Vars) MergeAgentPolicyPackagePolicies1Vars1(v AgentPolicyPackagePolicies1Vars1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AgentPolicy_PackagePolicies_1_Vars) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AgentPolicy_PackagePolicies_1_Vars) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsAgentPolicyPackagePolicies0 returns the union data inside the AgentPolicy_PackagePolicies as a AgentPolicyPackagePolicies0
 func (t AgentPolicy_PackagePolicies) AsAgentPolicyPackagePolicies0() (AgentPolicyPackagePolicies0, error) {
 	var body AgentPolicyPackagePolicies0
@@ -10326,6 +11939,68 @@ func (t AgentPolicyGlobalDataTagsItem_Value) MarshalJSON() ([]byte, error) {
 }
 
 func (t *AgentPolicyGlobalDataTagsItem_Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsNewOutputElasticsearchSecretsSslKey0 returns the union data inside the NewOutputElasticsearch_Secrets_Ssl_Key as a NewOutputElasticsearchSecretsSslKey0
+func (t NewOutputElasticsearch_Secrets_Ssl_Key) AsNewOutputElasticsearchSecretsSslKey0() (NewOutputElasticsearchSecretsSslKey0, error) {
+	var body NewOutputElasticsearchSecretsSslKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNewOutputElasticsearchSecretsSslKey0 overwrites any union data inside the NewOutputElasticsearch_Secrets_Ssl_Key as the provided NewOutputElasticsearchSecretsSslKey0
+func (t *NewOutputElasticsearch_Secrets_Ssl_Key) FromNewOutputElasticsearchSecretsSslKey0(v NewOutputElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNewOutputElasticsearchSecretsSslKey0 performs a merge with any union data inside the NewOutputElasticsearch_Secrets_Ssl_Key, using the provided NewOutputElasticsearchSecretsSslKey0
+func (t *NewOutputElasticsearch_Secrets_Ssl_Key) MergeNewOutputElasticsearchSecretsSslKey0(v NewOutputElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsNewOutputElasticsearchSecretsSslKey1 returns the union data inside the NewOutputElasticsearch_Secrets_Ssl_Key as a NewOutputElasticsearchSecretsSslKey1
+func (t NewOutputElasticsearch_Secrets_Ssl_Key) AsNewOutputElasticsearchSecretsSslKey1() (NewOutputElasticsearchSecretsSslKey1, error) {
+	var body NewOutputElasticsearchSecretsSslKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNewOutputElasticsearchSecretsSslKey1 overwrites any union data inside the NewOutputElasticsearch_Secrets_Ssl_Key as the provided NewOutputElasticsearchSecretsSslKey1
+func (t *NewOutputElasticsearch_Secrets_Ssl_Key) FromNewOutputElasticsearchSecretsSslKey1(v NewOutputElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNewOutputElasticsearchSecretsSslKey1 performs a merge with any union data inside the NewOutputElasticsearch_Secrets_Ssl_Key, using the provided NewOutputElasticsearchSecretsSslKey1
+func (t *NewOutputElasticsearch_Secrets_Ssl_Key) MergeNewOutputElasticsearchSecretsSslKey1(v NewOutputElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t NewOutputElasticsearch_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *NewOutputElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -10578,6 +12253,68 @@ func (t *NewOutputRemoteElasticsearch_Secrets_ServiceToken) UnmarshalJSON(b []by
 	return err
 }
 
+// AsNewOutputRemoteElasticsearchSecretsSslKey0 returns the union data inside the NewOutputRemoteElasticsearch_Secrets_Ssl_Key as a NewOutputRemoteElasticsearchSecretsSslKey0
+func (t NewOutputRemoteElasticsearch_Secrets_Ssl_Key) AsNewOutputRemoteElasticsearchSecretsSslKey0() (NewOutputRemoteElasticsearchSecretsSslKey0, error) {
+	var body NewOutputRemoteElasticsearchSecretsSslKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNewOutputRemoteElasticsearchSecretsSslKey0 overwrites any union data inside the NewOutputRemoteElasticsearch_Secrets_Ssl_Key as the provided NewOutputRemoteElasticsearchSecretsSslKey0
+func (t *NewOutputRemoteElasticsearch_Secrets_Ssl_Key) FromNewOutputRemoteElasticsearchSecretsSslKey0(v NewOutputRemoteElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNewOutputRemoteElasticsearchSecretsSslKey0 performs a merge with any union data inside the NewOutputRemoteElasticsearch_Secrets_Ssl_Key, using the provided NewOutputRemoteElasticsearchSecretsSslKey0
+func (t *NewOutputRemoteElasticsearch_Secrets_Ssl_Key) MergeNewOutputRemoteElasticsearchSecretsSslKey0(v NewOutputRemoteElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsNewOutputRemoteElasticsearchSecretsSslKey1 returns the union data inside the NewOutputRemoteElasticsearch_Secrets_Ssl_Key as a NewOutputRemoteElasticsearchSecretsSslKey1
+func (t NewOutputRemoteElasticsearch_Secrets_Ssl_Key) AsNewOutputRemoteElasticsearchSecretsSslKey1() (NewOutputRemoteElasticsearchSecretsSslKey1, error) {
+	var body NewOutputRemoteElasticsearchSecretsSslKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNewOutputRemoteElasticsearchSecretsSslKey1 overwrites any union data inside the NewOutputRemoteElasticsearch_Secrets_Ssl_Key as the provided NewOutputRemoteElasticsearchSecretsSslKey1
+func (t *NewOutputRemoteElasticsearch_Secrets_Ssl_Key) FromNewOutputRemoteElasticsearchSecretsSslKey1(v NewOutputRemoteElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNewOutputRemoteElasticsearchSecretsSslKey1 performs a merge with any union data inside the NewOutputRemoteElasticsearch_Secrets_Ssl_Key, using the provided NewOutputRemoteElasticsearchSecretsSslKey1
+func (t *NewOutputRemoteElasticsearch_Secrets_Ssl_Key) MergeNewOutputRemoteElasticsearchSecretsSslKey1(v NewOutputRemoteElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t NewOutputRemoteElasticsearch_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *NewOutputRemoteElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsNewOutputElasticsearch returns the union data inside the NewOutputUnion as a NewOutputElasticsearch
 func (t NewOutputUnion) AsNewOutputElasticsearch() (NewOutputElasticsearch, error) {
 	var body NewOutputElasticsearch
@@ -10688,6 +12425,68 @@ func (t NewOutputUnion) MarshalJSON() ([]byte, error) {
 }
 
 func (t *NewOutputUnion) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsOutputElasticsearchSecretsSslKey0 returns the union data inside the OutputElasticsearch_Secrets_Ssl_Key as a OutputElasticsearchSecretsSslKey0
+func (t OutputElasticsearch_Secrets_Ssl_Key) AsOutputElasticsearchSecretsSslKey0() (OutputElasticsearchSecretsSslKey0, error) {
+	var body OutputElasticsearchSecretsSslKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutputElasticsearchSecretsSslKey0 overwrites any union data inside the OutputElasticsearch_Secrets_Ssl_Key as the provided OutputElasticsearchSecretsSslKey0
+func (t *OutputElasticsearch_Secrets_Ssl_Key) FromOutputElasticsearchSecretsSslKey0(v OutputElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutputElasticsearchSecretsSslKey0 performs a merge with any union data inside the OutputElasticsearch_Secrets_Ssl_Key, using the provided OutputElasticsearchSecretsSslKey0
+func (t *OutputElasticsearch_Secrets_Ssl_Key) MergeOutputElasticsearchSecretsSslKey0(v OutputElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsOutputElasticsearchSecretsSslKey1 returns the union data inside the OutputElasticsearch_Secrets_Ssl_Key as a OutputElasticsearchSecretsSslKey1
+func (t OutputElasticsearch_Secrets_Ssl_Key) AsOutputElasticsearchSecretsSslKey1() (OutputElasticsearchSecretsSslKey1, error) {
+	var body OutputElasticsearchSecretsSslKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutputElasticsearchSecretsSslKey1 overwrites any union data inside the OutputElasticsearch_Secrets_Ssl_Key as the provided OutputElasticsearchSecretsSslKey1
+func (t *OutputElasticsearch_Secrets_Ssl_Key) FromOutputElasticsearchSecretsSslKey1(v OutputElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutputElasticsearchSecretsSslKey1 performs a merge with any union data inside the OutputElasticsearch_Secrets_Ssl_Key, using the provided OutputElasticsearchSecretsSslKey1
+func (t *OutputElasticsearch_Secrets_Ssl_Key) MergeOutputElasticsearchSecretsSslKey1(v OutputElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t OutputElasticsearch_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *OutputElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -10940,6 +12739,68 @@ func (t *OutputRemoteElasticsearch_Secrets_ServiceToken) UnmarshalJSON(b []byte)
 	return err
 }
 
+// AsOutputRemoteElasticsearchSecretsSslKey0 returns the union data inside the OutputRemoteElasticsearch_Secrets_Ssl_Key as a OutputRemoteElasticsearchSecretsSslKey0
+func (t OutputRemoteElasticsearch_Secrets_Ssl_Key) AsOutputRemoteElasticsearchSecretsSslKey0() (OutputRemoteElasticsearchSecretsSslKey0, error) {
+	var body OutputRemoteElasticsearchSecretsSslKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutputRemoteElasticsearchSecretsSslKey0 overwrites any union data inside the OutputRemoteElasticsearch_Secrets_Ssl_Key as the provided OutputRemoteElasticsearchSecretsSslKey0
+func (t *OutputRemoteElasticsearch_Secrets_Ssl_Key) FromOutputRemoteElasticsearchSecretsSslKey0(v OutputRemoteElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutputRemoteElasticsearchSecretsSslKey0 performs a merge with any union data inside the OutputRemoteElasticsearch_Secrets_Ssl_Key, using the provided OutputRemoteElasticsearchSecretsSslKey0
+func (t *OutputRemoteElasticsearch_Secrets_Ssl_Key) MergeOutputRemoteElasticsearchSecretsSslKey0(v OutputRemoteElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsOutputRemoteElasticsearchSecretsSslKey1 returns the union data inside the OutputRemoteElasticsearch_Secrets_Ssl_Key as a OutputRemoteElasticsearchSecretsSslKey1
+func (t OutputRemoteElasticsearch_Secrets_Ssl_Key) AsOutputRemoteElasticsearchSecretsSslKey1() (OutputRemoteElasticsearchSecretsSslKey1, error) {
+	var body OutputRemoteElasticsearchSecretsSslKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOutputRemoteElasticsearchSecretsSslKey1 overwrites any union data inside the OutputRemoteElasticsearch_Secrets_Ssl_Key as the provided OutputRemoteElasticsearchSecretsSslKey1
+func (t *OutputRemoteElasticsearch_Secrets_Ssl_Key) FromOutputRemoteElasticsearchSecretsSslKey1(v OutputRemoteElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOutputRemoteElasticsearchSecretsSslKey1 performs a merge with any union data inside the OutputRemoteElasticsearch_Secrets_Ssl_Key, using the provided OutputRemoteElasticsearchSecretsSslKey1
+func (t *OutputRemoteElasticsearch_Secrets_Ssl_Key) MergeOutputRemoteElasticsearchSecretsSslKey1(v OutputRemoteElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t OutputRemoteElasticsearch_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *OutputRemoteElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsOutputElasticsearch returns the union data inside the OutputUnion as a OutputElasticsearch
 func (t OutputUnion) AsOutputElasticsearch() (OutputElasticsearch, error) {
 	var body OutputElasticsearch
@@ -11085,6 +12946,668 @@ func (t OutputUnion) MarshalJSON() ([]byte, error) {
 }
 
 func (t *OutputUnion) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 returns the union data inside the PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type as a PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0
+func (t PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type) AsPackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0() (PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0, error) {
+	var body PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 overwrites any union data inside the PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type as the provided PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0
+func (t *PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type) FromPackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0(v PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0 performs a merge with any union data inside the PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type, using the provided PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0
+func (t *PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type) MergePackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0(v PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1 returns the union data inside the PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type as a PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1
+func (t PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type) AsPackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1() (PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1, error) {
+	var body PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1 overwrites any union data inside the PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type as the provided PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1
+func (t *PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type) FromPackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1(v PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1 performs a merge with any union data inside the PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type, using the provided PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1
+func (t *PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type) MergePackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1(v PackageInfoInstallationInfoAdditionalSpacesInstalledKibanaType1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PackageInfo_InstallationInfo_AdditionalSpacesInstalledKibana_Type) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPackageInfoInstallationInfoInstalledKibanaType0 returns the union data inside the PackageInfo_InstallationInfo_InstalledKibana_Type as a PackageInfoInstallationInfoInstalledKibanaType0
+func (t PackageInfo_InstallationInfo_InstalledKibana_Type) AsPackageInfoInstallationInfoInstalledKibanaType0() (PackageInfoInstallationInfoInstalledKibanaType0, error) {
+	var body PackageInfoInstallationInfoInstalledKibanaType0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageInfoInstallationInfoInstalledKibanaType0 overwrites any union data inside the PackageInfo_InstallationInfo_InstalledKibana_Type as the provided PackageInfoInstallationInfoInstalledKibanaType0
+func (t *PackageInfo_InstallationInfo_InstalledKibana_Type) FromPackageInfoInstallationInfoInstalledKibanaType0(v PackageInfoInstallationInfoInstalledKibanaType0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageInfoInstallationInfoInstalledKibanaType0 performs a merge with any union data inside the PackageInfo_InstallationInfo_InstalledKibana_Type, using the provided PackageInfoInstallationInfoInstalledKibanaType0
+func (t *PackageInfo_InstallationInfo_InstalledKibana_Type) MergePackageInfoInstallationInfoInstalledKibanaType0(v PackageInfoInstallationInfoInstalledKibanaType0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageInfoInstallationInfoInstalledKibanaType1 returns the union data inside the PackageInfo_InstallationInfo_InstalledKibana_Type as a PackageInfoInstallationInfoInstalledKibanaType1
+func (t PackageInfo_InstallationInfo_InstalledKibana_Type) AsPackageInfoInstallationInfoInstalledKibanaType1() (PackageInfoInstallationInfoInstalledKibanaType1, error) {
+	var body PackageInfoInstallationInfoInstalledKibanaType1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageInfoInstallationInfoInstalledKibanaType1 overwrites any union data inside the PackageInfo_InstallationInfo_InstalledKibana_Type as the provided PackageInfoInstallationInfoInstalledKibanaType1
+func (t *PackageInfo_InstallationInfo_InstalledKibana_Type) FromPackageInfoInstallationInfoInstalledKibanaType1(v PackageInfoInstallationInfoInstalledKibanaType1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageInfoInstallationInfoInstalledKibanaType1 performs a merge with any union data inside the PackageInfo_InstallationInfo_InstalledKibana_Type, using the provided PackageInfoInstallationInfoInstalledKibanaType1
+func (t *PackageInfo_InstallationInfo_InstalledKibana_Type) MergePackageInfoInstallationInfoInstalledKibanaType1(v PackageInfoInstallationInfoInstalledKibanaType1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PackageInfo_InstallationInfo_InstalledKibana_Type) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PackageInfo_InstallationInfo_InstalledKibana_Type) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPackageInfoType0 returns the union data inside the PackageInfo_Type as a PackageInfoType0
+func (t PackageInfo_Type) AsPackageInfoType0() (PackageInfoType0, error) {
+	var body PackageInfoType0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageInfoType0 overwrites any union data inside the PackageInfo_Type as the provided PackageInfoType0
+func (t *PackageInfo_Type) FromPackageInfoType0(v PackageInfoType0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageInfoType0 performs a merge with any union data inside the PackageInfo_Type, using the provided PackageInfoType0
+func (t *PackageInfo_Type) MergePackageInfoType0(v PackageInfoType0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageInfoType1 returns the union data inside the PackageInfo_Type as a PackageInfoType1
+func (t PackageInfo_Type) AsPackageInfoType1() (PackageInfoType1, error) {
+	var body PackageInfoType1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageInfoType1 overwrites any union data inside the PackageInfo_Type as the provided PackageInfoType1
+func (t *PackageInfo_Type) FromPackageInfoType1(v PackageInfoType1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageInfoType1 performs a merge with any union data inside the PackageInfo_Type, using the provided PackageInfoType1
+func (t *PackageInfo_Type) MergePackageInfoType1(v PackageInfoType1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageInfoType2 returns the union data inside the PackageInfo_Type as a PackageInfoType2
+func (t PackageInfo_Type) AsPackageInfoType2() (PackageInfoType2, error) {
+	var body PackageInfoType2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageInfoType2 overwrites any union data inside the PackageInfo_Type as the provided PackageInfoType2
+func (t *PackageInfo_Type) FromPackageInfoType2(v PackageInfoType2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageInfoType2 performs a merge with any union data inside the PackageInfo_Type, using the provided PackageInfoType2
+func (t *PackageInfo_Type) MergePackageInfoType2(v PackageInfoType2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageInfoType3 returns the union data inside the PackageInfo_Type as a PackageInfoType3
+func (t PackageInfo_Type) AsPackageInfoType3() (PackageInfoType3, error) {
+	var body PackageInfoType3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageInfoType3 overwrites any union data inside the PackageInfo_Type as the provided PackageInfoType3
+func (t *PackageInfo_Type) FromPackageInfoType3(v PackageInfoType3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageInfoType3 performs a merge with any union data inside the PackageInfo_Type, using the provided PackageInfoType3
+func (t *PackageInfo_Type) MergePackageInfoType3(v PackageInfoType3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PackageInfo_Type) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PackageInfo_Type) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 returns the union data inside the PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type as a PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0
+func (t PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type) AsPackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0() (PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0, error) {
+	var body PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 overwrites any union data inside the PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type as the provided PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0
+func (t *PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type) FromPackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0(v PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0 performs a merge with any union data inside the PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type, using the provided PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0
+func (t *PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type) MergePackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0(v PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1 returns the union data inside the PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type as a PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1
+func (t PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type) AsPackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1() (PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1, error) {
+	var body PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1 overwrites any union data inside the PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type as the provided PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1
+func (t *PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type) FromPackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1(v PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1 performs a merge with any union data inside the PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type, using the provided PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1
+func (t *PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type) MergePackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1(v PackageListItemInstallationInfoAdditionalSpacesInstalledKibanaType1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PackageListItem_InstallationInfo_AdditionalSpacesInstalledKibana_Type) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPackageListItemInstallationInfoInstalledKibanaType0 returns the union data inside the PackageListItem_InstallationInfo_InstalledKibana_Type as a PackageListItemInstallationInfoInstalledKibanaType0
+func (t PackageListItem_InstallationInfo_InstalledKibana_Type) AsPackageListItemInstallationInfoInstalledKibanaType0() (PackageListItemInstallationInfoInstalledKibanaType0, error) {
+	var body PackageListItemInstallationInfoInstalledKibanaType0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageListItemInstallationInfoInstalledKibanaType0 overwrites any union data inside the PackageListItem_InstallationInfo_InstalledKibana_Type as the provided PackageListItemInstallationInfoInstalledKibanaType0
+func (t *PackageListItem_InstallationInfo_InstalledKibana_Type) FromPackageListItemInstallationInfoInstalledKibanaType0(v PackageListItemInstallationInfoInstalledKibanaType0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageListItemInstallationInfoInstalledKibanaType0 performs a merge with any union data inside the PackageListItem_InstallationInfo_InstalledKibana_Type, using the provided PackageListItemInstallationInfoInstalledKibanaType0
+func (t *PackageListItem_InstallationInfo_InstalledKibana_Type) MergePackageListItemInstallationInfoInstalledKibanaType0(v PackageListItemInstallationInfoInstalledKibanaType0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageListItemInstallationInfoInstalledKibanaType1 returns the union data inside the PackageListItem_InstallationInfo_InstalledKibana_Type as a PackageListItemInstallationInfoInstalledKibanaType1
+func (t PackageListItem_InstallationInfo_InstalledKibana_Type) AsPackageListItemInstallationInfoInstalledKibanaType1() (PackageListItemInstallationInfoInstalledKibanaType1, error) {
+	var body PackageListItemInstallationInfoInstalledKibanaType1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageListItemInstallationInfoInstalledKibanaType1 overwrites any union data inside the PackageListItem_InstallationInfo_InstalledKibana_Type as the provided PackageListItemInstallationInfoInstalledKibanaType1
+func (t *PackageListItem_InstallationInfo_InstalledKibana_Type) FromPackageListItemInstallationInfoInstalledKibanaType1(v PackageListItemInstallationInfoInstalledKibanaType1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageListItemInstallationInfoInstalledKibanaType1 performs a merge with any union data inside the PackageListItem_InstallationInfo_InstalledKibana_Type, using the provided PackageListItemInstallationInfoInstalledKibanaType1
+func (t *PackageListItem_InstallationInfo_InstalledKibana_Type) MergePackageListItemInstallationInfoInstalledKibanaType1(v PackageListItemInstallationInfoInstalledKibanaType1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PackageListItem_InstallationInfo_InstalledKibana_Type) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PackageListItem_InstallationInfo_InstalledKibana_Type) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPackageListItemType0 returns the union data inside the PackageListItem_Type as a PackageListItemType0
+func (t PackageListItem_Type) AsPackageListItemType0() (PackageListItemType0, error) {
+	var body PackageListItemType0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageListItemType0 overwrites any union data inside the PackageListItem_Type as the provided PackageListItemType0
+func (t *PackageListItem_Type) FromPackageListItemType0(v PackageListItemType0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageListItemType0 performs a merge with any union data inside the PackageListItem_Type, using the provided PackageListItemType0
+func (t *PackageListItem_Type) MergePackageListItemType0(v PackageListItemType0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageListItemType1 returns the union data inside the PackageListItem_Type as a PackageListItemType1
+func (t PackageListItem_Type) AsPackageListItemType1() (PackageListItemType1, error) {
+	var body PackageListItemType1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageListItemType1 overwrites any union data inside the PackageListItem_Type as the provided PackageListItemType1
+func (t *PackageListItem_Type) FromPackageListItemType1(v PackageListItemType1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageListItemType1 performs a merge with any union data inside the PackageListItem_Type, using the provided PackageListItemType1
+func (t *PackageListItem_Type) MergePackageListItemType1(v PackageListItemType1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageListItemType2 returns the union data inside the PackageListItem_Type as a PackageListItemType2
+func (t PackageListItem_Type) AsPackageListItemType2() (PackageListItemType2, error) {
+	var body PackageListItemType2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageListItemType2 overwrites any union data inside the PackageListItem_Type as the provided PackageListItemType2
+func (t *PackageListItem_Type) FromPackageListItemType2(v PackageListItemType2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageListItemType2 performs a merge with any union data inside the PackageListItem_Type, using the provided PackageListItemType2
+func (t *PackageListItem_Type) MergePackageListItemType2(v PackageListItemType2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackageListItemType3 returns the union data inside the PackageListItem_Type as a PackageListItemType3
+func (t PackageListItem_Type) AsPackageListItemType3() (PackageListItemType3, error) {
+	var body PackageListItemType3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackageListItemType3 overwrites any union data inside the PackageListItem_Type as the provided PackageListItemType3
+func (t *PackageListItem_Type) FromPackageListItemType3(v PackageListItemType3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackageListItemType3 performs a merge with any union data inside the PackageListItem_Type, using the provided PackageListItemType3
+func (t *PackageListItem_Type) MergePackageListItemType3(v PackageListItemType3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PackageListItem_Type) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PackageListItem_Type) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsServerHostSecretsSslEsKey0 returns the union data inside the ServerHost_Secrets_Ssl_EsKey as a ServerHostSecretsSslEsKey0
+func (t ServerHost_Secrets_Ssl_EsKey) AsServerHostSecretsSslEsKey0() (ServerHostSecretsSslEsKey0, error) {
+	var body ServerHostSecretsSslEsKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromServerHostSecretsSslEsKey0 overwrites any union data inside the ServerHost_Secrets_Ssl_EsKey as the provided ServerHostSecretsSslEsKey0
+func (t *ServerHost_Secrets_Ssl_EsKey) FromServerHostSecretsSslEsKey0(v ServerHostSecretsSslEsKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeServerHostSecretsSslEsKey0 performs a merge with any union data inside the ServerHost_Secrets_Ssl_EsKey, using the provided ServerHostSecretsSslEsKey0
+func (t *ServerHost_Secrets_Ssl_EsKey) MergeServerHostSecretsSslEsKey0(v ServerHostSecretsSslEsKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsServerHostSecretsSslEsKey1 returns the union data inside the ServerHost_Secrets_Ssl_EsKey as a ServerHostSecretsSslEsKey1
+func (t ServerHost_Secrets_Ssl_EsKey) AsServerHostSecretsSslEsKey1() (ServerHostSecretsSslEsKey1, error) {
+	var body ServerHostSecretsSslEsKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromServerHostSecretsSslEsKey1 overwrites any union data inside the ServerHost_Secrets_Ssl_EsKey as the provided ServerHostSecretsSslEsKey1
+func (t *ServerHost_Secrets_Ssl_EsKey) FromServerHostSecretsSslEsKey1(v ServerHostSecretsSslEsKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeServerHostSecretsSslEsKey1 performs a merge with any union data inside the ServerHost_Secrets_Ssl_EsKey, using the provided ServerHostSecretsSslEsKey1
+func (t *ServerHost_Secrets_Ssl_EsKey) MergeServerHostSecretsSslEsKey1(v ServerHostSecretsSslEsKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ServerHost_Secrets_Ssl_EsKey) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ServerHost_Secrets_Ssl_EsKey) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsServerHostSecretsSslKey0 returns the union data inside the ServerHost_Secrets_Ssl_Key as a ServerHostSecretsSslKey0
+func (t ServerHost_Secrets_Ssl_Key) AsServerHostSecretsSslKey0() (ServerHostSecretsSslKey0, error) {
+	var body ServerHostSecretsSslKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromServerHostSecretsSslKey0 overwrites any union data inside the ServerHost_Secrets_Ssl_Key as the provided ServerHostSecretsSslKey0
+func (t *ServerHost_Secrets_Ssl_Key) FromServerHostSecretsSslKey0(v ServerHostSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeServerHostSecretsSslKey0 performs a merge with any union data inside the ServerHost_Secrets_Ssl_Key, using the provided ServerHostSecretsSslKey0
+func (t *ServerHost_Secrets_Ssl_Key) MergeServerHostSecretsSslKey0(v ServerHostSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsServerHostSecretsSslKey1 returns the union data inside the ServerHost_Secrets_Ssl_Key as a ServerHostSecretsSslKey1
+func (t ServerHost_Secrets_Ssl_Key) AsServerHostSecretsSslKey1() (ServerHostSecretsSslKey1, error) {
+	var body ServerHostSecretsSslKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromServerHostSecretsSslKey1 overwrites any union data inside the ServerHost_Secrets_Ssl_Key as the provided ServerHostSecretsSslKey1
+func (t *ServerHost_Secrets_Ssl_Key) FromServerHostSecretsSslKey1(v ServerHostSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeServerHostSecretsSslKey1 performs a merge with any union data inside the ServerHost_Secrets_Ssl_Key, using the provided ServerHostSecretsSslKey1
+func (t *ServerHost_Secrets_Ssl_Key) MergeServerHostSecretsSslKey1(v ServerHostSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ServerHost_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ServerHost_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsUpdateOutputElasticsearchSecretsSslKey0 returns the union data inside the UpdateOutputElasticsearch_Secrets_Ssl_Key as a UpdateOutputElasticsearchSecretsSslKey0
+func (t UpdateOutputElasticsearch_Secrets_Ssl_Key) AsUpdateOutputElasticsearchSecretsSslKey0() (UpdateOutputElasticsearchSecretsSslKey0, error) {
+	var body UpdateOutputElasticsearchSecretsSslKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUpdateOutputElasticsearchSecretsSslKey0 overwrites any union data inside the UpdateOutputElasticsearch_Secrets_Ssl_Key as the provided UpdateOutputElasticsearchSecretsSslKey0
+func (t *UpdateOutputElasticsearch_Secrets_Ssl_Key) FromUpdateOutputElasticsearchSecretsSslKey0(v UpdateOutputElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUpdateOutputElasticsearchSecretsSslKey0 performs a merge with any union data inside the UpdateOutputElasticsearch_Secrets_Ssl_Key, using the provided UpdateOutputElasticsearchSecretsSslKey0
+func (t *UpdateOutputElasticsearch_Secrets_Ssl_Key) MergeUpdateOutputElasticsearchSecretsSslKey0(v UpdateOutputElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUpdateOutputElasticsearchSecretsSslKey1 returns the union data inside the UpdateOutputElasticsearch_Secrets_Ssl_Key as a UpdateOutputElasticsearchSecretsSslKey1
+func (t UpdateOutputElasticsearch_Secrets_Ssl_Key) AsUpdateOutputElasticsearchSecretsSslKey1() (UpdateOutputElasticsearchSecretsSslKey1, error) {
+	var body UpdateOutputElasticsearchSecretsSslKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUpdateOutputElasticsearchSecretsSslKey1 overwrites any union data inside the UpdateOutputElasticsearch_Secrets_Ssl_Key as the provided UpdateOutputElasticsearchSecretsSslKey1
+func (t *UpdateOutputElasticsearch_Secrets_Ssl_Key) FromUpdateOutputElasticsearchSecretsSslKey1(v UpdateOutputElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUpdateOutputElasticsearchSecretsSslKey1 performs a merge with any union data inside the UpdateOutputElasticsearch_Secrets_Ssl_Key, using the provided UpdateOutputElasticsearchSecretsSslKey1
+func (t *UpdateOutputElasticsearch_Secrets_Ssl_Key) MergeUpdateOutputElasticsearchSecretsSslKey1(v UpdateOutputElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t UpdateOutputElasticsearch_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *UpdateOutputElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -11333,6 +13856,68 @@ func (t UpdateOutputRemoteElasticsearch_Secrets_ServiceToken) MarshalJSON() ([]b
 }
 
 func (t *UpdateOutputRemoteElasticsearch_Secrets_ServiceToken) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsUpdateOutputRemoteElasticsearchSecretsSslKey0 returns the union data inside the UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key as a UpdateOutputRemoteElasticsearchSecretsSslKey0
+func (t UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key) AsUpdateOutputRemoteElasticsearchSecretsSslKey0() (UpdateOutputRemoteElasticsearchSecretsSslKey0, error) {
+	var body UpdateOutputRemoteElasticsearchSecretsSslKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUpdateOutputRemoteElasticsearchSecretsSslKey0 overwrites any union data inside the UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key as the provided UpdateOutputRemoteElasticsearchSecretsSslKey0
+func (t *UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key) FromUpdateOutputRemoteElasticsearchSecretsSslKey0(v UpdateOutputRemoteElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUpdateOutputRemoteElasticsearchSecretsSslKey0 performs a merge with any union data inside the UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key, using the provided UpdateOutputRemoteElasticsearchSecretsSslKey0
+func (t *UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key) MergeUpdateOutputRemoteElasticsearchSecretsSslKey0(v UpdateOutputRemoteElasticsearchSecretsSslKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUpdateOutputRemoteElasticsearchSecretsSslKey1 returns the union data inside the UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key as a UpdateOutputRemoteElasticsearchSecretsSslKey1
+func (t UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key) AsUpdateOutputRemoteElasticsearchSecretsSslKey1() (UpdateOutputRemoteElasticsearchSecretsSslKey1, error) {
+	var body UpdateOutputRemoteElasticsearchSecretsSslKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUpdateOutputRemoteElasticsearchSecretsSslKey1 overwrites any union data inside the UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key as the provided UpdateOutputRemoteElasticsearchSecretsSslKey1
+func (t *UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key) FromUpdateOutputRemoteElasticsearchSecretsSslKey1(v UpdateOutputRemoteElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUpdateOutputRemoteElasticsearchSecretsSslKey1 performs a merge with any union data inside the UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key, using the provided UpdateOutputRemoteElasticsearchSecretsSslKey1
+func (t *UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key) MergeUpdateOutputRemoteElasticsearchSecretsSslKey1(v UpdateOutputRemoteElasticsearchSecretsSslKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *UpdateOutputRemoteElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -12716,6 +15301,22 @@ func NewGetFleetEpmPackagesRequest(server string, params *GetFleetEpmPackagesPar
 		if params.ExcludeInstallStatus != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "excludeInstallStatus", runtime.ParamLocationQuery, *params.ExcludeInstallStatus); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.WithPackagePoliciesCount != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "withPackagePoliciesCount", runtime.ParamLocationQuery, *params.WithPackagePoliciesCount); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -14245,9 +16846,11 @@ type GetFleetAgentPoliciesResponse struct {
 		Total   float32       `json:"total"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14274,9 +16877,11 @@ type PostFleetAgentPoliciesResponse struct {
 		Item AgentPolicy `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14304,9 +16909,11 @@ type PostFleetAgentPoliciesDeleteResponse struct {
 		Name string `json:"name"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14333,9 +16940,11 @@ type GetFleetAgentPoliciesAgentpolicyidResponse struct {
 		Item AgentPolicy `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14362,9 +16971,11 @@ type PutFleetAgentPoliciesAgentpolicyidResponse struct {
 		Item AgentPolicy `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14400,6 +17011,7 @@ type GetFleetEnrollmentApiKeysResponse struct {
 			// ApiKeyId The ID of the API key in the Security API.
 			ApiKeyId  string `json:"api_key_id"`
 			CreatedAt string `json:"created_at"`
+			Hidden    *bool  `json:"hidden,omitempty"`
 			Id        string `json:"id"`
 
 			// Name The name of the enrollment API key.
@@ -14413,9 +17025,11 @@ type GetFleetEnrollmentApiKeysResponse struct {
 		Total   float32 `json:"total"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14442,9 +17056,11 @@ type GetFleetEpmPackagesResponse struct {
 		Items []PackageListItem `json:"items"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14492,17 +17108,23 @@ type DeleteFleetEpmPackagesPkgnamePkgversionResponse struct {
 		Items []DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 type DeleteFleetEpmPackagesPkgnamePkgversion200Items0 struct {
-	Id       string                                               `json:"id"`
-	OriginId *string                                              `json:"originId,omitempty"`
-	Type     DeleteFleetEpmPackagesPkgnamePkgversion200Items0Type `json:"type"`
+	Id       string                                                   `json:"id"`
+	OriginId *string                                                  `json:"originId,omitempty"`
+	Type     DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_0_Type `json:"type"`
 }
-type DeleteFleetEpmPackagesPkgnamePkgversion200Items0Type string
+type DeleteFleetEpmPackagesPkgnamePkgversion200Items0Type0 string
+type DeleteFleetEpmPackagesPkgnamePkgversion200Items0Type1 = string
+type DeleteFleetEpmPackagesPkgnamePkgversion_200_Items_0_Type struct {
+	union json.RawMessage
+}
 type DeleteFleetEpmPackagesPkgnamePkgversion200Items1 struct {
 	Deferred *bool                                                `json:"deferred,omitempty"`
 	Id       string                                               `json:"id"`
@@ -14540,9 +17162,11 @@ type GetFleetEpmPackagesPkgnamePkgversionResponse struct {
 		} `json:"metadata,omitempty"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14568,21 +17192,28 @@ type PostFleetEpmPackagesPkgnamePkgversionResponse struct {
 	JSON200      *struct {
 		Meta struct {
 			InstallSource string `json:"install_source"`
+			Name          string `json:"name"`
 		} `json:"_meta"`
 		Items []PostFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 type PostFleetEpmPackagesPkgnamePkgversion200Items0 struct {
-	Id       string                                             `json:"id"`
-	OriginId *string                                            `json:"originId,omitempty"`
-	Type     PostFleetEpmPackagesPkgnamePkgversion200Items0Type `json:"type"`
+	Id       string                                                 `json:"id"`
+	OriginId *string                                                `json:"originId,omitempty"`
+	Type     PostFleetEpmPackagesPkgnamePkgversion_200_Items_0_Type `json:"type"`
 }
-type PostFleetEpmPackagesPkgnamePkgversion200Items0Type string
+type PostFleetEpmPackagesPkgnamePkgversion200Items0Type0 string
+type PostFleetEpmPackagesPkgnamePkgversion200Items0Type1 = string
+type PostFleetEpmPackagesPkgnamePkgversion_200_Items_0_Type struct {
+	union json.RawMessage
+}
 type PostFleetEpmPackagesPkgnamePkgversion200Items1 struct {
 	Deferred *bool                                              `json:"deferred,omitempty"`
 	Id       string                                             `json:"id"`
@@ -14620,9 +17251,11 @@ type GetFleetFleetServerHostsResponse struct {
 		Total   float32      `json:"total"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14649,9 +17282,11 @@ type PostFleetFleetServerHostsResponse struct {
 		Item ServerHost `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14678,9 +17313,11 @@ type DeleteFleetFleetServerHostsItemidResponse struct {
 		Id string `json:"id"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14707,9 +17344,11 @@ type GetFleetFleetServerHostsItemidResponse struct {
 		Item ServerHost `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14736,9 +17375,11 @@ type PutFleetFleetServerHostsItemidResponse struct {
 		Item ServerHost `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14768,9 +17409,11 @@ type GetFleetOutputsResponse struct {
 		Total   float32       `json:"total"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14797,9 +17440,11 @@ type PostFleetOutputsResponse struct {
 		Item OutputUnion `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14826,14 +17471,18 @@ type DeleteFleetOutputsOutputidResponse struct {
 		Id string `json:"id"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 	JSON404 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14860,9 +17509,11 @@ type GetFleetOutputsOutputidResponse struct {
 		Item OutputUnion `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14889,9 +17540,11 @@ type PutFleetOutputsOutputidResponse struct {
 		Item OutputUnion `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14921,9 +17574,11 @@ type GetFleetPackagePoliciesResponse struct {
 		Total   float32         `json:"total"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14950,14 +17605,18 @@ type PostFleetPackagePoliciesResponse struct {
 		Item PackagePolicy `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 	JSON409 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -14984,9 +17643,11 @@ type DeleteFleetPackagePoliciesPackagepolicyidResponse struct {
 		Id string `json:"id"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -15013,9 +17674,11 @@ type GetFleetPackagePoliciesPackagepolicyidResponse struct {
 		Item PackagePolicy `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 	JSON404 *struct {
 		Message string `json:"message"`
@@ -15045,14 +17708,18 @@ type PutFleetPackagePoliciesPackagepolicyidResponse struct {
 		Item PackagePolicy `json:"item"`
 	}
 	JSON400 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 	JSON403 *struct {
-		Error      *string  `json:"error,omitempty"`
-		Message    string   `json:"message"`
-		StatusCode *float32 `json:"statusCode,omitempty"`
+		Attributes interface{} `json:"attributes"`
+		Error      *string     `json:"error,omitempty"`
+		ErrorType  *string     `json:"errorType,omitempty"`
+		Message    string      `json:"message"`
+		StatusCode *float32    `json:"statusCode,omitempty"`
 	}
 }
 
@@ -15591,9 +18258,11 @@ func ParseGetFleetAgentPoliciesResponse(rsp *http.Response) (*GetFleetAgentPolic
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15630,9 +18299,11 @@ func ParsePostFleetAgentPoliciesResponse(rsp *http.Response) (*PostFleetAgentPol
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15670,9 +18341,11 @@ func ParsePostFleetAgentPoliciesDeleteResponse(rsp *http.Response) (*PostFleetAg
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15709,9 +18382,11 @@ func ParseGetFleetAgentPoliciesAgentpolicyidResponse(rsp *http.Response) (*GetFl
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15748,9 +18423,11 @@ func ParsePutFleetAgentPoliciesAgentpolicyidResponse(rsp *http.Response) (*PutFl
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15790,6 +18467,7 @@ func ParseGetFleetEnrollmentApiKeysResponse(rsp *http.Response) (*GetFleetEnroll
 				// ApiKeyId The ID of the API key in the Security API.
 				ApiKeyId  string `json:"api_key_id"`
 				CreatedAt string `json:"created_at"`
+				Hidden    *bool  `json:"hidden,omitempty"`
 				Id        string `json:"id"`
 
 				// Name The name of the enrollment API key.
@@ -15809,9 +18487,11 @@ func ParseGetFleetEnrollmentApiKeysResponse(rsp *http.Response) (*GetFleetEnroll
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15848,9 +18528,11 @@ func ParseGetFleetEpmPackagesResponse(rsp *http.Response) (*GetFleetEpmPackagesR
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15903,9 +18585,11 @@ func ParseDeleteFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15945,9 +18629,11 @@ func ParseGetFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*Get
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -15977,6 +18663,7 @@ func ParsePostFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*Po
 		var dest struct {
 			Meta struct {
 				InstallSource string `json:"install_source"`
+				Name          string `json:"name"`
 			} `json:"_meta"`
 			Items []PostFleetEpmPackagesPkgnamePkgversion_200_Items_Item `json:"items"`
 		}
@@ -15987,9 +18674,11 @@ func ParsePostFleetEpmPackagesPkgnamePkgversionResponse(rsp *http.Response) (*Po
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16029,9 +18718,11 @@ func ParseGetFleetFleetServerHostsResponse(rsp *http.Response) (*GetFleetFleetSe
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16068,9 +18759,11 @@ func ParsePostFleetFleetServerHostsResponse(rsp *http.Response) (*PostFleetFleet
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16107,9 +18800,11 @@ func ParseDeleteFleetFleetServerHostsItemidResponse(rsp *http.Response) (*Delete
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16146,9 +18841,11 @@ func ParseGetFleetFleetServerHostsItemidResponse(rsp *http.Response) (*GetFleetF
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16185,9 +18882,11 @@ func ParsePutFleetFleetServerHostsItemidResponse(rsp *http.Response) (*PutFleetF
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16227,9 +18926,11 @@ func ParseGetFleetOutputsResponse(rsp *http.Response) (*GetFleetOutputsResponse,
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16266,9 +18967,11 @@ func ParsePostFleetOutputsResponse(rsp *http.Response) (*PostFleetOutputsRespons
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16305,9 +19008,11 @@ func ParseDeleteFleetOutputsOutputidResponse(rsp *http.Response) (*DeleteFleetOu
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16316,9 +19021,11 @@ func ParseDeleteFleetOutputsOutputidResponse(rsp *http.Response) (*DeleteFleetOu
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16355,9 +19062,11 @@ func ParseGetFleetOutputsOutputidResponse(rsp *http.Response) (*GetFleetOutputsO
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16394,9 +19103,11 @@ func ParsePutFleetOutputsOutputidResponse(rsp *http.Response) (*PutFleetOutputsO
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16436,9 +19147,11 @@ func ParseGetFleetPackagePoliciesResponse(rsp *http.Response) (*GetFleetPackageP
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16475,9 +19188,11 @@ func ParsePostFleetPackagePoliciesResponse(rsp *http.Response) (*PostFleetPackag
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16486,9 +19201,11 @@ func ParsePostFleetPackagePoliciesResponse(rsp *http.Response) (*PostFleetPackag
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16525,9 +19242,11 @@ func ParseDeleteFleetPackagePoliciesPackagepolicyidResponse(rsp *http.Response) 
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16564,9 +19283,11 @@ func ParseGetFleetPackagePoliciesPackagepolicyidResponse(rsp *http.Response) (*G
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16612,9 +19333,11 @@ func ParsePutFleetPackagePoliciesPackagepolicyidResponse(rsp *http.Response) (*P
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -16623,9 +19346,11 @@ func ParsePutFleetPackagePoliciesPackagepolicyidResponse(rsp *http.Response) (*P
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest struct {
-			Error      *string  `json:"error,omitempty"`
-			Message    string   `json:"message"`
-			StatusCode *float32 `json:"statusCode,omitempty"`
+			Attributes interface{} `json:"attributes"`
+			Error      *string     `json:"error,omitempty"`
+			ErrorType  *string     `json:"errorType,omitempty"`
+			Message    string      `json:"message"`
+			StatusCode *float32    `json:"statusCode,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err

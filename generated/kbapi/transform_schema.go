@@ -875,6 +875,8 @@ func transformFleetPaths(schema *Schema) {
 	// See: https://github.com/elastic/kibana/issues/197155
 	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
 	hostPath.Put.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
+	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.ssl.x-omitempty", true)
+	hostPath.Put.Set("requestBody.content.application/json.schema.properties.ssl.x-omitempty", true)
 
 	// Outputs
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
@@ -1010,6 +1012,8 @@ func transformFleetPaths(schema *Schema) {
 	// [request body.1.output_id]: definition for this key is missing"
 	// See: https://github.com/elastic/kibana/issues/197155
 	schema.Components.Set("schemas.package_policy_request.properties.output_id.x-omitempty", true)
+	schema.Components.Set("schemas.package_policy_request.properties.additional_datastreams_permissions.x-omitempty", true)
+	schema.Components.Set("schemas.package_policy_request.properties.supports_agentless.x-omitempty", true)
 }
 
 // transformRemoveExamples removes all examples.
