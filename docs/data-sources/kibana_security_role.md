@@ -32,6 +32,7 @@ data "elasticstack_kibana_security_role" "example" {
 
 ### Optional
 
+- `description` (String) Description for the role
 - `metadata` (String) Optional meta-data.
 
 ### Read-Only
