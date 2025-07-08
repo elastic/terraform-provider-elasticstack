@@ -53,7 +53,7 @@ func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
 
 func CompositeIdFromStrFw(id string) (*CompositeId, fwdiags.Diagnostics) {
 	composite, diags := CompositeIdFromStr(id)
-	return composite, utils.ConvertSDKDiagnosticsToFramework(diags)
+	return composite, utils.FrameworkDiagsFromSDK(diags)
 }
 
 func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
