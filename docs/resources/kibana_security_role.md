@@ -124,6 +124,7 @@ resource "elasticstack_kibana_security_role" "example" {
 
 ### Optional
 
+- `description` (String) Optional description for the role
 - `kibana` (Block Set) The list of objects that specify the Kibana privileges for the role. (see [below for nested schema](#nestedblock--kibana))
 - `metadata` (String) Optional meta-data.
 

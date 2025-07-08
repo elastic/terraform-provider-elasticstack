@@ -14,12 +14,13 @@ const (
 
 // KibanaRole is the API role object
 type KibanaRole struct {
-	Name            string                       `json:"name,omitempty"`
-	Metadata        map[string]interface{}       `json:"metadata,omitempty"`
-	TransientMedata *KibanaRoleTransientMetadata `json:"transient_metadata,omitempty"`
-	Elasticsearch   *KibanaRoleElasticsearch     `json:"elasticsearch,omitempty"`
-	Kibana          []KibanaRoleKibana           `json:"kibana,omitempty"`
-	CreateOnly      bool                         `json:"-"`
+	Name              string                       `json:"name,omitempty"`
+	Metadata          map[string]interface{}       `json:"metadata,omitempty"`
+	TransientMetadata *KibanaRoleTransientMetadata `json:"transient_metadata,omitempty"`
+	Elasticsearch     *KibanaRoleElasticsearch     `json:"elasticsearch,omitempty"`
+	Kibana            []KibanaRoleKibana           `json:"kibana,omitempty"`
+	Description       string                       `json:"description,omitempty"`
+	CreateOnly        bool                         `json:"-"`
 }
 
 // KibanaRoleTransientMetadata is the API TransientMedata object

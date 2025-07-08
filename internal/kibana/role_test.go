@@ -19,6 +19,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	roleNameRemoteIndices := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
+	minSupportedDescriptionVersion := version.Must(version.NewVersion("8.15.0"))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -46,6 +47,16 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as", []string{"elastic", "kibana"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				Config:   testAccResourceSecurityRoleWithDescription(roleName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.#"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "description", "Role description"),
 				),
 			},
 			{
@@ -158,6 +169,32 @@ provider "elasticstack" {
 
 resource "elasticstack_kibana_security_role" "test" {
 	name    = "%s"
+	elasticsearch {
+	  cluster = [ "create_snapshot" ]
+	  indices {
+		names = ["sample"]
+		privileges = ["create", "read", "write"]
+	  }
+	  run_as = ["kibana", "elastic"]
+	}
+	kibana {
+	  base = [ "all" ]
+	  spaces = ["default"]
+	}
+}
+	`, roleName)
+}
+
+func testAccResourceSecurityRoleWithDescription(roleName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_role" "test" {
+	name    = "%s"
+	description = "Role description"
 	elasticsearch {
 	  cluster = [ "create_snapshot" ]
 	  indices {
