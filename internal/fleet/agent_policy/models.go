@@ -34,6 +34,7 @@ type agentPolicyModel struct {
 	MonitorMetrics     types.Bool   `tfsdk:"monitor_metrics"`
 	SysMonitoring      types.Bool   `tfsdk:"sys_monitoring"`
 	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
+	SupportsAgentless  types.Bool   `tfsdk:"supports_agentless"`
 	GlobalDataTags     types.Map    `tfsdk:"global_data_tags"` //> globalDataTagsModel
 }
 
@@ -67,6 +68,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
+	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
 	if utils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
 		var map0 = make(map[string]globalDataTagsItemModel)
@@ -166,6 +168,7 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
+		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, serverVersion)
@@ -195,6 +198,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
+		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, serverVersion)

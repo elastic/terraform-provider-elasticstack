@@ -36,7 +36,7 @@ func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:   testAccResourceAgentPolicyCreate(policyName, false),
+				Config:   testAccResourceAgentPolicyCreate(policyName, false, false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -44,12 +44,13 @@ func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "supports_agentless", "false"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:                   testAccResourceAgentPolicyCreate(policyName, false),
+				Config:                   testAccResourceAgentPolicyCreate(policyName, false, false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -57,6 +58,7 @@ func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "supports_agentless", "false"),
 				),
 			},
 		},
@@ -76,7 +78,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:   testAccResourceAgentPolicyCreate(policyName, false),
+				Config:   testAccResourceAgentPolicyCreate(policyName, false, false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -84,6 +86,29 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "supports_agentless", "false"),
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						originalPolicyId = value
+
+						if len(value) == 0 {
+							return errors.New("expected policy_id to be non empty")
+						}
+
+						return nil
+					}),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				Config:   testAccResourceAgentPolicyCreate(policyName, false, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "supports_agentless", "true"),
 					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
 						originalPolicyId = value
 
@@ -177,7 +202,7 @@ func TestAccResourceAgentPolicySkipDestroy(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:   testAccResourceAgentPolicyCreate(policyName, true),
+				Config:   testAccResourceAgentPolicyCreate(policyName, true, false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -207,7 +232,7 @@ func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
 	})
 }
 
-func testAccResourceAgentPolicyCreate(id string, skipDestroy bool) string {
+func testAccResourceAgentPolicyCreate(id string, skipDestroy bool, supportsAgentless bool) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -221,14 +246,16 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = true
   monitor_metrics = false
   skip_destroy = %t
+  supports_agentless = %t
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
   policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
 }
 
-`, fmt.Sprintf("Policy %s", id), skipDestroy)
+`, fmt.Sprintf("Policy %s", id), skipDestroy, supportsAgentless)
 }
+
 func testAccResourceAgentPolicyCreateWithGlobalDataTags(id string, skipDestroy bool) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
