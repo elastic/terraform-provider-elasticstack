@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -32,10 +32,10 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.base.#"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as.#"),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.names", []string{"sample"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.0.grant", []string{"sample"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.2.privileges", []string{"minimal_read", "store_search_session", "url_create"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.names", []string{"sample"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.0.grant", []string{"sample"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.2.privileges", []string{"minimal_read", "store_search_session", "url_create"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
 				),
 			},
 			{
@@ -44,9 +44,9 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.#"),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as", []string{"elastic", "kibana"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as", []string{"elastic", "kibana"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
 				),
 			},
 			{
@@ -66,14 +66,14 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.base.#"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as.#"),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.names", []string{"sample"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.0.grant", []string{"sample"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.2.privileges", []string{"minimal_read", "store_search_session", "url_create"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.clusters", []string{"test-cluster"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.field_security.0.grant", []string{"sample"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.names", []string{"sample"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.privileges", []string{"create", "read", "write"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.names", []string{"sample"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.0.grant", []string{"sample"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.2.privileges", []string{"minimal_read", "store_search_session", "url_create"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.clusters", []string{"test-cluster"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.field_security.0.grant", []string{"sample"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.names", []string{"sample"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.privileges", []string{"create", "read", "write"}),
 				),
 			},
 			{
@@ -83,13 +83,13 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.indices.0.field_security.#"),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as", []string{"elastic", "kibana"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.clusters", []string{"test-cluster2"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.field_security.0.grant", []string{"sample2"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.names", []string{"sample2"}),
-					utils.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.privileges", []string{"create", "read", "write"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.run_as", []string{"elastic", "kibana"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.clusters", []string{"test-cluster2"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.field_security.0.grant", []string{"sample2"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.names", []string{"sample2"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.0.remote_indices.0.privileges", []string{"create", "read", "write"}),
 				),
 			},
 		},

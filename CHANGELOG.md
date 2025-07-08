@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Add `headers` for the provider connection ([#1057](https://github.com/elastic/terraform-provider-elasticstack/pull/1057))
+- Migrate `elasticstack_elasticsearch_system_user` resource to Terraform plugin framework ([#1154](https://github.com/elastic/terraform-provider-elasticstack/pull/1154))
 - Add custom `endpoint` configuration support for snapshot repository setup ([#1158](https://github.com/elastic/terraform-provider-elasticstack/pull/1158))
 - Add `description` to `elasticstack_kibana_security_role` ([#1172](https://github.com/elastic/terraform-provider-elasticstack/issues/1172))
 

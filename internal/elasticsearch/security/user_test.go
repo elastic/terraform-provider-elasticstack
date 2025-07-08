@@ -2,13 +2,13 @@ package security_test
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -103,7 +103,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 
 					return nil
 				},
-				Check: checkUserCanAuthenticate(username, initialPassword),
+				Check: checks.CheckUserCanAuthenticate(username, initialPassword),
 			},
 			{
 				Config: testAccResourceSecurityUserUpdateNoPassword(username),
@@ -112,7 +112,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_admin"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_user.test", "password"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "full_name", "Test User"),
-					checkUserCanAuthenticate(username, initialPassword),
+					checks.CheckUserCanAuthenticate(username, initialPassword),
 				),
 			},
 			{
@@ -153,43 +153,11 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "email", "test@example.com"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_user.test", "password"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
-					checkUserCanAuthenticate(username, userUpdatedPassword),
+					checks.CheckUserCanAuthenticate(username, userUpdatedPassword),
 				),
 			},
 		},
 	})
-}
-
-func checkUserCanAuthenticate(username string, password string) func(*terraform.State) error {
-	return func(s *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingClient()
-		if err != nil {
-			return err
-		}
-
-		esClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
-
-		credentials := fmt.Sprintf("%s:%s", username, password)
-		authHeader := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(credentials)))
-
-		req := esClient.Security.Authenticate.WithHeader(map[string]string{"Authorization": authHeader})
-		resp, err := esClient.Security.Authenticate(req)
-		if err != nil {
-			return err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.IsError() {
-			body, err := io.ReadAll(resp.Body)
-
-			return fmt.Errorf("failed to authenticate as test user [%s] %s %s", username, body, err)
-		}
-		return nil
-	}
 }
 
 func testAccResourceSecurityUserCreate(username string) string {

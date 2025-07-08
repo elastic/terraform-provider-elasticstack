@@ -93,7 +93,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_security_role":         security.ResourceRole(),
 			"elasticstack_elasticsearch_security_role_mapping": security.ResourceRoleMapping(),
 			"elasticstack_elasticsearch_security_user":         security.ResourceUser(),
-			"elasticstack_elasticsearch_security_system_user":  security.ResourceSystemUser(),
 			"elasticstack_elasticsearch_snapshot_lifecycle":    cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository":   cluster.ResourceSnapshotRepository(),
 			"elasticstack_elasticsearch_script":                cluster.ResourceScript(),
