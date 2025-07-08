@@ -545,8 +545,6 @@ var transformers = []TransformFunc{
 	transformAddMisingDescriptions,
 	transformKibanaPaths,
 	transformFleetPaths,
-	// transformRemoveEnums,
-	// transformAddGoPointersFlag,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 }
@@ -886,6 +884,8 @@ func transformFleetPaths(schema *Schema) {
 	// See: https://github.com/elastic/kibana/issues/197155
 	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
 	hostPath.Put.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
+	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.ssl.x-omitempty", true)
+	hostPath.Put.Set("requestBody.content.application/json.schema.properties.ssl.x-omitempty", true)
 
 	// Outputs
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
@@ -1021,22 +1021,8 @@ func transformFleetPaths(schema *Schema) {
 	// [request body.1.output_id]: definition for this key is missing"
 	// See: https://github.com/elastic/kibana/issues/197155
 	schema.Components.Set("schemas.package_policy_request.properties.output_id.x-omitempty", true)
-}
-
-// transformRemoveEnums remove all enums.
-func transformRemoveEnums(schema *Schema) {
-	deleteEnumFn := func(key string, node Map) {
-		if node.Has("enum") {
-			delete(node, "enum")
-		}
-	}
-
-	for _, pathInfo := range schema.Paths {
-		for _, methInfo := range pathInfo.Endpoints {
-			methInfo.Iterate(deleteEnumFn)
-		}
-	}
-	schema.Components.Iterate(deleteEnumFn)
+	schema.Components.Set("schemas.package_policy_request.properties.additional_datastreams_permissions.x-omitempty", true)
+	schema.Components.Set("schemas.package_policy_request.properties.supports_agentless.x-omitempty", true)
 }
 
 // transformRemoveExamples removes all examples.
@@ -1057,27 +1043,6 @@ func transformRemoveExamples(schema *Schema) {
 	}
 	schema.Components.Iterate(deleteExampleFn)
 	schema.Components.Set("examples", Map{})
-}
-
-// transformAddOptionalPointersFlag adds a x-go-type-skip-optional-pointer
-// flag to maps and arrays, since they are already nullable types.
-func transformAddOptionalPointersFlag(schema *Schema) {
-	addFlagFn := func(key string, node Map) {
-		if node["type"] == "array" {
-			node["x-go-type-skip-optional-pointer"] = true
-		} else if node["type"] == "object" {
-			if _, ok := node["properties"]; !ok {
-				node["x-go-type-skip-optional-pointer"] = true
-			}
-		}
-	}
-
-	for _, pathInfo := range schema.Paths {
-		for _, methInfo := range pathInfo.Endpoints {
-			methInfo.Iterate(addFlagFn)
-		}
-	}
-	schema.Components.Iterate(addFlagFn)
 }
 
 // transformRemoveUnusedComponents removes all unused schema components.

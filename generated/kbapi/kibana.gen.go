@@ -2510,7 +2510,7 @@ type PackagePolicyInputStream struct {
 // PackagePolicyRequest defines model for package_policy_request.
 type PackagePolicyRequest struct {
 	// AdditionalDatastreamsPermissions Additional datastream permissions, that will be added to the agent policy.
-	AdditionalDatastreamsPermissions *[]string `json:"additional_datastreams_permissions"`
+	AdditionalDatastreamsPermissions *[]string `json:"additional_datastreams_permissions,omitempty"`
 	Description                      *string   `json:"description,omitempty"`
 	Force                            *bool     `json:"force,omitempty"`
 	Id                               *string   `json:"id,omitempty"`
@@ -2525,7 +2525,7 @@ type PackagePolicyRequest struct {
 	PolicyIds *[]string                             `json:"policy_ids,omitempty"`
 
 	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy.
-	SupportsAgentless *bool                   `json:"supports_agentless"`
+	SupportsAgentless *bool                   `json:"supports_agentless,omitempty"`
 	Vars              *map[string]interface{} `json:"vars,omitempty"`
 }
 
@@ -3214,7 +3214,7 @@ type PostFleetFleetServerHostsJSONBody struct {
 		EsCertificateAuthorities *[]string                                       `json:"es_certificate_authorities,omitempty"`
 		EsKey                    *string                                         `json:"es_key,omitempty"`
 		Key                      *string                                         `json:"key,omitempty"`
-	} `json:"ssl"`
+	} `json:"ssl,omitempty"`
 }
 
 // PostFleetFleetServerHostsJSONBodySecretsSslEsKey0 defines parameters for PostFleetFleetServerHosts.
@@ -3267,7 +3267,7 @@ type PutFleetFleetServerHostsItemidJSONBody struct {
 		EsCertificateAuthorities *[]string                                            `json:"es_certificate_authorities,omitempty"`
 		EsKey                    *string                                              `json:"es_key,omitempty"`
 		Key                      *string                                              `json:"key,omitempty"`
-	} `json:"ssl"`
+	} `json:"ssl,omitempty"`
 }
 
 // PutFleetFleetServerHostsItemidJSONBodySecretsSslEsKey0 defines parameters for PutFleetFleetServerHostsItemid.

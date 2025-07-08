@@ -117,6 +117,6 @@ func (r *Resource) requiresReplaceIfUpdateNotSupported() planmodifier.String {
 			resp.RequiresReplace = version != nil && version.LessThan(MinVersionWithUpdate)
 		},
 		"Requires replace if the server does not support update",
-		"Requries replace if the server does not support update",
+		"Requires replace if the server does not support update",
 	)
 }
