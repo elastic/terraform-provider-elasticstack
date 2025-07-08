@@ -42,6 +42,21 @@ func CheckError(res *esapi.Response, errMsg string) sdkdiag.Diagnostics {
 	return diags
 }
 
+func CheckErrorFromFW(res *esapi.Response, errMsg string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	if res.IsError() {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			diags.AddError(errMsg, err.Error())
+			return diags
+		}
+		diags.AddError(errMsg, fmt.Sprintf("Failed with: %s", body))
+		return diags
+	}
+	return diags
+}
+
 func CheckHttpError(res *http.Response, errMsg string) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
 

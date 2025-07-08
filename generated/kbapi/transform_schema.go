@@ -545,8 +545,6 @@ var transformers = []TransformFunc{
 	transformAddMisingDescriptions,
 	transformKibanaPaths,
 	transformFleetPaths,
-	// transformRemoveEnums,
-	// transformAddGoPointersFlag,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 }
@@ -570,6 +568,8 @@ func transformFilterPaths(schema *Schema) {
 		"/api/fleet/outputs/{outputId}":                  {"get", "put", "delete"},
 		"/api/fleet/package_policies":                    {"get", "post"},
 		"/api/fleet/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
+		"/api/synthetics/params":                         {"post"},
+		"/api/synthetics/params/{id}":                    {"get", "put", "delete"},
 	}
 
 	for path, pathInfo := range schema.Paths {
@@ -694,7 +694,11 @@ func transformSimplifyContentType(schema *Schema) {
 func transformAddMisingDescriptions(schema *Schema) {
 	for _, pathInfo := range schema.Paths {
 		for _, endpoint := range pathInfo.Endpoints {
-			responses := endpoint.MustGetMap("responses")
+			responses, ok := endpoint.GetMap("responses")
+			if !ok {
+				return
+			}
+
 			for code := range responses {
 				response := responses.MustGetMap(code)
 				if _, ok := response["description"]; !ok {
@@ -749,6 +753,9 @@ func transformKibanaPaths(schema *Schema) {
 	dataViewsPath := schema.MustGetPath("/s/{spaceId}/api/data_views")
 
 	dataViewsPath.Get.CreateRef(schema, "get_data_views_response_item", "responses.200.content.application/json.schema.properties.data_view.items")
+
+	sytheticsParamsPath := schema.MustGetPath("/api/synthetics/params")
+	sytheticsParamsPath.Post.CreateRef(schema, "create_param_response", "responses.200.content.application/json.schema")
 
 	schema.Components.CreateRef(schema, "Data_views_data_view_response_object_inner", "schemas.Data_views_data_view_response_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_sourcefilter_item", "schemas.Data_views_sourcefilters.items")
@@ -877,6 +884,8 @@ func transformFleetPaths(schema *Schema) {
 	// See: https://github.com/elastic/kibana/issues/197155
 	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
 	hostPath.Put.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
+	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.ssl.x-omitempty", true)
+	hostPath.Put.Set("requestBody.content.application/json.schema.properties.ssl.x-omitempty", true)
 
 	// Outputs
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
@@ -1012,22 +1021,8 @@ func transformFleetPaths(schema *Schema) {
 	// [request body.1.output_id]: definition for this key is missing"
 	// See: https://github.com/elastic/kibana/issues/197155
 	schema.Components.Set("schemas.package_policy_request.properties.output_id.x-omitempty", true)
-}
-
-// transformRemoveEnums remove all enums.
-func transformRemoveEnums(schema *Schema) {
-	deleteEnumFn := func(key string, node Map) {
-		if node.Has("enum") {
-			delete(node, "enum")
-		}
-	}
-
-	for _, pathInfo := range schema.Paths {
-		for _, methInfo := range pathInfo.Endpoints {
-			methInfo.Iterate(deleteEnumFn)
-		}
-	}
-	schema.Components.Iterate(deleteEnumFn)
+	schema.Components.Set("schemas.package_policy_request.properties.additional_datastreams_permissions.x-omitempty", true)
+	schema.Components.Set("schemas.package_policy_request.properties.supports_agentless.x-omitempty", true)
 }
 
 // transformRemoveExamples removes all examples.
@@ -1048,27 +1043,6 @@ func transformRemoveExamples(schema *Schema) {
 	}
 	schema.Components.Iterate(deleteExampleFn)
 	schema.Components.Set("examples", Map{})
-}
-
-// transformAddOptionalPointersFlag adds a x-go-type-skip-optional-pointer
-// flag to maps and arrays, since they are already nullable types.
-func transformAddOptionalPointersFlag(schema *Schema) {
-	addFlagFn := func(key string, node Map) {
-		if node["type"] == "array" {
-			node["x-go-type-skip-optional-pointer"] = true
-		} else if node["type"] == "object" {
-			if _, ok := node["properties"]; !ok {
-				node["x-go-type-skip-optional-pointer"] = true
-			}
-		}
-	}
-
-	for _, pathInfo := range schema.Paths {
-		for _, methInfo := range pathInfo.Endpoints {
-			methInfo.Iterate(addFlagFn)
-		}
-	}
-	schema.Components.Iterate(addFlagFn)
 }
 
 // transformRemoveUnusedComponents removes all unused schema components.

@@ -150,6 +150,7 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 	return actions
 }
 
+//go:generate go tool go.uber.org/mock/mockgen -destination=./alerting_mocks.go -package=kibana -source ./alerting.go ApiClient
 type ApiClient interface {
 	GetAlertingClient() (alerting.AlertingAPI, error)
 	SetAlertingAuthContext(context.Context) context.Context

@@ -37,9 +37,9 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version-file: 'tools/go.mod'
+          go-version-file: 'go.mod'
           cache: true
-          cache-dependency-path: tools/go.sum
+          cache-dependency-path: go.sum
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_wrapper: false
@@ -179,4 +179,5 @@ jobs:
           ELASTICSEARCH_USERNAME: "elastic"
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           KIBANA_ENDPOINT: "http://localhost:5601"
-          KIBANA_API_KEY: ${{ steps.get-api-key.outputs.apikey }}
+          KIBANA_USERNAME: "elastic"
+          KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
