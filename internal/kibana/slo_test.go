@@ -21,6 +21,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+var sloTimesliceMetricsMinVersion = version.Must(version.NewVersion("8.12.0"))
+
 func TestAccResourceSlo(t *testing.T) {
 	// This test exposes a bug in Kibana present in 8.11.x
 	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
@@ -257,11 +259,12 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSloDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
 				  name        = "%s"
 				  description = "basic timeslice metric"
@@ -304,11 +307,11 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSloDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
-			{
+			{ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
 				  name        = "%s"
 				  description = "percentile timeslice metric"
@@ -352,11 +355,12 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSloDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
 				  name        = "%s"
 				  description = "doc_count timeslice metric"
@@ -397,11 +401,12 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 func TestAccResourceSlo_timeslice_metric_indicator_mismatched_equation(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSloDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
 				  name        = "%s"
 				  description = "mismatched metric/equation"
@@ -440,11 +445,11 @@ func TestAccResourceSlo_timeslice_metric_indicator_mismatched_equation(t *testin
 func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSloDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
-			{
+			{ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
 				  name        = "%s"
 				  description = "multiple mixed metrics"
