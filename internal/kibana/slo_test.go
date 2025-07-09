@@ -279,6 +279,16 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 				      threshold  = 100
 				    }
 				  }
+				  budgeting_method = "timeslices"
+				  objective {
+				    target           = 0.95
+				    timeslice_target = 0.95
+				    timeslice_window = "5m"
+				  }
+				  time_window {
+				    duration = "7d"
+				    type     = "rolling"
+				  }
 				}
 				`, sloName),
 				Check: resource.ComposeTestCheckFunc(
@@ -317,6 +327,16 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 				      threshold  = 200
 				    }
 				  }
+				  budgeting_method = "timeslices"
+				  objective {
+				    target           = 0.95
+				    timeslice_target = 0.95
+				    timeslice_window = "5m"
+				  }
+				  time_window {
+				    duration = "7d"
+				    type     = "rolling"
+				  }
 				}
 				`, sloName),
 				Check: resource.ComposeTestCheckFunc(
@@ -353,6 +373,16 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 				      threshold  = 10
 				    }
 				  }
+				  budgeting_method = "timeslices"
+				  objective {
+				    target           = 0.95
+				    timeslice_target = 0.95
+				    timeslice_window = "5m"
+				  }
+				  time_window {
+				    duration = "7d"
+				    type     = "rolling"
+				  }
 				}
 				`, sloName),
 				Check: resource.ComposeTestCheckFunc(
@@ -388,6 +418,16 @@ func TestAccResourceSlo_timeslice_metric_indicator_mismatched_equation(t *testin
 				      comparator = "GT"
 				      threshold  = 100
 				    }
+				  }
+				  budgeting_method = "timeslices"
+				  objective {
+				    target           = 0.95
+				    timeslice_target = 0.95
+				    timeslice_window = "5m"
+				  }
+				  time_window {
+				    duration = "7d"
+				    type     = "rolling"
 				  }
 				}
 				`, sloName),
@@ -431,6 +471,16 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 				      comparator = "GT"
 				      threshold  = 100
 				    }
+				  }
+				  budgeting_method = "timeslices"
+				  objective {
+				    target           = 0.95
+				    timeslice_target = 0.95
+				    timeslice_window = "5m"
+				  }
+				  time_window {
+				    duration = "7d"
+				    type     = "rolling"
 				  }
 				}
 				`, sloName),
