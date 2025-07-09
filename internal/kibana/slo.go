@@ -1010,17 +1010,37 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 	case s.Indicator.IndicatorPropertiesTimesliceMetric != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesTimesliceMetric.Type]
 		params := s.Indicator.IndicatorPropertiesTimesliceMetric.Params
-		metric := []map[string]interface{}{{
-			"metrics":    params.Metric.Metrics,
+		metrics := []map[string]interface{}{}
+		for _, m := range params.Metric.Metrics {
+			metric := map[string]interface{}{}
+			if m.TimesliceMetricBasicMetricWithField != nil {
+				metric["name"] = m.TimesliceMetricBasicMetricWithField.Name
+				metric["aggregation"] = m.TimesliceMetricBasicMetricWithField.Aggregation
+				metric["field"] = m.TimesliceMetricBasicMetricWithField.Field
+			}
+			if m.TimesliceMetricPercentileMetric != nil {
+				metric["name"] = m.TimesliceMetricPercentileMetric.Name
+				metric["aggregation"] = m.TimesliceMetricPercentileMetric.Aggregation
+				metric["field"] = m.TimesliceMetricPercentileMetric.Field
+				metric["percentile"] = m.TimesliceMetricPercentileMetric.Percentile
+			}
+			if m.TimesliceMetricDocCountMetric != nil {
+				metric["name"] = m.TimesliceMetricDocCountMetric.Name
+				metric["aggregation"] = m.TimesliceMetricDocCountMetric.Aggregation
+			}
+			metrics = append(metrics, metric)
+		}
+		metricBlock := map[string]interface{}{
+			"metrics":    metrics,
 			"equation":   params.Metric.Equation,
 			"comparator": params.Metric.Comparator,
 			"threshold":  params.Metric.Threshold,
-		}}
+		}
 		indicator = append(indicator, map[string]interface{}{
 			"index":           params.Index,
 			"timestamp_field": params.TimestampField,
 			"filter":          params.Filter,
-			"metric":          metric,
+			"metric":          []interface{}{metricBlock},
 		})
 
 	default:
@@ -1114,7 +1134,7 @@ var indicatorAddressToType = map[string]string{
 	"kql_custom_indicator":       "sli.kql.custom",
 	"metric_custom_indicator":    "sli.metric.custom",
 	"histogram_custom_indicator": "sli.histogram.custom",
-	"timeslice_metric_indicator": "sli.timeslice.metric",
+	"timeslice_metric_indicator": "sli.metric.timeslice",
 }
 
 var indicatorTypeToAddress = utils.FlipMap(indicatorAddressToType)

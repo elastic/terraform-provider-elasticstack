@@ -265,34 +265,45 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
-				  name        = "%s"
-				  description = "basic timeslice metric"
-				  timeslice_metric_indicator {
-				    index = "my-index"
-				    timestamp_field = "@timestamp"
-				    metric {
-				      metrics {
-				        name        = "A"
-				        aggregation = "sum"
-				        field       = "latency"
-				      }
-				      equation   = "A"
-				      comparator = "GT"
-				      threshold  = 100
-				    }
-				  }
-				  budgeting_method = "timeslices"
-				  objective {
-				    target           = 0.95
-				    timeslice_target = 0.95
-				    timeslice_window = "5m"
-				  }
-				  time_window {
-				    duration = "7d"
-				    type     = "rolling"
-				  }
-				}
+				Config: fmt.Sprintf(`
+					provider "elasticstack" {
+						elasticsearch {}
+						kibana {}
+					}
+			
+					resource "elasticstack_elasticsearch_index" "my_index" {
+						name = "my-index"
+						deletion_protection = false
+					}
+                    resource "elasticstack_kibana_slo" "test_slo" {
+						name        = "%s"
+						description = "basic timeslice metric"
+						timeslice_metric_indicator {
+							index = "my-index"
+							timestamp_field = "@timestamp"
+							metric {
+								metrics {
+									name        = "A"
+									aggregation = "sum"
+									field       = "latency"
+								}
+								equation   = "A"
+								comparator = "GT"
+								threshold  = 100
+							}
+						}
+						budgeting_method = "timeslices"
+						objective {
+							target           = 0.95
+							timeslice_target = 0.95
+							timeslice_window = "5m"
+						}
+						time_window {
+							duration = "7d"
+							type     = "rolling"
+						}
+						depends_on = [elasticstack_elasticsearch_index.my_index]
+					}
 				`, sloName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "sum"),
@@ -313,35 +324,47 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
-				  name        = "%s"
-				  description = "percentile timeslice metric"
-				  timeslice_metric_indicator {
-				    index = "my-index"
-				    timestamp_field = "@timestamp"
-				    metric {
-				      metrics {
-				        name        = "B"
-				        aggregation = "percentile"
-				        field       = "latency"
-				        percentile  = 99
-				      }
-				      equation   = "B"
-				      comparator = "LT"
-				      threshold  = 200
-				    }
-				  }
-				  budgeting_method = "timeslices"
-				  objective {
-				    target           = 0.95
-				    timeslice_target = 0.95
-				    timeslice_window = "5m"
-				  }
-				  time_window {
-				    duration = "7d"
-				    type     = "rolling"
-				  }
-				}
+				Config: fmt.Sprintf(`
+					provider "elasticstack" {
+						elasticsearch {}
+						kibana {}
+					}
+				
+					resource "elasticstack_elasticsearch_index" "my_index" {
+						name = "my-index"
+						deletion_protection = false
+					}
+				
+					resource "elasticstack_kibana_slo" "test_slo" {
+						name        = "%s"
+						description = "percentile timeslice metric"
+						timeslice_metric_indicator {
+							index = "my-index"
+							timestamp_field = "@timestamp"
+							metric {
+								metrics {
+									name        = "B"
+									aggregation = "percentile"
+									field       = "latency"
+									percentile  = 99
+								}
+								equation   = "B"
+								comparator = "LT"
+								threshold  = 200
+							}
+						}
+						budgeting_method = "timeslices"
+						objective {
+							target           = 0.95
+							timeslice_target = 0.95
+							timeslice_window = "5m"
+						}
+						time_window {
+							duration = "7d"
+							type     = "rolling"
+						}
+						depends_on = [elasticstack_elasticsearch_index.my_index]
+					}
 				`, sloName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "percentile"),
@@ -362,33 +385,45 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
-				  name        = "%s"
-				  description = "doc_count timeslice metric"
-				  timeslice_metric_indicator {
-				    index = "my-index"
-				    timestamp_field = "@timestamp"
-				    metric {
-				      metrics {
-				        name        = "C"
-				        aggregation = "doc_count"
-				      }
-				      equation   = "C"
-				      comparator = "GTE"
-				      threshold  = 10
-				    }
-				  }
-				  budgeting_method = "timeslices"
-				  objective {
-				    target           = 0.95
-				    timeslice_target = 0.95
-				    timeslice_window = "5m"
-				  }
-				  time_window {
-				    duration = "7d"
-				    type     = "rolling"
-				  }
-				}
+				Config: fmt.Sprintf(`
+					provider "elasticstack" {
+					    elasticsearch {}
+					    kibana {}
+					}
+					
+					resource "elasticstack_elasticsearch_index" "my_index" {
+					    name = "my-index"
+					    deletion_protection = false
+					}
+					
+					resource "elasticstack_kibana_slo" "test_slo" {
+					    name        = "%s"
+					    description = "doc_count timeslice metric"
+					    timeslice_metric_indicator {
+					        index = "my-index"
+					        timestamp_field = "@timestamp"
+					        metric {
+					            metrics {
+					                name        = "C"
+					                aggregation = "doc_count"
+					            }
+					            equation   = "C"
+					            comparator = "GTE"
+					            threshold  = 10
+					        }
+					    }
+					    budgeting_method = "timeslices"
+					    objective {
+					        target           = 0.95
+					        timeslice_target = 0.95
+					        timeslice_window = "5m"
+					    }
+					    time_window {
+					        duration = "7d"
+					        type     = "rolling"
+					    }
+					    depends_on = [elasticstack_elasticsearch_index.my_index]
+					}
 				`, sloName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "doc_count"),
@@ -408,34 +443,46 @@ func TestAccResourceSlo_timeslice_metric_indicator_mismatched_equation(t *testin
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
-				  name        = "%s"
-				  description = "mismatched metric/equation"
-				  timeslice_metric_indicator {
-				    index = "my-index"
-				    timestamp_field = "@timestamp"
-				    metric {
-				      metrics {
-				        name        = "A"
-				        aggregation = "sum"
-				        field       = "latency"
-				      }
-				      equation   = "A + B"
-				      comparator = "GT"
-				      threshold  = 100
-				    }
-				  }
-				  budgeting_method = "timeslices"
-				  objective {
-				    target           = 0.95
-				    timeslice_target = 0.95
-				    timeslice_window = "5m"
-				  }
-				  time_window {
-				    duration = "7d"
-				    type     = "rolling"
-				  }
-				}
+				Config: fmt.Sprintf(`
+					provider "elasticstack" {
+					    elasticsearch {}
+					    kibana {}
+					}
+					
+					resource "elasticstack_elasticsearch_index" "my_index" {
+					    name = "my-index"
+					    deletion_protection = false
+					}
+					
+					resource "elasticstack_kibana_slo" "test_slo" {
+					    name        = "%s"
+					    description = "mismatched metric/equation"
+					    timeslice_metric_indicator {
+					        index = "my-index"
+					        timestamp_field = "@timestamp"
+					        metric {
+					            metrics {
+					                name        = "A"
+					                aggregation = "sum"
+					                field       = "latency"
+					            }
+					            equation   = "A + B"
+					            comparator = "GT"
+					            threshold  = 100
+					        }
+					    }
+					    budgeting_method = "timeslices"
+					    objective {
+					        target           = 0.95
+					        timeslice_target = 0.95
+					        timeslice_window = "5m"
+					    }
+					    time_window {
+					        duration = "7d"
+					        type     = "rolling"
+					    }
+					    depends_on = [elasticstack_elasticsearch_index.my_index]
+					}
 				`, sloName),
 				ExpectError: regexp.MustCompile(`.*B.*not defined.*`),
 			},
@@ -452,45 +499,56 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
-				  name        = "%s"
-				  description = "multiple mixed metrics"
-				  timeslice_metric_indicator {
-				    index = "my-index"
-				    timestamp_field = "@timestamp"
-				    metric {
-				      metrics {
-				        name        = "A"
-				        aggregation = "sum"
-				        field       = "latency"
-				      }
-				      metrics {
-				        name        = "B"
-				        aggregation = "percentile"
-				        field       = "latency"
-				        percentile  = 99
-				      }
-				      metrics {
-				        name        = "C"
-				        aggregation = "doc_count"
-				      }
-				      equation   = "A + B + C"
-				      comparator = "GT"
-				      threshold  = 100
-				    }
-				  }
-				  budgeting_method = "timeslices"
-				  objective {
-				    target           = 0.95
-				    timeslice_target = 0.95
-				    timeslice_window = "5m"
-				  }
-				  time_window {
-				    duration = "7d"
-				    type     = "rolling"
-				  }
-				}
-				`, sloName),
+				Config: fmt.Sprintf(`
+					provider "elasticstack" {
+						elasticsearch {}
+						kibana {}
+					}
+					
+					resource "elasticstack_elasticsearch_index" "my_index" {
+						name = "my-index"
+						deletion_protection = false
+					}
+					resource "elasticstack_kibana_slo" "test_slo" {
+						name        = "%s"
+						description = "multiple mixed metrics"
+						timeslice_metric_indicator {
+							index = "my-index"
+							timestamp_field = "@timestamp"
+							metric {
+								metrics {
+									name        = "A"
+									aggregation = "sum"
+									field       = "latency"
+								}
+								metrics {
+									name        = "B"
+									aggregation = "percentile"
+									field       = "latency"
+									percentile  = 99
+								}
+								metrics {
+									name        = "C"
+									aggregation = "doc_count"
+								}
+								equation   = "A + B + C"
+								comparator = "GT"
+								threshold  = 100
+							}
+						}
+						budgeting_method = "timeslices"
+						objective {
+							target           = 0.95
+							timeslice_target = 0.95
+							timeslice_window = "5m"
+						}
+						time_window {
+							duration = "7d"
+							type     = "rolling"
+						}
+						depends_on = [elasticstack_elasticsearch_index.my_index]
+					}
+ 				`, sloName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "sum"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.1.aggregation", "percentile"),
