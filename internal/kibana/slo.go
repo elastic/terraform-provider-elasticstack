@@ -391,10 +391,12 @@ func getSchema() map[string]*schema.Schema {
 			},
 		},
 		"timeslice_metric_indicator": {
-			Description: "Defines a timeslice metric indicator for SLO.",
-			Type:        schema.TypeList,
-			Optional:    true,
-			MaxItems:    1,
+			Description:  "Defines a timeslice metric indicator for SLO.",
+			Type:         schema.TypeList,
+			MinItems:     1,
+			MaxItems:     1,
+			Optional:     true,
+			ExactlyOneOf: indicatorAddresses,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"index": {

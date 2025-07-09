@@ -310,8 +310,9 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
-			{ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
 				  name        = "%s"
 				  description = "percentile timeslice metric"
@@ -448,8 +449,9 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
-			{ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
 				  name        = "%s"
 				  description = "multiple mixed metrics"
