@@ -1,0 +1,23 @@
+---
+subcategory: "Kibana"
+layout: ""
+page_title: "Elasticstack: elasticstack_apm_agent_configuration Resource"
+description: |-
+  Creates or updates an APM agent configuration
+---
+
+# Resource: elasticstack_apm_agent_configuration
+
+Creates or updates a an APM agent configuration. See https://www.elastic.co/docs/solutions/observability/apm/apm-agent-central-configuration
+
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_apm_agent_configuration/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+Import is supported using the following syntax:
+
+{{ codefile "shell" "examples/resources/elasticstack_apm_agent_configuration/import.sh" }}

@@ -1,0 +1,9 @@
+* The project is a Terraform provider, written in Golang
+* The provider manages Elastic Stack resources
+* There is a mix of SDK, and plugin framework resources
+* New resources should be written with the Terraform plugin framework
+* Plugin framework resources should:
+    * Follow the example set in /internal/elasticsearch/security/system_user
+    * Be contained within their own module
+    * Have the main concepts split across their own files
+    * Include acceptance tests
