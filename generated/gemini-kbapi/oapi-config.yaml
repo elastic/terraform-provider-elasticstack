@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
+
+package: geminikbapi
+output: client.go
+generate:
+  client: true
+  models: true
+output-options:
+  include-operation-ids:
+    - get-fleet-agent-policies
+    - post-fleet-agent-policies
+    - get-fleet-agent-policies-agentpolicyid
+    - put-fleet-agent-policies-agentpolicyid
+    - post-fleet-agent-policies-delete
+    - get-fleet-enrollment-api-keys
+    - get-fleet-epm-packages
+    - post-fleet-epm-packages
+    - get-fleet-epm-packages-pkgname-pkgversion
+    - post-fleet-epm-packages-pkgname-pkgversion
+    - delete-fleet-epm-packages-pkgname-pkgversion
+    - get-fleet-fleet-server-hosts
+    - post-fleet-fleet-server-hosts
+    - get-fleet-fleet-server-hosts-itemid
+    - put-fleet-fleet-server-hosts-itemid
+    - delete-fleet-fleet-server-hosts-itemid
+    - get-fleet-outputs
+    - post-fleet-outputs
+    - get-fleet-outputs-outputid
+    - put-fleet-outputs-outputid
+    - delete-fleet-outputs-outputid
+    - get-fleet-package-policies
+    - post-fleet-package-policies
+    - get-fleet-package-policies-packagepolicyid
+    - put-fleet-package-policies-packagepolicyid
+    - delete-fleet-package-policies-packagepolicyid
+    - get-status
+    - post-parameters
+    - get-parameter
+    - put-parameter
+    - delete-parameter
+    - getAllDataViewsDefault
+    - createDataViewDefaultw
+    - getDataViewDefault
+    - updateDataViewDefault
+    - deleteDataViewDefault

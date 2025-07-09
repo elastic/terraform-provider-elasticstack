@@ -1,0 +1,9 @@
+overlay: 1.0.0
+info:
+  title: Patches the Kibana spec to work with oapi-codegen
+  version: 1.0.0
+actions:
+  - target: "$..properties[?(@.nullable==true)]"
+    description: Set x-omitempty on all nullable properties
+    update:
+      x-omitempty: true
