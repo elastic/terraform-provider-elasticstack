@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add `elasticstack_apm_agent_configuration` resource ([#1196](https://github.com/elastic/terraform-provider-elasticstack/pull/1196))
+
 ## [0.11.16] - 2025-07-09
 
 - Add `headers` for the provider connection ([#1057](https://github.com/elastic/terraform-provider-elasticstack/pull/1057))
