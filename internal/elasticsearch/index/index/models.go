@@ -290,7 +290,7 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 		Timeout:       timeout,
 	}
 
-	if serverFlavor != "serverless" {
+	if serverFlavor != clients.ServerlessFlavor {
 		params.WaitForActiveShards = model.WaitForActiveShards.ValueString()
 	}
 
