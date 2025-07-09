@@ -407,12 +407,46 @@ func (a *ApiClient) versionFromElasticsearch(ctx context.Context) (*version.Vers
 }
 
 func (a *ApiClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics) {
+	if a.elasticsearch != nil {
+		return a.flavorFromElasticsearch(ctx)
+	}
+
+	return a.flavorFromKibana()
+}
+
+func (a *ApiClient) flavorFromElasticsearch(ctx context.Context) (string, diag.Diagnostics) {
 	info, diags := a.serverInfo(ctx)
 	if diags.HasError() {
 		return "", diags
 	}
 
 	return info.Version.BuildFlavor, nil
+}
+
+func (a *ApiClient) flavorFromKibana() (string, diag.Diagnostics) {
+	kibClient, err := a.GetKibanaClient()
+	if err != nil {
+		return "", diag.Errorf("failed to get flavor from Kibana API: %s, "+
+			"please ensure a working 'kibana' endpoint is configured", err.Error())
+	}
+
+	status, err := kibClient.KibanaStatus.Get()
+	if err != nil {
+		return "", diag.Errorf("failed to get flavor from Kibana API: %s, "+
+			"Please ensure a working 'kibana' endpoint is configured", err.Error())
+	}
+
+	vMap, ok := status["version"].(map[string]interface{})
+	if !ok {
+		return "", diag.Errorf("failed to get flavor from Kibana API")
+	}
+
+	serverFlavor, ok := vMap["build_flavor"].(string)
+	if !ok {
+		return "", diag.Errorf("failed to get build flavor from Kibana status")
+	}
+
+	return serverFlavor, nil
 }
 
 func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
