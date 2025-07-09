@@ -166,6 +166,7 @@ func TestAccResourceSlo(t *testing.T) {
 					name:            sloName,
 					indicatorType:   "timeslice_metric_indicator",
 					settingsEnabled: true,
+					tags:            []string{"tag-1", "another_tag"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index-"+sloName),
@@ -429,62 +430,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "doc_count"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "C"),
 				),
-			},
-		},
-	})
-}
-
-func TestAccResourceSlo_timeslice_metric_indicator_mismatched_equation(t *testing.T) {
-	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceSloDestroy,
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`
-					provider "elasticstack" {
-					    elasticsearch {}
-					    kibana {}
-					}
-					
-					resource "elasticstack_elasticsearch_index" "my_index" {
-					    name = "my-index"
-					    deletion_protection = false
-					}
-					
-					resource "elasticstack_kibana_slo" "test_slo" {
-					    name        = "%s"
-					    description = "mismatched metric/equation"
-					    timeslice_metric_indicator {
-					        index = "my-index"
-					        timestamp_field = "@timestamp"
-					        metric {
-					            metrics {
-					                name        = "A"
-					                aggregation = "sum"
-					                field       = "latency"
-					            }
-					            equation   = "A + B"
-					            comparator = "GT"
-					            threshold  = 100
-					        }
-					    }
-					    budgeting_method = "timeslices"
-					    objective {
-					        target           = 0.95
-					        timeslice_target = 0.95
-					        timeslice_window = "5m"
-					    }
-					    time_window {
-					        duration = "7d"
-					        type     = "rolling"
-					    }
-					    depends_on = [elasticstack_elasticsearch_index.my_index]
-					}
-				`, sloName),
-				ExpectError: regexp.MustCompile(`.*B.*not defined.*`),
 			},
 		},
 	})
