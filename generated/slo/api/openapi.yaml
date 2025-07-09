@@ -1702,8 +1702,8 @@ components:
       type: object
     indicator_properties_timeslice_metric_params_metric_metrics_inner:
       anyOf:
-      - $ref: '#/components/schemas/timeslice_metric_percentile_metric'
       - $ref: '#/components/schemas/timeslice_metric_basic_metric_with_field'
+      - $ref: '#/components/schemas/timeslice_metric_percentile_metric'
       - $ref: '#/components/schemas/timeslice_metric_doc_count_metric'
       discriminator:
         mapping:
