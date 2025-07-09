@@ -34,6 +34,7 @@ type agentPolicyModel struct {
 	MonitorMetrics     types.Bool   `tfsdk:"monitor_metrics"`
 	SysMonitoring      types.Bool   `tfsdk:"sys_monitoring"`
 	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
+	UnenrollTimeout    types.Int64  `tfsdk:"unenroll_timeout"`
 	GlobalDataTags     types.Map    `tfsdk:"global_data_tags"` //> globalDataTagsModel
 }
 
@@ -67,6 +68,11 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
+
+	if data.UnenrollTimeout != nil {
+		model.UnenrollTimeout = types.Int64Value(int64(*data.UnenrollTimeout))
+	}
+
 	if utils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
 		var map0 = make(map[string]globalDataTagsItemModel)
@@ -168,6 +174,10 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 		Namespace:          model.Namespace.ValueString(),
 	}
 
+	if utils.IsKnown(model.UnenrollTimeout) {
+		body.UnenrollTimeout = utils.Pointer(float32(model.UnenrollTimeout.ValueInt64()))
+	}
+
 	tags, diags := model.convertGlobalDataTags(ctx, serverVersion)
 	if diags.HasError() {
 		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
@@ -195,6 +205,10 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
+	}
+
+	if utils.IsKnown(model.UnenrollTimeout) {
+		body.UnenrollTimeout = utils.Pointer(float32(model.UnenrollTimeout.ValueInt64()))
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, serverVersion)

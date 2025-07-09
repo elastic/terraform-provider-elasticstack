@@ -86,6 +86,10 @@ func getSchema() schema.Schema {
 				Description: "Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.",
 				Optional:    true,
 			},
+			"unenroll_timeout": schema.Int64Attribute{
+				Description: "The timeout in seconds for an agent to re-enroll before it is unenrolled.",
+				Optional:    true,
+			},
 			"sys_monitoring": schema.BoolAttribute{
 				Description: "Enable collection of system logs and metrics.",
 				Optional:    true,
