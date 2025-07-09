@@ -29,6 +29,9 @@ func TestAccResourceSlo(t *testing.T) {
 	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
+	slo8_12Constraints, err := version.NewConstraint(">=8.12.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	require.NoError(t, err)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -155,6 +158,20 @@ func TestAccResourceSlo(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.1", "another_tag"),
 				),
 			},
+			{
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_12Constraints),
+				Config: getSLOConfig(sloVars{
+					name:            sloName,
+					indicatorType:   "timeslice_metric_indicator",
+					settingsEnabled: true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index-"+sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.name", "A"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "sum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "A"),
+				),
+			},
 		},
 	})
 }
@@ -231,6 +248,197 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 					// resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.0", "some.field"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.1", "some.other.field"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSloDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
+				  name        = "%s"
+				  description = "basic timeslice metric"
+				  timeslice_metric_indicator {
+				    index = "my-index"
+				    timestamp_field = "@timestamp"
+				    metric {
+				      metrics {
+				        name        = "A"
+				        aggregation = "sum"
+				        field       = "latency"
+				      }
+				      equation   = "A"
+				      comparator = "GT"
+				      threshold  = 100
+				    }
+				  }
+				}
+				`, sloName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "sum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.field", "latency"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "A"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSloDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
+				  name        = "%s"
+				  description = "percentile timeslice metric"
+				  timeslice_metric_indicator {
+				    index = "my-index"
+				    timestamp_field = "@timestamp"
+				    metric {
+				      metrics {
+				        name        = "B"
+				        aggregation = "percentile"
+				        field       = "latency"
+				        percentile  = 99
+				      }
+				      equation   = "B"
+				      comparator = "LT"
+				      threshold  = 200
+				    }
+				  }
+				}
+				`, sloName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "percentile"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.percentile", "99"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "B"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSloDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
+				  name        = "%s"
+				  description = "doc_count timeslice metric"
+				  timeslice_metric_indicator {
+				    index = "my-index"
+				    timestamp_field = "@timestamp"
+				    metric {
+				      metrics {
+				        name        = "C"
+				        aggregation = "doc_count"
+				      }
+				      equation   = "C"
+				      comparator = "GTE"
+				      threshold  = 10
+				    }
+				  }
+				}
+				`, sloName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "doc_count"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "C"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSlo_timeslice_metric_indicator_mismatched_equation(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSloDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
+				  name        = "%s"
+				  description = "mismatched metric/equation"
+				  timeslice_metric_indicator {
+				    index = "my-index"
+				    timestamp_field = "@timestamp"
+				    metric {
+				      metrics {
+				        name        = "A"
+				        aggregation = "sum"
+				        field       = "latency"
+				      }
+				      equation   = "A + B"
+				      comparator = "GT"
+				      threshold  = 100
+				    }
+				  }
+				}
+				`, sloName),
+				ExpectError: regexp.MustCompile(`.*B.*not defined.*`),
+			},
+		},
+	})
+}
+
+func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSloDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`resource "elasticstack_kibana_slo" "test_slo" {
+				  name        = "%s"
+				  description = "multiple mixed metrics"
+				  timeslice_metric_indicator {
+				    index = "my-index"
+				    timestamp_field = "@timestamp"
+				    metric {
+				      metrics {
+				        name        = "A"
+				        aggregation = "sum"
+				        field       = "latency"
+				      }
+				      metrics {
+				        name        = "B"
+				        aggregation = "percentile"
+				        field       = "latency"
+				        percentile  = 99
+				      }
+				      metrics {
+				        name        = "C"
+				        aggregation = "doc_count"
+				      }
+				      equation   = "A + B + C"
+				      comparator = "GT"
+				      threshold  = 100
+				    }
+				  }
+				}
+				`, sloName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "sum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.1.aggregation", "percentile"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.2.aggregation", "doc_count"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "A + B + C"),
 				),
 			},
 		},
@@ -536,6 +744,23 @@ func getSLOConfig(vars sloVars) string {
 						field = "processor.accepted"
 				}
 				equation = "A + B"
+			}
+		}
+		  `, vars.name)
+		case "timeslice_metric_indicator":
+			indicator = fmt.Sprintf(`
+		timeslice_metric_indicator {
+			index = "my-index-%s"
+			timestamp_field = "@timestamp"
+			metric {
+				metrics {
+					name = "A"
+					aggregation = "sum"
+					field = "latency"
+				}
+				equation = "A"
+				comparator = "GT"
+				threshold = 100
 			}
 		}
 		  `, vars.name)
