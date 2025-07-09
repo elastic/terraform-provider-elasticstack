@@ -1362,9 +1362,9 @@ type NewOutputKafka struct {
 	CaTrustedFingerprint *string                    `json:"ca_trusted_fingerprint,omitempty"`
 	ClientId             *string                    `json:"client_id,omitempty"`
 	Compression          *NewOutputKafkaCompression `json:"compression,omitempty"`
-	CompressionLevel     interface{}                `json:"compression_level"`
+	CompressionLevel     float32                    `json:"compression_level"`
 	ConfigYaml           *string                    `json:"config_yaml"`
-	ConnectionType       interface{}                `json:"connection_type"`
+	ConnectionType       string                     `json:"connection_type"`
 	Hash                 *struct {
 		Hash   *string `json:"hash,omitempty"`
 		Random *bool   `json:"random,omitempty"`
@@ -1382,7 +1382,7 @@ type NewOutputKafka struct {
 	Key                 *string                  `json:"key,omitempty"`
 	Name                string                   `json:"name"`
 	Partition           *NewOutputKafkaPartition `json:"partition,omitempty"`
-	Password            interface{}              `json:"password"`
+	Password            string                   `json:"password"`
 	ProxyId             *string                  `json:"proxy_id,omitempty"`
 	Random              *struct {
 		GroupEvents *float32 `json:"group_events,omitempty"`
@@ -1405,7 +1405,7 @@ type NewOutputKafka struct {
 	Timeout  *float32           `json:"timeout,omitempty"`
 	Topic    *string            `json:"topic,omitempty"`
 	Type     NewOutputKafkaType `json:"type"`
-	Username interface{}        `json:"username"`
+	Username string             `json:"username"`
 	Version  *string            `json:"version,omitempty"`
 }
 
@@ -1649,9 +1649,9 @@ type OutputKafka struct {
 	CaTrustedFingerprint *string                     `json:"ca_trusted_fingerprint"`
 	ClientId             *string                     `json:"client_id,omitempty"`
 	Compression          *OutputKafkaCompression     `json:"compression,omitempty"`
-	CompressionLevel     interface{}                 `json:"compression_level"`
+	CompressionLevel     float32                     `json:"compression_level"`
 	ConfigYaml           *string                     `json:"config_yaml"`
-	ConnectionType       interface{}                 `json:"connection_type"`
+	ConnectionType       string                      `json:"connection_type"`
 	Hash                 *OutputKafka_Hash           `json:"hash,omitempty"`
 	Headers              *[]OutputKafka_Headers_Item `json:"headers,omitempty"`
 	Hosts                []string                    `json:"hosts"`
@@ -1663,7 +1663,7 @@ type OutputKafka struct {
 	Key                  *string                     `json:"key,omitempty"`
 	Name                 string                      `json:"name"`
 	Partition            *OutputKafkaPartition       `json:"partition,omitempty"`
-	Password             interface{}                 `json:"password"`
+	Password             string                      `json:"password"`
 	ProxyId              *string                     `json:"proxy_id"`
 	Random               *OutputKafka_Random         `json:"random,omitempty"`
 	RequiredAcks         *OutputKafkaRequiredAcks    `json:"required_acks,omitempty"`
@@ -1675,7 +1675,7 @@ type OutputKafka struct {
 	Timeout              *float32                    `json:"timeout,omitempty"`
 	Topic                *string                     `json:"topic,omitempty"`
 	Type                 OutputKafkaType             `json:"type"`
-	Username             interface{}                 `json:"username"`
+	Username             string                      `json:"username"`
 	Version              *string                     `json:"version,omitempty"`
 	AdditionalProperties map[string]interface{}      `json:"-"`
 }
@@ -2679,9 +2679,9 @@ type UpdateOutputKafka struct {
 	CaTrustedFingerprint *string                       `json:"ca_trusted_fingerprint,omitempty"`
 	ClientId             *string                       `json:"client_id,omitempty"`
 	Compression          *UpdateOutputKafkaCompression `json:"compression,omitempty"`
-	CompressionLevel     interface{}                   `json:"compression_level"`
+	CompressionLevel     float32                       `json:"compression_level"`
 	ConfigYaml           *string                       `json:"config_yaml"`
-	ConnectionType       interface{}                   `json:"connection_type"`
+	ConnectionType       string                        `json:"connection_type"`
 	Hash                 *struct {
 		Hash   *string `json:"hash,omitempty"`
 		Random *bool   `json:"random,omitempty"`
@@ -2698,7 +2698,7 @@ type UpdateOutputKafka struct {
 	Key                 *string                     `json:"key,omitempty"`
 	Name                string                      `json:"name"`
 	Partition           *UpdateOutputKafkaPartition `json:"partition,omitempty"`
-	Password            interface{}                 `json:"password"`
+	Password            string                      `json:"password"`
 	ProxyId             *string                     `json:"proxy_id,omitempty"`
 	Random              *struct {
 		GroupEvents *float32 `json:"group_events,omitempty"`
@@ -2721,7 +2721,7 @@ type UpdateOutputKafka struct {
 	Timeout  *float32               `json:"timeout,omitempty"`
 	Topic    *string                `json:"topic,omitempty"`
 	Type     *UpdateOutputKafkaType `json:"type,omitempty"`
-	Username interface{}            `json:"username"`
+	Username string                 `json:"username"`
 	Version  *string                `json:"version,omitempty"`
 }
 

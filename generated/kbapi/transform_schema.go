@@ -932,8 +932,15 @@ func transformFleetPaths(schema *Schema) {
 		*/
 
 		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s_kafka.properties", name))
-		for _, key := range []string{"compression_level", "connection_type", "password", "username"} {
-			props.Set(key, Map{})
+		for key, finalType := range map[string]string{
+			"compression_level": "number",
+			"connection_type":   "string",
+			"password":          "string",
+			"username":          "string",
+		} {
+			props.Set(key, Map{
+				"type": finalType,
+			})
 		}
 	}
 

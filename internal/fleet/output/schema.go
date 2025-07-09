@@ -47,7 +47,7 @@ func getSchema() schema.Schema {
 				Description: "The output type.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("elasticsearch", "logstash"),
+					stringvalidator.OneOf("elasticsearch", "logstash", "kafka"),
 				},
 			},
 			"hosts": schema.ListAttribute{
@@ -85,6 +85,63 @@ func getSchema() schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
+			"kafka": schema.ListNestedBlock{
+				Description: "Kafka output configuration.",
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"topic": schema.StringAttribute{
+							Description: "The Kafka topic to publish events to.",
+							Required:    true,
+						},
+						"client_id": schema.StringAttribute{
+							Description: "The client ID to use when connecting to Kafka.",
+							Optional:    true,
+						},
+						"version": schema.StringAttribute{
+							Description: "The Kafka protocol version to use.",
+							Optional:    true,
+						},
+						"compression": schema.StringAttribute{
+							Description: "The compression codec to use.",
+							Optional:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("gzip", "snappy", "lz4"),
+							},
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"sasl": schema.ListNestedBlock{
+							Description: "SASL authentication configuration.",
+							Validators: []validator.List{
+								listvalidator.SizeAtMost(1),
+							},
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"mechanism": schema.StringAttribute{
+										Description: "The SASL mechanism to use.",
+										Required:    true,
+										Validators: []validator.String{
+											stringvalidator.OneOf("PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"),
+										},
+									},
+									"username": schema.StringAttribute{
+										Description: "The username for SASL authentication.",
+										Required:    true,
+									},
+									"password": schema.StringAttribute{
+										Description: "The password for SASL authentication.",
+										Required:    true,
+										Sensitive:   true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"ssl": schema.ListNestedBlock{
 				Description: "SSL configuration.",
 				Validators: []validator.List{

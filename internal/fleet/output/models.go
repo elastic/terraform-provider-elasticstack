@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -23,12 +24,27 @@ type outputModel struct {
 	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
 	Ssl                  types.List   `tfsdk:"ssl"` //> outputSslModel
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
+	Kafka                types.List   `tfsdk:"kafka"` //> kafkaModel
 }
 
 type outputSslModel struct {
 	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` //> string
 	Certificate            types.String `tfsdk:"certificate"`
 	Key                    types.String `tfsdk:"key"`
+}
+
+type kafkaSaslModel struct {
+	Mechanism types.String `tfsdk:"mechanism"`
+	Username  types.String `tfsdk:"username"`
+	Password  types.String `tfsdk:"password"`
+}
+
+type kafkaModel struct {
+	Topic       types.String `tfsdk:"topic"`
+	ClientID    types.String `tfsdk:"client_id"`
+	Version     types.String `tfsdk:"version"`
+	Compression types.String `tfsdk:"compression"`
+	Sasl        types.List   `tfsdk:"sasl"` //> kafkaSaslModel
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
@@ -44,11 +60,11 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 				Certificate:            types.StringPointerValue(ssl.Certificate),
 				Key:                    types.StringPointerValue(ssl.Key),
 			}}
-			list, nd := types.ListValueFrom(ctx, getSslAttrTypes(), sslModels)
+			list, nd := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getSslAttrs()}, sslModels)
 			diags.Append(nd...)
 			return list
 		} else {
-			return types.ListNull(getSslAttrTypes())
+			return types.ListNull(types.ObjectType{AttrTypes: getSslAttrs()})
 		}
 	}
 
@@ -96,6 +112,50 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 		model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 		model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 		model.Ssl = doSsl(data.Ssl)
+
+	case "kafka":
+		data, err := union.AsOutputKafka()
+		if err != nil {
+			diags.AddError(err.Error(), "")
+			return
+		}
+
+		model.ID = types.StringPointerValue(data.Id)
+		model.OutputID = types.StringPointerValue(data.Id)
+		model.Name = types.StringValue(data.Name)
+		model.Type = types.StringValue(string(data.Type))
+		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
+		model.CaSha256 = types.StringPointerValue(data.CaSha256)
+		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
+		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
+		model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
+		model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
+		model.Ssl = doSsl(data.Ssl)
+
+		var saslList types.List
+		if data.Sasl != nil {
+			saslModels := []kafkaSaslModel{{
+				Mechanism: types.StringValue(string(*data.Sasl.Mechanism)),
+				Username:  types.StringValue(data.Username),
+				Password:  types.StringValue(data.Password),
+			}}
+			var nd diag.Diagnostics
+			saslList, nd = types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getKafkaSaslAttrTypes()}, saslModels)
+			diags.Append(nd...)
+		} else {
+			saslList = types.ListNull(types.ObjectType{AttrTypes: getKafkaSaslAttrTypes()})
+		}
+
+		kafkaModels := []kafkaModel{{
+			Topic:       types.StringPointerValue(data.Topic),
+			ClientID:    types.StringPointerValue(data.ClientId),
+			Version:     types.StringPointerValue(data.Version),
+			Compression: types.StringValue(string(*data.Compression)),
+			Sasl:        saslList,
+		}}
+		list, nd := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getKafkaAttrTypes()}, kafkaModels)
+		diags.Append(nd...)
+		model.Kafka = list
 
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %s", discriminator), "")
@@ -156,6 +216,57 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union kbapi.NewO
 		}
 
 		err := union.FromNewOutputLogstash(body)
+		if err != nil {
+			diags.AddError(err.Error(), "")
+			return
+		}
+
+	case "kafka":
+		body := kbapi.NewOutputKafka{
+			Type:                 kbapi.NewOutputKafkaTypeKafka,
+			CaSha256:             model.CaSha256.ValueStringPointer(),
+			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
+			Id:                   model.OutputID.ValueStringPointer(),
+			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+			Name:                 model.Name.ValueString(),
+			Ssl:                  doSsl(),
+		}
+
+		if utils.IsKnown(model.Kafka) {
+			kafkaModels := utils.ListTypeAs[kafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
+			if len(kafkaModels) > 0 {
+				k := kafkaModels[0]
+				body.Topic = k.Topic.ValueStringPointer()
+				body.ClientId = k.ClientID.ValueStringPointer()
+				body.Version = k.Version.ValueStringPointer()
+				compression := k.Compression.ValueString()
+				if compression != "" {
+					body.Compression = utils.Pointer(kbapi.NewOutputKafkaCompression(compression))
+				}
+
+				if utils.IsKnown(k.Sasl) {
+					saslModels := utils.ListTypeAs[kafkaSaslModel](ctx, k.Sasl, path.Root("sasl"), &diags)
+					if len(saslModels) > 0 {
+						s := saslModels[0]
+						body.Username = s.Username.ValueString()
+						body.Password = s.Password.ValueString()
+						mechanism := s.Mechanism.ValueStringPointer()
+						if mechanism != nil {
+							body.Sasl = &struct {
+								Mechanism *kbapi.NewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
+							}{
+								Mechanism: (*kbapi.NewOutputKafkaSaslMechanism)(mechanism),
+							}
+						}
+					}
+				}
+			}
+		}
+
+		err := union.FromNewOutputKafka(body)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return
@@ -223,9 +334,85 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context) (union kbapi.Upda
 			return
 		}
 
+	case "kafka":
+		body := kbapi.UpdateOutputKafka{
+			Type:                 utils.Pointer(kbapi.Kafka),
+			CaSha256:             model.CaSha256.ValueStringPointer(),
+			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
+			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+			Name:                 model.Name.ValueString(),
+			Ssl:                  doSsl(),
+		}
+
+		if utils.IsKnown(model.Kafka) {
+			kafkaModels := utils.ListTypeAs[kafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
+			if len(kafkaModels) > 0 {
+				k := kafkaModels[0]
+				body.Topic = k.Topic.ValueStringPointer()
+				body.ClientId = k.ClientID.ValueStringPointer()
+				body.Version = k.Version.ValueStringPointer()
+				compression := k.Compression.ValueString()
+				if compression != "" {
+					body.Compression = utils.Pointer(kbapi.UpdateOutputKafkaCompression(compression))
+				}
+
+				if utils.IsKnown(k.Sasl) {
+					saslModels := utils.ListTypeAs[kafkaSaslModel](ctx, k.Sasl, path.Root("sasl"), &diags)
+					if len(saslModels) > 0 {
+						s := saslModels[0]
+						body.Username = s.Username.ValueString()
+						body.Password = s.Password.ValueString()
+						mechanism := s.Mechanism.ValueStringPointer()
+						if mechanism != nil {
+							body.Sasl = &struct {
+								Mechanism *kbapi.UpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
+							}{
+								Mechanism: (*kbapi.UpdateOutputKafkaSaslMechanism)(mechanism),
+							}
+						}
+					}
+				}
+			}
+		}
+
+		err := union.FromUpdateOutputKafka(body)
+		if err != nil {
+			diags.AddError(err.Error(), "")
+			return
+		}
+
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")
 	}
 
 	return
+}
+
+func getSslAttrs() map[string]attr.Type {
+	return map[string]attr.Type{
+		"certificate_authorities": types.ListType{ElemType: types.StringType},
+		"certificate":             types.StringType,
+		"key":                     types.StringType,
+	}
+}
+
+func getKafkaSaslAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"mechanism": types.StringType,
+		"username":  types.StringType,
+		"password":  types.StringType,
+	}
+}
+
+func getKafkaAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"topic":       types.StringType,
+		"client_id":   types.StringType,
+		"version":     types.StringType,
+		"compression": types.StringType,
+		"sasl":        types.ListType{ElemType: types.ObjectType{AttrTypes: getKafkaSaslAttrTypes()}},
+	}
 }
