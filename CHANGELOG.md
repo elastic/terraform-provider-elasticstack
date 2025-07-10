@@ -1,6 +1,6 @@
 ## [Unreleased]
 
-- Add support for `timeslice_metric_indicator` in `elasticstack_kibana_slo` ([#1201](https://github.com/elastic/terraform-provider-elasticstack/pull/1195))
+- Add support for `timeslice_metric_indicator` in `elasticstack_kibana_slo` ([#1195](https://github.com/elastic/terraform-provider-elasticstack/pull/1195))
 
 ## [0.11.16] - 2025-07-09
 
