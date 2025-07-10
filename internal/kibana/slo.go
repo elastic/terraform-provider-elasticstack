@@ -3,10 +3,10 @@ package kibana
 import (
 	"context"
 	"fmt"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -757,7 +757,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 				Params: slo.IndicatorPropertiesTimesliceMetricParams{
 					Index:          params["index"].(string),
 					TimestampField: params["timestamp_field"].(string),
-					Filter:         getOrNilString("filter", d),
+					Filter:         getOrNilString("timeslice_metric_indicator.0.filter", d),
 					Metric: slo.IndicatorPropertiesTimesliceMetricParamsMetric{
 						Metrics:    metrics,
 						Equation:   metricBlock["equation"].(string),
