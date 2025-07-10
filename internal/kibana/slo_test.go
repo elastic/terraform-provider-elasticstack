@@ -31,9 +31,6 @@ func TestAccResourceSlo(t *testing.T) {
 	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
-	slo8_12Constraints, err := version.NewConstraint(">=" + sloTimesliceMetricsMinVersion.String())
-	require.NoError(t, err)
-
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -161,7 +158,7 @@ func TestAccResourceSlo(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_12Constraints),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				Config: getSLOConfig(sloVars{
 					name:            sloName,
 					indicatorType:   "timeslice_metric_indicator",
