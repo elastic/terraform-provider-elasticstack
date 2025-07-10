@@ -969,6 +969,18 @@ components:
                   description: List of metrics with their name, aggregation type, and field.
                   type: array
                   items:
+                    discriminator:
+                      propertyName: aggregation
+                      mapping:
+                        percentile: '#/components/schemas/timeslice_metric_percentile_metric'
+                        doc_count: '#/components/schemas/timeslice_metric_doc_count_metric'
+                        sum: '#/components/schemas/timeslice_metric_basic_metric_with_field'
+                        avg: '#/components/schemas/timeslice_metric_basic_metric_with_field'
+                        min: '#/components/schemas/timeslice_metric_basic_metric_with_field'
+                        max: '#/components/schemas/timeslice_metric_basic_metric_with_field'
+                        std_deviation: '#/components/schemas/timeslice_metric_basic_metric_with_field'
+                        last_value: '#/components/schemas/timeslice_metric_basic_metric_with_field'
+                        cardinality: '#/components/schemas/timeslice_metric_basic_metric_with_field'
                     anyOf:
                       - $ref: '#/components/schemas/timeslice_metric_basic_metric_with_field'
                       - $ref: '#/components/schemas/timeslice_metric_percentile_metric'
