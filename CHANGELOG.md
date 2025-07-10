@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add support for `timeslice_metric_indicator` in `elasticstack_kibana_slo` ([#1201](https://github.com/elastic/terraform-provider-elasticstack/pull/1195))
+
 ## [0.11.16] - 2025-07-09
 
 - Add `headers` for the provider connection ([#1057](https://github.com/elastic/terraform-provider-elasticstack/pull/1057))
