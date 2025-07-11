@@ -22,12 +22,13 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	sVersion, e := r.client.ServerVersion(ctx)
-	if e != nil {
+	feat, diags := r.buildFeatures(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	body, diags := planModel.toAPICreateModel(ctx, sVersion)
+	body, diags := planModel.toAPICreateModel(ctx, feat)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

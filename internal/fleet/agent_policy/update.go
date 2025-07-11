@@ -22,15 +22,13 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	sVersion, e := r.client.ServerVersion(ctx)
-	if e != nil {
-		for _, a := range e {
-			resp.Diagnostics.AddError(a.Summary, a.Detail)
-		}
+	feat, diags := r.buildFeatures(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx, sVersion)
+	body, diags := planModel.toAPIUpdateModel(ctx, feat)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

@@ -8,12 +8,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+type features struct {
+	SupportsGlobalDataTags    bool
+	SupportsSupportsAgentless bool
+}
 
 type globalDataTagsItemModel struct {
 	StringValue types.String  `tfsdk:"string_value"`
@@ -34,6 +38,7 @@ type agentPolicyModel struct {
 	MonitorMetrics     types.Bool   `tfsdk:"monitor_metrics"`
 	SysMonitoring      types.Bool   `tfsdk:"sys_monitoring"`
 	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
+	SupportsAgentless  types.Bool   `tfsdk:"supports_agentless"`
 	GlobalDataTags     types.Map    `tfsdk:"global_data_tags"` //> globalDataTagsModel
 }
 
@@ -67,6 +72,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.MonitoringOutputId = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
+	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
 	if utils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
 		var map0 = make(map[string]globalDataTagsItemModel)
@@ -99,18 +105,18 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 
 // convertGlobalDataTags converts the global data tags from terraform model to API model
 // and performs version validation
-func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, serverVersion *version.Version) (*[]kbapi.AgentPolicyGlobalDataTagsItem, diag.Diagnostics) {
+func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat features) (*[]kbapi.AgentPolicyGlobalDataTagsItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if len(model.GlobalDataTags.Elements()) == 0 {
-		if serverVersion.GreaterThanOrEqual(MinVersionGlobalDataTags) {
+		if feat.SupportsGlobalDataTags {
 			emptyList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0)
 			return &emptyList, diags
 		}
 		return nil, diags
 	}
 
-	if serverVersion.LessThan(MinVersionGlobalDataTags) {
+	if !feat.SupportsGlobalDataTags {
 		diags.AddError("global_data_tags ES version error", fmt.Sprintf("Global data tags are only supported in Elastic Stack %s and above", MinVersionGlobalDataTags))
 		return nil, diags
 	}
@@ -146,7 +152,7 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, server
 	return &itemsList, diags
 }
 
-func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat features) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
 
 	if model.MonitorLogs.ValueBool() {
@@ -154,6 +160,16 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 	}
 	if model.MonitorMetrics.ValueBool() {
 		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledMetrics)
+	}
+
+	if utils.IsKnown(model.SupportsAgentless) && !feat.SupportsSupportsAgentless {
+		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+			diag.NewAttributeErrorDiagnostic(
+				path.Root("supports_agentless"),
+				"Unsupported Elasticsearch version",
+				fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+			),
+		}
 	}
 
 	body := kbapi.PostFleetAgentPoliciesJSONRequestBody{
@@ -166,9 +182,10 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
+		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
 	}
 
-	tags, diags := model.convertGlobalDataTags(ctx, serverVersion)
+	tags, diags := model.convertGlobalDataTags(ctx, feat)
 	if diags.HasError() {
 		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 	}
@@ -177,13 +194,23 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, serverVersi
 	return body, nil
 }
 
-func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersion *version.Version) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat features) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.Logs)
 	}
 	if model.MonitorMetrics.ValueBool() {
 		monitoring = append(monitoring, kbapi.Metrics)
+	}
+
+	if utils.IsKnown(model.SupportsAgentless) && !feat.SupportsSupportsAgentless {
+		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+			diag.NewAttributeErrorDiagnostic(
+				path.Root("supports_agentless"),
+				"Unsupported Elasticsearch version",
+				fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+			),
+		}
 	}
 
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
@@ -195,9 +222,10 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, serverVersi
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
+		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
 	}
 
-	tags, diags := model.convertGlobalDataTags(ctx, serverVersion)
+	tags, diags := model.convertGlobalDataTags(ctx, feat)
 	if diags.HasError() {
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}

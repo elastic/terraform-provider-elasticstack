@@ -56,6 +56,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `monitoring_output_id` (String) The identifier for monitoring output.
 - `policy_id` (String) Unique identifier of the agent policy.
 - `skip_destroy` (Boolean) Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.
+- `supports_agentless` (Boolean) Set to true to enable agentless data collection.
 - `sys_monitoring` (Boolean) Enable collection of system logs and metrics.
 
 ### Read-Only
