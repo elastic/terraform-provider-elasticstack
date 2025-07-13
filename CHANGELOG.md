@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.11.17] - 2025-07-14
+
 - Add support for `timeslice_metric_indicator` in `elasticstack_kibana_slo` ([#1195](https://github.com/elastic/terraform-provider-elasticstack/pull/1195))
 
 ## [0.11.16] - 2025-07-09
@@ -430,8 +432,9 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...HEAD
-[0.11.15]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...HEAD
+[0.11.17]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...v0.11.17
+[0.11.16]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
 [0.11.15]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...v0.11.15
 [0.11.14]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.13...v0.11.14
 [0.11.13]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.12...v0.11.13
