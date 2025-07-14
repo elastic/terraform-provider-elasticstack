@@ -1,0 +1,20 @@
+---
+subcategory: "Ingest"
+layout: ""
+page_title: "Elasticstack: elasticstack_elasticsearch_ingest_processor_reroute Data Source"
+description: |-
+  Helper data source to create a processor which reroutes a document to a different data stream, index, or index alias.
+---
+
+# Data Source: elasticstack_elasticsearch_ingest_processor_reroute
+
+Reroutes a document to a different data stream, index, or index alias. This processor is useful for routing documents based on data stream routing rules.
+
+See: https://www.elastic.co/guide/en/elasticsearch/reference/current/reroute-processor.html
+
+
+## Example Usage
+
+{{ tffile "examples/data-sources/elasticstack_elasticsearch_ingest_processor_reroute/data-source.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}

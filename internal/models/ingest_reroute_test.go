@@ -9,8 +9,9 @@ import (
 
 func TestProcessorReroute_JSON(t *testing.T) {
 	processor := &ProcessorReroute{
-		Field:         "routing_field",
-		IgnoreMissing: false,
+		Destination: "logs-generic-default",
+		Dataset:     "generic",
+		Namespace:   "default",
 	}
 	processor.IgnoreFailure = false
 
@@ -26,7 +27,8 @@ func TestProcessorReroute_JSON(t *testing.T) {
 	// Verify the structure
 	assert.Contains(t, result, "reroute")
 	reroute := result["reroute"]
-	assert.Equal(t, "routing_field", reroute["field"])
+	assert.Equal(t, "logs-generic-default", reroute["destination"])
+	assert.Equal(t, "generic", reroute["dataset"])
+	assert.Equal(t, "default", reroute["namespace"])
 	assert.Equal(t, false, reroute["ignore_failure"])
-	assert.Equal(t, false, reroute["ignore_missing"])
 }

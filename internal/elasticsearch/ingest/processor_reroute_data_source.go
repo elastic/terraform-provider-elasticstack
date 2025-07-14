@@ -19,16 +19,20 @@ func DataSourceProcessorReroute() *schema.Resource {
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
-		"field": {
-			Description: "The field to get the routing value from.",
+		"destination": {
+			Description: "The destination data stream, index, or index alias to route the document to.",
 			Type:        schema.TypeString,
-			Required:    true,
-		},
-		"ignore_missing": {
-			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
-			Type:        schema.TypeBool,
 			Optional:    true,
-			Default:     false,
+		},
+		"dataset": {
+			Description: "The destination dataset to route the document to.",
+			Type:        schema.TypeString,
+			Optional:    true,
+		},
+		"namespace": {
+			Description: "The destination namespace to route the document to.",
+			Type:        schema.TypeString,
+			Optional:    true,
 		},
 		"description": {
 			Description: "Description of the processor. ",
@@ -70,7 +74,7 @@ func DataSourceProcessorReroute() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Reroutes a document to a different shard in the same index. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/reroute-processor.html",
+		Description: "Reroutes a document to a different data stream, index, or index alias. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/reroute-processor.html",
 
 		ReadContext: dataSourceProcessorRerouteRead,
 
@@ -83,9 +87,17 @@ func dataSourceProcessorRerouteRead(ctx context.Context, d *schema.ResourceData,
 
 	processor := &models.ProcessorReroute{}
 
-	processor.Field = d.Get("field").(string)
 	processor.IgnoreFailure = d.Get("ignore_failure").(bool)
-	processor.IgnoreMissing = d.Get("ignore_missing").(bool)
+
+	if v, ok := d.GetOk("destination"); ok {
+		processor.Destination = v.(string)
+	}
+	if v, ok := d.GetOk("dataset"); ok {
+		processor.Dataset = v.(string)
+	}
+	if v, ok := d.GetOk("namespace"); ok {
+		processor.Namespace = v.(string)
+	}
 
 	if v, ok := d.GetOk("description"); ok {
 		processor.Description = v.(string)

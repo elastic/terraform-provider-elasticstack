@@ -263,8 +263,9 @@ type ProcessorRename struct {
 type ProcessorReroute struct {
 	CommonProcessor
 
-	Field         string `json:"field"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	Destination string `json:"destination,omitempty"`
+	Dataset     string `json:"dataset,omitempty"`
+	Namespace   string `json:"namespace,omitempty"`
 }
 
 type ProcessorScript struct {

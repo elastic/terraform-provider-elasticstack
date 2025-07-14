@@ -25,8 +25,7 @@ func TestAccDataSourceIngestProcessorReroute(t *testing.T) {
 const expectedJsonReroute = `{
 	"reroute": {
 		"ignore_failure": false,
-		"field": "routing_field",
-		"ignore_missing": false
+		"destination": "logs-generic-default"
 	}
 }`
 
@@ -36,6 +35,6 @@ provider "elasticstack" {
 }
 
 data "elasticstack_elasticsearch_ingest_processor_reroute" "test" {
-  field = "routing_field"
+  destination = "logs-generic-default"
 }
 `
