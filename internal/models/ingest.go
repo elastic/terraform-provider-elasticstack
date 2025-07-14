@@ -295,6 +295,14 @@ type ProcessorSort struct {
 	TargetField string `json:"target_field,omitempty"`
 }
 
+type ProcessorReroute struct {
+	CommonProcessor
+
+	Destination string   `json:"destination,omitempty"`
+	Dataset     []string `json:"dataset,omitempty"`
+	Namespace   []string `json:"namespace,omitempty"`
+}
+
 type ProcessorSplit struct {
 	CommonProcessor
 	ProcessortFields
