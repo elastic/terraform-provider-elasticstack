@@ -260,6 +260,13 @@ type ProcessorRename struct {
 	ProcessortFields
 }
 
+type ProcessorReroute struct {
+	CommonProcessor
+
+	Field         string `json:"field"`
+	IgnoreMissing bool   `json:"ignore_missing"`
+}
+
 type ProcessorScript struct {
 	CommonProcessor
 
