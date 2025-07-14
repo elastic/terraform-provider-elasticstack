@@ -21,10 +21,10 @@ func TestDataSourceProcessorReroute_Unit(t *testing.T) {
 
 	// Test data source read function
 	d := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{
-		"destination":  "target-index",
-		"dataset":      "logs",
-		"namespace":    "production",
-		"description":  "Test reroute processor",
+		"destination": "target-index",
+		"dataset":     "logs",
+		"namespace":   "production",
+		"description": "Test reroute processor",
 	})
 
 	ctx := context.Background()
