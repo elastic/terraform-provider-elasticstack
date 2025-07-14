@@ -192,7 +192,7 @@ docker-fleet: docker-network docker-elasticsearch docker-kibana setup-kibana-fle
       	-e KIBANA_FLEET_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
 		--name $(FLEET_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		docker.elastic.co/beats/elastic-agent:$(STACK_VERSION)
+		elastic/elastic-agent:$(STACK_VERSION)
 
 
 .PHONY: docker-network
