@@ -163,16 +163,17 @@ type Application struct {
 }
 
 type IndexTemplate struct {
-	Name          string                 `json:"-"`
-	Create        bool                   `json:"-"`
-	Timeout       string                 `json:"-"`
-	ComposedOf    []string               `json:"composed_of"`
-	DataStream    *DataStreamSettings    `json:"data_stream,omitempty"`
-	IndexPatterns []string               `json:"index_patterns"`
-	Meta          map[string]interface{} `json:"_meta,omitempty"`
-	Priority      *int                   `json:"priority,omitempty"`
-	Template      *Template              `json:"template,omitempty"`
-	Version       *int                   `json:"version,omitempty"`
+	Name                            string                 `json:"-"`
+	Create                          bool                   `json:"-"`
+	Timeout                         string                 `json:"-"`
+	ComposedOf                      []string               `json:"composed_of"`
+	IgnoreMissingComponentTemplates []string               `json:"ignore_missing_component_templates"`
+	DataStream                      *DataStreamSettings    `json:"data_stream,omitempty"`
+	IndexPatterns                   []string               `json:"index_patterns"`
+	Meta                            map[string]interface{} `json:"_meta,omitempty"`
+	Priority                        *int                   `json:"priority,omitempty"`
+	Template                        *Template              `json:"template,omitempty"`
+	Version                         *int                   `json:"version,omitempty"`
 }
 
 type DataStreamSettings struct {
