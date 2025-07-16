@@ -4,13 +4,16 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**CreateMaintenanceWindow**](AlertingAPI.md#CreateMaintenanceWindow) | **Post** /s/{spaceId}/api/maintenance_window | Create a maintenance window.
 [**CreateRule**](AlertingAPI.md#CreateRule) | **Post** /s/{spaceId}/api/alerting/rule | Creates a rule with a randomly generated rule identifier.
 [**CreateRuleId**](AlertingAPI.md#CreateRuleId) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule with a specific rule identifier.
+[**DeleteMaintenanceWindow**](AlertingAPI.md#DeleteMaintenanceWindow) | **Delete** /s/{spaceId}/api/maintenance_window/{maintenanceWindowId} | Delete a maintenance window
 [**DeleteRule**](AlertingAPI.md#DeleteRule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
 [**DisableRule**](AlertingAPI.md#DisableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
 [**EnableRule**](AlertingAPI.md#EnableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
 [**FindRules**](AlertingAPI.md#FindRules) | **Get** /s/{spaceId}/api/alerting/rules/_find | Retrieves information about rules.
 [**GetAlertingHealth**](AlertingAPI.md#GetAlertingHealth) | **Get** /s/{spaceId}/api/alerting/_health | Retrieves the health status of the alerting framework.
+[**GetMaintenanceWindow**](AlertingAPI.md#GetMaintenanceWindow) | **Get** /s/{spaceId}/api/maintenance_window/{maintenanceWindowId} | Get a maintenance window
 [**GetRule**](AlertingAPI.md#GetRule) | **Get** /s/{spaceId}/api/alerting/rule/{ruleId} | Retrieves a rule by its identifier.
 [**GetRuleTypes**](AlertingAPI.md#GetRuleTypes) | **Get** /s/{spaceId}/api/alerting/rule_types | Retrieves a list of rule types.
 [**LegacyCreateAlert**](AlertingAPI.md#LegacyCreateAlert) | **Post** /s/{spaceId}/api/alerts/alert/{alertId} | Create an alert.
@@ -30,9 +33,84 @@ Method | HTTP request | Description
 [**MuteAllAlerts**](AlertingAPI.md#MuteAllAlerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_mute_all | Mutes all alerts.
 [**UnmuteAlert**](AlertingAPI.md#UnmuteAlert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute | Unmutes an alert.
 [**UnmuteAllAlerts**](AlertingAPI.md#UnmuteAllAlerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all | Unmutes all alerts.
+[**UpdateMaintenanceWindow**](AlertingAPI.md#UpdateMaintenanceWindow) | **Patch** /s/{spaceId}/api/maintenance_window/{maintenanceWindowId} | Update a maintenance window.
 [**UpdateRule**](AlertingAPI.md#UpdateRule) | **Put** /s/{spaceId}/api/alerting/rule/{ruleId} | Updates the attributes for a rule.
 [**UpdateRuleAPIKey**](AlertingAPI.md#UpdateRuleAPIKey) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_update_api_key | Updates the API key for a rule.
 
+
+
+## CreateMaintenanceWindow
+
+> MaintenanceWindowResponseProperties CreateMaintenanceWindow(ctx, spaceId).KbnXsrf(kbnXsrf).CreateMaintenanceWindowRequest(createMaintenanceWindowRequest).Execute()
+
+Create a maintenance window.
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
+    spaceId := TODO // interface{} | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    createMaintenanceWindowRequest := *openapiclient.NewCreateMaintenanceWindowRequest(*openapiclient.NewCreateMaintenanceWindowRequestSchedule(*openapiclient.NewCreateMaintenanceWindowRequestScheduleCustom("Duration_example", "Start_example")), "Title_example") // CreateMaintenanceWindowRequest |  (optional)
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.AlertingAPI.CreateMaintenanceWindow(context.Background(), spaceId).KbnXsrf(kbnXsrf).CreateMaintenanceWindowRequest(createMaintenanceWindowRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.CreateMaintenanceWindow``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `CreateMaintenanceWindow`: MaintenanceWindowResponseProperties
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.CreateMaintenanceWindow`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | [**interface{}**](.md) | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiCreateMaintenanceWindowRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+
+ **createMaintenanceWindowRequest** | [**CreateMaintenanceWindowRequest**](CreateMaintenanceWindowRequest.md) |  | 
+
+### Return type
+
+[**MaintenanceWindowResponseProperties**](MaintenanceWindowResponseProperties.md)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
 
 
 ## CreateRule
@@ -180,6 +258,79 @@ Name | Type | Description  | Notes
 
 - **Content-Type**: application/json
 - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## DeleteMaintenanceWindow
+
+> DeleteMaintenanceWindow(ctx, maintenanceWindowId, spaceId).KbnXsrf(kbnXsrf).Execute()
+
+Delete a maintenance window
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
+    maintenanceWindowId := TODO // interface{} | An identifier for the maintenance window.
+    spaceId := TODO // interface{} | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    r, err := apiClient.AlertingAPI.DeleteMaintenanceWindow(context.Background(), maintenanceWindowId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.DeleteMaintenanceWindow``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**maintenanceWindowId** | [**interface{}**](.md) | An identifier for the maintenance window. | 
+**spaceId** | [**interface{}**](.md) | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiDeleteMaintenanceWindowRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+
+
+
+### Return type
+
+ (empty response body)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: Not defined
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
@@ -550,6 +701,79 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**GetAlertingHealth200Response**](GetAlertingHealth200Response.md)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## GetMaintenanceWindow
+
+> MaintenanceWindowResponseProperties GetMaintenanceWindow(ctx, maintenanceWindowId, spaceId).Execute()
+
+Get a maintenance window
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    maintenanceWindowId := TODO // interface{} | An identifier for the maintenance window.
+    spaceId := TODO // interface{} | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.AlertingAPI.GetMaintenanceWindow(context.Background(), maintenanceWindowId, spaceId).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.GetMaintenanceWindow``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `GetMaintenanceWindow`: MaintenanceWindowResponseProperties
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.GetMaintenanceWindow`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**maintenanceWindowId** | [**interface{}**](.md) | An identifier for the maintenance window. | 
+**spaceId** | [**interface{}**](.md) | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiGetMaintenanceWindowRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+
+
+
+### Return type
+
+[**MaintenanceWindowResponseProperties**](MaintenanceWindowResponseProperties.md)
 
 ### Authorization
 
@@ -1973,6 +2197,83 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## UpdateMaintenanceWindow
+
+> MaintenanceWindowResponseProperties UpdateMaintenanceWindow(ctx, maintenanceWindowId, spaceId).KbnXsrf(kbnXsrf).UpdateMaintenanceWindowRequest(updateMaintenanceWindowRequest).Execute()
+
+Update a maintenance window.
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    kbnXsrf := TODO // interface{} | Cross-site request forgery protection
+    maintenanceWindowId := TODO // interface{} | An identifier for the maintenance window.
+    spaceId := TODO // interface{} | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    updateMaintenanceWindowRequest := *openapiclient.NewUpdateMaintenanceWindowRequest() // UpdateMaintenanceWindowRequest |  (optional)
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.AlertingAPI.UpdateMaintenanceWindow(context.Background(), maintenanceWindowId, spaceId).KbnXsrf(kbnXsrf).UpdateMaintenanceWindowRequest(updateMaintenanceWindowRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.UpdateMaintenanceWindow``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `UpdateMaintenanceWindow`: MaintenanceWindowResponseProperties
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.UpdateMaintenanceWindow`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**maintenanceWindowId** | [**interface{}**](.md) | An identifier for the maintenance window. | 
+**spaceId** | [**interface{}**](.md) | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiUpdateMaintenanceWindowRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | [**interface{}**](interface{}.md) | Cross-site request forgery protection | 
+
+
+ **updateMaintenanceWindowRequest** | [**UpdateMaintenanceWindowRequest**](UpdateMaintenanceWindowRequest.md) |  | 
+
+### Return type
+
+[**MaintenanceWindowResponseProperties**](MaintenanceWindowResponseProperties.md)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
