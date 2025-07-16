@@ -39,7 +39,7 @@ func ResourceTemplate() *schema.Resource {
 			},
 		},
 		"ignore_missing_component_templates": {
-			Description: "A list of component template names that are ignored if missing.",
+			Description: "A list of component template names that are ignored if missing. ",
 			Type:        schema.TypeList,
 			Optional:    true,
 			Computed:    true,
