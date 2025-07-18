@@ -1,4 +1,4 @@
-This is a Go based repository hosting a Terrform provider for the elastic stack (elasticsearch and kibana) APIs.  This repo currently supports both [plugin framework](https://developer.hashicorp.com/terraform/plugin/framework/getting-started/code-walkthrough) and [sdkv2](https://developer.hashicorp.com/terraform/plugin/sdkv2) resources. All new resources _must_ use the plugin framework. 
+This is a Go based repository hosting a Terrform provider for the elastic stack (elasticsearch and kibana) APIs.  This repo currently supports both [plugin framework](https://developer.hashicorp.com/terraform/plugin/framework/getting-started/code-walkthrough) and [sdkv2](https://developer.hashicorp.com/terraform/plugin/sdkv2) resources. Unless you're told otherwise, all new resources _must_ use the plugin framework. 
 
 For further information, please see [README.md](../README.md) and the [CONTRIBUTING.md](../CONTRIBUTING.md) docs.
 
