@@ -26,11 +26,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	// Use namespace if explicitly set, otherwise fall back to space_id
-	namespace := plan.Namespace.ValueString()
-	if namespace == "" || plan.Namespace.IsNull() || plan.Namespace.IsUnknown() {
-		namespace = plan.SpaceID.ValueString()
-	}
+	namespace := plan.SpaceID.ValueString()
 
 	result, err := kibanaClient.KibanaSynthetics.Monitor.Add(ctx, input.config, input.fields, namespace)
 	if err != nil {
