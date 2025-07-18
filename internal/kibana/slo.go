@@ -390,6 +390,86 @@ func getSchema() map[string]*schema.Schema {
 				},
 			},
 		},
+		"timeslice_metric_indicator": {
+			Description:  "Defines a timeslice metric indicator for SLO.",
+			Type:         schema.TypeList,
+			MinItems:     1,
+			MaxItems:     1,
+			Optional:     true,
+			ExactlyOneOf: indicatorAddresses,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"index": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"timestamp_field": {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"filter": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"metric": {
+						Type:     schema.TypeList,
+						Required: true,
+						MaxItems: 1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"metrics": {
+									Type:     schema.TypeList,
+									Required: true,
+									MinItems: 1,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"name": {
+												Type:        schema.TypeString,
+												Required:    true,
+												Description: "The unique name for this metric. Used as a variable in the equation field.",
+											},
+											"aggregation": {
+												Type:        schema.TypeString,
+												Required:    true,
+												Description: "The aggregation type for this metric. One of: sum, avg, min, max, value_count, percentile, doc_count. Determines which other fields are required:",
+											},
+											"field": {
+												Type:        schema.TypeString,
+												Optional:    true,
+												Description: "Field to aggregate. Required for aggregations: sum, avg, min, max, value_count, percentile. Must NOT be set for doc_count.",
+											},
+											"percentile": {
+												Type:        schema.TypeFloat,
+												Optional:    true,
+												Description: "Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations.",
+											},
+											"filter": {
+												Type:        schema.TypeString,
+												Optional:    true,
+												Description: "Optional KQL filter for this metric. Supported for all aggregations except doc_count.",
+											},
+										},
+									},
+								},
+								"equation": {
+									Type:     schema.TypeString,
+									Required: true,
+								},
+								"comparator": {
+									Type:         schema.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringInSlice([]string{"GT", "GTE", "LT", "LTE"}, false),
+								},
+								"threshold": {
+									Type:     schema.TypeFloat,
+									Required: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		"time_window": {
 			Description: "Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`.",
 			Type:        schema.TypeList,
@@ -634,6 +714,60 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 			},
 		}
 
+	case "timeslice_metric_indicator":
+		params := d.Get("timeslice_metric_indicator.0").(map[string]interface{})
+		metricBlock := params["metric"].([]interface{})[0].(map[string]interface{})
+		metricsIface := metricBlock["metrics"].([]interface{})
+		metrics := make([]slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, len(metricsIface))
+		for i, m := range metricsIface {
+			metric := m.(map[string]interface{})
+			agg := metric["aggregation"].(string)
+			switch agg {
+			case "sum", "avg", "min", "max", "value_count":
+				metrics[i] = slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
+					TimesliceMetricBasicMetricWithField: &slo.TimesliceMetricBasicMetricWithField{
+						Name:        metric["name"].(string),
+						Aggregation: agg,
+						Field:       metric["field"].(string),
+					},
+				}
+			case "percentile":
+				metrics[i] = slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
+					TimesliceMetricPercentileMetric: &slo.TimesliceMetricPercentileMetric{
+						Name:        metric["name"].(string),
+						Aggregation: agg,
+						Field:       metric["field"].(string),
+						Percentile:  metric["percentile"].(float64),
+					},
+				}
+			case "doc_count":
+				metrics[i] = slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
+					TimesliceMetricDocCountMetric: &slo.TimesliceMetricDocCountMetric{
+						Name:        metric["name"].(string),
+						Aggregation: agg,
+					},
+				}
+			default:
+				return models.Slo{}, diag.Errorf("metrics[%d]: unsupported aggregation '%s'", i, agg)
+			}
+		}
+		indicator = slo.SloResponseIndicator{
+			IndicatorPropertiesTimesliceMetric: &slo.IndicatorPropertiesTimesliceMetric{
+				Type: indicatorAddressToType[indicatorType],
+				Params: slo.IndicatorPropertiesTimesliceMetricParams{
+					Index:          params["index"].(string),
+					TimestampField: params["timestamp_field"].(string),
+					Filter:         getOrNilString("timeslice_metric_indicator.0.filter", d),
+					Metric: slo.IndicatorPropertiesTimesliceMetricParamsMetric{
+						Metrics:    metrics,
+						Equation:   metricBlock["equation"].(string),
+						Comparator: metricBlock["comparator"].(string),
+						Threshold:  metricBlock["threshold"].(float64),
+					},
+				},
+			},
+		}
+
 	default:
 		return models.Slo{}, diag.Errorf("unknown indicator type %s", indicatorType)
 	}
@@ -873,6 +1007,42 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"total":           total,
 		})
 
+	case s.Indicator.IndicatorPropertiesTimesliceMetric != nil:
+		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesTimesliceMetric.Type]
+		params := s.Indicator.IndicatorPropertiesTimesliceMetric.Params
+		metrics := []map[string]interface{}{}
+		for _, m := range params.Metric.Metrics {
+			metric := map[string]interface{}{}
+			if m.TimesliceMetricBasicMetricWithField != nil {
+				metric["name"] = m.TimesliceMetricBasicMetricWithField.Name
+				metric["aggregation"] = m.TimesliceMetricBasicMetricWithField.Aggregation
+				metric["field"] = m.TimesliceMetricBasicMetricWithField.Field
+			}
+			if m.TimesliceMetricPercentileMetric != nil {
+				metric["name"] = m.TimesliceMetricPercentileMetric.Name
+				metric["aggregation"] = m.TimesliceMetricPercentileMetric.Aggregation
+				metric["field"] = m.TimesliceMetricPercentileMetric.Field
+				metric["percentile"] = m.TimesliceMetricPercentileMetric.Percentile
+			}
+			if m.TimesliceMetricDocCountMetric != nil {
+				metric["name"] = m.TimesliceMetricDocCountMetric.Name
+				metric["aggregation"] = m.TimesliceMetricDocCountMetric.Aggregation
+			}
+			metrics = append(metrics, metric)
+		}
+		metricBlock := map[string]interface{}{
+			"metrics":    metrics,
+			"equation":   params.Metric.Equation,
+			"comparator": params.Metric.Comparator,
+			"threshold":  params.Metric.Threshold,
+		}
+		indicator = append(indicator, map[string]interface{}{
+			"index":           params.Index,
+			"timestamp_field": params.TimestampField,
+			"filter":          params.Filter,
+			"metric":          []interface{}{metricBlock},
+		})
+
 	default:
 		return diag.Errorf("indicator not set")
 	}
@@ -964,6 +1134,7 @@ var indicatorAddressToType = map[string]string{
 	"kql_custom_indicator":       "sli.kql.custom",
 	"metric_custom_indicator":    "sli.metric.custom",
 	"histogram_custom_indicator": "sli.histogram.custom",
+	"timeslice_metric_indicator": "sli.metric.timeslice",
 }
 
 var indicatorTypeToAddress = utils.FlipMap(indicatorAddressToType)

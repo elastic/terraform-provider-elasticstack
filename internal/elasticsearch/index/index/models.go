@@ -286,11 +286,11 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 	timeout, _ := model.Timeout.Parse()
 
 	params := models.PutIndexParams{
-		MasterTimeout: masterTimeout,
-		Timeout:       timeout,
+		Timeout: timeout,
 	}
 
 	if serverFlavor != clients.ServerlessFlavor {
+		params.MasterTimeout = masterTimeout
 		params.WaitForActiveShards = model.WaitForActiveShards.ValueString()
 	}
 

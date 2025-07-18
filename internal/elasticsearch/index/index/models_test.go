@@ -366,6 +366,7 @@ func Test_tfModel_toPutIndexParams(t *testing.T) {
 			if isServerless {
 				flavor = clients.ServerlessFlavor
 				expectedParams.WaitForActiveShards = ""
+				expectedParams.MasterTimeout = 0
 			}
 
 			params := model.toPutIndexParams(flavor)
