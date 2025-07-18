@@ -1,5 +1,6 @@
 ## [Unreleased]
 
+- Add support for `solution` field in `elasticstack_kibana_space` resource and data source ([#1102](https://github.com/elastic/terraform-provider-elasticstack/issues/1102))
 - Add support for `timeslice_metric_indicator` in `elasticstack_kibana_slo` ([#1195](https://github.com/elastic/terraform-provider-elasticstack/pull/1195))
 - Add `elasticstack_elasticsearch_ingest_processor_reroute` data source ([#678](https://github.com/elastic/terraform-provider-elasticstack/issues/678))
 - Add support for `supports_agentless` to `elasticstack_fleet_agent_policy` ([#1197](https://github.com/elastic/terraform-provider-elasticstack/pull/1197))

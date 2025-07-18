@@ -17,4 +17,5 @@ type model struct {
 	Initials         types.String `tfsdk:"initials"`
 	Color            types.String `tfsdk:"color"`
 	ImageUrl         types.String `tfsdk:"image_url"`
+	Solution         types.String `tfsdk:"solution"`
 }

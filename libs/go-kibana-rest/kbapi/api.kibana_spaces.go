@@ -23,6 +23,7 @@ type KibanaSpace struct {
 	Initials         string   `json:"initials,omitempty"`
 	Color            string   `json:"color,omitempty"`
 	ImageURL         string   `json:"imageUrl,omitempty"`
+	Solution         string   `json:"solution,omitempty"`
 }
 
 // KibanaSpaces is the list of KibanaSpace object
