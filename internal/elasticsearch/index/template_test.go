@@ -61,8 +61,8 @@ resource "elasticstack_elasticsearch_index_template" "test" {
   priority       = 42
   index_patterns = ["%s-logs-*"]
 
-	composed_of = ["%s-logs@custom"]
-	ignore_missing_component_templates = ["%s-logs@custom"]
+  composed_of = ["%s-logs@custom"]
+  ignore_missing_component_templates = ["%s-logs@custom"]
 
   template {
     alias {
