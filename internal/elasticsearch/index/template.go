@@ -38,6 +38,15 @@ func ResourceTemplate() *schema.Resource {
 				Type: schema.TypeString,
 			},
 		},
+		"ignore_missing_component_templates": {
+			Description: "A list of component template names that are ignored if missing.",
+			Type:        schema.TypeList,
+			Optional:    true,
+			Computed:    true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
 		"data_stream": {
 			Description: "If this object is included, the template is used to create data streams and their backing indices. Supports an empty object.",
 			Type:        schema.TypeList,
@@ -221,6 +230,14 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	indexTemplate.ComposedOf = compsOf
 
+	compsOfIgnore := make([]string, 0)
+	if v, ok := d.GetOk("ignore_missing_component_templates"); ok {
+		for _, c := range v.([]interface{}) {
+			compsOfIgnore = append(compsOfIgnore, c.(string))
+		}
+	}
+	indexTemplate.IgnoreMissingComponentTemplates = compsOfIgnore
+
 	if v, ok := d.GetOk("data_stream"); ok {
 		// 8.x workaround
 		hasAllowCustomRouting := false
@@ -369,6 +386,9 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 	if err := d.Set("composed_of", tpl.IndexTemplate.ComposedOf); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("ignore_missing_component_templates", tpl.IndexTemplate.IgnoreMissingComponentTemplates); err != nil {
 		return diag.FromErr(err)
 	}
 	if stream := tpl.IndexTemplate.DataStream; stream != nil {
