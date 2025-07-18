@@ -78,7 +78,7 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
 - `retest_on_failure` (Boolean) Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.
 - `schedule` (Number) The monitor’s schedule in minutes. Supported values are 1, 3, 5, 10, 15, 30, 60, 120 and 240.
 - `service_name` (String) The APM service name.
-- `space_id` (String) The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \, /, ?, ", <, >, |, whitespace, ,, #, :, or -. Default: `default`
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used. This value is used for the default for `namespace` when that attribute is not provided.
 - `tags` (List of String) An array of tags.
 - `tcp` (Attributes) TCP Monitor specific fields (see [below for nested schema](#nestedatt--tcp))
 - `timeout` (Number) The monitor timeout in seconds, monitor will fail if it doesn’t complete within this time. Default: `16`
