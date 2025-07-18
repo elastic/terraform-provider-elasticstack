@@ -6,10 +6,13 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var SpaceSolutionMinVersion = version.Must(version.NewVersion("8.18.0"))
 
 func ResourceSpace() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -94,6 +97,18 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 	kibana, err := client.GetKibanaClient()
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Check version compatibility for solution field
+	if solution, ok := d.GetOk("solution"); ok && solution.(string) != "" {
+		serverVersion, diags := client.ServerVersion(ctx)
+		if diags.HasError() {
+			return diags
+		}
+
+		if !serverVersion.GreaterThanOrEqual(SpaceSolutionMinVersion) {
+			return diag.Errorf("solution field is not supported in this version of the Elastic Stack. Solution field requires %s or higher", SpaceSolutionMinVersion)
+		}
 	}
 
 	space := kbapi.KibanaSpace{
