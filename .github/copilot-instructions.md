@@ -19,13 +19,13 @@ For further information, please see [README.md](../README.md) and the [CONTRIBUT
 ## Repository Structure
 
 • **docs/** - Documentation files
-  • **data-sources/** - Documentation for Terraform data sources (51 files)
+  • **data-sources/** - Documentation for Terraform data sources
   • **guides/** - User guides and tutorials
-  • **resources/** - Documentation for Terraform resources (35 files)
+  • **resources/** - Documentation for Terraform resources
 • **examples/** - Example Terraform configurations
   • **cloud/** - Examples using the cloud to launch testing stacks
-  • **data-sources/** - Data source usage examples (45+ examples)
-  • **resources/** - Resource usage examples (30+ examples)
+  • **data-sources/** - Data source usage examples
+  • **resources/** - Resource usage examples
   • **provider/** - Provider configuration examples
 • **generated/** - Auto-generated clients from the `generate-clients` make target
   • **alerting/** - Kibana alerting API client
