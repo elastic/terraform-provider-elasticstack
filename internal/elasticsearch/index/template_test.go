@@ -25,6 +25,8 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "index_patterns.*", fmt.Sprintf("%s-logs-*", templateName)),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "composed_of.*", fmt.Sprintf("%s-logs@custom", templateName)),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "ignore_missing_component_templates.*", fmt.Sprintf("%s-logs@custom", templateName)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "priority", "42"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "name", fmt.Sprintf("%s-stream", templateName)),
@@ -36,6 +38,8 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "index_patterns.*", fmt.Sprintf("%s-logs-*", templateName)),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "composed_of.*", fmt.Sprintf("%s-logs-updated@custom", templateName)),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "ignore_missing_component_templates.*", fmt.Sprintf("%s-logs-updated@custom", templateName)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "name", fmt.Sprintf("%s-stream", templateName)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test2", "data_stream.0.hidden", "false"),
@@ -57,6 +61,9 @@ resource "elasticstack_elasticsearch_index_template" "test" {
   priority       = 42
   index_patterns = ["%s-logs-*"]
 
+	composed_of = ["%s-logs@custom"]
+	ignore_missing_component_templates = ["%s-logs@custom"]
+
   template {
     alias {
       name = "my_template_test"
@@ -76,7 +83,7 @@ resource "elasticstack_elasticsearch_index_template" "test2" {
     hidden = true
   }
 }
-	`, name, name, name)
+	`, name, name, name, name, name)
 }
 
 func testAccResourceIndexTemplateUpdate(name string) string {
@@ -89,6 +96,9 @@ resource "elasticstack_elasticsearch_index_template" "test" {
   name = "%s"
 
   index_patterns = ["%s-logs-*"]
+
+	composed_of = ["%s-logs-updated@custom"]
+	ignore_missing_component_templates = ["%s-logs-updated@custom"]
 
   template {
     alias {
@@ -114,7 +124,7 @@ resource "elasticstack_elasticsearch_index_template" "test2" {
 
   template {}
 }
-	`, name, name, name)
+	`, name, name, name, name, name)
 }
 
 func checkResourceIndexTemplateDestroy(s *terraform.State) error {

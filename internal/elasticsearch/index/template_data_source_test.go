@@ -22,6 +22,8 @@ func TestAccIndexTemplateDataSource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_index_template.test", "index_patterns.*", fmt.Sprintf("tf-acc-%s-*", templateName)),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_index_template.test", "composed_of.*", fmt.Sprintf("%s-logs@custom", templateName)),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_index_template.test", "ignore_missing_component_templates.*", fmt.Sprintf("%s-logs@custom", templateName)),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "priority", "100"),
 				),
 			},
@@ -40,10 +42,13 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 
 	priority       = 100
 	index_patterns = ["tf-acc-%s-*"]
+
+	composed_of = ["%s-logs@custom"]
+	ignore_missing_component_templates = ["%s-logs@custom"]
 }
 
 data "elasticstack_elasticsearch_index_template" "test" {
 	name = elasticstack_elasticsearch_index_template.test.name
 }
-	`, templateName, templateName)
+	`, templateName, templateName, templateName, templateName)
 }
