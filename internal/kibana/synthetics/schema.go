@@ -146,7 +146,7 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: "The monitor’s name.",
 			},
 			"space_id": schema.StringAttribute{
-				MarkdownDescription: "The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
+				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used. This value is used for the default for `namespace` when that attribute is not provided.",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
