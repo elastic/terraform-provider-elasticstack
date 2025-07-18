@@ -56,6 +56,7 @@ For further information, please see [README.md](../README.md) and the [CONTRIBUT
 * Follow Go best practices and idiomatic patterns
 * Maintain existing code structure and organization
 * Write unit tests for new functionality. Use table-driven unit tests when possible.
+* When creating a new Plugin Framework based resource, follow the code organisation of `internal/elasticsearch/security/system_user` 
 * Avoid adding any extra functionality into the `utils` package, instead preferencing adding to a more specific package or creating one to match the purpose
 * Think through your planning first using the codebase as your guide before creating new resources and data sources
 
