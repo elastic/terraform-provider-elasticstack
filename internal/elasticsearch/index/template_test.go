@@ -97,8 +97,8 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 
   index_patterns = ["%s-logs-*"]
 
-	composed_of = ["%s-logs-updated@custom"]
-	ignore_missing_component_templates = ["%s-logs-updated@custom"]
+  composed_of = ["%s-logs-updated@custom"]
+  ignore_missing_component_templates = ["%s-logs-updated@custom"]
 
   template {
     alias {
