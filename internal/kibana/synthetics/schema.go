@@ -583,7 +583,7 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
-func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor) (*tfModelV0, diag.Diagnostics) {
+func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, spaceID string) (*tfModelV0, diag.Diagnostics) {
 	var schedule int64
 	var err error
 	dg := diag.Diagnostics{}
@@ -657,7 +657,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 	}
 
 	resourceID := clients.CompositeId{
-		ClusterId:  api.Namespace,
+		ClusterId:  spaceID,
 		ResourceId: string(api.Id),
 	}
 
@@ -669,7 +669,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 	return &tfModelV0{
 		ID:               types.StringValue(resourceID.String()),
 		Name:             types.StringValue(api.Name),
-		SpaceID:          types.StringValue(api.Namespace),
+		SpaceID:          types.StringValue(spaceID),
 		Namespace:        types.StringValue(api.Namespace),
 		Schedule:         types.Int64Value(schedule),
 		Locations:        v.Locations,

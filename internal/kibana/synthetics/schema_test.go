@@ -406,7 +406,8 @@ func TestToModelV0(t *testing.T) {
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			model, diag := tt.expected.toModelV0(ctx, &tt.input)
+			expectedSpaceID := tt.expected.SpaceID.ValueString()
+			model, diag := tt.expected.toModelV0(ctx, &tt.input, expectedSpaceID)
 			assert.False(t, diag.HasError())
 			assert.Equal(t, &tt.expected, model)
 		})
@@ -831,7 +832,8 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			actual, diag := tt.state.toModelV0(ctx, &tt.input)
+			expectedSpaceID := tt.expected.SpaceID.ValueString()
+			actual, diag := tt.state.toModelV0(ctx, &tt.input, expectedSpaceID)
 			assert.False(t, diag.HasError())
 			assert.NotNil(t, actual)
 			assert.Equal(t, &tt.expected, actual)
