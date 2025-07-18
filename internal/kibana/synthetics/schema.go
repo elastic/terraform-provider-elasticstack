@@ -99,6 +99,7 @@ type tfModelV0 struct {
 	ID               types.String              `tfsdk:"id"`
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
+	Namespace        types.String              `tfsdk:"namespace"`
 	Schedule         types.Int64               `tfsdk:"schedule"`
 	Locations        []types.String            `tfsdk:"locations"`
 	PrivateLocations []types.String            `tfsdk:"private_locations"`
@@ -144,6 +145,15 @@ func monitorConfigSchema() schema.Schema {
 			},
 			"space_id": schema.StringAttribute{
 				MarkdownDescription: "The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
+				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+				Computed: true,
+			},
+			"namespace": schema.StringAttribute{
+				MarkdownDescription: "The data stream namespace. If not specified, defaults to the value of space_id. The namespace must be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -.",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -653,6 +663,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 		ID:               types.StringValue(resourceID.String()),
 		Name:             types.StringValue(api.Name),
 		SpaceID:          types.StringValue(api.Namespace),
+		Namespace:        types.StringValue(api.Namespace),
 		Schedule:         types.Int64Value(schedule),
 		Locations:        v.Locations,
 		PrivateLocations: StringSliceValue(privateLocLabels),
@@ -873,6 +884,12 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		return nil, dg
 	}
 
+	// Use namespace if explicitly set, otherwise fall back to space_id
+	namespace := v.Namespace.ValueString()
+	if namespace == "" || v.Namespace.IsNull() || v.Namespace.IsUnknown() {
+		namespace = v.SpaceID.ValueString()
+	}
+
 	return &kbapi.SyntheticsMonitorConfig{
 		Name:             v.Name.ValueString(),
 		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueInt64()),
@@ -883,7 +900,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		Alert:            toTFAlertConfig(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
-		Namespace:        v.SpaceID.ValueString(),
+		Namespace:        namespace,
 		Params:           params,
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
 	}, diag.Diagnostics{} //dg

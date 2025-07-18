@@ -26,7 +26,12 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	namespace := plan.SpaceID.ValueString()
+	// Use namespace if explicitly set, otherwise fall back to space_id
+	namespace := plan.Namespace.ValueString()
+	if namespace == "" || plan.Namespace.IsNull() || plan.Namespace.IsUnknown() {
+		namespace = plan.SpaceID.ValueString()
+	}
+
 	result, err := kibanaClient.KibanaSynthetics.Monitor.Add(ctx, input.config, input.fields, namespace)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, namespace %s", input.config.Name, namespace), err.Error())

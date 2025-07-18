@@ -33,7 +33,12 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	namespace := plan.SpaceID.ValueString()
+	// Use namespace if explicitly set, otherwise fall back to space_id
+	namespace := plan.Namespace.ValueString()
+	if namespace == "" || plan.Namespace.IsNull() || plan.Namespace.IsUnknown() {
+		namespace = plan.SpaceID.ValueString()
+	}
+
 	result, err := kibanaClient.KibanaSynthetics.Monitor.Update(ctx, kbapi.MonitorID(monitorId.ResourceId), input.config, input.fields, namespace)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to update Kibana monitor `%s`, namespace %s", input.config.Name, namespace), err.Error())

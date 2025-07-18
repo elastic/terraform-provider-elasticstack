@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 var (
@@ -32,6 +33,34 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource - %s"
 	space_id = "testacc"
+	schedule = 5
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	enabled = true
+	tags = ["a", "b"]
+	alert = {
+		status = {
+			enabled = true
+		}
+		tls = {
+			enabled = true
+		}
+	}
+	service_name = "test apm service"
+	timeout = 30
+	http = {
+		url = "http://localhost:5601"
+		mode = "any"
+		ipv4 = true
+		ipv6 = false
+	}
+}
+`
+	httpMonitorConfigWithNamespace = `
+
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorResource - %s"
+	space_id = "testacc"
+	namespace = "test-namespace"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
@@ -841,4 +870,42 @@ resource "elasticstack_kibana_synthetics_private_location" "%s" {
 	config := fmt.Sprintf(cfg, id, name, privateLocationId)
 
 	return resourceId, provider + config
+}
+
+func TestSyntheticMonitorHTTPResourceWithNamespace(t *testing.T) {
+
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	id := "http-monitor-namespace"
+	httpMonitorId, config := testMonitorConfig(id, httpMonitorConfigWithNamespace, name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			// Create and Read http monitor with explicit namespace
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
+					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource - "+name),
+					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(httpMonitorId, "namespace", "test-namespace"),
+					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "5"),
+					resource.TestCheckResourceAttr(httpMonitorId, "enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:5601"),
+				),
+			},
+			// Import
+			{
+				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName: httpMonitorId,
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return fmt.Sprintf("%s/%s", "testacc", s.RootModule().Resources[httpMonitorId].Primary.Attributes["id"]), nil
+				},
+				ImportStateVerify: true,
+			},
+		},
+	})
 }
