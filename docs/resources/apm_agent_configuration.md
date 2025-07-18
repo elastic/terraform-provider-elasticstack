@@ -8,7 +8,7 @@ description: |-
 
 # Resource: elasticstack_apm_agent_configuration
 
-Creates or updates a an APM agent configuration. See https://www.elastic.co/docs/solutions/observability/apm/apm-agent-central-configuration
+Creates or updates an APM agent configuration. See https://www.elastic.co/docs/solutions/observability/apm/apm-agent-central-configuration
 
 ## Example Usage
 

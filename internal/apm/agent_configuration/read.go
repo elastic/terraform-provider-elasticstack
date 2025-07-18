@@ -34,7 +34,7 @@ func (r *resourceAgentConfiguration) Read(ctx context.Context, req resource.Read
 		resp.Diagnostics.AddError("Failed to get APM agent configurations", err.Error())
 		return
 	}
-
+	defer apiResp.Body.Close()
 	if diags := utils.CheckHttpErrorFromFW(apiResp.HTTPResponse, "Failed to get APM agent configurations"); diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
