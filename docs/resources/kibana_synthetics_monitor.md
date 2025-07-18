@@ -72,6 +72,7 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
 - `http` (Attributes) HTTP Monitor specific fields (see [below for nested schema](#nestedatt--http))
 - `icmp` (Attributes) ICMP Monitor specific fields (see [below for nested schema](#nestedatt--icmp))
 - `locations` (List of String) Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
+- `namespace` (String) The data stream namespace. If not specified, defaults to the value of space_id. The namespace must be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \, /, ?, ", <, >, |, whitespace, ,, #, :, or -.
 - `params` (String) Monitor parameters. Raw JSON object, use `jsonencode` function to represent JSON
 - `private_locations` (List of String) These Private Locations refer to locations hosted and managed by you, whereas locations are hosted by Elastic. You can specify a Private Location using the location’s name.
 - `retest_on_failure` (Boolean) Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.
