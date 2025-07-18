@@ -60,7 +60,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource - %s"
 	space_id = "testacc"
-	namespace = "test-namespace"
+	namespace = "testnamespace"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
@@ -890,7 +890,7 @@ func TestSyntheticMonitorHTTPResourceWithNamespace(t *testing.T) {
 					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
 					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource - "+name),
 					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(httpMonitorId, "namespace", "test-namespace"),
+					resource.TestCheckResourceAttr(httpMonitorId, "namespace", "testnamespace"),
 					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(httpMonitorId, "enabled", "true"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:5601"),

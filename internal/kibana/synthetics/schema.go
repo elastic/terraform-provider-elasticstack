@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
@@ -158,6 +159,12 @@ func monitorConfigSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[^*\\/?\"<>|\s,#:-]*$`),
+						"namespace must not contain any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -",
+					),
 				},
 				Computed: true,
 			},
