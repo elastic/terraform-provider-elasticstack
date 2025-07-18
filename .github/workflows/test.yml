@@ -126,6 +126,7 @@ jobs:
           - '8.15.5'
           - '8.16.2'
           - '8.17.0'
+          - '8.18.3'
           - '9.0.0-SNAPSHOT'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4

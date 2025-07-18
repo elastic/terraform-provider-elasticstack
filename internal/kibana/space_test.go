@@ -6,6 +6,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -40,7 +42,8 @@ func TestAccResourceSpace(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceSpaceWithSolution(spaceId),
+				Config:   testAccResourceSpaceWithSolution(spaceId),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibana.SpaceSolutionMinVersion),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceId),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Solution %s", spaceId)),
