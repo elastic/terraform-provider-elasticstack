@@ -9,7 +9,7 @@ For further information, please see [README.md](../README.md) and the [CONTRIBUT
 - Run `make lint` to ensure any linting errors have not surfaced with your changes
 
 ### Required Before Pull Request
-- Run `make gen` to update the documentation and code based on your changes.
+- Run `make docs-generate` to update the documentation.
 
 ### Development Flow
 - Develop feature or fix bug
