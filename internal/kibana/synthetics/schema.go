@@ -10,6 +10,7 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -149,7 +150,8 @@ func monitorConfigSchema() schema.Schema {
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
+					planmodifiers.StringUseDefaultIfUnknown("default"),
+					requiresReplaceIfSpaceIdChanged(),
 				},
 				Computed: true,
 			},
@@ -1070,4 +1072,59 @@ func (v tfStatusConfigV0) toTfStatusConfigV0() *kbapi.SyntheticsStatusConfig {
 	return &kbapi.SyntheticsStatusConfig{
 		Enabled: v.Enabled.ValueBoolPointer(),
 	}
+}
+
+func requiresReplaceIfSpaceIdChanged() planmodifier.String {
+	return stringplanmodifier.RequiresReplaceIf(
+		func(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+			// Don't require replace if plan value is unknown
+			if req.PlanValue.IsUnknown() {
+				resp.RequiresReplace = false
+				return
+			}
+
+			// Don't require replace if state value is null (creating)
+			if req.StateValue.IsNull() {
+				resp.RequiresReplace = false
+				return
+			}
+
+			// Don't require replace if config value is null (not configured by user)
+			if req.ConfigValue.IsNull() {
+				resp.RequiresReplace = false
+				return
+			}
+
+			stateValue := req.StateValue.ValueString()
+			planValue := req.PlanValue.ValueString()
+
+			// Don't require replace if values are the same
+			if stateValue == planValue {
+				resp.RequiresReplace = false
+				return
+			}
+
+			// Normalize empty and "default" values for comparison
+			normalizeValue := func(v string) string {
+				if v == "" || v == "default" {
+					return "default"
+				}
+				return v
+			}
+
+			normalizedState := normalizeValue(stateValue)
+			normalizedPlan := normalizeValue(planValue)
+
+			// Don't require replace if the change is between empty/"" and "default"
+			if normalizedState == normalizedPlan {
+				resp.RequiresReplace = false
+				return
+			}
+
+			// Otherwise, require replace
+			resp.RequiresReplace = true
+		},
+		"Requires replace if the space_id changes, except when changing between empty and 'default'",
+		"Requires replace if the space_id changes, except when changing between empty and 'default'",
+	)
 }

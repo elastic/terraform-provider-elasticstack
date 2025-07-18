@@ -902,7 +902,7 @@ func TestSyntheticMonitorHTTPResourceWithNamespace(t *testing.T) {
 				ResourceName: httpMonitorId,
 				ImportState:  true,
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					return fmt.Sprintf("%s/%s", "testacc", s.RootModule().Resources[httpMonitorId].Primary.Attributes["id"]), nil
+					return s.RootModule().Resources[httpMonitorId].Primary.Attributes["id"], nil
 				},
 				ImportStateVerify: true,
 			},
