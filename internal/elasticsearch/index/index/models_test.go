@@ -7,6 +7,7 @@ import (
 
 	fuzz "github.com/google/gofuzz"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -363,8 +364,9 @@ func Test_tfModel_toPutIndexParams(t *testing.T) {
 
 			flavor := "not_serverless"
 			if isServerless {
-				flavor = "serverless"
+				flavor = clients.ServerlessFlavor
 				expectedParams.WaitForActiveShards = ""
+				expectedParams.MasterTimeout = 0
 			}
 
 			params := model.toPutIndexParams(flavor)
