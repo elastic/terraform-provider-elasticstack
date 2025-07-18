@@ -22,6 +22,7 @@ func (s *KBAPITestSuite) TestKibanaSpaces() {
 		ID:          "test",
 		Name:        "test",
 		Description: "My test",
+		Solution:    "security",
 	}
 	kibanaSpace, err = s.KibanaSpaces.Create(kibanaSpace)
 	assert.NoError(s.T(), err)

@@ -61,6 +61,12 @@ func ResourceSpace() *schema.Resource {
 			Optional:     true,
 			ValidateFunc: validation.StringMatch(regexp.MustCompile("^data:image/"), "must be a valid data-URL encoded image"),
 		},
+		"solution": {
+			Description:  "The solution view for the space. Valid options are `security`, `oblt`, `es`, or `classic`.",
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice([]string{"security", "oblt", "es", "classic"}, false),
+		},
 	}
 
 	return &schema.Resource{
@@ -118,6 +124,10 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 
 	if imageUrl, ok := d.GetOk("image_url"); ok {
 		space.ImageURL = imageUrl.(string)
+	}
+
+	if solution, ok := d.GetOk("solution"); ok {
+		space.Solution = solution.(string)
 	}
 
 	var spaceResponse *kbapi.KibanaSpace
@@ -180,6 +190,9 @@ func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.FromErr(err)
 	}
 	if err := d.Set("color", space.Color); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("solution", space.Solution); err != nil {
 		return diag.FromErr(err)
 	}
 

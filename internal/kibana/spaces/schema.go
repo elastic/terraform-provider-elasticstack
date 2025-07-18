@@ -51,6 +51,10 @@ func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 							Description: "The data-URL encoded image to display in the space avatar.",
 							Optional:    true,
 						},
+						"solution": schema.StringAttribute{
+							Description: "The solution view for the space. Valid options are `security`, `oblt`, `es`, or `classic`.",
+							Optional:    true,
+						},
 					},
 				},
 			},
