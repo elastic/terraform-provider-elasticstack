@@ -260,6 +260,14 @@ type ProcessorRename struct {
 	ProcessortFields
 }
 
+type ProcessorReroute struct {
+	CommonProcessor
+
+	Destination string `json:"destination,omitempty"`
+	Dataset     string `json:"dataset,omitempty"`
+	Namespace   string `json:"namespace,omitempty"`
+}
+
 type ProcessorScript struct {
 	CommonProcessor
 
