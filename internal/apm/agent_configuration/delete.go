@@ -56,6 +56,4 @@ func (r *resourceAgentConfiguration) Delete(ctx context.Context, req resource.De
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("Deleted APM agent configuration with ID: %s", state.ID.ValueString()))
-
-	resp.State.RemoveResource(ctx)
 }

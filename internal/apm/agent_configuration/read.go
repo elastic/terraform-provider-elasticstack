@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -18,10 +19,27 @@ func (r *resourceAgentConfiguration) Read(ctx context.Context, req resource.Read
 		return
 	}
 
+	updatedState, diags := r.read(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if updatedState == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, updatedState)...)
+}
+
+func (r *resourceAgentConfiguration) read(ctx context.Context, state *AgentConfiguration) (*AgentConfiguration, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	kibana, err := r.client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
-		return
+		diags.AddError("Unable to get Kibana client", err.Error())
+		return nil, diags
 	}
 
 	apiResp, err := kibana.API.GetAgentConfigurationsWithResponse(
@@ -31,17 +49,18 @@ func (r *resourceAgentConfiguration) Read(ctx context.Context, req resource.Read
 		},
 	)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get APM agent configurations", err.Error())
-		return
+		diags.AddError("Failed to get APM agent configurations", err.Error())
+		return nil, diags
 	}
-	if diags := utils.CheckHttpErrorFromFW(apiResp.HTTPResponse, "Failed to get APM agent configurations"); diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
+
+	if httpDiags := utils.CheckHttpErrorFromFW(apiResp.HTTPResponse, "Failed to get APM agent configurations"); httpDiags.HasError() {
+		diags.Append(httpDiags...)
+		return nil, diags
 	}
 
 	if apiResp.JSON200 == nil {
-		resp.Diagnostics.AddError("Failed to get APM agent configurations from body", "Expected 200 response body to not be nil")
-		return
+		diags.AddError("Failed to get APM agent configurations from body", "Expected 200 response body to not be nil")
+		return nil, diags
 	}
 
 	idFromState := state.ID.ValueString()
@@ -58,8 +77,7 @@ func (r *resourceAgentConfiguration) Read(ctx context.Context, req resource.Read
 	}
 
 	if foundConfig == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return nil, diags
 	}
 
 	state.ID = types.StringValue(idFromState)
@@ -74,14 +92,14 @@ func (r *resourceAgentConfiguration) Read(ctx context.Context, req resource.Read
 		}
 	}
 
-	settings, diags := types.MapValueFrom(ctx, types.StringType, stringSettings)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	settings, mapDiags := types.MapValueFrom(ctx, types.StringType, stringSettings)
+	diags.Append(mapDiags...)
+	if diags.HasError() {
+		return nil, diags
 	}
 	state.Settings = settings
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	return state, diags
 }
 
 func createAgentConfigIDfromAPI(config kbapi.APMUIAgentConfigurationObject) string {

@@ -58,8 +58,14 @@ func (r *resourceAgentConfiguration) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	id := plan.SetIDFromService()
-	tflog.Trace(ctx, fmt.Sprintf("Created APM agent configuration with ID: %s", id))
+	plan.SetIDFromService()
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	updatedState, diags := r.read(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("Created APM agent configuration with ID: %s", updatedState.ID.ValueString()))
+	resp.Diagnostics.Append(resp.State.Set(ctx, updatedState)...)
 }

@@ -56,7 +56,12 @@ func (r *resourceAgentConfiguration) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("Updated APM agent configuration with ID: %s", plan.ID.ValueString()))
+	updatedState, diags := r.read(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	tflog.Trace(ctx, fmt.Sprintf("Updated APM agent configuration with ID: %s", updatedState.ID.ValueString()))
+	resp.Diagnostics.Append(resp.State.Set(ctx, updatedState)...)
 }
