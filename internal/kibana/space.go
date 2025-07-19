@@ -41,6 +41,7 @@ func ResourceSpace() *schema.Resource {
 			Description: "The list of disabled features for the space. To get a list of available feature IDs, use the Features API (https://www.elastic.co/guide/en/kibana/master/features-api-get.html).",
 			Type:        schema.TypeSet,
 			Optional:    true,
+			Computed:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
@@ -68,6 +69,7 @@ func ResourceSpace() *schema.Resource {
 			Description:  "The solution view for the space. Valid options are `security`, `oblt`, `es`, or `classic`.",
 			Type:         schema.TypeString,
 			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validation.StringInSlice([]string{"security", "oblt", "es", "classic"}, false),
 		},
 	}
