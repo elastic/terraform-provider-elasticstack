@@ -820,18 +820,6 @@ func transformKibanaPaths(schema *Schema) {
 
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
-
-	// Can be removed when https://github.com/elastic/kibana/pull/226713 is merged
-	schema.Components.Set("schemas.APM_UI_delete_service_object", Map{
-		"type": "object",
-		"properties": Map{
-			"service": Map{
-				"$ref": "#/components/schemas/APM_UI_service_object",
-			},
-		},
-	})
-	agentConfigPath := schema.MustGetPath("/api/apm/settings/agent-configuration")
-	agentConfigPath.Delete.Set("requestBody.content.application/json.schema.$ref", "#/components/schemas/APM_UI_delete_service_object")
 }
 
 // transformFleetPaths fixes the fleet paths.

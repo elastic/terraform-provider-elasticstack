@@ -32,7 +32,7 @@ func (r *resourceAgentConfiguration) Delete(ctx context.Context, req resource.De
 	}
 
 	deleteReqBody := kbapi.APMUIDeleteServiceObject{
-		Service: &kbapi.APMUIServiceObject{
+		Service: kbapi.APMUIServiceObject{
 			Name:        &serviceName,
 			Environment: serviceEnv,
 		},

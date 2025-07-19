@@ -693,10 +693,10 @@ type APMUIDeleteAgentConfigurationsResponse struct {
 	Result *string `json:"result,omitempty"`
 }
 
-// APMUIDeleteServiceObject defines model for APM_UI_delete_service_object.
+// APMUIDeleteServiceObject Service
 type APMUIDeleteServiceObject struct {
 	// Service Service
-	Service *APMUIServiceObject `json:"service,omitempty"`
+	Service APMUIServiceObject `json:"service"`
 }
 
 // APMUIServiceObject Service
