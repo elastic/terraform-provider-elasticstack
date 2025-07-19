@@ -1,4 +1,4 @@
-# SloResponseGroupBy
+# GroupBy
 
 ## Properties
 
@@ -7,20 +7,20 @@ Name | Type | Description | Notes
 
 ## Methods
 
-### NewSloResponseGroupBy
+### NewGroupBy
 
-`func NewSloResponseGroupBy() *SloResponseGroupBy`
+`func NewGroupBy() *GroupBy`
 
-NewSloResponseGroupBy instantiates a new SloResponseGroupBy object
+NewGroupBy instantiates a new GroupBy object
 This constructor will assign default values to properties that have it defined,
 and makes sure properties required by API are set, but the set of arguments
 will change when the set of required properties is changed
 
-### NewSloResponseGroupByWithDefaults
+### NewGroupByWithDefaults
 
-`func NewSloResponseGroupByWithDefaults() *SloResponseGroupBy`
+`func NewGroupByWithDefaults() *GroupBy`
 
-NewSloResponseGroupByWithDefaults instantiates a new SloResponseGroupBy object
+NewGroupByWithDefaults instantiates a new GroupBy object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
