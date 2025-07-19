@@ -23,7 +23,6 @@ resource "elasticstack_kibana_space" "example" {
   description       = "A fresh space for testing visualisations"
   disabled_features = ["ingestManager", "enterpriseSearch"]
   initials          = "ts"
-  solution          = "security"
 }
 ```
 
