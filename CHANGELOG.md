@@ -1,6 +1,6 @@
 ## [Unreleased]
 
-## [0.11.17] - 2025-07-14
+## [0.11.17] - 2025-07-21
 
 - Add `elasticstack_apm_agent_configuration` resource ([#1196](https://github.com/elastic/terraform-provider-elasticstack/pull/1196))
 - Add support for `timeslice_metric_indicator` in `elasticstack_kibana_slo` ([#1195](https://github.com/elastic/terraform-provider-elasticstack/pull/1195))
