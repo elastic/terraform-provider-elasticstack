@@ -30,7 +30,7 @@ func TestAccIndexTemplateDataSource(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config: testAccIndexTemplateDataSourceWithIgnoreComponentConfig(templateNameComponent),
+				Config:   testAccIndexTemplateDataSourceWithIgnoreComponentConfig(templateNameComponent),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateNameComponent),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_index_template.test", "index_patterns.*", fmt.Sprintf("tf-acc-component-%s-*", templateNameComponent)),
@@ -60,7 +60,6 @@ data "elasticstack_elasticsearch_index_template" "test" {
 }
 	`, templateName, templateName)
 }
-
 
 func testAccIndexTemplateDataSourceWithIgnoreComponentConfig(templateName string) string {
 	return fmt.Sprintf(`

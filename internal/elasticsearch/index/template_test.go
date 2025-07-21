@@ -46,7 +46,7 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config: testAccResourceIndexTemplateCreateWithIgnoreComponent(templateNameComponent),
+				Config:   testAccResourceIndexTemplateCreateWithIgnoreComponent(templateNameComponent),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test_component", "name", templateNameComponent),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test_component", "index_patterns.*", fmt.Sprintf("%s-logscomponent-*", templateNameComponent)),
@@ -56,7 +56,7 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config: testAccResourceIndexTemplateUpdateWithIgnoreComponent(templateNameComponent),
+				Config:   testAccResourceIndexTemplateUpdateWithIgnoreComponent(templateNameComponent),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test_component", "name", templateNameComponent),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test_component", "index_patterns.*", fmt.Sprintf("%s-logscomponent-*", templateNameComponent)),
