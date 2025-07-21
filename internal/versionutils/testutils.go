@@ -37,3 +37,18 @@ func CheckIfVersionMeetsConstraints(constraints version.Constraints) func() (boo
 		return !constraints.Check(serverVersion), nil
 	}
 }
+
+func CheckIfNotServerless() func() (bool, error) {
+	return func() (b bool, err error) {
+		client, err := clients.NewAcceptanceTestingClient()
+		if err != nil {
+			return false, err
+		}
+		serverFlavor, diags := client.ServerFlavor(context.Background())
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to get the elasticsearch flavor %v", diags)
+		}
+
+		return serverFlavor != clients.ServerlessFlavor, nil
+	}
+}

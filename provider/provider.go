@@ -62,6 +62,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_ingest_processor_registered_domain": ingest.DataSourceProcessorRegisteredDomain(),
 			"elasticstack_elasticsearch_ingest_processor_remove":            ingest.DataSourceProcessorRemove(),
 			"elasticstack_elasticsearch_ingest_processor_rename":            ingest.DataSourceProcessorRename(),
+			"elasticstack_elasticsearch_ingest_processor_reroute":           ingest.DataSourceProcessorReroute(),
 			"elasticstack_elasticsearch_ingest_processor_script":            ingest.DataSourceProcessorScript(),
 			"elasticstack_elasticsearch_ingest_processor_set":               ingest.DataSourceProcessorSet(),
 			"elasticstack_elasticsearch_ingest_processor_set_security_user": ingest.DataSourceProcessorSetSecurityUser(),

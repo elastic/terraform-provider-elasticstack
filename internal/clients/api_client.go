@@ -33,6 +33,8 @@ type CompositeId struct {
 	ResourceId string
 }
 
+const ServerlessFlavor = "serverless"
+
 func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	idParts := strings.Split(id, "/")
@@ -350,6 +352,24 @@ func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.D
 	a.elasticsearchClusterInfo = &info
 
 	return &info, diags
+}
+
+func (a *ApiClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+	flavor, diags := a.ServerFlavor(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	if flavor == ServerlessFlavor {
+		return true, nil
+	}
+
+	serverVersion, diags := a.ServerVersion(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	return serverVersion.GreaterThanOrEqual(minVersion), nil
 }
 
 func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
