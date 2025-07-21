@@ -10,10 +10,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+var (
+	MinSupportedIgnoreMissingComponentTemplateVersion = version.Must(version.NewVersion("8.7.0"))
 )
 
 func ResourceTemplate() *schema.Resource {
@@ -219,6 +224,12 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	if diags.HasError() {
 		return diags
 	}
+
+	serverVersion, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
 	var indexTemplate models.IndexTemplate
 	indexTemplate.Name = templateId
 
@@ -230,13 +241,17 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 	indexTemplate.ComposedOf = compsOf
 
-	compsOfIgnore := make([]string, 0)
 	if v, ok := d.GetOk("ignore_missing_component_templates"); ok {
+		compsOfIgnore := make([]string, 0)
 		for _, c := range v.([]interface{}) {
 			compsOfIgnore = append(compsOfIgnore, c.(string))
 		}
+
+		if len(compsOfIgnore) > 0 && serverVersion.LessThan(MinSupportedIgnoreMissingComponentTemplateVersion) {
+			return diag.FromErr(fmt.Errorf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", MinSupportedIgnoreMissingComponentTemplateVersion.String()))
+		}
+		indexTemplate.IgnoreMissingComponentTemplates = compsOfIgnore
 	}
-	indexTemplate.IgnoreMissingComponentTemplates = compsOfIgnore
 
 	if v, ok := d.GetOk("data_stream"); ok {
 		// 8.x workaround

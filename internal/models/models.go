@@ -167,7 +167,7 @@ type IndexTemplate struct {
 	Create                          bool                   `json:"-"`
 	Timeout                         string                 `json:"-"`
 	ComposedOf                      []string               `json:"composed_of"`
-	IgnoreMissingComponentTemplates []string               `json:"ignore_missing_component_templates"`
+	IgnoreMissingComponentTemplates []string               `json:"ignore_missing_component_templates,omitempty"`
 	DataStream                      *DataStreamSettings    `json:"data_stream,omitempty"`
 	IndexPatterns                   []string               `json:"index_patterns"`
 	Meta                            map[string]interface{} `json:"_meta,omitempty"`
