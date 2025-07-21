@@ -570,6 +570,7 @@ func transformFilterPaths(schema *Schema) {
 		"/api/fleet/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
 		"/api/synthetics/params":                         {"post"},
 		"/api/synthetics/params/{id}":                    {"get", "put", "delete"},
+		"/api/apm/settings/agent-configuration":          {"get", "put", "delete"},
 	}
 
 	for path, pathInfo := range schema.Paths {
