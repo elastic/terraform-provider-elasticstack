@@ -37,7 +37,7 @@ func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 						"disabled_features": schema.ListAttribute{
 							Description: "The list of disabled features for the space. To get a list of available feature IDs, use the Features API (https://www.elastic.co/guide/en/kibana/master/features-api-get.html).",
 							ElementType: types.StringType,
-							Optional:    true,
+							Computed:    true,
 						},
 						"initials": schema.StringAttribute{
 							Description: "The initials shown in the space avatar. By default, the initials are automatically generated from the space name. Initials must be 1 or 2 characters.",
@@ -50,6 +50,10 @@ func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 						"image_url": schema.StringAttribute{
 							Description: "The data-URL encoded image to display in the space avatar.",
 							Optional:    true,
+						},
+						"solution": schema.StringAttribute{
+							Description: "The solution view for the space. Valid options are `security`, `oblt`, `es`, or `classic`.",
+							Computed:    true,
 						},
 					},
 				},

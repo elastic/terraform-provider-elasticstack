@@ -41,11 +41,12 @@ Required:
 Optional:
 
 - `description` (String) The description for the space.
-- `disabled_features` (List of String) The list of disabled features for the space. To get a list of available feature IDs, use the Features API (https://www.elastic.co/guide/en/kibana/master/features-api-get.html).
 - `image_url` (String) The data-URL encoded image to display in the space avatar.
 
 Read-Only:
 
 - `color` (String) The hexadecimal color code used in the space avatar. By default, the color is automatically generated from the space name.
+- `disabled_features` (List of String) The list of disabled features for the space. To get a list of available feature IDs, use the Features API (https://www.elastic.co/guide/en/kibana/master/features-api-get.html).
 - `id` (String) Internal identifier of the resource.
 - `initials` (String) The initials shown in the space avatar. By default, the initials are automatically generated from the space name. Initials must be 1 or 2 characters.
+- `solution` (String) The solution view for the space. Valid options are `security`, `oblt`, `es`, or `classic`.
