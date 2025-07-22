@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
+
 ## [0.11.17] - 2025-07-21
 
 - Add `elasticstack_apm_agent_configuration` resource ([#1196](https://github.com/elastic/terraform-provider-elasticstack/pull/1196))
@@ -7,7 +9,6 @@
 - Add `elasticstack_elasticsearch_ingest_processor_reroute` data source ([#678](https://github.com/elastic/terraform-provider-elasticstack/issues/678))
 - Add support for `supports_agentless` to `elasticstack_fleet_agent_policy` ([#1197](https://github.com/elastic/terraform-provider-elasticstack/pull/1197))
 - Ignore `master_timeout` when targeting Serverless projects ([#1207](https://github.com/elastic/terraform-provider-elasticstack/pull/1207))
-- Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
 
 ## [0.11.16] - 2025-07-09
 
