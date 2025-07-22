@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
+
 ## [0.11.17] - 2025-07-21
 
 - Add `elasticstack_apm_agent_configuration` resource ([#1196](https://github.com/elastic/terraform-provider-elasticstack/pull/1196))

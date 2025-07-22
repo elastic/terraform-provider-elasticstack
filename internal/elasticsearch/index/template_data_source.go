@@ -29,6 +29,14 @@ func DataSourceTemplate() *schema.Resource {
 				Type: schema.TypeString,
 			},
 		},
+		"ignore_missing_component_templates": {
+			Description: "A list of component template names that are ignored if missing.",
+			Type:        schema.TypeList,
+			Computed:    true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
 		"data_stream": {
 			Description: "If this object is included, the template is used to create data streams and their backing indices. Supports an empty object.",
 			Type:        schema.TypeList,
