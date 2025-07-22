@@ -84,7 +84,7 @@ jobs:
           - 5601:5601
         options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
       fleet:
-        image: docker.elastic.co/beats/elastic-agent:${{ matrix.version }}
+        image: elastic/elastic-agent:${{ matrix.version }}
         env:
           SERVER_NAME: fleet
           FLEET_ENROLL: "1"
@@ -126,7 +126,7 @@ jobs:
           - '8.15.5'
           - '8.16.2'
           - '8.17.0'
-          - '9.0.0-SNAPSHOT'
+          - '9.0.3'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
@@ -156,7 +156,7 @@ jobs:
 
       - id: setup-fleet
         name: Setup Fleet
-        if: matrix.version == '8.10.3' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.2' || matrix.version == '8.17.0' || matrix.version == '9.0.0-SNAPSHOT'
+        if: matrix.version == '8.10.3' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.2' || matrix.version == '8.17.0' || matrix.version == '9.0.3'
         run: |-
           make setup-kibana-fleet
         env:
