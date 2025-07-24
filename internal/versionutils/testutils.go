@@ -23,6 +23,22 @@ func CheckIfVersionIsUnsupported(minSupportedVersion *version.Version) func() (b
 	}
 }
 
+func CheckIfServerless() func() (bool, error) {
+	return func() (b bool, err error) {
+		serverlessFlavor := "serverless"
+		client, err := clients.NewAcceptanceTestingClient()
+		if err != nil {
+			return false, err
+		}
+		serverFlavor, diags := client.ServerFlavor(context.Background())
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to parse the elasticsearch server flavor %v", diags)
+		}
+
+		return serverFlavor == serverlessFlavor, nil
+	}
+}
+
 func CheckIfVersionMeetsConstraints(constraints version.Constraints) func() (bool, error) {
 	return func() (b bool, err error) {
 		client, err := clients.NewAcceptanceTestingClient()
