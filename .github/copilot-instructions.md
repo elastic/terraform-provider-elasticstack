@@ -53,7 +53,7 @@ Carefully read the issue and think hard about a plan to solve it before coding. 
 - You MUST iterate and keep going until the problem is solved.
 
 ## 6. Testing
-- Run tests frequently using `make test`
+- Run tests frequently using `make test` and `make testacc`
 - After each change, verify correctness by running relevant tests.
 - If tests fail, analyze failures and revise your patch.
 - Write additional tests if needed to capture important behaviors or edge cases.
