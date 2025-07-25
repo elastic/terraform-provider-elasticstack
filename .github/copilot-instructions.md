@@ -63,8 +63,7 @@ Carefully read the issue and think hard about a plan to solve it before coding. 
 - Confirm the root cause is fixed.
 - Review your solution for logic correctness and robustness.
 - Iterate until you are extremely confident the fix is complete and all tests pass.
-- Run `make lint` to ensure any linting errors have not surfaced with your changes
-- Run `make fmt` before committing any changes to ensure proper code formatting, this will run gofmt on all Go files to maintain consistent style.
+- Run `make lint` to ensure any linting errors have not surfaced with your changes. This task may automatically correct any linting errors, and regenerate documentation. Include any changes in your commit. 
 
 ## 8. Final Reflection and Additional Testing
 - Reflect carefully on the original intent of the user and the problem statement.
