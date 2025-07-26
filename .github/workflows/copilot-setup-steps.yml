@@ -33,7 +33,7 @@ jobs:
       TF_ACC: "1"
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:9.0.3@sha256:b21843a4a2efafcb0475ead137ce0a669fca412739694de833a2697f121a87b9
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.0.4@sha256:59da431b8987b508af17a9424f1f03398ecaacc09c4218abe306749b524f1519
         env:
           discovery.type: single-node
           xpack.security.enabled: true
