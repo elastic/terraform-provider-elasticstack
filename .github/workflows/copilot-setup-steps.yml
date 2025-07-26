@@ -60,7 +60,7 @@ jobs:
           - 5601:5601
         options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
       fleet:
-        image: docker.elastic.co/elastic-agent/elastic-agent:9.0.3@sha256:c143c196d75078d1633c436fc8ab1e8c0d387d7131e3ace8bac1c1eea6d583ff
+        image: docker.elastic.co/elastic-agent/elastic-agent:9.0.4@sha256:f33be65eafedbdd3637f36641785482420b1e3a51c61068497bbf22694fb7e7e
         env:
           SERVER_NAME: fleet
           FLEET_ENROLL: "1"
