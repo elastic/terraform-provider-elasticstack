@@ -7,9 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -45,24 +43,8 @@ func (r *enrichPolicyResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	// Convert model to framework types
-	data.Name = types.StringValue(policy.Name)
-	data.PolicyType = types.StringValue(policy.Type)
-	data.MatchField = types.StringValue(policy.MatchField)
-
-	if policy.Query != "" && policy.Query != "null" {
-		data.Query = types.StringValue(policy.Query)
-	} else {
-		data.Query = types.StringNull()
-	}
-
-	// Convert string slices to List
-	data.Indices = utils.SliceToListType_String(ctx, policy.Indices, path.Empty(), &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	data.EnrichFields = utils.SliceToListType_String(ctx, policy.EnrichFields, path.Empty(), &resp.Diagnostics)
+	// Convert model to framework types using shared function
+	data.populateFromPolicy(ctx, policy, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

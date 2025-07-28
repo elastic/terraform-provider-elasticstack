@@ -2,8 +2,8 @@ package enrich
 
 import (
 	"context"
-	"regexp"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -108,11 +108,9 @@ func GetResourceSchema() schema.Schema {
 			"query": schema.StringAttribute{
 				MarkdownDescription: "Query used to filter documents in the enrich index. The policy only uses documents matching this query to enrich incoming documents. Defaults to a match_all query.",
 				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.RegexMatches(regexp.MustCompile(`^\{.*\}$`), "must be valid JSON"),
 				},
 			},
 			"execute": schema.BoolAttribute{

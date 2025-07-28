@@ -7,9 +7,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -72,6 +72,7 @@ func GetDataSourceSchema() schema.Schema {
 			},
 			"query": schema.StringAttribute{
 				MarkdownDescription: "Query used to filter documents in the enrich index for matching.",
+				CustomType:          jsontypes.NormalizedType{},
 				Computed:            true,
 			},
 		},
@@ -111,24 +112,8 @@ func (d *enrichPolicyDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	// Convert model to framework types
-	data.Name = types.StringValue(policy.Name)
-	data.PolicyType = types.StringValue(policy.Type)
-	data.MatchField = types.StringValue(policy.MatchField)
-
-	if policy.Query != "" && policy.Query != "null" {
-		data.Query = types.StringValue(policy.Query)
-	} else {
-		data.Query = types.StringNull()
-	}
-
-	// Convert string slices to List
-	data.Indices = utils.SliceToListType_String(ctx, policy.Indices, path.Empty(), &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	data.EnrichFields = utils.SliceToListType_String(ctx, policy.EnrichFields, path.Empty(), &resp.Diagnostics)
+	// Convert model to framework types using shared function
+	data.populateFromPolicy(ctx, policy, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
