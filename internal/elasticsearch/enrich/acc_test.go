@@ -69,7 +69,7 @@ func TestAccResourceEnrichPolicyFromSDK(t *testing.T) {
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"elasticstack": {
 						Source:            "elastic/elasticstack",
-						VersionConstraint: "0.11.15",
+						VersionConstraint: "0.11.17",
 					},
 				},
 				Config: testAccEnrichPolicyFW(name),
