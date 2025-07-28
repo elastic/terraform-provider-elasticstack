@@ -2,6 +2,7 @@
 
 - Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
 - Migrate `elasticstack_elasticsearch_enrich_policy` resource and data source to Terraform Plugin Framework ([#1220](https://github.com/elastic/terraform-provider-elasticstack/pull/1220))
+- Prevent provider panic when a script exists in state, but not in Elasticsearch ([#1218](https://github.com/elastic/terraform-provider-elasticstack/pull/1218))
 
 ## [0.11.17] - 2025-07-21
 
