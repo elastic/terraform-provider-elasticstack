@@ -80,12 +80,12 @@ output "query" {
 
 ### Read-Only
 
-- `enrich_fields` (List of String) Fields to add to matching incoming documents. These fields must be present in the source indices.
+- `enrich_fields` (Set of String) Fields to add to matching incoming documents. These fields must be present in the source indices.
 - `id` (String) Internal identifier of the resource
-- `indices` (List of String) Array of one or more source indices used to create the enrich index.
+- `indices` (Set of String) Array of one or more source indices used to create the enrich index.
 - `match_field` (String) Field from the source indices used to match incoming documents.
 - `policy_type` (String) The type of enrich policy, can be one of geo_match, match, range.
-- `query` (String) Query used to filter documents in the enrich index for matching.
+- `query` (String) Query used to filter documents in the enrich index. The policy only uses documents matching this query to enrich incoming documents. Defaults to a match_all query.
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
