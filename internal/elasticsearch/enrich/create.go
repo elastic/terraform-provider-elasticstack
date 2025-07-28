@@ -52,12 +52,12 @@ func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 	}
 
 	// Convert framework types to model
-	indices := utils.ListTypeToSlice_String(ctx, data.Indices, path.Empty(), &diags)
+	indices := setTypeToSlice_String(ctx, data.Indices, path.Empty(), &diags)
 	if diags.HasError() {
 		return diags
 	}
 
-	enrichFields := utils.ListTypeToSlice_String(ctx, data.EnrichFields, path.Empty(), &diags)
+	enrichFields := setTypeToSlice_String(ctx, data.EnrichFields, path.Empty(), &diags)
 	if diags.HasError() {
 		return diags
 	}

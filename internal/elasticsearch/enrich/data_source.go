@@ -56,7 +56,7 @@ func GetDataSourceSchema() schema.Schema {
 				MarkdownDescription: "The type of enrich policy, can be one of geo_match, match, range.",
 				Computed:            true,
 			},
-			"indices": schema.ListAttribute{
+			"indices": schema.SetAttribute{
 				MarkdownDescription: "Array of one or more source indices used to create the enrich index.",
 				ElementType:         types.StringType,
 				Computed:            true,
@@ -65,13 +65,13 @@ func GetDataSourceSchema() schema.Schema {
 				MarkdownDescription: "Field from the source indices used to match incoming documents.",
 				Computed:            true,
 			},
-			"enrich_fields": schema.ListAttribute{
+			"enrich_fields": schema.SetAttribute{
 				MarkdownDescription: "Fields to add to matching incoming documents. These fields must be present in the source indices.",
 				ElementType:         types.StringType,
 				Computed:            true,
 			},
 			"query": schema.StringAttribute{
-				MarkdownDescription: "Query used to filter documents in the enrich index for matching.",
+				MarkdownDescription: "Query used to filter documents in the enrich index. The policy only uses documents matching this query to enrich incoming documents. Defaults to a match_all query.",
 				CustomType:          jsontypes.NormalizedType{},
 				Computed:            true,
 			},
