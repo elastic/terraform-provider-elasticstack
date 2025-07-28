@@ -31,7 +31,7 @@ func (r *enrichPolicyResource) Update(ctx context.Context, req resource.UpdateRe
 }
 
 func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data EnrichPolicyData
+	var data EnrichPolicyDataWithExecute
 	var diags diag.Diagnostics
 	diags.Append(plan.Get(ctx, &data)...)
 	if diags.HasError() {

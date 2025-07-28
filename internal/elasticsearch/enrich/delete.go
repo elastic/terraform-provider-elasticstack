@@ -10,7 +10,7 @@ import (
 )
 
 func (r *enrichPolicyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data EnrichPolicyData
+	var data EnrichPolicyDataWithExecute
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return

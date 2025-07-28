@@ -20,7 +20,11 @@ type EnrichPolicyData struct {
 	MatchField              types.String         `tfsdk:"match_field"`
 	EnrichFields            types.List           `tfsdk:"enrich_fields"`
 	Query                   jsontypes.Normalized `tfsdk:"query"`
-	Execute                 types.Bool           `tfsdk:"execute"`
+}
+
+type EnrichPolicyDataWithExecute struct {
+	EnrichPolicyData
+	Execute types.Bool `tfsdk:"execute"`
 }
 
 // populateFromPolicy converts models.EnrichPolicy to EnrichPolicyData fields

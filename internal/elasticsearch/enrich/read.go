@@ -12,7 +12,7 @@ import (
 )
 
 func (r *enrichPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data EnrichPolicyData
+	var data EnrichPolicyDataWithExecute
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
