@@ -50,7 +50,7 @@ func (r *enrichPolicyResource) Read(ctx context.Context, req resource.ReadReques
 	data.Name = types.StringValue(policy.Name)
 	data.PolicyType = types.StringValue(policy.Type)
 	data.MatchField = types.StringValue(policy.MatchField)
-	
+
 	if policy.Query != "" && policy.Query != "null" {
 		data.Query = types.StringValue(policy.Query)
 	} else {
@@ -108,7 +108,7 @@ func (d *enrichPolicyDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.Name = types.StringValue(policy.Name)
 	data.PolicyType = types.StringValue(policy.Type)
 	data.MatchField = types.StringValue(policy.MatchField)
-	
+
 	if policy.Query != "" && policy.Query != "null" {
 		data.Query = types.StringValue(policy.Query)
 	} else {
