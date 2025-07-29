@@ -3,6 +3,7 @@ package kibana
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -81,11 +82,15 @@ func getSchema() map[string]*schema.Schema {
 
 	return map[string]*schema.Schema{
 		"slo_id": {
-			Description: "An ID (8 and 36 characters). If omitted, a UUIDv1 will be generated server-side.",
+			Description: "An ID (8 to 48 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.",
 			Type:        schema.TypeString,
 			Optional:    true,
 			Computed:    true,
 			ForceNew:    true,
+			ValidateFunc: validation.All(
+				validation.StringLenBetween(8, 48),
+				validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9_-]+$`), "must contain only letters, numbers, hyphens, and underscores"),
+			),
 		},
 		"name": {
 			Description: "The name of the SLO.",
