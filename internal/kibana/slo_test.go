@@ -611,6 +611,83 @@ func TestAccResourceSloErrors(t *testing.T) {
 	})
 }
 
+func TestAccResourceSloValidation(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config:      getSLOConfigWithInvalidSloId("short", "sh", "apm_latency_indicator"),
+				ExpectError: regexp.MustCompile(`expected length of slo_id to be in the range \(8 - 48\)`),
+			},
+			{
+				Config:      getSLOConfigWithInvalidSloId("toolongid", "this-id-is-way-too-long-and-exceeds-the-48-character-limit-for-slo-ids", "apm_latency_indicator"),
+				ExpectError: regexp.MustCompile(`expected length of slo_id to be in the range \(8 - 48\)`),
+			},
+			{
+				Config:      getSLOConfigWithInvalidSloId("invalidchars", "invalid@id$", "apm_latency_indicator"),
+				ExpectError: regexp.MustCompile(`must contain only letters, numbers, hyphens, and underscores`),
+			},
+		},
+	})
+}
+
+func TestSloIdValidation(t *testing.T) {
+	resource := kibanaresource.ResourceSlo()
+	sloIdSchema := resource.Schema["slo_id"]
+
+	// Test valid slo_id values
+	validIds := []string{
+		"valid_id",   // 8 chars with underscore
+		"valid-id",   // 8 chars with hyphen
+		"validId123", // 11 chars with mixed case and numbers
+		"a1234567",   // exactly 8 chars
+		"this-is-a-very-long-but-valid-slo-id-12345678", // exactly 48 chars
+	}
+
+	for _, id := range validIds {
+		warnings, errors := sloIdSchema.ValidateFunc(id, "slo_id")
+		if len(errors) > 0 {
+			t.Errorf("Expected valid ID %q to pass validation, but got errors: %v", id, errors)
+		}
+		if len(warnings) > 0 {
+			t.Errorf("Expected valid ID %q to have no warnings, but got: %v", id, warnings)
+		}
+	}
+
+	// Test invalid slo_id values
+	invalidTests := []struct {
+		id          string
+		expectedErr string
+	}{
+		{"short", "expected length of slo_id to be in the range (8 - 48)"},
+		{"1234567", "expected length of slo_id to be in the range (8 - 48)"},                                                                 // 7 chars
+		{"this-is-a-very-long-slo-id-that-exceeds-the-48-character-limit-for-sure", "expected length of slo_id to be in the range (8 - 48)"}, // > 48 chars
+		{"invalid@id", "must contain only letters, numbers, hyphens, and underscores"},
+		{"invalid$id", "must contain only letters, numbers, hyphens, and underscores"},
+		{"invalid id", "must contain only letters, numbers, hyphens, and underscores"}, // space
+		{"invalid.id", "must contain only letters, numbers, hyphens, and underscores"}, // period
+	}
+
+	for _, test := range invalidTests {
+		_, errors := sloIdSchema.ValidateFunc(test.id, "slo_id")
+		if len(errors) == 0 {
+			t.Errorf("Expected invalid ID %q to fail validation", test.id)
+		} else {
+			found := false
+			for _, err := range errors {
+				if strings.Contains(err.Error(), test.expectedErr) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected error for ID %q to contain %q, but got: %v", test.id, test.expectedErr, errors)
+			}
+		}
+	}
+}
+
 func checkResourceSloDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
@@ -854,5 +931,61 @@ func getSLOConfig(vars sloVars) string {
 
 	config := fmt.Sprintf(configTemplate, vars.name, vars.name, vars.name, getIndicator(vars.indicatorType), settings, groupByOption, tagsOption)
 
+	return config
+}
+
+func getSLOConfigWithInvalidSloId(name, sloId, indicatorType string) string {
+	configTemplate := `
+		provider "elasticstack" {
+		elasticsearch {}
+		kibana {}
+		}
+
+		resource "elasticstack_elasticsearch_index" "my_index" {
+			name = "my-index-%s"
+			deletion_protection = false
+		}
+
+		resource "elasticstack_kibana_slo" "test_slo" {
+			name        = "%s"
+			slo_id      = "%s"
+			description = "fully sick SLO"
+
+		%s
+
+			time_window {
+			duration   = "7d"
+			type = "rolling"
+			}
+
+			budgeting_method = "timeslices"
+
+			objective {
+			target          = 0.999
+			timeslice_target = 0.95
+			timeslice_window = "5m"
+			}
+
+			depends_on = [elasticstack_elasticsearch_index.my_index]
+
+		}
+	`
+
+	var indicator string
+	switch indicatorType {
+	case "apm_latency_indicator":
+		indicator = fmt.Sprintf(`
+		apm_latency_indicator {
+			environment      = "production"
+			service          = "my-service"
+			transaction_type = "request"
+			transaction_name = "GET /sup/dawg"
+			index            = "my-index-%s"
+			threshold        = 500
+		}
+		`, name)
+	}
+
+	config := fmt.Sprintf(configTemplate, name, name, sloId, indicator)
 	return config
 }

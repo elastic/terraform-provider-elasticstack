@@ -248,7 +248,7 @@ resource "elasticstack_kibana_slo" "timeslice_metric" {
 - `kql_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--kql_custom_indicator))
 - `metric_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator))
 - `settings` (Block List, Max: 1) The default settings should be sufficient for most users, but if needed, these properties can be overwritten. (see [below for nested schema](#nestedblock--settings))
-- `slo_id` (String) An ID (8 and 36 characters). If omitted, a UUIDv1 will be generated server-side.
+- `slo_id` (String) An ID (8 to 48 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) The tags for the SLO.
 - `timeslice_metric_indicator` (Block List, Max: 1) Defines a timeslice metric indicator for SLO. (see [below for nested schema](#nestedblock--timeslice_metric_indicator))
