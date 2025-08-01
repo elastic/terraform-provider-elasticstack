@@ -30,5 +30,5 @@ func (r *MaintenanceWindowResource) Configure(ctx context.Context, req resource.
 
 // Metadata returns the provider type name.
 func (r *MaintenanceWindowResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_maintenance_window_2")
+	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_maintenance_window")
 }
