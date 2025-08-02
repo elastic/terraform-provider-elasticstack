@@ -48,7 +48,7 @@ jobs:
           - 9200:9200
         options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
       kibana:
-        image: docker.elastic.co/kibana/kibana:9.0.3@sha256:c4c00a485fbc3619d8373f3bc74e9dd5b5a34380ef50442be4366e8fb57cd50a
+        image: docker.elastic.co/kibana/kibana:9.1.0@sha256:dc186ea11154576c474f9a541dbee95401fd910028ef21ab8b3a222ce2c0e067
         env:
           SERVER_NAME: kibana
           ELASTICSEARCH_HOSTS: http://elasticsearch:9200
