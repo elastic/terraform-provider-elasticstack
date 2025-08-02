@@ -2,6 +2,7 @@ package maintenance_window
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -128,64 +129,9 @@ func (model *MaintenanceWindowModel) fromAPICreateResponse(ctx context.Context, 
 		return nil
 	}
 
-	response := data.JSON200
-
-	var diags diag.Diagnostics
-
-	resourceID := clients.CompositeId{
-		ClusterId:  model.SpaceID.ValueString(),
-		ResourceId: response.Id,
-	}
-
-	model.ID = types.StringValue(resourceID.String())
-	model.Title = types.StringValue(response.Title)
-	model.Enabled = types.BoolValue(response.Enabled)
-
-	model.CustomSchedule = MaintenanceWindowSchedule{
-		Start:    types.StringValue(response.Schedule.Custom.Start),
-		Duration: types.StringValue(response.Schedule.Custom.Duration),
-		Timezone: types.StringPointerValue(response.Schedule.Custom.Timezone),
-	}
-
-	if response.Schedule.Custom.Recurring != nil {
-		model.CustomSchedule.Recurring = &MaintenanceWindowScheduleRecurring{
-			End:        types.StringPointerValue(response.Schedule.Custom.Recurring.End),
-			Every:      types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
-			OnWeekDay:  types.ListNull(types.StringType),
-			OnMonth:    types.ListNull(types.Int32Type),
-			OnMonthDay: types.ListNull(types.Int32Type),
-		}
-
-		if response.Schedule.Custom.Recurring.Occurrences != nil {
-			occurrences := int32(*response.Schedule.Custom.Recurring.Occurrences)
-			model.CustomSchedule.Recurring.Occurrences = types.Int32PointerValue(&occurrences)
-		}
-
-		if response.Schedule.Custom.Recurring.OnWeekDay != nil {
-			onWeekDay, _ := types.ListValueFrom(ctx, types.StringType, response.Schedule.Custom.Recurring.OnWeekDay)
-			model.CustomSchedule.Recurring.OnWeekDay = onWeekDay
-		}
-
-		if response.Schedule.Custom.Recurring.OnMonth != nil {
-			onMonth, _ := types.ListValueFrom(ctx, types.Float32Type, response.Schedule.Custom.Recurring.OnMonth)
-			model.CustomSchedule.Recurring.OnMonth = onMonth
-		}
-
-		if response.Schedule.Custom.Recurring.OnMonthDay != nil {
-			onMonthDay, _ := types.ListValueFrom(ctx, types.Float32Type, response.Schedule.Custom.Recurring.OnMonthDay)
-			model.CustomSchedule.Recurring.OnMonthDay = onMonthDay
-		}
-	}
-
-	if response.Scope != nil {
-		model.Scope = &MaintenanceWindowScope{
-			Alerting: MaintenanceWindowAlertingScope{
-				Kql: types.StringValue(response.Scope.Alerting.Query.Kql),
-			},
-		}
-	}
-
-	return diags
+	var response = &ResponseJson{}
+	json.Unmarshal(data.Body, response)
+	return model._fromAPIResponse(ctx, *response)
 }
 
 /* READ */
@@ -195,64 +141,9 @@ func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, da
 		return nil
 	}
 
-	response := data.JSON200
-
-	var diags diag.Diagnostics
-
-	resourceID := clients.CompositeId{
-		ClusterId:  model.SpaceID.ValueString(),
-		ResourceId: response.Id,
-	}
-
-	model.ID = types.StringValue(resourceID.String())
-	model.Title = types.StringValue(response.Title)
-	model.Enabled = types.BoolValue(response.Enabled)
-
-	model.CustomSchedule = MaintenanceWindowSchedule{
-		Start:    types.StringValue(response.Schedule.Custom.Start),
-		Duration: types.StringValue(response.Schedule.Custom.Duration),
-		Timezone: types.StringPointerValue(response.Schedule.Custom.Timezone),
-	}
-
-	if response.Schedule.Custom.Recurring != nil {
-		model.CustomSchedule.Recurring = &MaintenanceWindowScheduleRecurring{
-			End:        types.StringPointerValue(response.Schedule.Custom.Recurring.End),
-			Every:      types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
-			OnWeekDay:  types.ListNull(types.StringType),
-			OnMonth:    types.ListNull(types.Float32Type),
-			OnMonthDay: types.ListNull(types.Float32Type),
-		}
-
-		if response.Schedule.Custom.Recurring.Occurrences != nil {
-			occurrences := int32(*response.Schedule.Custom.Recurring.Occurrences)
-			model.CustomSchedule.Recurring.Occurrences = types.Int32PointerValue(&occurrences)
-		}
-
-		if response.Schedule.Custom.Recurring.OnWeekDay != nil {
-			onWeekDay, _ := types.ListValueFrom(ctx, types.StringType, response.Schedule.Custom.Recurring.OnWeekDay)
-			model.CustomSchedule.Recurring.OnWeekDay = onWeekDay
-		}
-
-		if response.Schedule.Custom.Recurring.OnMonth != nil {
-			onMonth, _ := types.ListValueFrom(ctx, types.Float32Type, response.Schedule.Custom.Recurring.OnMonth)
-			model.CustomSchedule.Recurring.OnMonth = onMonth
-		}
-
-		if response.Schedule.Custom.Recurring.OnMonthDay != nil {
-			onMonthDay, _ := types.ListValueFrom(ctx, types.Float32Type, response.Schedule.Custom.Recurring.OnMonthDay)
-			model.CustomSchedule.Recurring.OnMonthDay = onMonthDay
-		}
-	}
-
-	if response.Scope != nil {
-		model.Scope = &MaintenanceWindowScope{
-			Alerting: MaintenanceWindowAlertingScope{
-				Kql: types.StringValue(response.Scope.Alerting.Query.Kql),
-			},
-		}
-	}
-
-	return diags
+	var response = &ResponseJson{}
+	json.Unmarshal(data.Body, response)
+	return model._fromAPIResponse(ctx, *response)
 }
 
 /* UPDATE */
@@ -383,7 +274,60 @@ func (model *MaintenanceWindowModel) fromAPIUpdateResponse(ctx context.Context, 
 		return nil
 	}
 
-	response := data.JSON200
+	var response = &ResponseJson{}
+	json.Unmarshal(data.Body, response)
+	return model._fromAPIResponse(ctx, *response)
+}
+
+/* DELETE */
+
+func (model MaintenanceWindowModel) getMaintenanceWindowIDAndSpaceID() (maintenanceWindowID string, spaceID string) {
+	maintenanceWindowID = model.ID.ValueString()
+	spaceID = model.SpaceID.ValueString()
+
+	resourceID := model.ID.ValueString()
+	maybeCompositeID, _ := clients.CompositeIdFromStr(resourceID)
+	if maybeCompositeID != nil {
+		maintenanceWindowID = maybeCompositeID.ResourceId
+		spaceID = maybeCompositeID.ClusterId
+	}
+
+	return
+}
+
+/* UTILS */
+
+type ResponseJson struct {
+	CreatedAt string  `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Enabled   bool    `json:"enabled"`
+	Id        string  `json:"id"`
+	Schedule  struct {
+		Custom struct {
+			Duration  string `json:"duration"`
+			Recurring *struct {
+				End         *string    `json:"end,omitempty"`
+				Every       *string    `json:"every,omitempty"`
+				Occurrences *float32   `json:"occurrences,omitempty"`
+				OnMonth     *[]float32 `json:"onMonth,omitempty"`
+				OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
+				OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
+			} `json:"recurring,omitempty"`
+			Start    string  `json:"start"`
+			Timezone *string `json:"timezone,omitempty"`
+		} `json:"custom"`
+	} `json:"schedule"`
+	Scope *struct {
+		Alerting struct {
+			Query struct {
+				Kql string `json:"kql"`
+			} `json:"query"`
+		} `json:"alerting"`
+	} `json:"scope,omitempty"`
+	Title string `json:"title"`
+}
+
+func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, response ResponseJson) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 
@@ -441,20 +385,4 @@ func (model *MaintenanceWindowModel) fromAPIUpdateResponse(ctx context.Context, 
 	}
 
 	return diags
-}
-
-/* DELETE */
-
-func (model MaintenanceWindowModel) getMaintenanceWindowIDAndSpaceID() (maintenanceWindowID string, spaceID string) {
-	maintenanceWindowID = model.ID.ValueString()
-	spaceID = model.SpaceID.ValueString()
-
-	resourceID := model.ID.ValueString()
-	maybeCompositeID, _ := clients.CompositeIdFromStr(resourceID)
-	if maybeCompositeID != nil {
-		maintenanceWindowID = maybeCompositeID.ResourceId
-		spaceID = maybeCompositeID.ClusterId
-	}
-
-	return
 }
