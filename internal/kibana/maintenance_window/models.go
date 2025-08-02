@@ -34,12 +34,12 @@ type MaintenanceWindowSchedule struct {
 }
 
 type MaintenanceWindowScheduleRecurring struct {
-	End         types.String  `tfsdk:"end"`
-	Every       types.String  `tfsdk:"every"`
-	Occurrences types.Float32 `tfsdk:"occurrences"`
-	OnWeekDay   types.List    `tfsdk:"on_week_day"`
-	OnMonthDay  types.List    `tfsdk:"on_month_day"`
-	OnMonth     types.List    `tfsdk:"on_month"`
+	End         types.String `tfsdk:"end"`
+	Every       types.String `tfsdk:"every"`
+	Occurrences types.Int32  `tfsdk:"occurrences"`
+	OnWeekDay   types.List   `tfsdk:"on_week_day"`
+	OnMonthDay  types.List   `tfsdk:"on_month_day"`
+	OnMonth     types.List   `tfsdk:"on_month"`
 }
 
 /* CREATE */
@@ -73,8 +73,9 @@ func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kba
 			Every: model.CustomSchedule.Recurring.Every.ValueStringPointer(),
 		}
 
-		if !model.CustomSchedule.Recurring.Occurrences.IsNull() && !model.CustomSchedule.Recurring.Occurrences.IsUnknown() && model.CustomSchedule.Recurring.Occurrences.ValueFloat32() > 0 {
-			body.Schedule.Custom.Recurring.Occurrences = model.CustomSchedule.Recurring.Occurrences.ValueFloat32Pointer()
+		if !model.CustomSchedule.Recurring.Occurrences.IsNull() && !model.CustomSchedule.Recurring.Occurrences.IsUnknown() && model.CustomSchedule.Recurring.Occurrences.ValueInt32() > 0 {
+			occurrences := float32(model.CustomSchedule.Recurring.Occurrences.ValueInt32())
+			body.Schedule.Custom.Recurring.Occurrences = &occurrences
 		}
 
 		if !model.CustomSchedule.Recurring.OnWeekDay.IsNull() && !model.CustomSchedule.Recurring.OnWeekDay.IsUnknown() {
@@ -148,12 +149,16 @@ func (model *MaintenanceWindowModel) fromAPICreateResponse(ctx context.Context, 
 
 	if response.Schedule.Custom.Recurring != nil {
 		model.CustomSchedule.Recurring = &MaintenanceWindowScheduleRecurring{
-			End:         types.StringPointerValue(response.Schedule.Custom.Recurring.End),
-			Every:       types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
-			Occurrences: types.Float32PointerValue(response.Schedule.Custom.Recurring.Occurrences),
-			OnWeekDay:   types.ListNull(types.StringType),
-			OnMonth:     types.ListNull(types.Float32Type),
-			OnMonthDay:  types.ListNull(types.Float32Type),
+			End:        types.StringPointerValue(response.Schedule.Custom.Recurring.End),
+			Every:      types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
+			OnWeekDay:  types.ListNull(types.StringType),
+			OnMonth:    types.ListNull(types.Int32Type),
+			OnMonthDay: types.ListNull(types.Int32Type),
+		}
+
+		if response.Schedule.Custom.Recurring.Occurrences != nil {
+			occurrences := int32(*response.Schedule.Custom.Recurring.Occurrences)
+			model.CustomSchedule.Recurring.Occurrences = types.Int32PointerValue(&occurrences)
 		}
 
 		if response.Schedule.Custom.Recurring.OnWeekDay != nil {
@@ -211,12 +216,16 @@ func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, da
 
 	if response.Schedule.Custom.Recurring != nil {
 		model.CustomSchedule.Recurring = &MaintenanceWindowScheduleRecurring{
-			End:         types.StringPointerValue(response.Schedule.Custom.Recurring.End),
-			Every:       types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
-			Occurrences: types.Float32PointerValue(response.Schedule.Custom.Recurring.Occurrences),
-			OnWeekDay:   types.ListNull(types.StringType),
-			OnMonth:     types.ListNull(types.Float32Type),
-			OnMonthDay:  types.ListNull(types.Float32Type),
+			End:        types.StringPointerValue(response.Schedule.Custom.Recurring.End),
+			Every:      types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
+			OnWeekDay:  types.ListNull(types.StringType),
+			OnMonth:    types.ListNull(types.Float32Type),
+			OnMonthDay: types.ListNull(types.Float32Type),
+		}
+
+		if response.Schedule.Custom.Recurring.Occurrences != nil {
+			occurrences := int32(*response.Schedule.Custom.Recurring.Occurrences)
+			model.CustomSchedule.Recurring.Occurrences = types.Int32PointerValue(&occurrences)
 		}
 
 		if response.Schedule.Custom.Recurring.OnWeekDay != nil {
@@ -319,8 +328,9 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 			body.Schedule.Custom.Recurring.Every = model.CustomSchedule.Recurring.Every.ValueStringPointer()
 		}
 
-		if !model.CustomSchedule.Recurring.Occurrences.IsNull() && !model.CustomSchedule.Recurring.Occurrences.IsUnknown() && model.CustomSchedule.Recurring.Occurrences.ValueFloat32() > 0 {
-			body.Schedule.Custom.Recurring.Occurrences = model.CustomSchedule.Recurring.Occurrences.ValueFloat32Pointer()
+		if !model.CustomSchedule.Recurring.Occurrences.IsNull() && !model.CustomSchedule.Recurring.Occurrences.IsUnknown() && model.CustomSchedule.Recurring.Occurrences.ValueInt32() > 0 {
+			occurrences := float32(model.CustomSchedule.Recurring.Occurrences.ValueInt32())
+			body.Schedule.Custom.Recurring.Occurrences = &occurrences
 		}
 
 		if !model.CustomSchedule.Recurring.OnWeekDay.IsNull() && !model.CustomSchedule.Recurring.OnWeekDay.IsUnknown() {
@@ -368,7 +378,7 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 	return body, diags
 }
 
-func (model *MaintenanceWindowModel) fromAPIUpdateResponse(ctx context.Context, data *kbapi.PatchMaintenanceWindowIdResponse, spaceID string) diag.Diagnostics {
+func (model *MaintenanceWindowModel) fromAPIUpdateResponse(ctx context.Context, data *kbapi.PatchMaintenanceWindowIdResponse) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -394,12 +404,16 @@ func (model *MaintenanceWindowModel) fromAPIUpdateResponse(ctx context.Context, 
 
 	if response.Schedule.Custom.Recurring != nil {
 		model.CustomSchedule.Recurring = &MaintenanceWindowScheduleRecurring{
-			End:         types.StringPointerValue(response.Schedule.Custom.Recurring.End),
-			Every:       types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
-			Occurrences: types.Float32PointerValue(response.Schedule.Custom.Recurring.Occurrences),
-			OnWeekDay:   types.ListNull(types.StringType),
-			OnMonth:     types.ListNull(types.Float32Type),
-			OnMonthDay:  types.ListNull(types.Float32Type),
+			End:        types.StringPointerValue(response.Schedule.Custom.Recurring.End),
+			Every:      types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
+			OnWeekDay:  types.ListNull(types.StringType),
+			OnMonth:    types.ListNull(types.Float32Type),
+			OnMonthDay: types.ListNull(types.Float32Type),
+		}
+
+		if response.Schedule.Custom.Recurring.Occurrences != nil {
+			occurrences := int32(*response.Schedule.Custom.Recurring.Occurrences)
+			model.CustomSchedule.Recurring.Occurrences = types.Int32PointerValue(&occurrences)
 		}
 
 		if response.Schedule.Custom.Recurring.OnWeekDay != nil {

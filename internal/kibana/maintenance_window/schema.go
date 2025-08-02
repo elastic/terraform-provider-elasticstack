@@ -3,7 +3,7 @@ package maintenance_window
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -84,11 +84,11 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 									StringIsMaintenanceWindowIntervalFrequency{},
 								},
 							},
-							"occurrences": schema.Float32Attribute{
+							"occurrences": schema.Int32Attribute{
 								Description: "The total number of recurrences of the schedule.",
 								Optional:    true,
-								Validators: []validator.Float32{
-									float32validator.AtLeast(1),
+								Validators: []validator.Int32{
+									int32validator.AtLeast(1),
 								},
 							},
 							"on_week_day": schema.ListAttribute{
@@ -103,21 +103,21 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 							},
 							"on_month_day": schema.ListAttribute{
 								Description: "The specific days of the month for a recurring schedule. Valid values are 1-31.",
-								ElementType: types.Float32Type,
+								ElementType: types.Int32Type,
 								Optional:    true,
 								Validators: []validator.List{
-									listvalidator.ValueFloat32sAre(
-										float32validator.Between(1, 31),
+									listvalidator.ValueInt32sAre(
+										int32validator.Between(1, 31),
 									),
 								},
 							},
 							"on_month": schema.ListAttribute{
 								Description: "The specific months for a recurring schedule. Valid values are 1-12.",
-								ElementType: types.Float32Type,
+								ElementType: types.Int32Type,
 								Optional:    true,
 								Validators: []validator.List{
-									listvalidator.ValueFloat32sAre(
-										float32validator.Between(1, 12),
+									listvalidator.ValueInt32sAre(
+										int32validator.Between(1, 12),
 									),
 								},
 							},

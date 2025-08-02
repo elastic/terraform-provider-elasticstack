@@ -35,7 +35,7 @@ func (r *MaintenanceWindowResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	diags = planMaintenanceWindow.fromAPIUpdateResponse(ctx, maintenanceWindow, spaceID)
+	diags = planMaintenanceWindow.fromAPIUpdateResponse(ctx, maintenanceWindow)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
