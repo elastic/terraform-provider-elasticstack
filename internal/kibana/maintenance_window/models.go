@@ -129,8 +129,14 @@ func (model *MaintenanceWindowModel) fromAPICreateResponse(ctx context.Context, 
 		return nil
 	}
 
+	var diags diag.Diagnostics
 	var response = &ResponseJson{}
-	json.Unmarshal(data.Body, response)
+
+	if err := json.Unmarshal(data.Body, response); err != nil {
+		diags.AddError(err.Error(), "cannot unmarshal PostMaintenanceWindowResponse")
+		return diags
+	}
+
 	return model._fromAPIResponse(ctx, *response)
 }
 
@@ -141,8 +147,14 @@ func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, da
 		return nil
 	}
 
+	var diags diag.Diagnostics
 	var response = &ResponseJson{}
-	json.Unmarshal(data.Body, response)
+
+	if err := json.Unmarshal(data.Body, response); err != nil {
+		diags.AddError(err.Error(), "cannot unmarshal GetMaintenanceWindowIdResponse")
+		return diags
+	}
+
 	return model._fromAPIResponse(ctx, *response)
 }
 
@@ -274,8 +286,14 @@ func (model *MaintenanceWindowModel) fromAPIUpdateResponse(ctx context.Context, 
 		return nil
 	}
 
+	var diags diag.Diagnostics
 	var response = &ResponseJson{}
-	json.Unmarshal(data.Body, response)
+
+	if err := json.Unmarshal(data.Body, response); err != nil {
+		diags.AddError(err.Error(), "cannot unmarshal PatchMaintenanceWindowIdResponse")
+		return diags
+	}
+
 	return model._fromAPIResponse(ctx, *response)
 }
 
