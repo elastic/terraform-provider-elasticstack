@@ -3,7 +3,6 @@ package provider
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
@@ -78,7 +77,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
 			"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
 			"elasticstack_elasticsearch_info":                               cluster.DataSourceClusterInfo(),
-			"elasticstack_elasticsearch_enrich_policy":                      enrich.DataSourceEnrichPolicy(),
 
 			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
 			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
@@ -97,7 +95,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_snapshot_lifecycle":    cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository":   cluster.ResourceSnapshotRepository(),
 			"elasticstack_elasticsearch_script":                cluster.ResourceScript(),
-			"elasticstack_elasticsearch_enrich_policy":         enrich.ResourceEnrichPolicy(),
 			"elasticstack_elasticsearch_transform":             transform.ResourceTransform(),
 			"elasticstack_elasticsearch_watch":                 watcher.ResourceWatch(),
 
