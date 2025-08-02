@@ -129,7 +129,7 @@ func (model *MaintenanceWindowModel) fromAPICreateResponse(ctx context.Context, 
 		return nil
 	}
 
-	var diags diag.Diagnostics
+	var diags = diag.Diagnostics{}
 	var response = &ResponseJson{}
 
 	if err := json.Unmarshal(data.Body, response); err != nil {
@@ -147,7 +147,7 @@ func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, da
 		return nil
 	}
 
-	var diags diag.Diagnostics
+	var diags = diag.Diagnostics{}
 	var response = &ResponseJson{}
 
 	if err := json.Unmarshal(data.Body, response); err != nil {
@@ -286,7 +286,7 @@ func (model *MaintenanceWindowModel) fromAPIUpdateResponse(ctx context.Context, 
 		return nil
 	}
 
-	var diags diag.Diagnostics
+	var diags = diag.Diagnostics{}
 	var response = &ResponseJson{}
 
 	if err := json.Unmarshal(data.Body, response); err != nil {
@@ -313,7 +313,7 @@ func (model MaintenanceWindowModel) getMaintenanceWindowIDAndSpaceID() (maintena
 	return
 }
 
-/* UTILS */
+/* RESPONSE HANDLER */
 
 type ResponseJson struct {
 	CreatedAt string  `json:"created_at"`
