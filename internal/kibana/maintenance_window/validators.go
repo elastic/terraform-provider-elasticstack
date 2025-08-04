@@ -8,6 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
+func StringMatchesIntervalFrequencyRegex(s string) (matched bool, err error) {
+	pattern := `^[1-9][0-9]*(?:d|w|M|y)$`
+	return regexp.MatchString(pattern, s)
+}
+
 type StringIsMaintenanceWindowIntervalFrequency struct{}
 
 func (s StringIsMaintenanceWindowIntervalFrequency) Description(_ context.Context) string {
@@ -23,10 +28,7 @@ func (s StringIsMaintenanceWindowIntervalFrequency) ValidateString(_ context.Con
 		return
 	}
 
-	pattern := `^[1-9][0-9]*(?:d|w|M|y)$`
-	matched, err := regexp.MatchString(pattern, req.ConfigValue.ValueString())
-
-	if err != nil || !matched {
+	if matched, err := StringMatchesIntervalFrequencyRegex(req.ConfigValue.ValueString()); err != nil || !matched {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"expected value to be a valid interval/frequency",
@@ -34,6 +36,11 @@ func (s StringIsMaintenanceWindowIntervalFrequency) ValidateString(_ context.Con
 		)
 		return
 	}
+}
+
+func StringMatchesOnWeekDayRegex(s string) (matched bool, err error) {
+	pattern := `^(((\+|-)[1-5])?(MO|TU|WE|TH|FR|SA|SU))$`
+	return regexp.MatchString(pattern, s)
 }
 
 type StringIsMaintenanceWindowOnWeekDay struct{}
@@ -51,9 +58,7 @@ func (s StringIsMaintenanceWindowOnWeekDay) ValidateString(_ context.Context, re
 		return
 	}
 
-	pattern := `^(((\+|-)[1-5])?(MO|TU|WE|TH|FR|SA|SU))$`
-
-	if matched, err := regexp.MatchString(pattern, req.ConfigValue.ValueString()); err != nil || !matched {
+	if matched, err := StringMatchesOnWeekDayRegex(req.ConfigValue.ValueString()); err != nil || !matched {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"expected value to be a valid OnWeekDay",
@@ -61,6 +66,12 @@ func (s StringIsMaintenanceWindowOnWeekDay) ValidateString(_ context.Context, re
 		)
 		return
 	}
+}
+
+func StringMatchesAlertingDurationRegex(s string) (matched bool, err error) {
+	pattern := "^[1-9][0-9]*(?:d|h|m|s)$"
+
+	return regexp.MatchString(pattern, s)
 }
 
 type StringIsAlertingDuration struct{}
@@ -78,9 +89,7 @@ func (s StringIsAlertingDuration) ValidateString(_ context.Context, req validato
 		return
 	}
 
-	pattern := "^[1-9][0-9]*(?:d|h|m|s)$"
-
-	if matched, err := regexp.MatchString(pattern, req.ConfigValue.ValueString()); err != nil || !matched {
+	if matched, err := StringMatchesAlertingDurationRegex(req.ConfigValue.ValueString()); err != nil || !matched {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"expected value to be a valid alerting duration",

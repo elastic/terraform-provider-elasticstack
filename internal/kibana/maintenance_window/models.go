@@ -256,7 +256,6 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 	}
 
 	if model.Scope != nil {
-		// Yes, I hate it too
 		body.Scope = &struct {
 			Alerting struct {
 				Query struct {
@@ -315,36 +314,6 @@ func (model MaintenanceWindowModel) getMaintenanceWindowIDAndSpaceID() (maintena
 
 /* RESPONSE HANDLER */
 
-type ResponseJson struct {
-	CreatedAt string  `json:"created_at"`
-	CreatedBy *string `json:"created_by"`
-	Enabled   bool    `json:"enabled"`
-	Id        string  `json:"id"`
-	Schedule  struct {
-		Custom struct {
-			Duration  string `json:"duration"`
-			Recurring *struct {
-				End         *string    `json:"end,omitempty"`
-				Every       *string    `json:"every,omitempty"`
-				Occurrences *float32   `json:"occurrences,omitempty"`
-				OnMonth     *[]float32 `json:"onMonth,omitempty"`
-				OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-				OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-			} `json:"recurring,omitempty"`
-			Start    string  `json:"start"`
-			Timezone *string `json:"timezone,omitempty"`
-		} `json:"custom"`
-	} `json:"schedule"`
-	Scope *struct {
-		Alerting struct {
-			Query struct {
-				Kql string `json:"kql"`
-			} `json:"query"`
-		} `json:"alerting"`
-	} `json:"scope,omitempty"`
-	Title string `json:"title"`
-}
-
 func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, response ResponseJson) diag.Diagnostics {
 
 	var diags diag.Diagnostics
@@ -369,8 +338,8 @@ func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, respo
 			End:        types.StringPointerValue(response.Schedule.Custom.Recurring.End),
 			Every:      types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
 			OnWeekDay:  types.ListNull(types.StringType),
-			OnMonth:    types.ListNull(types.Float32Type),
-			OnMonthDay: types.ListNull(types.Float32Type),
+			OnMonth:    types.ListNull(types.Int32Type),
+			OnMonthDay: types.ListNull(types.Int32Type),
 		}
 
 		if response.Schedule.Custom.Recurring.Occurrences != nil {
@@ -384,12 +353,12 @@ func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, respo
 		}
 
 		if response.Schedule.Custom.Recurring.OnMonth != nil {
-			onMonth, _ := types.ListValueFrom(ctx, types.Float32Type, response.Schedule.Custom.Recurring.OnMonth)
+			onMonth, _ := types.ListValueFrom(ctx, types.Int32Type, response.Schedule.Custom.Recurring.OnMonth)
 			model.CustomSchedule.Recurring.OnMonth = onMonth
 		}
 
 		if response.Schedule.Custom.Recurring.OnMonthDay != nil {
-			onMonthDay, _ := types.ListValueFrom(ctx, types.Float32Type, response.Schedule.Custom.Recurring.OnMonthDay)
+			onMonthDay, _ := types.ListValueFrom(ctx, types.Int32Type, response.Schedule.Custom.Recurring.OnMonthDay)
 			model.CustomSchedule.Recurring.OnMonthDay = onMonthDay
 		}
 	}
