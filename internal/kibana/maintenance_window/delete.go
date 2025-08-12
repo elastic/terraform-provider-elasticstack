@@ -16,6 +16,21 @@ func (r *MaintenanceWindowResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
+	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	if sdkDiags.HasError() {
+		return
+	}
+
+	serverFlavor, sdkDiags := r.client.ServerFlavor(ctx)
+	if sdkDiags.HasError() {
+		return
+	}
+
+	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
+	if diags.HasError() {
+		return
+	}
+
 	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
