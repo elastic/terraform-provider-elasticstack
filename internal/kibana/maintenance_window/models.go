@@ -46,7 +46,7 @@ type MaintenanceWindowScheduleRecurring struct {
 /* CREATE */
 
 func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWindowJSONRequestBody, diag.Diagnostics) {
-	var diags diag.Diagnostics
+	var diags = diag.Diagnostics{}
 
 	body := kbapi.PostMaintenanceWindowJSONRequestBody{
 		Enabled: model.Enabled.ValueBoolPointer(),
@@ -81,25 +81,24 @@ func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kba
 
 		if !model.CustomSchedule.Recurring.OnWeekDay.IsNull() && !model.CustomSchedule.Recurring.OnWeekDay.IsUnknown() {
 			var onWeekDay []string
-			diags = model.CustomSchedule.Recurring.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)
+			diags.Append(model.CustomSchedule.Recurring.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)...)
 			body.Schedule.Custom.Recurring.OnWeekDay = &onWeekDay
 		}
 
 		if !model.CustomSchedule.Recurring.OnMonth.IsNull() && !model.CustomSchedule.Recurring.OnMonth.IsUnknown() {
 			var onMonth []float32
-			diags = model.CustomSchedule.Recurring.OnMonth.ElementsAs(ctx, &onMonth, true)
+			diags.Append(model.CustomSchedule.Recurring.OnMonth.ElementsAs(ctx, &onMonth, true)...)
 			body.Schedule.Custom.Recurring.OnMonth = &onMonth
 		}
 
 		if !model.CustomSchedule.Recurring.OnMonthDay.IsNull() && !model.CustomSchedule.Recurring.OnMonthDay.IsUnknown() {
 			var onMonthDay []float32
-			diags = model.CustomSchedule.Recurring.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)
+			diags.Append(model.CustomSchedule.Recurring.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)...)
 			body.Schedule.Custom.Recurring.OnMonthDay = &onMonthDay
 		}
 	}
 
 	if model.Scope != nil {
-		// Yes, I hate it too
 		body.Scope = &struct {
 			Alerting struct {
 				Query struct {
@@ -161,7 +160,7 @@ func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, da
 /* UPDATE */
 
 func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWindowIdJSONRequestBody, diag.Diagnostics) {
-	var diags diag.Diagnostics
+	var diags = diag.Diagnostics{}
 
 	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{}
 
@@ -238,19 +237,19 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 
 		if !model.CustomSchedule.Recurring.OnWeekDay.IsNull() && !model.CustomSchedule.Recurring.OnWeekDay.IsUnknown() {
 			var onWeekDay []string
-			diags = model.CustomSchedule.Recurring.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)
+			diags.Append(model.CustomSchedule.Recurring.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)...)
 			body.Schedule.Custom.Recurring.OnWeekDay = &onWeekDay
 		}
 
 		if !model.CustomSchedule.Recurring.OnMonth.IsNull() && !model.CustomSchedule.Recurring.OnMonth.IsUnknown() {
 			var onMonth []float32
-			diags = model.CustomSchedule.Recurring.OnMonth.ElementsAs(ctx, &onMonth, true)
+			diags.Append(model.CustomSchedule.Recurring.OnMonth.ElementsAs(ctx, &onMonth, true)...)
 			body.Schedule.Custom.Recurring.OnMonth = &onMonth
 		}
 
 		if !model.CustomSchedule.Recurring.OnMonthDay.IsNull() && !model.CustomSchedule.Recurring.OnMonthDay.IsUnknown() {
 			var onMonthDay []float32
-			diags = model.CustomSchedule.Recurring.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)
+			diags.Append(model.CustomSchedule.Recurring.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)...)
 			body.Schedule.Custom.Recurring.OnMonthDay = &onMonthDay
 		}
 	}
@@ -315,8 +314,7 @@ func (model MaintenanceWindowModel) getMaintenanceWindowIDAndSpaceID() (maintena
 /* RESPONSE HANDLER */
 
 func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, response ResponseJson) diag.Diagnostics {
-
-	var diags diag.Diagnostics
+	var diags = diag.Diagnostics{}
 
 	resourceID := clients.CompositeId{
 		ClusterId:  model.SpaceID.ValueString(),
@@ -348,18 +346,33 @@ func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, respo
 		}
 
 		if response.Schedule.Custom.Recurring.OnWeekDay != nil {
-			onWeekDay, _ := types.ListValueFrom(ctx, types.StringType, response.Schedule.Custom.Recurring.OnWeekDay)
-			model.CustomSchedule.Recurring.OnWeekDay = onWeekDay
+			onWeekDay, d := types.ListValueFrom(ctx, types.StringType, response.Schedule.Custom.Recurring.OnWeekDay)
+
+			if d.HasError() {
+				diags.Append(d...)
+			} else {
+				model.CustomSchedule.Recurring.OnWeekDay = onWeekDay
+			}
 		}
 
 		if response.Schedule.Custom.Recurring.OnMonth != nil {
-			onMonth, _ := types.ListValueFrom(ctx, types.Int32Type, response.Schedule.Custom.Recurring.OnMonth)
-			model.CustomSchedule.Recurring.OnMonth = onMonth
+			onMonth, d := types.ListValueFrom(ctx, types.Int32Type, response.Schedule.Custom.Recurring.OnMonth)
+
+			if d.HasError() {
+				diags.Append(d...)
+			} else {
+				model.CustomSchedule.Recurring.OnMonth = onMonth
+			}
 		}
 
 		if response.Schedule.Custom.Recurring.OnMonthDay != nil {
-			onMonthDay, _ := types.ListValueFrom(ctx, types.Int32Type, response.Schedule.Custom.Recurring.OnMonthDay)
-			model.CustomSchedule.Recurring.OnMonthDay = onMonthDay
+			onMonthDay, d := types.ListValueFrom(ctx, types.Int32Type, response.Schedule.Custom.Recurring.OnMonthDay)
+
+			if d.HasError() {
+				diags.Append(d...)
+			} else {
+				model.CustomSchedule.Recurring.OnMonthDay = onMonthDay
+			}
 		}
 	}
 
