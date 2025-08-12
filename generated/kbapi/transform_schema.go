@@ -167,7 +167,7 @@ func (p *Path) SetEndpoint(method string, endpoint Map) {
 	case "put":
 		p.Put = endpoint
 	case "patch":
-		p.Put = endpoint
+		p.Patch = endpoint
 	case "delete":
 		p.Delete = endpoint
 	default:

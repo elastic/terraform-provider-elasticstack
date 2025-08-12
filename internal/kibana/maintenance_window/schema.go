@@ -18,11 +18,11 @@ import (
 
 func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages Kibana data views",
+		Description: "Manages Kibana maintenance windows",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Generated ID for the data view.",
+				MarkdownDescription: "Generated ID for the maintenance window.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
