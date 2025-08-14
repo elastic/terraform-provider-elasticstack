@@ -3539,6 +3539,103 @@ type DeleteAgentConfigurationJSONRequestBody = APMUIDeleteServiceObject
 // CreateUpdateAgentConfigurationJSONRequestBody defines body for CreateUpdateAgentConfiguration for application/json ContentType.
 type CreateUpdateAgentConfigurationJSONRequestBody = APMUIAgentConfigurationIntakeObject
 
+// PostMaintenanceWindowJSONBody defines parameters for PostMaintenanceWindow.
+
+type PostMaintenanceWindowJSONBody struct {
+	// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+	Enabled  *bool `json:"enabled,omitempty"`
+	Schedule struct {
+		Custom struct {
+			// Duration The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+			Duration  string `json:"duration"`
+			Recurring *struct {
+				// End The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
+				End *string `json:"end,omitempty"`
+
+				// Every The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
+				Every *string `json:"every,omitempty"`
+
+				// Occurrences The total number of recurrences of the schedule.
+				Occurrences *float32 `json:"occurrences,omitempty"`
+
+				// OnMonth The specific months for a recurring schedule. Valid values are 1-12.
+				OnMonth *[]float32 `json:"onMonth,omitempty"`
+
+				// OnMonthDay The specific days of the month for a recurring schedule. Valid values are 1-31.
+				OnMonthDay *[]float32 `json:"onMonthDay,omitempty"`
+
+				// OnWeekDay The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
+				OnWeekDay *[]string `json:"onWeekDay,omitempty"`
+			} `json:"recurring,omitempty"`
+
+			// Start The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+			Start string `json:"start"`
+
+			// Timezone The timezone of the schedule. The default timezone is UTC.
+			Timezone *string `json:"timezone,omitempty"`
+		} `json:"custom"`
+	} `json:"schedule"`
+	Scope *struct {
+		Alerting struct {
+			Query struct {
+				// Kql A filter written in Kibana Query Language (KQL). Only alerts matching this query will be supressed by the maintenance window.
+				Kql string `json:"kql"`
+			} `json:"query"`
+		} `json:"alerting"`
+	} `json:"scope,omitempty"`
+
+	// Title The name of the maintenance window. While this name does not have to be unique, a distinctive name can help you identify a specific maintenance window.
+	Title string `json:"title"`
+}
+
+// PatchMaintenanceWindowIdJSONBody defines parameters for PatchMaintenanceWindowId.
+type PatchMaintenanceWindowIdJSONBody struct {
+	// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+	Enabled  *bool `json:"enabled,omitempty"`
+	Schedule *struct {
+		Custom struct {
+			// Duration The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+			Duration  string `json:"duration"`
+			Recurring *struct {
+				// End The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
+				End *string `json:"end,omitempty"`
+
+				// Every The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
+				Every *string `json:"every,omitempty"`
+
+				// Occurrences The total number of recurrences of the schedule.
+				Occurrences *float32 `json:"occurrences,omitempty"`
+
+				// OnMonth The specific months for a recurring schedule. Valid values are 1-12.
+				OnMonth *[]float32 `json:"onMonth,omitempty"`
+
+				// OnMonthDay The specific days of the month for a recurring schedule. Valid values are 1-31.
+				OnMonthDay *[]float32 `json:"onMonthDay,omitempty"`
+
+				// OnWeekDay The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
+				OnWeekDay *[]string `json:"onWeekDay,omitempty"`
+			} `json:"recurring,omitempty"`
+
+			// Start The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+			Start string `json:"start"`
+
+			// Timezone The timezone of the schedule. The default timezone is UTC.
+			Timezone *string `json:"timezone,omitempty"`
+		} `json:"custom"`
+	} `json:"schedule,omitempty"`
+	Scope *struct {
+		Alerting struct {
+			Query struct {
+				// Kql A filter written in Kibana Query Language (KQL). Only alerts matching this query will be supressed by the maintenance window.
+				Kql string `json:"kql"`
+			} `json:"query"`
+		} `json:"alerting"`
+	} `json:"scope,omitempty"`
+
+	// Title The name of the maintenance window. While this name does not have to be unique, a distinctive name can help you identify a specific maintenance window.
+	Title *string `json:"title,omitempty"`
+}
+
 // PostFleetAgentPoliciesJSONRequestBody defines body for PostFleetAgentPolicies for application/json ContentType.
 type PostFleetAgentPoliciesJSONRequestBody PostFleetAgentPoliciesJSONBody
 
@@ -3580,6 +3677,12 @@ type CreateDataViewDefaultwJSONRequestBody = DataViewsCreateDataViewRequestObjec
 
 // UpdateDataViewDefaultJSONRequestBody defines body for UpdateDataViewDefault for application/json ContentType.
 type UpdateDataViewDefaultJSONRequestBody = DataViewsUpdateDataViewRequestObject
+
+// PostMaintenanceWindowJSONRequestBody defines body for PostMaintenanceWindow for application/json ContentType.
+type PostMaintenanceWindowJSONRequestBody PostMaintenanceWindowJSONBody
+
+// PatchMaintenanceWindowIdJSONRequestBody defines body for PatchMaintenanceWindowId for application/json ContentType.
+type PatchMaintenanceWindowIdJSONRequestBody PatchMaintenanceWindowIdJSONBody
 
 // Getter for additional properties for AgentPolicy_PackagePolicies_1_Elasticsearch_Privileges. Returns the specified
 // element and whether it was found
@@ -14583,6 +14686,22 @@ type ClientInterface interface {
 	UpdateDataViewDefaultWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostMaintenanceWindowWithBody request with any body
+	PostMaintenanceWindowWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostMaintenanceWindow(ctx context.Context, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteMaintenanceWindowId request
+	DeleteMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetMaintenanceWindowId request
+	GetMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchMaintenanceWindowIdWithBody request with any body
+	PatchMaintenanceWindowIdWithBody(ctx context.Context, spaceId SpaceId, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) DeleteAgentConfigurationWithBody(ctx context.Context, params *DeleteAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -15399,6 +15518,78 @@ func NewCreateUpdateAgentConfigurationRequestWithBody(server string, params *Cre
 	}
 
 	return req, nil
+}
+
+func (c *Client) PostMaintenanceWindowWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostMaintenanceWindowRequestWithBody(c.Server, spaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostMaintenanceWindow(ctx context.Context, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostMaintenanceWindowRequest(c.Server, spaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteMaintenanceWindowIdRequest(c.Server, spaceId, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetMaintenanceWindowIdRequest(c.Server, spaceId, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchMaintenanceWindowIdWithBody(ctx context.Context, spaceId SpaceId, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchMaintenanceWindowIdRequestWithBody(c.Server, spaceId, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchMaintenanceWindowIdRequest(c.Server, spaceId, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 // NewGetFleetAgentPoliciesRequest generates requests for GetFleetAgentPolicies
@@ -17488,6 +17679,189 @@ func NewUpdateDataViewDefaultRequestWithBody(server string, spaceId SpaceId, vie
 	return req, nil
 }
 
+// NewPostMaintenanceWindowRequest calls the generic PostMaintenanceWindow builder with application/json body
+func NewPostMaintenanceWindowRequest(server string, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostMaintenanceWindowRequestWithBody(server, spaceId, "application/json", bodyReader)
+}
+
+// NewPostMaintenanceWindowRequestWithBody generates requests for PostMaintenanceWindow with any type of body
+func NewPostMaintenanceWindowRequestWithBody(server string, spaceId SpaceId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/maintenance_window", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteMaintenanceWindowIdRequest generates requests for DeleteMaintenanceWindowId
+func NewDeleteMaintenanceWindowIdRequest(server string, spaceId SpaceId, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/maintenance_window/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetMaintenanceWindowIdRequest generates requests for GetMaintenanceWindowId
+func NewGetMaintenanceWindowIdRequest(server string, spaceId SpaceId, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/maintenance_window/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPatchMaintenanceWindowIdRequest calls the generic PatchMaintenanceWindowId builder with application/json body
+func NewPatchMaintenanceWindowIdRequest(server string, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchMaintenanceWindowIdRequestWithBody(server, spaceId, id, "application/json", bodyReader)
+}
+
+// NewPatchMaintenanceWindowIdRequestWithBody generates requests for PatchMaintenanceWindowId with any type of body
+func NewPatchMaintenanceWindowIdRequestWithBody(server string, spaceId SpaceId, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/maintenance_window/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -17676,6 +18050,22 @@ type ClientWithResponsesInterface interface {
 	UpdateDataViewDefaultWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
 
 	UpdateDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
+
+	// PostMaintenanceWindowWithBodyWithResponse request with any body
+	PostMaintenanceWindowWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error)
+
+	PostMaintenanceWindowWithResponse(ctx context.Context, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error)
+
+	// DeleteMaintenanceWindowIdWithResponse request
+	DeleteMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*DeleteMaintenanceWindowIdResponse, error)
+
+	// GetMaintenanceWindowIdWithResponse request
+	GetMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*GetMaintenanceWindowIdResponse, error)
+
+	// PatchMaintenanceWindowIdWithBodyWithResponse request with any body
+	PatchMaintenanceWindowIdWithBodyWithResponse(ctx context.Context, spaceId SpaceId, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchMaintenanceWindowIdResponse, error)
+
+	PatchMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchMaintenanceWindowIdResponse, error)
 }
 
 type DeleteAgentConfigurationResponse struct {
@@ -18904,6 +19294,285 @@ func (c *ClientWithResponses) CreateUpdateAgentConfigurationWithResponse(ctx con
 	return ParseCreateUpdateAgentConfigurationResponse(rsp)
 }
 
+type PostMaintenanceWindowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// CreatedAt The date and time when the maintenance window was created.
+		CreatedAt string `json:"created_at"`
+
+		// CreatedBy The identifier for the user that created the maintenance window.
+		CreatedBy *string `json:"created_by"`
+
+		// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+		Enabled bool `json:"enabled"`
+
+		// Id The identifier for the maintenance window.
+		Id       string `json:"id"`
+		Schedule struct {
+			Custom struct {
+				// Duration The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+				Duration  string `json:"duration"`
+				Recurring *struct {
+					// End The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
+					End *string `json:"end,omitempty"`
+
+					// Every The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
+					Every *string `json:"every,omitempty"`
+
+					// Occurrences The total number of recurrences of the schedule.
+					Occurrences *float32 `json:"occurrences,omitempty"`
+
+					// OnMonth The specific months for a recurring schedule. Valid values are 1-12.
+					OnMonth *[]float32 `json:"onMonth,omitempty"`
+
+					// OnMonthDay The specific days of the month for a recurring schedule. Valid values are 1-31.
+					OnMonthDay *[]float32 `json:"onMonthDay,omitempty"`
+
+					// OnWeekDay The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
+					OnWeekDay *[]string `json:"onWeekDay,omitempty"`
+				} `json:"recurring,omitempty"`
+
+				// Start The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+				Start string `json:"start"`
+
+				// Timezone The timezone of the schedule. The default timezone is UTC.
+				Timezone *string `json:"timezone,omitempty"`
+			} `json:"custom"`
+		} `json:"schedule"`
+		Scope *struct {
+			Alerting struct {
+				Query struct {
+					// Kql A filter written in Kibana Query Language (KQL).
+					Kql string `json:"kql"`
+				} `json:"query"`
+			} `json:"alerting"`
+		} `json:"scope,omitempty"`
+
+		// Status The current status of the maintenance window.
+		Status PostMaintenanceWindow200Status `json:"status"`
+
+		// Title The name of the maintenance window.
+		Title string `json:"title"`
+
+		// UpdatedAt The date and time when the maintenance window was last updated.
+		UpdatedAt string `json:"updated_at"`
+
+		// UpdatedBy The identifier for the user that last updated this maintenance window.
+		UpdatedBy *string `json:"updated_by"`
+	}
+}
+type PostMaintenanceWindow200Status string
+
+// Status returns HTTPResponse.Status
+func (r PostMaintenanceWindowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostMaintenanceWindowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteMaintenanceWindowIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteMaintenanceWindowIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteMaintenanceWindowIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetMaintenanceWindowIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// CreatedAt The date and time when the maintenance window was created.
+		CreatedAt string `json:"created_at"`
+
+		// CreatedBy The identifier for the user that created the maintenance window.
+		CreatedBy *string `json:"created_by"`
+
+		// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+		Enabled bool `json:"enabled"`
+
+		// Id The identifier for the maintenance window.
+		Id       string `json:"id"`
+		Schedule struct {
+			Custom struct {
+				// Duration The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+				Duration  string `json:"duration"`
+				Recurring *struct {
+					// End The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
+					End *string `json:"end,omitempty"`
+
+					// Every The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
+					Every *string `json:"every,omitempty"`
+
+					// Occurrences The total number of recurrences of the schedule.
+					Occurrences *float32 `json:"occurrences,omitempty"`
+
+					// OnMonth The specific months for a recurring schedule. Valid values are 1-12.
+					OnMonth *[]float32 `json:"onMonth,omitempty"`
+
+					// OnMonthDay The specific days of the month for a recurring schedule. Valid values are 1-31.
+					OnMonthDay *[]float32 `json:"onMonthDay,omitempty"`
+
+					// OnWeekDay The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
+					OnWeekDay *[]string `json:"onWeekDay,omitempty"`
+				} `json:"recurring,omitempty"`
+
+				// Start The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+				Start string `json:"start"`
+
+				// Timezone The timezone of the schedule. The default timezone is UTC.
+				Timezone *string `json:"timezone,omitempty"`
+			} `json:"custom"`
+		} `json:"schedule"`
+		Scope *struct {
+			Alerting struct {
+				Query struct {
+					// Kql A filter written in Kibana Query Language (KQL).
+					Kql string `json:"kql"`
+				} `json:"query"`
+			} `json:"alerting"`
+		} `json:"scope,omitempty"`
+
+		// Status The current status of the maintenance window.
+		Status GetMaintenanceWindowId200Status `json:"status"`
+
+		// Title The name of the maintenance window.
+		Title string `json:"title"`
+
+		// UpdatedAt The date and time when the maintenance window was last updated.
+		UpdatedAt string `json:"updated_at"`
+
+		// UpdatedBy The identifier for the user that last updated this maintenance window.
+		UpdatedBy *string `json:"updated_by"`
+	}
+}
+type GetMaintenanceWindowId200Status string
+
+// Status returns HTTPResponse.Status
+func (r GetMaintenanceWindowIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetMaintenanceWindowIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchMaintenanceWindowIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// CreatedAt The date and time when the maintenance window was created.
+		CreatedAt string `json:"created_at"`
+
+		// CreatedBy The identifier for the user that created the maintenance window.
+		CreatedBy *string `json:"created_by"`
+
+		// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+		Enabled bool `json:"enabled"`
+
+		// Id The identifier for the maintenance window.
+		Id       string `json:"id"`
+		Schedule struct {
+			Custom struct {
+				// Duration The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+				Duration  string `json:"duration"`
+				Recurring *struct {
+					// End The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
+					End *string `json:"end,omitempty"`
+
+					// Every The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
+					Every *string `json:"every,omitempty"`
+
+					// Occurrences The total number of recurrences of the schedule.
+					Occurrences *float32 `json:"occurrences,omitempty"`
+
+					// OnMonth The specific months for a recurring schedule. Valid values are 1-12.
+					OnMonth *[]float32 `json:"onMonth,omitempty"`
+
+					// OnMonthDay The specific days of the month for a recurring schedule. Valid values are 1-31.
+					OnMonthDay *[]float32 `json:"onMonthDay,omitempty"`
+
+					// OnWeekDay The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
+					OnWeekDay *[]string `json:"onWeekDay,omitempty"`
+				} `json:"recurring,omitempty"`
+
+				// Start The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+				Start string `json:"start"`
+
+				// Timezone The timezone of the schedule. The default timezone is UTC.
+				Timezone *string `json:"timezone,omitempty"`
+			} `json:"custom"`
+		} `json:"schedule"`
+		Scope *struct {
+			Alerting struct {
+				Query struct {
+					// Kql A filter written in Kibana Query Language (KQL).
+					Kql string `json:"kql"`
+				} `json:"query"`
+			} `json:"alerting"`
+		} `json:"scope,omitempty"`
+
+		// Status The current status of the maintenance window.
+		Status PatchMaintenanceWindowId200Status `json:"status"`
+
+		// Title The name of the maintenance window.
+		Title string `json:"title"`
+
+		// UpdatedAt The date and time when the maintenance window was last updated.
+		UpdatedAt string `json:"updated_at"`
+
+		// UpdatedBy The identifier for the user that last updated this maintenance window.
+		UpdatedBy *string `json:"updated_by"`
+	}
+}
+type PatchMaintenanceWindowId200Status string
+
+// Status returns HTTPResponse.Status
+func (r PatchMaintenanceWindowIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchMaintenanceWindowIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // GetFleetAgentPoliciesWithResponse request returning *GetFleetAgentPoliciesResponse
 func (c *ClientWithResponses) GetFleetAgentPoliciesWithResponse(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesResponse, error) {
 	rsp, err := c.GetFleetAgentPolicies(ctx, params, reqEditors...)
@@ -19484,6 +20153,58 @@ func ParseCreateUpdateAgentConfigurationResponse(rsp *http.Response) (*CreateUpd
 	}
 
 	return response, nil
+}
+
+// PostMaintenanceWindowWithBodyWithResponse request with arbitrary body returning *PostMaintenanceWindowResponse
+func (c *ClientWithResponses) PostMaintenanceWindowWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error) {
+	rsp, err := c.PostMaintenanceWindowWithBody(ctx, spaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostMaintenanceWindowResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostMaintenanceWindowWithResponse(ctx context.Context, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error) {
+	rsp, err := c.PostMaintenanceWindow(ctx, spaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostMaintenanceWindowResponse(rsp)
+}
+
+// DeleteMaintenanceWindowIdWithResponse request returning *DeleteMaintenanceWindowIdResponse
+func (c *ClientWithResponses) DeleteMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*DeleteMaintenanceWindowIdResponse, error) {
+	rsp, err := c.DeleteMaintenanceWindowId(ctx, spaceId, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteMaintenanceWindowIdResponse(rsp)
+}
+
+// GetMaintenanceWindowIdWithResponse request returning *GetMaintenanceWindowIdResponse
+func (c *ClientWithResponses) GetMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*GetMaintenanceWindowIdResponse, error) {
+	rsp, err := c.GetMaintenanceWindowId(ctx, spaceId, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetMaintenanceWindowIdResponse(rsp)
+}
+
+// PatchMaintenanceWindowIdWithBodyWithResponse request with arbitrary body returning *PatchMaintenanceWindowIdResponse
+func (c *ClientWithResponses) PatchMaintenanceWindowIdWithBodyWithResponse(ctx context.Context, spaceId SpaceId, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchMaintenanceWindowIdResponse, error) {
+	rsp, err := c.PatchMaintenanceWindowIdWithBody(ctx, spaceId, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchMaintenanceWindowIdResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchMaintenanceWindowIdResponse, error) {
+	rsp, err := c.PatchMaintenanceWindowId(ctx, spaceId, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchMaintenanceWindowIdResponse(rsp)
 }
 
 // ParseGetFleetAgentPoliciesResponse parses an HTTP response from a GetFleetAgentPoliciesWithResponse call
@@ -20866,6 +21587,289 @@ func ParseUpdateDataViewDefaultResponse(rsp *http.Response) (*UpdateDataViewDefa
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostMaintenanceWindowResponse parses an HTTP response from a PostMaintenanceWindowWithResponse call
+func ParsePostMaintenanceWindowResponse(rsp *http.Response) (*PostMaintenanceWindowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostMaintenanceWindowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// CreatedAt The date and time when the maintenance window was created.
+			CreatedAt string `json:"created_at"`
+
+			// CreatedBy The identifier for the user that created the maintenance window.
+			CreatedBy *string `json:"created_by"`
+
+			// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+			Enabled bool `json:"enabled"`
+
+			// Id The identifier for the maintenance window.
+			Id       string `json:"id"`
+			Schedule struct {
+				Custom struct {
+					// Duration The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+					Duration  string `json:"duration"`
+					Recurring *struct {
+						// End The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
+						End *string `json:"end,omitempty"`
+
+						// Every The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
+						Every *string `json:"every,omitempty"`
+
+						// Occurrences The total number of recurrences of the schedule.
+						Occurrences *float32 `json:"occurrences,omitempty"`
+
+						// OnMonth The specific months for a recurring schedule. Valid values are 1-12.
+						OnMonth *[]float32 `json:"onMonth,omitempty"`
+
+						// OnMonthDay The specific days of the month for a recurring schedule. Valid values are 1-31.
+						OnMonthDay *[]float32 `json:"onMonthDay,omitempty"`
+
+						// OnWeekDay The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
+						OnWeekDay *[]string `json:"onWeekDay,omitempty"`
+					} `json:"recurring,omitempty"`
+
+					// Start The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+					Start string `json:"start"`
+
+					// Timezone The timezone of the schedule. The default timezone is UTC.
+					Timezone *string `json:"timezone,omitempty"`
+				} `json:"custom"`
+			} `json:"schedule"`
+			Scope *struct {
+				Alerting struct {
+					Query struct {
+						// Kql A filter written in Kibana Query Language (KQL).
+						Kql string `json:"kql"`
+					} `json:"query"`
+				} `json:"alerting"`
+			} `json:"scope,omitempty"`
+
+			// Status The current status of the maintenance window.
+			Status PostMaintenanceWindow200Status `json:"status"`
+
+			// Title The name of the maintenance window.
+			Title string `json:"title"`
+
+			// UpdatedAt The date and time when the maintenance window was last updated.
+			UpdatedAt string `json:"updated_at"`
+
+			// UpdatedBy The identifier for the user that last updated this maintenance window.
+			UpdatedBy *string `json:"updated_by"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteMaintenanceWindowIdResponse parses an HTTP response from a DeleteMaintenanceWindowIdWithResponse call
+func ParseDeleteMaintenanceWindowIdResponse(rsp *http.Response) (*DeleteMaintenanceWindowIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteMaintenanceWindowIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetMaintenanceWindowIdResponse parses an HTTP response from a GetMaintenanceWindowIdWithResponse call
+func ParseGetMaintenanceWindowIdResponse(rsp *http.Response) (*GetMaintenanceWindowIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetMaintenanceWindowIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// CreatedAt The date and time when the maintenance window was created.
+			CreatedAt string `json:"created_at"`
+
+			// CreatedBy The identifier for the user that created the maintenance window.
+			CreatedBy *string `json:"created_by"`
+
+			// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+			Enabled bool `json:"enabled"`
+
+			// Id The identifier for the maintenance window.
+			Id       string `json:"id"`
+			Schedule struct {
+				Custom struct {
+					// Duration The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+					Duration  string `json:"duration"`
+					Recurring *struct {
+						// End The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
+						End *string `json:"end,omitempty"`
+
+						// Every The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
+						Every *string `json:"every,omitempty"`
+
+						// Occurrences The total number of recurrences of the schedule.
+						Occurrences *float32 `json:"occurrences,omitempty"`
+
+						// OnMonth The specific months for a recurring schedule. Valid values are 1-12.
+						OnMonth *[]float32 `json:"onMonth,omitempty"`
+
+						// OnMonthDay The specific days of the month for a recurring schedule. Valid values are 1-31.
+						OnMonthDay *[]float32 `json:"onMonthDay,omitempty"`
+
+						// OnWeekDay The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
+						OnWeekDay *[]string `json:"onWeekDay,omitempty"`
+					} `json:"recurring,omitempty"`
+
+					// Start The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+					Start string `json:"start"`
+
+					// Timezone The timezone of the schedule. The default timezone is UTC.
+					Timezone *string `json:"timezone,omitempty"`
+				} `json:"custom"`
+			} `json:"schedule"`
+			Scope *struct {
+				Alerting struct {
+					Query struct {
+						// Kql A filter written in Kibana Query Language (KQL).
+						Kql string `json:"kql"`
+					} `json:"query"`
+				} `json:"alerting"`
+			} `json:"scope,omitempty"`
+
+			// Status The current status of the maintenance window.
+			Status GetMaintenanceWindowId200Status `json:"status"`
+
+			// Title The name of the maintenance window.
+			Title string `json:"title"`
+
+			// UpdatedAt The date and time when the maintenance window was last updated.
+			UpdatedAt string `json:"updated_at"`
+
+			// UpdatedBy The identifier for the user that last updated this maintenance window.
+			UpdatedBy *string `json:"updated_by"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchMaintenanceWindowIdResponse parses an HTTP response from a PatchMaintenanceWindowIdWithResponse call
+func ParsePatchMaintenanceWindowIdResponse(rsp *http.Response) (*PatchMaintenanceWindowIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchMaintenanceWindowIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// CreatedAt The date and time when the maintenance window was created.
+			CreatedAt string `json:"created_at"`
+
+			// CreatedBy The identifier for the user that created the maintenance window.
+			CreatedBy *string `json:"created_by"`
+
+			// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
+			Enabled bool `json:"enabled"`
+
+			// Id The identifier for the maintenance window.
+			Id       string `json:"id"`
+			Schedule struct {
+				Custom struct {
+					// Duration The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+					Duration  string `json:"duration"`
+					Recurring *struct {
+						// End The end date of a recurring schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-04-01T00:00:00.000Z`.
+						End *string `json:"end,omitempty"`
+
+						// Every The interval and frequency of a recurring schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.
+						Every *string `json:"every,omitempty"`
+
+						// Occurrences The total number of recurrences of the schedule.
+						Occurrences *float32 `json:"occurrences,omitempty"`
+
+						// OnMonth The specific months for a recurring schedule. Valid values are 1-12.
+						OnMonth *[]float32 `json:"onMonth,omitempty"`
+
+						// OnMonthDay The specific days of the month for a recurring schedule. Valid values are 1-31.
+						OnMonthDay *[]float32 `json:"onMonthDay,omitempty"`
+
+						// OnWeekDay The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
+						OnWeekDay *[]string `json:"onWeekDay,omitempty"`
+					} `json:"recurring,omitempty"`
+
+					// Start The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+					Start string `json:"start"`
+
+					// Timezone The timezone of the schedule. The default timezone is UTC.
+					Timezone *string `json:"timezone,omitempty"`
+				} `json:"custom"`
+			} `json:"schedule"`
+			Scope *struct {
+				Alerting struct {
+					Query struct {
+						// Kql A filter written in Kibana Query Language (KQL).
+						Kql string `json:"kql"`
+					} `json:"query"`
+				} `json:"alerting"`
+			} `json:"scope,omitempty"`
+
+			// Status The current status of the maintenance window.
+			Status PatchMaintenanceWindowId200Status `json:"status"`
+
+			// Title The name of the maintenance window.
+			Title string `json:"title"`
+
+			// UpdatedAt The date and time when the maintenance window was last updated.
+			UpdatedAt string `json:"updated_at"`
+
+			// UpdatedBy The identifier for the user that last updated this maintenance window.
+			UpdatedBy *string `json:"updated_by"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 
