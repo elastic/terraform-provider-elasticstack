@@ -99,6 +99,7 @@ type tfModelV0 struct {
 	ID               types.String              `tfsdk:"id"`
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
+	Namespace        types.String              `tfsdk:"namespace"`
 	Schedule         types.Int64               `tfsdk:"schedule"`
 	Locations        []types.String            `tfsdk:"locations"`
 	PrivateLocations []types.String            `tfsdk:"private_locations"`
@@ -143,7 +144,16 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: "The monitor’s name.",
 			},
 			"space_id": schema.StringAttribute{
-				MarkdownDescription: "The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
+				MarkdownDescription: "Kibana space. The space ID that is part of the Kibana URL when inside the space. Space IDs are limited to lowercase alphanumeric, underscore, and hyphen characters (a-z, 0-9, _, and -). You are cannot change the ID with the update operation.",
+				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+				Computed: true,
+			},
+			"namespace": schema.StringAttribute{
+				MarkdownDescription: "Fleet namespace. The `namespace` field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -566,7 +576,7 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
-func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor) (*tfModelV0, diag.Diagnostics) {
+func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
 	var schedule int64
 	var err error
 	dg := diag.Diagnostics{}
@@ -640,7 +650,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 	}
 
 	resourceID := clients.CompositeId{
-		ClusterId:  api.Namespace,
+		ClusterId:  space,
 		ResourceId: string(api.Id),
 	}
 
@@ -652,7 +662,8 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 	return &tfModelV0{
 		ID:               types.StringValue(resourceID.String()),
 		Name:             types.StringValue(api.Name),
-		SpaceID:          types.StringValue(api.Namespace),
+		SpaceID:          types.StringValue(space),
+		Namespace:        types.StringValue(api.Namespace),
 		Schedule:         types.Int64Value(schedule),
 		Locations:        v.Locations,
 		PrivateLocations: StringSliceValue(privateLocLabels),
@@ -883,7 +894,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		Alert:            toTFAlertConfig(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
-		Namespace:        v.SpaceID.ValueString(),
+		Namespace:        v.Namespace.ValueString(),
 		Params:           params,
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
 	}, diag.Diagnostics{} //dg
