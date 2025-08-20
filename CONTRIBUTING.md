@@ -13,7 +13,7 @@ Check [generated/kbapi](./generated/kbapi/) for more details.
 make docker-testacc
 ```
 
-Hello
+Hello world
 
 Run a single test with terraform debug enabled:
 ```bash
