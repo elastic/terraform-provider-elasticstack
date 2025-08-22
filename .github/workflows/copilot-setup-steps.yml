@@ -33,7 +33,7 @@ jobs:
       TF_ACC: "1"
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:9.1.0@sha256:47f91984aa1065d745f0a7c827bc912ea1ac439c635854902b65b6ed77f62055
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2@sha256:d1a8016cf55be8ffec635ed69f5a9acb0c459db35b46a4549ec5b2847a2f170a
         env:
           discovery.type: single-node
           xpack.security.enabled: true
@@ -48,7 +48,7 @@ jobs:
           - 9200:9200
         options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
       kibana:
-        image: docker.elastic.co/kibana/kibana:9.0.3@sha256:c4c00a485fbc3619d8373f3bc74e9dd5b5a34380ef50442be4366e8fb57cd50a
+        image: docker.elastic.co/kibana/kibana:9.1.2@sha256:dea5d20df42e6833966deceadb10ecdbf85970b704d17b0abfc3b485622c1a08
         env:
           SERVER_NAME: kibana
           ELASTICSEARCH_HOSTS: http://elasticsearch:9200
@@ -60,7 +60,7 @@ jobs:
           - 5601:5601
         options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
       fleet:
-        image: docker.elastic.co/elastic-agent/elastic-agent:9.1.0@sha256:add63bc9d450c29b9e8bb462e4295fa2ec725db394f372fa392213aad5603553
+        image: docker.elastic.co/elastic-agent/elastic-agent:9.1.2@sha256:942aa0ffe94c268aab83881fc8be0ca0af079c395820ce8e7552f0ce97e0a760
         env:
           SERVER_NAME: fleet
           FLEET_ENROLL: "1"
@@ -79,7 +79,7 @@ jobs:
         options: --restart="unless-stopped"
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
           go-version-file: 'go.mod'
