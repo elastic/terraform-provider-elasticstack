@@ -41,10 +41,10 @@ resource "elasticstack_elasticsearch_security_system_user" "kibana_system" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `enabled` (Boolean) Specifies whether the user is enabled. The default value is true.
-- `password` (String, Sensitive) The user’s password. Passwords must be at least 6 characters long.
-- `password_hash` (String, Sensitive) A hash of the user’s password. This must be produced using the same hashing algorithm as has been configured for password storage (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings).
+- `password` (String, Sensitive) The user's password. Passwords must be at least 6 characters long.
+- `password_hash` (String, Sensitive) A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings).
 
 ### Read-Only
 
@@ -63,6 +63,7 @@ Optional:
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
 - `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the JWT token
+- `headers` (Map of String, Sensitive) A list of headers to be sent with each request to Elasticsearch.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth

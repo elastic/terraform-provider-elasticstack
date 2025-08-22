@@ -3,12 +3,14 @@ package provider
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/apm/agent_configuration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/system_user"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agent_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollment_tokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
@@ -20,6 +22,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/private_location"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -88,8 +91,10 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		agent_configuration.NewAgentConfigurationResource,
 		func() resource.Resource { return &import_saved_objects.Resource{} },
 		data_view.NewResource,
+		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &private_location.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
 		func() resource.Resource { return &synthetics.Resource{} },
@@ -100,5 +105,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		integration_policy.NewResource,
 		output.NewResource,
 		server_host.NewResource,
+		system_user.NewSystemUserResource,
 	}
 }

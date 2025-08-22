@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.11.14
+VERSION ?= 0.11.17
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -15,7 +15,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 9.0.0-SNAPSHOT
+STACK_VERSION ?= 9.0.3
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -192,7 +192,7 @@ docker-fleet: docker-network docker-elasticsearch docker-kibana setup-kibana-fle
       	-e KIBANA_FLEET_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
 		--name $(FLEET_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		docker.elastic.co/beats/elastic-agent:$(STACK_VERSION)
+		elastic/elastic-agent:$(STACK_VERSION)
 
 
 .PHONY: docker-network
@@ -225,7 +225,7 @@ docker-clean: ## Try to remove provisioned nodes and assigned network
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ $(GOBIN)/tfplugindocs
+	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
 
 .PHONY: gen
@@ -245,19 +245,8 @@ install: build ## Install built provider into the local terraform cache
 
 
 .PHONY: tools
-tools: $(GOBIN) ## Install useful tools for linting, docs generation and development
-	@ cd tools && go install github.com/client9/misspell/cmd/misspell
-	@ cd tools && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-	@ cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
-	@ cd tools && go install github.com/goreleaser/goreleaser/v2
-	@ cd tools && go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
-	@ cd tools && go install go.uber.org/mock/mockgen
-
-.PHONY: misspell
-misspell:
-	@ $(GOBIN)/misspell -error -source go ./internal/
-	@ $(GOBIN)/misspell -error -source text ./templates/
-
+tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.4.0
 
 .PHONY: golangci-lint
 golangci-lint:
@@ -265,7 +254,7 @@ golangci-lint:
 
 
 .PHONY: lint
-lint: setup misspell golangci-lint check-fmt check-docs ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint check-fmt check-docs ## Run lints to check the spelling and common go patterns
 
 .PHONY: fmt
 fmt: ## Format code
@@ -286,22 +275,21 @@ check-docs: docs-generate  ## Check uncommitted changes on docs
 
 
 .PHONY: setup
-setup: tools ## Setup the dev environment
-
+setup: tools vendor ## Setup the dev environment
 
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
-	@ $(GOBIN)/goreleaser release --snapshot --clean
+	@ go tool github.com/goreleaser/goreleaser/v2 release --snapshot --clean
 
 
 .PHONY: release-no-publish
 release-no-publish: tools check-sign-release ## Make a release without publishing artifacts
-	@ $(GOBIN)/goreleaser release --skip=publish,announce,validate  --parallelism=2
+	@ go tool github.com/goreleaser/goreleaser/v2 release --skip=publish,announce,validate  --parallelism=2
 
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ $(GOBIN)/goreleaser release --clean  --parallelism=4
+	@ go tool github.com/goreleaser/goreleaser/v2 release --clean  --parallelism=4
 
 
 .PHONY: check-sign-release

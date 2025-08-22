@@ -42,6 +42,7 @@ output "template" {
 - `composed_of` (List of String) An ordered list of component template names.
 - `data_stream` (List of Object) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedatt--data_stream))
 - `id` (String) Internal identifier of the resource
+- `ignore_missing_component_templates` (List of String) A list of component template names that are ignored if missing.
 - `index_patterns` (Set of String) Array of wildcard (*) expressions used to match the names of data streams and indices during creation.
 - `metadata` (String) Optional user metadata about the index template.
 - `priority` (Number) Priority to determine index template precedence when a new data stream or index is created.
@@ -61,6 +62,7 @@ Optional:
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
 - `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the JWT token
+- `headers` (Map of String, Sensitive) A list of headers to be sent with each request to Elasticsearch.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `key_data` (String, Sensitive) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth

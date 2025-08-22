@@ -2,5 +2,9 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>elastic/renovate-config"
-  ]
+  ],
+  "automerge": true,
+  "automergeStrategy": "squash",
+  "automergeType": "branch",
+  "rebaseWhen": "auto"
 }

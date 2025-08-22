@@ -3,9 +3,11 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -143,6 +145,13 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Description: "Name of the S3 bucket to use for snapshots.",
 			Type:        schema.TypeString,
 			Required:    true,
+		},
+		"endpoint": {
+			Description:  "Custom S3 service endpoint, useful when using VPC endpoints or non-default S3 URLs.",
+			Type:         schema.TypeString,
+			Optional:     true,
+			Computed:     true,
+			ValidateFunc: validateURLEndpoint,
 		},
 		"client": {
 			Description: "The name of the S3 client to use to connect to S3.",
@@ -431,13 +440,13 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 			case schema.TypeInt, schema.TypeFloat:
 				i, err := strconv.Atoi(v.(string))
 				if err != nil {
-					return nil, fmt.Errorf(`Failed to parse value = "%v" for setting = "%s"`, v, k)
+					return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
 				}
 				settings[k] = i
 			case schema.TypeBool:
 				b, err := strconv.ParseBool(v.(string))
 				if err != nil {
-					return nil, fmt.Errorf(`Failed to parse value = "%v" for setting = "%s"`, v, k)
+					return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
 				}
 				settings[k] = b
 			default:
@@ -465,4 +474,22 @@ func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta in
 		return diags
 	}
 	return diags
+}
+
+func validateURLEndpoint(val interface{}, key string) ([]string, []error) {
+	v := val.(string)
+	if v == "" {
+		return nil, nil
+	}
+
+	parsed, err := url.ParseRequestURI(v)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return nil, []error{fmt.Errorf("%q must be a valid HTTP/HTTPS URL, got: %q", key, v)}
+	}
+
+	if !strings.HasPrefix(v, "http://") && !strings.HasPrefix(v, "https://") {
+		return nil, []error{fmt.Errorf("%q must start with http:// or https://, got: %q", key, v)}
+	}
+
+	return nil, nil
 }

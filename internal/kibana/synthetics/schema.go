@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -25,7 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"strconv"
 )
 
 const (
@@ -857,7 +858,7 @@ func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, d
 
 func toTFAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kbapi.MonitorAlertConfig {
 	var alert *kbapi.MonitorAlertConfig
-	if !(v.IsNull() || v.IsUnknown()) {
+	if !v.IsNull() && !v.IsUnknown() {
 		tfAlert := tfAlertConfigV0{}
 		tfsdk.ValueAs(ctx, v, &tfAlert)
 		alert = tfAlert.toTfAlertConfigV0()
@@ -899,7 +900,7 @@ func tfInt64ToString(v types.Int64) string {
 func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p string) (*kbapi.SSLConfig, diag.Diagnostics) {
 
 	var ssl *kbapi.SSLConfig
-	if !(v.SslSupportedProtocols.IsNull() || v.SslSupportedProtocols.IsUnknown()) {
+	if !v.SslSupportedProtocols.IsNull() && !v.SslSupportedProtocols.IsUnknown() {
 		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
 		if dg.HasError() {
 			return nil, dg
@@ -908,7 +909,7 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 		ssl.SupportedProtocols = sslSupportedProtocols
 	}
 
-	if !(v.SslVerificationMode.IsNull() || v.SslVerificationMode.IsUnknown()) {
+	if !v.SslVerificationMode.IsNull() && !v.SslVerificationMode.IsUnknown() {
 		if ssl == nil {
 			ssl = &kbapi.SSLConfig{}
 		}
@@ -923,21 +924,21 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 		ssl.CertificateAuthorities = certAuths
 	}
 
-	if !(v.SslCertificate.IsUnknown() || v.SslCertificate.IsNull()) {
+	if !v.SslCertificate.IsUnknown() && !v.SslCertificate.IsNull() {
 		if ssl == nil {
 			ssl = &kbapi.SSLConfig{}
 		}
 		ssl.Certificate = v.SslCertificate.ValueString()
 	}
 
-	if !(v.SslKey.IsUnknown() || v.SslKey.IsNull()) {
+	if !v.SslKey.IsUnknown() && !v.SslKey.IsNull() {
 		if ssl == nil {
 			ssl = &kbapi.SSLConfig{}
 		}
 		ssl.Key = v.SslKey.ValueString()
 	}
 
-	if !(v.SslKeyPassphrase.IsUnknown() || v.SslKeyPassphrase.IsNull()) {
+	if !v.SslKeyPassphrase.IsUnknown() && !v.SslKeyPassphrase.IsNull() {
 		if ssl == nil {
 			ssl = &kbapi.SSLConfig{}
 		}

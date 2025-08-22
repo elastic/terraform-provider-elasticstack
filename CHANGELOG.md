@@ -1,5 +1,29 @@
 ## [Unreleased]
 
+- Add `slo_id` validation to `elasticstack_kibana_slo` ([#1221](https://github.com/elastic/terraform-provider-elasticstack/pull/1221))
+- Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
+- Prevent provider panic when a script exists in state, but not in Elasticsearch ([#1218](https://github.com/elastic/terraform-provider-elasticstack/pull/1218))
+
+## [0.11.17] - 2025-07-21
+
+- Add `elasticstack_apm_agent_configuration` resource ([#1196](https://github.com/elastic/terraform-provider-elasticstack/pull/1196))
+- Add support for `timeslice_metric_indicator` in `elasticstack_kibana_slo` ([#1195](https://github.com/elastic/terraform-provider-elasticstack/pull/1195))
+- Add `elasticstack_elasticsearch_ingest_processor_reroute` data source ([#678](https://github.com/elastic/terraform-provider-elasticstack/issues/678))
+- Add support for `supports_agentless` to `elasticstack_fleet_agent_policy` ([#1197](https://github.com/elastic/terraform-provider-elasticstack/pull/1197))
+- Ignore `master_timeout` when targeting Serverless projects ([#1207](https://github.com/elastic/terraform-provider-elasticstack/pull/1207))
+
+## [0.11.16] - 2025-07-09
+
+- Add `headers` for the provider connection ([#1057](https://github.com/elastic/terraform-provider-elasticstack/pull/1057))
+- Migrate `elasticstack_elasticsearch_system_user` resource to Terraform plugin framework ([#1154](https://github.com/elastic/terraform-provider-elasticstack/pull/1154))
+- Add custom `endpoint` configuration support for snapshot repository setup ([#1158](https://github.com/elastic/terraform-provider-elasticstack/pull/1158))
+- Add `description` to `elasticstack_kibana_security_role` ([#1172](https://github.com/elastic/terraform-provider-elasticstack/issues/1172))
+- Add `elasticstack_kibana_synthetics_parameter` resource ([#1155](https://github.com/elastic/terraform-provider-elasticstack/pull/1155))
+
+## [0.11.15] - 2025-04-23
+
+- Add `global_data_tags` to fleet agent policies. ([#1044](https://github.com/elastic/terraform-provider-elasticstack/pull/1044))
+
 ## [0.11.14] - 2025-03-17
 
 - Fix a provider crash when interacting with elasticstack_kibana_data_view resources created with 0.11.0. ([#979](https://github.com/elastic/terraform-provider-elasticstack/pull/979))
@@ -416,7 +440,10 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...HEAD
+[0.11.17]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...v0.11.17
+[0.11.16]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
+[0.11.15]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...v0.11.15
 [0.11.14]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.13...v0.11.14
 [0.11.13]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.12...v0.11.13
 [0.11.12]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.11...v0.11.12

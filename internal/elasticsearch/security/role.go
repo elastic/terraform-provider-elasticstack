@@ -17,8 +17,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var minSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
-var minSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
+var (
+	MinSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
+	MinSupportedDescriptionVersion   = version.Must(version.NewVersion("8.15.0"))
+)
 
 func ResourceRole() *schema.Resource {
 	roleSchema := map[string]*schema.Schema{
@@ -268,8 +270,8 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 	// Add description to the role
 	if v, ok := d.GetOk("description"); ok {
 		// Return an error if the server version is less than the minimum supported version
-		if serverVersion.LessThan(minSupportedDescriptionVersion) {
-			return diag.FromErr(fmt.Errorf("'description' is supported only for Elasticsearch v%s and above", minSupportedDescriptionVersion.String()))
+		if serverVersion.LessThan(MinSupportedDescriptionVersion) {
+			return diag.FromErr(fmt.Errorf("'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String()))
 		}
 
 		description := v.(string)
@@ -379,8 +381,8 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 
 	if v, ok := d.GetOk("remote_indices"); ok {
 		definedRemoteIndices := v.(*schema.Set)
-		if definedRemoteIndices.Len() > 0 && serverVersion.LessThan(minSupportedRemoteIndicesVersion) {
-			return diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Elasticsearch v%s and above", minSupportedRemoteIndicesVersion.String()))
+		if definedRemoteIndices.Len() > 0 && serverVersion.LessThan(MinSupportedRemoteIndicesVersion) {
+			return diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Elasticsearch v%s and above", MinSupportedRemoteIndicesVersion.String()))
 		}
 		remoteIndices := make([]models.RemoteIndexPerms, definedRemoteIndices.Len())
 		for i, idx := range definedRemoteIndices.List() {

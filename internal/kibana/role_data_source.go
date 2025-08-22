@@ -217,6 +217,11 @@ func DataSourceRole() *schema.Resource {
 			ValidateFunc:     validation.StringIsJSON,
 			DiffSuppressFunc: utils.DiffJsonSuppress,
 		},
+		"description": {
+			Description: "Description for the role",
+			Type:        schema.TypeString,
+			Optional:    true,
+		},
 	}
 
 	return &schema.Resource{

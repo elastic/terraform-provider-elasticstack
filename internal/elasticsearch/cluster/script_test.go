@@ -9,6 +9,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAccResourceScript(t *testing.T) {
@@ -29,6 +30,26 @@ func TestAccResourceScript(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccScriptUpdate(scriptID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "source", "Math.log(_score * 4) + params['changed_modifier']"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "params", `{"changed_modifier":2}`),
+				),
+			},
+			{
+				// Ensure the provider doesn't panic if the script has been deleted outside of the Terraform flow
+				PreConfig: func() {
+					client, err := clients.NewAcceptanceTestingClient()
+					require.NoError(t, err)
+
+					esClient, err := client.GetESClient()
+					require.NoError(t, err)
+
+					_, err = esClient.DeleteScript(scriptID)
+					require.NoError(t, err)
+				},
 				Config: testAccScriptUpdate(scriptID),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),

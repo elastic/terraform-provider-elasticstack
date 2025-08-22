@@ -1,10 +1,11 @@
-package security_test
+package system_user_test
 
 import (
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -24,7 +25,8 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 				Config: testAccResourceSecuritySystemUserUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
+					checks.CheckUserCanAuthenticate("remote_monitoring_user", "new_password"),
 				),
 			},
 		},
@@ -44,6 +46,36 @@ func TestAccResourceSecuritySystemUserNotFound(t *testing.T) {
 	})
 }
 
+func TestAccResourceSecuritySystemUserFromSDK(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create the system user with the last provider version where the system user resource was built on the SDK
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.11.15",
+					},
+				},
+				Config: testAccResourceSecuritySystemUserCreate,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccResourceSecuritySystemUserCreate,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
+				),
+			},
+		},
+	})
+}
+
 const testAccResourceSecuritySystemUserCreate = `
 provider "elasticstack" {
   elasticsearch {}
@@ -51,9 +83,9 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_user" {
   username  = "remote_monitoring_user"
-  password  = "new_password"
 }
-	`
+`
+
 const testAccResourceSecuritySystemUserUpdate = `
 provider "elasticstack" {
   elasticsearch {}
@@ -62,7 +94,6 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_user" {
   username  = "remote_monitoring_user"
   password  = "new_password"
-  enabled   = false
 }
 	`
 const testAccResourceSecuritySystemUserNotFound = `

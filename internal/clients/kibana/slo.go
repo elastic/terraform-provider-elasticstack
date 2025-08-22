@@ -156,6 +156,9 @@ func responseIndicatorToCreateSloRequestIndicator(s slo.SloResponseIndicator) (s
 	case *slo.IndicatorPropertiesHistogram:
 		ret.IndicatorPropertiesHistogram = ind
 
+	case *slo.IndicatorPropertiesTimesliceMetric:
+		ret.IndicatorPropertiesTimesliceMetric = ind
+
 	default:
 		return ret, fmt.Errorf("unknown indicator type: %T", ind)
 	}

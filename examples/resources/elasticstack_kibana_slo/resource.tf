@@ -176,3 +176,38 @@ resource "elasticstack_kibana_slo" "custom_metric" {
   }
 
 }
+
+//Available from 8.12.0
+resource "elasticstack_kibana_slo" "timeslice_metric" {
+  name        = "timeslice metric"
+  description = "timeslice metric"
+
+  timeslice_metric_indicator {
+    index           = "my-index"
+    timestamp_field = "@timestamp"
+    metric {
+      metrics {
+        name        = "A"
+        aggregation = "sum"
+        field       = "latency"
+      }
+      equation   = "A"
+      comparator = "GT"
+      threshold  = 100
+    }
+  }
+
+  time_window {
+    duration = "7d"
+    type     = "rolling"
+  }
+
+  budgeting_method = "timeslices"
+
+  objective {
+    target           = 0.95
+    timeslice_target = 0.95
+    timeslice_window = "5m"
+  }
+
+}

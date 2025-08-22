@@ -89,49 +89,73 @@ func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username stri
 	return diags
 }
 
-func EnableUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
-	var diags diag.Diagnostics
+func EnableUser(ctx context.Context, apiClient *clients.ApiClient, username string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError(
+			"Unable to get Elasticsearch client",
+			err.Error(),
+		)
+		return diags
 	}
 	res, err := esClient.Security.EnableUser(username, esClient.Security.EnableUser.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError(
+			"Unable to enable system user",
+			err.Error(),
+		)
+		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to enable system user"); diags.HasError() {
+	if diags := utils.CheckErrorFromFW(res, "Unable to enable system user"); diags.HasError() {
 		return diags
 	}
 	return diags
 }
 
-func DisableUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
-	var diags diag.Diagnostics
+func DisableUser(ctx context.Context, apiClient *clients.ApiClient, username string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError(
+			"Unable to get Elasticsearch client",
+			err.Error(),
+		)
+		return diags
 	}
 	res, err := esClient.Security.DisableUser(username, esClient.Security.DisableUser.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError(
+			"Unable to disable system user",
+			err.Error(),
+		)
+		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to disable system user"); diags.HasError() {
+	if diags := utils.CheckErrorFromFW(res, "Unable to disable system user"); diags.HasError() {
 		return diags
 	}
 	return diags
 }
 
-func ChangeUserPassword(ctx context.Context, apiClient *clients.ApiClient, username string, userPassword *models.UserPassword) diag.Diagnostics {
-	var diags diag.Diagnostics
+func ChangeUserPassword(ctx context.Context, apiClient *clients.ApiClient, username string, userPassword *models.UserPassword) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
 	userPasswordBytes, err := json.Marshal(userPassword)
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError(
+			"Unable to marshal user password",
+			err.Error(),
+		)
+		return diags
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError(
+			"Unable to get Elasticsearch client",
+			err.Error(),
+		)
+		return diags
 	}
 	res, err := esClient.Security.ChangePassword(
 		bytes.NewReader(userPasswordBytes),
@@ -139,10 +163,14 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ApiClient, usern
 		esClient.Security.ChangePassword.WithContext(ctx),
 	)
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError(
+			"Unable to change user password",
+			err.Error(),
+		)
+		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to change user's password"); diags.HasError() {
+	if diags := utils.CheckErrorFromFW(res, "Unable to change user's password"); diags.HasError() {
 		return diags
 	}
 	return diags

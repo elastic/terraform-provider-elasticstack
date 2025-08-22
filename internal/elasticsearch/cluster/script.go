@@ -81,6 +81,7 @@ func resourceScriptRead(ctx context.Context, d *schema.ResourceData, meta interf
 	if script == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Script "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
+		return nil
 	}
 	if diags.HasError() {
 		return diags

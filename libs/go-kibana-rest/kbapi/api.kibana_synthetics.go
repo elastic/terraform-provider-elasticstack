@@ -15,6 +15,7 @@ const (
 	basePathKibanaSynthetics = "/api/synthetics"
 	privateLocationsSuffix   = "/private_locations"
 	monitorsSuffix           = "/monitors"
+	parametersSuffix         = "/params"
 
 	Http    MonitorType = "http"
 	Tcp     MonitorType = "tcp"
@@ -84,6 +85,10 @@ type KibanaSyntheticsPrivateLocationAPI struct {
 	Create KibanaSyntheticsPrivateLocationCreate
 	Delete KibanaSyntheticsPrivateLocationDelete
 	Get    KibanaSyntheticsPrivateLocationGet
+}
+
+type KibanaSyntheticsParameterAPI struct {
+	Delete KibanaSyntheticsParameterDelete
 }
 
 type SyntheticsStatusConfig struct {
@@ -256,6 +261,11 @@ type MonitorTypeConfig struct {
 	Type MonitorType `json:"type"`
 }
 
+type ParameterDeleteStatus struct {
+	Id      string `json:"id"`
+	Deleted bool   `json:"deleted"`
+}
+
 func (f HTTPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
 
 	mType := MonitorTypeConfig{Type: Http}
@@ -329,6 +339,8 @@ type KibanaSyntheticsPrivateLocationCreate func(ctx context.Context, pLoc Privat
 type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel string) (*PrivateLocation, error)
 
 type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string) error
+
+type KibanaSyntheticsParameterDelete func(ctx context.Context, id string) ([]ParameterDeleteStatus, error)
 
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
 	return func(ctx context.Context, idOrLabel string) (*PrivateLocation, error) {
@@ -432,6 +444,44 @@ func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorA
 			return nil, err
 		}
 		return unmarshal(resp, SyntheticsMonitor{})
+	}
+}
+
+func newKibanaSyntheticsParameterDeleteFunc(c *resty.Client) KibanaSyntheticsParameterDelete {
+	// We're intentionally using the undocumented delete API call that the
+	// Kibana UI does. It's the only endpoint that works correctly across all
+	// Kibana versions. There have been many bugs...
+
+	// DELETE /api/synthetics/params/<id> (from documentation)
+	//   - Works on >=8.17.0.
+	//   - HTTP 404 on 8.12.x through 8.16.x.
+	// DELETE /api/synthetics/params/_bulk_delete (from documentation)
+	//   - HTTP 400 on 9.0.x with error message about URL parameters and body
+	//     provided at the same time ("_bulk_delete" interpreted as parameter
+	//     ID?).
+	//   - HTTP 403 on 8.18.x with error message about missing `uptime-read` and
+	//     `uptime-write` permissions despite having the `superuser` role.
+	//   - HTTP 403 with no details on 8.17.x.
+	//   - HTTP 404 on 8.12.x through 8.16.x.
+	// POST /api/synthetics/params/_bulk_delete (from comment in documentation example)
+	//   - Works on >=8.17.0.
+	//   - HTTP 404 on 8.12.x through 8.16.x.
+	// DELETE /api/synthetics/params (what the Kibana UI does)
+	//   - Works on >=8.12.0.
+
+	return func(ctx context.Context, id string) ([]ParameterDeleteStatus, error) {
+		path := basePath("", parametersSuffix)
+		log.Debugf("URL to delete parameter: %s", path)
+
+		resp, err := c.R().SetContext(ctx).SetBody(map[string]interface{}{
+			"ids": []string{id},
+		}).Delete(path)
+		if err = handleKibanaError(err, resp); err != nil {
+			return nil, err
+		}
+
+		result, err := unmarshal(resp, []ParameterDeleteStatus{})
+		return *result, err
 	}
 }
 

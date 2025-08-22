@@ -25,6 +25,205 @@ type IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner struct {
 // Unmarshal JSON data into any of the pointers in the struct
 func (dst *IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner) UnmarshalJSON(data []byte) error {
 	var err error
+	// use discriminator value to speed up the lookup
+	var jsonDict map[string]interface{}
+	err = json.Unmarshal(data, &jsonDict)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal JSON into map for the discriminator lookup")
+	}
+
+	// check if the discriminator value is 'avg'
+	if jsonDict["aggregation"] == "avg" {
+		// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
+		err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
+		if err == nil {
+			jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
+			if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
+				dst.TimesliceMetricBasicMetricWithField = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricBasicMetricWithField, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricBasicMetricWithField = nil
+		}
+	}
+
+	// check if the discriminator value is 'cardinality'
+	if jsonDict["aggregation"] == "cardinality" {
+		// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
+		err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
+		if err == nil {
+			jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
+			if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
+				dst.TimesliceMetricBasicMetricWithField = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricBasicMetricWithField, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricBasicMetricWithField = nil
+		}
+	}
+
+	// check if the discriminator value is 'doc_count'
+	if jsonDict["aggregation"] == "doc_count" {
+		// try to unmarshal JSON data into TimesliceMetricDocCountMetric
+		err = json.Unmarshal(data, &dst.TimesliceMetricDocCountMetric)
+		if err == nil {
+			jsonTimesliceMetricDocCountMetric, _ := json.Marshal(dst.TimesliceMetricDocCountMetric)
+			if string(jsonTimesliceMetricDocCountMetric) == "{}" { // empty struct
+				dst.TimesliceMetricDocCountMetric = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricDocCountMetric, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricDocCountMetric = nil
+		}
+	}
+
+	// check if the discriminator value is 'last_value'
+	if jsonDict["aggregation"] == "last_value" {
+		// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
+		err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
+		if err == nil {
+			jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
+			if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
+				dst.TimesliceMetricBasicMetricWithField = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricBasicMetricWithField, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricBasicMetricWithField = nil
+		}
+	}
+
+	// check if the discriminator value is 'max'
+	if jsonDict["aggregation"] == "max" {
+		// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
+		err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
+		if err == nil {
+			jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
+			if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
+				dst.TimesliceMetricBasicMetricWithField = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricBasicMetricWithField, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricBasicMetricWithField = nil
+		}
+	}
+
+	// check if the discriminator value is 'min'
+	if jsonDict["aggregation"] == "min" {
+		// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
+		err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
+		if err == nil {
+			jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
+			if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
+				dst.TimesliceMetricBasicMetricWithField = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricBasicMetricWithField, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricBasicMetricWithField = nil
+		}
+	}
+
+	// check if the discriminator value is 'percentile'
+	if jsonDict["aggregation"] == "percentile" {
+		// try to unmarshal JSON data into TimesliceMetricPercentileMetric
+		err = json.Unmarshal(data, &dst.TimesliceMetricPercentileMetric)
+		if err == nil {
+			jsonTimesliceMetricPercentileMetric, _ := json.Marshal(dst.TimesliceMetricPercentileMetric)
+			if string(jsonTimesliceMetricPercentileMetric) == "{}" { // empty struct
+				dst.TimesliceMetricPercentileMetric = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricPercentileMetric, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricPercentileMetric = nil
+		}
+	}
+
+	// check if the discriminator value is 'std_deviation'
+	if jsonDict["aggregation"] == "std_deviation" {
+		// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
+		err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
+		if err == nil {
+			jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
+			if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
+				dst.TimesliceMetricBasicMetricWithField = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricBasicMetricWithField, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricBasicMetricWithField = nil
+		}
+	}
+
+	// check if the discriminator value is 'sum'
+	if jsonDict["aggregation"] == "sum" {
+		// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
+		err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
+		if err == nil {
+			jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
+			if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
+				dst.TimesliceMetricBasicMetricWithField = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricBasicMetricWithField, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricBasicMetricWithField = nil
+		}
+	}
+
+	// check if the discriminator value is 'timeslice_metric_basic_metric_with_field'
+	if jsonDict["aggregation"] == "timeslice_metric_basic_metric_with_field" {
+		// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
+		err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
+		if err == nil {
+			jsonTimesliceMetricBasicMetricWithField, _ := json.Marshal(dst.TimesliceMetricBasicMetricWithField)
+			if string(jsonTimesliceMetricBasicMetricWithField) == "{}" { // empty struct
+				dst.TimesliceMetricBasicMetricWithField = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricBasicMetricWithField, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricBasicMetricWithField = nil
+		}
+	}
+
+	// check if the discriminator value is 'timeslice_metric_doc_count_metric'
+	if jsonDict["aggregation"] == "timeslice_metric_doc_count_metric" {
+		// try to unmarshal JSON data into TimesliceMetricDocCountMetric
+		err = json.Unmarshal(data, &dst.TimesliceMetricDocCountMetric)
+		if err == nil {
+			jsonTimesliceMetricDocCountMetric, _ := json.Marshal(dst.TimesliceMetricDocCountMetric)
+			if string(jsonTimesliceMetricDocCountMetric) == "{}" { // empty struct
+				dst.TimesliceMetricDocCountMetric = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricDocCountMetric, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricDocCountMetric = nil
+		}
+	}
+
+	// check if the discriminator value is 'timeslice_metric_percentile_metric'
+	if jsonDict["aggregation"] == "timeslice_metric_percentile_metric" {
+		// try to unmarshal JSON data into TimesliceMetricPercentileMetric
+		err = json.Unmarshal(data, &dst.TimesliceMetricPercentileMetric)
+		if err == nil {
+			jsonTimesliceMetricPercentileMetric, _ := json.Marshal(dst.TimesliceMetricPercentileMetric)
+			if string(jsonTimesliceMetricPercentileMetric) == "{}" { // empty struct
+				dst.TimesliceMetricPercentileMetric = nil
+			} else {
+				return nil // data stored in dst.TimesliceMetricPercentileMetric, return on the first match
+			}
+		} else {
+			dst.TimesliceMetricPercentileMetric = nil
+		}
+	}
+
 	// try to unmarshal JSON data into TimesliceMetricBasicMetricWithField
 	err = json.Unmarshal(data, &dst.TimesliceMetricBasicMetricWithField)
 	if err == nil {

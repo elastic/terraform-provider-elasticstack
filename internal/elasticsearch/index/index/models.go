@@ -286,11 +286,11 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 	timeout, _ := model.Timeout.Parse()
 
 	params := models.PutIndexParams{
-		MasterTimeout: masterTimeout,
-		Timeout:       timeout,
+		Timeout: timeout,
 	}
 
-	if serverFlavor != "serverless" {
+	if serverFlavor != clients.ServerlessFlavor {
+		params.MasterTimeout = masterTimeout
 		params.WaitForActiveShards = model.WaitForActiveShards.ValueString()
 	}
 
@@ -444,7 +444,7 @@ func (model tfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (at
 }
 
 func convertSettingsKeyToTFFieldKey(settingKey string) string {
-	return strings.Replace(settingKey, ".", "_", -1)
+	return strings.ReplaceAll(settingKey, ".", "_")
 }
 
 func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {

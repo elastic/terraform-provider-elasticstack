@@ -10,7 +10,6 @@ import (
 	"time"
 
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -146,7 +145,7 @@ func ExpandIndividuallyDefinedSettings(ctx context.Context, d *schema.ResourceDa
 }
 
 func ConvertSettingsKeyToTFFieldKey(settingKey string) string {
-	return strings.Replace(settingKey, ".", "_", -1)
+	return strings.ReplaceAll(settingKey, ".", "_")
 }
 
 func Pointer[T any](value T) *T {
@@ -232,11 +231,32 @@ func ConvertToAttrDiags(diags fwdiag.Diagnostics, path path.Path) fwdiag.Diagnos
 	for _, d := range diags {
 		if d.Severity() == fwdiag.SeverityError {
 			nd.AddAttributeError(path, d.Summary(), d.Detail())
-		} else if d.Severity() == diag.SeverityWarning {
+		} else if d.Severity() == fwdiag.SeverityWarning {
 			nd.AddAttributeWarning(path, d.Summary(), d.Detail())
 		} else {
 			nd.Append(d)
 		}
 	}
 	return nd
+}
+
+func DefaultIfNil[T any](value *T) T {
+	var result T
+
+	if value != nil {
+		result = *value
+	}
+
+	return result
+}
+
+// Returns an empty slice if s is a slice represented by nil (no backing array).
+// Guarantees that json.Marshal and terraform parameters will not treat the
+// empty slice as null.
+func NonNilSlice[T any](s []T) []T {
+	if s == nil {
+		return []T{}
+	}
+
+	return s
 }

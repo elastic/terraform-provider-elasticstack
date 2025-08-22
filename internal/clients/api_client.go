@@ -33,6 +33,8 @@ type CompositeId struct {
 	ResourceId string
 }
 
+const ServerlessFlavor = "serverless"
+
 func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	idParts := strings.Split(id, "/")
@@ -53,7 +55,7 @@ func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
 
 func CompositeIdFromStrFw(id string) (*CompositeId, fwdiags.Diagnostics) {
 	composite, diags := CompositeIdFromStr(id)
-	return composite, utils.ConvertSDKDiagnosticsToFramework(diags)
+	return composite, utils.FrameworkDiagsFromSDK(diags)
 }
 
 func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
@@ -352,6 +354,24 @@ func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.D
 	return &info, diags
 }
 
+func (a *ApiClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+	flavor, diags := a.ServerFlavor(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	if flavor == ServerlessFlavor {
+		return true, nil
+	}
+
+	serverVersion, diags := a.ServerVersion(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	return serverVersion.GreaterThanOrEqual(minVersion), nil
+}
+
 func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
 	if a.elasticsearch != nil {
 		return a.versionFromElasticsearch(ctx)
@@ -363,12 +383,14 @@ func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.D
 func (a *ApiClient) versionFromKibana() (*version.Version, diag.Diagnostics) {
 	kibClient, err := a.GetKibanaClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diag.Errorf("failed to get version from Kibana API: %s, "+
+			"please ensure a working 'kibana' endpoint is configured", err.Error())
 	}
 
 	status, err := kibClient.KibanaStatus.Get()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diag.Errorf("failed to get version from Kibana API: %s, "+
+			"Please ensure a working 'kibana' endpoint is configured", err.Error())
 	}
 
 	vMap, ok := status["version"].(map[string]interface{})
@@ -405,12 +427,46 @@ func (a *ApiClient) versionFromElasticsearch(ctx context.Context) (*version.Vers
 }
 
 func (a *ApiClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics) {
+	if a.elasticsearch != nil {
+		return a.flavorFromElasticsearch(ctx)
+	}
+
+	return a.flavorFromKibana()
+}
+
+func (a *ApiClient) flavorFromElasticsearch(ctx context.Context) (string, diag.Diagnostics) {
 	info, diags := a.serverInfo(ctx)
 	if diags.HasError() {
 		return "", diags
 	}
 
 	return info.Version.BuildFlavor, nil
+}
+
+func (a *ApiClient) flavorFromKibana() (string, diag.Diagnostics) {
+	kibClient, err := a.GetKibanaClient()
+	if err != nil {
+		return "", diag.Errorf("failed to get flavor from Kibana API: %s, "+
+			"please ensure a working 'kibana' endpoint is configured", err.Error())
+	}
+
+	status, err := kibClient.KibanaStatus.Get()
+	if err != nil {
+		return "", diag.Errorf("failed to get flavor from Kibana API: %s, "+
+			"Please ensure a working 'kibana' endpoint is configured", err.Error())
+	}
+
+	vMap, ok := status["version"].(map[string]interface{})
+	if !ok {
+		return "", diag.Errorf("failed to get flavor from Kibana API")
+	}
+
+	serverFlavor, ok := vMap["build_flavor"].(string)
+	if !ok {
+		return "", diag.Errorf("failed to get build flavor from Kibana status")
+	}
+
+	return serverFlavor, nil
 }
 
 func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
@@ -440,7 +496,7 @@ func buildEsClient(cfg config.Client) (*elasticsearch.Client, error) {
 
 	es, err := elasticsearch.NewClient(*cfg.Elasticsearch)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create Elasticsearch client: %w", err)
+		return nil, fmt.Errorf("unable to create Elasticsearch client: %w", err)
 	}
 
 	return es, nil
@@ -475,7 +531,7 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 func buildKibanaOapiClient(cfg config.Client) (*kibana_oapi.Client, error) {
 	client, err := kibana_oapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create KibanaOapi client: %w", err)
+		return nil, fmt.Errorf("unable to create KibanaOapi client: %w", err)
 	}
 
 	return client, nil
@@ -539,7 +595,7 @@ func buildSloClient(cfg config.Client, httpClient *http.Client) *slo.APIClient {
 func buildFleetClient(cfg config.Client) (*fleet.Client, error) {
 	client, err := fleet.NewClient(*cfg.Fleet)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create Fleet client: %w", err)
+		return nil, fmt.Errorf("unable to create Fleet client: %w", err)
 	}
 
 	return client, nil

@@ -6,15 +6,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
-	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
-
-var minSupportedRemoteIndicesVersion = version.Must(version.NewSemver("8.10.0"))
-var minSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
 
 func TestAccResourceSecurityRole(t *testing.T) {
 	// generate a random username
@@ -53,7 +50,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedRemoteIndicesVersion),
 				Config:   testAccResourceSecurityRoleRemoteIndicesCreate(roleNameRemoteIndices),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameRemoteIndices),
@@ -68,7 +65,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedRemoteIndicesVersion),
 				Config:   testAccResourceSecurityRoleRemoteIndicesUpdate(roleNameRemoteIndices),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameRemoteIndices),
@@ -84,7 +81,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
 				Config:   testAccResourceSecurityRoleDescriptionCreate(roleNameDescription),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
@@ -92,7 +89,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
 				Config:   testAccResourceSecurityRoleDescriptionUpdate(roleNameDescription),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),

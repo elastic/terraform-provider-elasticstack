@@ -1,0 +1,1 @@
+terraform import elasticstack_apm_agent_configuration.test_configuration my-service:production
