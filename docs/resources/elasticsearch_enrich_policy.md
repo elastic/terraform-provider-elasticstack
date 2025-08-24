@@ -58,13 +58,13 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy1" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `execute` (Boolean) Whether to call the execute API function in order to create the enrich index.
 - `query` (String) Query used to filter documents in the enrich index. The policy only uses documents matching this query to enrich incoming documents. Defaults to a match_all query.
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
