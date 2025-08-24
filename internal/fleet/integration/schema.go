@@ -26,9 +26,6 @@ func (r *integrationResource) Schema(ctx context.Context, req resource.SchemaReq
 		"version": schema.StringAttribute{
 			Description: "The integration package version.",
 			Required:    true,
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.RequiresReplace(),
-			},
 		},
 		"force": schema.BoolAttribute{
 			Description: "Set to true to force the requested action.",
