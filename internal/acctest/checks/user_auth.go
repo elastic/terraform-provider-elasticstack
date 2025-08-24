@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func CheckUserCanAuthenticate(username string, password string) func(*terraform.State) error {
