@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Name** | **string** | The name of the metric. Only valid options are A-Z | 
-**Aggregation** | **string** | The aggregation type of the metric. Only valid option is \&quot;sum\&quot; | 
+**Aggregation** | **string** | The aggregation type of the metric. | 
 **Field** | **string** | The field of the metric. | 
 **Filter** | Pointer to **string** | The filter to apply to the metric. | [optional] 
 
