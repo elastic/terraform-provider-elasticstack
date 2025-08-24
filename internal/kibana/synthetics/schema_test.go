@@ -49,6 +49,7 @@ func TestToModelV0(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -83,6 +84,7 @@ func TestToModelV0(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -111,6 +113,7 @@ func TestToModelV0(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -130,6 +133,7 @@ func TestToModelV0(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -191,6 +195,7 @@ func TestToModelV0(t *testing.T) {
 				ID:               types.StringValue("default/test-id-http"),
 				Name:             types.StringValue("test-name-http"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -261,6 +266,7 @@ func TestToModelV0(t *testing.T) {
 				ID:               types.StringValue("default/test-id-tcp"),
 				Name:             types.StringValue("test-name-tcp"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        nil,
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -320,6 +326,7 @@ func TestToModelV0(t *testing.T) {
 				ID:               types.StringValue("default/test-id-icmp"),
 				Name:             types.StringValue("test-name-icmp"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        nil,
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -375,6 +382,7 @@ func TestToModelV0(t *testing.T) {
 				ID:               types.StringValue("default/test-id-browser"),
 				Name:             types.StringValue("test-name-browser"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        nil,
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -398,7 +406,8 @@ func TestToModelV0(t *testing.T) {
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			model, diag := tt.expected.toModelV0(ctx, &tt.input)
+			expectedSpaceID := tt.expected.SpaceID.ValueString()
+			model, diag := tt.expected.toModelV0(ctx, &tt.input, expectedSpaceID)
 			assert.False(t, diag.HasError())
 			assert.Equal(t, &tt.expected, model)
 		})
@@ -457,6 +466,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				ID:               types.StringValue("test-id-http"),
 				Name:             types.StringValue("test-name-http"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -533,6 +543,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				ID:               types.StringValue("test-id-tcp"),
 				Name:             types.StringValue("test-name-tcp"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: nil,
@@ -597,6 +608,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				ID:               types.StringValue("test-id-icmp"),
 				Name:             types.StringValue("test-name-icmp"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: nil,
@@ -637,6 +649,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				ID:               types.StringValue("test-id-browser"),
 				Name:             types.StringValue("test-name-browser"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: nil,
@@ -722,6 +735,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				ID:              types.StringValue("/"),
 				Name:            types.StringValue(""),
 				SpaceID:         types.StringValue(""),
+				Namespace:       types.StringValue(""),
 				Schedule:        types.Int64Value(0),
 				APMServiceName:  types.StringValue(""),
 				TimeoutSeconds:  types.Int64Value(0),
@@ -767,6 +781,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -801,6 +816,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -816,7 +832,8 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			actual, diag := tt.state.toModelV0(ctx, &tt.input)
+			expectedSpaceID := tt.expected.SpaceID.ValueString()
+			actual, diag := tt.state.toModelV0(ctx, &tt.input, expectedSpaceID)
 			assert.False(t, diag.HasError())
 			assert.NotNil(t, actual)
 			assert.Equal(t, &tt.expected, actual)

@@ -18,7 +18,7 @@ func Test_roundtrip(t *testing.T) {
 		{
 			name:       "only required fields",
 			id:         "id-1",
-			namespaces: []string{"ns-1"},
+			namespaces: []string{"ns1"},
 			request: kboapi.SyntheticsParameterRequest{
 				Key:   "key-1",
 				Value: "value-1",
@@ -39,7 +39,7 @@ func Test_roundtrip(t *testing.T) {
 		{
 			name:       "only description",
 			id:         "id-3",
-			namespaces: []string{"ns-3"},
+			namespaces: []string{"ns3"},
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-3",
 				Value:       "value-3",
@@ -49,7 +49,7 @@ func Test_roundtrip(t *testing.T) {
 		{
 			name:       "only tags",
 			id:         "id-4",
-			namespaces: []string{"ns-4"},
+			namespaces: []string{"ns4"},
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-4",
 				Value:       "value-4",
@@ -59,7 +59,7 @@ func Test_roundtrip(t *testing.T) {
 		{
 			name:       "all namespaces",
 			id:         "id-5",
-			namespaces: []string{"ns-5"},
+			namespaces: []string{"ns5"},
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-5",
 				Value:       "value-5",

@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -99,6 +101,7 @@ type tfModelV0 struct {
 	ID               types.String              `tfsdk:"id"`
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
+	Namespace        types.String              `tfsdk:"namespace"`
 	Schedule         types.Int64               `tfsdk:"schedule"`
 	Locations        []types.String            `tfsdk:"locations"`
 	PrivateLocations []types.String            `tfsdk:"private_locations"`
@@ -143,11 +146,27 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: "The monitor’s name.",
 			},
 			"space_id": schema.StringAttribute{
-				MarkdownDescription: "The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
+				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used. This value is used for the default for `namespace` when that attribute is not provided.",
+				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					planmodifiers.StringUseDefaultIfUnknown("default"),
+					requiresReplaceIfSpaceIdChanged(),
+				},
+				Computed: true,
+			},
+			"namespace": schema.StringAttribute{
+				MarkdownDescription: "The data stream namespace. If not specified, defaults to the value of space_id. The namespace must be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -.",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[^*\\/?\"<>|\s,#:-]*$`),
+						"namespace must not contain any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -",
+					),
 				},
 				Computed: true,
 			},
@@ -566,7 +585,7 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
-func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor) (*tfModelV0, diag.Diagnostics) {
+func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, spaceID string) (*tfModelV0, diag.Diagnostics) {
 	var schedule int64
 	var err error
 	dg := diag.Diagnostics{}
@@ -640,7 +659,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 	}
 
 	resourceID := clients.CompositeId{
-		ClusterId:  api.Namespace,
+		ClusterId:  spaceID,
 		ResourceId: string(api.Id),
 	}
 
@@ -652,7 +671,8 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor)
 	return &tfModelV0{
 		ID:               types.StringValue(resourceID.String()),
 		Name:             types.StringValue(api.Name),
-		SpaceID:          types.StringValue(api.Namespace),
+		SpaceID:          types.StringValue(spaceID),
+		Namespace:        types.StringValue(api.Namespace),
 		Schedule:         types.Int64Value(schedule),
 		Locations:        v.Locations,
 		PrivateLocations: StringSliceValue(privateLocLabels),
@@ -873,6 +893,12 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		return nil, dg
 	}
 
+	// Use namespace if explicitly set, otherwise fall back to space_id
+	namespace := v.Namespace.ValueString()
+	if namespace == "" || v.Namespace.IsNull() || v.Namespace.IsUnknown() {
+		namespace = v.SpaceID.ValueString()
+	}
+
 	return &kbapi.SyntheticsMonitorConfig{
 		Name:             v.Name.ValueString(),
 		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueInt64()),
@@ -883,7 +909,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		Alert:            toTFAlertConfig(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
-		Namespace:        v.SpaceID.ValueString(),
+		Namespace:        namespace,
 		Params:           params,
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
 	}, diag.Diagnostics{} //dg
@@ -1046,4 +1072,59 @@ func (v tfStatusConfigV0) toTfStatusConfigV0() *kbapi.SyntheticsStatusConfig {
 	return &kbapi.SyntheticsStatusConfig{
 		Enabled: v.Enabled.ValueBoolPointer(),
 	}
+}
+
+func requiresReplaceIfSpaceIdChanged() planmodifier.String {
+	return stringplanmodifier.RequiresReplaceIf(
+		func(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+			// Don't require replace if plan value is unknown
+			if req.PlanValue.IsUnknown() {
+				resp.RequiresReplace = false
+				return
+			}
+
+			// Don't require replace if state value is null (creating)
+			if req.StateValue.IsNull() {
+				resp.RequiresReplace = false
+				return
+			}
+
+			// Don't require replace if config value is null (not configured by user)
+			if req.ConfigValue.IsNull() {
+				resp.RequiresReplace = false
+				return
+			}
+
+			stateValue := req.StateValue.ValueString()
+			planValue := req.PlanValue.ValueString()
+
+			// Don't require replace if values are the same
+			if stateValue == planValue {
+				resp.RequiresReplace = false
+				return
+			}
+
+			// Normalize empty and "default" values for comparison
+			normalizeValue := func(v string) string {
+				if v == "" || v == "default" {
+					return "default"
+				}
+				return v
+			}
+
+			normalizedState := normalizeValue(stateValue)
+			normalizedPlan := normalizeValue(planValue)
+
+			// Don't require replace if the change is between empty/"" and "default"
+			if normalizedState == normalizedPlan {
+				resp.RequiresReplace = false
+				return
+			}
+
+			// Otherwise, require replace
+			resp.RequiresReplace = true
+		},
+		"Requires replace if the space_id changes, except when changing between empty and 'default'",
+		"Requires replace if the space_id changes, except when changing between empty and 'default'",
+	)
 }
