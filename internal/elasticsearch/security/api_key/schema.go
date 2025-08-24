@@ -12,11 +12,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 )
 
-const currentSchemaVersion int64 = 1
+const (
+	currentSchemaVersion int64 = 2
+	defaultAPIKeyType          = "rest"
+)
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = r.getSchema(currentSchemaVersion)
@@ -25,7 +30,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 func (r *Resource) getSchema(version int64) schema.Schema {
 	return schema.Schema{
 		Version:     version,
-		Description: "Creates an API key for access without requiring basic authentication. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html",
+		Description: "Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},
@@ -55,11 +60,27 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"type": schema.StringAttribute{
+				Description: "The type of API key. Valid values are 'rest' (default) and 'cross_cluster'. Cross-cluster API keys are used for cross-cluster search and replication.",
+				Optional:    true,
+				Computed:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf(defaultAPIKeyType, "cross_cluster"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
+					planmodifiers.StringUseDefaultIfUnknown(defaultAPIKeyType),
+				},
+			},
 			"role_descriptors": schema.StringAttribute{
 				Description: "Role descriptors for this API key.",
 				CustomType:  jsontypes.NormalizedType{},
 				Optional:    true,
 				Computed:    true,
+				Validators: []validator.String{
+					RequiresType(defaultAPIKeyType),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					r.requiresReplaceIfUpdateNotSupported(),
@@ -87,6 +108,55 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					r.requiresReplaceIfUpdateNotSupported(),
+				},
+			},
+			"access": schema.SingleNestedAttribute{
+				Description: "Access configuration for cross-cluster API keys. Only applicable when type is 'cross_cluster'.",
+				Optional:    true,
+				Validators: []validator.Object{
+					RequiresType("cross_cluster"),
+				},
+				Attributes: map[string]schema.Attribute{
+					"search": schema.ListNestedAttribute{
+						Description: "A list of search configurations for which the cross-cluster API key will have search privileges.",
+						Optional:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"names": schema.ListAttribute{
+									Description: "A list of index patterns for search.",
+									Required:    true,
+									ElementType: types.StringType,
+								},
+								"field_security": schema.StringAttribute{
+									Description: "Field-level security configuration in JSON format.",
+									Optional:    true,
+									CustomType:  jsontypes.NormalizedType{},
+								},
+								"query": schema.StringAttribute{
+									Description: "Query to filter documents for search operations in JSON format.",
+									Optional:    true,
+									CustomType:  jsontypes.NormalizedType{},
+								},
+								"allow_restricted_indices": schema.BoolAttribute{
+									Description: "Whether to allow access to restricted indices.",
+									Optional:    true,
+								},
+							},
+						},
+					},
+					"replication": schema.ListNestedAttribute{
+						Description: "A list of replication configurations for which the cross-cluster API key will have replication privileges.",
+						Optional:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"names": schema.ListAttribute{
+									Description: "A list of index patterns for replication.",
+									Required:    true,
+									ElementType: types.StringType,
+								},
+							},
+						},
+					},
 				},
 			},
 			"api_key": schema.StringAttribute{

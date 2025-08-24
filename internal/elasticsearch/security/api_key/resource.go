@@ -19,7 +19,8 @@ var (
 	MinVersion                         = version.Must(version.NewVersion("8.0.0")) // Enabled in 8.0
 	MinVersionWithUpdate               = version.Must(version.NewVersion("8.4.0"))
 	MinVersionReturningRoleDescriptors = version.Must(version.NewVersion("8.5.0"))
-	MinVersionWithRestriction          = version.Must(version.NewVersion("8.9.0")) // Enabled in 8.0
+	MinVersionWithRestriction          = version.Must(version.NewVersion("8.9.0"))  // Enabled in 8.0
+	MinVersionWithCrossCluster         = version.Must(version.NewVersion("8.10.0")) // Cross-cluster API keys enabled in 8.10
 )
 
 type Resource struct {

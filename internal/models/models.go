@@ -126,12 +126,42 @@ type ApiKeyCreateResponse struct {
 
 type ApiKeyResponse struct {
 	ApiKey
+	Type             string                          `json:"type,omitempty"`
 	RolesDescriptors map[string]ApiKeyRoleDescriptor `json:"role_descriptors,omitempty"`
 	Expiration       int64                           `json:"expiration,omitempty"`
 	Id               string                          `json:"id,omitempty"`
 	Key              string                          `json:"api_key,omitempty"`
 	EncodedKey       string                          `json:"encoded,omitempty"`
 	Invalidated      bool                            `json:"invalidated,omitempty"`
+	Access           *CrossClusterApiKeyAccess       `json:"access,omitempty"`
+}
+
+type CrossClusterApiKeyAccess struct {
+	Search      []CrossClusterApiKeyAccessEntry `json:"search,omitempty"`
+	Replication []CrossClusterApiKeyAccessEntry `json:"replication,omitempty"`
+}
+
+type CrossClusterApiKeyAccessEntry struct {
+	Names                  []string       `json:"names"`
+	FieldSecurity          *FieldSecurity `json:"field_security,omitempty"`
+	Query                  *string        `json:"query,omitempty"`
+	AllowRestrictedIndices *bool          `json:"allow_restricted_indices,omitempty"`
+}
+
+type CrossClusterApiKey struct {
+	ID         string                    `json:"-"`
+	Name       string                    `json:"name,omitempty"`
+	Expiration string                    `json:"expiration,omitempty"`
+	Access     *CrossClusterApiKeyAccess `json:"access,omitempty"`
+	Metadata   map[string]interface{}    `json:"metadata,omitempty"`
+}
+
+type CrossClusterApiKeyCreateResponse struct {
+	Id         string `json:"id,omitempty"`
+	Name       string `json:"name"`
+	Key        string `json:"api_key,omitempty"`
+	EncodedKey string `json:"encoded,omitempty"`
+	Expiration int64  `json:"expiration,omitempty"`
 }
 
 type IndexPerms struct {
