@@ -4,13 +4,16 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var MinVersionSupportingPreconfiguredIDs = version.Must(version.NewVersion("8.8.0"))
 
 func ResourceActionConnector() *schema.Resource {
 	var connectorSchema = map[string]*schema.Schema{
@@ -116,7 +119,7 @@ func connectorCustomizeDiff(ctx context.Context, rd *schema.ResourceDiff, in int
 
 	stateJSON := state.AsString()
 
-	customJSON, err := kibana.ConnectorConfigWithDefaults(oldTypeID, newJSON, oldJSON, stateJSON)
+	customJSON, err := kibana_oapi.ConnectorConfigWithDefaults(oldTypeID, newJSON, oldJSON, stateJSON)
 	if err != nil {
 		return err
 	}
@@ -129,12 +132,26 @@ func resourceConnectorCreate(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	connectorOld, diags := expandActionConnector(d)
 	if diags.HasError() {
 		return diags
 	}
 
-	connectorID, diags := kibana.CreateConnector(ctx, client, connectorOld)
+	version, diags := client.ServerVersion(ctx)
+	if diags.HasError() {
+		return diags
+	}
+
+	if connectorOld.ConnectorID != "" && version.LessThan(MinVersionSupportingPreconfiguredIDs) {
+		return diag.Errorf("Preconfigured connector IDs are only supported for Elastic Stack v%s and above. Either remove the `connector_id` attribute or upgrade your target cluster to supported version", MinVersionSupportingPreconfiguredIDs)
+	}
+
+	connectorID, diags := kibana_oapi.CreateConnector(ctx, oapiClient, connectorOld)
 
 	if diags.HasError() {
 		return diags
@@ -152,6 +169,11 @@ func resourceConnectorUpdate(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	connectorOld, diags := expandActionConnector(d)
 	if diags.HasError() {
 		return diags
@@ -163,7 +185,7 @@ func resourceConnectorUpdate(ctx context.Context, d *schema.ResourceData, meta i
 	}
 	connectorOld.ConnectorID = compositeIDold.ResourceId
 
-	connectorID, diags := kibana.UpdateConnector(ctx, client, connectorOld)
+	connectorID, diags := kibana_oapi.UpdateConnector(ctx, oapiClient, connectorOld)
 
 	if diags.HasError() {
 		return diags
@@ -181,12 +203,17 @@ func resourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta int
 		return diags
 	}
 
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	compositeID, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	connector, diags := kibana.GetConnector(ctx, client, compositeID.ResourceId, compositeID.ClusterId)
+	connector, diags := kibana_oapi.GetConnector(ctx, oapiClient, compositeID.ResourceId, compositeID.ClusterId)
 	if connector == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -204,6 +231,11 @@ func resourceConnectorDelete(ctx context.Context, d *schema.ResourceData, meta i
 		return diags
 	}
 
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	compositeID, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
@@ -211,7 +243,7 @@ func resourceConnectorDelete(ctx context.Context, d *schema.ResourceData, meta i
 
 	spaceId := d.Get("space_id").(string)
 
-	if diags := kibana.DeleteConnector(ctx, client, compositeID.ResourceId, spaceId); diags.HasError() {
+	if diags := kibana_oapi.DeleteConnector(ctx, oapiClient, compositeID.ResourceId, spaceId); diags.HasError() {
 		return diags
 	}
 

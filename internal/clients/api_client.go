@@ -11,7 +11,6 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
-	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -25,7 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/securityprovider"
 )
 
 type CompositeId struct {
@@ -76,7 +74,6 @@ type ApiClient struct {
 	kibana                   *kibana.Client
 	kibanaOapi               *kibana_oapi.Client
 	alerting                 alerting.AlertingAPI
-	connectors               *connectors.Client
 	slo                      slo.SloAPI
 	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
@@ -105,11 +102,6 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 
 	kibanaHttpClient := kib.Client.GetClient()
 
-	actionConnectors, err := buildConnectorsClient(cfg, kibanaHttpClient)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create Kibana action connectors client: [%w]", err)
-	}
-
 	kibOapi, err := kibana_oapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
 		return nil, err
@@ -126,7 +118,6 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 			kibanaOapi:    kibOapi,
 			alerting:      buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI,
 			slo:           buildSloClient(cfg, kibanaHttpClient).SloAPI,
-			connectors:    actionConnectors,
 			kibanaConfig:  *cfg.Kibana,
 			fleet:         fleetClient,
 			version:       version,
@@ -260,14 +251,6 @@ func (a *ApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
 	}
 
 	return a.alerting, nil
-}
-
-func (a *ApiClient) GetKibanaConnectorsClient(ctx context.Context) (*connectors.Client, error) {
-	if a.connectors == nil {
-		return nil, errors.New("kibana action connector client not found")
-	}
-
-	return a.connectors, nil
 }
 
 func (a *ApiClient) GetSloClient() (slo.SloAPI, error) {
@@ -551,33 +534,6 @@ func buildAlertingClient(cfg config.Client, httpClient *http.Client) *alerting.A
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
-func buildConnectorsClient(cfg config.Client, httpClient *http.Client) (*connectors.Client, error) {
-	var authInterceptor connectors.ClientOption
-	if cfg.Kibana.ApiKey != "" {
-		apiKeyProvider, err := securityprovider.NewSecurityProviderApiKey(
-			"header",
-			"Authorization",
-			"ApiKey "+cfg.Kibana.ApiKey,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create api key auth provider: %w", err)
-		}
-		authInterceptor = connectors.WithRequestEditorFn(apiKeyProvider.Intercept)
-	} else {
-		basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cfg.Kibana.Username, cfg.Kibana.Password)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
-		}
-		authInterceptor = connectors.WithRequestEditorFn(basicAuthProvider.Intercept)
-	}
-
-	return connectors.NewClient(
-		cfg.Kibana.Address,
-		authInterceptor,
-		connectors.WithHTTPClient(httpClient),
-	)
-}
-
 func buildSloClient(cfg config.Client, httpClient *http.Client) *slo.APIClient {
 	sloConfig := slo.Configuration{
 		Debug:     logging.IsDebugOrHigher(),
@@ -643,14 +599,9 @@ func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, erro
 		client.kibanaOapi = kibanaOapiClient
 
 		kibanaHttpClient := kibanaClient.Client.GetClient()
-		connectorsClient, err := buildConnectorsClient(cfg, kibanaHttpClient)
-		if err != nil {
-			return nil, fmt.Errorf("cannot create Kibana connectors client: [%w]", err)
-		}
 
 		client.alerting = buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI
 		client.slo = buildSloClient(cfg, kibanaHttpClient).SloAPI
-		client.connectors = connectorsClient
 	}
 
 	if cfg.Fleet != nil {
