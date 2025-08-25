@@ -8,7 +8,6 @@ import (
 type API struct {
 	KibanaSpaces           *KibanaSpacesAPI
 	KibanaRoleManagement   *KibanaRoleManagementAPI
-	KibanaDashboard        *KibanaDashboardAPI
 	KibanaSavedObject      *KibanaSavedObjectAPI
 	KibanaStatus           *KibanaStatusAPI
 	KibanaLogstashPipeline *KibanaLogstashPipelineAPI
@@ -32,12 +31,6 @@ type KibanaRoleManagementAPI struct {
 	List           KibanaRoleManagementList
 	CreateOrUpdate KibanaRoleManagementCreateOrUpdate
 	Delete         KibanaRoleManagementDelete
-}
-
-// KibanaDashboardAPI handle the dashboard API
-type KibanaDashboardAPI struct {
-	Export KibanaDashboardExport
-	Import KibanaDashboardImport
 }
 
 // KibanaSavedObjectAPI handle the saved object API
@@ -91,10 +84,6 @@ func New(c *resty.Client) *API {
 			List:           newKibanaRoleManagementListFunc(c),
 			CreateOrUpdate: newKibanaRoleManagementCreateOrUpdateFunc(c),
 			Delete:         newKibanaRoleManagementDeleteFunc(c),
-		},
-		KibanaDashboard: &KibanaDashboardAPI{
-			Export: newKibanaDashboardExportFunc(c),
-			Import: newKibanaDashboardImportFunc(c),
 		},
 		KibanaSavedObject: &KibanaSavedObjectAPI{
 			Get:    newKibanaSavedObjectGetFunc(c),

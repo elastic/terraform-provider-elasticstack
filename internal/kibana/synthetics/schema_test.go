@@ -3,8 +3,9 @@ package synthetics
 import (
 	"context"
 	"encoding/json"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -49,6 +50,7 @@ func TestToModelV0(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -83,6 +85,7 @@ func TestToModelV0(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -111,6 +114,7 @@ func TestToModelV0(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -130,6 +134,7 @@ func TestToModelV0(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -191,6 +196,7 @@ func TestToModelV0(t *testing.T) {
 				ID:               types.StringValue("default/test-id-http"),
 				Name:             types.StringValue("test-name-http"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -229,7 +235,7 @@ func TestToModelV0(t *testing.T) {
 			input: kbapi.SyntheticsMonitor{
 				Id:             "test-id-tcp",
 				Name:           "test-name-tcp",
-				Namespace:      "default",
+				Namespace:      "default-2",
 				Enabled:        tBool,
 				Alert:          &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
 				Schedule:       &kbapi.MonitorScheduleConfig{Number: "5", Unit: "m"},
@@ -261,6 +267,7 @@ func TestToModelV0(t *testing.T) {
 				ID:               types.StringValue("default/test-id-tcp"),
 				Name:             types.StringValue("test-name-tcp"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default-2"),
 				Schedule:         types.Int64Value(5),
 				Locations:        nil,
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -320,6 +327,7 @@ func TestToModelV0(t *testing.T) {
 				ID:               types.StringValue("default/test-id-icmp"),
 				Name:             types.StringValue("test-name-icmp"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        nil,
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -375,6 +383,7 @@ func TestToModelV0(t *testing.T) {
 				ID:               types.StringValue("default/test-id-browser"),
 				Name:             types.StringValue("test-name-browser"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        nil,
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -398,7 +407,7 @@ func TestToModelV0(t *testing.T) {
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			model, diag := tt.expected.toModelV0(ctx, &tt.input)
+			model, diag := tt.expected.toModelV0(ctx, &tt.input, tt.expected.SpaceID.ValueString())
 			assert.False(t, diag.HasError())
 			assert.Equal(t, &tt.expected, model)
 		})
@@ -457,6 +466,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				ID:               types.StringValue("test-id-http"),
 				Name:             types.StringValue("test-name-http"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default-3"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: []types.String{types.StringValue("test private location")},
@@ -500,7 +510,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					Tags:             []string{"tag1", "tag2"},
 					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}, Tls: &kbapi.SyntheticsStatusConfig{Enabled: fBool}},
 					APMServiceName:   "test-service-http",
-					Namespace:        "default",
+					Namespace:        "default-3",
 					TimeoutSeconds:   30,
 					Params:           kbapi.JsonObject{"param1": "value1"},
 				},
@@ -533,6 +543,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				ID:               types.StringValue("test-id-tcp"),
 				Name:             types.StringValue("test-name-tcp"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: nil,
@@ -597,6 +608,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				ID:               types.StringValue("test-id-icmp"),
 				Name:             types.StringValue("test-name-icmp"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: nil,
@@ -637,6 +649,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				ID:               types.StringValue("test-id-browser"),
 				Name:             types.StringValue("test-name-browser"),
 				SpaceID:          types.StringValue("default"),
+				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: nil,
@@ -722,6 +735,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				ID:              types.StringValue("/"),
 				Name:            types.StringValue(""),
 				SpaceID:         types.StringValue(""),
+				Namespace:       types.StringValue(""),
 				Schedule:        types.Int64Value(0),
 				APMServiceName:  types.StringValue(""),
 				TimeoutSeconds:  types.Int64Value(0),
@@ -767,6 +781,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -801,6 +816,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				ID:             types.StringValue("/"),
 				Name:           types.StringValue(""),
 				SpaceID:        types.StringValue(""),
+				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
@@ -816,7 +832,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			actual, diag := tt.state.toModelV0(ctx, &tt.input)
+			actual, diag := tt.state.toModelV0(ctx, &tt.input, tt.state.SpaceID.ValueString())
 			assert.False(t, diag.HasError())
 			assert.NotNil(t, actual)
 			assert.Equal(t, &tt.expected, actual)

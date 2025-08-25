@@ -32,6 +32,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestHttpMonitorResource - %s"
 	space_id = "testacc"
+	namespace = "test_namespace"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
@@ -164,6 +165,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestTcpMonitorResource - %s"
 	space_id = "testacc"
+	namespace = "testacc_test"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
@@ -230,6 +232,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestIcmpMonitorResource - %s"
 	space_id = "testacc"
+	namespace = "testacc_namespace"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
@@ -279,6 +282,7 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	name = "TestBrowserMonitorResource - %s"
 	space_id = "testacc"
+	namespace = "testacc_ns"
 	schedule = 5
 	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
 	enabled = true
@@ -363,7 +367,8 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
 					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestHttpMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "space_id", ""),
+					resource.TestCheckResourceAttr(bmMonitorId, "namespace", "default"),
 					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
 					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
 					resource.TestCheckResourceAttr(bmMonitorId, "http.url", "http://localhost:5601"),
@@ -376,7 +381,8 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(sslHttpMonitorId, "id"),
 					resource.TestCheckResourceAttr(sslHttpMonitorId, "name", "TestHttpMonitorResource - "+sslName),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "space_id", ""),
+					resource.TestCheckResourceAttr(sslHttpMonitorId, "namespace", "default"),
 					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.url", "http://localhost:5601"),
 					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_verification_mode", "full"),
 					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_supported_protocols.#", "1"),
@@ -405,6 +411,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
 					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource - "+name),
 					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(httpMonitorId, "namespace", "test_namespace"),
 					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(httpMonitorId, "private_locations.0"),
@@ -446,6 +453,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
 					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource Updated - "+name),
 					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(httpMonitorId, "namespace", "test_namespace"),
 					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "10"),
 					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(httpMonitorId, "private_locations.0"),
@@ -509,7 +517,8 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
 					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestTcpMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "space_id", ""),
+					resource.TestCheckResourceAttr(bmMonitorId, "namespace", "default"),
 					resource.TestCheckResourceAttr(bmMonitorId, "tcp.host", "http://localhost:5601"),
 					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
 					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
@@ -523,7 +532,8 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(sslTcpMonitorId, "id"),
 					resource.TestCheckResourceAttr(sslTcpMonitorId, "name", "TestHttpMonitorResource - "+sslName),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "space_id", ""),
+					resource.TestCheckResourceAttr(sslTcpMonitorId, "namespace", "default"),
 					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.host", "http://localhost:5601"),
 					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_verification_mode", "full"),
 					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_supported_protocols.#", "1"),
@@ -552,6 +562,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource - "+name),
 					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "namespace", "testacc_test"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "private_locations.0"),
@@ -590,6 +601,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource Updated - "+name),
 					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(tcpMonitorId, "namespace", "testacc_test"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "10"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(tcpMonitorId, "private_locations.0"),
@@ -643,7 +655,8 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
 					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestIcmpMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "space_id", ""),
+					resource.TestCheckResourceAttr(bmMonitorId, "namespace", "default"),
 					resource.TestCheckResourceAttr(bmMonitorId, "icmp.host", "localhost"),
 					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
 					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
@@ -658,6 +671,7 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(icmpMonitorId, "id"),
 					resource.TestCheckResourceAttr(icmpMonitorId, "name", "TestIcmpMonitorResource - "+name),
 					resource.TestCheckResourceAttr(icmpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "namespace", "testacc_namespace"),
 					resource.TestCheckResourceAttr(icmpMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(icmpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(icmpMonitorId, "private_locations.0"),
@@ -689,6 +703,7 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(icmpMonitorId, "id"),
 					resource.TestCheckResourceAttr(icmpMonitorId, "name", "TestIcmpMonitorResource Updated - "+name),
 					resource.TestCheckResourceAttr(icmpMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(icmpMonitorId, "namespace", "testacc_namespace"),
 					resource.TestCheckResourceAttr(icmpMonitorId, "schedule", "10"),
 					resource.TestCheckResourceAttr(icmpMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(icmpMonitorId, "private_locations.0"),
@@ -735,7 +750,8 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
 					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestBrowserMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(bmMonitorId, "space_id", "default"),
+					resource.TestCheckResourceAttr(bmMonitorId, "space_id", ""),
+					resource.TestCheckResourceAttr(bmMonitorId, "namespace", "default"),
 					resource.TestCheckResourceAttr(bmMonitorId, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
 					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
 					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
@@ -749,6 +765,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(browserMonitorId, "id"),
 					resource.TestCheckResourceAttr(browserMonitorId, "name", "TestBrowserMonitorResource - "+name),
 					resource.TestCheckResourceAttr(browserMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(browserMonitorId, "namespace", "testacc_ns"),
 					resource.TestCheckResourceAttr(browserMonitorId, "schedule", "5"),
 					resource.TestCheckResourceAttr(browserMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(browserMonitorId, "private_locations.0"),
@@ -780,6 +797,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(browserMonitorId, "id"),
 					resource.TestCheckResourceAttr(browserMonitorId, "name", "TestBrowserMonitorResource Updated - "+name),
 					resource.TestCheckResourceAttr(browserMonitorId, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(browserMonitorId, "namespace", "testacc_ns"),
 					resource.TestCheckResourceAttr(browserMonitorId, "schedule", "10"),
 					resource.TestCheckResourceAttr(browserMonitorId, "private_locations.#", "1"),
 					resource.TestCheckResourceAttrSet(browserMonitorId, "private_locations.0"),
