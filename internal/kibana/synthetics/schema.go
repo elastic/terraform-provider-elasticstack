@@ -153,11 +153,10 @@ func monitorConfigSchema() schema.Schema {
 				Computed: true,
 			},
 			"namespace": schema.StringAttribute{
-				MarkdownDescription: "Fleet namespace. The `namespace` field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
+				MarkdownDescription: "Fleet namespace, the namespace of a datastream where test documents are stored. Note: if you change its value, kibana creates new datastream. A user needs permissions for new/old datastream in update case to be able to see full monitor history. The `namespace` field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
 				},
 				Computed: true,
 			},
