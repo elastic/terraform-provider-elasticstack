@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -91,4 +92,33 @@ func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta i
 	d.SetId(compositeID.String())
 
 	return flattenActionConnector(foundConnectors[0], d)
+}
+
+func flattenActionConnector(connector *models.KibanaActionConnector, d *schema.ResourceData) diag.Diagnostics {
+	if err := d.Set("connector_id", connector.ConnectorID); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("space_id", connector.SpaceID); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("name", connector.Name); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("connector_type_id", connector.ConnectorTypeID); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("config", connector.ConfigJSON); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("is_deprecated", connector.IsDeprecated); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("is_missing_secrets", connector.IsMissingSecrets); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("is_preconfigured", connector.IsPreconfigured); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return nil
 }

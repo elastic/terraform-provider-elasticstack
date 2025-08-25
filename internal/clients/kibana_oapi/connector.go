@@ -11,14 +11,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func CreateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
+func CreateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
 	body, err := createConnectorRequestBody(connectorOld)
 	if err != nil {
-		return "", diag.FromErr(err)
+		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create connector request body", err.Error())}
 	}
 
 	resp, err := client.API.PostActionsConnectorIdWithResponse(
@@ -35,40 +36,40 @@ func CreateConnector(ctx context.Context, client *Client, connectorOld models.Ki
 		},
 	)
 	if err != nil {
-		return "", diag.FromErr(err)
+		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("HTTP request failed", err.Error())}
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Id, nil
 	default:
-		return "", reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return "", reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
-func UpdateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
+func UpdateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
 	body, err := updateConnectorRequestBody(connectorOld)
 	if err != nil {
-		return "", diag.FromErr(err)
+		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create update request body", err.Error())}
 	}
 
 	resp, err := client.API.PutActionsConnectorIdWithResponse(ctx, connectorOld.SpaceID, connectorOld.ConnectorID, body)
 	if err != nil {
-		return "", diag.Errorf("unable to update connector: [%v]", err)
+		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to update connector", err.Error())}
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Id, nil
 	default:
-		return "", reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return "", reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
-func GetConnector(ctx context.Context, client *Client, connectorID, spaceID string) (*models.KibanaActionConnector, diag.Diagnostics) {
+func GetConnector(ctx context.Context, client *Client, connectorID, spaceID string) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
 	resp, err := client.API.GetActionsConnectorIdWithResponse(ctx, spaceID, connectorID)
 	if err != nil {
-		return nil, diag.Errorf("unable to get connector: [%v]", err)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to get connector", err.Error())}
 	}
 
 	switch resp.StatusCode() {
@@ -77,14 +78,14 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
-func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, diag.Diagnostics) {
+func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, sdkdiag.Diagnostics) {
 	resp, err := client.API.GetActionsConnectorsWithResponse(ctx, spaceID)
 	if err != nil {
-		return nil, diag.Errorf("unable to get connectors: [%v]", err)
+		return nil, sdkdiag.Errorf("unable to get connectors: [%v]", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
@@ -101,9 +102,9 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 			continue
 		}
 
-		c, diags := ConnectorResponseToModel(spaceID, &connector)
-		if diags.HasError() {
-			return nil, diags
+		c, fwDiags := ConnectorResponseToModel(spaceID, &connector)
+		if fwDiags.HasError() {
+			return nil, utils.SDKDiagsFromFramework(fwDiags)
 		}
 
 		foundConnectors = append(foundConnectors, c)
@@ -115,9 +116,9 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 	return foundConnectors, nil
 }
 
-func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse) (*models.KibanaActionConnector, diag.Diagnostics) {
+func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
 	if connector == nil {
-		return nil, diag.Errorf("connector response is nil")
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Invalid connector response", "connector response is nil")}
 	}
 
 	var configJSON []byte
@@ -132,7 +133,7 @@ func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse
 		var err error
 		configJSON, err = json.Marshal(configMap)
 		if err != nil {
-			return nil, diag.Errorf("unable to marshal config: %v", err)
+			return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to marshal config", err.Error())}
 		}
 
 		// If we have a specific config type, marshal into and out of that to
@@ -141,7 +142,7 @@ func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse
 		if ok {
 			configJSONString, err := handler.remarshalConfig(string(configJSON))
 			if err != nil {
-				return nil, diag.Errorf("failed to remarshal config: %v", err)
+				return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to remarshal config", err.Error())}
 			}
 
 			configJSON = []byte(configJSONString)
@@ -165,21 +166,21 @@ func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse
 	return model, nil
 }
 
-func DeleteConnector(ctx context.Context, client *Client, connectorID string, spaceID string) diag.Diagnostics {
+func DeleteConnector(ctx context.Context, client *Client, connectorID string, spaceID string) fwdiag.Diagnostics {
 	resp, err := client.API.DeleteActionsConnectorIdWithResponse(ctx, spaceID, connectorID)
 	if err != nil {
-		return diag.Errorf("unable to delete connector: [%v]", err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to delete connector", err.Error())}
 	}
 
 	if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent {
-		return reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 
 	return nil
 }
 
 type connectorConfigHandler struct {
-	defaults        func(plan, backend string) (string, error)
+	defaults        func(plan string) (string, error)
 	remarshalConfig func(config string) (string, error)
 }
 
@@ -246,13 +247,13 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 	},
 }
 
-func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (string, error) {
+func ConnectorConfigWithDefaults(connectorTypeID, plan string) (string, error) {
 	handler, ok := connectorConfigHandlers[connectorTypeID]
 	if !ok {
 		return plan, errors.New("unknown connector type ID: " + connectorTypeID)
 	}
 
-	return handler.defaults(plan, backend)
+	return handler.defaults(plan)
 }
 
 // User can omit optonal fields in config JSON.
@@ -271,7 +272,7 @@ func remarshalConfig[T any](plan string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsCasesWebhook(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 	var custom kbapi.CasesWebhookConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -292,7 +293,7 @@ func connectorConfigWithDefaultsCasesWebhook(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsEmail(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsEmail(plan string) (string, error) {
 	var custom kbapi.EmailConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -310,11 +311,11 @@ func connectorConfigWithDefaultsEmail(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsGemini(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsGemini(plan string) (string, error) {
 	return plan, nil
 }
 
-func connectorConfigWithDefaultsIndex(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsIndex(plan string) (string, error) {
 	var custom kbapi.IndexConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -329,32 +330,28 @@ func connectorConfigWithDefaultsIndex(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsJira(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsJira(plan string) (string, error) {
 	return remarshalConfig[kbapi.JiraConfig](plan)
 }
 
-func connectorConfigWithDefaultsOpsgenie(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsOpsgenie(plan string) (string, error) {
 	return plan, nil
 }
 
-func connectorConfigWithDefaultsPagerduty(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsPagerduty(plan string) (string, error) {
 	return remarshalConfig[kbapi.PagerdutyConfig](plan)
 }
 
-func connectorConfigWithDefaultsResilient(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsResilient(plan string) (string, error) {
 	return plan, nil
 }
 
-func connectorConfigWithDefaultsServicenow(plan, backend string) (string, error) {
+func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
 	var planConfig kbapi.ServicenowConfig
 	if err := json.Unmarshal([]byte(plan), &planConfig); err != nil {
 		return "", err
 	}
-	var backendConfig kbapi.ServicenowConfig
-	if err := json.Unmarshal([]byte(backend), &backendConfig); err != nil {
-		return "", err
-	}
-	if planConfig.IsOAuth == nil && backendConfig.IsOAuth != nil && !*backendConfig.IsOAuth {
+	if planConfig.IsOAuth == nil {
 		planConfig.IsOAuth = utils.Pointer(false)
 	}
 	if planConfig.UsesTableApi == nil {
@@ -367,7 +364,7 @@ func connectorConfigWithDefaultsServicenow(plan, backend string) (string, error)
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsServicenowItom(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
 	var custom kbapi.ServicenowItomConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -382,11 +379,11 @@ func connectorConfigWithDefaultsServicenowItom(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsServicenowSir(plan, backend string) (string, error) {
-	return connectorConfigWithDefaultsServicenow(plan, backend)
+func connectorConfigWithDefaultsServicenowSir(plan string) (string, error) {
+	return connectorConfigWithDefaultsServicenow(plan)
 }
 
-func connectorConfigWithDefaultsSwimlane(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
 	var custom kbapi.SwimlaneConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -444,15 +441,15 @@ func connectorConfigWithDefaultsSwimlane(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsTines(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsTines(plan string) (string, error) {
 	return plan, nil
 }
 
-func connectorConfigWithDefaultsWebhook(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsWebhook(plan string) (string, error) {
 	return plan, nil
 }
 
-func connectorConfigWithDefaultsXmatters(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
 	var custom kbapi.XmattersConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
