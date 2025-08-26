@@ -37,8 +37,12 @@ When creating new resources:
 * `make lint`: Lints and formats the code.
 * `make test`: Run unit tests.
 * `make docs-generate`: Generate documentation.
+* [Running & Debugging the Provider](#running--debugging-the-provider)
+* [Running Acceptance Tests](#running-acceptance-tests)
 
 ### Running & Debugging the Provider
+
+Also see [Terraform docs on debugging](https://developer.hashicorp.com/terraform/plugin/debugging#starting-a-provider-in-debug-mode).
 
 Run the provider in debug mode and reattach the provider in Terraform:
 * Launch `main.go` with the `-debug` flag from your IDE.
@@ -46,7 +50,7 @@ Run the provider in debug mode and reattach the provider in Terraform:
 * Export it in your shell where you run Terraform: `export TF_REATTACH_PROVIDERS='{…}'`.
 * Terraform will now talk to your debug instance, and you can set breakpoints.
 
-#### Running Acceptance Tests
+### Running Acceptance Tests
 
 Acceptance tests spin up Elasticsearch, Kibana, and Fleet with Docker and run tests in a Go container.
 
