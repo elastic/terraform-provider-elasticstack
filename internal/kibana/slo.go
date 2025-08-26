@@ -2,12 +2,11 @@ package kibana
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -596,7 +595,7 @@ func getOrNilFloat(path string, d *schema.ResourceData) *float64 {
 func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var indicator slo.SloResponseIndicator
+	var indicator kbapi.SLOsSloDefinitionResponse_Indicator
 	var indicatorType string
 	for key := range indicatorAddressToType {
 		_, exists := d.GetOk(key)
@@ -607,193 +606,347 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 
 	switch indicatorType {
 	case "kql_custom_indicator":
-		indicator = slo.SloResponseIndicator{
-			IndicatorPropertiesCustomKql: &slo.IndicatorPropertiesCustomKql{
-				Type: indicatorAddressToType[indicatorType],
-				Params: slo.IndicatorPropertiesCustomKqlParams{
-					Index:          d.Get(indicatorType + ".0.index").(string),
-					Filter:         getOrNilString(indicatorType+".0.filter", d),
-					Good:           d.Get(indicatorType + ".0.good").(string),
-					Total:          d.Get(indicatorType + ".0.total").(string),
-					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
-				},
+		var goodFilter kbapi.SLOsKqlWithFiltersGood
+		goodFilter.FromSLOsKqlWithFiltersGood0(d.Get(indicatorType + ".0.good").(string))
+
+		var totalFilter kbapi.SLOsKqlWithFiltersTotal
+		totalFilter.FromSLOsKqlWithFiltersTotal0(d.Get(indicatorType + ".0.total").(string))
+
+		customKql := kbapi.SLOsIndicatorPropertiesCustomKql{
+			Type: indicatorAddressToType[indicatorType],
+			Params: struct {
+				DataViewId     *string                       `json:"dataViewId,omitempty"`
+				Filter         *kbapi.SLOsKqlWithFilters     `json:"filter,omitempty"`
+				Good           kbapi.SLOsKqlWithFiltersGood  `json:"good"`
+				Index          string                        `json:"index"`
+				TimestampField string                        `json:"timestampField"`
+				Total          kbapi.SLOsKqlWithFiltersTotal `json:"total"`
+			}{
+				Index:          d.Get(indicatorType + ".0.index").(string),
+				Good:           goodFilter,
+				Total:          totalFilter,
+				TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 			},
 		}
+		indicator.FromSLOsIndicatorPropertiesCustomKql(customKql)
 
 	case "apm_availability_indicator":
-		indicator = slo.SloResponseIndicator{
-			IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
-				Type: indicatorAddressToType[indicatorType],
-				Params: slo.IndicatorPropertiesApmAvailabilityParams{
-					Service:         d.Get(indicatorType + ".0.service").(string),
-					Environment:     d.Get(indicatorType + ".0.environment").(string),
-					TransactionType: d.Get(indicatorType + ".0.transaction_type").(string),
-					TransactionName: d.Get(indicatorType + ".0.transaction_name").(string),
-					Filter:          getOrNilString(indicatorType+".0.filter", d),
-					Index:           d.Get(indicatorType + ".0.index").(string),
-				},
+		apmAvailability := kbapi.SLOsIndicatorPropertiesApmAvailability{
+			Type: indicatorAddressToType[indicatorType],
+			Params: struct {
+				Environment     string  `json:"environment"`
+				Filter          *string `json:"filter,omitempty"`
+				Index           string  `json:"index"`
+				Service         string  `json:"service"`
+				TransactionName string  `json:"transactionName"`
+				TransactionType string  `json:"transactionType"`
+			}{
+				Service:         d.Get(indicatorType + ".0.service").(string),
+				Environment:     d.Get(indicatorType + ".0.environment").(string),
+				TransactionType: d.Get(indicatorType + ".0.transaction_type").(string),
+				TransactionName: d.Get(indicatorType + ".0.transaction_name").(string),
+				Filter:          getOrNilString(indicatorType+".0.filter", d),
+				Index:           d.Get(indicatorType + ".0.index").(string),
 			},
 		}
+		indicator.FromSLOsIndicatorPropertiesApmAvailability(apmAvailability)
 
 	case "apm_latency_indicator":
-		indicator = slo.SloResponseIndicator{
-			IndicatorPropertiesApmLatency: &slo.IndicatorPropertiesApmLatency{
-				Type: indicatorAddressToType[indicatorType],
-				Params: slo.IndicatorPropertiesApmLatencyParams{
-					Service:         d.Get(indicatorType + ".0.service").(string),
-					Environment:     d.Get(indicatorType + ".0.environment").(string),
-					TransactionType: d.Get(indicatorType + ".0.transaction_type").(string),
-					TransactionName: d.Get(indicatorType + ".0.transaction_name").(string),
-					Filter:          getOrNilString(indicatorType+".0.filter", d),
-					Index:           d.Get(indicatorType + ".0.index").(string),
-					Threshold:       float64(d.Get(indicatorType + ".0.threshold").(int)),
-				},
+		apmLatency := kbapi.SLOsIndicatorPropertiesApmLatency{
+			Type: indicatorAddressToType[indicatorType],
+			Params: struct {
+				Environment     string  `json:"environment"`
+				Filter          *string `json:"filter,omitempty"`
+				Index           string  `json:"index"`
+				Service         string  `json:"service"`
+				Threshold       float32 `json:"threshold"`
+				TransactionName string  `json:"transactionName"`
+				TransactionType string  `json:"transactionType"`
+			}{
+				Service:         d.Get(indicatorType + ".0.service").(string),
+				Environment:     d.Get(indicatorType + ".0.environment").(string),
+				TransactionType: d.Get(indicatorType + ".0.transaction_type").(string),
+				TransactionName: d.Get(indicatorType + ".0.transaction_name").(string),
+				Filter:          getOrNilString(indicatorType+".0.filter", d),
+				Index:           d.Get(indicatorType + ".0.index").(string),
+				Threshold:       float32(d.Get(indicatorType + ".0.threshold").(int)),
 			},
 		}
+		indicator.FromSLOsIndicatorPropertiesApmLatency(apmLatency)
 
 	case "histogram_custom_indicator":
-		indicator = slo.SloResponseIndicator{
-			IndicatorPropertiesHistogram: &slo.IndicatorPropertiesHistogram{
-				Type: indicatorAddressToType[indicatorType],
-				Params: slo.IndicatorPropertiesHistogramParams{
-					Filter:         getOrNilString(indicatorType+".0.filter", d),
-					Index:          d.Get(indicatorType + ".0.index").(string),
-					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
-					Good: slo.IndicatorPropertiesHistogramParamsGood{
-						Field:       d.Get(indicatorType + ".0.good.0.field").(string),
-						Aggregation: d.Get(indicatorType + ".0.good.0.aggregation").(string),
-						Filter:      getOrNilString(indicatorType+".0.good.0.filter", d),
-						From:        getOrNilFloat(indicatorType+".0.good.0.from", d),
-						To:          getOrNilFloat(indicatorType+".0.good.0.to", d),
-					},
-					Total: slo.IndicatorPropertiesHistogramParamsTotal{
-						Field:       d.Get(indicatorType + ".0.total.0.field").(string),
-						Aggregation: d.Get(indicatorType + ".0.total.0.aggregation").(string),
-						Filter:      getOrNilString(indicatorType+".0.total.0.filter", d),
-						From:        getOrNilFloat(indicatorType+".0.total.0.from", d),
-						To:          getOrNilFloat(indicatorType+".0.total.0.to", d),
-					},
+		histogram := kbapi.SLOsIndicatorPropertiesHistogram{
+			Type: indicatorAddressToType[indicatorType],
+			Params: struct {
+				DataViewId *string `json:"dataViewId,omitempty"`
+				Filter     *string `json:"filter,omitempty"`
+				Good       struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
+					Field       string                                                      `json:"field"`
+					Filter      *string                                                     `json:"filter,omitempty"`
+					From        *float32                                                    `json:"from,omitempty"`
+					To          *float32                                                    `json:"to,omitempty"`
+				} `json:"good"`
+				Index          string `json:"index"`
+				TimestampField string `json:"timestampField"`
+				Total          struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
+					Field       string                                                       `json:"field"`
+					Filter      *string                                                      `json:"filter,omitempty"`
+					From        *float32                                                     `json:"from,omitempty"`
+					To          *float32                                                     `json:"to,omitempty"`
+				} `json:"total"`
+			}{
+				Filter:         getOrNilString(indicatorType+".0.filter", d),
+				Index:          d.Get(indicatorType + ".0.index").(string),
+				TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
+				Good: struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
+					Field       string                                                      `json:"field"`
+					Filter      *string                                                     `json:"filter,omitempty"`
+					From        *float32                                                    `json:"from,omitempty"`
+					To          *float32                                                    `json:"to,omitempty"`
+				}{
+					Field:       d.Get(indicatorType + ".0.good.0.field").(string),
+					Aggregation: kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation(d.Get(indicatorType + ".0.good.0.aggregation").(string)),
+					Filter:      getOrNilString(indicatorType+".0.good.0.filter", d),
+					From:        convertFloat64PtrToFloat32Ptr(getOrNilFloat(indicatorType+".0.good.0.from", d)),
+					To:          convertFloat64PtrToFloat32Ptr(getOrNilFloat(indicatorType+".0.good.0.to", d)),
+				},
+				Total: struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
+					Field       string                                                       `json:"field"`
+					Filter      *string                                                      `json:"filter,omitempty"`
+					From        *float32                                                     `json:"from,omitempty"`
+					To          *float32                                                     `json:"to,omitempty"`
+				}{
+					Field:       d.Get(indicatorType + ".0.total.0.field").(string),
+					Aggregation: kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation(d.Get(indicatorType + ".0.total.0.aggregation").(string)),
+					Filter:      getOrNilString(indicatorType+".0.total.0.filter", d),
+					From:        convertFloat64PtrToFloat32Ptr(getOrNilFloat(indicatorType+".0.total.0.from", d)),
+					To:          convertFloat64PtrToFloat32Ptr(getOrNilFloat(indicatorType+".0.total.0.to", d)),
 				},
 			},
 		}
+		indicator.FromSLOsIndicatorPropertiesHistogram(histogram)
 
 	case "metric_custom_indicator":
-		goodMetricsRaw := d.Get(indicatorType + ".0.good.0.metrics").([]interface{})
-		var goodMetrics []slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner
-		for n := range goodMetricsRaw {
-			idx := fmt.Sprint(n)
-			goodMetrics = append(goodMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
-				Name:        d.Get(indicatorType + ".0.good.0.metrics." + idx + ".name").(string),
-				Field:       d.Get(indicatorType + ".0.good.0.metrics." + idx + ".field").(string),
-				Aggregation: d.Get(indicatorType + ".0.good.0.metrics." + idx + ".aggregation").(string),
-				Filter:      getOrNilString(indicatorType+".0.good.0.metrics."+idx+".filter", d),
-			})
+		params := d.Get("metric_custom_indicator.0").(map[string]interface{})
+
+		// Parse good and total queries
+		goodBlock := params["good"].([]interface{})[0].(map[string]interface{})
+		totalBlock := params["total"].([]interface{})[0].(map[string]interface{})
+
+		// Parse good metrics
+		goodMetricsIface := goodBlock["metrics"].([]interface{})
+		goodMetrics := make([]kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item, len(goodMetricsIface))
+		for i, m := range goodMetricsIface {
+			metric := m.(map[string]interface{})
+			agg := metric["aggregation"].(string)
+
+			var metricItem kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item
+			switch agg {
+			case "sum":
+				metricWithField := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0{
+					Name:        metric["name"].(string),
+					Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0AggregationSum,
+					Field:       metric["field"].(string),
+				}
+				if filter, ok := metric["filter"].(string); ok && filter != "" {
+					metricWithField.Filter = &filter
+				}
+				metricItem.FromSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0(metricWithField)
+			case "doc_count":
+				docCountMetric := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1{
+					Name:        metric["name"].(string),
+					Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1AggregationDocCount,
+				}
+				if filter, ok := metric["filter"].(string); ok && filter != "" {
+					docCountMetric.Filter = &filter
+				}
+				metricItem.FromSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1(docCountMetric)
+			default:
+				return models.Slo{}, diag.Errorf("good.metrics[%d]: unsupported aggregation '%s', only 'sum' and 'doc_count' are supported", i, agg)
+			}
+			goodMetrics[i] = metricItem
 		}
-		totalMetricsRaw := d.Get(indicatorType + ".0.total.0.metrics").([]interface{})
-		var totalMetrics []slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner
-		for n := range totalMetricsRaw {
-			idx := fmt.Sprint(n)
-			totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{
-				Name:        d.Get(indicatorType + ".0.total.0.metrics." + idx + ".name").(string),
-				Field:       d.Get(indicatorType + ".0.total.0.metrics." + idx + ".field").(string),
-				Aggregation: d.Get(indicatorType + ".0.total.0.metrics." + idx + ".aggregation").(string),
-				Filter:      getOrNilString(indicatorType+".0.total.0.metrics."+idx+".filter", d),
-			})
+
+		// Parse total metrics
+		totalMetricsIface := totalBlock["metrics"].([]interface{})
+		totalMetrics := make([]kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item, len(totalMetricsIface))
+		for i, m := range totalMetricsIface {
+			metric := m.(map[string]interface{})
+			agg := metric["aggregation"].(string)
+
+			var metricItem kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item
+			switch agg {
+			case "sum":
+				metricWithField := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0{
+					Name:        metric["name"].(string),
+					Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0AggregationSum,
+					Field:       metric["field"].(string),
+				}
+				if filter, ok := metric["filter"].(string); ok && filter != "" {
+					metricWithField.Filter = &filter
+				}
+				metricItem.FromSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0(metricWithField)
+			case "doc_count":
+				docCountMetric := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1{
+					Name:        metric["name"].(string),
+					Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1AggregationDocCount,
+				}
+				if filter, ok := metric["filter"].(string); ok && filter != "" {
+					docCountMetric.Filter = &filter
+				}
+				metricItem.FromSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1(docCountMetric)
+			default:
+				return models.Slo{}, diag.Errorf("total.metrics[%d]: unsupported aggregation '%s', only 'sum' and 'doc_count' are supported", i, agg)
+			}
+			totalMetrics[i] = metricItem
 		}
-		indicator = slo.SloResponseIndicator{
-			IndicatorPropertiesCustomMetric: &slo.IndicatorPropertiesCustomMetric{
-				Type: indicatorAddressToType[indicatorType],
-				Params: slo.IndicatorPropertiesCustomMetricParams{
-					Filter:         getOrNilString(indicatorType+".0.filter", d),
-					Index:          d.Get(indicatorType + ".0.index").(string),
-					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
-					Good: slo.IndicatorPropertiesCustomMetricParamsGood{
-						Equation: d.Get(indicatorType + ".0.good.0.equation").(string),
-						Metrics:  goodMetrics,
-					},
-					Total: slo.IndicatorPropertiesCustomMetricParamsTotal{
-						Equation: d.Get(indicatorType + ".0.total.0.equation").(string),
-						Metrics:  totalMetrics,
-					},
+
+		customMetric := kbapi.SLOsIndicatorPropertiesCustomMetric{
+			Type: indicatorAddressToType[indicatorType],
+			Params: struct {
+				DataViewId *string `json:"dataViewId,omitempty"`
+				Filter     *string `json:"filter,omitempty"`
+				Good       struct {
+					Equation string                                                               `json:"equation"`
+					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item `json:"metrics"`
+				} `json:"good"`
+				Index          string `json:"index"`
+				TimestampField string `json:"timestampField"`
+				Total          struct {
+					Equation string                                                                `json:"equation"`
+					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item `json:"metrics"`
+				} `json:"total"`
+			}{
+				Filter:         getOrNilString(indicatorType+".0.filter", d),
+				Index:          d.Get(indicatorType + ".0.index").(string),
+				TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
+				Good: struct {
+					Equation string                                                               `json:"equation"`
+					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item `json:"metrics"`
+				}{
+					Equation: goodBlock["equation"].(string),
+					Metrics:  goodMetrics,
+				},
+				Total: struct {
+					Equation string                                                                `json:"equation"`
+					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item `json:"metrics"`
+				}{
+					Equation: totalBlock["equation"].(string),
+					Metrics:  totalMetrics,
 				},
 			},
 		}
+		indicator.FromSLOsIndicatorPropertiesCustomMetric(customMetric)
 
 	case "timeslice_metric_indicator":
 		params := d.Get("timeslice_metric_indicator.0").(map[string]interface{})
 		metricBlock := params["metric"].([]interface{})[0].(map[string]interface{})
 		metricsIface := metricBlock["metrics"].([]interface{})
-		metrics := make([]slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, len(metricsIface))
+
+		metrics := make([]kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item, len(metricsIface))
 		for i, m := range metricsIface {
 			metric := m.(map[string]interface{})
 			agg := metric["aggregation"].(string)
+
+			var metricItem kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item
 			switch agg {
 			case "sum", "avg", "min", "max", "value_count":
-				metrics[i] = slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
-					TimesliceMetricBasicMetricWithField: &slo.TimesliceMetricBasicMetricWithField{
-						Name:        metric["name"].(string),
-						Aggregation: agg,
-						Field:       metric["field"].(string),
-					},
+				basicMetric := kbapi.SLOsTimesliceMetricBasicMetricWithField{
+					Name:        metric["name"].(string),
+					Aggregation: kbapi.SLOsTimesliceMetricBasicMetricWithFieldAggregation(agg),
+					Field:       metric["field"].(string),
 				}
+				if filter, ok := metric["filter"].(string); ok && filter != "" {
+					basicMetric.Filter = &filter
+				}
+				metricItem.FromSLOsTimesliceMetricBasicMetricWithField(basicMetric)
 			case "percentile":
-				metrics[i] = slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
-					TimesliceMetricPercentileMetric: &slo.TimesliceMetricPercentileMetric{
-						Name:        metric["name"].(string),
-						Aggregation: agg,
-						Field:       metric["field"].(string),
-						Percentile:  metric["percentile"].(float64),
-					},
+				percentileMetric := kbapi.SLOsTimesliceMetricPercentileMetric{
+					Name:        metric["name"].(string),
+					Aggregation: kbapi.SLOsTimesliceMetricPercentileMetricAggregation(agg),
+					Field:       metric["field"].(string),
+					Percentile:  float32(metric["percentile"].(float64)),
 				}
+				if filter, ok := metric["filter"].(string); ok && filter != "" {
+					percentileMetric.Filter = &filter
+				}
+				metricItem.FromSLOsTimesliceMetricPercentileMetric(percentileMetric)
 			case "doc_count":
-				metrics[i] = slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
-					TimesliceMetricDocCountMetric: &slo.TimesliceMetricDocCountMetric{
-						Name:        metric["name"].(string),
-						Aggregation: agg,
-					},
+				docCountMetric := kbapi.SLOsTimesliceMetricDocCountMetric{
+					Name:        metric["name"].(string),
+					Aggregation: kbapi.SLOsTimesliceMetricDocCountMetricAggregation(agg),
 				}
+				if filter, ok := metric["filter"].(string); ok && filter != "" {
+					docCountMetric.Filter = &filter
+				}
+				metricItem.FromSLOsTimesliceMetricDocCountMetric(docCountMetric)
 			default:
 				return models.Slo{}, diag.Errorf("metrics[%d]: unsupported aggregation '%s'", i, agg)
 			}
+			metrics[i] = metricItem
 		}
-		indicator = slo.SloResponseIndicator{
-			IndicatorPropertiesTimesliceMetric: &slo.IndicatorPropertiesTimesliceMetric{
-				Type: indicatorAddressToType[indicatorType],
-				Params: slo.IndicatorPropertiesTimesliceMetricParams{
-					Index:          params["index"].(string),
-					TimestampField: params["timestamp_field"].(string),
-					Filter:         getOrNilString("timeslice_metric_indicator.0.filter", d),
-					Metric: slo.IndicatorPropertiesTimesliceMetricParamsMetric{
-						Metrics:    metrics,
-						Equation:   metricBlock["equation"].(string),
-						Comparator: metricBlock["comparator"].(string),
-						Threshold:  metricBlock["threshold"].(float64),
-					},
+
+		threshold := float32(metricBlock["threshold"].(float64))
+		equation := metricBlock["equation"].(string)
+		comparator := kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator(metricBlock["comparator"].(string))
+
+		timesliceMetric := kbapi.SLOsIndicatorPropertiesTimesliceMetric{
+			Type: indicatorAddressToType[indicatorType],
+			Params: struct {
+				DataViewId *string `json:"dataViewId,omitempty"`
+				Filter     *string `json:"filter,omitempty"`
+				Index      string  `json:"index"`
+				Metric     struct {
+					Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
+					Equation   string                                                                    `json:"equation"`
+					Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
+					Threshold  float32                                                                   `json:"threshold"`
+				} `json:"metric"`
+				TimestampField string `json:"timestampField"`
+			}{
+				Filter:         getOrNilString(indicatorType+".0.filter", d),
+				Index:          d.Get(indicatorType + ".0.index").(string),
+				TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
+				Metric: struct {
+					Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
+					Equation   string                                                                    `json:"equation"`
+					Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
+					Threshold  float32                                                                   `json:"threshold"`
+				}{
+					Metrics:    metrics,
+					Equation:   equation,
+					Threshold:  threshold,
+					Comparator: comparator,
 				},
 			},
 		}
+		indicator.FromSLOsIndicatorPropertiesTimesliceMetric(timesliceMetric)
 
 	default:
 		return models.Slo{}, diag.Errorf("unknown indicator type %s", indicatorType)
 	}
 
-	timeWindow := slo.TimeWindow{
-		Type:     d.Get("time_window.0.type").(string),
+	timeWindow := kbapi.SLOsTimeWindow{
+		Type:     kbapi.SLOsTimeWindowType(d.Get("time_window.0.type").(string)),
 		Duration: d.Get("time_window.0.duration").(string),
 	}
 
-	objective := slo.Objective{
+	objective := kbapi.SLOsObjective{
 		Target:          d.Get("objective.0.target").(float64),
 		TimesliceTarget: getOrNilFloat("objective.0.timeslice_target", d),
 		TimesliceWindow: getOrNilString("objective.0.timeslice_window", d),
 	}
 
-	settings := slo.Settings{
+	settings := kbapi.SLOsSettings{
 		SyncDelay: getOrNilString("settings.0.sync_delay", d),
 		Frequency: getOrNilString("settings.0.frequency", d),
 	}
 
-	budgetingMethod := slo.BudgetingMethod(d.Get("budgeting_method").(string))
+	budgetingMethod := kbapi.SLOsBudgetingMethod(d.Get("budgeting_method").(string))
 
 	slo := models.Slo{
 		Name:            d.Get("name").(string),
@@ -847,7 +1000,12 @@ func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.Errorf("multiple group_by fields are not supported in this version of the Elastic Stack. Multiple group_by fields requires %s", SLOSupportsMultipleGroupByMinVersion)
 	}
 
-	res, diags := kibana.CreateSlo(ctx, client, slo, supportsMultipleGroupBy)
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	res, diags := kibana_oapi.CreateSlo(ctx, oapiClient, slo)
 	if diags.HasError() {
 		return diags
 	}
@@ -879,7 +1037,12 @@ func resourceSloUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.Errorf("multiple group_by fields are not supported in this version of the Elastic Stack. Multiple group_by fields requires %s", SLOSupportsMultipleGroupByMinVersion)
 	}
 
-	res, diags := kibana.UpdateSlo(ctx, client, slo, supportsMultipleGroupBy)
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	res, diags := kibana_oapi.UpdateSlo(ctx, oapiClient, slo)
 	if diags.HasError() {
 		return diags
 	}
@@ -890,33 +1053,19 @@ func resourceSloUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 	return resourceSloRead(ctx, d, meta)
 }
 
-func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
-	if diags.HasError() {
-		return diags
-	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
-	if diags.HasError() {
-		return diags
-	}
-	id := compId.ResourceId
-	spaceId := compId.ClusterId
-
-	s, diags := kibana.GetSlo(ctx, client, id, spaceId)
-	if s == nil && diags == nil {
-		d.SetId("")
-		return nil
-	}
-	if diags.HasError() {
-		return diags
-	}
-
+func setIndicatorInResourceData(s *models.Slo, d *schema.ResourceData) diag.Diagnostics {
 	indicator := []interface{}{}
 	var indicatorAddress string
-	switch {
-	case s.Indicator.IndicatorPropertiesApmAvailability != nil:
-		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesApmAvailability.Type]
-		params := s.Indicator.IndicatorPropertiesApmAvailability.Params
+
+	value, err := s.Indicator.ValueByDiscriminator()
+	if err != nil {
+		return diag.Errorf("failed to get discriminator value: %v", err)
+	}
+
+	switch indicatorValue := value.(type) {
+	case kbapi.SLOsIndicatorPropertiesApmAvailability:
+		indicatorAddress = indicatorTypeToAddress[indicatorValue.Type]
+		params := indicatorValue.Params
 		indicator = append(indicator, map[string]interface{}{
 			"environment":      params.Environment,
 			"service":          params.Service,
@@ -926,9 +1075,9 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"filter":           params.Filter,
 		})
 
-	case s.Indicator.IndicatorPropertiesApmLatency != nil:
-		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesApmLatency.Type]
-		params := s.Indicator.IndicatorPropertiesApmLatency.Params
+	case kbapi.SLOsIndicatorPropertiesApmLatency:
+		indicatorAddress = indicatorTypeToAddress[indicatorValue.Type]
+		params := indicatorValue.Params
 		indicator = append(indicator, map[string]interface{}{
 			"environment":      params.Environment,
 			"service":          params.Service,
@@ -939,9 +1088,9 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"threshold":        params.Threshold,
 		})
 
-	case s.Indicator.IndicatorPropertiesCustomKql != nil:
-		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomKql.Type]
-		params := s.Indicator.IndicatorPropertiesCustomKql.Params
+	case kbapi.SLOsIndicatorPropertiesCustomKql:
+		indicatorAddress = indicatorTypeToAddress[indicatorValue.Type]
+		params := indicatorValue.Params
 		indicator = append(indicator, map[string]interface{}{
 			"index":           params.Index,
 			"filter":          params.Filter,
@@ -950,9 +1099,9 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"timestamp_field": params.TimestampField,
 		})
 
-	case s.Indicator.IndicatorPropertiesHistogram != nil:
-		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesHistogram.Type]
-		params := s.Indicator.IndicatorPropertiesHistogram.Params
+	case kbapi.SLOsIndicatorPropertiesHistogram:
+		indicatorAddress = indicatorTypeToAddress[indicatorValue.Type]
+		params := indicatorValue.Params
 		good := []map[string]interface{}{{
 			"field":       params.Good.Field,
 			"aggregation": params.Good.Aggregation,
@@ -975,30 +1124,52 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"total":           total,
 		})
 
-	case s.Indicator.IndicatorPropertiesCustomMetric != nil:
-		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomMetric.Type]
-		params := s.Indicator.IndicatorPropertiesCustomMetric.Params
+	case kbapi.SLOsIndicatorPropertiesCustomMetric:
+		indicatorAddress = indicatorTypeToAddress[indicatorValue.Type]
+		params := indicatorValue.Params
+
+		// Convert good metrics
 		goodMetrics := []map[string]interface{}{}
-		for _, m := range params.Good.Metrics {
-			goodMetrics = append(goodMetrics, map[string]interface{}{
-				"name":        m.Name,
-				"aggregation": m.Aggregation,
-				"field":       m.Field,
-				"filter":      m.Filter,
-			})
+		for _, item := range params.Good.Metrics {
+			// Try to extract metric from union type
+			if basic, err := item.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0(); err == nil {
+				goodMetrics = append(goodMetrics, map[string]interface{}{
+					"name":        basic.Name,
+					"aggregation": basic.Aggregation,
+					"field":       basic.Field,
+					"filter":      basic.Filter,
+				})
+			} else if docCount, err := item.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1(); err == nil {
+				goodMetrics = append(goodMetrics, map[string]interface{}{
+					"name":        docCount.Name,
+					"aggregation": docCount.Aggregation,
+					"filter":      docCount.Filter,
+				})
+			}
 		}
 		good := []map[string]interface{}{{
 			"equation": params.Good.Equation,
 			"metrics":  goodMetrics,
 		}}
+
+		// Convert total metrics
 		totalMetrics := []map[string]interface{}{}
-		for _, m := range params.Total.Metrics {
-			totalMetrics = append(totalMetrics, map[string]interface{}{
-				"name":        m.Name,
-				"aggregation": m.Aggregation,
-				"field":       m.Field,
-				"filter":      m.Filter,
-			})
+		for _, item := range params.Total.Metrics {
+			// Try to extract metric from union type
+			if basic, err := item.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0(); err == nil {
+				totalMetrics = append(totalMetrics, map[string]interface{}{
+					"name":        basic.Name,
+					"aggregation": basic.Aggregation,
+					"field":       basic.Field,
+					"filter":      basic.Filter,
+				})
+			} else if docCount, err := item.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1(); err == nil {
+				totalMetrics = append(totalMetrics, map[string]interface{}{
+					"name":        docCount.Name,
+					"aggregation": docCount.Aggregation,
+					"filter":      docCount.Filter,
+				})
+			}
 		}
 		total := []map[string]interface{}{{
 			"equation": params.Total.Equation,
@@ -1012,26 +1183,41 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"total":           total,
 		})
 
-	case s.Indicator.IndicatorPropertiesTimesliceMetric != nil:
-		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesTimesliceMetric.Type]
-		params := s.Indicator.IndicatorPropertiesTimesliceMetric.Params
+	case kbapi.SLOsIndicatorPropertiesTimesliceMetric:
+		indicatorAddress = indicatorTypeToAddress[indicatorValue.Type]
+		params := indicatorValue.Params
+
+		// Convert metrics from union types
 		metrics := []map[string]interface{}{}
-		for _, m := range params.Metric.Metrics {
+		for _, item := range params.Metric.Metrics {
 			metric := map[string]interface{}{}
-			if m.TimesliceMetricBasicMetricWithField != nil {
-				metric["name"] = m.TimesliceMetricBasicMetricWithField.Name
-				metric["aggregation"] = m.TimesliceMetricBasicMetricWithField.Aggregation
-				metric["field"] = m.TimesliceMetricBasicMetricWithField.Field
+
+			value, err := item.ValueByDiscriminator()
+			if err != nil {
+				continue // Skip invalid metrics
 			}
-			if m.TimesliceMetricPercentileMetric != nil {
-				metric["name"] = m.TimesliceMetricPercentileMetric.Name
-				metric["aggregation"] = m.TimesliceMetricPercentileMetric.Aggregation
-				metric["field"] = m.TimesliceMetricPercentileMetric.Field
-				metric["percentile"] = m.TimesliceMetricPercentileMetric.Percentile
-			}
-			if m.TimesliceMetricDocCountMetric != nil {
-				metric["name"] = m.TimesliceMetricDocCountMetric.Name
-				metric["aggregation"] = m.TimesliceMetricDocCountMetric.Aggregation
+			switch metricValue := value.(type) {
+			case kbapi.SLOsTimesliceMetricBasicMetricWithField:
+				metric["name"] = metricValue.Name
+				metric["aggregation"] = metricValue.Aggregation
+				metric["field"] = metricValue.Field
+				if metricValue.Filter != nil {
+					metric["filter"] = *metricValue.Filter
+				}
+			case kbapi.SLOsTimesliceMetricPercentileMetric:
+				metric["name"] = metricValue.Name
+				metric["aggregation"] = metricValue.Aggregation
+				metric["field"] = metricValue.Field
+				metric["percentile"] = metricValue.Percentile
+				if metricValue.Filter != nil {
+					metric["filter"] = *metricValue.Filter
+				}
+			case kbapi.SLOsTimesliceMetricDocCountMetric:
+				metric["name"] = metricValue.Name
+				metric["aggregation"] = metricValue.Aggregation
+				if metricValue.Filter != nil {
+					metric["filter"] = *metricValue.Filter
+				}
 			}
 			metrics = append(metrics, metric)
 		}
@@ -1049,11 +1235,46 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 		})
 
 	default:
-		return diag.Errorf("indicator not set")
+		return diag.Errorf("unsupported indicator type: %T", indicatorValue)
 	}
 
 	if err := d.Set(indicatorAddress, indicator); err != nil {
 		return diag.FromErr(err)
+	}
+
+	return nil
+}
+
+func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	compId, diags := clients.CompositeIdFromStr(d.Id())
+	if diags.HasError() {
+		return diags
+	}
+	id := compId.ResourceId
+	spaceId := compId.ClusterId
+
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	s, diags := kibana_oapi.GetSlo(ctx, oapiClient, spaceId, id)
+	if s == nil && diags == nil {
+		d.SetId("")
+		return nil
+	}
+	if diags.HasError() {
+		return diags
+	}
+
+	// Set indicator data in resource
+	if diags := setIndicatorInResourceData(s, d); diags.HasError() {
+		return diags
 	}
 
 	time_window := []interface{}{
@@ -1117,6 +1338,12 @@ func resourceSloDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	if diags.HasError() {
 		return diags
 	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	compId, diags := clients.CompositeIdFromStr(d.Id())
 	if diags.HasError() {
 		return diags
@@ -1124,7 +1351,7 @@ func resourceSloDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 
 	spaceId := d.Get("space_id").(string)
 
-	if diags = kibana.DeleteSlo(ctx, client, spaceId, compId.ResourceId); diags.HasError() {
+	if diags = kibana_oapi.DeleteSlo(ctx, oapiClient, spaceId, compId.ResourceId); diags.HasError() {
 		return diags
 	}
 
@@ -1143,3 +1370,11 @@ var indicatorAddressToType = map[string]string{
 }
 
 var indicatorTypeToAddress = utils.FlipMap(indicatorAddressToType)
+
+func convertFloat64PtrToFloat32Ptr(f64ptr *float64) *float32 {
+	if f64ptr == nil {
+		return nil
+	}
+	f32 := float32(*f64ptr)
+	return &f32
+}

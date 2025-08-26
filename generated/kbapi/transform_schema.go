@@ -571,6 +571,8 @@ func transformFilterPaths(schema *Schema) {
 		"/api/synthetics/params":                         {"post"},
 		"/api/synthetics/params/{id}":                    {"get", "put", "delete"},
 		"/api/apm/settings/agent-configuration":          {"get", "put", "delete"},
+		"/s/{spaceId}/api/observability/slos":            {"post"},
+		"/s/{spaceId}/api/observability/slos/{sloId}":    {"get", "put", "delete"},
 	}
 
 	for path, pathInfo := range schema.Paths {
@@ -820,6 +822,10 @@ func transformKibanaPaths(schema *Schema) {
 
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
+
+	// SLOs
+	schema.Components.Set("schemas.SLOs_objective.properties.target.format", "double")
+	schema.Components.Set("schemas.SLOs_objective.properties.timesliceTarget.format", "double")
 }
 
 // transformFleetPaths fixes the fleet paths.
