@@ -5,7 +5,7 @@ This guide explains how to set up your environment, make changes, and submit a P
 ## Development Setup
 
 * Fork and clone the repo.
-* Setup your preferred IDE (Intelliji, VSCode, etc.)
+* Setup your preferred IDE (IntelliJ, VSCode, etc.)
 
 Requirements:
 * [Terraform](https://www.terraform.io/downloads.html) >= 1.0.0
@@ -15,58 +15,53 @@ Requirements:
 ## Development Workflow
 
 * Create a new branch for your changes.
-* Make your changes. See [Useful Commands](#useful-commands) and [Debugging](#debugging).
-  * GitHub Copilot can be used to help with these changes (See [Using Copilot](#using-copilot))
+* Make your changes. See [Useful Commands](#useful-commands) and [Debugging](#running--debugging-the-provider).
 * Validate your changes
   * Run unit and acceptance tests (See [Running Acceptance Tests](#running-acceptance-tests)).
-  * Run `make fmt`, `make lint`.
+  * Run `make lint` to check linting and formatting. For this check to succeed, all changes must have been committed.
   * All checks also run automatically on every PR.
-* Add a changelog entry in `CHANGELOG.md` under the `Unreleased` section. This will be included in the release notes of the next release.
 * Submit your PR for review.
+* Add a changelog entry in `CHANGELOG.md` under the `Unreleased` section. This will be included in the release notes of the next release. The changelog entry references the PR, so it has to be added after the PR has been opened.
 
 When creating new resources:
 * Use the [Plugin Framework](https://developer.hashicorp.com/terraform/plugin/framework/getting-started/code-walkthrough) for new resources.
   * Use an existing resource (e.g. `internal/elasticsearch/security/system_user`) as a template.
   * Some resources use the deprecated Terraform SDK, so only resources using the new Terraform Framework should be used as reference.
 * Use the generated API clients to interact with the Kibana APIs. (See [Working with Generated API Clients](#working-with-generated-api-clients)
-* Add documentation and examples for the resource. Update the generated docs with `make docs-generate`.
+* Add a documentation template and examples for the resource. See [Updating Documentation](#updating-documentation) for more details.
 * Write unit and acceptance tests.
-
-
-## Using Copilot
-
-GitHub Copilot can speed up development, but you’re responsible for correctness:
-* Create an issue describing the desired change and acceptance criteria.
-* Assign the issue to Copilot and iterate with prompts.
-* Review outputs carefully; add tests and adjust as needed.
-* Example issue: https://github.com/elastic/terraform-provider-elasticstack/issues/1219
 
 ### Useful Commands
 
 * `make build`: Build the provider.
-* `make install`: Install the provider.
-* `make fmt`: Format the code.
-* `make lint`: Lint the code.
+* `make lint`: Lints and formats the code.
 * `make test`: Run unit tests.
 * `make docs-generate`: Generate documentation.
+
+### Running & Debugging the Provider
+
+Run the provider in debug mode and reattach the provider in Terraform:
+* Launch `main.go` with the `-debug` flag from your IDE.
+* After launching, the provider will print an env var. Copy the printed `TF_REATTACH_PROVIDERS='{…}'` value.
+* Export it in your shell where you run Terraform: `export TF_REATTACH_PROVIDERS='{…}'`.
+* Terraform will now talk to your debug instance, and you can set breakpoints.
 
 #### Running Acceptance Tests
 
 Acceptance tests spin up Elasticsearch, Kibana, and Fleet with Docker and run tests in a Go container.
 
-Quick start (default stack version from Makefile):
 ```bash
-make docker-testacc
-```
+# Start Elasticsearch, Kibana, and Fleet
+make docker-fleet
 
-Run a single test with terraform debug enabled:
-```bash
-env TF_LOG=DEBUG make docker-testacc TESTARGS='-run ^TestAccResourceDataStreamLifecycle$$'
-```
+# Run all tests
+make testacc
 
-A way to forward debug logs to a file:
-```bash
-env TF_ACC_LOG_PATH=/tmp/tf.log TF_ACC_LOG=DEBUG TF_LOG=DEBUG make docker-testacc
+# Run a specific test
+make testacc TESTARGS='-run ^TestAccResourceDataStreamLifecycle$$'
+
+# Cleanup created docker containers
+make docker-clean
 ```
 
 ### Working with Generated API Clients
@@ -81,10 +76,7 @@ If your work involves the Kibana API, the API client can be generated directly f
 
 The codebase includes a number of deprecated clients which should not be used anymore:
 - `libs/go-kibana-rest`: Fork of an external library, which is not maintained anymore.
-- `generated/alerting`
-- `generated/connectors`
-- `generated/slo`
-- `internal/clients/*`: Manually written clients. These should only be used/extended if it is not possible to use the generated clients.
+- `generated/alerting`, `generated/connectors`, `generated/slo`: Older generated clients, but based on non-standard specs. If any of these APIs are needed, they should be included in the `kbapi` client.
 
 ### Updating Documentation
 
@@ -92,14 +84,6 @@ Docs are generated from templates in `templates/` and examples in `examples/`.
 * Update or add templates and examples.
 * Run `make docs-generate` to produce files under `docs/`.
 * Commit the generated files. `make lint` will fail if docs are stale.
-
-### Debugging
-
-Run the provider in debug mode and reattach the provider in Terraform:
-* Launch `main.go` with the `-debug` flag from your IDE.
-* After launching, the provider will print an env var. Copy the printed `TF_REATTACH_PROVIDERS='{…}'` value.
-* Export it in your shell where you run Terraform: `export TF_REATTACH_PROVIDERS='{…}'`.
-* Terraform will now talk to your debug instance, and you can set breakpoints.
 
 ## Project Structure
 
