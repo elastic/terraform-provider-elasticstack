@@ -42,10 +42,13 @@ When creating new resources:
 
 ### Running & Debugging the Provider
 
+You can run the currently checked-out code for local testing and use it with Terraform.
+
 Also see [Terraform docs on debugging](https://developer.hashicorp.com/terraform/plugin/debugging#starting-a-provider-in-debug-mode).
 
 Run the provider in debug mode and reattach the provider in Terraform:
 * Launch `main.go` with the `-debug` flag from your IDE.
+  * Or launch it with `go run main.go -debug` from the command line.
 * After launching, the provider will print an env var. Copy the printed `TF_REATTACH_PROVIDERS='{…}'` value.
 * Export it in your shell where you run Terraform: `export TF_REATTACH_PROVIDERS='{…}'`.
 * Terraform will now talk to your debug instance, and you can set breakpoints.
