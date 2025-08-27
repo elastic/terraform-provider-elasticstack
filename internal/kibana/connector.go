@@ -18,11 +18,12 @@ var MinVersionSupportingPreconfiguredIDs = version.Must(version.NewVersion("8.8.
 func ResourceActionConnector() *schema.Resource {
 	var connectorSchema = map[string]*schema.Schema{
 		"connector_id": {
-			Description: "A UUID v1 or v4 to use instead of a randomly generated ID.",
-			Type:        schema.TypeString,
-			Computed:    true,
-			Optional:    true,
-			ForceNew:    true,
+			Description:  "A UUID v1 or v4 to use instead of a randomly generated ID.",
+			Type:         schema.TypeString,
+			Computed:     true,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.IsUUID,
 		},
 		"space_id": {
 			Description: "An identifier for the space. If space_id is not provided, the default space is used.",
@@ -255,6 +256,7 @@ func expandActionConnector(d *schema.ResourceData) (models.KibanaActionConnector
 	var diags diag.Diagnostics
 
 	connector := models.KibanaActionConnector{
+		ConnectorID:     d.Get("connector_id").(string),
 		SpaceID:         d.Get("space_id").(string),
 		Name:            d.Get("name").(string),
 		ConnectorTypeID: d.Get("connector_type_id").(string),
