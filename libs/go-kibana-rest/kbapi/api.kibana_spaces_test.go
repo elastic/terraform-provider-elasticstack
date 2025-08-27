@@ -42,7 +42,7 @@ func (s *KBAPITestSuite) TestKibanaSpaces() {
 		Objects: []KibanaSpaceObjectParameter{
 			{
 				Type: "config",
-				ID:   "8.17.0",
+				ID:   "9.0.3",
 			},
 		},
 	}

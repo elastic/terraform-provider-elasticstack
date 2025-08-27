@@ -3,6 +3,7 @@
 - Add `slo_id` validation to `elasticstack_kibana_slo` ([#1221](https://github.com/elastic/terraform-provider-elasticstack/pull/1221))
 - Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
 - Prevent provider panic when a script exists in state, but not in Elasticsearch ([#1218](https://github.com/elastic/terraform-provider-elasticstack/pull/1218))
+- Add `namespace` attribute to `elasticstack_kibana_synthetics_monitor` resource to support setting data stream namespace independently from `space_id` ([#1247](https://github.com/elastic/terraform-provider-elasticstack/pull/1247))
 
 ## [0.11.17] - 2025-07-21
 
