@@ -18,9 +18,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccResourceSecurityApiKey(t *testing.T) {
@@ -258,9 +258,8 @@ func TestAccResourceSecurityApiKeyFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.9",
 					},
 				},
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
-				Config:                   testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
+				Config:   testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "role_descriptors"),

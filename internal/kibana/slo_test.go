@@ -16,9 +16,9 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/require"
 
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var sloTimesliceMetricsMinVersion = version.Must(version.NewVersion("8.12.0"))
@@ -190,8 +190,7 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 						VersionConstraint: "0.11.11",
 					},
 				},
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsMultipleGroupByMinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsMultipleGroupByMinVersion),
 				Config: getSLOConfig(sloVars{
 					name:                    sloName,
 					indicatorType:           "metric_custom_indicator",
