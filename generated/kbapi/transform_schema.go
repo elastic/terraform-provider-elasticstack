@@ -115,16 +115,24 @@ type Path struct {
 
 func (p Path) Endpoints(yield func(key string, endpoint Map) bool) {
 	if p.Get != nil {
-		yield("get", p.Get)
+		if !yield("get", p.Get) {
+			return
+		}
 	}
 	if p.Post != nil {
-		yield("post", p.Post)
+		if !yield("post", p.Post) {
+			return
+		}
 	}
 	if p.Put != nil {
-		yield("put", p.Put)
+		if !yield("put", p.Put) {
+			return
+		}
 	}
 	if p.Delete != nil {
-		yield("delete", p.Delete)
+		if !yield("delete", p.Delete) {
+			return
+		}
 	}
 }
 
@@ -538,72 +546,24 @@ func (s Slice) atoi(key string) int {
 type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
-	transformFilterPaths,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
 	transformAddMisingDescriptions,
 	transformKibanaPaths,
 	transformFleetPaths,
+	fixSyntheticsGetParamResponse,
+	fixRunMessageEmailRequired,
+	removeBrokenDiscriminator,
+	fixEntityRiskRecordInteger,
+	fixHttpMonitorFieldsCheckType,
+	fixAssetCriticalitySortField,
+	fixPutSecurityRoleName,
+	fixGetSpacesParams,
+	fixGetSyntheticsMonitorsParams,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
-}
-
-// transformFilterPaths filters the paths in a schema down to a specified list
-// of endpoints and methods.
-func transformFilterPaths(schema *Schema) {
-	var includePaths = map[string][]string{
-		"/api/data_views":                                {"get"},
-		"/api/data_views/data_view":                      {"post"},
-		"/api/data_views/data_view/{viewId}":             {"get", "post", "delete"},
-		"/api/fleet/agent_policies":                      {"get", "post"},
-		"/api/fleet/agent_policies/delete":               {"post"},
-		"/api/fleet/agent_policies/{agentPolicyId}":      {"get", "put"},
-		"/api/fleet/enrollment_api_keys":                 {"get"},
-		"/api/fleet/epm/packages":                        {"get", "post"},
-		"/api/fleet/epm/packages/{pkgName}/{pkgVersion}": {"get", "post", "delete"},
-		"/api/fleet/fleet_server_hosts":                  {"get", "post"},
-		"/api/fleet/fleet_server_hosts/{itemId}":         {"get", "put", "delete"},
-		"/api/fleet/outputs":                             {"get", "post"},
-		"/api/fleet/outputs/{outputId}":                  {"get", "put", "delete"},
-		"/api/fleet/package_policies":                    {"get", "post"},
-		"/api/fleet/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
-		"/api/synthetics/params":                         {"post"},
-		"/api/synthetics/params/{id}":                    {"get", "put", "delete"},
-		"/api/apm/settings/agent-configuration":          {"get", "put", "delete"},
-		"/api/actions/connector/{id}":                    {"get", "put", "post", "delete"},
-		"/api/actions/connectors":                        {"get"},
-	}
-
-	for path, pathInfo := range schema.Paths {
-		if allowedMethods, ok := includePaths[path]; ok {
-			// Filter out endpoints not if filter list
-			for method := range pathInfo.Endpoints {
-				if !slices.Contains(allowedMethods, method) {
-					pathInfo.SetEndpoint(method, nil)
-				}
-			}
-		} else {
-			// Remove paths not in filter list.
-			delete(schema.Paths, path)
-		}
-	}
-
-	// Go through again, verify each entry exists
-	for path, methods := range includePaths {
-		pathInfo := schema.GetPath(path)
-		if pathInfo == nil {
-			log.Panicf("Missing path %q", path)
-		}
-
-		for _, method := range methods {
-			endpoint := pathInfo.GetEndpoint(method)
-			if endpoint == nil {
-				log.Panicf("Missing method %q of %q", method, path)
-			}
-		}
-	}
 }
 
 // transformRemoveKbnXsrf removes the kbn-xsrf header as it	is already applied
@@ -700,7 +660,7 @@ func transformAddMisingDescriptions(schema *Schema) {
 		for _, endpoint := range pathInfo.Endpoints {
 			responses, ok := endpoint.GetMap("responses")
 			if !ok {
-				return
+				continue
 			}
 
 			for code := range responses {
@@ -844,6 +804,87 @@ func transformKibanaPaths(schema *Schema) {
 
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
+
+}
+
+// https://github.com/elastic/kibana/pull/233414
+func fixSyntheticsGetParamResponse(schema *Schema) {
+	schema.Components.Delete("schemas.Synthetics_getParameterResponse.required")
+	schema.Paths["/api/synthetics/params"].Get.Set("responses.200.content.application/json.schema.items", Map{
+		"$ref": "#/components/schemas/Synthetics_getParameterResponse",
+	})
+}
+
+// https://github.com/elastic/kibana/pull/233249
+func fixRunMessageEmailRequired(schema *Schema) {
+	schema.Components.Set("schemas.run_message_email.required", Slice{"message", "subject"})
+}
+
+func removeBrokenDiscriminator(schema *Schema) {
+	brokenDiscriminatorPaths := map[string]string{
+		"/api/detection_engine/rules/preview": "post",
+		"/api/synthetics/monitors":            "post",
+		"/api/synthetics/monitors/{id}":       "put",
+	}
+
+	brokenDiscriminatorComponents := []string{
+		"Security_AI_Assistant_API_KnowledgeBaseEntryCreateProps",
+		"Security_AI_Assistant_API_KnowledgeBaseEntryResponse",
+		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateProps",
+		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateRouteProps",
+		"Security_Detections_API_RuleCreateProps",
+		"Security_Detections_API_RuleResponse",
+		"Security_Detections_API_RuleSource",
+		"Security_Detections_API_RuleUpdateProps",
+		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
+		"Security_Exceptions_API_ExceptionListItemEntry",
+	}
+
+	for _, component := range brokenDiscriminatorComponents {
+		schema.Components.Delete(fmt.Sprintf("schemas.%s.discriminator", component))
+	}
+
+	for path, method := range brokenDiscriminatorPaths {
+		schema.MustGetPath(path).MustGetEndpoint(method).Delete("requestBody.content.application/json.schema.discriminator")
+	}
+}
+
+// https://github.com/elastic/kibana/pull/233253
+func fixEntityRiskRecordInteger(schema *Schema) {
+	integerProperties := []string{"category_1_count", "category_2_count"}
+	for _, property := range integerProperties {
+		schema.Components.Set(fmt.Sprintf("schemas.Security_Entity_Analytics_API_EntityRiskScoreRecord.properties.%s.type", property), "integer")
+		schema.Components.Delete(fmt.Sprintf("schemas.Security_Entity_Analytics_API_EntityRiskScoreRecord.properties.%s.format", property))
+	}
+}
+
+// https://github.com/elastic/kibana/pull/233255
+func fixHttpMonitorFieldsCheckType(schema *Schema) {
+	schema.Components.Set("schemas.Synthetics_httpMonitorFields.allOf.1.properties.check.type", "object")
+}
+
+// https://github.com/elastic/kibana/pull/233256
+func fixAssetCriticalitySortField(schema *Schema) {
+	schema.MustGetPath("/api/asset_criticality/list").MustGetEndpoint("get").Set("parameters.0.schema.enum.3", "@timestamp")
+}
+
+func fixPutSecurityRoleName(schema *Schema) {
+	putEndpoint := schema.MustGetPath("/api/security/role/{name}").MustGetEndpoint("put")
+	putEndpoint.Delete("requestBody.content.application/json.schema.properties.kibana.items.properties.base.anyOf")
+	putEndpoint.Move("requestBody.content.application/json.schema.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.kibana.items.properties.spaces")
+
+	postEndpoint := schema.MustGetPath("/api/security/roles").MustGetEndpoint("post")
+	postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.additionalProperties", "requestBody.content.application/json.schema.properties.roles")
+	postEndpoint.Delete("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.base.anyOf")
+	postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces")
+}
+
+func fixGetSpacesParams(schema *Schema) {
+	schema.MustGetPath("/api/spaces/space").MustGetEndpoint("get").Delete("parameters.1.schema.anyOf")
+}
+
+func fixGetSyntheticsMonitorsParams(schema *Schema) {
+	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Move("parameters.12.schema.oneOf.1", "parameters.12.schema")
 }
 
 // transformFleetPaths fixes the fleet paths.
