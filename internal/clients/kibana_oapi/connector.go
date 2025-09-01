@@ -194,7 +194,6 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.EmailConfig],
 	},
 	".gemini": {
-		defaults:        connectorConfigWithDefaultsGemini,
 		remarshalConfig: remarshalConfig[kbapi.GeminiConfig],
 	},
 	".index": {
@@ -206,7 +205,6 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.JiraConfig],
 	},
 	".opsgenie": {
-		defaults:        connectorConfigWithDefaultsOpsgenie,
 		remarshalConfig: remarshalConfig[kbapi.OpsgenieConfig],
 	},
 	".pagerduty": {
@@ -214,7 +212,6 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.PagerdutyConfig],
 	},
 	".resilient": {
-		defaults:        connectorConfigWithDefaultsResilient,
 		remarshalConfig: remarshalConfig[kbapi.ResilientConfig],
 	},
 	".servicenow": {
@@ -229,16 +226,17 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		defaults:        connectorConfigWithDefaultsServicenowSir,
 		remarshalConfig: remarshalConfig[kbapi.ServicenowConfig],
 	},
+	".slack_api": {
+		remarshalConfig: remarshalConfig[kbapi.SlackApiConfig],
+	},
 	".swimlane": {
 		defaults:        connectorConfigWithDefaultsSwimlane,
 		remarshalConfig: remarshalConfig[kbapi.SwimlaneConfig],
 	},
 	".tines": {
-		defaults:        connectorConfigWithDefaultsTines,
 		remarshalConfig: remarshalConfig[kbapi.TinesConfig],
 	},
 	".webhook": {
-		defaults:        connectorConfigWithDefaultsWebhook,
 		remarshalConfig: remarshalConfig[kbapi.WebhookConfig],
 	},
 	".xmatters": {
@@ -251,6 +249,10 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan string) (string, error) {
 	handler, ok := connectorConfigHandlers[connectorTypeID]
 	if !ok {
 		return plan, errors.New("unknown connector type ID: " + connectorTypeID)
+	}
+
+	if handler.defaults == nil {
+		return plan, nil
 	}
 
 	return handler.defaults(plan)
@@ -311,10 +313,6 @@ func connectorConfigWithDefaultsEmail(plan string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsGemini(plan string) (string, error) {
-	return plan, nil
-}
-
 func connectorConfigWithDefaultsIndex(plan string) (string, error) {
 	var custom kbapi.IndexConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
@@ -334,16 +332,8 @@ func connectorConfigWithDefaultsJira(plan string) (string, error) {
 	return remarshalConfig[kbapi.JiraConfig](plan)
 }
 
-func connectorConfigWithDefaultsOpsgenie(plan string) (string, error) {
-	return plan, nil
-}
-
 func connectorConfigWithDefaultsPagerduty(plan string) (string, error) {
 	return remarshalConfig[kbapi.PagerdutyConfig](plan)
-}
-
-func connectorConfigWithDefaultsResilient(plan string) (string, error) {
-	return plan, nil
 }
 
 func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
@@ -439,14 +429,6 @@ func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
 		return "", err
 	}
 	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsTines(plan string) (string, error) {
-	return plan, nil
-}
-
-func connectorConfigWithDefaultsWebhook(plan string) (string, error) {
-	return plan, nil
 }
 
 func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
