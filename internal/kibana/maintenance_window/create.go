@@ -25,18 +25,14 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
-	if sdkDiags.HasError() {
+	isSupported, sdkDiags := r.client.EnforceMinVersion(ctx, version.Must(version.NewVersion("9.1.0")))
+	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(diags)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	serverFlavor, sdkDiags := r.client.ServerFlavor(ctx)
-	if sdkDiags.HasError() {
-		return
-	}
-
-	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
-	if diags.HasError() {
+	
+	if !isSupported {
+		resp.Diagnostics.AddError("Unsupported server version", "Maintenance windows are not supported until Elastic Stack v9.0. Upgrade the target server to use this resource")
 		return
 	}
 
