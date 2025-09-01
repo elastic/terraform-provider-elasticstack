@@ -22,11 +22,11 @@ resource "elasticstack_kibana_maintenance_window" "my_maintenance_window" {
   title   = "UPDATE TEST"
   enabled = true
 
-  custom_schedule {
+  custom_schedule = {
     start    = "1993-01-01T05:00:00.200Z"
     duration = "12d"
 
-    recurring {
+    recurring = {
       every        = "21d"
       on_week_day  = ["MO", "+3TU", "-2FR"]
       on_month_day = [1, 2, 4, 6, 7]
@@ -34,8 +34,8 @@ resource "elasticstack_kibana_maintenance_window" "my_maintenance_window" {
     }
   }
 
-  scope {
-    alerting {
+  scope = {
+    alerting = {
       kql = "_id: '1234'"
     }
   }
@@ -78,7 +78,7 @@ Optional:
 
 Optional:
 
-- `end` (String) The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
+- `end` (String) The end date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
 - `every` (String) The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
 - `occurrences` (Number) The total number of recurrences of the schedule.
 - `on_month` (List of Number) The specific months for a recurring schedule. Valid values are 1-12.

@@ -51,7 +51,7 @@ func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kba
 
 	body := kbapi.PostMaintenanceWindowJSONRequestBody{
 		Enabled: model.Enabled.ValueBoolPointer(),
-		Title:   *model.Title.ValueStringPointer(),
+		Title:   model.Title.ValueString(),
 	}
 
 	body.Schedule.Custom.Duration = model.CustomSchedule.Duration.ValueString()
@@ -75,7 +75,7 @@ func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kba
 			Every: model.CustomSchedule.Recurring.Every.ValueStringPointer(),
 		}
 
-		if !model.CustomSchedule.Recurring.Occurrences.IsNull() && !model.CustomSchedule.Recurring.Occurrences.IsUnknown() && model.CustomSchedule.Recurring.Occurrences.ValueInt32() > 0 {
+		if utils.IsKnown(model.CustomSchedule.Recurring.Occurrences) {
 			occurrences := float32(model.CustomSchedule.Recurring.Occurrences.ValueInt32())
 			body.Schedule.Custom.Recurring.Occurrences = &occurrences
 		}
