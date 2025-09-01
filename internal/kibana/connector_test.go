@@ -8,8 +8,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -21,7 +23,11 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	create := func(name string) string {
+	create := func(name, id string) string {
+		idAttribute := ""
+		if id != "" {
+			idAttribute = fmt.Sprintf(`connector_id = "%s"`, id)
+		}
 		return fmt.Sprintf(`
 	provider "elasticstack" {
 	  elasticsearch {}
@@ -30,6 +36,7 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 
 	resource "elasticstack_kibana_action_connector" "test" {
 	  name         = "%s"
+	  %s
 	  config       = jsonencode({
 		createIncidentJson = "{}"
 		createIncidentResponseKey = "key"
@@ -46,10 +53,14 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 	  })
 	  connector_type_id = ".cases-webhook"
 	}`,
-			name)
+			name, idAttribute)
 	}
 
-	update := func(name string) string {
+	update := func(name, id string) string {
+		idAttribute := ""
+		if id != "" {
+			idAttribute = fmt.Sprintf(`connector_id = "%s"`, id)
+		}
 		return fmt.Sprintf(`
 	provider "elasticstack" {
 	  elasticsearch {}
@@ -58,6 +69,7 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 
 	resource "elasticstack_kibana_action_connector" "test" {
 	  name         = "Updated %s"
+	  %s
 	  config = jsonencode({
 		createIncidentJson = "{}"
 		createIncidentResponseKey = "key"
@@ -75,57 +87,81 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 	  })
 	  connector_type_id = ".cases-webhook"
 	}`,
-			name)
+			name, idAttribute)
 	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceKibanaConnectorDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   create(connectorName),
-				Check: resource.ComposeTestCheckFunc(
-					testCommonAttributes(connectorName, ".cases-webhook"),
+	for _, connectorID := range []string{"", uuid.NewString()} {
+		t.Run(fmt.Sprintf("with connector ID '%s'", connectorID), func(t *testing.T) {
+			minVersion := minSupportedVersion
+			if connectorID != "" {
+				minVersion = kibana.MinVersionSupportingPreconfiguredIDs
+			}
 
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentJson\":\"{}\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentResponseKey\":\"key\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentUrl\":\"https://www\.elastic\.co/\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"getIncidentResponseExternalTitleKey\":\"title\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"getIncidentUrl\":\"https://www\.elastic\.co/\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentJson\":\"{}\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentUrl\":\"https://www.elastic\.co/\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"viewIncidentUrl\":\"https://www\.elastic\.co/\"`)),
-					// `post` is the default value that is returned by backend
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`"createIncidentMethod\":\"post\"`)),
+			resource.Test(t, resource.TestCase{
+				PreCheck:                 func() { acctest.PreCheck(t) },
+				CheckDestroy:             checkResourceKibanaConnectorDestroy,
+				ProtoV6ProviderFactories: acctest.Providers,
+				Steps: []resource.TestStep{
+					{
+						SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersion),
+						Config:   create(connectorName, connectorID),
+						Check: resource.ComposeTestCheckFunc(
+							testCommonAttributes(connectorName, ".cases-webhook"),
 
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"user\":\"user1\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"password\":\"password1\"`)),
-				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   update(connectorName),
-				Check: resource.ComposeTestCheckFunc(
-					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".cases-webhook"),
+							resource.TestCheckResourceAttrWith("elasticstack_kibana_action_connector.test", "connector_id", func(value string) error {
+								if connectorID == "" {
+									if _, err := uuid.Parse(value); err != nil {
+										return fmt.Errorf("expected connector_id to be a uuid: %w", err)
+									}
 
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentJson\":\"{}\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentResponseKey\":\"key\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentUrl\":\"https://www\.elastic\.co/\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"getIncidentResponseExternalTitleKey\":\"title\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"getIncidentUrl\":\"https://www\.elastic\.co/\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentJson\":\"{}\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentUrl\":\"https://elasticsearch\.com/\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"viewIncidentUrl\":\"https://www\.elastic\.co/\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`createIncidentMethod\":\"put\"`)),
+									return nil
+								}
 
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"user\":\"user2\"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"password\":\"password2\"`)),
-				),
-			},
-		},
-	})
+								if connectorID != value {
+									return fmt.Errorf("expected connector_id to match pre-defined id. '%s' != %s", connectorID, value)
+								}
+
+								return nil
+							}),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentJson\":\"{}\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentResponseKey\":\"key\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentUrl\":\"https://www\.elastic\.co/\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"getIncidentResponseExternalTitleKey\":\"title\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"getIncidentUrl\":\"https://www\.elastic\.co/\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentJson\":\"{}\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentUrl\":\"https://www.elastic\.co/\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"viewIncidentUrl\":\"https://www\.elastic\.co/\"`)),
+							// `post` is the default value that is returned by backend
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`"createIncidentMethod\":\"post\"`)),
+
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"user\":\"user1\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"password\":\"password1\"`)),
+						),
+					},
+					{
+						SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersion),
+						Config:   update(connectorName, connectorID),
+						Check: resource.ComposeTestCheckFunc(
+							testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".cases-webhook"),
+
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentJson\":\"{}\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentResponseKey\":\"key\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"createIncidentUrl\":\"https://www\.elastic\.co/\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"getIncidentResponseExternalTitleKey\":\"title\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"getIncidentUrl\":\"https://www\.elastic\.co/\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentJson\":\"{}\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentUrl\":\"https://elasticsearch\.com/\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"viewIncidentUrl\":\"https://www\.elastic\.co/\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`createIncidentMethod\":\"put\"`)),
+
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"user\":\"user2\"`)),
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"password\":\"password2\"`)),
+						),
+					},
+				},
+			})
+		})
+	}
 }
 
 func TestAccResourceKibanaConnectorEmail(t *testing.T) {
@@ -1549,13 +1585,18 @@ func checkResourceKibanaConnectorDestroy(s *terraform.State) error {
 		return err
 	}
 
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return err
+	}
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_kibana_action_connector" {
 			continue
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		connector, diags := kibana.GetConnector(context.Background(), client, compId.ResourceId, compId.ClusterId)
+		connector, diags := kibana_oapi.GetConnector(context.Background(), oapiClient, compId.ResourceId, compId.ClusterId)
 		if diags.HasError() {
 			return fmt.Errorf("Failed to get connector: %v", diags)
 		}

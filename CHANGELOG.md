@@ -4,6 +4,8 @@
 - Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
 - Prevent provider panic when a script exists in state, but not in Elasticsearch ([#1218](https://github.com/elastic/terraform-provider-elasticstack/pull/1218))
 - Add support for managing cross_cluster API keys in `elasticstack_elasticsearch_security_api_key` ([#1252](https://github.com/elastic/terraform-provider-elasticstack/pull/1252))
+- Allow version changes without a destroy/create cycle with `elasticstack_fleet_integration` ([#1255](https://github.com/elastic/terraform-provider-elasticstack/pull/1255)). This fixes an issue where it was impossible to upgrade integrations which are used by an integration policy.
+- Add `namespace` attribute to `elasticstack_kibana_synthetics_monitor` resource to support setting data stream namespace independently from `space_id` ([#1247](https://github.com/elastic/terraform-provider-elasticstack/pull/1247))
 
 ## [0.11.17] - 2025-07-21
 

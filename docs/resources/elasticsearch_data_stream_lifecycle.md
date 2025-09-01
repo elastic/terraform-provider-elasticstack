@@ -6,7 +6,7 @@ description: |-
   Manages Lifecycle for Elasticsearch Data Streams
 ---
 
-# Resource: elasticstack_elasticsearch_data_stream
+# Resource: elasticstack_elasticsearch_data_stream_lifecycle
 
 Configures the data stream lifecycle for the targeted data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html
 

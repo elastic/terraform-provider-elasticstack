@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -66,11 +66,15 @@ func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta i
 	if diags.HasError() {
 		return diags
 	}
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	connectorName := d.Get("name").(string)
 	spaceId := d.Get("space_id").(string)
 	connectorType := d.Get("connector_type_id").(string)
 
-	foundConnectors, diags := kibana.SearchConnectors(ctx, client, connectorName, spaceId, connectorType)
+	foundConnectors, diags := kibana_oapi.SearchConnectors(ctx, oapiClient, connectorName, spaceId, connectorType)
 	if diags.HasError() {
 		return diags
 	}
