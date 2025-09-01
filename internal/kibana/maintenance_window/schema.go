@@ -74,7 +74,7 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 						Required:    true,
 						Attributes: map[string]schema.Attribute{
 							"end": schema.StringAttribute{
-								Description: "The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.",
+								Description: "The end date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.",
 								Optional:    true,
 							},
 							"every": schema.StringAttribute{

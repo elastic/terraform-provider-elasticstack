@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -79,19 +80,19 @@ func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kba
 			body.Schedule.Custom.Recurring.Occurrences = &occurrences
 		}
 
-		if !model.CustomSchedule.Recurring.OnWeekDay.IsNull() && !model.CustomSchedule.Recurring.OnWeekDay.IsUnknown() {
+		if utils.IsKnown(model.CustomSchedule.Recurring.OnWeekDay) {
 			var onWeekDay []string
 			diags.Append(model.CustomSchedule.Recurring.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)...)
 			body.Schedule.Custom.Recurring.OnWeekDay = &onWeekDay
 		}
 
-		if !model.CustomSchedule.Recurring.OnMonth.IsNull() && !model.CustomSchedule.Recurring.OnMonth.IsUnknown() {
+		if utils.IsKnown(model.CustomSchedule.Recurring.OnMonth) {
 			var onMonth []float32
 			diags.Append(model.CustomSchedule.Recurring.OnMonth.ElementsAs(ctx, &onMonth, true)...)
 			body.Schedule.Custom.Recurring.OnMonth = &onMonth
 		}
 
-		if !model.CustomSchedule.Recurring.OnMonthDay.IsNull() && !model.CustomSchedule.Recurring.OnMonthDay.IsUnknown() {
+		if utils.IsKnown(model.CustomSchedule.Recurring.OnMonthDay) {
 			var onMonthDay []float32
 			diags.Append(model.CustomSchedule.Recurring.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)...)
 			body.Schedule.Custom.Recurring.OnMonthDay = &onMonthDay
@@ -162,14 +163,9 @@ func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, da
 func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWindowIdJSONRequestBody, diag.Diagnostics) {
 	var diags = diag.Diagnostics{}
 
-	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{}
-
-	if !model.Enabled.IsNull() {
-		body.Enabled = model.Enabled.ValueBoolPointer()
-	}
-
-	if !model.Title.IsNull() {
-		body.Title = model.Title.ValueStringPointer()
+	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{
+		Enabled: model.Enabled.ValueBoolPointer(),
+		Title:   model.Title.ValueStringPointer(),
 	}
 
 	schedule := struct {
@@ -207,7 +203,7 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 
 	body.Schedule = &schedule
 
-	if !model.CustomSchedule.Timezone.IsNull() && !model.CustomSchedule.Timezone.IsUnknown() {
+	if utils.IsKnown(model.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = model.CustomSchedule.Timezone.ValueStringPointer()
 	}
 

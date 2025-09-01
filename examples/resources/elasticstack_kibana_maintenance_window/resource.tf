@@ -7,11 +7,11 @@ resource "elasticstack_kibana_maintenance_window" "my_maintenance_window" {
   title   = "UPDATE TEST"
   enabled = true
 
-  custom_schedule {
+  custom_schedule = {
     start    = "1993-01-01T05:00:00.200Z"
     duration = "12d"
 
-    recurring {
+    recurring = {
       every        = "21d"
       on_week_day  = ["MO", "+3TU", "-2FR"]
       on_month_day = [1, 2, 4, 6, 7]
@@ -19,8 +19,8 @@ resource "elasticstack_kibana_maintenance_window" "my_maintenance_window" {
     }
   }
 
-  scope {
-    alerting {
+  scope = {
+    alerting = {
       kql = "_id: '1234'"
     }
   }
