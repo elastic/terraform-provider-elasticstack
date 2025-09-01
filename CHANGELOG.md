@@ -1,5 +1,6 @@
 ## [Unreleased]
 
+- Add support for `solution` field in `elasticstack_kibana_space` resource and data source ([#1102](https://github.com/elastic/terraform-provider-elasticstack/issues/1102))
 - Add `slo_id` validation to `elasticstack_kibana_slo` ([#1221](https://github.com/elastic/terraform-provider-elasticstack/pull/1221))
 - Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
 - Prevent provider panic when a script exists in state, but not in Elasticsearch ([#1218](https://github.com/elastic/terraform-provider-elasticstack/pull/1218))
