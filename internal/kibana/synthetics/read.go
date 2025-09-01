@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -28,9 +29,9 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	namespace := compositeId.ClusterId
+	spaceId := compositeId.ClusterId
 	monitorId := kbapi.MonitorID(compositeId.ResourceId)
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Get(ctx, monitorId, namespace)
+	result, err := kibanaClient.KibanaSynthetics.Monitor.Get(ctx, monitorId, spaceId)
 	if err != nil {
 		var apiError *kbapi.APIError
 		if errors.As(err, &apiError) && apiError.Code == 404 {
@@ -38,11 +39,11 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 			return
 		}
 
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to get monitor `%s`, namespace %s", monitorId, namespace), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to get monitor `%s`, space %s", monitorId, spaceId), err.Error())
 		return
 	}
 
-	state, diags = state.toModelV0(ctx, result)
+	state, diags = state.toModelV0(ctx, result, spaceId)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
