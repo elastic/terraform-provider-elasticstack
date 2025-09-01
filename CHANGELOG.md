@@ -1,6 +1,14 @@
 ## [Unreleased]
 
 - Add support for `solution` field in `elasticstack_kibana_space` resource and data source ([#1102](https://github.com/elastic/terraform-provider-elasticstack/issues/1102))
+- Add `slo_id` validation to `elasticstack_kibana_slo` ([#1221](https://github.com/elastic/terraform-provider-elasticstack/pull/1221))
+- Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
+- Prevent provider panic when a script exists in state, but not in Elasticsearch ([#1218](https://github.com/elastic/terraform-provider-elasticstack/pull/1218))
+- Add `namespace` attribute to `elasticstack_kibana_synthetics_monitor` resource to support setting data stream namespace independently from `space_id` ([#1247](https://github.com/elastic/terraform-provider-elasticstack/pull/1247))
+
+## [0.11.17] - 2025-07-21
+
+- Add `elasticstack_apm_agent_configuration` resource ([#1196](https://github.com/elastic/terraform-provider-elasticstack/pull/1196))
 - Add support for `timeslice_metric_indicator` in `elasticstack_kibana_slo` ([#1195](https://github.com/elastic/terraform-provider-elasticstack/pull/1195))
 - Add `elasticstack_elasticsearch_ingest_processor_reroute` data source ([#678](https://github.com/elastic/terraform-provider-elasticstack/issues/678))
 - Add support for `supports_agentless` to `elasticstack_fleet_agent_policy` ([#1197](https://github.com/elastic/terraform-provider-elasticstack/pull/1197))
@@ -434,8 +442,9 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...HEAD
-[0.11.15]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...HEAD
+[0.11.17]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...v0.11.17
+[0.11.16]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
 [0.11.15]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...v0.11.15
 [0.11.14]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.13...v0.11.14
 [0.11.13]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.12...v0.11.13

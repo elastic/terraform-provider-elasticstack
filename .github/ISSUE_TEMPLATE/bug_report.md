@@ -36,4 +36,4 @@ If applicable, add screenshots to help explain your problem.
  - Elasticsearch Version [e.g. 7.16.0]
 
 **Additional context**
-Add any other context about the problem here.
+Add any other context about the problem here. Links to specific affected code files and paths here are also extremely useful (if known).

@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.11.16
+VERSION ?= 0.11.17
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -15,7 +15,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 9.0.0-SNAPSHOT
+STACK_VERSION ?= 9.0.3
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -192,7 +192,7 @@ docker-fleet: docker-network docker-elasticsearch docker-kibana setup-kibana-fle
       	-e KIBANA_FLEET_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
 		--name $(FLEET_NAME) \
 		--network $(ELASTICSEARCH_NETWORK) \
-		docker.elastic.co/beats/elastic-agent:$(STACK_VERSION)
+		elastic/elastic-agent:$(STACK_VERSION)
 
 
 .PHONY: docker-network
@@ -246,7 +246,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.2.2
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.4.0
 
 .PHONY: golangci-lint
 golangci-lint:
