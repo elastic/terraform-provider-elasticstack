@@ -27,6 +27,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 			Initials:    types.StringValue(space.Initials),
 			Color:       types.StringValue(space.Color),
 			ImageUrl:    types.StringValue(space.ImageURL),
+			Solution:    types.StringValue(space.Solution),
 		}
 
 		disabledFeatures, diags := types.ListValueFrom(ctx, types.StringType, space.DisabledFeatures)

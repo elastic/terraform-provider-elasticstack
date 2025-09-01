@@ -76,64 +76,9 @@ provider "elasticstack" {
 }
 ```
 
-
 ## Developing the Provider
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements)).
-
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
-
-To install the provider locally into the `~/.terraform.d/plugins/...` directory one can use `make install` command. This will allow to refer this provider directly in the Terraform configuration without needing to download it from the registry.
-
-To generate or update documentation, run `make gen`. All the generated docs will have to be committed to the repository as well.
-
-In order to run the full suite of Acceptance tests, run `make testacc`.
-
-If you have [Docker](https://docs.docker.com/get-docker/) installed, you can use following command to start the Elasticsearch container and run Acceptance tests against it:
-
-```sh
-$ make docker-testacc
-```
-
-To clean up the used containers and to free up the assigned container names, run `make docker-clean`.
-
-Note: there have been some issues encountered when using `tfenv` for local development. It's recommended you move your version management for terraform to `asdf` instead.
-
-
-### Requirements
-
-- [Terraform](https://www.terraform.io/downloads.html) >= 1.0.0
-- [Go](https://golang.org/doc/install) >= 1.19
-
-
-### Building The Provider
-
-1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the `make install` command:
-```sh
-$ make install
-```
-
-
-### Adding Dependencies
-
-This provider uses [Go modules](https://github.com/golang/go/wiki/Modules).
-Please see the Go documentation for the most up to date information about using Go modules.
-
-To add a new dependency `github.com/author/dependency` to your Terraform provider:
-
-```
-go get github.com/author/dependency
-go mod tidy
-```
-
-Then commit the changes to `go.mod` and `go.sum`.
-
-### Generating Kibana clients
-
-Kibana clients for some APIs are generated based on Kibana OpenAPI specs.
-Please see [Makefile](./Makefile) tasks for more details.
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Support
 

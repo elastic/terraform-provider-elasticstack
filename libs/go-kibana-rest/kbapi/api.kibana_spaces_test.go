@@ -22,6 +22,7 @@ func (s *KBAPITestSuite) TestKibanaSpaces() {
 		ID:          "test",
 		Name:        "test",
 		Description: "My test",
+		Solution:    "security",
 	}
 	kibanaSpace, err = s.KibanaSpaces.Create(kibanaSpace)
 	assert.NoError(s.T(), err)
@@ -42,7 +43,7 @@ func (s *KBAPITestSuite) TestKibanaSpaces() {
 		Objects: []KibanaSpaceObjectParameter{
 			{
 				Type: "config",
-				ID:   "8.17.0",
+				ID:   "9.0.3",
 			},
 		},
 	}
