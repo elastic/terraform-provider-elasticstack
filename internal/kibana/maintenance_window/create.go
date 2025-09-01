@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -26,11 +28,11 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	isSupported, sdkDiags := r.client.EnforceMinVersion(ctx, version.Must(version.NewVersion("9.1.0")))
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(diags)...)
+	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	
+
 	if !isSupported {
 		resp.Diagnostics.AddError("Unsupported server version", "Maintenance windows are not supported until Elastic Stack v9.0. Upgrade the target server to use this resource")
 		return
