@@ -1,4 +1,4 @@
-package maintenance_window
+package validation_utils
 
 import (
 	"reflect"

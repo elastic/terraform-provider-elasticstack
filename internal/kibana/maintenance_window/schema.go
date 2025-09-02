@@ -3,6 +3,7 @@ package maintenance_window
 import (
 	"context"
 
+	validation_utils "github.com/elastic/terraform-provider-elasticstack/internal/kibana/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -61,7 +62,7 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 						Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
 						Required:    true,
 						Validators: []validator.String{
-							StringIsAlertingDuration{},
+							validation_utils.StringIsAlertingDuration{},
 						},
 					},
 					"timezone": schema.StringAttribute{
@@ -81,7 +82,7 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 								Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
 								Optional:    true,
 								Validators: []validator.String{
-									StringIsMaintenanceWindowIntervalFrequency{},
+									validation_utils.StringIsMaintenanceWindowIntervalFrequency{},
 								},
 							},
 							"occurrences": schema.Int32Attribute{
@@ -97,7 +98,7 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 								Optional:    true,
 								Validators: []validator.List{
 									listvalidator.ValueStringsAre(
-										StringIsMaintenanceWindowOnWeekDay{},
+										validation_utils.StringIsMaintenanceWindowOnWeekDay{},
 									),
 								},
 							},
