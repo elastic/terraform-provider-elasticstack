@@ -22,7 +22,7 @@ require (
 	github.com/hashicorp/terraform-plugin-testing v1.13.3
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/oapi-codegen/runtime v1.1.2
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 )
 
