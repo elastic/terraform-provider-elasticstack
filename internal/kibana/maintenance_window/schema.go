@@ -57,6 +57,9 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 					"start": schema.StringAttribute{
 						Description: "The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.",
 						Required:    true,
+						Validators: []validator.String{
+							validation_utils.StringIsISO8601{},
+						},
 					},
 					"duration": schema.StringAttribute{
 						Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
@@ -77,6 +80,9 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 							"end": schema.StringAttribute{
 								Description: "The end date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.",
 								Optional:    true,
+								Validators: []validator.String{
+									validation_utils.StringIsISO8601{},
+								},
 							},
 							"every": schema.StringAttribute{
 								Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
