@@ -170,16 +170,18 @@ func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, respo
 		Start:    types.StringValue(response.Schedule.Custom.Start),
 		Duration: types.StringValue(response.Schedule.Custom.Duration),
 		Timezone: types.StringPointerValue(response.Schedule.Custom.Timezone),
-	}
-
-	if response.Schedule.Custom.Recurring != nil {
-		model.CustomSchedule.Recurring = &MaintenanceWindowScheduleRecurring{
-			End:        types.StringPointerValue(response.Schedule.Custom.Recurring.End),
-			Every:      types.StringPointerValue(response.Schedule.Custom.Recurring.Every),
+		Recurring: &MaintenanceWindowScheduleRecurring{
+			End:        types.StringNull(),
+			Every:      types.StringNull(),
 			OnWeekDay:  types.ListNull(types.StringType),
 			OnMonth:    types.ListNull(types.Int32Type),
 			OnMonthDay: types.ListNull(types.Int32Type),
-		}
+		},
+	}
+
+	if response.Schedule.Custom.Recurring != nil {
+		model.CustomSchedule.Recurring.End = types.StringPointerValue(response.Schedule.Custom.Recurring.End)
+		model.CustomSchedule.Recurring.Every = types.StringPointerValue(response.Schedule.Custom.Recurring.Every)
 
 		if response.Schedule.Custom.Recurring.Occurrences != nil {
 			occurrences := int32(*response.Schedule.Custom.Recurring.Occurrences)
