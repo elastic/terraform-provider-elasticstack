@@ -47,8 +47,6 @@ type MaintenanceWindowScheduleRecurring struct {
 /* CREATE */
 
 func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWindowJSONRequestBody, diag.Diagnostics) {
-	var diags = diag.Diagnostics{}
-
 	body := kbapi.PostMaintenanceWindowJSONRequestBody{
 		Enabled: model.Enabled.ValueBoolPointer(),
 		Title:   model.Title.ValueString(),
@@ -61,65 +59,9 @@ func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kba
 		body.Schedule.Custom.Timezone = model.CustomSchedule.Timezone.ValueStringPointer()
 	}
 
-	if model.CustomSchedule.Recurring != nil {
-
-		body.Schedule.Custom.Recurring = &struct {
-			End         *string    `json:"end,omitempty"`
-			Every       *string    `json:"every,omitempty"`
-			Occurrences *float32   `json:"occurrences,omitempty"`
-			OnMonth     *[]float32 `json:"onMonth,omitempty"`
-			OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-			OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-		}{
-			End:   model.CustomSchedule.Recurring.End.ValueStringPointer(),
-			Every: model.CustomSchedule.Recurring.Every.ValueStringPointer(),
-		}
-
-		if utils.IsKnown(model.CustomSchedule.Recurring.Occurrences) {
-			occurrences := float32(model.CustomSchedule.Recurring.Occurrences.ValueInt32())
-			body.Schedule.Custom.Recurring.Occurrences = &occurrences
-		}
-
-		if utils.IsKnown(model.CustomSchedule.Recurring.OnWeekDay) {
-			var onWeekDay []string
-			diags.Append(model.CustomSchedule.Recurring.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)...)
-			body.Schedule.Custom.Recurring.OnWeekDay = &onWeekDay
-		}
-
-		if utils.IsKnown(model.CustomSchedule.Recurring.OnMonth) {
-			var onMonth []float32
-			diags.Append(model.CustomSchedule.Recurring.OnMonth.ElementsAs(ctx, &onMonth, true)...)
-			body.Schedule.Custom.Recurring.OnMonth = &onMonth
-		}
-
-		if utils.IsKnown(model.CustomSchedule.Recurring.OnMonthDay) {
-			var onMonthDay []float32
-			diags.Append(model.CustomSchedule.Recurring.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)...)
-			body.Schedule.Custom.Recurring.OnMonthDay = &onMonthDay
-		}
-	}
-
-	if model.Scope != nil {
-		body.Scope = &struct {
-			Alerting struct {
-				Query struct {
-					Kql string `json:"kql"`
-				} `json:"query"`
-			} `json:"alerting"`
-		}{
-			Alerting: struct {
-				Query struct {
-					Kql string `json:"kql"`
-				} `json:"query"`
-			}{
-				Query: struct {
-					Kql string `json:"kql"`
-				}{
-					Kql: model.Scope.Alerting.Kql.ValueString(),
-				},
-			},
-		}
-	}
+	customRecurring, diags := model.CustomSchedule.Recurring.toAPIRequest(ctx)
+	body.Schedule.Custom.Recurring = customRecurring
+	body.Scope = model.Scope.toAPIRequest()
 
 	return body, diags
 }
@@ -161,14 +103,12 @@ func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, da
 /* UPDATE */
 
 func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWindowIdJSONRequestBody, diag.Diagnostics) {
-	var diags = diag.Diagnostics{}
-
 	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{
 		Enabled: model.Enabled.ValueBoolPointer(),
 		Title:   model.Title.ValueStringPointer(),
 	}
 
-	schedule := struct {
+	body.Schedule = &struct {
 		Custom struct {
 			Duration  string `json:"duration"`
 			Recurring *struct {
@@ -201,76 +141,13 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 		},
 	}
 
-	body.Schedule = &schedule
-
 	if utils.IsKnown(model.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = model.CustomSchedule.Timezone.ValueStringPointer()
 	}
 
-	if model.CustomSchedule.Recurring != nil {
-
-		body.Schedule.Custom.Recurring = &struct {
-			End         *string    `json:"end,omitempty"`
-			Every       *string    `json:"every,omitempty"`
-			Occurrences *float32   `json:"occurrences,omitempty"`
-			OnMonth     *[]float32 `json:"onMonth,omitempty"`
-			OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-			OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-		}{}
-
-		if !model.CustomSchedule.Recurring.End.IsNull() {
-			body.Schedule.Custom.Recurring.End = model.CustomSchedule.Recurring.End.ValueStringPointer()
-		}
-
-		if !model.CustomSchedule.Recurring.Every.IsNull() {
-			body.Schedule.Custom.Recurring.Every = model.CustomSchedule.Recurring.Every.ValueStringPointer()
-		}
-
-		if !model.CustomSchedule.Recurring.Occurrences.IsNull() && !model.CustomSchedule.Recurring.Occurrences.IsUnknown() && model.CustomSchedule.Recurring.Occurrences.ValueInt32() > 0 {
-			occurrences := float32(model.CustomSchedule.Recurring.Occurrences.ValueInt32())
-			body.Schedule.Custom.Recurring.Occurrences = &occurrences
-		}
-
-		if !model.CustomSchedule.Recurring.OnWeekDay.IsNull() && !model.CustomSchedule.Recurring.OnWeekDay.IsUnknown() {
-			var onWeekDay []string
-			diags.Append(model.CustomSchedule.Recurring.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)...)
-			body.Schedule.Custom.Recurring.OnWeekDay = &onWeekDay
-		}
-
-		if !model.CustomSchedule.Recurring.OnMonth.IsNull() && !model.CustomSchedule.Recurring.OnMonth.IsUnknown() {
-			var onMonth []float32
-			diags.Append(model.CustomSchedule.Recurring.OnMonth.ElementsAs(ctx, &onMonth, true)...)
-			body.Schedule.Custom.Recurring.OnMonth = &onMonth
-		}
-
-		if !model.CustomSchedule.Recurring.OnMonthDay.IsNull() && !model.CustomSchedule.Recurring.OnMonthDay.IsUnknown() {
-			var onMonthDay []float32
-			diags.Append(model.CustomSchedule.Recurring.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)...)
-			body.Schedule.Custom.Recurring.OnMonthDay = &onMonthDay
-		}
-	}
-
-	if model.Scope != nil {
-		body.Scope = &struct {
-			Alerting struct {
-				Query struct {
-					Kql string `json:"kql"`
-				} `json:"query"`
-			} `json:"alerting"`
-		}{
-			Alerting: struct {
-				Query struct {
-					Kql string `json:"kql"`
-				} `json:"query"`
-			}{
-				Query: struct {
-					Kql string `json:"kql"`
-				}{
-					Kql: model.Scope.Alerting.Kql.ValueString(),
-				},
-			},
-		}
-	}
+	customRecurring, diags := model.CustomSchedule.Recurring.toAPIRequest(ctx)
+	body.Schedule.Custom.Recurring = customRecurring
+	body.Scope = model.Scope.toAPIRequest()
 
 	return body, diags
 }
@@ -381,4 +258,94 @@ func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, respo
 	}
 
 	return diags
+}
+
+/* HELPERS */
+
+func (model *MaintenanceWindowScope) toAPIRequest() *struct {
+	Alerting struct {
+		Query struct {
+			Kql string `json:"kql"`
+		} `json:"query"`
+	} `json:"alerting"`
+} {
+	if model == nil {
+		return nil
+	}
+
+	return &struct {
+		Alerting struct {
+			Query struct {
+				Kql string `json:"kql"`
+			} `json:"query"`
+		} `json:"alerting"`
+	}{
+		Alerting: struct {
+			Query struct {
+				Kql string `json:"kql"`
+			} `json:"query"`
+		}{
+			Query: struct {
+				Kql string `json:"kql"`
+			}{
+				Kql: model.Alerting.Kql.ValueString(),
+			},
+		},
+	}
+}
+
+func (model *MaintenanceWindowScheduleRecurring) toAPIRequest(ctx context.Context) (*struct {
+	End         *string    `json:"end,omitempty"`
+	Every       *string    `json:"every,omitempty"`
+	Occurrences *float32   `json:"occurrences,omitempty"`
+	OnMonth     *[]float32 `json:"onMonth,omitempty"`
+	OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
+	OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
+}, diag.Diagnostics) {
+	if model == nil {
+		return nil, nil
+	}
+
+	var diags diag.Diagnostics
+	result := &struct {
+		End         *string    `json:"end,omitempty"`
+		Every       *string    `json:"every,omitempty"`
+		Occurrences *float32   `json:"occurrences,omitempty"`
+		OnMonth     *[]float32 `json:"onMonth,omitempty"`
+		OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
+		OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
+	}{}
+
+	if utils.IsKnown(model.End) {
+		result.End = model.End.ValueStringPointer()
+	}
+
+	if utils.IsKnown(model.Every) {
+		result.Every = model.Every.ValueStringPointer()
+	}
+
+	if utils.IsKnown(model.Occurrences) {
+		occurrences := float32(model.Occurrences.ValueInt32())
+		result.Occurrences = &occurrences
+	}
+
+	if utils.IsKnown(model.OnWeekDay) {
+		var onWeekDay []string
+		diags.Append(model.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)...)
+		result.OnWeekDay = &onWeekDay
+	}
+
+	if utils.IsKnown(model.OnMonth) {
+		var onMonth []float32
+		diags.Append(model.OnMonth.ElementsAs(ctx, &onMonth, true)...)
+		result.OnMonth = &onMonth
+	}
+
+	if utils.IsKnown(model.OnMonthDay) {
+		var onMonthDay []float32
+		diags.Append(model.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)...)
+		result.OnMonthDay = &onMonthDay
+	}
+
+	return result, diags
 }
