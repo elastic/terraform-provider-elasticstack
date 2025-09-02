@@ -22,7 +22,7 @@ func (r *MaintenanceWindowResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	viewID, spaceID := stateModel.getMaintenanceWindowIDAndSpaceID()
-	diags = kibana_oapi.DeleteMaintenanceWindow(ctx, client, spaceID, viewID)
+	maintenanceWindowID, spaceID := stateModel.getMaintenanceWindowIDAndSpaceID()
+	diags = kibana_oapi.DeleteMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 }

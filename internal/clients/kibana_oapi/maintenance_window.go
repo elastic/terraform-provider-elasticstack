@@ -41,17 +41,17 @@ func CreateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 }
 
 // UpdateMaintenanceWindow updates an existing maintenance window.
-func UpdateMaintenanceWindow(ctx context.Context, client *Client, spaceID string, maintenanceWindowID string, req kbapi.PatchMaintenanceWindowIdJSONRequestBody) (*kbapi.PatchMaintenanceWindowIdResponse, diag.Diagnostics) {
+func UpdateMaintenanceWindow(ctx context.Context, client *Client, spaceID string, maintenanceWindowID string, req kbapi.PatchMaintenanceWindowIdJSONRequestBody) diag.Diagnostics {
 	resp, err := client.API.PatchMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return utils.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp, nil
+		return nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 

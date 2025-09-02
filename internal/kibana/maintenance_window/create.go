@@ -45,14 +45,30 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	spaceID := planMaintenanceWindow.SpaceID.ValueString()
-	maintenanceWindowAPIResponse, diags := kibana_oapi.CreateMaintenanceWindow(ctx, client, spaceID, body)
+	createMaintenanceWindowResponse, diags := kibana_oapi.CreateMaintenanceWindow(ctx, client, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = planMaintenanceWindow.fromAPICreateResponse(ctx, maintenanceWindowAPIResponse)
+	/*
+	* In create/update paths we typically follow the write operation with a read, and then set the state from the read.
+	* We want to avoid a dirty plan immediately after an apply.
+	 */
+	maintenanceWindowID := createMaintenanceWindowResponse.JSON200.Id
+	readMaintenanceWindowResponse, diags := kibana_oapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if readMaintenanceWindowResponse == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	diags = planMaintenanceWindow.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

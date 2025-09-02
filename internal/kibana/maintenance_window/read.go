@@ -37,8 +37,8 @@ func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	viewID, spaceID := stateModel.getMaintenanceWindowIDAndSpaceID()
-	maintenanceWindow, diags := kibana_oapi.GetMaintenanceWindow(ctx, client, spaceID, viewID)
+	maintenanceWindowID, spaceID := stateModel.getMaintenanceWindowIDAndSpaceID()
+	maintenanceWindow, diags := kibana_oapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

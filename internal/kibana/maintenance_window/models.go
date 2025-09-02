@@ -66,22 +66,6 @@ func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kba
 	return body, diags
 }
 
-func (model *MaintenanceWindowModel) fromAPICreateResponse(ctx context.Context, data *kbapi.PostMaintenanceWindowResponse) diag.Diagnostics {
-	if data == nil {
-		return nil
-	}
-
-	var diags = diag.Diagnostics{}
-	var response = &ResponseJson{}
-
-	if err := json.Unmarshal(data.Body, response); err != nil {
-		diags.AddError(err.Error(), "cannot unmarshal PostMaintenanceWindowResponse")
-		return diags
-	}
-
-	return model._fromAPIResponse(ctx, *response)
-}
-
 /* READ */
 
 func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, data *kbapi.GetMaintenanceWindowIdResponse) diag.Diagnostics {
@@ -150,22 +134,6 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 	body.Scope = model.Scope.toAPIRequest()
 
 	return body, diags
-}
-
-func (model *MaintenanceWindowModel) fromAPIUpdateResponse(ctx context.Context, data *kbapi.PatchMaintenanceWindowIdResponse) diag.Diagnostics {
-	if data == nil {
-		return nil
-	}
-
-	var diags = diag.Diagnostics{}
-	var response = &ResponseJson{}
-
-	if err := json.Unmarshal(data.Body, response); err != nil {
-		diags.AddError(err.Error(), "cannot unmarshal PatchMaintenanceWindowIdResponse")
-		return diags
-	}
-
-	return model._fromAPIResponse(ctx, *response)
 }
 
 /* DELETE */
