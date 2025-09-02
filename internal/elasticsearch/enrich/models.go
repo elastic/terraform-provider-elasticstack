@@ -6,7 +6,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -41,47 +40,10 @@ func (data *EnrichPolicyData) populateFromPolicy(ctx context.Context, policy *mo
 	}
 
 	// Convert string slices to Set
-	data.Indices = sliceToSetType_String(ctx, policy.Indices, path.Empty(), diagnostics)
+	data.Indices = utils.SetValueFrom(ctx, policy.Indices, types.StringType, path.Empty(), diagnostics)
 	if diagnostics.HasError() {
 		return
 	}
 
-	data.EnrichFields = sliceToSetType_String(ctx, policy.EnrichFields, path.Empty(), diagnostics)
-}
-
-// setTypeToSlice_String converts a types.Set to []string
-func setTypeToSlice_String(ctx context.Context, value types.Set, p path.Path, diags *diag.Diagnostics) []string {
-	if value.IsNull() || value.IsUnknown() {
-		return nil
-	}
-
-	var elements []types.String
-	d := value.ElementsAs(ctx, &elements, false)
-	diags.Append(utils.ConvertToAttrDiags(d, p)...)
-	if diags.HasError() {
-		return nil
-	}
-
-	result := make([]string, len(elements))
-	for i, elem := range elements {
-		result[i] = elem.ValueString()
-	}
-	return result
-}
-
-// sliceToSetType_String converts a []string to types.Set
-func sliceToSetType_String(ctx context.Context, value []string, p path.Path, diags *diag.Diagnostics) types.Set {
-	if value == nil {
-		return types.SetNull(types.StringType)
-	}
-
-	// Convert []string to []attr.Value
-	elements := make([]attr.Value, len(value))
-	for i, v := range value {
-		elements[i] = types.StringValue(v)
-	}
-
-	set, d := types.SetValue(types.StringType, elements)
-	diags.Append(utils.ConvertToAttrDiags(d, p)...)
-	return set
+	data.EnrichFields = utils.SetValueFrom(ctx, policy.EnrichFields, types.StringType, path.Empty(), diagnostics)
 }
