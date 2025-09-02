@@ -197,10 +197,10 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat features) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.Logs)
+		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.Metrics)
+		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledMetrics)
 	}
 
 	if utils.IsKnown(model.SupportsAgentless) && !feat.SupportsSupportsAgentless {
