@@ -12,6 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+type Elementable interface {
+	attr.Value
+	ElementsAs(ctx context.Context, target interface{}, allowUnhandled bool) diag.Diagnostics
+}
+
 type ListMeta struct {
 	Context context.Context
 	Index   int
@@ -44,6 +49,22 @@ func ValueStringPointer(value types.String) *string {
 		return nil
 	}
 	return value.ValueStringPointer()
+}
+
+// ================
+// ==== Generic ===
+// ================
+
+// MapTypeAs converts a types.Map into a tfsdk aware map[string]T.
+func elementsAs[T any](ctx context.Context, value Elementable, p path.Path, diags *diag.Diagnostics) T {
+	var result T
+	if !IsKnown(value) {
+		return result
+	}
+
+	d := value.ElementsAs(ctx, &result, false)
+	diags.Append(ConvertToAttrDiags(d, p)...)
+	return result
 }
 
 // ================
@@ -107,14 +128,7 @@ func MapTypeToMap[T1 any, T2 any](ctx context.Context, value types.Map, p path.P
 
 // MapTypeAs converts a types.Map into a tfsdk aware map[string]T.
 func MapTypeAs[T any](ctx context.Context, value types.Map, p path.Path, diags *diag.Diagnostics) map[string]T {
-	if !IsKnown(value) {
-		return nil
-	}
-
-	var items map[string]T
-	d := value.ElementsAs(ctx, &items, false)
-	diags.Append(ConvertToAttrDiags(d, p)...)
-	return items
+	return elementsAs[map[string]T](ctx, value, p, diags)
 }
 
 // MapValueFrom converts a tfsdk aware map[string]T to a types.Map.
@@ -145,10 +159,7 @@ func SliceToListType[T1 any, T2 any](ctx context.Context, value []T1, elemType a
 // SliceToListType_String converts a tfsdk naive []string into a types.List.
 // This is a shorthand SliceToListType helper for strings.
 func SliceToListType_String(ctx context.Context, value []string, p path.Path, diags *diag.Diagnostics) types.List {
-	return SliceToListType(ctx, value, types.StringType, p, diags,
-		func(item string, meta ListMeta) types.String {
-			return types.StringValue(item)
-		})
+	return ListValueFrom(ctx, value, types.StringType, p, diags)
 }
 
 // ListTypeToMap converts a types.List first into a tfsdk aware map[string]T1
@@ -184,26 +195,32 @@ func ListTypeToSlice[T1 any, T2 any](ctx context.Context, value types.List, p pa
 // ListTypeToSlice_String converts a types.List into a []string.
 // This is a shorthand ListTypeToSlice helper for strings.
 func ListTypeToSlice_String(ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics) []string {
-	return ListTypeToSlice(ctx, value, p, diags, func(item types.String, meta ListMeta) string {
-		return item.ValueString()
-	})
+	return ListTypeAs[string](ctx, value, p, diags)
 }
 
 // ListTypeAs converts a types.List into a tfsdk aware []T.
 func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics) []T {
-	if !IsKnown(value) {
-		return nil
-	}
-
-	var items []T
-	nd := value.ElementsAs(ctx, &items, false)
-	diags.Append(ConvertToAttrDiags(nd, p)...)
-	return items
+	return elementsAs[[]T](ctx, value, p, diags)
 }
 
 // ListValueFrom converts a tfsdk aware []T to a types.List.
 func ListValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.List {
 	list, d := types.ListValueFrom(ctx, elemType, value)
+	diags.Append(ConvertToAttrDiags(d, p)...)
+	return list
+}
+
+// ===================
+// ===== Sets =====
+// ===================
+
+// SetTypeAs converts a types.Set into a tfsdk aware []T.
+func SetTypeAs[T any](ctx context.Context, value types.Set, p path.Path, diags *diag.Diagnostics) []T {
+	return elementsAs[[]T](ctx, value, p, diags)
+}
+
+func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.Set {
+	list, d := types.SetValueFrom(ctx, elemType, value)
 	diags.Append(ConvertToAttrDiags(d, p)...)
 	return list
 }

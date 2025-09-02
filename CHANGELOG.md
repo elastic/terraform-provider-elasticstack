@@ -1,8 +1,12 @@
 ## [Unreleased]
 
+- Add support for `solution` field in `elasticstack_kibana_space` resource and data source ([#1102](https://github.com/elastic/terraform-provider-elasticstack/issues/1102))
 - Add `slo_id` validation to `elasticstack_kibana_slo` ([#1221](https://github.com/elastic/terraform-provider-elasticstack/pull/1221))
 - Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
+- Migrate `elasticstack_elasticsearch_enrich_policy` resource and data source to Terraform Plugin Framework ([#1220](https://github.com/elastic/terraform-provider-elasticstack/pull/1220))
 - Prevent provider panic when a script exists in state, but not in Elasticsearch ([#1218](https://github.com/elastic/terraform-provider-elasticstack/pull/1218))
+- Allow version changes without a destroy/create cycle with `elasticstack_fleet_integration` ([#1255](https://github.com/elastic/terraform-provider-elasticstack/pull/1255)). This fixes an issue where it was impossible to upgrade integrations which are used by an integration policy.
+- Add `namespace` attribute to `elasticstack_kibana_synthetics_monitor` resource to support setting data stream namespace independently from `space_id` ([#1247](https://github.com/elastic/terraform-provider-elasticstack/pull/1247))
 
 ## [0.11.17] - 2025-07-21
 

@@ -126,6 +126,7 @@ jobs:
           - '8.15.5'
           - '8.16.2'
           - '8.17.0'
+          - '8.18.3'
           - '9.0.3'
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5

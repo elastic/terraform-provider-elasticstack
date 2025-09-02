@@ -74,11 +74,35 @@ output "query" {
 
 - `name` (String) The name of the policy.
 
+### Optional
+
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+
 ### Read-Only
 
 - `enrich_fields` (Set of String) Fields to add to matching incoming documents. These fields must be present in the source indices.
 - `id` (String) Internal identifier of the resource
 - `indices` (Set of String) Array of one or more source indices used to create the enrich index.
-- `match_field` (String) Field in source indices used to match incoming documents.
+- `match_field` (String) Field from the source indices used to match incoming documents.
 - `policy_type` (String) The type of enrich policy, can be one of geo_match, match, range.
 - `query` (String) Query used to filter documents in the enrich index. The policy only uses documents matching this query to enrich incoming documents. Defaults to a match_all query.
+
+<a id="nestedblock--elasticsearch_connection"></a>
+### Nested Schema for `elasticsearch_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `cert_data` (String) PEM encoded certificate for client auth
+- `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
+- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the JWT token
+- `headers` (Map of String, Sensitive) A list of headers to be sent with each request to Elasticsearch.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
+- `key_file` (String) Path to a file containing the PEM encoded private key for client auth
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
