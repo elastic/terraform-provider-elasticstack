@@ -4,17 +4,14 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var stateModel MaintenanceWindowModel
 
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	req.State.GetAttribute(ctx, path.Root("id"), &stateModel.ID)
 
 	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
 	if sdkDiags.HasError() {
@@ -26,7 +23,7 @@ func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
+	diags := validateMaintenanceWindowServer(serverVersion, serverFlavor)
 	if diags.HasError() {
 		return
 	}
