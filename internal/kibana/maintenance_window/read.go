@@ -12,6 +12,7 @@ func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadR
 	var stateModel MaintenanceWindowModel
 
 	req.State.GetAttribute(ctx, path.Root("id"), &stateModel.ID)
+	req.State.GetAttribute(ctx, path.Root("space_id"), &stateModel.SpaceID)
 
 	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
 	if sdkDiags.HasError() {

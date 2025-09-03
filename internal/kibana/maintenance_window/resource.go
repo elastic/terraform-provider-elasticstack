@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	_ resource.Resource              = &MaintenanceWindowResource{}
-	_ resource.ResourceWithConfigure = &MaintenanceWindowResource{}
+	_ resource.Resource                = &MaintenanceWindowResource{}
+	_ resource.ResourceWithConfigure   = &MaintenanceWindowResource{}
 	_ resource.ResourceWithImportState = &MaintenanceWindowResource{}
 )
 

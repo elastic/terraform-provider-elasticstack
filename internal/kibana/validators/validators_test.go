@@ -1,4 +1,4 @@
-package validation_utils
+package validators
 
 import (
 	"reflect"
