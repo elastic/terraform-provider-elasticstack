@@ -1108,15 +1108,16 @@ type SyntheticsPostParameterResponse struct {
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      interface{} `json:"agent_download_target_directory,omitempty"`
-		AgentDownloadTimeout              interface{} `json:"agent_download_timeout,omitempty"`
-		AgentLimitsGoMaxProcs             interface{} `json:"agent_limits_go_max_procs,omitempty"`
-		AgentLoggingFilesInterval         interface{} `json:"agent_logging_files_interval,omitempty"`
-		AgentLoggingFilesKeepfiles        interface{} `json:"agent_logging_files_keepfiles,omitempty"`
-		AgentLoggingFilesRotateeverybytes interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
-		AgentLoggingLevel                 interface{} `json:"agent_logging_level,omitempty"`
-		AgentLoggingMetricsPeriod         interface{} `json:"agent_logging_metrics_period,omitempty"`
-		AgentLoggingToFiles               interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentDownloadTargetDirectory       interface{} `json:"agent_download_target_directory,omitempty"`
+		AgentDownloadTimeout               interface{} `json:"agent_download_timeout,omitempty"`
+		AgentLimitsGoMaxProcs              interface{} `json:"agent_limits_go_max_procs,omitempty"`
+		AgentLoggingFilesInterval          interface{} `json:"agent_logging_files_interval,omitempty"`
+		AgentLoggingFilesKeepfiles         interface{} `json:"agent_logging_files_keepfiles,omitempty"`
+		AgentLoggingFilesRotateeverybytes  interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
+		AgentLoggingLevel                  interface{} `json:"agent_logging_level,omitempty"`
+		AgentLoggingMetricsPeriod          interface{} `json:"agent_logging_metrics_period,omitempty"`
+		AgentLoggingToFiles                interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentMonitoringRuntimeExperimental interface{} `json:"agent_monitoring_runtime_experimental,omitempty"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -1926,9 +1927,10 @@ type NewOutputElasticsearch struct {
 			Key *NewOutputElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *NewOutputShipper          `json:"shipper,omitempty"`
-	Ssl     *NewOutputSsl              `json:"ssl,omitempty"`
-	Type    NewOutputElasticsearchType `json:"type"`
+	Shipper            *NewOutputShipper          `json:"shipper,omitempty"`
+	Ssl                *NewOutputSsl              `json:"ssl,omitempty"`
+	Type               NewOutputElasticsearchType `json:"type"`
+	WriteToLogsStreams *bool                      `json:"write_to_logs_streams,omitempty"`
 }
 
 // NewOutputElasticsearchPreset defines model for NewOutputElasticsearch.Preset.
@@ -1997,13 +1999,14 @@ type NewOutputKafka struct {
 			Key NewOutputKafka_Secrets_Ssl_Key `json:"key"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper  *NewOutputShipper  `json:"shipper,omitempty"`
-	Ssl      *NewOutputSsl      `json:"ssl,omitempty"`
-	Timeout  *float32           `json:"timeout,omitempty"`
-	Topic    *string            `json:"topic,omitempty"`
-	Type     NewOutputKafkaType `json:"type"`
-	Username interface{}        `json:"username"`
-	Version  *string            `json:"version,omitempty"`
+	Shipper            *NewOutputShipper  `json:"shipper,omitempty"`
+	Ssl                *NewOutputSsl      `json:"ssl,omitempty"`
+	Timeout            *float32           `json:"timeout,omitempty"`
+	Topic              *string            `json:"topic,omitempty"`
+	Type               NewOutputKafkaType `json:"type"`
+	Username           interface{}        `json:"username"`
+	Version            *string            `json:"version,omitempty"`
+	WriteToLogsStreams *bool              `json:"write_to_logs_streams,omitempty"`
 }
 
 // NewOutputKafkaAuthType defines model for NewOutputKafka.AuthType.
@@ -2069,9 +2072,10 @@ type NewOutputLogstash struct {
 			Key *NewOutputLogstash_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *NewOutputShipper     `json:"shipper,omitempty"`
-	Ssl     *NewOutputSsl         `json:"ssl,omitempty"`
-	Type    NewOutputLogstashType `json:"type"`
+	Shipper            *NewOutputShipper     `json:"shipper,omitempty"`
+	Ssl                *NewOutputSsl         `json:"ssl,omitempty"`
+	Type               NewOutputLogstashType `json:"type"`
+	WriteToLogsStreams *bool                 `json:"write_to_logs_streams,omitempty"`
 }
 
 // NewOutputLogstashSecretsSslKey0 defines model for .
@@ -2119,6 +2123,7 @@ type NewOutputRemoteElasticsearch struct {
 	SyncIntegrations            *bool                            `json:"sync_integrations,omitempty"`
 	SyncUninstalledIntegrations *bool                            `json:"sync_uninstalled_integrations,omitempty"`
 	Type                        NewOutputRemoteElasticsearchType `json:"type"`
+	WriteToLogsStreams          *bool                            `json:"write_to_logs_streams,omitempty"`
 }
 
 // NewOutputRemoteElasticsearchPreset defines model for NewOutputRemoteElasticsearch.Preset.
@@ -2214,6 +2219,7 @@ type OutputElasticsearch struct {
 	Shipper              *OutputShipper               `json:"shipper,omitempty"`
 	Ssl                  *OutputSsl                   `json:"ssl,omitempty"`
 	Type                 OutputElasticsearchType      `json:"type"`
+	WriteToLogsStreams   *bool                        `json:"write_to_logs_streams,omitempty"`
 	AdditionalProperties map[string]interface{}       `json:"-"`
 }
 
@@ -2286,6 +2292,7 @@ type OutputKafka struct {
 	Type                 OutputKafkaType             `json:"type"`
 	Username             interface{}                 `json:"username"`
 	Version              *string                     `json:"version,omitempty"`
+	WriteToLogsStreams   *bool                       `json:"write_to_logs_streams,omitempty"`
 	AdditionalProperties map[string]interface{}      `json:"-"`
 }
 
@@ -2398,6 +2405,7 @@ type OutputLogstash struct {
 	Shipper              *OutputShipper          `json:"shipper,omitempty"`
 	Ssl                  *OutputSsl              `json:"ssl,omitempty"`
 	Type                 OutputLogstashType      `json:"type"`
+	WriteToLogsStreams   *bool                   `json:"write_to_logs_streams,omitempty"`
 	AdditionalProperties map[string]interface{}  `json:"-"`
 }
 
@@ -2454,6 +2462,7 @@ type OutputRemoteElasticsearch struct {
 	SyncIntegrations            *bool                              `json:"sync_integrations,omitempty"`
 	SyncUninstalledIntegrations *bool                              `json:"sync_uninstalled_integrations,omitempty"`
 	Type                        OutputRemoteElasticsearchType      `json:"type"`
+	WriteToLogsStreams          *bool                              `json:"write_to_logs_streams,omitempty"`
 	AdditionalProperties        map[string]interface{}             `json:"-"`
 }
 
@@ -2609,6 +2618,12 @@ type PackageInfo_Conditions struct {
 	AdditionalProperties map[string]interface{}          `json:"-"`
 }
 
+// PackageInfo_Discovery_Datasets_Item defines model for PackageInfo.Discovery.Datasets.Item.
+type PackageInfo_Discovery_Datasets_Item struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // PackageInfo_Discovery_Fields_Item defines model for PackageInfo.Discovery.Fields.Item.
 type PackageInfo_Discovery_Fields_Item struct {
 	Name                 string                 `json:"name"`
@@ -2617,8 +2632,9 @@ type PackageInfo_Discovery_Fields_Item struct {
 
 // PackageInfo_Discovery defines model for PackageInfo.Discovery.
 type PackageInfo_Discovery struct {
-	Fields               *[]PackageInfo_Discovery_Fields_Item `json:"fields,omitempty"`
-	AdditionalProperties map[string]interface{}               `json:"-"`
+	Datasets             *[]PackageInfo_Discovery_Datasets_Item `json:"datasets,omitempty"`
+	Fields               *[]PackageInfo_Discovery_Fields_Item   `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                 `json:"-"`
 }
 
 // PackageInfo_Icons_Item defines model for package_info.icons.Item.
@@ -2841,6 +2857,12 @@ type PackageListItem_Conditions struct {
 	AdditionalProperties map[string]interface{}              `json:"-"`
 }
 
+// PackageListItem_Discovery_Datasets_Item defines model for PackageListItem.Discovery.Datasets.Item.
+type PackageListItem_Discovery_Datasets_Item struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // PackageListItem_Discovery_Fields_Item defines model for PackageListItem.Discovery.Fields.Item.
 type PackageListItem_Discovery_Fields_Item struct {
 	Name                 string                 `json:"name"`
@@ -2849,8 +2871,9 @@ type PackageListItem_Discovery_Fields_Item struct {
 
 // PackageListItem_Discovery defines model for PackageListItem.Discovery.
 type PackageListItem_Discovery struct {
-	Fields               *[]PackageListItem_Discovery_Fields_Item `json:"fields,omitempty"`
-	AdditionalProperties map[string]interface{}                   `json:"-"`
+	Datasets             *[]PackageListItem_Discovery_Datasets_Item `json:"datasets,omitempty"`
+	Fields               *[]PackageListItem_Discovery_Fields_Item   `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                     `json:"-"`
 }
 
 // PackageListItem_Icons_Item defines model for package_list_item.icons.Item.
@@ -3564,9 +3587,10 @@ type UpdateOutputElasticsearch struct {
 			Key *UpdateOutputElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *UpdateOutputShipper           `json:"shipper,omitempty"`
-	Ssl     *UpdateOutputSsl               `json:"ssl,omitempty"`
-	Type    *UpdateOutputElasticsearchType `json:"type,omitempty"`
+	Shipper            *UpdateOutputShipper           `json:"shipper,omitempty"`
+	Ssl                *UpdateOutputSsl               `json:"ssl,omitempty"`
+	Type               *UpdateOutputElasticsearchType `json:"type,omitempty"`
+	WriteToLogsStreams *bool                          `json:"write_to_logs_streams,omitempty"`
 }
 
 // UpdateOutputElasticsearchPreset defines model for UpdateOutputElasticsearch.Preset.
@@ -3634,13 +3658,14 @@ type UpdateOutputKafka struct {
 			Key UpdateOutputKafka_Secrets_Ssl_Key `json:"key"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper  *UpdateOutputShipper   `json:"shipper,omitempty"`
-	Ssl      *UpdateOutputSsl       `json:"ssl,omitempty"`
-	Timeout  *float32               `json:"timeout,omitempty"`
-	Topic    *string                `json:"topic,omitempty"`
-	Type     *UpdateOutputKafkaType `json:"type,omitempty"`
-	Username interface{}            `json:"username"`
-	Version  *string                `json:"version,omitempty"`
+	Shipper            *UpdateOutputShipper   `json:"shipper,omitempty"`
+	Ssl                *UpdateOutputSsl       `json:"ssl,omitempty"`
+	Timeout            *float32               `json:"timeout,omitempty"`
+	Topic              *string                `json:"topic,omitempty"`
+	Type               *UpdateOutputKafkaType `json:"type,omitempty"`
+	Username           interface{}            `json:"username"`
+	Version            *string                `json:"version,omitempty"`
+	WriteToLogsStreams *bool                  `json:"write_to_logs_streams,omitempty"`
 }
 
 // UpdateOutputKafkaAuthType defines model for UpdateOutputKafka.AuthType.
@@ -3705,9 +3730,10 @@ type UpdateOutputLogstash struct {
 			Key *UpdateOutputLogstash_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *UpdateOutputShipper      `json:"shipper,omitempty"`
-	Ssl     *UpdateOutputSsl          `json:"ssl,omitempty"`
-	Type    *UpdateOutputLogstashType `json:"type,omitempty"`
+	Shipper            *UpdateOutputShipper      `json:"shipper,omitempty"`
+	Ssl                *UpdateOutputSsl          `json:"ssl,omitempty"`
+	Type               *UpdateOutputLogstashType `json:"type,omitempty"`
+	WriteToLogsStreams *bool                     `json:"write_to_logs_streams,omitempty"`
 }
 
 // UpdateOutputLogstashSecretsSslKey0 defines model for .
@@ -3754,6 +3780,7 @@ type UpdateOutputRemoteElasticsearch struct {
 	SyncIntegrations            *bool                                `json:"sync_integrations,omitempty"`
 	SyncUninstalledIntegrations *bool                                `json:"sync_uninstalled_integrations,omitempty"`
 	Type                        *UpdateOutputRemoteElasticsearchType `json:"type,omitempty"`
+	WriteToLogsStreams          *bool                                `json:"write_to_logs_streams,omitempty"`
 }
 
 // UpdateOutputRemoteElasticsearchPreset defines model for UpdateOutputRemoteElasticsearch.Preset.
@@ -3958,15 +3985,16 @@ type GetFleetAgentPoliciesParamsFormat string
 // PostFleetAgentPoliciesJSONBody defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      interface{} `json:"agent_download_target_directory,omitempty"`
-		AgentDownloadTimeout              interface{} `json:"agent_download_timeout,omitempty"`
-		AgentLimitsGoMaxProcs             interface{} `json:"agent_limits_go_max_procs,omitempty"`
-		AgentLoggingFilesInterval         interface{} `json:"agent_logging_files_interval,omitempty"`
-		AgentLoggingFilesKeepfiles        interface{} `json:"agent_logging_files_keepfiles,omitempty"`
-		AgentLoggingFilesRotateeverybytes interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
-		AgentLoggingLevel                 interface{} `json:"agent_logging_level,omitempty"`
-		AgentLoggingMetricsPeriod         interface{} `json:"agent_logging_metrics_period,omitempty"`
-		AgentLoggingToFiles               interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentDownloadTargetDirectory       interface{} `json:"agent_download_target_directory,omitempty"`
+		AgentDownloadTimeout               interface{} `json:"agent_download_timeout,omitempty"`
+		AgentLimitsGoMaxProcs              interface{} `json:"agent_limits_go_max_procs,omitempty"`
+		AgentLoggingFilesInterval          interface{} `json:"agent_logging_files_interval,omitempty"`
+		AgentLoggingFilesKeepfiles         interface{} `json:"agent_logging_files_keepfiles,omitempty"`
+		AgentLoggingFilesRotateeverybytes  interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
+		AgentLoggingLevel                  interface{} `json:"agent_logging_level,omitempty"`
+		AgentLoggingMetricsPeriod          interface{} `json:"agent_logging_metrics_period,omitempty"`
+		AgentLoggingToFiles                interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentMonitoringRuntimeExperimental interface{} `json:"agent_monitoring_runtime_experimental,omitempty"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -4070,15 +4098,16 @@ type GetFleetAgentPoliciesAgentpolicyidParamsFormat string
 // PutFleetAgentPoliciesAgentpolicyidJSONBody defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      interface{} `json:"agent_download_target_directory,omitempty"`
-		AgentDownloadTimeout              interface{} `json:"agent_download_timeout,omitempty"`
-		AgentLimitsGoMaxProcs             interface{} `json:"agent_limits_go_max_procs,omitempty"`
-		AgentLoggingFilesInterval         interface{} `json:"agent_logging_files_interval,omitempty"`
-		AgentLoggingFilesKeepfiles        interface{} `json:"agent_logging_files_keepfiles,omitempty"`
-		AgentLoggingFilesRotateeverybytes interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
-		AgentLoggingLevel                 interface{} `json:"agent_logging_level,omitempty"`
-		AgentLoggingMetricsPeriod         interface{} `json:"agent_logging_metrics_period,omitempty"`
-		AgentLoggingToFiles               interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentDownloadTargetDirectory       interface{} `json:"agent_download_target_directory,omitempty"`
+		AgentDownloadTimeout               interface{} `json:"agent_download_timeout,omitempty"`
+		AgentLimitsGoMaxProcs              interface{} `json:"agent_limits_go_max_procs,omitempty"`
+		AgentLoggingFilesInterval          interface{} `json:"agent_logging_files_interval,omitempty"`
+		AgentLoggingFilesKeepfiles         interface{} `json:"agent_logging_files_keepfiles,omitempty"`
+		AgentLoggingFilesRotateeverybytes  interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
+		AgentLoggingLevel                  interface{} `json:"agent_logging_level,omitempty"`
+		AgentLoggingMetricsPeriod          interface{} `json:"agent_logging_metrics_period,omitempty"`
+		AgentLoggingToFiles                interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentMonitoringRuntimeExperimental interface{} `json:"agent_monitoring_runtime_experimental,omitempty"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -4800,6 +4829,14 @@ func (a *OutputElasticsearch) UnmarshalJSON(b []byte) error {
 		delete(object, "type")
 	}
 
+	if raw, found := object["write_to_logs_streams"]; found {
+		err = json.Unmarshal(raw, &a.WriteToLogsStreams)
+		if err != nil {
+			return fmt.Errorf("error reading 'write_to_logs_streams': %w", err)
+		}
+		delete(object, "write_to_logs_streams")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -4930,6 +4967,13 @@ func (a OutputElasticsearch) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	if a.WriteToLogsStreams != nil {
+		object["write_to_logs_streams"], err = json.Marshal(a.WriteToLogsStreams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'write_to_logs_streams': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -5448,6 +5492,14 @@ func (a *OutputKafka) UnmarshalJSON(b []byte) error {
 		delete(object, "version")
 	}
 
+	if raw, found := object["write_to_logs_streams"]; found {
+		err = json.Unmarshal(raw, &a.WriteToLogsStreams)
+		if err != nil {
+			return fmt.Errorf("error reading 'write_to_logs_streams': %w", err)
+		}
+		delete(object, "write_to_logs_streams")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -5693,6 +5745,13 @@ func (a OutputKafka) MarshalJSON() ([]byte, error) {
 		object["version"], err = json.Marshal(a.Version)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'version': %w", err)
+		}
+	}
+
+	if a.WriteToLogsStreams != nil {
+		object["write_to_logs_streams"], err = json.Marshal(a.WriteToLogsStreams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'write_to_logs_streams': %w", err)
 		}
 	}
 
@@ -6505,6 +6564,14 @@ func (a *OutputLogstash) UnmarshalJSON(b []byte) error {
 		delete(object, "type")
 	}
 
+	if raw, found := object["write_to_logs_streams"]; found {
+		err = json.Unmarshal(raw, &a.WriteToLogsStreams)
+		if err != nil {
+			return fmt.Errorf("error reading 'write_to_logs_streams': %w", err)
+		}
+		delete(object, "write_to_logs_streams")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -6628,6 +6695,13 @@ func (a OutputLogstash) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	if a.WriteToLogsStreams != nil {
+		object["write_to_logs_streams"], err = json.Marshal(a.WriteToLogsStreams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'write_to_logs_streams': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -7042,6 +7116,14 @@ func (a *OutputRemoteElasticsearch) UnmarshalJSON(b []byte) error {
 		delete(object, "type")
 	}
 
+	if raw, found := object["write_to_logs_streams"]; found {
+		err = json.Unmarshal(raw, &a.WriteToLogsStreams)
+		if err != nil {
+			return fmt.Errorf("error reading 'write_to_logs_streams': %w", err)
+		}
+		delete(object, "write_to_logs_streams")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -7207,6 +7289,13 @@ func (a OutputRemoteElasticsearch) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	if a.WriteToLogsStreams != nil {
+		object["write_to_logs_streams"], err = json.Marshal(a.WriteToLogsStreams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'write_to_logs_streams': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -8573,6 +8662,72 @@ func (a PackageInfo_Conditions) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for PackageInfo_Discovery_Datasets_Item. Returns the specified
+// element and whether it was found
+func (a PackageInfo_Discovery_Datasets_Item) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PackageInfo_Discovery_Datasets_Item
+func (a *PackageInfo_Discovery_Datasets_Item) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PackageInfo_Discovery_Datasets_Item to handle AdditionalProperties
+func (a *PackageInfo_Discovery_Datasets_Item) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PackageInfo_Discovery_Datasets_Item to handle AdditionalProperties
+func (a PackageInfo_Discovery_Datasets_Item) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for PackageInfo_Discovery_Fields_Item. Returns the specified
 // element and whether it was found
 func (a PackageInfo_Discovery_Fields_Item) Get(fieldName string) (value interface{}, found bool) {
@@ -8664,6 +8819,14 @@ func (a *PackageInfo_Discovery) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["datasets"]; found {
+		err = json.Unmarshal(raw, &a.Datasets)
+		if err != nil {
+			return fmt.Errorf("error reading 'datasets': %w", err)
+		}
+		delete(object, "datasets")
+	}
+
 	if raw, found := object["fields"]; found {
 		err = json.Unmarshal(raw, &a.Fields)
 		if err != nil {
@@ -8690,6 +8853,13 @@ func (a *PackageInfo_Discovery) UnmarshalJSON(b []byte) error {
 func (a PackageInfo_Discovery) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Datasets != nil {
+		object["datasets"], err = json.Marshal(a.Datasets)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'datasets': %w", err)
+		}
+	}
 
 	if a.Fields != nil {
 		object["fields"], err = json.Marshal(a.Fields)
@@ -10746,6 +10916,72 @@ func (a PackageListItem_Conditions) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for PackageListItem_Discovery_Datasets_Item. Returns the specified
+// element and whether it was found
+func (a PackageListItem_Discovery_Datasets_Item) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PackageListItem_Discovery_Datasets_Item
+func (a *PackageListItem_Discovery_Datasets_Item) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PackageListItem_Discovery_Datasets_Item to handle AdditionalProperties
+func (a *PackageListItem_Discovery_Datasets_Item) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PackageListItem_Discovery_Datasets_Item to handle AdditionalProperties
+func (a PackageListItem_Discovery_Datasets_Item) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for PackageListItem_Discovery_Fields_Item. Returns the specified
 // element and whether it was found
 func (a PackageListItem_Discovery_Fields_Item) Get(fieldName string) (value interface{}, found bool) {
@@ -10837,6 +11073,14 @@ func (a *PackageListItem_Discovery) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["datasets"]; found {
+		err = json.Unmarshal(raw, &a.Datasets)
+		if err != nil {
+			return fmt.Errorf("error reading 'datasets': %w", err)
+		}
+		delete(object, "datasets")
+	}
+
 	if raw, found := object["fields"]; found {
 		err = json.Unmarshal(raw, &a.Fields)
 		if err != nil {
@@ -10863,6 +11107,13 @@ func (a *PackageListItem_Discovery) UnmarshalJSON(b []byte) error {
 func (a PackageListItem_Discovery) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Datasets != nil {
+		object["datasets"], err = json.Marshal(a.Datasets)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'datasets': %w", err)
+		}
+	}
 
 	if a.Fields != nil {
 		object["fields"], err = json.Marshal(a.Fields)

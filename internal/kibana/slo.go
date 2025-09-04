@@ -137,20 +137,24 @@ func getSchema() map[string]*schema.Schema {
 									Elem: &schema.Resource{
 										Schema: map[string]*schema.Schema{
 											"name": {
-												Type:     schema.TypeString,
-												Required: true,
+												Type:        schema.TypeString,
+												Required:    true,
+												Description: "The unique name for this metric. Used as a variable in the equation field.",
 											},
 											"aggregation": {
-												Type:     schema.TypeString,
-												Required: true,
+												Type:        schema.TypeString,
+												Required:    true,
+												Description: "The aggregation type for this metric. One of: sum, doc_count. Determines which other fields are required:",
 											},
 											"field": {
-												Type:     schema.TypeString,
-												Required: true,
+												Type:        schema.TypeString,
+												Optional:    true,
+												Description: "Field to aggregate. Must NOT be set for doc_count.",
 											},
 											"filter": {
-												Type:     schema.TypeString,
-												Optional: true,
+												Type:        schema.TypeString,
+												Optional:    true,
+												Description: "Optional KQL filter for this metric.",
 											},
 										},
 									},
@@ -175,20 +179,24 @@ func getSchema() map[string]*schema.Schema {
 									Elem: &schema.Resource{
 										Schema: map[string]*schema.Schema{
 											"name": {
-												Type:     schema.TypeString,
-												Required: true,
+												Type:        schema.TypeString,
+												Required:    true,
+												Description: "The unique name for this metric. Used as a variable in the equation field.",
 											},
 											"aggregation": {
-												Type:     schema.TypeString,
-												Required: true,
+												Type:        schema.TypeString,
+												Required:    true,
+												Description: "The aggregation type for this metric. One of: sum, doc_count. Determines which other fields are required:",
 											},
 											"field": {
-												Type:     schema.TypeString,
-												Required: true,
+												Type:        schema.TypeString,
+												Optional:    true,
+												Description: "Field to aggregate. Must NOT be set for doc_count.",
 											},
 											"filter": {
-												Type:     schema.TypeString,
-												Optional: true,
+												Type:        schema.TypeString,
+												Optional:    true,
+												Description: "Optional KQL filter for this metric.",
 											},
 										},
 									},
