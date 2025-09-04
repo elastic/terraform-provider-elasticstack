@@ -471,6 +471,17 @@ func TestAccResourceSecurityApiKeyCrossCluster(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.replication.0.names.0", "archive-*"),
 				),
 			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithCrossCluster),
+				Config:   testAccResourceSecurityApiKeyCrossClusterUpdate(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "type", "cross_cluster"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.0", "log-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.1", "metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.replication.0.names.0", "archives-*"),
+				),
+			},
 		},
 	})
 }
@@ -494,6 +505,39 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
     replication = [
       {
         names = ["archive-*"]
+      }
+    ]
+  }
+
+  expiration = "30d"
+
+  metadata = jsonencode({
+    description = "Cross-cluster test key"
+    environment = "test"
+  })
+}
+	`, apiKeyName)
+}
+
+func testAccResourceSecurityApiKeyCrossClusterUpdate(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+  type = "cross_cluster"
+
+  access = {
+    search = [
+      {
+        names = ["log-*", "metrics-*"]
+      }
+    ]
+    replication = [
+      {
+        names = ["archives-*"]
       }
     ]
   }

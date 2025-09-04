@@ -19,8 +19,10 @@ import (
 )
 
 const (
-	currentSchemaVersion int64 = 2
-	defaultAPIKeyType          = "rest"
+	currentSchemaVersion   int64 = 2
+	restAPIKeyType               = "rest"
+	crossClusterAPIKeyType       = "cross_cluster"
+	defaultAPIKeyType            = restAPIKeyType
 )
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -65,7 +67,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{
-					stringvalidator.OneOf(defaultAPIKeyType, "cross_cluster"),
+					stringvalidator.OneOf(defaultAPIKeyType, crossClusterAPIKeyType),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -84,6 +86,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					r.requiresReplaceIfUpdateNotSupported(),
+					SetUnknownIfAccessHasChanges(),
 				},
 			},
 			"expiration": schema.StringAttribute{
@@ -114,7 +117,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				Description: "Access configuration for cross-cluster API keys. Only applicable when type is 'cross_cluster'.",
 				Optional:    true,
 				Validators: []validator.Object{
-					RequiresType("cross_cluster"),
+					RequiresType(crossClusterAPIKeyType),
 				},
 				Attributes: map[string]schema.Attribute{
 					"search": schema.ListNestedAttribute{
