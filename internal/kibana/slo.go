@@ -542,6 +542,11 @@ func getSchema() map[string]*schema.Schema {
 						Optional: true,
 						Computed: true,
 					},
+					"prevent_initial_backfill": {
+						Description: "Prevents the underlying ES transform from attempting to backfill data on start, which can sometimes be resource-intensive or time-consuming and unnecessary",
+						Type:        schema.TypeBool,
+						Optional:    true,
+					},
 				},
 			},
 		},
@@ -589,6 +594,14 @@ func getOrNilFloat(path string, d *schema.ResourceData) *float64 {
 	if v, ok := d.GetOk(path); ok {
 		f := v.(float64)
 		return &f
+	}
+	return nil
+}
+
+func getOrNilBool(path string, d *schema.ResourceData) *bool {
+	if v, ok := d.GetOk(path); ok {
+		b := v.(bool)
+		return &b
 	}
 	return nil
 }
@@ -789,8 +802,9 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 	}
 
 	settings := slo.Settings{
-		SyncDelay: getOrNilString("settings.0.sync_delay", d),
-		Frequency: getOrNilString("settings.0.frequency", d),
+		SyncDelay:              getOrNilString("settings.0.sync_delay", d),
+		Frequency:              getOrNilString("settings.0.frequency", d),
+		PreventInitialBackfill: getOrNilBool("settings.0.prevent_initial_backfill", d),
 	}
 
 	budgetingMethod := slo.BudgetingMethod(d.Get("budgeting_method").(string))
@@ -1079,8 +1093,9 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 
 	if err := d.Set("settings", []interface{}{
 		map[string]interface{}{
-			"sync_delay": s.Settings.SyncDelay,
-			"frequency":  s.Settings.Frequency,
+			"sync_delay":               s.Settings.SyncDelay,
+			"frequency":                s.Settings.Frequency,
+			"prevent_initial_backfill": s.Settings.PreventInitialBackfill,
 		},
 	}); err != nil {
 		return diag.FromErr(err)
