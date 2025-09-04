@@ -8,6 +8,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,9 +36,12 @@ func (r *Resource) create(ctx context.Context, plan *tfsdk.Plan, state *tfsdk.St
 		return
 	}
 
+	// Debug the request payload
+	requestJSON, _ := json.Marshal(createRequest)
 	tflog.Debug(ctx, "Creating detection rule", map[string]interface{}{
-		"name": planModel.Name.ValueString(),
-		"type": planModel.Type.ValueString(),
+		"name":    planModel.Name.ValueString(),
+		"type":    planModel.Type.ValueString(),
+		"request": string(requestJSON),
 	})
 
 	// Create the rule
@@ -76,7 +80,7 @@ func (r *Resource) create(ctx context.Context, plan *tfsdk.Plan, state *tfsdk.St
 	}
 
 	// Convert response to model
-	stateModel, convertDiags := r.convertAPIResponseToModel(ctx, *resp.JSON200, spaceID)
+	stateModel, convertDiags := r.convertAPIResponseToModel(ctx, *resp.JSON200, spaceID, &planModel)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
 		return
@@ -101,11 +105,11 @@ func (r *Resource) buildCreateRequest(ctx context.Context, model DetectionRuleMo
 		ruleID = uuid.New().String()
 	}
 
-	// Build the base request structure
-	var request kbapi.SecurityDetectionsAPIRuleCreateProps
-
 	// Set fields based on rule type
 	ruleType := model.Type.ValueString()
+
+	// Build the request directly as JSON to avoid union type issues
+	var requestData interface{}
 
 	switch ruleType {
 	case "query":
@@ -137,12 +141,56 @@ func (r *Resource) buildCreateRequest(ctx context.Context, model DetectionRuleMo
 			queryRule.RuleId = &ruleID
 		}
 
-		// Use the FromQueryRuleCreateProps method to set the union
-		err := request.FromSecurityDetectionsAPIQueryRuleCreateProps(queryRule)
-		if err != nil {
-			diags.AddError("Error building query rule request", err.Error())
-			return request, diags
+		// Set list fields from plan
+		if !model.Tags.IsNull() && len(model.Tags.Elements()) > 0 {
+			tags := make([]string, 0, len(model.Tags.Elements()))
+			for _, elem := range model.Tags.Elements() {
+				if str, ok := elem.(types.String); ok && !str.IsNull() {
+					tags = append(tags, str.ValueString())
+				}
+			}
+			if len(tags) > 0 {
+				queryRule.Tags = &tags
+			}
 		}
+
+		if !model.References.IsNull() && len(model.References.Elements()) > 0 {
+			references := make([]string, 0, len(model.References.Elements()))
+			for _, elem := range model.References.Elements() {
+				if str, ok := elem.(types.String); ok && !str.IsNull() {
+					references = append(references, str.ValueString())
+				}
+			}
+			if len(references) > 0 {
+				queryRule.References = &references
+			}
+		}
+
+		if !model.FalsePositives.IsNull() && len(model.FalsePositives.Elements()) > 0 {
+			falsePositives := make([]string, 0, len(model.FalsePositives.Elements()))
+			for _, elem := range model.FalsePositives.Elements() {
+				if str, ok := elem.(types.String); ok && !str.IsNull() {
+					falsePositives = append(falsePositives, str.ValueString())
+				}
+			}
+			if len(falsePositives) > 0 {
+				queryRule.FalsePositives = &falsePositives
+			}
+		}
+
+		if !model.Author.IsNull() && len(model.Author.Elements()) > 0 {
+			author := make([]string, 0, len(model.Author.Elements()))
+			for _, elem := range model.Author.Elements() {
+				if str, ok := elem.(types.String); ok && !str.IsNull() {
+					author = append(author, str.ValueString())
+				}
+			}
+			if len(author) > 0 {
+				queryRule.Author = &author
+			}
+		}
+
+		requestData = queryRule
 
 	case "eql":
 		eqlRule := kbapi.SecurityDetectionsAPIEqlRuleCreateProps{
@@ -168,23 +216,80 @@ func (r *Resource) buildCreateRequest(ctx context.Context, model DetectionRuleMo
 			eqlRule.RuleId = &ruleID
 		}
 
-		// Use the FromEqlRuleCreateProps method to set the union
-		err := request.FromSecurityDetectionsAPIEqlRuleCreateProps(eqlRule)
-		if err != nil {
-			diags.AddError("Error building EQL rule request", err.Error())
-			return request, diags
+		// Set list fields from plan
+		if !model.Tags.IsNull() && len(model.Tags.Elements()) > 0 {
+			tags := make([]string, 0, len(model.Tags.Elements()))
+			for _, elem := range model.Tags.Elements() {
+				if str, ok := elem.(types.String); ok && !str.IsNull() {
+					tags = append(tags, str.ValueString())
+				}
+			}
+			if len(tags) > 0 {
+				eqlRule.Tags = &tags
+			}
 		}
+
+		if !model.References.IsNull() && len(model.References.Elements()) > 0 {
+			references := make([]string, 0, len(model.References.Elements()))
+			for _, elem := range model.References.Elements() {
+				if str, ok := elem.(types.String); ok && !str.IsNull() {
+					references = append(references, str.ValueString())
+				}
+			}
+			if len(references) > 0 {
+				eqlRule.References = &references
+			}
+		}
+
+		if !model.FalsePositives.IsNull() && len(model.FalsePositives.Elements()) > 0 {
+			falsePositives := make([]string, 0, len(model.FalsePositives.Elements()))
+			for _, elem := range model.FalsePositives.Elements() {
+				if str, ok := elem.(types.String); ok && !str.IsNull() {
+					falsePositives = append(falsePositives, str.ValueString())
+				}
+			}
+			if len(falsePositives) > 0 {
+				eqlRule.FalsePositives = &falsePositives
+			}
+		}
+
+		if !model.Author.IsNull() && len(model.Author.Elements()) > 0 {
+			author := make([]string, 0, len(model.Author.Elements()))
+			for _, elem := range model.Author.Elements() {
+				if str, ok := elem.(types.String); ok && !str.IsNull() {
+					author = append(author, str.ValueString())
+				}
+			}
+			if len(author) > 0 {
+				eqlRule.Author = &author
+			}
+		}
+
+		requestData = eqlRule
 
 	default:
 		diags.AddError("Unsupported rule type", fmt.Sprintf("Rule type '%s' is not yet supported", ruleType))
-		return request, diags
+		return kbapi.SecurityDetectionsAPIRuleCreateProps{}, diags
+	}
+
+	// Marshal to JSON and then unmarshal to the union type to preserve the correct structure
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		diags.AddError("Error marshaling request data", err.Error())
+		return kbapi.SecurityDetectionsAPIRuleCreateProps{}, diags
+	}
+
+	var request kbapi.SecurityDetectionsAPIRuleCreateProps
+	if err := json.Unmarshal(jsonData, &request); err != nil {
+		diags.AddError("Error creating union type", err.Error())
+		return kbapi.SecurityDetectionsAPIRuleCreateProps{}, diags
 	}
 
 	return request, diags
 }
 
 // convertAPIResponseToModel converts the API response to the Terraform model.
-func (r *Resource) convertAPIResponseToModel(ctx context.Context, response interface{}, spaceID string) (DetectionRuleModel, diag.Diagnostics) {
+func (r *Resource) convertAPIResponseToModel(ctx context.Context, response interface{}, spaceID string, planModel *DetectionRuleModel) (DetectionRuleModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var model DetectionRuleModel
 
@@ -254,17 +359,86 @@ func (r *Resource) convertAPIResponseToModel(ctx context.Context, response inter
 	// Handle rule-specific fields
 	if query, ok := responseMap["query"].(string); ok {
 		model.Query = types.StringValue(query)
-	}
-	if language, ok := responseMap["language"].(string); ok {
-		model.Language = types.StringValue(language)
+	} else if planModel != nil && !planModel.Query.IsNull() {
+		model.Query = planModel.Query
 	}
 
-	// Handle arrays - for now, set empty defaults if not present
-	model.Tags = types.ListNull(types.StringType)
-	model.References = types.ListNull(types.StringType)
-	model.FalsePositives = types.ListNull(types.StringType)
-	model.Author = types.ListNull(types.StringType)
-	model.Index = types.ListNull(types.StringType)
+	if language, ok := responseMap["language"].(string); ok {
+		model.Language = types.StringValue(language)
+	} else if planModel != nil && !planModel.Language.IsNull() {
+		model.Language = planModel.Language
+	}
+
+	// Handle list attributes - preserve plan values or extract from response
+	if tagsInterface, ok := responseMap["tags"].([]interface{}); ok {
+		tags := make([]attr.Value, len(tagsInterface))
+		for i, v := range tagsInterface {
+			if str, ok := v.(string); ok {
+				tags[i] = types.StringValue(str)
+			}
+		}
+		model.Tags = types.ListValueMust(types.StringType, tags)
+	} else if planModel != nil && !planModel.Tags.IsNull() {
+		model.Tags = planModel.Tags
+	} else {
+		model.Tags = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	if referencesInterface, ok := responseMap["references"].([]interface{}); ok {
+		references := make([]attr.Value, len(referencesInterface))
+		for i, v := range referencesInterface {
+			if str, ok := v.(string); ok {
+				references[i] = types.StringValue(str)
+			}
+		}
+		model.References = types.ListValueMust(types.StringType, references)
+	} else if planModel != nil && !planModel.References.IsNull() {
+		model.References = planModel.References
+	} else {
+		model.References = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	if falsePositivesInterface, ok := responseMap["false_positives"].([]interface{}); ok {
+		falsePositives := make([]attr.Value, len(falsePositivesInterface))
+		for i, v := range falsePositivesInterface {
+			if str, ok := v.(string); ok {
+				falsePositives[i] = types.StringValue(str)
+			}
+		}
+		model.FalsePositives = types.ListValueMust(types.StringType, falsePositives)
+	} else if planModel != nil && !planModel.FalsePositives.IsNull() {
+		model.FalsePositives = planModel.FalsePositives
+	} else {
+		model.FalsePositives = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	if authorInterface, ok := responseMap["author"].([]interface{}); ok {
+		author := make([]attr.Value, len(authorInterface))
+		for i, v := range authorInterface {
+			if str, ok := v.(string); ok {
+				author[i] = types.StringValue(str)
+			}
+		}
+		model.Author = types.ListValueMust(types.StringType, author)
+	} else if planModel != nil && !planModel.Author.IsNull() {
+		model.Author = planModel.Author
+	} else {
+		model.Author = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	if indexInterface, ok := responseMap["index"].([]interface{}); ok {
+		index := make([]attr.Value, len(indexInterface))
+		for i, v := range indexInterface {
+			if str, ok := v.(string); ok {
+				index[i] = types.StringValue(str)
+			}
+		}
+		model.Index = types.ListValueMust(types.StringType, index)
+	} else if planModel != nil && !planModel.Index.IsNull() {
+		model.Index = planModel.Index
+	} else {
+		model.Index = types.ListNull(types.StringType)
+	}
 
 	// Set defaults for other fields
 	if model.Interval.IsNull() {
