@@ -20,7 +20,7 @@ func TestSetUnknownIfAccessHasChanges(t *testing.T) {
 	// Define the schema for testing
 	testSchema := schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"type": schema.StringAttribute{},
+			"type":             schema.StringAttribute{},
 			"role_descriptors": schema.StringAttribute{},
 			"access": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
