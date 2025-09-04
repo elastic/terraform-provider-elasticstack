@@ -574,6 +574,7 @@ func transformFilterPaths(schema *Schema) {
 		"/api/apm/settings/agent-configuration":          {"get", "put", "delete"},
 		"/api/actions/connector/{id}":                    {"get", "put", "post", "delete"},
 		"/api/actions/connectors":                        {"get"},
+		"/api/detection_engine/rules":                    {"get", "put", "post", "delete"},
 	}
 
 	for path, pathInfo := range schema.Paths {
