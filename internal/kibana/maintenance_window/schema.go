@@ -62,7 +62,7 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 						},
 					},
 					"duration": schema.StringAttribute{
-						Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
+						Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for days, hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
 						Required:    true,
 						Validators: []validator.String{
 							validators.StringIsAlertingDuration{},
@@ -85,7 +85,7 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 								},
 							},
 							"every": schema.StringAttribute{
-								Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
+								Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for days, hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
 								Optional:    true,
 								Validators: []validator.String{
 									validators.StringIsMaintenanceWindowIntervalFrequency{},

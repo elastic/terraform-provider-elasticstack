@@ -65,7 +65,7 @@ resource "elasticstack_kibana_maintenance_window" "my_maintenance_window" {
 
 Required:
 
-- `duration` (String) The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+- `duration` (String) The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for days, hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
 - `recurring` (Attributes) A set schedule over which the maintenance window applies. (see [below for nested schema](#nestedatt--custom_schedule--recurring))
 - `start` (String) The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
 
@@ -79,7 +79,7 @@ Optional:
 Optional:
 
 - `end` (String) The end date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.
-- `every` (String) The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
+- `every` (String) The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for days, hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.
 - `occurrences` (Number) The total number of recurrences of the schedule.
 - `on_month` (List of Number) The specific months for a recurring schedule. Valid values are 1-12.
 - `on_month_day` (List of Number) The specific days of the month for a recurring schedule. Valid values are 1-31.
