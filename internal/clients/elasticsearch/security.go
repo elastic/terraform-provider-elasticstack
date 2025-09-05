@@ -440,3 +440,58 @@ func DeleteApiKey(apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
 	}
 	return nil
 }
+
+func CreateCrossClusterApiKey(apiClient *clients.ApiClient, apikey *models.CrossClusterApiKey) (*models.CrossClusterApiKeyCreateResponse, fwdiag.Diagnostics) {
+	apikeyBytes, err := json.Marshal(apikey)
+	if err != nil {
+		return nil, utils.FrameworkDiagFromError(err)
+	}
+
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, utils.FrameworkDiagFromError(err)
+	}
+	res, err := esClient.Security.CreateCrossClusterAPIKey(bytes.NewReader(apikeyBytes))
+	if err != nil {
+		return nil, utils.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to create cross cluster apikey"); diags.HasError() {
+		return nil, utils.FrameworkDiagsFromSDK(diags)
+	}
+
+	var apiKey models.CrossClusterApiKeyCreateResponse
+
+	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
+		return nil, utils.FrameworkDiagFromError(err)
+	}
+
+	return &apiKey, nil
+}
+
+func UpdateCrossClusterApiKey(apiClient *clients.ApiClient, apikey models.CrossClusterApiKey) fwdiag.Diagnostics {
+	id := apikey.ID
+
+	apikey.Expiration = ""
+	apikey.Name = ""
+	apikey.ID = ""
+	apikeyBytes, err := json.Marshal(apikey)
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+	res, err := esClient.Security.UpdateCrossClusterAPIKey(id, bytes.NewReader(apikeyBytes))
+	if err != nil {
+		return utils.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+	if diags := utils.CheckError(res, "Unable to update cross cluster apikey"); diags.HasError() {
+		return utils.FrameworkDiagsFromSDK(diags)
+	}
+
+	return nil
+}

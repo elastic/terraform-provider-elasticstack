@@ -26,5 +26,19 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 				resp.State.Set(ctx, model)
 			},
 		},
+		1: {
+			PriorSchema: utils.Pointer(r.getSchema(1)),
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				var model tfModel
+				resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				model.Type = basetypes.NewStringValue(defaultAPIKeyType)
+
+				resp.State.Set(ctx, model)
+			},
+		},
 	}
 }
