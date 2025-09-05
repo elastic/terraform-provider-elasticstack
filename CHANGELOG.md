@@ -8,6 +8,7 @@
 - Add support for managing cross_cluster API keys in `elasticstack_elasticsearch_security_api_key` ([#1252](https://github.com/elastic/terraform-provider-elasticstack/pull/1252))
 - Allow version changes without a destroy/create cycle with `elasticstack_fleet_integration` ([#1255](https://github.com/elastic/terraform-provider-elasticstack/pull/1255)). This fixes an issue where it was impossible to upgrade integrations which are used by an integration policy.
 - Add `namespace` attribute to `elasticstack_kibana_synthetics_monitor` resource to support setting data stream namespace independently from `space_id` ([#1247](https://github.com/elastic/terraform-provider-elasticstack/pull/1247))
+- Migrate `elasticstack_elasticsearch_security_role_mapping` resource and data source to Terraform Plugin Framework ([#1279](https://github.com/elastic/terraform-provider-elasticstack/pull/1279))
 
 ## [0.11.17] - 2025-07-21
 

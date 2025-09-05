@@ -252,73 +252,88 @@ func DeleteRole(ctx context.Context, apiClient *clients.ApiClient, rolename stri
 	return diags
 }
 
-func PutRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMapping *models.RoleMapping) diag.Diagnostics {
+func PutRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMapping *models.RoleMapping) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
 	roleMappingBytes, err := json.Marshal(roleMapping)
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to marshal role mapping", err.Error())
+		return diags
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
 	}
 	res, err := esClient.Security.PutRoleMapping(roleMapping.Name, bytes.NewReader(roleMappingBytes), esClient.Security.PutRoleMapping.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to put role mapping", err.Error())
+		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to put role mapping"); diags.HasError() {
+	if sdkDiags := utils.CheckError(res, "Unable to put role mapping"); sdkDiags.HasError() {
+		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 		return diags
 	}
 
-	return nil
+	return diags
 }
 
-func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) (*models.RoleMapping, diag.Diagnostics) {
+func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) (*models.RoleMapping, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return nil, diags
 	}
 	req := esClient.Security.GetRoleMapping.WithName(roleMappingName)
 	res, err := esClient.Security.GetRoleMapping(req, esClient.Security.GetRoleMapping.WithContext(ctx))
 	if err != nil {
-		return nil, diag.FromErr(err)
+		diags.AddError("Unable to get role mapping", err.Error())
+		return nil, diags
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
+		return nil, diags
 	}
-	if diags := utils.CheckError(res, "Unable to get a role mapping."); diags.HasError() {
+	if sdkDiags := utils.CheckError(res, "Unable to get a role mapping."); sdkDiags.HasError() {
+		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 		return nil, diags
 	}
 	roleMappings := make(map[string]models.RoleMapping)
 	if err := json.NewDecoder(res.Body).Decode(&roleMappings); err != nil {
-		return nil, diag.FromErr(err)
+		diags.AddError("Unable to decode role mapping response", err.Error())
+		return nil, diags
 
 	}
 	if roleMapping, ok := roleMappings[roleMappingName]; ok {
 		roleMapping.Name = roleMappingName
-		return &roleMapping, nil
+		return &roleMapping, diags
 	}
 
-	return nil, diag.Errorf("unable to find role mapping '%s' in the cluster", roleMappingName)
+	diags.AddError("Role mapping not found", fmt.Sprintf("unable to find role mapping '%s' in the cluster", roleMappingName))
+	return nil, diags
 }
 
-func DeleteRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) diag.Diagnostics {
+func DeleteRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
 	}
 	res, err := esClient.Security.DeleteRoleMapping(roleMappingName, esClient.Security.DeleteRoleMapping.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to delete role mapping", err.Error())
+		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete role mapping"); diags.HasError() {
+	if sdkDiags := utils.CheckError(res, "Unable to delete role mapping"); sdkDiags.HasError() {
+		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 		return diags
 	}
 
-	return nil
+	return diags
 }
 
 func CreateApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.ApiKeyCreateResponse, fwdiag.Diagnostics) {

@@ -1,4 +1,4 @@
-package security_test
+package role_mapping_test
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestResourceRoleMapping(t *testing.T) {
+func TestAccResourceSecurityRoleMapping(t *testing.T) {
 	roleMappingName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -54,76 +54,37 @@ func TestResourceRoleMapping(t *testing.T) {
 	})
 }
 
-func testAccResourceSecurityRoleMappingCreate(roleMappingName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role_mapping" "test" {
-  name = "%s"
-  enabled = true
-  roles = [
-    "admin"
-  ]
-  rules = jsonencode({
-    any = [
-      { field = { username = "esadmin" } },
-      { field = { groups = "cn=admins,dc=example,dc=com" } },
-    ]
-  })
-
-  metadata = jsonencode({ version = 1 })
-}
-	`, roleMappingName)
-}
-
-func testAccResourceSecurityRoleMappingUpdate(roleMappingName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role_mapping" "test" {
-  name = "%s"
-  enabled = false
-  roles = [
-    "admin",
-    "user"
-  ]
-  rules = jsonencode({
-    any = [
-      { field = { username = "esadmin" } },
-      { field = { groups = "cn=admins,dc=example,dc=com" } },
-    ]
-  })
-}
-	`, roleMappingName)
-}
-
-func testAccResourceSecurityRoleMappingRoleTemplates(roleMappingName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role_mapping" "test" {
-  name = "%s"
-  enabled = false
-  role_templates = jsonencode([
-    {
-      template = jsonencode({ source = "{{#tojson}}groups{{/tojson}}" }),
-      format = "json"
-    }
-  ])
-  rules = jsonencode({
-    any = [
-      { field = { username = "esadmin" } },
-      { field = { groups = "cn=admins,dc=example,dc=com" } },
-    ]
-  })
-}
-	`, roleMappingName)
+func TestAccResourceSecurityRoleMappingFromSDK(t *testing.T) {
+	roleMappingName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create the role mapping with the last provider version where the role mapping resource was built on the SDK
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.11.17",
+					},
+				},
+				Config: testAccResourceSecurityRoleMappingCreate(roleMappingName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
+					checks.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin"}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccResourceSecurityRoleMappingCreate(roleMappingName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
+					checks.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin"}),
+				),
+			},
+		},
+	})
 }
 
 func checkResourceSecurityRoleMappingDestroy(s *terraform.State) error {
@@ -149,8 +110,79 @@ func checkResourceSecurityRoleMappingDestroy(s *terraform.State) error {
 		}
 
 		if res.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("role mapping (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Role mapping (%s) still exists", compId.ResourceId)
 		}
 	}
 	return nil
+}
+
+func testAccResourceSecurityRoleMappingCreate(roleMappingName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role_mapping" "test" {
+  name    = "%s"
+  enabled = true
+  roles   = ["admin"]
+  rules = jsonencode({
+    any = [
+      { field = { username = "esadmin" } },
+      { field = { groups = "cn=admins,dc=example,dc=com" } },
+    ]
+  })
+
+  metadata = jsonencode({ version = 1 })
+}
+	`, roleMappingName)
+}
+
+func testAccResourceSecurityRoleMappingUpdate(roleMappingName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role_mapping" "test" {
+  name    = "%s"
+  enabled = false
+  roles   = ["admin", "user"]
+  rules = jsonencode({
+    any = [
+      { field = { username = "esadmin" } },
+      { field = { groups = "cn=admins,dc=example,dc=com" } },
+    ]
+  })
+
+  metadata = jsonencode({})
+}
+	`, roleMappingName)
+}
+
+func testAccResourceSecurityRoleMappingRoleTemplates(roleMappingName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_role_mapping" "test" {
+  name    = "%s"
+  enabled = false
+  role_templates = jsonencode([
+    {
+      format   = "json"
+      template = "{\"source\":\"{{#tojson}}groups{{/tojson}}\"}"
+    }
+  ])
+  rules = jsonencode({
+    any = [
+      { field = { username = "esadmin" } },
+      { field = { groups = "cn=admins,dc=example,dc=com" } },
+    ]
+  })
+
+  metadata = jsonencode({})
+}
+	`, roleMappingName)
 }
