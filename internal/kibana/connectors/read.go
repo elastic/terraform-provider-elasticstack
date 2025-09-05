@@ -26,12 +26,12 @@ func (r *Resource) readConnectorFromAPI(ctx context.Context, client *clients.Api
 		return false, diags
 	}
 
-	connector, diags := kibana_oapi.GetConnector(ctx, oapiClient, compositeID.ResourceId, compositeID.ClusterId)
-	if connector == nil && diags == nil {
+	connector, diagsTemp := kibana_oapi.GetConnector(ctx, oapiClient, compositeID.ResourceId, compositeID.ClusterId)
+	if connector == nil && diagsTemp == nil {
 		// Resource not found
 		return false, diags
 	}
-	diags.Append(diags...)
+	diags.Append(diagsTemp...)
 	if diags.HasError() {
 		return false, diags
 	}
