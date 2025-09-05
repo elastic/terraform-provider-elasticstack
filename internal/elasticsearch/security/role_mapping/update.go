@@ -9,9 +9,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
@@ -50,16 +50,10 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 
 	// Handle roles or role templates
 	if utils.IsKnown(data.Roles) {
-		var roles []string
-		rolesElements := make([]types.String, 0, len(data.Roles.Elements()))
-		diags.Append(data.Roles.ElementsAs(ctx, &rolesElements, false)...)
+		roleMapping.Roles = utils.SetTypeAs[string](ctx, data.Roles, path.Root("roles"), &diags)
 		if diags.HasError() {
 			return diags
 		}
-		for _, role := range rolesElements {
-			roles = append(roles, role.ValueString())
-		}
-		roleMapping.Roles = roles
 	}
 
 	if utils.IsKnown(data.RoleTemplates) {

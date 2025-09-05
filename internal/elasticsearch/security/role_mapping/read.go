@@ -9,8 +9,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -52,19 +52,9 @@ func readRoleMapping(ctx context.Context, client *clients.ApiClient, roleMapping
 	data.Rules = jsontypes.NewNormalizedValue(string(rulesJSON))
 
 	// Handle roles
-	if len(roleMapping.Roles) > 0 {
-		rolesValues := make([]attr.Value, len(roleMapping.Roles))
-		for i, role := range roleMapping.Roles {
-			rolesValues[i] = types.StringValue(role)
-		}
-		rolesSet, setDiags := types.SetValue(types.StringType, rolesValues)
-		diags.Append(setDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		data.Roles = rolesSet
-	} else {
-		data.Roles = types.SetNull(types.StringType)
+	data.Roles = utils.SetValueFrom(ctx, roleMapping.Roles, types.StringType, path.Root("roles"), &diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	// Handle role templates
