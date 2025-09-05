@@ -37,7 +37,4 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	spaceId := state.SpaceID.ValueString()
 
 	response.Diagnostics.Append(kibana_oapi.DeleteConnector(ctx, oapiClient, compositeID.ResourceId, spaceId)...)
-	if response.Diagnostics.HasError() {
-		return
-	}
 }
