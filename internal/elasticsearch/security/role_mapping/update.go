@@ -23,11 +23,6 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	roleMappingName := data.Name.ValueString()
-	id, sdkDiags := r.client.ID(ctx, roleMappingName)
-	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return diags
-	}
 
 	client, frameworkDiags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	diags.Append(frameworkDiags...)
@@ -54,7 +49,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	// Handle roles or role templates
-	if !data.Roles.IsNull() && !data.Roles.IsUnknown() {
+	if utils.IsKnown(data.Roles) {
 		var roles []string
 		rolesElements := make([]types.String, 0, len(data.Roles.Elements()))
 		diags.Append(data.Roles.ElementsAs(ctx, &rolesElements, false)...)
@@ -67,7 +62,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 		roleMapping.Roles = roles
 	}
 
-	if !data.RoleTemplates.IsNull() && !data.RoleTemplates.IsUnknown() {
+	if utils.IsKnown(data.RoleTemplates) {
 		var roleTemplates []map[string]interface{}
 		if err := json.Unmarshal([]byte(data.RoleTemplates.ValueString()), &roleTemplates); err != nil {
 			diags.AddError("Failed to parse role templates JSON", err.Error())
@@ -77,21 +72,27 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	// Put role mapping
-	sdkDiags = elasticsearch.PutRoleMapping(ctx, client, &roleMapping)
-	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	apiDiags := elasticsearch.PutRoleMapping(ctx, client, &roleMapping)
+	diags.Append(apiDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	data.Id = types.StringValue(id.String())
-	diags.Append(state.Set(ctx, &data)...)
+	// Read the updated role mapping to ensure consistent result
+	readData, readDiags := readRoleMapping(ctx, client, roleMappingName, data.ElasticsearchConnection)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if readData != nil {
+		diags.Append(state.Set(ctx, readData)...)
+	}
+
 	return diags
 }
 
 func (r *roleMappingResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	diags := r.update(ctx, req.Plan, &resp.State)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }

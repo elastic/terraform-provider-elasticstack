@@ -2,14 +2,13 @@ package role_mapping
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -79,7 +78,14 @@ func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadReq
 	}
 
 	roleMappingName := data.Name.ValueString()
-	id, sdkDiags := d.client.ID(ctx, roleMappingName)
+
+	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, d.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	id, sdkDiags := client.ID(ctx, roleMappingName)
 	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -87,31 +93,20 @@ func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	data.Id = types.StringValue(id.String())
 
-	// Reuse the resource read logic
-	resourceRead := &roleMappingResource{client: d.client}
-
-	// Create a mock state and request
-	state := tfsdk.State{
-		Schema: GetSchema(),
-	}
-	state.Set(ctx, &data)
-
-	readReq := resource.ReadRequest{State: state}
-	readResp := &resource.ReadResponse{
-		State: state,
-	}
-
-	resourceRead.Read(ctx, readReq, readResp)
-	resp.Diagnostics.Append(readResp.Diagnostics...)
+	// Use the extracted read function
+	readData, readDiags := readRoleMapping(ctx, client, roleMappingName, data.ElasticsearchConnection)
+	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var resultData RoleMappingData
-	resp.Diagnostics.Append(readResp.State.Get(ctx, &resultData)...)
-	if resp.Diagnostics.HasError() {
+	if readData == nil {
+		resp.Diagnostics.AddError(
+			"Role mapping not found",
+			fmt.Sprintf("Role mapping '%s' not found", roleMappingName),
+		)
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &resultData)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }

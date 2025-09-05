@@ -5,7 +5,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -29,5 +28,5 @@ func (r *roleMappingResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	sdkDiags := elasticsearch.DeleteRoleMapping(ctx, client, compId.ResourceId)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(sdkDiags...)
 }
