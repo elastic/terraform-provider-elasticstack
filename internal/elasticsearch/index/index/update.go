@@ -6,8 +6,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -36,7 +36,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	name := planModel.Name.ValueString()
 	id, sdkDiags := client.ID(ctx, name)
 	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
 	}
 

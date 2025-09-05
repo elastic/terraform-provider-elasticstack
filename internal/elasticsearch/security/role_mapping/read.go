@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,7 +35,7 @@ func readRoleMapping(ctx context.Context, client *clients.ApiClient, roleMapping
 
 	// Set basic fields
 	compId, compDiags := client.ID(ctx, roleMappingName)
-	diags.Append(utils.FrameworkDiagsFromSDK(compDiags)...)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(compDiags)...)
 	if diags.HasError() {
 		return nil, diags
 	}

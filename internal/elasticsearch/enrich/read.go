@@ -6,7 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -32,7 +32,7 @@ func (r *enrichPolicyResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	policy, sdkDiags := elasticsearch.GetEnrichPolicy(ctx, client, policyName)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

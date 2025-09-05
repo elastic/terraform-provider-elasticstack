@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -14,7 +14,7 @@ func GetMaintenanceWindow(ctx context.Context, client *Client, spaceID string, m
 	resp, err := client.API.GetMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID)
 
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -29,7 +29,7 @@ func GetMaintenanceWindow(ctx context.Context, client *Client, spaceID string, m
 func CreateMaintenanceWindow(ctx context.Context, client *Client, spaceID string, body kbapi.PostMaintenanceWindowJSONRequestBody) (*kbapi.PostMaintenanceWindowResponse, diag.Diagnostics) {
 	resp, err := client.API.PostMaintenanceWindowWithResponse(ctx, spaceID, body)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -44,7 +44,7 @@ func CreateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 func UpdateMaintenanceWindow(ctx context.Context, client *Client, spaceID string, maintenanceWindowID string, req kbapi.PatchMaintenanceWindowIdJSONRequestBody) diag.Diagnostics {
 	resp, err := client.API.PatchMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID, req)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -59,7 +59,7 @@ func UpdateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 func DeleteMaintenanceWindow(ctx context.Context, client *Client, spaceID string, maintenanceWindowID string) diag.Diagnostics {
 	resp, err := client.API.DeleteMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
