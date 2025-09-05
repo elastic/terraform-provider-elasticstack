@@ -2,7 +2,6 @@ package validators
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,7 +31,7 @@ func (s StringIsMaintenanceWindowOnWeekDay) ValidateString(_ context.Context, re
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"expected value to be a valid OnWeekDay",
-			fmt.Sprintf("This value must be a valid OnWeekDay. Accepted values are specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`). %s", err),
+			"This value must be a valid OnWeekDay. Accepted values are specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`).",
 		)
 		return
 	}

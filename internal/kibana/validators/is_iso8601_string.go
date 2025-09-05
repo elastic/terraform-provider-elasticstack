@@ -2,7 +2,6 @@ package validators
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,7 +31,7 @@ func (s StringIsISO8601) ValidateString(_ context.Context, req validator.StringR
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"expected value to be a valid ISO8601 string",
-			fmt.Sprintf("This value must be a valid ISO8601 date and time formatted string %s", err),
+			"This value must be a valid ISO8601 date and time formatted string.",
 		)
 		return
 	}

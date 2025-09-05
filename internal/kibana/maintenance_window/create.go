@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -73,6 +74,9 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	planMaintenanceWindow.ID = types.StringValue(maintenanceWindowID)
+	planMaintenanceWindow.SpaceID = types.StringValue(spaceID)
 
 	diags = resp.State.Set(ctx, planMaintenanceWindow)
 	resp.Diagnostics.Append(diags...)

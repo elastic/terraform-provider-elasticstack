@@ -2,7 +2,6 @@ package validators
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -35,7 +34,7 @@ func (s StringIsAlertingDuration) ValidateString(_ context.Context, req validato
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"expected value to be a valid alerting duration",
-			fmt.Sprintf("This value must be a valid alerting duration in seconds (s), minutes (m), hours (h), or days (d) %s", err),
+			"This value must be a valid alerting duration in seconds (s), minutes (m), hours (h), or days (d).",
 		)
 		return
 	}
@@ -46,5 +45,5 @@ func (s StringIsAlertingDuration) ValidateString(_ context.Context, req validato
 //nolint:staticcheck
 func StringIsAlertingDurationSDKV2() schema.SchemaValidateFunc {
 	r := regexp.MustCompile(alertingDurationPattern)
-	return validation.StringMatch(r, "string is not a valid Alerting duration in seconds (s), minutes (m), hours (h), or days (d)")
+	return validation.StringMatch(r, "string is not a valid Alerting duration in seconds (s), minutes (m), hours (h), or days (d).")
 }

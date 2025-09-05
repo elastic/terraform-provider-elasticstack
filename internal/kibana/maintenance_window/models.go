@@ -157,12 +157,6 @@ func (model MaintenanceWindowModel) getMaintenanceWindowIDAndSpaceID() (maintena
 func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, response ResponseJson) diag.Diagnostics {
 	var diags = diag.Diagnostics{}
 
-	resourceID := clients.CompositeId{
-		ClusterId:  model.SpaceID.ValueString(),
-		ResourceId: response.Id,
-	}
-
-	model.ID = types.StringValue(resourceID.String())
 	model.Title = types.StringValue(response.Title)
 	model.Enabled = types.BoolValue(response.Enabled)
 

@@ -2,7 +2,6 @@ package validators
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,7 +31,7 @@ func (s StringIsMaintenanceWindowIntervalFrequency) ValidateString(_ context.Con
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"expected value to be a valid interval/frequency",
-			fmt.Sprintf("This value must be a valid interval/frequency. Allowed values are in the `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`. %s", err),
+			"This value must be a valid interval/frequency. Allowed values are in the `<integer><unit>` format. `<unit>` is one of `d`, `w`, `M`, or `y` for days, weeks, months, years. For example: `15d`, `2w`, `3m`, `1y`.",
 		)
 		return
 	}

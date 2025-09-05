@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *MaintenanceWindowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -70,6 +71,9 @@ func (r *MaintenanceWindowResource) Update(ctx context.Context, req resource.Upd
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	planMaintenanceWindow.ID = types.StringValue(maintenanceWindowID)
+	planMaintenanceWindow.SpaceID = types.StringValue(spaceID)
 
 	diags = resp.State.Set(ctx, planMaintenanceWindow)
 	resp.Diagnostics.Append(diags...)

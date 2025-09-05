@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -52,6 +53,9 @@ func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadR
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	stateModel.ID = types.StringValue(maintenanceWindowID)
+	stateModel.SpaceID = types.StringValue(spaceID)
 
 	diags = resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
