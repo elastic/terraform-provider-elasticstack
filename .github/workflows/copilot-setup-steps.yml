@@ -21,62 +21,6 @@ jobs:
     permissions:
       # If you want to clone the repository as part of your setup steps, for example to install dependencies, you'll need the `contents: read` permission. If you don't clone the repository in your setup steps, Copilot will do this for you automatically after the steps complete.
       contents: read
-    env:
-      ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
-      ELASTICSEARCH_USERNAME: "elastic"
-      ELASTICSEARCH_PASSWORD: password
-      KIBANA_ENDPOINT: "http://localhost:5601"
-      KIBANA_USERNAME: "elastic"
-      KIBANA_PASSWORD: password
-      KIBANA_SYSTEM_USERNAME: kibana_system
-      KIBANA_SYSTEM_PASSWORD: password
-      TF_ACC: "1"
-    services:
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2@sha256:d1a8016cf55be8ffec635ed69f5a9acb0c459db35b46a4549ec5b2847a2f170a
-        env:
-          discovery.type: single-node
-          xpack.security.enabled: true
-          xpack.security.authc.api_key.enabled: true
-          xpack.security.authc.token.enabled: true
-          xpack.watcher.enabled: true
-          xpack.license.self_generated.type: trial
-          repositories.url.allowed_urls: https://example.com/*
-          path.repo: /tmp
-          ELASTIC_PASSWORD: ${{ env.ELASTICSEARCH_PASSWORD }}
-        ports:
-          - 9200:9200
-        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
-      kibana:
-        image: docker.elastic.co/kibana/kibana:9.1.2@sha256:dea5d20df42e6833966deceadb10ecdbf85970b704d17b0abfc3b485622c1a08
-        env:
-          SERVER_NAME: kibana
-          ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-          ELASTICSEARCH_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
-          ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
-          XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
-          # LOGGING_ROOT_LEVEL: debug
-        ports:
-          - 5601:5601
-        options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
-      fleet:
-        image: docker.elastic.co/elastic-agent/elastic-agent:9.1.2@sha256:942aa0ffe94c268aab83881fc8be0ca0af079c395820ce8e7552f0ce97e0a760
-        env:
-          SERVER_NAME: fleet
-          FLEET_ENROLL: "1"
-          FLEET_URL: https://fleet:8220
-          FLEET_INSECURE: "true"
-          FLEET_SERVER_ENABLE: "1"
-          FLEET_SERVER_POLICY_ID: fleet-server
-          FLEET_SERVER_ELASTICSEARCH_HOST: http://elasticsearch:9200
-          FLEET_SERVER_ELASTICSEARCH_INSECURE: "true"
-          FLEET_SERVER_INSECURE_HTTP: "true"
-          KIBANA_HOST: http://kibana:5601
-          KIBANA_FLEET_SETUP: "1"
-          KIBANA_FLEET_PASSWORD: ${{ env.ELASTICSEARCH_PASSWORD }}
-        ports:
-          - 8220:8220
-        options: --restart="unless-stopped"
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -87,6 +31,9 @@ jobs:
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_wrapper: false
+
+      - name: Setup Elastic Stack
+        run: make docker-fleet
 
       - name: Get dependencies
         run: make setup

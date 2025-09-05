@@ -100,6 +100,15 @@ var (
 		types.StringValue("v3"),
 	})
 
+	awareSetUnk   = types.SetUnknown(awareType)
+	awareSetNil   = types.SetNull(awareType)
+	awareSetEmpty = types.SetValueMust(awareType, []attr.Value{})
+	awareSetFull  = types.SetValueMust(awareType, []attr.Value{
+		types.ObjectValueMust(awareType.AttrTypes, map[string]attr.Value{"id": types.StringValue("id1")}),
+		types.ObjectValueMust(awareType.AttrTypes, map[string]attr.Value{"id": types.StringValue("id2")}),
+		types.ObjectValueMust(awareType.AttrTypes, map[string]attr.Value{"id": types.StringValue("id3")}),
+	})
+
 	normUnk   = jsontypes.NewNormalizedUnknown()
 	normNil   = jsontypes.NewNormalizedNull()
 	normEmpty = jsontypes.NewNormalizedValue(`{}`)
@@ -694,6 +703,55 @@ func TestTransformMapToSlice(t *testing.T) {
 			sort.Slice(got, sortFn(got))
 			sort.Slice(tt.want, sortFn(tt.want))
 
+			require.Equal(t, tt.want, got)
+			require.Empty(t, diags)
+		})
+	}
+}
+
+// Sets
+
+func TestSetTypeAs(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input types.Set
+		want  []aware
+	}{
+		{name: "converts unknown", input: awareSetUnk, want: awareSliceNil},
+		{name: "converts nil", input: awareSetNil, want: awareSliceNil},
+		{name: "converts empty", input: awareSetEmpty, want: awareSliceEmpty},
+		{name: "converts struct", input: awareSetFull, want: awareSliceFull},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := utils.SetTypeAs[aware](context.Background(), tt.input, path.Empty(), &diags)
+			require.Equal(t, tt.want, got)
+			require.Empty(t, diags)
+		})
+	}
+}
+
+func TestSetValueFrom(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input []aware
+		want  types.Set
+	}{
+		{name: "converts nil", input: awareSliceNil, want: awareSetNil},
+		{name: "converts empty", input: awareSliceEmpty, want: awareSetEmpty},
+		{name: "converts struct", input: awareSliceFull, want: awareSetFull},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := utils.SetValueFrom(context.Background(), tt.input, awareType, path.Empty(), &diags)
 			require.Equal(t, tt.want, got)
 			require.Empty(t, diags)
 		})

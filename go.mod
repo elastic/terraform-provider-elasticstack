@@ -19,10 +19,10 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-mux v0.20.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
+	github.com/hashicorp/terraform-plugin-testing v1.13.3
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
-	github.com/oapi-codegen/oapi-codegen/v2 v2.5.0
 	github.com/oapi-codegen/runtime v1.1.2
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 )
 
@@ -287,6 +287,7 @@ require (
 	github.com/multiformats/go-multibase v0.2.0 // indirect
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
+	github.com/oapi-codegen/oapi-codegen/v2 v2.5.0 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/oklog/run v1.1.0 // indirect
@@ -339,7 +340,7 @@ require (
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 // indirect
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
 	github.com/transparency-dev/merkle v0.0.2 // indirect
-	github.com/ulikunitz/xz v0.5.12 // indirect
+	github.com/ulikunitz/xz v0.5.14 // indirect
 	github.com/vbatts/tar-split v0.12.1 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect

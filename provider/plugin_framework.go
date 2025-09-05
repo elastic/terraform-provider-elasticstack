@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/apm/agent_configuration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
@@ -87,6 +88,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 		spaces.NewDataSource,
 		enrollment_tokens.NewDataSource,
 		integration_ds.NewDataSource,
+		enrich.NewEnrichPolicyDataSource,
 	}
 }
 
@@ -108,5 +110,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		output.NewResource,
 		server_host.NewResource,
 		system_user.NewSystemUserResource,
+		enrich.NewEnrichPolicyResource,
 	}
 }
