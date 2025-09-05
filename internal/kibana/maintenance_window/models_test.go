@@ -13,7 +13,6 @@ import (
 )
 
 var modelWithAllFields = MaintenanceWindowModel{
-	ID:      types.StringValue("/existing-space-id/id"),
 	Title:   types.StringValue("test response"),
 	Enabled: types.BoolValue(true),
 
@@ -40,7 +39,6 @@ var modelWithAllFields = MaintenanceWindowModel{
 }
 
 var modelOccurrencesNoScope = MaintenanceWindowModel{
-	ID:      types.StringValue("/existing-space-id/id"),
 	Title:   types.StringValue("test response"),
 	Enabled: types.BoolValue(true),
 
