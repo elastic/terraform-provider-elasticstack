@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -46,6 +47,7 @@ func (d *roleMappingDataSource) Schema(ctx context.Context, req datasource.Schem
 			"rules": schema.StringAttribute{
 				MarkdownDescription: "The rules that determine which users should be matched by the mapping. A rule is a logical condition that is expressed by using a JSON DSL.",
 				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"roles": schema.SetAttribute{
 				MarkdownDescription: "A list of role names that are granted to the users that match the role mapping rules.",
@@ -55,10 +57,12 @@ func (d *roleMappingDataSource) Schema(ctx context.Context, req datasource.Schem
 			"role_templates": schema.StringAttribute{
 				MarkdownDescription: "A list of mustache templates that will be evaluated to determine the roles names that should granted to the users that match the role mapping rules.",
 				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"metadata": schema.StringAttribute{
 				MarkdownDescription: "Additional metadata that helps define which roles are assigned to each user. Keys beginning with `_` are reserved for system usage.",
 				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 		},
 	}

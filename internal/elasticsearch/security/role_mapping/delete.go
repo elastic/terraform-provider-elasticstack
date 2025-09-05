@@ -27,6 +27,5 @@ func (r *roleMappingResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	sdkDiags := elasticsearch.DeleteRoleMapping(ctx, client, compId.ResourceId)
-	resp.Diagnostics.Append(sdkDiags...)
+	resp.Diagnostics.Append(elasticsearch.DeleteRoleMapping(ctx, client, compId.ResourceId)...)
 }
