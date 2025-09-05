@@ -89,18 +89,18 @@ func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	// Reuse the resource read logic
 	resourceRead := &roleMappingResource{client: d.client}
-	
+
 	// Create a mock state and request
 	state := tfsdk.State{
 		Schema: GetSchema(),
 	}
 	state.Set(ctx, &data)
-	
+
 	readReq := resource.ReadRequest{State: state}
 	readResp := &resource.ReadResponse{
 		State: state,
 	}
-	
+
 	resourceRead.Read(ctx, readReq, readResp)
 	resp.Diagnostics.Append(readResp.Diagnostics...)
 	if resp.Diagnostics.HasError() {
