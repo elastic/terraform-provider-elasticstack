@@ -11,6 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role_mapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/system_user"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agent_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollment_tokens"
@@ -88,6 +89,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 		enrollment_tokens.NewDataSource,
 		integration_ds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
+		role_mapping.NewRoleMappingDataSource,
 	}
 }
 
@@ -109,5 +111,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		server_host.NewResource,
 		system_user.NewSystemUserResource,
 		enrich.NewEnrichPolicyResource,
+		role_mapping.NewRoleMappingResource,
 	}
 }
