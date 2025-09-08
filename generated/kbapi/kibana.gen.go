@@ -13,8 +13,10 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -30,6 +32,382 @@ const (
 // Defines values for DataViews404ResponseStatusCode.
 const (
 	N404 DataViews404ResponseStatusCode = 404
+)
+
+// Defines values for SecurityDetectionsAPIAlertSuppressionDurationUnit.
+const (
+	H SecurityDetectionsAPIAlertSuppressionDurationUnit = "h"
+	M SecurityDetectionsAPIAlertSuppressionDurationUnit = "m"
+	S SecurityDetectionsAPIAlertSuppressionDurationUnit = "s"
+)
+
+// Defines values for SecurityDetectionsAPIAlertSuppressionMissingFieldsStrategy.
+const (
+	DoNotSuppress SecurityDetectionsAPIAlertSuppressionMissingFieldsStrategy = "doNotSuppress"
+	Suppress      SecurityDetectionsAPIAlertSuppressionMissingFieldsStrategy = "suppress"
+)
+
+// Defines values for SecurityDetectionsAPIDefaultParamsCommand.
+const (
+	Isolate SecurityDetectionsAPIDefaultParamsCommand = "isolate"
+)
+
+// Defines values for SecurityDetectionsAPIEndpointResponseActionActionTypeId.
+const (
+	DotEndpoint SecurityDetectionsAPIEndpointResponseActionActionTypeId = ".endpoint"
+)
+
+// Defines values for SecurityDetectionsAPIEqlQueryLanguage.
+const (
+	SecurityDetectionsAPIEqlQueryLanguageEql SecurityDetectionsAPIEqlQueryLanguage = "eql"
+)
+
+// Defines values for SecurityDetectionsAPIEqlRequiredFieldsType.
+const (
+	SecurityDetectionsAPIEqlRequiredFieldsTypeEql SecurityDetectionsAPIEqlRequiredFieldsType = "eql"
+)
+
+// Defines values for SecurityDetectionsAPIEqlRuleType.
+const (
+	SecurityDetectionsAPIEqlRuleTypeEql SecurityDetectionsAPIEqlRuleType = "eql"
+)
+
+// Defines values for SecurityDetectionsAPIEqlRuleCreateFieldsType.
+const (
+	SecurityDetectionsAPIEqlRuleCreateFieldsTypeEql SecurityDetectionsAPIEqlRuleCreateFieldsType = "eql"
+)
+
+// Defines values for SecurityDetectionsAPIEqlRuleCreatePropsType.
+const (
+	SecurityDetectionsAPIEqlRuleCreatePropsTypeEql SecurityDetectionsAPIEqlRuleCreatePropsType = "eql"
+)
+
+// Defines values for SecurityDetectionsAPIEqlRuleResponseFieldsType.
+const (
+	SecurityDetectionsAPIEqlRuleResponseFieldsTypeEql SecurityDetectionsAPIEqlRuleResponseFieldsType = "eql"
+)
+
+// Defines values for SecurityDetectionsAPIEqlRuleUpdatePropsType.
+const (
+	Eql SecurityDetectionsAPIEqlRuleUpdatePropsType = "eql"
+)
+
+// Defines values for SecurityDetectionsAPIEsqlQueryLanguage.
+const (
+	SecurityDetectionsAPIEsqlQueryLanguageEsql SecurityDetectionsAPIEsqlQueryLanguage = "esql"
+)
+
+// Defines values for SecurityDetectionsAPIEsqlRuleType.
+const (
+	SecurityDetectionsAPIEsqlRuleTypeEsql SecurityDetectionsAPIEsqlRuleType = "esql"
+)
+
+// Defines values for SecurityDetectionsAPIEsqlRuleCreateFieldsType.
+const (
+	SecurityDetectionsAPIEsqlRuleCreateFieldsTypeEsql SecurityDetectionsAPIEsqlRuleCreateFieldsType = "esql"
+)
+
+// Defines values for SecurityDetectionsAPIEsqlRuleCreatePropsType.
+const (
+	SecurityDetectionsAPIEsqlRuleCreatePropsTypeEsql SecurityDetectionsAPIEsqlRuleCreatePropsType = "esql"
+)
+
+// Defines values for SecurityDetectionsAPIEsqlRuleRequiredFieldsType.
+const (
+	SecurityDetectionsAPIEsqlRuleRequiredFieldsTypeEsql SecurityDetectionsAPIEsqlRuleRequiredFieldsType = "esql"
+)
+
+// Defines values for SecurityDetectionsAPIEsqlRuleResponseFieldsType.
+const (
+	SecurityDetectionsAPIEsqlRuleResponseFieldsTypeEsql SecurityDetectionsAPIEsqlRuleResponseFieldsType = "esql"
+)
+
+// Defines values for SecurityDetectionsAPIEsqlRuleUpdatePropsType.
+const (
+	Esql SecurityDetectionsAPIEsqlRuleUpdatePropsType = "esql"
+)
+
+// Defines values for SecurityDetectionsAPIExceptionListType.
+const (
+	Detection                       SecurityDetectionsAPIExceptionListType = "detection"
+	Endpoint                        SecurityDetectionsAPIExceptionListType = "endpoint"
+	EndpointBlocklists              SecurityDetectionsAPIExceptionListType = "endpoint_blocklists"
+	EndpointEvents                  SecurityDetectionsAPIExceptionListType = "endpoint_events"
+	EndpointHostIsolationExceptions SecurityDetectionsAPIExceptionListType = "endpoint_host_isolation_exceptions"
+	EndpointTrustedApps             SecurityDetectionsAPIExceptionListType = "endpoint_trusted_apps"
+	EndpointTrustedDevices          SecurityDetectionsAPIExceptionListType = "endpoint_trusted_devices"
+	RuleDefault                     SecurityDetectionsAPIExceptionListType = "rule_default"
+)
+
+// Defines values for SecurityDetectionsAPIExternalRuleSourceType.
+const (
+	External SecurityDetectionsAPIExternalRuleSourceType = "external"
+)
+
+// Defines values for SecurityDetectionsAPIInternalRuleSourceType.
+const (
+	Internal SecurityDetectionsAPIInternalRuleSourceType = "internal"
+)
+
+// Defines values for SecurityDetectionsAPIKqlQueryLanguage.
+const (
+	Kuery  SecurityDetectionsAPIKqlQueryLanguage = "kuery"
+	Lucene SecurityDetectionsAPIKqlQueryLanguage = "lucene"
+)
+
+// Defines values for SecurityDetectionsAPIMachineLearningRuleType.
+const (
+	SecurityDetectionsAPIMachineLearningRuleTypeMachineLearning SecurityDetectionsAPIMachineLearningRuleType = "machine_learning"
+)
+
+// Defines values for SecurityDetectionsAPIMachineLearningRuleCreateFieldsType.
+const (
+	SecurityDetectionsAPIMachineLearningRuleCreateFieldsTypeMachineLearning SecurityDetectionsAPIMachineLearningRuleCreateFieldsType = "machine_learning"
+)
+
+// Defines values for SecurityDetectionsAPIMachineLearningRuleCreatePropsType.
+const (
+	SecurityDetectionsAPIMachineLearningRuleCreatePropsTypeMachineLearning SecurityDetectionsAPIMachineLearningRuleCreatePropsType = "machine_learning"
+)
+
+// Defines values for SecurityDetectionsAPIMachineLearningRuleRequiredFieldsType.
+const (
+	SecurityDetectionsAPIMachineLearningRuleRequiredFieldsTypeMachineLearning SecurityDetectionsAPIMachineLearningRuleRequiredFieldsType = "machine_learning"
+)
+
+// Defines values for SecurityDetectionsAPIMachineLearningRuleResponseFieldsType.
+const (
+	SecurityDetectionsAPIMachineLearningRuleResponseFieldsTypeMachineLearning SecurityDetectionsAPIMachineLearningRuleResponseFieldsType = "machine_learning"
+)
+
+// Defines values for SecurityDetectionsAPIMachineLearningRuleUpdatePropsType.
+const (
+	SecurityDetectionsAPIMachineLearningRuleUpdatePropsTypeMachineLearning SecurityDetectionsAPIMachineLearningRuleUpdatePropsType = "machine_learning"
+)
+
+// Defines values for SecurityDetectionsAPINewTermsRuleType.
+const (
+	SecurityDetectionsAPINewTermsRuleTypeNewTerms SecurityDetectionsAPINewTermsRuleType = "new_terms"
+)
+
+// Defines values for SecurityDetectionsAPINewTermsRuleCreateFieldsType.
+const (
+	SecurityDetectionsAPINewTermsRuleCreateFieldsTypeNewTerms SecurityDetectionsAPINewTermsRuleCreateFieldsType = "new_terms"
+)
+
+// Defines values for SecurityDetectionsAPINewTermsRuleCreatePropsType.
+const (
+	SecurityDetectionsAPINewTermsRuleCreatePropsTypeNewTerms SecurityDetectionsAPINewTermsRuleCreatePropsType = "new_terms"
+)
+
+// Defines values for SecurityDetectionsAPINewTermsRuleRequiredFieldsType.
+const (
+	SecurityDetectionsAPINewTermsRuleRequiredFieldsTypeNewTerms SecurityDetectionsAPINewTermsRuleRequiredFieldsType = "new_terms"
+)
+
+// Defines values for SecurityDetectionsAPINewTermsRuleResponseFieldsType.
+const (
+	SecurityDetectionsAPINewTermsRuleResponseFieldsTypeNewTerms SecurityDetectionsAPINewTermsRuleResponseFieldsType = "new_terms"
+)
+
+// Defines values for SecurityDetectionsAPINewTermsRuleUpdatePropsType.
+const (
+	SecurityDetectionsAPINewTermsRuleUpdatePropsTypeNewTerms SecurityDetectionsAPINewTermsRuleUpdatePropsType = "new_terms"
+)
+
+// Defines values for SecurityDetectionsAPIOsqueryResponseActionActionTypeId.
+const (
+	DotOsquery SecurityDetectionsAPIOsqueryResponseActionActionTypeId = ".osquery"
+)
+
+// Defines values for SecurityDetectionsAPIProcessesParamsCommand.
+const (
+	KillProcess    SecurityDetectionsAPIProcessesParamsCommand = "kill-process"
+	SuspendProcess SecurityDetectionsAPIProcessesParamsCommand = "suspend-process"
+)
+
+// Defines values for SecurityDetectionsAPIQueryRuleType.
+const (
+	SecurityDetectionsAPIQueryRuleTypeQuery SecurityDetectionsAPIQueryRuleType = "query"
+)
+
+// Defines values for SecurityDetectionsAPIQueryRuleCreateFieldsType.
+const (
+	SecurityDetectionsAPIQueryRuleCreateFieldsTypeQuery SecurityDetectionsAPIQueryRuleCreateFieldsType = "query"
+)
+
+// Defines values for SecurityDetectionsAPIQueryRuleCreatePropsType.
+const (
+	SecurityDetectionsAPIQueryRuleCreatePropsTypeQuery SecurityDetectionsAPIQueryRuleCreatePropsType = "query"
+)
+
+// Defines values for SecurityDetectionsAPIQueryRuleRequiredFieldsType.
+const (
+	SecurityDetectionsAPIQueryRuleRequiredFieldsTypeQuery SecurityDetectionsAPIQueryRuleRequiredFieldsType = "query"
+)
+
+// Defines values for SecurityDetectionsAPIQueryRuleResponseFieldsType.
+const (
+	SecurityDetectionsAPIQueryRuleResponseFieldsTypeQuery SecurityDetectionsAPIQueryRuleResponseFieldsType = "query"
+)
+
+// Defines values for SecurityDetectionsAPIQueryRuleUpdatePropsType.
+const (
+	SecurityDetectionsAPIQueryRuleUpdatePropsTypeQuery SecurityDetectionsAPIQueryRuleUpdatePropsType = "query"
+)
+
+// Defines values for SecurityDetectionsAPIRiskScoreMappingOperator.
+const (
+	SecurityDetectionsAPIRiskScoreMappingOperatorEquals SecurityDetectionsAPIRiskScoreMappingOperator = "equals"
+)
+
+// Defines values for SecurityDetectionsAPIRuleActionNotifyWhen.
+const (
+	OnActionGroupChange SecurityDetectionsAPIRuleActionNotifyWhen = "onActionGroupChange"
+	OnActiveAlert       SecurityDetectionsAPIRuleActionNotifyWhen = "onActiveAlert"
+	OnThrottleInterval  SecurityDetectionsAPIRuleActionNotifyWhen = "onThrottleInterval"
+)
+
+// Defines values for SecurityDetectionsAPIRuleActionThrottle0.
+const (
+	NoActions SecurityDetectionsAPIRuleActionThrottle0 = "no_actions"
+	Rule      SecurityDetectionsAPIRuleActionThrottle0 = "rule"
+)
+
+// Defines values for SecurityDetectionsAPIRuleExceptionListNamespaceType.
+const (
+	Agnostic SecurityDetectionsAPIRuleExceptionListNamespaceType = "agnostic"
+	Single   SecurityDetectionsAPIRuleExceptionListNamespaceType = "single"
+)
+
+// Defines values for SecurityDetectionsAPIRuleExecutionStatus.
+const (
+	Failed         SecurityDetectionsAPIRuleExecutionStatus = "failed"
+	GoingToRun     SecurityDetectionsAPIRuleExecutionStatus = "going to run"
+	PartialFailure SecurityDetectionsAPIRuleExecutionStatus = "partial failure"
+	Running        SecurityDetectionsAPIRuleExecutionStatus = "running"
+	Succeeded      SecurityDetectionsAPIRuleExecutionStatus = "succeeded"
+)
+
+// Defines values for SecurityDetectionsAPISavedObjectResolveAliasPurpose.
+const (
+	SavedObjectConversion SecurityDetectionsAPISavedObjectResolveAliasPurpose = "savedObjectConversion"
+	SavedObjectImport     SecurityDetectionsAPISavedObjectResolveAliasPurpose = "savedObjectImport"
+)
+
+// Defines values for SecurityDetectionsAPISavedObjectResolveOutcome.
+const (
+	AliasMatch SecurityDetectionsAPISavedObjectResolveOutcome = "aliasMatch"
+	Conflict   SecurityDetectionsAPISavedObjectResolveOutcome = "conflict"
+	ExactMatch SecurityDetectionsAPISavedObjectResolveOutcome = "exactMatch"
+)
+
+// Defines values for SecurityDetectionsAPISavedQueryRuleType.
+const (
+	SecurityDetectionsAPISavedQueryRuleTypeSavedQuery SecurityDetectionsAPISavedQueryRuleType = "saved_query"
+)
+
+// Defines values for SecurityDetectionsAPISavedQueryRuleCreateFieldsType.
+const (
+	SecurityDetectionsAPISavedQueryRuleCreateFieldsTypeSavedQuery SecurityDetectionsAPISavedQueryRuleCreateFieldsType = "saved_query"
+)
+
+// Defines values for SecurityDetectionsAPISavedQueryRuleCreatePropsType.
+const (
+	SecurityDetectionsAPISavedQueryRuleCreatePropsTypeSavedQuery SecurityDetectionsAPISavedQueryRuleCreatePropsType = "saved_query"
+)
+
+// Defines values for SecurityDetectionsAPISavedQueryRuleRequiredFieldsType.
+const (
+	SecurityDetectionsAPISavedQueryRuleRequiredFieldsTypeSavedQuery SecurityDetectionsAPISavedQueryRuleRequiredFieldsType = "saved_query"
+)
+
+// Defines values for SecurityDetectionsAPISavedQueryRuleResponseFieldsType.
+const (
+	SecurityDetectionsAPISavedQueryRuleResponseFieldsTypeSavedQuery SecurityDetectionsAPISavedQueryRuleResponseFieldsType = "saved_query"
+)
+
+// Defines values for SecurityDetectionsAPISavedQueryRuleUpdatePropsType.
+const (
+	SecurityDetectionsAPISavedQueryRuleUpdatePropsTypeSavedQuery SecurityDetectionsAPISavedQueryRuleUpdatePropsType = "saved_query"
+)
+
+// Defines values for SecurityDetectionsAPISeverity.
+const (
+	Critical SecurityDetectionsAPISeverity = "critical"
+	High     SecurityDetectionsAPISeverity = "high"
+	Low      SecurityDetectionsAPISeverity = "low"
+	Medium   SecurityDetectionsAPISeverity = "medium"
+)
+
+// Defines values for SecurityDetectionsAPISeverityMappingOperator.
+const (
+	SecurityDetectionsAPISeverityMappingOperatorEquals SecurityDetectionsAPISeverityMappingOperator = "equals"
+)
+
+// Defines values for SecurityDetectionsAPIThreatMappingEntryType.
+const (
+	Mapping SecurityDetectionsAPIThreatMappingEntryType = "mapping"
+)
+
+// Defines values for SecurityDetectionsAPIThreatMatchRuleType.
+const (
+	SecurityDetectionsAPIThreatMatchRuleTypeThreatMatch SecurityDetectionsAPIThreatMatchRuleType = "threat_match"
+)
+
+// Defines values for SecurityDetectionsAPIThreatMatchRuleCreateFieldsType.
+const (
+	SecurityDetectionsAPIThreatMatchRuleCreateFieldsTypeThreatMatch SecurityDetectionsAPIThreatMatchRuleCreateFieldsType = "threat_match"
+)
+
+// Defines values for SecurityDetectionsAPIThreatMatchRuleCreatePropsType.
+const (
+	SecurityDetectionsAPIThreatMatchRuleCreatePropsTypeThreatMatch SecurityDetectionsAPIThreatMatchRuleCreatePropsType = "threat_match"
+)
+
+// Defines values for SecurityDetectionsAPIThreatMatchRuleRequiredFieldsType.
+const (
+	SecurityDetectionsAPIThreatMatchRuleRequiredFieldsTypeThreatMatch SecurityDetectionsAPIThreatMatchRuleRequiredFieldsType = "threat_match"
+)
+
+// Defines values for SecurityDetectionsAPIThreatMatchRuleResponseFieldsType.
+const (
+	SecurityDetectionsAPIThreatMatchRuleResponseFieldsTypeThreatMatch SecurityDetectionsAPIThreatMatchRuleResponseFieldsType = "threat_match"
+)
+
+// Defines values for SecurityDetectionsAPIThreatMatchRuleUpdatePropsType.
+const (
+	SecurityDetectionsAPIThreatMatchRuleUpdatePropsTypeThreatMatch SecurityDetectionsAPIThreatMatchRuleUpdatePropsType = "threat_match"
+)
+
+// Defines values for SecurityDetectionsAPIThresholdRuleType.
+const (
+	SecurityDetectionsAPIThresholdRuleTypeThreshold SecurityDetectionsAPIThresholdRuleType = "threshold"
+)
+
+// Defines values for SecurityDetectionsAPIThresholdRuleCreateFieldsType.
+const (
+	SecurityDetectionsAPIThresholdRuleCreateFieldsTypeThreshold SecurityDetectionsAPIThresholdRuleCreateFieldsType = "threshold"
+)
+
+// Defines values for SecurityDetectionsAPIThresholdRuleCreatePropsType.
+const (
+	SecurityDetectionsAPIThresholdRuleCreatePropsTypeThreshold SecurityDetectionsAPIThresholdRuleCreatePropsType = "threshold"
+)
+
+// Defines values for SecurityDetectionsAPIThresholdRuleRequiredFieldsType.
+const (
+	SecurityDetectionsAPIThresholdRuleRequiredFieldsTypeThreshold SecurityDetectionsAPIThresholdRuleRequiredFieldsType = "threshold"
+)
+
+// Defines values for SecurityDetectionsAPIThresholdRuleResponseFieldsType.
+const (
+	SecurityDetectionsAPIThresholdRuleResponseFieldsTypeThreshold SecurityDetectionsAPIThresholdRuleResponseFieldsType = "threshold"
+)
+
+// Defines values for SecurityDetectionsAPIThresholdRuleUpdatePropsType.
+const (
+	SecurityDetectionsAPIThresholdRuleUpdatePropsTypeThreshold SecurityDetectionsAPIThresholdRuleUpdatePropsType = "threshold"
 )
 
 // Defines values for AgentPolicyMonitoringEnabled.
@@ -322,6 +700,7 @@ const (
 	PackageInfoInstallationInfoInstalledEsTypeIndex               PackageInfoInstallationInfoInstalledEsType = "index"
 	PackageInfoInstallationInfoInstalledEsTypeIndexTemplate       PackageInfoInstallationInfoInstalledEsType = "index_template"
 	PackageInfoInstallationInfoInstalledEsTypeIngestPipeline      PackageInfoInstallationInfoInstalledEsType = "ingest_pipeline"
+	PackageInfoInstallationInfoInstalledEsTypeKnowledgeBase       PackageInfoInstallationInfoInstalledEsType = "knowledge_base"
 	PackageInfoInstallationInfoInstalledEsTypeMlModel             PackageInfoInstallationInfoInstalledEsType = "ml_model"
 	PackageInfoInstallationInfoInstalledEsTypeTransform           PackageInfoInstallationInfoInstalledEsType = "transform"
 )
@@ -417,6 +796,7 @@ const (
 	PackageListItemInstallationInfoInstalledEsTypeIndex               PackageListItemInstallationInfoInstalledEsType = "index"
 	PackageListItemInstallationInfoInstalledEsTypeIndexTemplate       PackageListItemInstallationInfoInstalledEsType = "index_template"
 	PackageListItemInstallationInfoInstalledEsTypeIngestPipeline      PackageListItemInstallationInfoInstalledEsType = "ingest_pipeline"
+	PackageListItemInstallationInfoInstalledEsTypeKnowledgeBase       PackageListItemInstallationInfoInstalledEsType = "knowledge_base"
 	PackageListItemInstallationInfoInstalledEsTypeMlModel             PackageListItemInstallationInfoInstalledEsType = "ml_model"
 	PackageListItemInstallationInfoInstalledEsTypeTransform           PackageListItemInstallationInfoInstalledEsType = "transform"
 )
@@ -1045,6 +1425,5782 @@ type DataViewsUpdateDataViewRequestObjectInner struct {
 	TypeMeta *DataViewsTypemeta `json:"typeMeta,omitempty"`
 }
 
+// SecurityDetectionsAPIAlertSuppression Defines alert suppression configuration.
+type SecurityDetectionsAPIAlertSuppression struct {
+	Duration *SecurityDetectionsAPIAlertSuppressionDuration `json:"duration,omitempty"`
+	GroupBy  SecurityDetectionsAPIAlertSuppressionGroupBy   `json:"group_by"`
+
+	// MissingFieldsStrategy Describes how alerts will be generated for documents with missing suppress by fields:
+	// doNotSuppress - per each document a separate alert will be created
+	// suppress - only alert will be created per suppress by bucket
+	MissingFieldsStrategy *SecurityDetectionsAPIAlertSuppressionMissingFieldsStrategy `json:"missing_fields_strategy,omitempty"`
+}
+
+// SecurityDetectionsAPIAlertSuppressionDuration defines model for Security_Detections_API_AlertSuppressionDuration.
+type SecurityDetectionsAPIAlertSuppressionDuration struct {
+	// Unit Time unit
+	Unit  SecurityDetectionsAPIAlertSuppressionDurationUnit `json:"unit"`
+	Value int                                               `json:"value"`
+}
+
+// SecurityDetectionsAPIAlertSuppressionDurationUnit Time unit
+type SecurityDetectionsAPIAlertSuppressionDurationUnit string
+
+// SecurityDetectionsAPIAlertSuppressionGroupBy defines model for Security_Detections_API_AlertSuppressionGroupBy.
+type SecurityDetectionsAPIAlertSuppressionGroupBy = []string
+
+// SecurityDetectionsAPIAlertSuppressionMissingFieldsStrategy Describes how alerts will be generated for documents with missing suppress by fields:
+// doNotSuppress - per each document a separate alert will be created
+// suppress - only alert will be created per suppress by bucket
+type SecurityDetectionsAPIAlertSuppressionMissingFieldsStrategy string
+
+// SecurityDetectionsAPIAlertsIndex (deprecated) Has no effect.
+type SecurityDetectionsAPIAlertsIndex = string
+
+// SecurityDetectionsAPIAlertsIndexNamespace Has no effect.
+type SecurityDetectionsAPIAlertsIndexNamespace = string
+
+// SecurityDetectionsAPIAnomalyThreshold Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100.
+type SecurityDetectionsAPIAnomalyThreshold = int
+
+// SecurityDetectionsAPIBuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+type SecurityDetectionsAPIBuildingBlockType = string
+
+// SecurityDetectionsAPIConcurrentSearches defines model for Security_Detections_API_ConcurrentSearches.
+type SecurityDetectionsAPIConcurrentSearches = int
+
+// SecurityDetectionsAPIDataViewId defines model for Security_Detections_API_DataViewId.
+type SecurityDetectionsAPIDataViewId = string
+
+// SecurityDetectionsAPIDefaultParams defines model for Security_Detections_API_DefaultParams.
+type SecurityDetectionsAPIDefaultParams struct {
+	Command SecurityDetectionsAPIDefaultParamsCommand `json:"command"`
+	Comment *string                                   `json:"comment,omitempty"`
+}
+
+// SecurityDetectionsAPIDefaultParamsCommand defines model for SecurityDetectionsAPIDefaultParams.Command.
+type SecurityDetectionsAPIDefaultParamsCommand string
+
+// SecurityDetectionsAPIEcsMapping Map Osquery results columns or static values to Elastic Common Schema (ECS) fields. Example: "ecs_mapping": {"process.pid": {"field": "pid"}}
+type SecurityDetectionsAPIEcsMapping map[string]struct {
+	Field *string                                `json:"field,omitempty"`
+	Value *SecurityDetectionsAPIEcsMapping_Value `json:"value,omitempty"`
+}
+
+// SecurityDetectionsAPIEcsMappingValue0 defines model for .
+type SecurityDetectionsAPIEcsMappingValue0 = string
+
+// SecurityDetectionsAPIEcsMappingValue1 defines model for .
+type SecurityDetectionsAPIEcsMappingValue1 = []string
+
+// SecurityDetectionsAPIEcsMapping_Value defines model for SecurityDetectionsAPIEcsMapping.Value.
+type SecurityDetectionsAPIEcsMapping_Value struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIEndpointResponseAction defines model for Security_Detections_API_EndpointResponseAction.
+type SecurityDetectionsAPIEndpointResponseAction struct {
+	ActionTypeId SecurityDetectionsAPIEndpointResponseActionActionTypeId `json:"action_type_id"`
+	Params       SecurityDetectionsAPIEndpointResponseAction_Params      `json:"params"`
+}
+
+// SecurityDetectionsAPIEndpointResponseActionActionTypeId defines model for SecurityDetectionsAPIEndpointResponseAction.ActionTypeId.
+type SecurityDetectionsAPIEndpointResponseActionActionTypeId string
+
+// SecurityDetectionsAPIEndpointResponseAction_Params defines model for SecurityDetectionsAPIEndpointResponseAction.Params.
+type SecurityDetectionsAPIEndpointResponseAction_Params struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIEqlOptionalFields defines model for Security_Detections_API_EqlOptionalFields.
+type SecurityDetectionsAPIEqlOptionalFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression      *SecurityDetectionsAPIAlertSuppression      `json:"alert_suppression,omitempty"`
+	DataViewId            *SecurityDetectionsAPIDataViewId            `json:"data_view_id,omitempty"`
+	EventCategoryOverride *SecurityDetectionsAPIEventCategoryOverride `json:"event_category_override,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// TiebreakerField Sets a secondary field for sorting events
+	TiebreakerField *SecurityDetectionsAPITiebreakerField `json:"tiebreaker_field,omitempty"`
+
+	// TimestampField Specifies the name of the event timestamp field used for sorting a sequence of events. Not to be confused with `timestamp_override`, which specifies the more general field used for querying events within a range. Defaults to the @timestamp ECS field.
+	TimestampField *SecurityDetectionsAPITimestampField `json:"timestamp_field,omitempty"`
+}
+
+// SecurityDetectionsAPIEqlQueryLanguage defines model for Security_Detections_API_EqlQueryLanguage.
+type SecurityDetectionsAPIEqlQueryLanguage string
+
+// SecurityDetectionsAPIEqlRequiredFields defines model for Security_Detections_API_EqlRequiredFields.
+type SecurityDetectionsAPIEqlRequiredFields struct {
+	Language SecurityDetectionsAPIEqlQueryLanguage `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEqlRequiredFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIEqlRequiredFieldsType Rule type
+type SecurityDetectionsAPIEqlRequiredFieldsType string
+
+// SecurityDetectionsAPIEqlRule defines model for Security_Detections_API_EqlRule.
+type SecurityDetectionsAPIEqlRule struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions []SecurityDetectionsAPIRuleAction `json:"actions"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author SecurityDetectionsAPIRuleAuthorArray `json:"author"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	CreatedAt         time.Time                               `json:"created_at"`
+	CreatedBy         string                                  `json:"created_by"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled               SecurityDetectionsAPIIsRuleEnabled          `json:"enabled"`
+	EventCategoryOverride *SecurityDetectionsAPIEventCategoryOverride `json:"event_category_override,omitempty"`
+	ExceptionsList        []SecurityDetectionsAPIRuleExceptionList    `json:"exceptions_list"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From SecurityDetectionsAPIRuleIntervalFrom `json:"from"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable SecurityDetectionsAPIIsRuleImmutable `json:"immutable"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval SecurityDetectionsAPIRuleInterval `json:"interval"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIEqlQueryLanguage     `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals SecurityDetectionsAPIMaxSignals `json:"max_signals"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          SecurityDetectionsAPIRuleReferenceArray      `json:"references"`
+	RelatedIntegrations SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations"`
+	RequiredFields      SecurityDetectionsAPIRequiredFieldArray      `json:"required_fields"`
+	ResponseActions     *[]SecurityDetectionsAPIResponseAction       `json:"response_actions,omitempty"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup SecurityDetectionsAPISetupGuide `json:"setup"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping SecurityDetectionsAPISeverityMapping `json:"severity_mapping"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   SecurityDetectionsAPIRuleTagArray `json:"tags"`
+	Threat SecurityDetectionsAPIThreatArray  `json:"threat"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TiebreakerField Sets a secondary field for sorting events
+	TiebreakerField *SecurityDetectionsAPITiebreakerField `json:"tiebreaker_field,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampField Specifies the name of the event timestamp field used for sorting a sequence of events. Not to be confused with `timestamp_override`, which specifies the more general field used for querying events within a range. Defaults to the @timestamp ECS field.
+	TimestampField *SecurityDetectionsAPITimestampField `json:"timestamp_field,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                SecurityDetectionsAPIRuleIntervalTo                     `json:"to"`
+
+	// Type Rule type
+	Type      SecurityDetectionsAPIEqlRuleType `json:"type"`
+	UpdatedAt time.Time                        `json:"updated_at"`
+	UpdatedBy string                           `json:"updated_by"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version SecurityDetectionsAPIRuleVersion `json:"version"`
+}
+
+// SecurityDetectionsAPIEqlRuleType Rule type
+type SecurityDetectionsAPIEqlRuleType string
+
+// SecurityDetectionsAPIEqlRuleCreateFields defines model for Security_Detections_API_EqlRuleCreateFields.
+type SecurityDetectionsAPIEqlRuleCreateFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression      *SecurityDetectionsAPIAlertSuppression      `json:"alert_suppression,omitempty"`
+	DataViewId            *SecurityDetectionsAPIDataViewId            `json:"data_view_id,omitempty"`
+	EventCategoryOverride *SecurityDetectionsAPIEventCategoryOverride `json:"event_category_override,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language SecurityDetectionsAPIEqlQueryLanguage   `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// TiebreakerField Sets a secondary field for sorting events
+	TiebreakerField *SecurityDetectionsAPITiebreakerField `json:"tiebreaker_field,omitempty"`
+
+	// TimestampField Specifies the name of the event timestamp field used for sorting a sequence of events. Not to be confused with `timestamp_override`, which specifies the more general field used for querying events within a range. Defaults to the @timestamp ECS field.
+	TimestampField *SecurityDetectionsAPITimestampField `json:"timestamp_field,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEqlRuleCreateFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIEqlRuleCreateFieldsType Rule type
+type SecurityDetectionsAPIEqlRuleCreateFieldsType string
+
+// SecurityDetectionsAPIEqlRuleCreateProps defines model for Security_Detections_API_EqlRuleCreateProps.
+type SecurityDetectionsAPIEqlRuleCreateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled               *SecurityDetectionsAPIIsRuleEnabled         `json:"enabled,omitempty"`
+	EventCategoryOverride *SecurityDetectionsAPIEventCategoryOverride `json:"event_category_override,omitempty"`
+	ExceptionsList        *[]SecurityDetectionsAPIRuleExceptionList   `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIEqlQueryLanguage     `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TiebreakerField Sets a secondary field for sorting events
+	TiebreakerField *SecurityDetectionsAPITiebreakerField `json:"tiebreaker_field,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampField Specifies the name of the event timestamp field used for sorting a sequence of events. Not to be confused with `timestamp_override`, which specifies the more general field used for querying events within a range. Defaults to the @timestamp ECS field.
+	TimestampField *SecurityDetectionsAPITimestampField `json:"timestamp_field,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEqlRuleCreatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIEqlRuleCreatePropsType Rule type
+type SecurityDetectionsAPIEqlRuleCreatePropsType string
+
+// SecurityDetectionsAPIEqlRuleResponseFields defines model for Security_Detections_API_EqlRuleResponseFields.
+type SecurityDetectionsAPIEqlRuleResponseFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression      *SecurityDetectionsAPIAlertSuppression      `json:"alert_suppression,omitempty"`
+	DataViewId            *SecurityDetectionsAPIDataViewId            `json:"data_view_id,omitempty"`
+	EventCategoryOverride *SecurityDetectionsAPIEventCategoryOverride `json:"event_category_override,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language SecurityDetectionsAPIEqlQueryLanguage   `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// TiebreakerField Sets a secondary field for sorting events
+	TiebreakerField *SecurityDetectionsAPITiebreakerField `json:"tiebreaker_field,omitempty"`
+
+	// TimestampField Specifies the name of the event timestamp field used for sorting a sequence of events. Not to be confused with `timestamp_override`, which specifies the more general field used for querying events within a range. Defaults to the @timestamp ECS field.
+	TimestampField *SecurityDetectionsAPITimestampField `json:"timestamp_field,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEqlRuleResponseFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIEqlRuleResponseFieldsType Rule type
+type SecurityDetectionsAPIEqlRuleResponseFieldsType string
+
+// SecurityDetectionsAPIEqlRuleUpdateProps defines model for Security_Detections_API_EqlRuleUpdateProps.
+type SecurityDetectionsAPIEqlRuleUpdateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled               *SecurityDetectionsAPIIsRuleEnabled         `json:"enabled,omitempty"`
+	EventCategoryOverride *SecurityDetectionsAPIEventCategoryOverride `json:"event_category_override,omitempty"`
+	ExceptionsList        *[]SecurityDetectionsAPIRuleExceptionList   `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Id A universally unique identifier
+	Id *SecurityDetectionsAPIRuleObjectId `json:"id,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIEqlQueryLanguage     `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TiebreakerField Sets a secondary field for sorting events
+	TiebreakerField *SecurityDetectionsAPITiebreakerField `json:"tiebreaker_field,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampField Specifies the name of the event timestamp field used for sorting a sequence of events. Not to be confused with `timestamp_override`, which specifies the more general field used for querying events within a range. Defaults to the @timestamp ECS field.
+	TimestampField *SecurityDetectionsAPITimestampField `json:"timestamp_field,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEqlRuleUpdatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIEqlRuleUpdatePropsType Rule type
+type SecurityDetectionsAPIEqlRuleUpdatePropsType string
+
+// SecurityDetectionsAPIEsqlQueryLanguage defines model for Security_Detections_API_EsqlQueryLanguage.
+type SecurityDetectionsAPIEsqlQueryLanguage string
+
+// SecurityDetectionsAPIEsqlRule defines model for Security_Detections_API_EsqlRule.
+type SecurityDetectionsAPIEsqlRule struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions []SecurityDetectionsAPIRuleAction `json:"actions"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author SecurityDetectionsAPIRuleAuthorArray `json:"author"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	CreatedAt         time.Time                               `json:"created_at"`
+	CreatedBy         string                                  `json:"created_by"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        SecurityDetectionsAPIIsRuleEnabled       `json:"enabled"`
+	ExceptionsList []SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From SecurityDetectionsAPIRuleIntervalFrom `json:"from"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable SecurityDetectionsAPIIsRuleImmutable `json:"immutable"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval SecurityDetectionsAPIRuleInterval `json:"interval"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIEsqlQueryLanguage    `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals SecurityDetectionsAPIMaxSignals `json:"max_signals"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          SecurityDetectionsAPIRuleReferenceArray      `json:"references"`
+	RelatedIntegrations SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations"`
+	RequiredFields      SecurityDetectionsAPIRequiredFieldArray      `json:"required_fields"`
+	ResponseActions     *[]SecurityDetectionsAPIResponseAction       `json:"response_actions,omitempty"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup SecurityDetectionsAPISetupGuide `json:"setup"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping SecurityDetectionsAPISeverityMapping `json:"severity_mapping"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   SecurityDetectionsAPIRuleTagArray `json:"tags"`
+	Threat SecurityDetectionsAPIThreatArray  `json:"threat"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                SecurityDetectionsAPIRuleIntervalTo                     `json:"to"`
+
+	// Type Rule type
+	Type      SecurityDetectionsAPIEsqlRuleType `json:"type"`
+	UpdatedAt time.Time                         `json:"updated_at"`
+	UpdatedBy string                            `json:"updated_by"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version SecurityDetectionsAPIRuleVersion `json:"version"`
+}
+
+// SecurityDetectionsAPIEsqlRuleType Rule type
+type SecurityDetectionsAPIEsqlRuleType string
+
+// SecurityDetectionsAPIEsqlRuleCreateFields defines model for Security_Detections_API_EsqlRuleCreateFields.
+type SecurityDetectionsAPIEsqlRuleCreateFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	Language         SecurityDetectionsAPIEsqlQueryLanguage `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEsqlRuleCreateFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIEsqlRuleCreateFieldsType Rule type
+type SecurityDetectionsAPIEsqlRuleCreateFieldsType string
+
+// SecurityDetectionsAPIEsqlRuleCreateProps defines model for Security_Detections_API_EsqlRuleCreateProps.
+type SecurityDetectionsAPIEsqlRuleCreateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIEsqlQueryLanguage    `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEsqlRuleCreatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIEsqlRuleCreatePropsType Rule type
+type SecurityDetectionsAPIEsqlRuleCreatePropsType string
+
+// SecurityDetectionsAPIEsqlRuleOptionalFields defines model for Security_Detections_API_EsqlRuleOptionalFields.
+type SecurityDetectionsAPIEsqlRuleOptionalFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+}
+
+// SecurityDetectionsAPIEsqlRuleRequiredFields defines model for Security_Detections_API_EsqlRuleRequiredFields.
+type SecurityDetectionsAPIEsqlRuleRequiredFields struct {
+	Language SecurityDetectionsAPIEsqlQueryLanguage `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEsqlRuleRequiredFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIEsqlRuleRequiredFieldsType Rule type
+type SecurityDetectionsAPIEsqlRuleRequiredFieldsType string
+
+// SecurityDetectionsAPIEsqlRuleResponseFields defines model for Security_Detections_API_EsqlRuleResponseFields.
+type SecurityDetectionsAPIEsqlRuleResponseFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	Language         SecurityDetectionsAPIEsqlQueryLanguage `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEsqlRuleResponseFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIEsqlRuleResponseFieldsType Rule type
+type SecurityDetectionsAPIEsqlRuleResponseFieldsType string
+
+// SecurityDetectionsAPIEsqlRuleUpdateProps defines model for Security_Detections_API_EsqlRuleUpdateProps.
+type SecurityDetectionsAPIEsqlRuleUpdateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Id A universally unique identifier
+	Id *SecurityDetectionsAPIRuleObjectId `json:"id,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIEsqlQueryLanguage    `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIEsqlRuleUpdatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIEsqlRuleUpdatePropsType Rule type
+type SecurityDetectionsAPIEsqlRuleUpdatePropsType string
+
+// SecurityDetectionsAPIEventCategoryOverride defines model for Security_Detections_API_EventCategoryOverride.
+type SecurityDetectionsAPIEventCategoryOverride = string
+
+// SecurityDetectionsAPIExceptionListType The exception type
+type SecurityDetectionsAPIExceptionListType string
+
+// SecurityDetectionsAPIExternalRuleSource Type of rule source for externally sourced rules, i.e. rules that have an external source, such as the Elastic Prebuilt rules repo.
+type SecurityDetectionsAPIExternalRuleSource struct {
+	// IsCustomized Determines whether an external/prebuilt rule has been customized by the user (i.e. any of its fields have been modified and diverged from the base value).
+	IsCustomized SecurityDetectionsAPIIsExternalRuleCustomized `json:"is_customized"`
+	Type         SecurityDetectionsAPIExternalRuleSourceType   `json:"type"`
+}
+
+// SecurityDetectionsAPIExternalRuleSourceType defines model for SecurityDetectionsAPIExternalRuleSource.Type.
+type SecurityDetectionsAPIExternalRuleSourceType string
+
+// SecurityDetectionsAPIHistoryWindowStart Start date to use when checking if a term has been seen before. Supports relative dates – for example, now-30d will search the last 30 days of data when checking if a term is new. We do not recommend using absolute dates, which can cause issues with rule performance due to querying increasing amounts of data over time.
+type SecurityDetectionsAPIHistoryWindowStart = string
+
+// SecurityDetectionsAPIIndexPatternArray Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+// > info
+// > This field is not supported for ES|QL rules.
+type SecurityDetectionsAPIIndexPatternArray = []string
+
+// SecurityDetectionsAPIInternalRuleSource Type of rule source for internally sourced rules, i.e. created within the Kibana apps.
+type SecurityDetectionsAPIInternalRuleSource struct {
+	Type SecurityDetectionsAPIInternalRuleSourceType `json:"type"`
+}
+
+// SecurityDetectionsAPIInternalRuleSourceType defines model for SecurityDetectionsAPIInternalRuleSource.Type.
+type SecurityDetectionsAPIInternalRuleSourceType string
+
+// SecurityDetectionsAPIInvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+type SecurityDetectionsAPIInvestigationFields struct {
+	FieldNames []SecurityDetectionsAPINonEmptyString `json:"field_names"`
+}
+
+// SecurityDetectionsAPIInvestigationGuide Notes to help investigate alerts produced by the rule.
+type SecurityDetectionsAPIInvestigationGuide = string
+
+// SecurityDetectionsAPIIsExternalRuleCustomized Determines whether an external/prebuilt rule has been customized by the user (i.e. any of its fields have been modified and diverged from the base value).
+type SecurityDetectionsAPIIsExternalRuleCustomized = bool
+
+// SecurityDetectionsAPIIsRuleEnabled Determines whether the rule is enabled. Defaults to true.
+type SecurityDetectionsAPIIsRuleEnabled = bool
+
+// SecurityDetectionsAPIIsRuleImmutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+type SecurityDetectionsAPIIsRuleImmutable = bool
+
+// SecurityDetectionsAPIItemsPerSearch defines model for Security_Detections_API_ItemsPerSearch.
+type SecurityDetectionsAPIItemsPerSearch = int
+
+// SecurityDetectionsAPIKqlQueryLanguage defines model for Security_Detections_API_KqlQueryLanguage.
+type SecurityDetectionsAPIKqlQueryLanguage string
+
+// SecurityDetectionsAPIMachineLearningJobId Machine learning job ID(s) the rule monitors for anomaly scores.
+type SecurityDetectionsAPIMachineLearningJobId struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIMachineLearningJobId0 defines model for .
+type SecurityDetectionsAPIMachineLearningJobId0 = string
+
+// SecurityDetectionsAPIMachineLearningJobId1 defines model for .
+type SecurityDetectionsAPIMachineLearningJobId1 = []string
+
+// SecurityDetectionsAPIMachineLearningRule defines model for Security_Detections_API_MachineLearningRule.
+type SecurityDetectionsAPIMachineLearningRule struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions []SecurityDetectionsAPIRuleAction `json:"actions"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// AnomalyThreshold Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100.
+	AnomalyThreshold SecurityDetectionsAPIAnomalyThreshold `json:"anomaly_threshold"`
+
+	// Author The rule’s author.
+	Author SecurityDetectionsAPIRuleAuthorArray `json:"author"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	CreatedAt         time.Time                               `json:"created_at"`
+	CreatedBy         string                                  `json:"created_by"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        SecurityDetectionsAPIIsRuleEnabled       `json:"enabled"`
+	ExceptionsList []SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From SecurityDetectionsAPIRuleIntervalFrom `json:"from"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable SecurityDetectionsAPIIsRuleImmutable `json:"immutable"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval SecurityDetectionsAPIRuleInterval `json:"interval"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MachineLearningJobId Machine learning job ID(s) the rule monitors for anomaly scores.
+	MachineLearningJobId SecurityDetectionsAPIMachineLearningJobId `json:"machine_learning_job_id"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals SecurityDetectionsAPIMaxSignals `json:"max_signals"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          SecurityDetectionsAPIRuleReferenceArray      `json:"references"`
+	RelatedIntegrations SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations"`
+	RequiredFields      SecurityDetectionsAPIRequiredFieldArray      `json:"required_fields"`
+	ResponseActions     *[]SecurityDetectionsAPIResponseAction       `json:"response_actions,omitempty"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup SecurityDetectionsAPISetupGuide `json:"setup"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping SecurityDetectionsAPISeverityMapping `json:"severity_mapping"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   SecurityDetectionsAPIRuleTagArray `json:"tags"`
+	Threat SecurityDetectionsAPIThreatArray  `json:"threat"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                SecurityDetectionsAPIRuleIntervalTo                     `json:"to"`
+
+	// Type Rule type
+	Type      SecurityDetectionsAPIMachineLearningRuleType `json:"type"`
+	UpdatedAt time.Time                                    `json:"updated_at"`
+	UpdatedBy string                                       `json:"updated_by"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version SecurityDetectionsAPIRuleVersion `json:"version"`
+}
+
+// SecurityDetectionsAPIMachineLearningRuleType Rule type
+type SecurityDetectionsAPIMachineLearningRuleType string
+
+// SecurityDetectionsAPIMachineLearningRuleCreateFields defines model for Security_Detections_API_MachineLearningRuleCreateFields.
+type SecurityDetectionsAPIMachineLearningRuleCreateFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+
+	// AnomalyThreshold Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100.
+	AnomalyThreshold SecurityDetectionsAPIAnomalyThreshold `json:"anomaly_threshold"`
+
+	// MachineLearningJobId Machine learning job ID(s) the rule monitors for anomaly scores.
+	MachineLearningJobId SecurityDetectionsAPIMachineLearningJobId `json:"machine_learning_job_id"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIMachineLearningRuleCreateFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIMachineLearningRuleCreateFieldsType Rule type
+type SecurityDetectionsAPIMachineLearningRuleCreateFieldsType string
+
+// SecurityDetectionsAPIMachineLearningRuleCreateProps defines model for Security_Detections_API_MachineLearningRuleCreateProps.
+type SecurityDetectionsAPIMachineLearningRuleCreateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// AnomalyThreshold Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100.
+	AnomalyThreshold SecurityDetectionsAPIAnomalyThreshold `json:"anomaly_threshold"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MachineLearningJobId Machine learning job ID(s) the rule monitors for anomaly scores.
+	MachineLearningJobId SecurityDetectionsAPIMachineLearningJobId `json:"machine_learning_job_id"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIMachineLearningRuleCreatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIMachineLearningRuleCreatePropsType Rule type
+type SecurityDetectionsAPIMachineLearningRuleCreatePropsType string
+
+// SecurityDetectionsAPIMachineLearningRuleOptionalFields defines model for Security_Detections_API_MachineLearningRuleOptionalFields.
+type SecurityDetectionsAPIMachineLearningRuleOptionalFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+}
+
+// SecurityDetectionsAPIMachineLearningRuleRequiredFields defines model for Security_Detections_API_MachineLearningRuleRequiredFields.
+type SecurityDetectionsAPIMachineLearningRuleRequiredFields struct {
+	// AnomalyThreshold Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100.
+	AnomalyThreshold SecurityDetectionsAPIAnomalyThreshold `json:"anomaly_threshold"`
+
+	// MachineLearningJobId Machine learning job ID(s) the rule monitors for anomaly scores.
+	MachineLearningJobId SecurityDetectionsAPIMachineLearningJobId `json:"machine_learning_job_id"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIMachineLearningRuleRequiredFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIMachineLearningRuleRequiredFieldsType Rule type
+type SecurityDetectionsAPIMachineLearningRuleRequiredFieldsType string
+
+// SecurityDetectionsAPIMachineLearningRuleResponseFields defines model for Security_Detections_API_MachineLearningRuleResponseFields.
+type SecurityDetectionsAPIMachineLearningRuleResponseFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+
+	// AnomalyThreshold Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100.
+	AnomalyThreshold SecurityDetectionsAPIAnomalyThreshold `json:"anomaly_threshold"`
+
+	// MachineLearningJobId Machine learning job ID(s) the rule monitors for anomaly scores.
+	MachineLearningJobId SecurityDetectionsAPIMachineLearningJobId `json:"machine_learning_job_id"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIMachineLearningRuleResponseFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIMachineLearningRuleResponseFieldsType Rule type
+type SecurityDetectionsAPIMachineLearningRuleResponseFieldsType string
+
+// SecurityDetectionsAPIMachineLearningRuleUpdateProps defines model for Security_Detections_API_MachineLearningRuleUpdateProps.
+type SecurityDetectionsAPIMachineLearningRuleUpdateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// AnomalyThreshold Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100.
+	AnomalyThreshold SecurityDetectionsAPIAnomalyThreshold `json:"anomaly_threshold"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Id A universally unique identifier
+	Id *SecurityDetectionsAPIRuleObjectId `json:"id,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MachineLearningJobId Machine learning job ID(s) the rule monitors for anomaly scores.
+	MachineLearningJobId SecurityDetectionsAPIMachineLearningJobId `json:"machine_learning_job_id"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIMachineLearningRuleUpdatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIMachineLearningRuleUpdatePropsType Rule type
+type SecurityDetectionsAPIMachineLearningRuleUpdatePropsType string
+
+// SecurityDetectionsAPIMaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+// > info
+// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+type SecurityDetectionsAPIMaxSignals = int
+
+// SecurityDetectionsAPINewTermsFields Fields to monitor for new values.
+type SecurityDetectionsAPINewTermsFields = []string
+
+// SecurityDetectionsAPINewTermsRule defines model for Security_Detections_API_NewTermsRule.
+type SecurityDetectionsAPINewTermsRule struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions []SecurityDetectionsAPIRuleAction `json:"actions"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author SecurityDetectionsAPIRuleAuthorArray `json:"author"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	CreatedAt         time.Time                               `json:"created_at"`
+	CreatedBy         string                                  `json:"created_by"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        SecurityDetectionsAPIIsRuleEnabled       `json:"enabled"`
+	ExceptionsList []SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From SecurityDetectionsAPIRuleIntervalFrom `json:"from"`
+
+	// HistoryWindowStart Start date to use when checking if a term has been seen before. Supports relative dates – for example, now-30d will search the last 30 days of data when checking if a term is new. We do not recommend using absolute dates, which can cause issues with rule performance due to querying increasing amounts of data over time.
+	HistoryWindowStart SecurityDetectionsAPIHistoryWindowStart `json:"history_window_start"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable SecurityDetectionsAPIIsRuleImmutable `json:"immutable"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval SecurityDetectionsAPIRuleInterval `json:"interval"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIKqlQueryLanguage     `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals SecurityDetectionsAPIMaxSignals `json:"max_signals"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// NewTermsFields Fields to monitor for new values.
+	NewTermsFields SecurityDetectionsAPINewTermsFields `json:"new_terms_fields"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          SecurityDetectionsAPIRuleReferenceArray      `json:"references"`
+	RelatedIntegrations SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations"`
+	RequiredFields      SecurityDetectionsAPIRequiredFieldArray      `json:"required_fields"`
+	ResponseActions     *[]SecurityDetectionsAPIResponseAction       `json:"response_actions,omitempty"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup SecurityDetectionsAPISetupGuide `json:"setup"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping SecurityDetectionsAPISeverityMapping `json:"severity_mapping"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   SecurityDetectionsAPIRuleTagArray `json:"tags"`
+	Threat SecurityDetectionsAPIThreatArray  `json:"threat"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                SecurityDetectionsAPIRuleIntervalTo                     `json:"to"`
+
+	// Type Rule type
+	Type      SecurityDetectionsAPINewTermsRuleType `json:"type"`
+	UpdatedAt time.Time                             `json:"updated_at"`
+	UpdatedBy string                                `json:"updated_by"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version SecurityDetectionsAPIRuleVersion `json:"version"`
+}
+
+// SecurityDetectionsAPINewTermsRuleType Rule type
+type SecurityDetectionsAPINewTermsRuleType string
+
+// SecurityDetectionsAPINewTermsRuleCreateFields defines model for Security_Detections_API_NewTermsRuleCreateFields.
+type SecurityDetectionsAPINewTermsRuleCreateFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// HistoryWindowStart Start date to use when checking if a term has been seen before. Supports relative dates – for example, now-30d will search the last 30 days of data when checking if a term is new. We do not recommend using absolute dates, which can cause issues with rule performance due to querying increasing amounts of data over time.
+	HistoryWindowStart SecurityDetectionsAPIHistoryWindowStart `json:"history_window_start"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language *SecurityDetectionsAPIKqlQueryLanguage  `json:"language,omitempty"`
+
+	// NewTermsFields Fields to monitor for new values.
+	NewTermsFields SecurityDetectionsAPINewTermsFields `json:"new_terms_fields"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPINewTermsRuleCreateFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPINewTermsRuleCreateFieldsType Rule type
+type SecurityDetectionsAPINewTermsRuleCreateFieldsType string
+
+// SecurityDetectionsAPINewTermsRuleCreateProps defines model for Security_Detections_API_NewTermsRuleCreateProps.
+type SecurityDetectionsAPINewTermsRuleCreateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// HistoryWindowStart Start date to use when checking if a term has been seen before. Supports relative dates – for example, now-30d will search the last 30 days of data when checking if a term is new. We do not recommend using absolute dates, which can cause issues with rule performance due to querying increasing amounts of data over time.
+	HistoryWindowStart SecurityDetectionsAPIHistoryWindowStart `json:"history_window_start"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// NewTermsFields Fields to monitor for new values.
+	NewTermsFields SecurityDetectionsAPINewTermsFields `json:"new_terms_fields"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPINewTermsRuleCreatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPINewTermsRuleCreatePropsType Rule type
+type SecurityDetectionsAPINewTermsRuleCreatePropsType string
+
+// SecurityDetectionsAPINewTermsRuleDefaultableFields defines model for Security_Detections_API_NewTermsRuleDefaultableFields.
+type SecurityDetectionsAPINewTermsRuleDefaultableFields struct {
+	Language *SecurityDetectionsAPIKqlQueryLanguage `json:"language,omitempty"`
+}
+
+// SecurityDetectionsAPINewTermsRuleOptionalFields defines model for Security_Detections_API_NewTermsRuleOptionalFields.
+type SecurityDetectionsAPINewTermsRuleOptionalFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+}
+
+// SecurityDetectionsAPINewTermsRuleRequiredFields defines model for Security_Detections_API_NewTermsRuleRequiredFields.
+type SecurityDetectionsAPINewTermsRuleRequiredFields struct {
+	// HistoryWindowStart Start date to use when checking if a term has been seen before. Supports relative dates – for example, now-30d will search the last 30 days of data when checking if a term is new. We do not recommend using absolute dates, which can cause issues with rule performance due to querying increasing amounts of data over time.
+	HistoryWindowStart SecurityDetectionsAPIHistoryWindowStart `json:"history_window_start"`
+
+	// NewTermsFields Fields to monitor for new values.
+	NewTermsFields SecurityDetectionsAPINewTermsFields `json:"new_terms_fields"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPINewTermsRuleRequiredFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPINewTermsRuleRequiredFieldsType Rule type
+type SecurityDetectionsAPINewTermsRuleRequiredFieldsType string
+
+// SecurityDetectionsAPINewTermsRuleResponseFields defines model for Security_Detections_API_NewTermsRuleResponseFields.
+type SecurityDetectionsAPINewTermsRuleResponseFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// HistoryWindowStart Start date to use when checking if a term has been seen before. Supports relative dates – for example, now-30d will search the last 30 days of data when checking if a term is new. We do not recommend using absolute dates, which can cause issues with rule performance due to querying increasing amounts of data over time.
+	HistoryWindowStart SecurityDetectionsAPIHistoryWindowStart `json:"history_window_start"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language SecurityDetectionsAPIKqlQueryLanguage   `json:"language"`
+
+	// NewTermsFields Fields to monitor for new values.
+	NewTermsFields SecurityDetectionsAPINewTermsFields `json:"new_terms_fields"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPINewTermsRuleResponseFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPINewTermsRuleResponseFieldsType Rule type
+type SecurityDetectionsAPINewTermsRuleResponseFieldsType string
+
+// SecurityDetectionsAPINewTermsRuleUpdateProps defines model for Security_Detections_API_NewTermsRuleUpdateProps.
+type SecurityDetectionsAPINewTermsRuleUpdateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// HistoryWindowStart Start date to use when checking if a term has been seen before. Supports relative dates – for example, now-30d will search the last 30 days of data when checking if a term is new. We do not recommend using absolute dates, which can cause issues with rule performance due to querying increasing amounts of data over time.
+	HistoryWindowStart SecurityDetectionsAPIHistoryWindowStart `json:"history_window_start"`
+
+	// Id A universally unique identifier
+	Id *SecurityDetectionsAPIRuleObjectId `json:"id,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// NewTermsFields Fields to monitor for new values.
+	NewTermsFields SecurityDetectionsAPINewTermsFields `json:"new_terms_fields"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPINewTermsRuleUpdatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPINewTermsRuleUpdatePropsType Rule type
+type SecurityDetectionsAPINewTermsRuleUpdatePropsType string
+
+// SecurityDetectionsAPINonEmptyString A string that does not contain only whitespace characters
+type SecurityDetectionsAPINonEmptyString = string
+
+// SecurityDetectionsAPIOsqueryParams defines model for Security_Detections_API_OsqueryParams.
+type SecurityDetectionsAPIOsqueryParams struct {
+	// EcsMapping Map Osquery results columns or static values to Elastic Common Schema (ECS) fields. Example: "ecs_mapping": {"process.pid": {"field": "pid"}}
+	EcsMapping *SecurityDetectionsAPIEcsMapping `json:"ecs_mapping,omitempty"`
+
+	// PackId To specify a query pack, use the packId field. Example: "packId": "processes_elastic"
+	PackId  *string                              `json:"pack_id,omitempty"`
+	Queries *[]SecurityDetectionsAPIOsqueryQuery `json:"queries,omitempty"`
+
+	// Query To run a single query, use the query field and enter a SQL query. Example: "query": "SELECT * FROM processes;"
+	Query *string `json:"query,omitempty"`
+
+	// SavedQueryId To run a saved query, use the saved_query_id field and specify the saved query ID. Example: "saved_query_id": "processes_elastic"
+	SavedQueryId *string `json:"saved_query_id,omitempty"`
+
+	// Timeout A timeout period, in seconds, after which the query will stop running. Overwriting the default timeout allows you to support queries that require more time to complete. The default and minimum supported value is 60. The maximum supported value is 900. Example: "timeout": 120.
+	Timeout *float32 `json:"timeout,omitempty"`
+}
+
+// SecurityDetectionsAPIOsqueryQuery defines model for Security_Detections_API_OsqueryQuery.
+type SecurityDetectionsAPIOsqueryQuery struct {
+	// EcsMapping Map Osquery results columns or static values to Elastic Common Schema (ECS) fields. Example: "ecs_mapping": {"process.pid": {"field": "pid"}}
+	EcsMapping *SecurityDetectionsAPIEcsMapping `json:"ecs_mapping,omitempty"`
+
+	// Id Query ID
+	Id       string  `json:"id"`
+	Platform *string `json:"platform,omitempty"`
+
+	// Query Query to run
+	Query    string `json:"query"`
+	Removed  *bool  `json:"removed,omitempty"`
+	Snapshot *bool  `json:"snapshot,omitempty"`
+
+	// Version Query version
+	Version *string `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIOsqueryResponseAction defines model for Security_Detections_API_OsqueryResponseAction.
+type SecurityDetectionsAPIOsqueryResponseAction struct {
+	ActionTypeId SecurityDetectionsAPIOsqueryResponseActionActionTypeId `json:"action_type_id"`
+	Params       SecurityDetectionsAPIOsqueryParams                     `json:"params"`
+}
+
+// SecurityDetectionsAPIOsqueryResponseActionActionTypeId defines model for SecurityDetectionsAPIOsqueryResponseAction.ActionTypeId.
+type SecurityDetectionsAPIOsqueryResponseActionActionTypeId string
+
+// SecurityDetectionsAPIProcessesParams defines model for Security_Detections_API_ProcessesParams.
+type SecurityDetectionsAPIProcessesParams struct {
+	// Command To run an endpoint response action, specify a value for the command field. Example: "command": "isolate"
+	Command SecurityDetectionsAPIProcessesParamsCommand `json:"command"`
+
+	// Comment Add a note that explains or describes the action. You can find your comment in the response actions history log. Example: "comment": "Check processes"
+	Comment *string `json:"comment,omitempty"`
+	Config  struct {
+		// Field Field to use instead of process.pid
+		Field string `json:"field"`
+
+		// Overwrite Whether to overwrite field with process.pid
+		Overwrite *bool `json:"overwrite,omitempty"`
+	} `json:"config"`
+}
+
+// SecurityDetectionsAPIProcessesParamsCommand To run an endpoint response action, specify a value for the command field. Example: "command": "isolate"
+type SecurityDetectionsAPIProcessesParamsCommand string
+
+// SecurityDetectionsAPIQueryRule defines model for Security_Detections_API_QueryRule.
+type SecurityDetectionsAPIQueryRule struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions []SecurityDetectionsAPIRuleAction `json:"actions"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author SecurityDetectionsAPIRuleAuthorArray `json:"author"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	CreatedAt         time.Time                               `json:"created_at"`
+	CreatedBy         string                                  `json:"created_by"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        SecurityDetectionsAPIIsRuleEnabled       `json:"enabled"`
+	ExceptionsList []SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From SecurityDetectionsAPIRuleIntervalFrom `json:"from"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable SecurityDetectionsAPIIsRuleImmutable `json:"immutable"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval SecurityDetectionsAPIRuleInterval `json:"interval"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIKqlQueryLanguage     `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals SecurityDetectionsAPIMaxSignals `json:"max_signals"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          SecurityDetectionsAPIRuleReferenceArray      `json:"references"`
+	RelatedIntegrations SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations"`
+	RequiredFields      SecurityDetectionsAPIRequiredFieldArray      `json:"required_fields"`
+	ResponseActions     *[]SecurityDetectionsAPIResponseAction       `json:"response_actions,omitempty"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup SecurityDetectionsAPISetupGuide `json:"setup"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping SecurityDetectionsAPISeverityMapping `json:"severity_mapping"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   SecurityDetectionsAPIRuleTagArray `json:"tags"`
+	Threat SecurityDetectionsAPIThreatArray  `json:"threat"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                SecurityDetectionsAPIRuleIntervalTo                     `json:"to"`
+
+	// Type Rule type
+	Type      SecurityDetectionsAPIQueryRuleType `json:"type"`
+	UpdatedAt time.Time                          `json:"updated_at"`
+	UpdatedBy string                             `json:"updated_by"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version SecurityDetectionsAPIRuleVersion `json:"version"`
+}
+
+// SecurityDetectionsAPIQueryRuleType Rule type
+type SecurityDetectionsAPIQueryRuleType string
+
+// SecurityDetectionsAPIQueryRuleCreateFields defines model for Security_Detections_API_QueryRuleCreateFields.
+type SecurityDetectionsAPIQueryRuleCreateFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language *SecurityDetectionsAPIKqlQueryLanguage  `json:"language,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIQueryRuleCreateFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIQueryRuleCreateFieldsType Rule type
+type SecurityDetectionsAPIQueryRuleCreateFieldsType string
+
+// SecurityDetectionsAPIQueryRuleCreateProps defines model for Security_Detections_API_QueryRuleCreateProps.
+type SecurityDetectionsAPIQueryRuleCreateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIQueryRuleCreatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIQueryRuleCreatePropsType Rule type
+type SecurityDetectionsAPIQueryRuleCreatePropsType string
+
+// SecurityDetectionsAPIQueryRuleDefaultableFields defines model for Security_Detections_API_QueryRuleDefaultableFields.
+type SecurityDetectionsAPIQueryRuleDefaultableFields struct {
+	Language *SecurityDetectionsAPIKqlQueryLanguage `json:"language,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+}
+
+// SecurityDetectionsAPIQueryRuleOptionalFields defines model for Security_Detections_API_QueryRuleOptionalFields.
+type SecurityDetectionsAPIQueryRuleOptionalFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+}
+
+// SecurityDetectionsAPIQueryRuleRequiredFields defines model for Security_Detections_API_QueryRuleRequiredFields.
+type SecurityDetectionsAPIQueryRuleRequiredFields struct {
+	// Type Rule type
+	Type SecurityDetectionsAPIQueryRuleRequiredFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIQueryRuleRequiredFieldsType Rule type
+type SecurityDetectionsAPIQueryRuleRequiredFieldsType string
+
+// SecurityDetectionsAPIQueryRuleResponseFields defines model for Security_Detections_API_QueryRuleResponseFields.
+type SecurityDetectionsAPIQueryRuleResponseFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language SecurityDetectionsAPIKqlQueryLanguage   `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIQueryRuleResponseFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIQueryRuleResponseFieldsType Rule type
+type SecurityDetectionsAPIQueryRuleResponseFieldsType string
+
+// SecurityDetectionsAPIQueryRuleUpdateProps defines model for Security_Detections_API_QueryRuleUpdateProps.
+type SecurityDetectionsAPIQueryRuleUpdateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Id A universally unique identifier
+	Id *SecurityDetectionsAPIRuleObjectId `json:"id,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIQueryRuleUpdatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIQueryRuleUpdatePropsType Rule type
+type SecurityDetectionsAPIQueryRuleUpdatePropsType string
+
+// SecurityDetectionsAPIRelatedIntegration Related integration is a potential dependency of a rule. It's assumed that if the user installs
+// one of the related integrations of a rule, the rule might start to work properly because it will
+// have source events (generated by this integration) potentially matching the rule's query.
+//
+// NOTE: Proper work is not guaranteed, because a related integration, if installed, can be
+// configured differently or generate data that is not necessarily relevant for this rule.
+//
+// Related integration is a combination of a Fleet package and (optionally) one of the
+// package's "integrations" that this package contains. It is represented by 3 properties:
+//
+// - `package`: name of the package (required, unique id)
+// - `version`: version of the package (required, semver-compatible)
+// - `integration`: name of the integration of this package (optional, id within the package)
+//
+// There are Fleet packages like `windows` that contain only one integration; in this case,
+// `integration` should be unspecified. There are also packages like `aws` and `azure` that contain
+// several integrations; in this case, `integration` should be specified.
+type SecurityDetectionsAPIRelatedIntegration struct {
+	// Integration A string that does not contain only whitespace characters
+	Integration *SecurityDetectionsAPINonEmptyString `json:"integration,omitempty"`
+
+	// Package A string that does not contain only whitespace characters
+	Package SecurityDetectionsAPINonEmptyString `json:"package"`
+
+	// Version A string that does not contain only whitespace characters
+	Version SecurityDetectionsAPINonEmptyString `json:"version"`
+}
+
+// SecurityDetectionsAPIRelatedIntegrationArray defines model for Security_Detections_API_RelatedIntegrationArray.
+type SecurityDetectionsAPIRelatedIntegrationArray = []SecurityDetectionsAPIRelatedIntegration
+
+// SecurityDetectionsAPIRequiredField Describes an Elasticsearch field that is needed for the rule to function.
+//
+// Almost all types of Security rules check source event documents for a match to some kind of
+// query or filter. If a document has certain field with certain values, then it's a match and
+// the rule will generate an alert.
+//
+// Required field is an event field that must be present in the source indices of a given rule.
+//
+// @example
+//
+//	const standardEcsField: RequiredField = {
+//	  name: 'event.action',
+//	  type: 'keyword',
+//	  ecs: true,
+//	};
+//
+// @example
+//
+//	const nonEcsField: RequiredField = {
+//	  name: 'winlog.event_data.AttributeLDAPDisplayName',
+//	  type: 'keyword',
+//	  ecs: false,
+//	};
+type SecurityDetectionsAPIRequiredField struct {
+	// Ecs Indicates whether the field is ECS-compliant. This property is only present in responses. Its value is computed based on field’s name and type.
+	Ecs bool `json:"ecs"`
+
+	// Name Name of an Elasticsearch field
+	Name string `json:"name"`
+
+	// Type Type of the Elasticsearch field
+	Type string `json:"type"`
+}
+
+// SecurityDetectionsAPIRequiredFieldArray defines model for Security_Detections_API_RequiredFieldArray.
+type SecurityDetectionsAPIRequiredFieldArray = []SecurityDetectionsAPIRequiredField
+
+// SecurityDetectionsAPIRequiredFieldInput Input parameters to create a RequiredField. Does not include the `ecs` field, because `ecs` is calculated on the backend based on the field name and type.
+type SecurityDetectionsAPIRequiredFieldInput struct {
+	// Name Name of an Elasticsearch field
+	Name string `json:"name"`
+
+	// Type Type of the Elasticsearch field
+	Type string `json:"type"`
+}
+
+// SecurityDetectionsAPIResponseAction defines model for Security_Detections_API_ResponseAction.
+type SecurityDetectionsAPIResponseAction struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIResponseFields defines model for Security_Detections_API_ResponseFields.
+type SecurityDetectionsAPIResponseFields struct {
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy string    `json:"created_by"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable      SecurityDetectionsAPIIsRuleImmutable    `json:"immutable"`
+	RequiredFields SecurityDetectionsAPIRequiredFieldArray `json:"required_fields"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+	UpdatedAt  time.Time                       `json:"updated_at"`
+	UpdatedBy  string                          `json:"updated_by"`
+}
+
+// SecurityDetectionsAPIRiskScore A numerical representation of the alert's severity from 0 to 100, where:
+// * `0` - `21` represents low severity
+// * `22` - `47` represents medium severity
+// * `48` - `73` represents high severity
+// * `74` - `100` represents critical severity
+type SecurityDetectionsAPIRiskScore = int
+
+// SecurityDetectionsAPIRiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+type SecurityDetectionsAPIRiskScoreMapping = []struct {
+	// Field Source event field used to override the default `risk_score`.
+	Field    string                                        `json:"field"`
+	Operator SecurityDetectionsAPIRiskScoreMappingOperator `json:"operator"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore *SecurityDetectionsAPIRiskScore `json:"risk_score,omitempty"`
+	Value     string                          `json:"value"`
+}
+
+// SecurityDetectionsAPIRiskScoreMappingOperator defines model for SecurityDetectionsAPIRiskScoreMapping.Operator.
+type SecurityDetectionsAPIRiskScoreMappingOperator string
+
+// SecurityDetectionsAPIRuleAction defines model for Security_Detections_API_RuleAction.
+type SecurityDetectionsAPIRuleAction struct {
+	// ActionTypeId The action type used for sending notifications, can be:
+	//
+	//   - `.slack`
+	//   - `.slack_api`
+	//   - `.email`
+	//   - `.index`
+	//   - `.pagerduty`
+	//   - `.swimlane`
+	//   - `.webhook`
+	//   - `.servicenow`
+	//   - `.servicenow-itom`
+	//   - `.servicenow-sir`
+	//   - `.jira`
+	//   - `.resilient`
+	//   - `.opsgenie`
+	//   - `.teams`
+	//   - `.torq`
+	//   - `.tines`
+	//   - `.d3security`
+	ActionTypeId string `json:"action_type_id"`
+
+	// AlertsFilter Object containing an action’s conditional filters.
+	//
+	// - `timeframe` (object, optional): Object containing the time frame for when this action can be run.
+	//     - `days` (array of integers, required): List of days of the week on which this action will be run. Days of the week are expressed as numbers between `1-7`, where `1` is Monday and `7` is Sunday. To select all days of the week, enter an empty array.
+	//     - `hours` (object, required): The hours of the day during which this action will run. Hours of the day are expressed as two strings in the format `hh:mm` in `24` hour time. A start of `00:00` and an end of `24:00` means the action can run all day.
+	//         - start (string, required): Start time in `hh:mm` format.
+	//         - end (string, required): End time in `hh:mm` format.
+	//     - `timezone` (string, required): An ISO timezone name, such as `Europe/Madrid` or `America/New_York`. Specific offsets such as `UTC` or `UTC+1` will also work, but lack built-in DST.
+	// - `query` (object, optional): Object containing a query filter which gets applied to an action and determines whether the action should run.
+	//     - `kql` (string, required): A KQL string.
+	//     - `filters` (array of objects, required): Array of filter objects, as defined in the `kbn-es-query` package.
+	AlertsFilter *SecurityDetectionsAPIRuleActionAlertsFilter `json:"alerts_filter,omitempty"`
+
+	// Frequency The action frequency defines when the action runs (for example, only on rule execution or at specific time intervals).
+	Frequency *SecurityDetectionsAPIRuleActionFrequency `json:"frequency,omitempty"`
+
+	// Group Optionally groups actions by use cases. Use `default` for alert notifications.
+	Group *SecurityDetectionsAPIRuleActionGroup `json:"group,omitempty"`
+
+	// Id The connector ID.
+	Id SecurityDetectionsAPIRuleActionId `json:"id"`
+
+	// Params Object containing the allowed connector fields, which varies according to the connector type.
+	//
+	// For Slack:
+	//
+	//   - `message` (string, required): The notification message.
+	//
+	// For email:
+	//
+	//   - `to`, `cc`, `bcc` (string): Email addresses to which the notifications are sent. At least one field must have a value.
+	//   - `subject` (string, optional): Email subject line.
+	//   - `message` (string, required): Email body text.
+	//
+	// For Webhook:
+	//
+	//   - `body` (string, required): JSON payload.
+	//
+	// For PagerDuty:
+	//
+	//   - `severity` (string, required): Severity of on the alert notification, can be: `Critical`, `Error`, `Warning` or `Info`.
+	//   - `eventAction` (string, required): Event [action type](https://v2.developer.pagerduty.com/docs/events-api-v2#event-action), which can be `trigger`, `resolve`, or `acknowledge`.
+	//   - `dedupKey` (string, optional): Groups alert notifications with the same PagerDuty alert.
+	//   - `timestamp` (DateTime, optional): ISO-8601 format [timestamp](https://v2.developer.pagerduty.com/docs/types#datetime).
+	//   - `component` (string, optional): Source machine component responsible for the event, for example `security-solution`.
+	//   - `group` (string, optional): Enables logical grouping of service components.
+	//   - `source` (string, optional): The affected system. Defaults to the Kibana saved object ID of the action.
+	//   - `summary` (string, options): Summary of the event. Defaults to `No summary provided`. Maximum length is 1024 characters.
+	//   - `class` (string, optional): Value indicating the class/type of the event.
+	Params SecurityDetectionsAPIRuleActionParams `json:"params"`
+
+	// Uuid A string that does not contain only whitespace characters
+	Uuid *SecurityDetectionsAPINonEmptyString `json:"uuid,omitempty"`
+}
+
+// SecurityDetectionsAPIRuleActionAlertsFilter Object containing an action’s conditional filters.
+//
+// - `timeframe` (object, optional): Object containing the time frame for when this action can be run.
+//   - `days` (array of integers, required): List of days of the week on which this action will be run. Days of the week are expressed as numbers between `1-7`, where `1` is Monday and `7` is Sunday. To select all days of the week, enter an empty array.
+//   - `hours` (object, required): The hours of the day during which this action will run. Hours of the day are expressed as two strings in the format `hh:mm` in `24` hour time. A start of `00:00` and an end of `24:00` means the action can run all day.
+//   - start (string, required): Start time in `hh:mm` format.
+//   - end (string, required): End time in `hh:mm` format.
+//   - `timezone` (string, required): An ISO timezone name, such as `Europe/Madrid` or `America/New_York`. Specific offsets such as `UTC` or `UTC+1` will also work, but lack built-in DST.
+//
+// - `query` (object, optional): Object containing a query filter which gets applied to an action and determines whether the action should run.
+//   - `kql` (string, required): A KQL string.
+//   - `filters` (array of objects, required): Array of filter objects, as defined in the `kbn-es-query` package.
+type SecurityDetectionsAPIRuleActionAlertsFilter map[string]interface{}
+
+// SecurityDetectionsAPIRuleActionFrequency The action frequency defines when the action runs (for example, only on rule execution or at specific time intervals).
+type SecurityDetectionsAPIRuleActionFrequency struct {
+	// NotifyWhen Defines how often rules run actions.
+	NotifyWhen SecurityDetectionsAPIRuleActionNotifyWhen `json:"notifyWhen"`
+
+	// Summary Action summary indicates whether we will send a summary notification about all the generate alerts or notification per individual alert
+	Summary bool `json:"summary"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle SecurityDetectionsAPIRuleActionThrottle `json:"throttle"`
+}
+
+// SecurityDetectionsAPIRuleActionGroup Optionally groups actions by use cases. Use `default` for alert notifications.
+type SecurityDetectionsAPIRuleActionGroup = string
+
+// SecurityDetectionsAPIRuleActionId The connector ID.
+type SecurityDetectionsAPIRuleActionId = string
+
+// SecurityDetectionsAPIRuleActionNotifyWhen Defines how often rules run actions.
+type SecurityDetectionsAPIRuleActionNotifyWhen string
+
+// SecurityDetectionsAPIRuleActionParams Object containing the allowed connector fields, which varies according to the connector type.
+//
+// For Slack:
+//
+//   - `message` (string, required): The notification message.
+//
+// For email:
+//
+//   - `to`, `cc`, `bcc` (string): Email addresses to which the notifications are sent. At least one field must have a value.
+//   - `subject` (string, optional): Email subject line.
+//   - `message` (string, required): Email body text.
+//
+// For Webhook:
+//
+//   - `body` (string, required): JSON payload.
+//
+// For PagerDuty:
+//
+//   - `severity` (string, required): Severity of on the alert notification, can be: `Critical`, `Error`, `Warning` or `Info`.
+//   - `eventAction` (string, required): Event [action type](https://v2.developer.pagerduty.com/docs/events-api-v2#event-action), which can be `trigger`, `resolve`, or `acknowledge`.
+//   - `dedupKey` (string, optional): Groups alert notifications with the same PagerDuty alert.
+//   - `timestamp` (DateTime, optional): ISO-8601 format [timestamp](https://v2.developer.pagerduty.com/docs/types#datetime).
+//   - `component` (string, optional): Source machine component responsible for the event, for example `security-solution`.
+//   - `group` (string, optional): Enables logical grouping of service components.
+//   - `source` (string, optional): The affected system. Defaults to the Kibana saved object ID of the action.
+//   - `summary` (string, options): Summary of the event. Defaults to `No summary provided`. Maximum length is 1024 characters.
+//   - `class` (string, optional): Value indicating the class/type of the event.
+type SecurityDetectionsAPIRuleActionParams map[string]interface{}
+
+// SecurityDetectionsAPIRuleActionThrottle Defines how often rule actions are taken.
+type SecurityDetectionsAPIRuleActionThrottle struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIRuleActionThrottle0 defines model for SecurityDetectionsAPIRuleActionThrottle.0.
+type SecurityDetectionsAPIRuleActionThrottle0 string
+
+// SecurityDetectionsAPIRuleActionThrottle1 Time interval in seconds, minutes, hours, or days.
+type SecurityDetectionsAPIRuleActionThrottle1 = string
+
+// SecurityDetectionsAPIRuleAuthorArray The rule’s author.
+type SecurityDetectionsAPIRuleAuthorArray = []string
+
+// SecurityDetectionsAPIRuleCreateProps defines model for Security_Detections_API_RuleCreateProps.
+type SecurityDetectionsAPIRuleCreateProps struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIRuleDescription The rule’s description.
+type SecurityDetectionsAPIRuleDescription = string
+
+// SecurityDetectionsAPIRuleExceptionList Array of [exception containers](https://www.elastic.co/guide/en/security/current/exceptions-api-overview.html), which define exceptions that prevent the rule from generating alerts even when its other criteria are met.
+type SecurityDetectionsAPIRuleExceptionList struct {
+	// Id ID of the exception container
+	Id string `json:"id"`
+
+	// ListId List ID of the exception container
+	ListId string `json:"list_id"`
+
+	// NamespaceType Determines the exceptions validity in rule's Kibana space
+	NamespaceType SecurityDetectionsAPIRuleExceptionListNamespaceType `json:"namespace_type"`
+
+	// Type The exception type
+	Type SecurityDetectionsAPIExceptionListType `json:"type"`
+}
+
+// SecurityDetectionsAPIRuleExceptionListNamespaceType Determines the exceptions validity in rule's Kibana space
+type SecurityDetectionsAPIRuleExceptionListNamespaceType string
+
+// SecurityDetectionsAPIRuleExecutionMetrics defines model for Security_Detections_API_RuleExecutionMetrics.
+type SecurityDetectionsAPIRuleExecutionMetrics struct {
+	// ExecutionGapDurationS Duration in seconds of execution gap
+	ExecutionGapDurationS *int `json:"execution_gap_duration_s,omitempty"`
+
+	// FrozenIndicesQueriedCount Count of frozen indices queried during the rule execution. These indices could not be entirely excluded after applying the time range filter.
+	FrozenIndicesQueriedCount *int `json:"frozen_indices_queried_count,omitempty"`
+
+	// GapRange Range of the execution gap
+	GapRange *struct {
+		// Gte Start date of the execution gap
+		Gte string `json:"gte"`
+
+		// Lte End date of the execution gap
+		Lte string `json:"lte"`
+	} `json:"gap_range,omitempty"`
+
+	// TotalEnrichmentDurationMs Total time spent enriching documents during current rule execution cycle
+	TotalEnrichmentDurationMs *int `json:"total_enrichment_duration_ms,omitempty"`
+
+	// TotalIndexingDurationMs Total time spent indexing documents during current rule execution cycle
+	TotalIndexingDurationMs *int `json:"total_indexing_duration_ms,omitempty"`
+
+	// TotalSearchDurationMs Total time spent performing ES searches as measured by Kibana; includes network latency and time spent serializing/deserializing request/response
+	TotalSearchDurationMs *int `json:"total_search_duration_ms,omitempty"`
+}
+
+// SecurityDetectionsAPIRuleExecutionStatus Custom execution status of Security rules that is different from the status used in the Alerting Framework. We merge our custom status with the Framework's status to determine the resulting status of a rule.
+// - going to run - @deprecated Replaced by the 'running' status but left for backwards compatibility with rule execution events already written to Event Log in the prior versions of Kibana. Don't use when writing rule status changes.
+// - running - Rule execution started but not reached any intermediate or final status.
+// - partial failure - Rule can partially fail for various reasons either in the middle of an execution (in this case we update its status right away) or in the end of it. So currently this status can be both intermediate and final at the same time. A typical reason for a partial failure: not all the indices that the rule searches over actually exist.
+// - failed - Rule failed to execute due to unhandled exception or a reason defined in the business logic of its executor function.
+// - succeeded - Rule executed successfully without any issues. Note: this status is just an indication of a rule's "health". The rule might or might not generate any alerts despite of it.
+type SecurityDetectionsAPIRuleExecutionStatus string
+
+// SecurityDetectionsAPIRuleExecutionStatusOrder defines model for Security_Detections_API_RuleExecutionStatusOrder.
+type SecurityDetectionsAPIRuleExecutionStatusOrder = int
+
+// SecurityDetectionsAPIRuleExecutionSummary Summary of the last execution of a rule.
+// > info
+// > This field is under development and its usage or schema may change
+type SecurityDetectionsAPIRuleExecutionSummary struct {
+	LastExecution struct {
+		// Date Date of the last execution
+		Date    time.Time                                 `json:"date"`
+		Message string                                    `json:"message"`
+		Metrics SecurityDetectionsAPIRuleExecutionMetrics `json:"metrics"`
+
+		// Status Custom execution status of Security rules that is different from the status used in the Alerting Framework. We merge our custom status with the Framework's status to determine the resulting status of a rule.
+		// - going to run - @deprecated Replaced by the 'running' status but left for backwards compatibility with rule execution events already written to Event Log in the prior versions of Kibana. Don't use when writing rule status changes.
+		// - running - Rule execution started but not reached any intermediate or final status.
+		// - partial failure - Rule can partially fail for various reasons either in the middle of an execution (in this case we update its status right away) or in the end of it. So currently this status can be both intermediate and final at the same time. A typical reason for a partial failure: not all the indices that the rule searches over actually exist.
+		// - failed - Rule failed to execute due to unhandled exception or a reason defined in the business logic of its executor function.
+		// - succeeded - Rule executed successfully without any issues. Note: this status is just an indication of a rule's "health". The rule might or might not generate any alerts despite of it.
+		Status      SecurityDetectionsAPIRuleExecutionStatus      `json:"status"`
+		StatusOrder SecurityDetectionsAPIRuleExecutionStatusOrder `json:"status_order"`
+	} `json:"last_execution"`
+}
+
+// SecurityDetectionsAPIRuleFalsePositiveArray String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+type SecurityDetectionsAPIRuleFalsePositiveArray = []string
+
+// SecurityDetectionsAPIRuleFilterArray The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+// > info
+// > This field is not supported for ES|QL rules.
+type SecurityDetectionsAPIRuleFilterArray = []interface{}
+
+// SecurityDetectionsAPIRuleInterval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+type SecurityDetectionsAPIRuleInterval = string
+
+// SecurityDetectionsAPIRuleIntervalFrom Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+type SecurityDetectionsAPIRuleIntervalFrom = string
+
+// SecurityDetectionsAPIRuleIntervalTo defines model for Security_Detections_API_RuleIntervalTo.
+type SecurityDetectionsAPIRuleIntervalTo = string
+
+// SecurityDetectionsAPIRuleLicense The rule's license.
+type SecurityDetectionsAPIRuleLicense = string
+
+// SecurityDetectionsAPIRuleMetadata Placeholder for metadata about the rule.
+// > info
+// > This field is overwritten when you save changes to the rule’s settings.
+type SecurityDetectionsAPIRuleMetadata map[string]interface{}
+
+// SecurityDetectionsAPIRuleName A human-readable name for the rule.
+type SecurityDetectionsAPIRuleName = string
+
+// SecurityDetectionsAPIRuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+type SecurityDetectionsAPIRuleNameOverride = string
+
+// SecurityDetectionsAPIRuleObjectId A universally unique identifier
+type SecurityDetectionsAPIRuleObjectId = SecurityDetectionsAPIUUID
+
+// SecurityDetectionsAPIRuleQuery [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+//
+// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+type SecurityDetectionsAPIRuleQuery = string
+
+// SecurityDetectionsAPIRuleReferenceArray Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+type SecurityDetectionsAPIRuleReferenceArray = []string
+
+// SecurityDetectionsAPIRuleResponse defines model for Security_Detections_API_RuleResponse.
+type SecurityDetectionsAPIRuleResponse struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIRuleRevision The rule's revision number.
+//
+// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+// > info
+// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+type SecurityDetectionsAPIRuleRevision = int
+
+// SecurityDetectionsAPIRuleSignatureId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+type SecurityDetectionsAPIRuleSignatureId = string
+
+// SecurityDetectionsAPIRuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+type SecurityDetectionsAPIRuleSource struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIRuleTagArray String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+type SecurityDetectionsAPIRuleTagArray = []string
+
+// SecurityDetectionsAPIRuleUpdateProps defines model for Security_Detections_API_RuleUpdateProps.
+type SecurityDetectionsAPIRuleUpdateProps struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIRuleVersion The rule's version number.
+//
+// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+// - For custom rules it is set to `1` when the rule is created.
+// > info
+// > It is not incremented on each update. Compare this to the `revision` field.
+type SecurityDetectionsAPIRuleVersion = int
+
+// SecurityDetectionsAPISavedObjectResolveAliasPurpose defines model for Security_Detections_API_SavedObjectResolveAliasPurpose.
+type SecurityDetectionsAPISavedObjectResolveAliasPurpose string
+
+// SecurityDetectionsAPISavedObjectResolveAliasTargetId defines model for Security_Detections_API_SavedObjectResolveAliasTargetId.
+type SecurityDetectionsAPISavedObjectResolveAliasTargetId = string
+
+// SecurityDetectionsAPISavedObjectResolveOutcome defines model for Security_Detections_API_SavedObjectResolveOutcome.
+type SecurityDetectionsAPISavedObjectResolveOutcome string
+
+// SecurityDetectionsAPISavedQueryId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+type SecurityDetectionsAPISavedQueryId = string
+
+// SecurityDetectionsAPISavedQueryRule defines model for Security_Detections_API_SavedQueryRule.
+type SecurityDetectionsAPISavedQueryRule struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions []SecurityDetectionsAPIRuleAction `json:"actions"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author SecurityDetectionsAPIRuleAuthorArray `json:"author"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	CreatedAt         time.Time                               `json:"created_at"`
+	CreatedBy         string                                  `json:"created_by"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        SecurityDetectionsAPIIsRuleEnabled       `json:"enabled"`
+	ExceptionsList []SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From SecurityDetectionsAPIRuleIntervalFrom `json:"from"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable SecurityDetectionsAPIIsRuleImmutable `json:"immutable"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval SecurityDetectionsAPIRuleInterval `json:"interval"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIKqlQueryLanguage     `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals SecurityDetectionsAPIMaxSignals `json:"max_signals"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          SecurityDetectionsAPIRuleReferenceArray      `json:"references"`
+	RelatedIntegrations SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations"`
+	RequiredFields      SecurityDetectionsAPIRequiredFieldArray      `json:"required_fields"`
+	ResponseActions     *[]SecurityDetectionsAPIResponseAction       `json:"response_actions,omitempty"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId SecurityDetectionsAPISavedQueryId `json:"saved_id"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup SecurityDetectionsAPISetupGuide `json:"setup"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping SecurityDetectionsAPISeverityMapping `json:"severity_mapping"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   SecurityDetectionsAPIRuleTagArray `json:"tags"`
+	Threat SecurityDetectionsAPIThreatArray  `json:"threat"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                SecurityDetectionsAPIRuleIntervalTo                     `json:"to"`
+
+	// Type Rule type
+	Type      SecurityDetectionsAPISavedQueryRuleType `json:"type"`
+	UpdatedAt time.Time                               `json:"updated_at"`
+	UpdatedBy string                                  `json:"updated_by"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version SecurityDetectionsAPIRuleVersion `json:"version"`
+}
+
+// SecurityDetectionsAPISavedQueryRuleType Rule type
+type SecurityDetectionsAPISavedQueryRuleType string
+
+// SecurityDetectionsAPISavedQueryRuleCreateFields defines model for Security_Detections_API_SavedQueryRuleCreateFields.
+type SecurityDetectionsAPISavedQueryRuleCreateFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language *SecurityDetectionsAPIKqlQueryLanguage  `json:"language,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId SecurityDetectionsAPISavedQueryId `json:"saved_id"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPISavedQueryRuleCreateFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPISavedQueryRuleCreateFieldsType Rule type
+type SecurityDetectionsAPISavedQueryRuleCreateFieldsType string
+
+// SecurityDetectionsAPISavedQueryRuleCreateProps defines model for Security_Detections_API_SavedQueryRuleCreateProps.
+type SecurityDetectionsAPISavedQueryRuleCreateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId SecurityDetectionsAPISavedQueryId `json:"saved_id"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPISavedQueryRuleCreatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPISavedQueryRuleCreatePropsType Rule type
+type SecurityDetectionsAPISavedQueryRuleCreatePropsType string
+
+// SecurityDetectionsAPISavedQueryRuleDefaultableFields defines model for Security_Detections_API_SavedQueryRuleDefaultableFields.
+type SecurityDetectionsAPISavedQueryRuleDefaultableFields struct {
+	Language *SecurityDetectionsAPIKqlQueryLanguage `json:"language,omitempty"`
+}
+
+// SecurityDetectionsAPISavedQueryRuleOptionalFields defines model for Security_Detections_API_SavedQueryRuleOptionalFields.
+type SecurityDetectionsAPISavedQueryRuleOptionalFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+}
+
+// SecurityDetectionsAPISavedQueryRuleRequiredFields defines model for Security_Detections_API_SavedQueryRuleRequiredFields.
+type SecurityDetectionsAPISavedQueryRuleRequiredFields struct {
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId SecurityDetectionsAPISavedQueryId `json:"saved_id"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPISavedQueryRuleRequiredFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPISavedQueryRuleRequiredFieldsType Rule type
+type SecurityDetectionsAPISavedQueryRuleRequiredFieldsType string
+
+// SecurityDetectionsAPISavedQueryRuleResponseFields defines model for Security_Detections_API_SavedQueryRuleResponseFields.
+type SecurityDetectionsAPISavedQueryRuleResponseFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId       `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language SecurityDetectionsAPIKqlQueryLanguage   `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId SecurityDetectionsAPISavedQueryId `json:"saved_id"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPISavedQueryRuleResponseFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPISavedQueryRuleResponseFieldsType Rule type
+type SecurityDetectionsAPISavedQueryRuleResponseFieldsType string
+
+// SecurityDetectionsAPISavedQueryRuleUpdateProps defines model for Security_Detections_API_SavedQueryRuleUpdateProps.
+type SecurityDetectionsAPISavedQueryRuleUpdateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Id A universally unique identifier
+	Id *SecurityDetectionsAPIRuleObjectId `json:"id,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query *SecurityDetectionsAPIRuleQuery `json:"query,omitempty"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId SecurityDetectionsAPISavedQueryId `json:"saved_id"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags   *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPISavedQueryRuleUpdatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPISavedQueryRuleUpdatePropsType Rule type
+type SecurityDetectionsAPISavedQueryRuleUpdatePropsType string
+
+// SecurityDetectionsAPISetupGuide Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+type SecurityDetectionsAPISetupGuide = string
+
+// SecurityDetectionsAPISeverity Severity level of alerts produced by the rule, which must be one of the following:
+// * `low`: Alerts that are of interest but generally not considered to be security incidents
+// * `medium`: Alerts that require investigation
+// * `high`: Alerts that require immediate investigation
+// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+type SecurityDetectionsAPISeverity string
+
+// SecurityDetectionsAPISeverityMapping Overrides generated alerts' severity with values from the source event
+type SecurityDetectionsAPISeverityMapping = []struct {
+	// Field Source event field used to override the default `severity`.
+	Field    string                                       `json:"field"`
+	Operator SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+	Value    string                        `json:"value"`
+}
+
+// SecurityDetectionsAPISeverityMappingOperator defines model for SecurityDetectionsAPISeverityMapping.Operator.
+type SecurityDetectionsAPISeverityMappingOperator string
+
+// SecurityDetectionsAPIThreat > info
+// > Currently, only threats described using the MITRE ATT&CK&trade; framework are supported.
+type SecurityDetectionsAPIThreat struct {
+	// Framework Relevant attack framework
+	Framework string `json:"framework"`
+
+	// Tactic Object containing information on the attack type
+	Tactic SecurityDetectionsAPIThreatTactic `json:"tactic"`
+
+	// Technique Array containing information on the attack techniques (optional)
+	Technique *[]SecurityDetectionsAPIThreatTechnique `json:"technique,omitempty"`
+}
+
+// SecurityDetectionsAPIThreatArray defines model for Security_Detections_API_ThreatArray.
+type SecurityDetectionsAPIThreatArray = []SecurityDetectionsAPIThreat
+
+// SecurityDetectionsAPIThreatFilters defines model for Security_Detections_API_ThreatFilters.
+type SecurityDetectionsAPIThreatFilters = []interface{}
+
+// SecurityDetectionsAPIThreatIndex Elasticsearch indices used to check which field values generate alerts.
+type SecurityDetectionsAPIThreatIndex = []string
+
+// SecurityDetectionsAPIThreatIndicatorPath Defines the path to the threat indicator in the indicator documents (optional)
+type SecurityDetectionsAPIThreatIndicatorPath = string
+
+// SecurityDetectionsAPIThreatMapping Array of entries objects that define mappings between the source event fields and the values in the Elasticsearch threat index. Each entries object must contain these fields:
+//
+// - field: field from the event indices on which the rule runs
+// - type: must be mapping
+// - value: field from the Elasticsearch threat index
+//
+// You can use Boolean and and or logic to define the conditions for when matching fields and values generate alerts. Sibling entries objects are evaluated using or logic, whereas multiple entries in a single entries object use and logic. See Example of Threat Match rule which uses both `and` and `or` logic.
+type SecurityDetectionsAPIThreatMapping = []struct {
+	Entries []SecurityDetectionsAPIThreatMappingEntry `json:"entries"`
+}
+
+// SecurityDetectionsAPIThreatMappingEntry defines model for Security_Detections_API_ThreatMappingEntry.
+type SecurityDetectionsAPIThreatMappingEntry struct {
+	// Field A string that does not contain only whitespace characters
+	Field  SecurityDetectionsAPINonEmptyString         `json:"field"`
+	Negate *bool                                       `json:"negate,omitempty"`
+	Type   SecurityDetectionsAPIThreatMappingEntryType `json:"type"`
+
+	// Value A string that does not contain only whitespace characters
+	Value SecurityDetectionsAPINonEmptyString `json:"value"`
+}
+
+// SecurityDetectionsAPIThreatMappingEntryType defines model for SecurityDetectionsAPIThreatMappingEntry.Type.
+type SecurityDetectionsAPIThreatMappingEntryType string
+
+// SecurityDetectionsAPIThreatMatchRule defines model for Security_Detections_API_ThreatMatchRule.
+type SecurityDetectionsAPIThreatMatchRule struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions []SecurityDetectionsAPIRuleAction `json:"actions"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author SecurityDetectionsAPIRuleAuthorArray `json:"author"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType  *SecurityDetectionsAPIBuildingBlockType  `json:"building_block_type,omitempty"`
+	ConcurrentSearches *SecurityDetectionsAPIConcurrentSearches `json:"concurrent_searches,omitempty"`
+	CreatedAt          time.Time                                `json:"created_at"`
+	CreatedBy          string                                   `json:"created_by"`
+	DataViewId         *SecurityDetectionsAPIDataViewId         `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        SecurityDetectionsAPIIsRuleEnabled       `json:"enabled"`
+	ExceptionsList []SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From SecurityDetectionsAPIRuleIntervalFrom `json:"from"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable SecurityDetectionsAPIIsRuleImmutable `json:"immutable"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval SecurityDetectionsAPIRuleInterval `json:"interval"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	ItemsPerSearch      *SecurityDetectionsAPIItemsPerSearch      `json:"items_per_search,omitempty"`
+	Language            SecurityDetectionsAPIKqlQueryLanguage     `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals SecurityDetectionsAPIMaxSignals `json:"max_signals"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          SecurityDetectionsAPIRuleReferenceArray      `json:"references"`
+	RelatedIntegrations SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations"`
+	RequiredFields      SecurityDetectionsAPIRequiredFieldArray      `json:"required_fields"`
+	ResponseActions     *[]SecurityDetectionsAPIResponseAction       `json:"response_actions,omitempty"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup SecurityDetectionsAPISetupGuide `json:"setup"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping SecurityDetectionsAPISeverityMapping `json:"severity_mapping"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags          SecurityDetectionsAPIRuleTagArray   `json:"tags"`
+	Threat        SecurityDetectionsAPIThreatArray    `json:"threat"`
+	ThreatFilters *SecurityDetectionsAPIThreatFilters `json:"threat_filters,omitempty"`
+
+	// ThreatIndex Elasticsearch indices used to check which field values generate alerts.
+	ThreatIndex SecurityDetectionsAPIThreatIndex `json:"threat_index"`
+
+	// ThreatIndicatorPath Defines the path to the threat indicator in the indicator documents (optional)
+	ThreatIndicatorPath *SecurityDetectionsAPIThreatIndicatorPath `json:"threat_indicator_path,omitempty"`
+	ThreatLanguage      *SecurityDetectionsAPIKqlQueryLanguage    `json:"threat_language,omitempty"`
+
+	// ThreatMapping Array of entries objects that define mappings between the source event fields and the values in the Elasticsearch threat index. Each entries object must contain these fields:
+	//
+	// - field: field from the event indices on which the rule runs
+	// - type: must be mapping
+	// - value: field from the Elasticsearch threat index
+	//
+	// You can use Boolean and and or logic to define the conditions for when matching fields and values generate alerts. Sibling entries objects are evaluated using or logic, whereas multiple entries in a single entries object use and logic. See Example of Threat Match rule which uses both `and` and `or` logic.
+	ThreatMapping SecurityDetectionsAPIThreatMapping `json:"threat_mapping"`
+
+	// ThreatQuery Query used to determine which fields in the Elasticsearch index are used for generating alerts.
+	ThreatQuery SecurityDetectionsAPIThreatQuery `json:"threat_query"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                SecurityDetectionsAPIRuleIntervalTo                     `json:"to"`
+
+	// Type Rule type
+	Type      SecurityDetectionsAPIThreatMatchRuleType `json:"type"`
+	UpdatedAt time.Time                                `json:"updated_at"`
+	UpdatedBy string                                   `json:"updated_by"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version SecurityDetectionsAPIRuleVersion `json:"version"`
+}
+
+// SecurityDetectionsAPIThreatMatchRuleType Rule type
+type SecurityDetectionsAPIThreatMatchRuleType string
+
+// SecurityDetectionsAPIThreatMatchRuleCreateFields defines model for Security_Detections_API_ThreatMatchRuleCreateFields.
+type SecurityDetectionsAPIThreatMatchRuleCreateFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression   *SecurityDetectionsAPIAlertSuppression   `json:"alert_suppression,omitempty"`
+	ConcurrentSearches *SecurityDetectionsAPIConcurrentSearches `json:"concurrent_searches,omitempty"`
+	DataViewId         *SecurityDetectionsAPIDataViewId         `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index          *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	ItemsPerSearch *SecurityDetectionsAPIItemsPerSearch    `json:"items_per_search,omitempty"`
+	Language       *SecurityDetectionsAPIKqlQueryLanguage  `json:"language,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId       *SecurityDetectionsAPISavedQueryId  `json:"saved_id,omitempty"`
+	ThreatFilters *SecurityDetectionsAPIThreatFilters `json:"threat_filters,omitempty"`
+
+	// ThreatIndex Elasticsearch indices used to check which field values generate alerts.
+	ThreatIndex SecurityDetectionsAPIThreatIndex `json:"threat_index"`
+
+	// ThreatIndicatorPath Defines the path to the threat indicator in the indicator documents (optional)
+	ThreatIndicatorPath *SecurityDetectionsAPIThreatIndicatorPath `json:"threat_indicator_path,omitempty"`
+	ThreatLanguage      *SecurityDetectionsAPIKqlQueryLanguage    `json:"threat_language,omitempty"`
+
+	// ThreatMapping Array of entries objects that define mappings between the source event fields and the values in the Elasticsearch threat index. Each entries object must contain these fields:
+	//
+	// - field: field from the event indices on which the rule runs
+	// - type: must be mapping
+	// - value: field from the Elasticsearch threat index
+	//
+	// You can use Boolean and and or logic to define the conditions for when matching fields and values generate alerts. Sibling entries objects are evaluated using or logic, whereas multiple entries in a single entries object use and logic. See Example of Threat Match rule which uses both `and` and `or` logic.
+	ThreatMapping SecurityDetectionsAPIThreatMapping `json:"threat_mapping"`
+
+	// ThreatQuery Query used to determine which fields in the Elasticsearch index are used for generating alerts.
+	ThreatQuery SecurityDetectionsAPIThreatQuery `json:"threat_query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThreatMatchRuleCreateFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIThreatMatchRuleCreateFieldsType Rule type
+type SecurityDetectionsAPIThreatMatchRuleCreateFieldsType string
+
+// SecurityDetectionsAPIThreatMatchRuleCreateProps defines model for Security_Detections_API_ThreatMatchRuleCreateProps.
+type SecurityDetectionsAPIThreatMatchRuleCreateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType  *SecurityDetectionsAPIBuildingBlockType  `json:"building_block_type,omitempty"`
+	ConcurrentSearches *SecurityDetectionsAPIConcurrentSearches `json:"concurrent_searches,omitempty"`
+	DataViewId         *SecurityDetectionsAPIDataViewId         `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	ItemsPerSearch      *SecurityDetectionsAPIItemsPerSearch      `json:"items_per_search,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags          *SecurityDetectionsAPIRuleTagArray  `json:"tags,omitempty"`
+	Threat        *SecurityDetectionsAPIThreatArray   `json:"threat,omitempty"`
+	ThreatFilters *SecurityDetectionsAPIThreatFilters `json:"threat_filters,omitempty"`
+
+	// ThreatIndex Elasticsearch indices used to check which field values generate alerts.
+	ThreatIndex SecurityDetectionsAPIThreatIndex `json:"threat_index"`
+
+	// ThreatIndicatorPath Defines the path to the threat indicator in the indicator documents (optional)
+	ThreatIndicatorPath *SecurityDetectionsAPIThreatIndicatorPath `json:"threat_indicator_path,omitempty"`
+	ThreatLanguage      *SecurityDetectionsAPIKqlQueryLanguage    `json:"threat_language,omitempty"`
+
+	// ThreatMapping Array of entries objects that define mappings between the source event fields and the values in the Elasticsearch threat index. Each entries object must contain these fields:
+	//
+	// - field: field from the event indices on which the rule runs
+	// - type: must be mapping
+	// - value: field from the Elasticsearch threat index
+	//
+	// You can use Boolean and and or logic to define the conditions for when matching fields and values generate alerts. Sibling entries objects are evaluated using or logic, whereas multiple entries in a single entries object use and logic. See Example of Threat Match rule which uses both `and` and `or` logic.
+	ThreatMapping SecurityDetectionsAPIThreatMapping `json:"threat_mapping"`
+
+	// ThreatQuery Query used to determine which fields in the Elasticsearch index are used for generating alerts.
+	ThreatQuery SecurityDetectionsAPIThreatQuery `json:"threat_query"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThreatMatchRuleCreatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIThreatMatchRuleCreatePropsType Rule type
+type SecurityDetectionsAPIThreatMatchRuleCreatePropsType string
+
+// SecurityDetectionsAPIThreatMatchRuleDefaultableFields defines model for Security_Detections_API_ThreatMatchRuleDefaultableFields.
+type SecurityDetectionsAPIThreatMatchRuleDefaultableFields struct {
+	Language *SecurityDetectionsAPIKqlQueryLanguage `json:"language,omitempty"`
+}
+
+// SecurityDetectionsAPIThreatMatchRuleOptionalFields defines model for Security_Detections_API_ThreatMatchRuleOptionalFields.
+type SecurityDetectionsAPIThreatMatchRuleOptionalFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression   *SecurityDetectionsAPIAlertSuppression   `json:"alert_suppression,omitempty"`
+	ConcurrentSearches *SecurityDetectionsAPIConcurrentSearches `json:"concurrent_searches,omitempty"`
+	DataViewId         *SecurityDetectionsAPIDataViewId         `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index          *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	ItemsPerSearch *SecurityDetectionsAPIItemsPerSearch    `json:"items_per_search,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId       *SecurityDetectionsAPISavedQueryId  `json:"saved_id,omitempty"`
+	ThreatFilters *SecurityDetectionsAPIThreatFilters `json:"threat_filters,omitempty"`
+
+	// ThreatIndicatorPath Defines the path to the threat indicator in the indicator documents (optional)
+	ThreatIndicatorPath *SecurityDetectionsAPIThreatIndicatorPath `json:"threat_indicator_path,omitempty"`
+	ThreatLanguage      *SecurityDetectionsAPIKqlQueryLanguage    `json:"threat_language,omitempty"`
+}
+
+// SecurityDetectionsAPIThreatMatchRuleRequiredFields defines model for Security_Detections_API_ThreatMatchRuleRequiredFields.
+type SecurityDetectionsAPIThreatMatchRuleRequiredFields struct {
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// ThreatIndex Elasticsearch indices used to check which field values generate alerts.
+	ThreatIndex SecurityDetectionsAPIThreatIndex `json:"threat_index"`
+
+	// ThreatMapping Array of entries objects that define mappings between the source event fields and the values in the Elasticsearch threat index. Each entries object must contain these fields:
+	//
+	// - field: field from the event indices on which the rule runs
+	// - type: must be mapping
+	// - value: field from the Elasticsearch threat index
+	//
+	// You can use Boolean and and or logic to define the conditions for when matching fields and values generate alerts. Sibling entries objects are evaluated using or logic, whereas multiple entries in a single entries object use and logic. See Example of Threat Match rule which uses both `and` and `or` logic.
+	ThreatMapping SecurityDetectionsAPIThreatMapping `json:"threat_mapping"`
+
+	// ThreatQuery Query used to determine which fields in the Elasticsearch index are used for generating alerts.
+	ThreatQuery SecurityDetectionsAPIThreatQuery `json:"threat_query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThreatMatchRuleRequiredFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIThreatMatchRuleRequiredFieldsType Rule type
+type SecurityDetectionsAPIThreatMatchRuleRequiredFieldsType string
+
+// SecurityDetectionsAPIThreatMatchRuleResponseFields defines model for Security_Detections_API_ThreatMatchRuleResponseFields.
+type SecurityDetectionsAPIThreatMatchRuleResponseFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression   *SecurityDetectionsAPIAlertSuppression   `json:"alert_suppression,omitempty"`
+	ConcurrentSearches *SecurityDetectionsAPIConcurrentSearches `json:"concurrent_searches,omitempty"`
+	DataViewId         *SecurityDetectionsAPIDataViewId         `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index          *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	ItemsPerSearch *SecurityDetectionsAPIItemsPerSearch    `json:"items_per_search,omitempty"`
+	Language       SecurityDetectionsAPIKqlQueryLanguage   `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId       *SecurityDetectionsAPISavedQueryId  `json:"saved_id,omitempty"`
+	ThreatFilters *SecurityDetectionsAPIThreatFilters `json:"threat_filters,omitempty"`
+
+	// ThreatIndex Elasticsearch indices used to check which field values generate alerts.
+	ThreatIndex SecurityDetectionsAPIThreatIndex `json:"threat_index"`
+
+	// ThreatIndicatorPath Defines the path to the threat indicator in the indicator documents (optional)
+	ThreatIndicatorPath *SecurityDetectionsAPIThreatIndicatorPath `json:"threat_indicator_path,omitempty"`
+	ThreatLanguage      *SecurityDetectionsAPIKqlQueryLanguage    `json:"threat_language,omitempty"`
+
+	// ThreatMapping Array of entries objects that define mappings between the source event fields and the values in the Elasticsearch threat index. Each entries object must contain these fields:
+	//
+	// - field: field from the event indices on which the rule runs
+	// - type: must be mapping
+	// - value: field from the Elasticsearch threat index
+	//
+	// You can use Boolean and and or logic to define the conditions for when matching fields and values generate alerts. Sibling entries objects are evaluated using or logic, whereas multiple entries in a single entries object use and logic. See Example of Threat Match rule which uses both `and` and `or` logic.
+	ThreatMapping SecurityDetectionsAPIThreatMapping `json:"threat_mapping"`
+
+	// ThreatQuery Query used to determine which fields in the Elasticsearch index are used for generating alerts.
+	ThreatQuery SecurityDetectionsAPIThreatQuery `json:"threat_query"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThreatMatchRuleResponseFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIThreatMatchRuleResponseFieldsType Rule type
+type SecurityDetectionsAPIThreatMatchRuleResponseFieldsType string
+
+// SecurityDetectionsAPIThreatMatchRuleUpdateProps defines model for Security_Detections_API_ThreatMatchRuleUpdateProps.
+type SecurityDetectionsAPIThreatMatchRuleUpdateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIAlertSuppression                `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType  *SecurityDetectionsAPIBuildingBlockType  `json:"building_block_type,omitempty"`
+	ConcurrentSearches *SecurityDetectionsAPIConcurrentSearches `json:"concurrent_searches,omitempty"`
+	DataViewId         *SecurityDetectionsAPIDataViewId         `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Id A universally unique identifier
+	Id *SecurityDetectionsAPIRuleObjectId `json:"id,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	ItemsPerSearch      *SecurityDetectionsAPIItemsPerSearch      `json:"items_per_search,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags          *SecurityDetectionsAPIRuleTagArray  `json:"tags,omitempty"`
+	Threat        *SecurityDetectionsAPIThreatArray   `json:"threat,omitempty"`
+	ThreatFilters *SecurityDetectionsAPIThreatFilters `json:"threat_filters,omitempty"`
+
+	// ThreatIndex Elasticsearch indices used to check which field values generate alerts.
+	ThreatIndex SecurityDetectionsAPIThreatIndex `json:"threat_index"`
+
+	// ThreatIndicatorPath Defines the path to the threat indicator in the indicator documents (optional)
+	ThreatIndicatorPath *SecurityDetectionsAPIThreatIndicatorPath `json:"threat_indicator_path,omitempty"`
+	ThreatLanguage      *SecurityDetectionsAPIKqlQueryLanguage    `json:"threat_language,omitempty"`
+
+	// ThreatMapping Array of entries objects that define mappings between the source event fields and the values in the Elasticsearch threat index. Each entries object must contain these fields:
+	//
+	// - field: field from the event indices on which the rule runs
+	// - type: must be mapping
+	// - value: field from the Elasticsearch threat index
+	//
+	// You can use Boolean and and or logic to define the conditions for when matching fields and values generate alerts. Sibling entries objects are evaluated using or logic, whereas multiple entries in a single entries object use and logic. See Example of Threat Match rule which uses both `and` and `or` logic.
+	ThreatMapping SecurityDetectionsAPIThreatMapping `json:"threat_mapping"`
+
+	// ThreatQuery Query used to determine which fields in the Elasticsearch index are used for generating alerts.
+	ThreatQuery SecurityDetectionsAPIThreatQuery `json:"threat_query"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThreatMatchRuleUpdatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIThreatMatchRuleUpdatePropsType Rule type
+type SecurityDetectionsAPIThreatMatchRuleUpdatePropsType string
+
+// SecurityDetectionsAPIThreatQuery Query used to determine which fields in the Elasticsearch index are used for generating alerts.
+type SecurityDetectionsAPIThreatQuery = string
+
+// SecurityDetectionsAPIThreatSubtechnique defines model for Security_Detections_API_ThreatSubtechnique.
+type SecurityDetectionsAPIThreatSubtechnique struct {
+	// Id Subtechnique ID
+	Id string `json:"id"`
+
+	// Name Subtechnique name
+	Name string `json:"name"`
+
+	// Reference Subtechnique reference
+	Reference string `json:"reference"`
+}
+
+// SecurityDetectionsAPIThreatTactic Object containing information on the attack type
+type SecurityDetectionsAPIThreatTactic struct {
+	// Id Tactic ID
+	Id string `json:"id"`
+
+	// Name Tactic name
+	Name string `json:"name"`
+
+	// Reference Tactic reference
+	Reference string `json:"reference"`
+}
+
+// SecurityDetectionsAPIThreatTechnique defines model for Security_Detections_API_ThreatTechnique.
+type SecurityDetectionsAPIThreatTechnique struct {
+	// Id Technique ID
+	Id string `json:"id"`
+
+	// Name Technique name
+	Name string `json:"name"`
+
+	// Reference Technique reference
+	Reference string `json:"reference"`
+
+	// Subtechnique Array containing more specific information on the attack technique.
+	Subtechnique *[]SecurityDetectionsAPIThreatSubtechnique `json:"subtechnique,omitempty"`
+}
+
+// SecurityDetectionsAPIThreshold defines model for Security_Detections_API_Threshold.
+type SecurityDetectionsAPIThreshold struct {
+	// Cardinality The field on which the cardinality is applied.
+	Cardinality *SecurityDetectionsAPIThresholdCardinality `json:"cardinality,omitempty"`
+
+	// Field The field on which the threshold is applied. If you specify an empty array ([]), alerts are generated when the query returns at least the number of results specified in the value field.
+	Field SecurityDetectionsAPIThresholdField `json:"field"`
+
+	// Value The threshold value from which an alert is generated.
+	Value SecurityDetectionsAPIThresholdValue `json:"value"`
+}
+
+// SecurityDetectionsAPIThresholdAlertSuppression Defines alert suppression configuration.
+type SecurityDetectionsAPIThresholdAlertSuppression struct {
+	Duration SecurityDetectionsAPIAlertSuppressionDuration `json:"duration"`
+}
+
+// SecurityDetectionsAPIThresholdCardinality The field on which the cardinality is applied.
+type SecurityDetectionsAPIThresholdCardinality = []struct {
+	// Field The field on which to calculate and compare the cardinality.
+	Field string `json:"field"`
+
+	// Value The threshold value from which an alert is generated based on unique number of values of cardinality.field.
+	Value int `json:"value"`
+}
+
+// SecurityDetectionsAPIThresholdField The field on which the threshold is applied. If you specify an empty array ([]), alerts are generated when the query returns at least the number of results specified in the value field.
+type SecurityDetectionsAPIThresholdField struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPIThresholdField0 defines model for .
+type SecurityDetectionsAPIThresholdField0 = string
+
+// SecurityDetectionsAPIThresholdField1 defines model for .
+type SecurityDetectionsAPIThresholdField1 = []string
+
+// SecurityDetectionsAPIThresholdRule defines model for Security_Detections_API_ThresholdRule.
+type SecurityDetectionsAPIThresholdRule struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions []SecurityDetectionsAPIRuleAction `json:"actions"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIThresholdAlertSuppression       `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author SecurityDetectionsAPIRuleAuthorArray `json:"author"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	CreatedAt         time.Time                               `json:"created_at"`
+	CreatedBy         string                                  `json:"created_by"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        SecurityDetectionsAPIIsRuleEnabled       `json:"enabled"`
+	ExceptionsList []SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list"`
+
+	// ExecutionSummary Summary of the last execution of a rule.
+	// > info
+	// > This field is under development and its usage or schema may change
+	ExecutionSummary *SecurityDetectionsAPIRuleExecutionSummary `json:"execution_summary,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From SecurityDetectionsAPIRuleIntervalFrom `json:"from"`
+
+	// Id A universally unique identifier
+	Id SecurityDetectionsAPIRuleObjectId `json:"id"`
+
+	// Immutable This field determines whether the rule is a prebuilt Elastic rule. It will be replaced with the `rule_source` field.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Immutable SecurityDetectionsAPIIsRuleImmutable `json:"immutable"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval SecurityDetectionsAPIRuleInterval `json:"interval"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            SecurityDetectionsAPIKqlQueryLanguage     `json:"language"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals SecurityDetectionsAPIMaxSignals `json:"max_signals"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          SecurityDetectionsAPIRuleReferenceArray      `json:"references"`
+	RelatedIntegrations SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations"`
+	RequiredFields      SecurityDetectionsAPIRequiredFieldArray      `json:"required_fields"`
+	ResponseActions     *[]SecurityDetectionsAPIResponseAction       `json:"response_actions,omitempty"`
+
+	// Revision The rule's revision number.
+	//
+	// It represents the version of rule's object in Kibana. It is set to `0` when the rule is installed or created and then gets incremented on each update.
+	// > info
+	// > Not all updates to any rule fields will increment the revision. Only those fields that are considered static `rule parameters` can trigger revision increments. For example, an update to a rule's query or index fields will increment the rule's revision by `1`. However, changes to dynamic or technical fields like enabled or execution_summary will not cause revision increments.
+	Revision SecurityDetectionsAPIRuleRevision `json:"revision"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId SecurityDetectionsAPIRuleSignatureId `json:"rule_id"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// RuleSource Discriminated union that determines whether the rule is internally sourced (created within the Kibana app) or has an external source, such as the Elastic Prebuilt rules repo.
+	RuleSource SecurityDetectionsAPIRuleSource `json:"rule_source"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup SecurityDetectionsAPISetupGuide `json:"setup"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping SecurityDetectionsAPISeverityMapping `json:"severity_mapping"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags      SecurityDetectionsAPIRuleTagArray `json:"tags"`
+	Threat    SecurityDetectionsAPIThreatArray  `json:"threat"`
+	Threshold SecurityDetectionsAPIThreshold    `json:"threshold"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                SecurityDetectionsAPIRuleIntervalTo                     `json:"to"`
+
+	// Type Rule type
+	Type      SecurityDetectionsAPIThresholdRuleType `json:"type"`
+	UpdatedAt time.Time                              `json:"updated_at"`
+	UpdatedBy string                                 `json:"updated_by"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version SecurityDetectionsAPIRuleVersion `json:"version"`
+}
+
+// SecurityDetectionsAPIThresholdRuleType Rule type
+type SecurityDetectionsAPIThresholdRuleType string
+
+// SecurityDetectionsAPIThresholdRuleCreateFields defines model for Security_Detections_API_ThresholdRuleCreateFields.
+type SecurityDetectionsAPIThresholdRuleCreateFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIThresholdAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId                `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language *SecurityDetectionsAPIKqlQueryLanguage  `json:"language,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId   *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+	Threshold SecurityDetectionsAPIThreshold     `json:"threshold"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThresholdRuleCreateFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIThresholdRuleCreateFieldsType Rule type
+type SecurityDetectionsAPIThresholdRuleCreateFieldsType string
+
+// SecurityDetectionsAPIThresholdRuleCreateProps defines model for Security_Detections_API_ThresholdRuleCreateProps.
+type SecurityDetectionsAPIThresholdRuleCreateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIThresholdAlertSuppression       `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags      *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat    *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+	Threshold SecurityDetectionsAPIThreshold     `json:"threshold"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThresholdRuleCreatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIThresholdRuleCreatePropsType Rule type
+type SecurityDetectionsAPIThresholdRuleCreatePropsType string
+
+// SecurityDetectionsAPIThresholdRuleDefaultableFields defines model for Security_Detections_API_ThresholdRuleDefaultableFields.
+type SecurityDetectionsAPIThresholdRuleDefaultableFields struct {
+	Language *SecurityDetectionsAPIKqlQueryLanguage `json:"language,omitempty"`
+}
+
+// SecurityDetectionsAPIThresholdRuleOptionalFields defines model for Security_Detections_API_ThresholdRuleOptionalFields.
+type SecurityDetectionsAPIThresholdRuleOptionalFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIThresholdAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId                `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+}
+
+// SecurityDetectionsAPIThresholdRuleRequiredFields defines model for Security_Detections_API_ThresholdRuleRequiredFields.
+type SecurityDetectionsAPIThresholdRuleRequiredFields struct {
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query     SecurityDetectionsAPIRuleQuery `json:"query"`
+	Threshold SecurityDetectionsAPIThreshold `json:"threshold"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThresholdRuleRequiredFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIThresholdRuleRequiredFieldsType Rule type
+type SecurityDetectionsAPIThresholdRuleRequiredFieldsType string
+
+// SecurityDetectionsAPIThresholdRuleResponseFields defines model for Security_Detections_API_ThresholdRuleResponseFields.
+type SecurityDetectionsAPIThresholdRuleResponseFields struct {
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIThresholdAlertSuppression `json:"alert_suppression,omitempty"`
+	DataViewId       *SecurityDetectionsAPIDataViewId                `json:"data_view_id,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index    *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+	Language SecurityDetectionsAPIKqlQueryLanguage   `json:"language"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId   *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+	Threshold SecurityDetectionsAPIThreshold     `json:"threshold"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThresholdRuleResponseFieldsType `json:"type"`
+}
+
+// SecurityDetectionsAPIThresholdRuleResponseFieldsType Rule type
+type SecurityDetectionsAPIThresholdRuleResponseFieldsType string
+
+// SecurityDetectionsAPIThresholdRuleUpdateProps defines model for Security_Detections_API_ThresholdRuleUpdateProps.
+type SecurityDetectionsAPIThresholdRuleUpdateProps struct {
+	// Actions Array defining the automated actions (notifications) taken when alerts are generated.
+	Actions *[]SecurityDetectionsAPIRuleAction `json:"actions,omitempty"`
+
+	// AlertSuppression Defines alert suppression configuration.
+	AlertSuppression *SecurityDetectionsAPIThresholdAlertSuppression       `json:"alert_suppression,omitempty"`
+	AliasPurpose     *SecurityDetectionsAPISavedObjectResolveAliasPurpose  `json:"alias_purpose,omitempty"`
+	AliasTargetId    *SecurityDetectionsAPISavedObjectResolveAliasTargetId `json:"alias_target_id,omitempty"`
+
+	// Author The rule’s author.
+	Author *SecurityDetectionsAPIRuleAuthorArray `json:"author,omitempty"`
+
+	// BuildingBlockType Determines if the rule acts as a building block. If yes, the value must be `default`.
+	// By default, building-block alerts are not displayed in the UI. These rules are used as a foundation for other rules that do generate alerts.
+	// For more information, refer to [About building block rules](https://www.elastic.co/guide/en/security/current/building-block-rule.html).
+	BuildingBlockType *SecurityDetectionsAPIBuildingBlockType `json:"building_block_type,omitempty"`
+	DataViewId        *SecurityDetectionsAPIDataViewId        `json:"data_view_id,omitempty"`
+
+	// Description The rule’s description.
+	Description SecurityDetectionsAPIRuleDescription `json:"description"`
+
+	// Enabled Determines whether the rule is enabled. Defaults to true.
+	Enabled        *SecurityDetectionsAPIIsRuleEnabled       `json:"enabled,omitempty"`
+	ExceptionsList *[]SecurityDetectionsAPIRuleExceptionList `json:"exceptions_list,omitempty"`
+
+	// FalsePositives String array used to describe common reasons why the rule may issue false-positive alerts. Defaults to an empty array.
+	FalsePositives *SecurityDetectionsAPIRuleFalsePositiveArray `json:"false_positives,omitempty"`
+
+	// Filters The query and filter context array used to define the conditions for when alerts are created from events. Defaults to an empty array.
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Filters *SecurityDetectionsAPIRuleFilterArray `json:"filters,omitempty"`
+
+	// From Time from which data is analyzed each time the rule runs, using a date math range. For example, now-4200s means the rule analyzes data from 70 minutes before its start time. Defaults to now-6m (analyzes data from 6 minutes before the start time).
+	From *SecurityDetectionsAPIRuleIntervalFrom `json:"from,omitempty"`
+
+	// Id A universally unique identifier
+	Id *SecurityDetectionsAPIRuleObjectId `json:"id,omitempty"`
+
+	// Index Indices on which the rule functions. Defaults to the Security Solution indices defined on the Kibana Advanced Settings page (Kibana → Stack Management → Advanced Settings → `securitySolution:defaultIndex`).
+	// > info
+	// > This field is not supported for ES|QL rules.
+	Index *SecurityDetectionsAPIIndexPatternArray `json:"index,omitempty"`
+
+	// Interval Frequency of rule execution, using a date math range. For example, "1h" means the rule runs every hour. Defaults to 5m (5 minutes).
+	Interval *SecurityDetectionsAPIRuleInterval `json:"interval,omitempty"`
+
+	// InvestigationFields Schema for fields relating to investigation fields. These are user defined fields we use to highlight
+	// in various features in the UI such as alert details flyout and exceptions auto-population from alert.
+	InvestigationFields *SecurityDetectionsAPIInvestigationFields `json:"investigation_fields,omitempty"`
+	Language            *SecurityDetectionsAPIKqlQueryLanguage    `json:"language,omitempty"`
+
+	// License The rule's license.
+	License *SecurityDetectionsAPIRuleLicense `json:"license,omitempty"`
+
+	// MaxSignals Maximum number of alerts the rule can create during a single run (the rule’s Max alerts per run [advanced setting](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-ui-advanced-params) value).
+	// > info
+	// > This setting can be superseded by the [Kibana configuration setting](https://www.elastic.co/guide/en/kibana/current/alert-action-settings-kb.html#alert-settings) `xpack.alerting.rules.run.alerts.max`, which determines the maximum alerts generated by any rule in the Kibana alerting framework. For example, if `xpack.alerting.rules.run.alerts.max` is set to 1000, the rule can generate no more than 1000 alerts even if `max_signals` is set higher.
+	MaxSignals *SecurityDetectionsAPIMaxSignals `json:"max_signals,omitempty"`
+
+	// Meta Placeholder for metadata about the rule.
+	// > info
+	// > This field is overwritten when you save changes to the rule’s settings.
+	Meta *SecurityDetectionsAPIRuleMetadata `json:"meta,omitempty"`
+
+	// Name A human-readable name for the rule.
+	Name SecurityDetectionsAPIRuleName `json:"name"`
+
+	// Namespace Has no effect.
+	Namespace *SecurityDetectionsAPIAlertsIndexNamespace `json:"namespace,omitempty"`
+
+	// Note Notes to help investigate alerts produced by the rule.
+	Note    *SecurityDetectionsAPIInvestigationGuide        `json:"note,omitempty"`
+	Outcome *SecurityDetectionsAPISavedObjectResolveOutcome `json:"outcome,omitempty"`
+
+	// OutputIndex (deprecated) Has no effect.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	OutputIndex *SecurityDetectionsAPIAlertsIndex `json:"output_index,omitempty"`
+
+	// Query [Query](https://www.elastic.co/guide/en/kibana/8.17/search.html) used by the rule to create alerts.
+	//
+	// - For indicator match rules, only the query’s results are used to determine whether an alert is generated.
+	// - ES|QL rules have additional query requirements. Refer to [Create ES|QL](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#create-esql-rule) rules for more information.
+	Query SecurityDetectionsAPIRuleQuery `json:"query"`
+
+	// References Array containing notes about or references to relevant information about the rule. Defaults to an empty array.
+	References          *SecurityDetectionsAPIRuleReferenceArray      `json:"references,omitempty"`
+	RelatedIntegrations *SecurityDetectionsAPIRelatedIntegrationArray `json:"related_integrations,omitempty"`
+
+	// RequiredFields Elasticsearch fields and their types that need to be present for the rule to function.
+	// > info
+	// > The value of `required_fields` does not affect the rule’s behavior, and specifying it incorrectly won’t cause the rule to fail. Use `required_fields` as an informational property to document the fields that the rule expects to be present in the data.
+	RequiredFields  *[]SecurityDetectionsAPIRequiredFieldInput `json:"required_fields,omitempty"`
+	ResponseActions *[]SecurityDetectionsAPIResponseAction     `json:"response_actions,omitempty"`
+
+	// RiskScore A numerical representation of the alert's severity from 0 to 100, where:
+	// * `0` - `21` represents low severity
+	// * `22` - `47` represents medium severity
+	// * `48` - `73` represents high severity
+	// * `74` - `100` represents critical severity
+	RiskScore SecurityDetectionsAPIRiskScore `json:"risk_score"`
+
+	// RiskScoreMapping Overrides generated alerts' risk_score with a value from the source event
+	RiskScoreMapping *SecurityDetectionsAPIRiskScoreMapping `json:"risk_score_mapping,omitempty"`
+
+	// RuleId A stable unique identifier for the rule object. It can be assigned during rule creation. It can be any string, but often is a UUID. It should be unique not only within a given Kibana space, but also across spaces and Elastic environments. The same prebuilt Elastic rule, when installed in two different Kibana spaces or two different Elastic environments, will have the same `rule_id`s.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `json:"rule_id,omitempty"`
+
+	// RuleNameOverride Sets which field in the source event is used to populate the alert's `signal.rule.name` value (in the UI, this value is displayed on the Rules page in the Rule column). When unspecified, the rule’s `name` value is used. The source field must be a string data type.
+	RuleNameOverride *SecurityDetectionsAPIRuleNameOverride `json:"rule_name_override,omitempty"`
+
+	// SavedId Kibana [saved search](https://www.elastic.co/guide/en/kibana/current/save-open-search.html) used by the rule to create alerts.
+	SavedId *SecurityDetectionsAPISavedQueryId `json:"saved_id,omitempty"`
+
+	// Setup Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
+	Setup *SecurityDetectionsAPISetupGuide `json:"setup,omitempty"`
+
+	// Severity Severity level of alerts produced by the rule, which must be one of the following:
+	// * `low`: Alerts that are of interest but generally not considered to be security incidents
+	// * `medium`: Alerts that require investigation
+	// * `high`: Alerts that require immediate investigation
+	// * `critical`: Alerts that indicate it is highly likely a security incident has occurred
+	Severity SecurityDetectionsAPISeverity `json:"severity"`
+
+	// SeverityMapping Overrides generated alerts' severity with values from the source event
+	SeverityMapping *SecurityDetectionsAPISeverityMapping `json:"severity_mapping,omitempty"`
+
+	// Tags String array containing words and phrases to help categorize, filter, and search rules. Defaults to an empty array.
+	Tags      *SecurityDetectionsAPIRuleTagArray `json:"tags,omitempty"`
+	Threat    *SecurityDetectionsAPIThreatArray  `json:"threat,omitempty"`
+	Threshold SecurityDetectionsAPIThreshold     `json:"threshold"`
+
+	// Throttle Defines how often rule actions are taken.
+	Throttle *SecurityDetectionsAPIRuleActionThrottle `json:"throttle,omitempty"`
+
+	// TimelineId Timeline template ID
+	TimelineId *SecurityDetectionsAPITimelineTemplateId `json:"timeline_id,omitempty"`
+
+	// TimelineTitle Timeline template title
+	TimelineTitle *SecurityDetectionsAPITimelineTemplateTitle `json:"timeline_title,omitempty"`
+
+	// TimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+	TimestampOverride *SecurityDetectionsAPITimestampOverride `json:"timestamp_override,omitempty"`
+
+	// TimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+	TimestampOverrideFallbackDisabled *SecurityDetectionsAPITimestampOverrideFallbackDisabled `json:"timestamp_override_fallback_disabled,omitempty"`
+	To                                *SecurityDetectionsAPIRuleIntervalTo                    `json:"to,omitempty"`
+
+	// Type Rule type
+	Type SecurityDetectionsAPIThresholdRuleUpdatePropsType `json:"type"`
+
+	// Version The rule's version number.
+	//
+	// - For prebuilt rules it represents the version of the rule's content in the source [detection-rules](https://github.com/elastic/detection-rules) repository (and the corresponding `security_detection_engine` Fleet package that is used for distributing prebuilt rules).
+	// - For custom rules it is set to `1` when the rule is created.
+	// > info
+	// > It is not incremented on each update. Compare this to the `revision` field.
+	Version *SecurityDetectionsAPIRuleVersion `json:"version,omitempty"`
+}
+
+// SecurityDetectionsAPIThresholdRuleUpdatePropsType Rule type
+type SecurityDetectionsAPIThresholdRuleUpdatePropsType string
+
+// SecurityDetectionsAPIThresholdValue The threshold value from which an alert is generated.
+type SecurityDetectionsAPIThresholdValue = int
+
+// SecurityDetectionsAPITiebreakerField Sets a secondary field for sorting events
+type SecurityDetectionsAPITiebreakerField = string
+
+// SecurityDetectionsAPITimelineTemplateId Timeline template ID
+type SecurityDetectionsAPITimelineTemplateId = string
+
+// SecurityDetectionsAPITimelineTemplateTitle Timeline template title
+type SecurityDetectionsAPITimelineTemplateTitle = string
+
+// SecurityDetectionsAPITimestampField Specifies the name of the event timestamp field used for sorting a sequence of events. Not to be confused with `timestamp_override`, which specifies the more general field used for querying events within a range. Defaults to the @timestamp ECS field.
+type SecurityDetectionsAPITimestampField = string
+
+// SecurityDetectionsAPITimestampOverride Sets the time field used to query indices. When unspecified, rules query the `@timestamp` field. The source field must be an Elasticsearch date data type.
+type SecurityDetectionsAPITimestampOverride = string
+
+// SecurityDetectionsAPITimestampOverrideFallbackDisabled Disables the fallback to the event's @timestamp field
+type SecurityDetectionsAPITimestampOverrideFallbackDisabled = bool
+
+// SecurityDetectionsAPIUUID A universally unique identifier
+type SecurityDetectionsAPIUUID = openapi_types.UUID
+
 // SyntheticsGetParameterResponse defines model for Synthetics_getParameterResponse.
 type SyntheticsGetParameterResponse struct {
 	// Description The description of the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
@@ -1108,15 +7264,16 @@ type SyntheticsPostParameterResponse struct {
 // AgentPolicy defines model for agent_policy.
 type AgentPolicy struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      interface{} `json:"agent_download_target_directory,omitempty"`
-		AgentDownloadTimeout              interface{} `json:"agent_download_timeout,omitempty"`
-		AgentLimitsGoMaxProcs             interface{} `json:"agent_limits_go_max_procs,omitempty"`
-		AgentLoggingFilesInterval         interface{} `json:"agent_logging_files_interval,omitempty"`
-		AgentLoggingFilesKeepfiles        interface{} `json:"agent_logging_files_keepfiles,omitempty"`
-		AgentLoggingFilesRotateeverybytes interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
-		AgentLoggingLevel                 interface{} `json:"agent_logging_level,omitempty"`
-		AgentLoggingMetricsPeriod         interface{} `json:"agent_logging_metrics_period,omitempty"`
-		AgentLoggingToFiles               interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentDownloadTargetDirectory       interface{} `json:"agent_download_target_directory,omitempty"`
+		AgentDownloadTimeout               interface{} `json:"agent_download_timeout,omitempty"`
+		AgentLimitsGoMaxProcs              interface{} `json:"agent_limits_go_max_procs,omitempty"`
+		AgentLoggingFilesInterval          interface{} `json:"agent_logging_files_interval,omitempty"`
+		AgentLoggingFilesKeepfiles         interface{} `json:"agent_logging_files_keepfiles,omitempty"`
+		AgentLoggingFilesRotateeverybytes  interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
+		AgentLoggingLevel                  interface{} `json:"agent_logging_level,omitempty"`
+		AgentLoggingMetricsPeriod          interface{} `json:"agent_logging_metrics_period,omitempty"`
+		AgentLoggingToFiles                interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentMonitoringRuntimeExperimental interface{} `json:"agent_monitoring_runtime_experimental,omitempty"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -1926,9 +8083,10 @@ type NewOutputElasticsearch struct {
 			Key *NewOutputElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *NewOutputShipper          `json:"shipper,omitempty"`
-	Ssl     *NewOutputSsl              `json:"ssl,omitempty"`
-	Type    NewOutputElasticsearchType `json:"type"`
+	Shipper            *NewOutputShipper          `json:"shipper,omitempty"`
+	Ssl                *NewOutputSsl              `json:"ssl,omitempty"`
+	Type               NewOutputElasticsearchType `json:"type"`
+	WriteToLogsStreams *bool                      `json:"write_to_logs_streams,omitempty"`
 }
 
 // NewOutputElasticsearchPreset defines model for NewOutputElasticsearch.Preset.
@@ -1997,13 +8155,14 @@ type NewOutputKafka struct {
 			Key NewOutputKafka_Secrets_Ssl_Key `json:"key"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper  *NewOutputShipper  `json:"shipper,omitempty"`
-	Ssl      *NewOutputSsl      `json:"ssl,omitempty"`
-	Timeout  *float32           `json:"timeout,omitempty"`
-	Topic    *string            `json:"topic,omitempty"`
-	Type     NewOutputKafkaType `json:"type"`
-	Username interface{}        `json:"username"`
-	Version  *string            `json:"version,omitempty"`
+	Shipper            *NewOutputShipper  `json:"shipper,omitempty"`
+	Ssl                *NewOutputSsl      `json:"ssl,omitempty"`
+	Timeout            *float32           `json:"timeout,omitempty"`
+	Topic              *string            `json:"topic,omitempty"`
+	Type               NewOutputKafkaType `json:"type"`
+	Username           interface{}        `json:"username"`
+	Version            *string            `json:"version,omitempty"`
+	WriteToLogsStreams *bool              `json:"write_to_logs_streams,omitempty"`
 }
 
 // NewOutputKafkaAuthType defines model for NewOutputKafka.AuthType.
@@ -2069,9 +8228,10 @@ type NewOutputLogstash struct {
 			Key *NewOutputLogstash_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *NewOutputShipper     `json:"shipper,omitempty"`
-	Ssl     *NewOutputSsl         `json:"ssl,omitempty"`
-	Type    NewOutputLogstashType `json:"type"`
+	Shipper            *NewOutputShipper     `json:"shipper,omitempty"`
+	Ssl                *NewOutputSsl         `json:"ssl,omitempty"`
+	Type               NewOutputLogstashType `json:"type"`
+	WriteToLogsStreams *bool                 `json:"write_to_logs_streams,omitempty"`
 }
 
 // NewOutputLogstashSecretsSslKey0 defines model for .
@@ -2119,6 +8279,7 @@ type NewOutputRemoteElasticsearch struct {
 	SyncIntegrations            *bool                            `json:"sync_integrations,omitempty"`
 	SyncUninstalledIntegrations *bool                            `json:"sync_uninstalled_integrations,omitempty"`
 	Type                        NewOutputRemoteElasticsearchType `json:"type"`
+	WriteToLogsStreams          *bool                            `json:"write_to_logs_streams,omitempty"`
 }
 
 // NewOutputRemoteElasticsearchPreset defines model for NewOutputRemoteElasticsearch.Preset.
@@ -2214,6 +8375,7 @@ type OutputElasticsearch struct {
 	Shipper              *OutputShipper               `json:"shipper,omitempty"`
 	Ssl                  *OutputSsl                   `json:"ssl,omitempty"`
 	Type                 OutputElasticsearchType      `json:"type"`
+	WriteToLogsStreams   *bool                        `json:"write_to_logs_streams,omitempty"`
 	AdditionalProperties map[string]interface{}       `json:"-"`
 }
 
@@ -2286,6 +8448,7 @@ type OutputKafka struct {
 	Type                 OutputKafkaType             `json:"type"`
 	Username             interface{}                 `json:"username"`
 	Version              *string                     `json:"version,omitempty"`
+	WriteToLogsStreams   *bool                       `json:"write_to_logs_streams,omitempty"`
 	AdditionalProperties map[string]interface{}      `json:"-"`
 }
 
@@ -2398,6 +8561,7 @@ type OutputLogstash struct {
 	Shipper              *OutputShipper          `json:"shipper,omitempty"`
 	Ssl                  *OutputSsl              `json:"ssl,omitempty"`
 	Type                 OutputLogstashType      `json:"type"`
+	WriteToLogsStreams   *bool                   `json:"write_to_logs_streams,omitempty"`
 	AdditionalProperties map[string]interface{}  `json:"-"`
 }
 
@@ -2454,6 +8618,7 @@ type OutputRemoteElasticsearch struct {
 	SyncIntegrations            *bool                              `json:"sync_integrations,omitempty"`
 	SyncUninstalledIntegrations *bool                              `json:"sync_uninstalled_integrations,omitempty"`
 	Type                        OutputRemoteElasticsearchType      `json:"type"`
+	WriteToLogsStreams          *bool                              `json:"write_to_logs_streams,omitempty"`
 	AdditionalProperties        map[string]interface{}             `json:"-"`
 }
 
@@ -2609,6 +8774,12 @@ type PackageInfo_Conditions struct {
 	AdditionalProperties map[string]interface{}          `json:"-"`
 }
 
+// PackageInfo_Discovery_Datasets_Item defines model for PackageInfo.Discovery.Datasets.Item.
+type PackageInfo_Discovery_Datasets_Item struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // PackageInfo_Discovery_Fields_Item defines model for PackageInfo.Discovery.Fields.Item.
 type PackageInfo_Discovery_Fields_Item struct {
 	Name                 string                 `json:"name"`
@@ -2617,8 +8788,9 @@ type PackageInfo_Discovery_Fields_Item struct {
 
 // PackageInfo_Discovery defines model for PackageInfo.Discovery.
 type PackageInfo_Discovery struct {
-	Fields               *[]PackageInfo_Discovery_Fields_Item `json:"fields,omitempty"`
-	AdditionalProperties map[string]interface{}               `json:"-"`
+	Datasets             *[]PackageInfo_Discovery_Datasets_Item `json:"datasets,omitempty"`
+	Fields               *[]PackageInfo_Discovery_Fields_Item   `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                 `json:"-"`
 }
 
 // PackageInfo_Icons_Item defines model for package_info.icons.Item.
@@ -2746,6 +8918,7 @@ type PackageInfo_InstallationInfo struct {
 	LatestInstallFailedAttempts     *[]PackageInfo_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
 	Name                            string                                                                          `json:"name"`
 	Namespaces                      *[]string                                                                       `json:"namespaces,omitempty"`
+	PreviousVersion                 *string                                                                         `json:"previous_version,omitempty"`
 	Type                            string                                                                          `json:"type"`
 	UpdatedAt                       *string                                                                         `json:"updated_at,omitempty"`
 	VerificationKeyId               *string                                                                         `json:"verification_key_id,omitempty"`
@@ -2841,6 +9014,12 @@ type PackageListItem_Conditions struct {
 	AdditionalProperties map[string]interface{}              `json:"-"`
 }
 
+// PackageListItem_Discovery_Datasets_Item defines model for PackageListItem.Discovery.Datasets.Item.
+type PackageListItem_Discovery_Datasets_Item struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // PackageListItem_Discovery_Fields_Item defines model for PackageListItem.Discovery.Fields.Item.
 type PackageListItem_Discovery_Fields_Item struct {
 	Name                 string                 `json:"name"`
@@ -2849,8 +9028,9 @@ type PackageListItem_Discovery_Fields_Item struct {
 
 // PackageListItem_Discovery defines model for PackageListItem.Discovery.
 type PackageListItem_Discovery struct {
-	Fields               *[]PackageListItem_Discovery_Fields_Item `json:"fields,omitempty"`
-	AdditionalProperties map[string]interface{}                   `json:"-"`
+	Datasets             *[]PackageListItem_Discovery_Datasets_Item `json:"datasets,omitempty"`
+	Fields               *[]PackageListItem_Discovery_Fields_Item   `json:"fields,omitempty"`
+	AdditionalProperties map[string]interface{}                     `json:"-"`
 }
 
 // PackageListItem_Icons_Item defines model for package_list_item.icons.Item.
@@ -2978,6 +9158,7 @@ type PackageListItem_InstallationInfo struct {
 	LatestInstallFailedAttempts     *[]PackageListItem_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
 	Name                            string                                                                              `json:"name"`
 	Namespaces                      *[]string                                                                           `json:"namespaces,omitempty"`
+	PreviousVersion                 *string                                                                             `json:"previous_version,omitempty"`
 	Type                            string                                                                              `json:"type"`
 	UpdatedAt                       *string                                                                             `json:"updated_at,omitempty"`
 	VerificationKeyId               *string                                                                             `json:"verification_key_id,omitempty"`
@@ -3564,9 +9745,10 @@ type UpdateOutputElasticsearch struct {
 			Key *UpdateOutputElasticsearch_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *UpdateOutputShipper           `json:"shipper,omitempty"`
-	Ssl     *UpdateOutputSsl               `json:"ssl,omitempty"`
-	Type    *UpdateOutputElasticsearchType `json:"type,omitempty"`
+	Shipper            *UpdateOutputShipper           `json:"shipper,omitempty"`
+	Ssl                *UpdateOutputSsl               `json:"ssl,omitempty"`
+	Type               *UpdateOutputElasticsearchType `json:"type,omitempty"`
+	WriteToLogsStreams *bool                          `json:"write_to_logs_streams,omitempty"`
 }
 
 // UpdateOutputElasticsearchPreset defines model for UpdateOutputElasticsearch.Preset.
@@ -3634,13 +9816,14 @@ type UpdateOutputKafka struct {
 			Key UpdateOutputKafka_Secrets_Ssl_Key `json:"key"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper  *UpdateOutputShipper   `json:"shipper,omitempty"`
-	Ssl      *UpdateOutputSsl       `json:"ssl,omitempty"`
-	Timeout  *float32               `json:"timeout,omitempty"`
-	Topic    *string                `json:"topic,omitempty"`
-	Type     *UpdateOutputKafkaType `json:"type,omitempty"`
-	Username interface{}            `json:"username"`
-	Version  *string                `json:"version,omitempty"`
+	Shipper            *UpdateOutputShipper   `json:"shipper,omitempty"`
+	Ssl                *UpdateOutputSsl       `json:"ssl,omitempty"`
+	Timeout            *float32               `json:"timeout,omitempty"`
+	Topic              *string                `json:"topic,omitempty"`
+	Type               *UpdateOutputKafkaType `json:"type,omitempty"`
+	Username           interface{}            `json:"username"`
+	Version            *string                `json:"version,omitempty"`
+	WriteToLogsStreams *bool                  `json:"write_to_logs_streams,omitempty"`
 }
 
 // UpdateOutputKafkaAuthType defines model for UpdateOutputKafka.AuthType.
@@ -3705,9 +9888,10 @@ type UpdateOutputLogstash struct {
 			Key *UpdateOutputLogstash_Secrets_Ssl_Key `json:"key,omitempty"`
 		} `json:"ssl,omitempty"`
 	} `json:"secrets,omitempty"`
-	Shipper *UpdateOutputShipper      `json:"shipper,omitempty"`
-	Ssl     *UpdateOutputSsl          `json:"ssl,omitempty"`
-	Type    *UpdateOutputLogstashType `json:"type,omitempty"`
+	Shipper            *UpdateOutputShipper      `json:"shipper,omitempty"`
+	Ssl                *UpdateOutputSsl          `json:"ssl,omitempty"`
+	Type               *UpdateOutputLogstashType `json:"type,omitempty"`
+	WriteToLogsStreams *bool                     `json:"write_to_logs_streams,omitempty"`
 }
 
 // UpdateOutputLogstashSecretsSslKey0 defines model for .
@@ -3754,6 +9938,7 @@ type UpdateOutputRemoteElasticsearch struct {
 	SyncIntegrations            *bool                                `json:"sync_integrations,omitempty"`
 	SyncUninstalledIntegrations *bool                                `json:"sync_uninstalled_integrations,omitempty"`
 	Type                        *UpdateOutputRemoteElasticsearchType `json:"type,omitempty"`
+	WriteToLogsStreams          *bool                                `json:"write_to_logs_streams,omitempty"`
 }
 
 // UpdateOutputRemoteElasticsearchPreset defines model for UpdateOutputRemoteElasticsearch.Preset.
@@ -3958,15 +10143,16 @@ type GetFleetAgentPoliciesParamsFormat string
 // PostFleetAgentPoliciesJSONBody defines parameters for PostFleetAgentPolicies.
 type PostFleetAgentPoliciesJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      interface{} `json:"agent_download_target_directory,omitempty"`
-		AgentDownloadTimeout              interface{} `json:"agent_download_timeout,omitempty"`
-		AgentLimitsGoMaxProcs             interface{} `json:"agent_limits_go_max_procs,omitempty"`
-		AgentLoggingFilesInterval         interface{} `json:"agent_logging_files_interval,omitempty"`
-		AgentLoggingFilesKeepfiles        interface{} `json:"agent_logging_files_keepfiles,omitempty"`
-		AgentLoggingFilesRotateeverybytes interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
-		AgentLoggingLevel                 interface{} `json:"agent_logging_level,omitempty"`
-		AgentLoggingMetricsPeriod         interface{} `json:"agent_logging_metrics_period,omitempty"`
-		AgentLoggingToFiles               interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentDownloadTargetDirectory       interface{} `json:"agent_download_target_directory,omitempty"`
+		AgentDownloadTimeout               interface{} `json:"agent_download_timeout,omitempty"`
+		AgentLimitsGoMaxProcs              interface{} `json:"agent_limits_go_max_procs,omitempty"`
+		AgentLoggingFilesInterval          interface{} `json:"agent_logging_files_interval,omitempty"`
+		AgentLoggingFilesKeepfiles         interface{} `json:"agent_logging_files_keepfiles,omitempty"`
+		AgentLoggingFilesRotateeverybytes  interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
+		AgentLoggingLevel                  interface{} `json:"agent_logging_level,omitempty"`
+		AgentLoggingMetricsPeriod          interface{} `json:"agent_logging_metrics_period,omitempty"`
+		AgentLoggingToFiles                interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentMonitoringRuntimeExperimental interface{} `json:"agent_monitoring_runtime_experimental,omitempty"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -4070,15 +10256,16 @@ type GetFleetAgentPoliciesAgentpolicyidParamsFormat string
 // PutFleetAgentPoliciesAgentpolicyidJSONBody defines parameters for PutFleetAgentPoliciesAgentpolicyid.
 type PutFleetAgentPoliciesAgentpolicyidJSONBody struct {
 	AdvancedSettings *struct {
-		AgentDownloadTargetDirectory      interface{} `json:"agent_download_target_directory,omitempty"`
-		AgentDownloadTimeout              interface{} `json:"agent_download_timeout,omitempty"`
-		AgentLimitsGoMaxProcs             interface{} `json:"agent_limits_go_max_procs,omitempty"`
-		AgentLoggingFilesInterval         interface{} `json:"agent_logging_files_interval,omitempty"`
-		AgentLoggingFilesKeepfiles        interface{} `json:"agent_logging_files_keepfiles,omitempty"`
-		AgentLoggingFilesRotateeverybytes interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
-		AgentLoggingLevel                 interface{} `json:"agent_logging_level,omitempty"`
-		AgentLoggingMetricsPeriod         interface{} `json:"agent_logging_metrics_period,omitempty"`
-		AgentLoggingToFiles               interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentDownloadTargetDirectory       interface{} `json:"agent_download_target_directory,omitempty"`
+		AgentDownloadTimeout               interface{} `json:"agent_download_timeout,omitempty"`
+		AgentLimitsGoMaxProcs              interface{} `json:"agent_limits_go_max_procs,omitempty"`
+		AgentLoggingFilesInterval          interface{} `json:"agent_logging_files_interval,omitempty"`
+		AgentLoggingFilesKeepfiles         interface{} `json:"agent_logging_files_keepfiles,omitempty"`
+		AgentLoggingFilesRotateeverybytes  interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
+		AgentLoggingLevel                  interface{} `json:"agent_logging_level,omitempty"`
+		AgentLoggingMetricsPeriod          interface{} `json:"agent_logging_metrics_period,omitempty"`
+		AgentLoggingToFiles                interface{} `json:"agent_logging_to_files,omitempty"`
+		AgentMonitoringRuntimeExperimental interface{} `json:"agent_monitoring_runtime_experimental,omitempty"`
 	} `json:"advanced_settings,omitempty"`
 	AgentFeatures *[]struct {
 		Enabled bool   `json:"enabled"`
@@ -4415,14 +10602,25 @@ type PutActionsConnectorIdJSONBody struct {
 	Secrets *UpdateConnectorSecrets `json:"secrets,omitempty"`
 }
 
-// DeleteAgentConfigurationJSONRequestBody defines body for DeleteAgentConfiguration for application/json ContentType.
-type DeleteAgentConfigurationJSONRequestBody = APMUIDeleteServiceObject
+// DeleteRuleParams defines parameters for DeleteRule.
+type DeleteRuleParams struct {
+	// Id The rule's `id` value.
+	Id *SecurityDetectionsAPIRuleObjectId `form:"id,omitempty" json:"id,omitempty"`
 
-// CreateUpdateAgentConfigurationJSONRequestBody defines body for CreateUpdateAgentConfiguration for application/json ContentType.
-type CreateUpdateAgentConfigurationJSONRequestBody = APMUIAgentConfigurationIntakeObject
+	// RuleId The rule's `rule_id` value.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `form:"rule_id,omitempty" json:"rule_id,omitempty"`
+}
+
+// ReadRuleParams defines parameters for ReadRule.
+type ReadRuleParams struct {
+	// Id The rule's `id` value.
+	Id *SecurityDetectionsAPIRuleObjectId `form:"id,omitempty" json:"id,omitempty"`
+
+	// RuleId The rule's `rule_id` value.
+	RuleId *SecurityDetectionsAPIRuleSignatureId `form:"rule_id,omitempty" json:"rule_id,omitempty"`
+}
 
 // PostMaintenanceWindowJSONBody defines parameters for PostMaintenanceWindow.
-
 type PostMaintenanceWindowJSONBody struct {
 	// Enabled Whether the current maintenance window is enabled. Disabled maintenance windows do not suppress notifications.
 	Enabled  *bool `json:"enabled,omitempty"`
@@ -4518,6 +10716,12 @@ type PatchMaintenanceWindowIdJSONBody struct {
 	Title *string `json:"title,omitempty"`
 }
 
+// DeleteAgentConfigurationJSONRequestBody defines body for DeleteAgentConfiguration for application/json ContentType.
+type DeleteAgentConfigurationJSONRequestBody = APMUIDeleteServiceObject
+
+// CreateUpdateAgentConfigurationJSONRequestBody defines body for CreateUpdateAgentConfiguration for application/json ContentType.
+type CreateUpdateAgentConfigurationJSONRequestBody = APMUIAgentConfigurationIntakeObject
+
 // PostFleetAgentPoliciesJSONRequestBody defines body for PostFleetAgentPolicies for application/json ContentType.
 type PostFleetAgentPoliciesJSONRequestBody PostFleetAgentPoliciesJSONBody
 
@@ -4565,6 +10769,12 @@ type CreateDataViewDefaultwJSONRequestBody = DataViewsCreateDataViewRequestObjec
 
 // UpdateDataViewDefaultJSONRequestBody defines body for UpdateDataViewDefault for application/json ContentType.
 type UpdateDataViewDefaultJSONRequestBody = DataViewsUpdateDataViewRequestObject
+
+// CreateRuleJSONRequestBody defines body for CreateRule for application/json ContentType.
+type CreateRuleJSONRequestBody = SecurityDetectionsAPIRuleCreateProps
+
+// UpdateRuleJSONRequestBody defines body for UpdateRule for application/json ContentType.
+type UpdateRuleJSONRequestBody = SecurityDetectionsAPIRuleUpdateProps
 
 // PostMaintenanceWindowJSONRequestBody defines body for PostMaintenanceWindow for application/json ContentType.
 type PostMaintenanceWindowJSONRequestBody PostMaintenanceWindowJSONBody
@@ -4903,6 +11113,14 @@ func (a *OutputElasticsearch) UnmarshalJSON(b []byte) error {
 		delete(object, "type")
 	}
 
+	if raw, found := object["write_to_logs_streams"]; found {
+		err = json.Unmarshal(raw, &a.WriteToLogsStreams)
+		if err != nil {
+			return fmt.Errorf("error reading 'write_to_logs_streams': %w", err)
+		}
+		delete(object, "write_to_logs_streams")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -5033,6 +11251,13 @@ func (a OutputElasticsearch) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	if a.WriteToLogsStreams != nil {
+		object["write_to_logs_streams"], err = json.Marshal(a.WriteToLogsStreams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'write_to_logs_streams': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -5551,6 +11776,14 @@ func (a *OutputKafka) UnmarshalJSON(b []byte) error {
 		delete(object, "version")
 	}
 
+	if raw, found := object["write_to_logs_streams"]; found {
+		err = json.Unmarshal(raw, &a.WriteToLogsStreams)
+		if err != nil {
+			return fmt.Errorf("error reading 'write_to_logs_streams': %w", err)
+		}
+		delete(object, "write_to_logs_streams")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -5796,6 +12029,13 @@ func (a OutputKafka) MarshalJSON() ([]byte, error) {
 		object["version"], err = json.Marshal(a.Version)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'version': %w", err)
+		}
+	}
+
+	if a.WriteToLogsStreams != nil {
+		object["write_to_logs_streams"], err = json.Marshal(a.WriteToLogsStreams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'write_to_logs_streams': %w", err)
 		}
 	}
 
@@ -6608,6 +12848,14 @@ func (a *OutputLogstash) UnmarshalJSON(b []byte) error {
 		delete(object, "type")
 	}
 
+	if raw, found := object["write_to_logs_streams"]; found {
+		err = json.Unmarshal(raw, &a.WriteToLogsStreams)
+		if err != nil {
+			return fmt.Errorf("error reading 'write_to_logs_streams': %w", err)
+		}
+		delete(object, "write_to_logs_streams")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -6731,6 +12979,13 @@ func (a OutputLogstash) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	if a.WriteToLogsStreams != nil {
+		object["write_to_logs_streams"], err = json.Marshal(a.WriteToLogsStreams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'write_to_logs_streams': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -7145,6 +13400,14 @@ func (a *OutputRemoteElasticsearch) UnmarshalJSON(b []byte) error {
 		delete(object, "type")
 	}
 
+	if raw, found := object["write_to_logs_streams"]; found {
+		err = json.Unmarshal(raw, &a.WriteToLogsStreams)
+		if err != nil {
+			return fmt.Errorf("error reading 'write_to_logs_streams': %w", err)
+		}
+		delete(object, "write_to_logs_streams")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -7310,6 +13573,13 @@ func (a OutputRemoteElasticsearch) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	if a.WriteToLogsStreams != nil {
+		object["write_to_logs_streams"], err = json.Marshal(a.WriteToLogsStreams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'write_to_logs_streams': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -8676,6 +14946,72 @@ func (a PackageInfo_Conditions) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for PackageInfo_Discovery_Datasets_Item. Returns the specified
+// element and whether it was found
+func (a PackageInfo_Discovery_Datasets_Item) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PackageInfo_Discovery_Datasets_Item
+func (a *PackageInfo_Discovery_Datasets_Item) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PackageInfo_Discovery_Datasets_Item to handle AdditionalProperties
+func (a *PackageInfo_Discovery_Datasets_Item) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PackageInfo_Discovery_Datasets_Item to handle AdditionalProperties
+func (a PackageInfo_Discovery_Datasets_Item) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for PackageInfo_Discovery_Fields_Item. Returns the specified
 // element and whether it was found
 func (a PackageInfo_Discovery_Fields_Item) Get(fieldName string) (value interface{}, found bool) {
@@ -8767,6 +15103,14 @@ func (a *PackageInfo_Discovery) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["datasets"]; found {
+		err = json.Unmarshal(raw, &a.Datasets)
+		if err != nil {
+			return fmt.Errorf("error reading 'datasets': %w", err)
+		}
+		delete(object, "datasets")
+	}
+
 	if raw, found := object["fields"]; found {
 		err = json.Unmarshal(raw, &a.Fields)
 		if err != nil {
@@ -8793,6 +15137,13 @@ func (a *PackageInfo_Discovery) UnmarshalJSON(b []byte) error {
 func (a PackageInfo_Discovery) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Datasets != nil {
+		object["datasets"], err = json.Marshal(a.Datasets)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'datasets': %w", err)
+		}
+	}
 
 	if a.Fields != nil {
 		object["fields"], err = json.Marshal(a.Fields)
@@ -9853,6 +16204,14 @@ func (a *PackageInfo_InstallationInfo) UnmarshalJSON(b []byte) error {
 		delete(object, "namespaces")
 	}
 
+	if raw, found := object["previous_version"]; found {
+		err = json.Unmarshal(raw, &a.PreviousVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'previous_version': %w", err)
+		}
+		delete(object, "previous_version")
+	}
+
 	if raw, found := object["type"]; found {
 		err = json.Unmarshal(raw, &a.Type)
 		if err != nil {
@@ -9990,6 +16349,13 @@ func (a PackageInfo_InstallationInfo) MarshalJSON() ([]byte, error) {
 		object["namespaces"], err = json.Marshal(a.Namespaces)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'namespaces': %w", err)
+		}
+	}
+
+	if a.PreviousVersion != nil {
+		object["previous_version"], err = json.Marshal(a.PreviousVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'previous_version': %w", err)
 		}
 	}
 
@@ -10849,6 +17215,72 @@ func (a PackageListItem_Conditions) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for PackageListItem_Discovery_Datasets_Item. Returns the specified
+// element and whether it was found
+func (a PackageListItem_Discovery_Datasets_Item) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PackageListItem_Discovery_Datasets_Item
+func (a *PackageListItem_Discovery_Datasets_Item) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PackageListItem_Discovery_Datasets_Item to handle AdditionalProperties
+func (a *PackageListItem_Discovery_Datasets_Item) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PackageListItem_Discovery_Datasets_Item to handle AdditionalProperties
+func (a PackageListItem_Discovery_Datasets_Item) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for PackageListItem_Discovery_Fields_Item. Returns the specified
 // element and whether it was found
 func (a PackageListItem_Discovery_Fields_Item) Get(fieldName string) (value interface{}, found bool) {
@@ -10940,6 +17372,14 @@ func (a *PackageListItem_Discovery) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["datasets"]; found {
+		err = json.Unmarshal(raw, &a.Datasets)
+		if err != nil {
+			return fmt.Errorf("error reading 'datasets': %w", err)
+		}
+		delete(object, "datasets")
+	}
+
 	if raw, found := object["fields"]; found {
 		err = json.Unmarshal(raw, &a.Fields)
 		if err != nil {
@@ -10966,6 +17406,13 @@ func (a *PackageListItem_Discovery) UnmarshalJSON(b []byte) error {
 func (a PackageListItem_Discovery) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Datasets != nil {
+		object["datasets"], err = json.Marshal(a.Datasets)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'datasets': %w", err)
+		}
+	}
 
 	if a.Fields != nil {
 		object["fields"], err = json.Marshal(a.Fields)
@@ -12026,6 +18473,14 @@ func (a *PackageListItem_InstallationInfo) UnmarshalJSON(b []byte) error {
 		delete(object, "namespaces")
 	}
 
+	if raw, found := object["previous_version"]; found {
+		err = json.Unmarshal(raw, &a.PreviousVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'previous_version': %w", err)
+		}
+		delete(object, "previous_version")
+	}
+
 	if raw, found := object["type"]; found {
 		err = json.Unmarshal(raw, &a.Type)
 		if err != nil {
@@ -12163,6 +18618,13 @@ func (a PackageListItem_InstallationInfo) MarshalJSON() ([]byte, error) {
 		object["namespaces"], err = json.Marshal(a.Namespaces)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'namespaces': %w", err)
+		}
+	}
+
+	if a.PreviousVersion != nil {
+		object["previous_version"], err = json.Marshal(a.PreviousVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'previous_version': %w", err)
 		}
 	}
 
@@ -12521,6 +18983,1274 @@ func (a *UpdateConnectorSecrets) Set(fieldName string, value interface{}) {
 		a.AdditionalProperties = make(map[string]interface{})
 	}
 	a.AdditionalProperties[fieldName] = value
+}
+
+// AsSecurityDetectionsAPIEcsMappingValue0 returns the union data inside the SecurityDetectionsAPIEcsMapping_Value as a SecurityDetectionsAPIEcsMappingValue0
+func (t SecurityDetectionsAPIEcsMapping_Value) AsSecurityDetectionsAPIEcsMappingValue0() (SecurityDetectionsAPIEcsMappingValue0, error) {
+	var body SecurityDetectionsAPIEcsMappingValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEcsMappingValue0 overwrites any union data inside the SecurityDetectionsAPIEcsMapping_Value as the provided SecurityDetectionsAPIEcsMappingValue0
+func (t *SecurityDetectionsAPIEcsMapping_Value) FromSecurityDetectionsAPIEcsMappingValue0(v SecurityDetectionsAPIEcsMappingValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEcsMappingValue0 performs a merge with any union data inside the SecurityDetectionsAPIEcsMapping_Value, using the provided SecurityDetectionsAPIEcsMappingValue0
+func (t *SecurityDetectionsAPIEcsMapping_Value) MergeSecurityDetectionsAPIEcsMappingValue0(v SecurityDetectionsAPIEcsMappingValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIEcsMappingValue1 returns the union data inside the SecurityDetectionsAPIEcsMapping_Value as a SecurityDetectionsAPIEcsMappingValue1
+func (t SecurityDetectionsAPIEcsMapping_Value) AsSecurityDetectionsAPIEcsMappingValue1() (SecurityDetectionsAPIEcsMappingValue1, error) {
+	var body SecurityDetectionsAPIEcsMappingValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEcsMappingValue1 overwrites any union data inside the SecurityDetectionsAPIEcsMapping_Value as the provided SecurityDetectionsAPIEcsMappingValue1
+func (t *SecurityDetectionsAPIEcsMapping_Value) FromSecurityDetectionsAPIEcsMappingValue1(v SecurityDetectionsAPIEcsMappingValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEcsMappingValue1 performs a merge with any union data inside the SecurityDetectionsAPIEcsMapping_Value, using the provided SecurityDetectionsAPIEcsMappingValue1
+func (t *SecurityDetectionsAPIEcsMapping_Value) MergeSecurityDetectionsAPIEcsMappingValue1(v SecurityDetectionsAPIEcsMappingValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIEcsMapping_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIEcsMapping_Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIDefaultParams returns the union data inside the SecurityDetectionsAPIEndpointResponseAction_Params as a SecurityDetectionsAPIDefaultParams
+func (t SecurityDetectionsAPIEndpointResponseAction_Params) AsSecurityDetectionsAPIDefaultParams() (SecurityDetectionsAPIDefaultParams, error) {
+	var body SecurityDetectionsAPIDefaultParams
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIDefaultParams overwrites any union data inside the SecurityDetectionsAPIEndpointResponseAction_Params as the provided SecurityDetectionsAPIDefaultParams
+func (t *SecurityDetectionsAPIEndpointResponseAction_Params) FromSecurityDetectionsAPIDefaultParams(v SecurityDetectionsAPIDefaultParams) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIDefaultParams performs a merge with any union data inside the SecurityDetectionsAPIEndpointResponseAction_Params, using the provided SecurityDetectionsAPIDefaultParams
+func (t *SecurityDetectionsAPIEndpointResponseAction_Params) MergeSecurityDetectionsAPIDefaultParams(v SecurityDetectionsAPIDefaultParams) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIProcessesParams returns the union data inside the SecurityDetectionsAPIEndpointResponseAction_Params as a SecurityDetectionsAPIProcessesParams
+func (t SecurityDetectionsAPIEndpointResponseAction_Params) AsSecurityDetectionsAPIProcessesParams() (SecurityDetectionsAPIProcessesParams, error) {
+	var body SecurityDetectionsAPIProcessesParams
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIProcessesParams overwrites any union data inside the SecurityDetectionsAPIEndpointResponseAction_Params as the provided SecurityDetectionsAPIProcessesParams
+func (t *SecurityDetectionsAPIEndpointResponseAction_Params) FromSecurityDetectionsAPIProcessesParams(v SecurityDetectionsAPIProcessesParams) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIProcessesParams performs a merge with any union data inside the SecurityDetectionsAPIEndpointResponseAction_Params, using the provided SecurityDetectionsAPIProcessesParams
+func (t *SecurityDetectionsAPIEndpointResponseAction_Params) MergeSecurityDetectionsAPIProcessesParams(v SecurityDetectionsAPIProcessesParams) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIEndpointResponseAction_Params) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIEndpointResponseAction_Params) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIMachineLearningJobId0 returns the union data inside the SecurityDetectionsAPIMachineLearningJobId as a SecurityDetectionsAPIMachineLearningJobId0
+func (t SecurityDetectionsAPIMachineLearningJobId) AsSecurityDetectionsAPIMachineLearningJobId0() (SecurityDetectionsAPIMachineLearningJobId0, error) {
+	var body SecurityDetectionsAPIMachineLearningJobId0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIMachineLearningJobId0 overwrites any union data inside the SecurityDetectionsAPIMachineLearningJobId as the provided SecurityDetectionsAPIMachineLearningJobId0
+func (t *SecurityDetectionsAPIMachineLearningJobId) FromSecurityDetectionsAPIMachineLearningJobId0(v SecurityDetectionsAPIMachineLearningJobId0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIMachineLearningJobId0 performs a merge with any union data inside the SecurityDetectionsAPIMachineLearningJobId, using the provided SecurityDetectionsAPIMachineLearningJobId0
+func (t *SecurityDetectionsAPIMachineLearningJobId) MergeSecurityDetectionsAPIMachineLearningJobId0(v SecurityDetectionsAPIMachineLearningJobId0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIMachineLearningJobId1 returns the union data inside the SecurityDetectionsAPIMachineLearningJobId as a SecurityDetectionsAPIMachineLearningJobId1
+func (t SecurityDetectionsAPIMachineLearningJobId) AsSecurityDetectionsAPIMachineLearningJobId1() (SecurityDetectionsAPIMachineLearningJobId1, error) {
+	var body SecurityDetectionsAPIMachineLearningJobId1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIMachineLearningJobId1 overwrites any union data inside the SecurityDetectionsAPIMachineLearningJobId as the provided SecurityDetectionsAPIMachineLearningJobId1
+func (t *SecurityDetectionsAPIMachineLearningJobId) FromSecurityDetectionsAPIMachineLearningJobId1(v SecurityDetectionsAPIMachineLearningJobId1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIMachineLearningJobId1 performs a merge with any union data inside the SecurityDetectionsAPIMachineLearningJobId, using the provided SecurityDetectionsAPIMachineLearningJobId1
+func (t *SecurityDetectionsAPIMachineLearningJobId) MergeSecurityDetectionsAPIMachineLearningJobId1(v SecurityDetectionsAPIMachineLearningJobId1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIMachineLearningJobId) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIMachineLearningJobId) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIOsqueryResponseAction returns the union data inside the SecurityDetectionsAPIResponseAction as a SecurityDetectionsAPIOsqueryResponseAction
+func (t SecurityDetectionsAPIResponseAction) AsSecurityDetectionsAPIOsqueryResponseAction() (SecurityDetectionsAPIOsqueryResponseAction, error) {
+	var body SecurityDetectionsAPIOsqueryResponseAction
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIOsqueryResponseAction overwrites any union data inside the SecurityDetectionsAPIResponseAction as the provided SecurityDetectionsAPIOsqueryResponseAction
+func (t *SecurityDetectionsAPIResponseAction) FromSecurityDetectionsAPIOsqueryResponseAction(v SecurityDetectionsAPIOsqueryResponseAction) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIOsqueryResponseAction performs a merge with any union data inside the SecurityDetectionsAPIResponseAction, using the provided SecurityDetectionsAPIOsqueryResponseAction
+func (t *SecurityDetectionsAPIResponseAction) MergeSecurityDetectionsAPIOsqueryResponseAction(v SecurityDetectionsAPIOsqueryResponseAction) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIEndpointResponseAction returns the union data inside the SecurityDetectionsAPIResponseAction as a SecurityDetectionsAPIEndpointResponseAction
+func (t SecurityDetectionsAPIResponseAction) AsSecurityDetectionsAPIEndpointResponseAction() (SecurityDetectionsAPIEndpointResponseAction, error) {
+	var body SecurityDetectionsAPIEndpointResponseAction
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEndpointResponseAction overwrites any union data inside the SecurityDetectionsAPIResponseAction as the provided SecurityDetectionsAPIEndpointResponseAction
+func (t *SecurityDetectionsAPIResponseAction) FromSecurityDetectionsAPIEndpointResponseAction(v SecurityDetectionsAPIEndpointResponseAction) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEndpointResponseAction performs a merge with any union data inside the SecurityDetectionsAPIResponseAction, using the provided SecurityDetectionsAPIEndpointResponseAction
+func (t *SecurityDetectionsAPIResponseAction) MergeSecurityDetectionsAPIEndpointResponseAction(v SecurityDetectionsAPIEndpointResponseAction) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIResponseAction) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIResponseAction) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIRuleActionThrottle0 returns the union data inside the SecurityDetectionsAPIRuleActionThrottle as a SecurityDetectionsAPIRuleActionThrottle0
+func (t SecurityDetectionsAPIRuleActionThrottle) AsSecurityDetectionsAPIRuleActionThrottle0() (SecurityDetectionsAPIRuleActionThrottle0, error) {
+	var body SecurityDetectionsAPIRuleActionThrottle0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIRuleActionThrottle0 overwrites any union data inside the SecurityDetectionsAPIRuleActionThrottle as the provided SecurityDetectionsAPIRuleActionThrottle0
+func (t *SecurityDetectionsAPIRuleActionThrottle) FromSecurityDetectionsAPIRuleActionThrottle0(v SecurityDetectionsAPIRuleActionThrottle0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIRuleActionThrottle0 performs a merge with any union data inside the SecurityDetectionsAPIRuleActionThrottle, using the provided SecurityDetectionsAPIRuleActionThrottle0
+func (t *SecurityDetectionsAPIRuleActionThrottle) MergeSecurityDetectionsAPIRuleActionThrottle0(v SecurityDetectionsAPIRuleActionThrottle0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIRuleActionThrottle1 returns the union data inside the SecurityDetectionsAPIRuleActionThrottle as a SecurityDetectionsAPIRuleActionThrottle1
+func (t SecurityDetectionsAPIRuleActionThrottle) AsSecurityDetectionsAPIRuleActionThrottle1() (SecurityDetectionsAPIRuleActionThrottle1, error) {
+	var body SecurityDetectionsAPIRuleActionThrottle1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIRuleActionThrottle1 overwrites any union data inside the SecurityDetectionsAPIRuleActionThrottle as the provided SecurityDetectionsAPIRuleActionThrottle1
+func (t *SecurityDetectionsAPIRuleActionThrottle) FromSecurityDetectionsAPIRuleActionThrottle1(v SecurityDetectionsAPIRuleActionThrottle1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIRuleActionThrottle1 performs a merge with any union data inside the SecurityDetectionsAPIRuleActionThrottle, using the provided SecurityDetectionsAPIRuleActionThrottle1
+func (t *SecurityDetectionsAPIRuleActionThrottle) MergeSecurityDetectionsAPIRuleActionThrottle1(v SecurityDetectionsAPIRuleActionThrottle1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIRuleActionThrottle) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIRuleActionThrottle) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIEqlRuleCreateProps returns the union data inside the SecurityDetectionsAPIRuleCreateProps as a SecurityDetectionsAPIEqlRuleCreateProps
+func (t SecurityDetectionsAPIRuleCreateProps) AsSecurityDetectionsAPIEqlRuleCreateProps() (SecurityDetectionsAPIEqlRuleCreateProps, error) {
+	var body SecurityDetectionsAPIEqlRuleCreateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEqlRuleCreateProps overwrites any union data inside the SecurityDetectionsAPIRuleCreateProps as the provided SecurityDetectionsAPIEqlRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) FromSecurityDetectionsAPIEqlRuleCreateProps(v SecurityDetectionsAPIEqlRuleCreateProps) error {
+	v.Type = "Security_Detections_API_EqlRuleCreateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEqlRuleCreateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleCreateProps, using the provided SecurityDetectionsAPIEqlRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) MergeSecurityDetectionsAPIEqlRuleCreateProps(v SecurityDetectionsAPIEqlRuleCreateProps) error {
+	v.Type = "Security_Detections_API_EqlRuleCreateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIQueryRuleCreateProps returns the union data inside the SecurityDetectionsAPIRuleCreateProps as a SecurityDetectionsAPIQueryRuleCreateProps
+func (t SecurityDetectionsAPIRuleCreateProps) AsSecurityDetectionsAPIQueryRuleCreateProps() (SecurityDetectionsAPIQueryRuleCreateProps, error) {
+	var body SecurityDetectionsAPIQueryRuleCreateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIQueryRuleCreateProps overwrites any union data inside the SecurityDetectionsAPIRuleCreateProps as the provided SecurityDetectionsAPIQueryRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) FromSecurityDetectionsAPIQueryRuleCreateProps(v SecurityDetectionsAPIQueryRuleCreateProps) error {
+	v.Type = "Security_Detections_API_QueryRuleCreateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIQueryRuleCreateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleCreateProps, using the provided SecurityDetectionsAPIQueryRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) MergeSecurityDetectionsAPIQueryRuleCreateProps(v SecurityDetectionsAPIQueryRuleCreateProps) error {
+	v.Type = "Security_Detections_API_QueryRuleCreateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPISavedQueryRuleCreateProps returns the union data inside the SecurityDetectionsAPIRuleCreateProps as a SecurityDetectionsAPISavedQueryRuleCreateProps
+func (t SecurityDetectionsAPIRuleCreateProps) AsSecurityDetectionsAPISavedQueryRuleCreateProps() (SecurityDetectionsAPISavedQueryRuleCreateProps, error) {
+	var body SecurityDetectionsAPISavedQueryRuleCreateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPISavedQueryRuleCreateProps overwrites any union data inside the SecurityDetectionsAPIRuleCreateProps as the provided SecurityDetectionsAPISavedQueryRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) FromSecurityDetectionsAPISavedQueryRuleCreateProps(v SecurityDetectionsAPISavedQueryRuleCreateProps) error {
+	v.Type = "Security_Detections_API_SavedQueryRuleCreateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPISavedQueryRuleCreateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleCreateProps, using the provided SecurityDetectionsAPISavedQueryRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) MergeSecurityDetectionsAPISavedQueryRuleCreateProps(v SecurityDetectionsAPISavedQueryRuleCreateProps) error {
+	v.Type = "Security_Detections_API_SavedQueryRuleCreateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIThresholdRuleCreateProps returns the union data inside the SecurityDetectionsAPIRuleCreateProps as a SecurityDetectionsAPIThresholdRuleCreateProps
+func (t SecurityDetectionsAPIRuleCreateProps) AsSecurityDetectionsAPIThresholdRuleCreateProps() (SecurityDetectionsAPIThresholdRuleCreateProps, error) {
+	var body SecurityDetectionsAPIThresholdRuleCreateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIThresholdRuleCreateProps overwrites any union data inside the SecurityDetectionsAPIRuleCreateProps as the provided SecurityDetectionsAPIThresholdRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) FromSecurityDetectionsAPIThresholdRuleCreateProps(v SecurityDetectionsAPIThresholdRuleCreateProps) error {
+	v.Type = "Security_Detections_API_ThresholdRuleCreateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIThresholdRuleCreateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleCreateProps, using the provided SecurityDetectionsAPIThresholdRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) MergeSecurityDetectionsAPIThresholdRuleCreateProps(v SecurityDetectionsAPIThresholdRuleCreateProps) error {
+	v.Type = "Security_Detections_API_ThresholdRuleCreateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIThreatMatchRuleCreateProps returns the union data inside the SecurityDetectionsAPIRuleCreateProps as a SecurityDetectionsAPIThreatMatchRuleCreateProps
+func (t SecurityDetectionsAPIRuleCreateProps) AsSecurityDetectionsAPIThreatMatchRuleCreateProps() (SecurityDetectionsAPIThreatMatchRuleCreateProps, error) {
+	var body SecurityDetectionsAPIThreatMatchRuleCreateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIThreatMatchRuleCreateProps overwrites any union data inside the SecurityDetectionsAPIRuleCreateProps as the provided SecurityDetectionsAPIThreatMatchRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) FromSecurityDetectionsAPIThreatMatchRuleCreateProps(v SecurityDetectionsAPIThreatMatchRuleCreateProps) error {
+	v.Type = "Security_Detections_API_ThreatMatchRuleCreateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIThreatMatchRuleCreateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleCreateProps, using the provided SecurityDetectionsAPIThreatMatchRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) MergeSecurityDetectionsAPIThreatMatchRuleCreateProps(v SecurityDetectionsAPIThreatMatchRuleCreateProps) error {
+	v.Type = "Security_Detections_API_ThreatMatchRuleCreateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIMachineLearningRuleCreateProps returns the union data inside the SecurityDetectionsAPIRuleCreateProps as a SecurityDetectionsAPIMachineLearningRuleCreateProps
+func (t SecurityDetectionsAPIRuleCreateProps) AsSecurityDetectionsAPIMachineLearningRuleCreateProps() (SecurityDetectionsAPIMachineLearningRuleCreateProps, error) {
+	var body SecurityDetectionsAPIMachineLearningRuleCreateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIMachineLearningRuleCreateProps overwrites any union data inside the SecurityDetectionsAPIRuleCreateProps as the provided SecurityDetectionsAPIMachineLearningRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) FromSecurityDetectionsAPIMachineLearningRuleCreateProps(v SecurityDetectionsAPIMachineLearningRuleCreateProps) error {
+	v.Type = "Security_Detections_API_MachineLearningRuleCreateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIMachineLearningRuleCreateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleCreateProps, using the provided SecurityDetectionsAPIMachineLearningRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) MergeSecurityDetectionsAPIMachineLearningRuleCreateProps(v SecurityDetectionsAPIMachineLearningRuleCreateProps) error {
+	v.Type = "Security_Detections_API_MachineLearningRuleCreateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPINewTermsRuleCreateProps returns the union data inside the SecurityDetectionsAPIRuleCreateProps as a SecurityDetectionsAPINewTermsRuleCreateProps
+func (t SecurityDetectionsAPIRuleCreateProps) AsSecurityDetectionsAPINewTermsRuleCreateProps() (SecurityDetectionsAPINewTermsRuleCreateProps, error) {
+	var body SecurityDetectionsAPINewTermsRuleCreateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPINewTermsRuleCreateProps overwrites any union data inside the SecurityDetectionsAPIRuleCreateProps as the provided SecurityDetectionsAPINewTermsRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) FromSecurityDetectionsAPINewTermsRuleCreateProps(v SecurityDetectionsAPINewTermsRuleCreateProps) error {
+	v.Type = "Security_Detections_API_NewTermsRuleCreateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPINewTermsRuleCreateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleCreateProps, using the provided SecurityDetectionsAPINewTermsRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) MergeSecurityDetectionsAPINewTermsRuleCreateProps(v SecurityDetectionsAPINewTermsRuleCreateProps) error {
+	v.Type = "Security_Detections_API_NewTermsRuleCreateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIEsqlRuleCreateProps returns the union data inside the SecurityDetectionsAPIRuleCreateProps as a SecurityDetectionsAPIEsqlRuleCreateProps
+func (t SecurityDetectionsAPIRuleCreateProps) AsSecurityDetectionsAPIEsqlRuleCreateProps() (SecurityDetectionsAPIEsqlRuleCreateProps, error) {
+	var body SecurityDetectionsAPIEsqlRuleCreateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEsqlRuleCreateProps overwrites any union data inside the SecurityDetectionsAPIRuleCreateProps as the provided SecurityDetectionsAPIEsqlRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) FromSecurityDetectionsAPIEsqlRuleCreateProps(v SecurityDetectionsAPIEsqlRuleCreateProps) error {
+	v.Type = "Security_Detections_API_EsqlRuleCreateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEsqlRuleCreateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleCreateProps, using the provided SecurityDetectionsAPIEsqlRuleCreateProps
+func (t *SecurityDetectionsAPIRuleCreateProps) MergeSecurityDetectionsAPIEsqlRuleCreateProps(v SecurityDetectionsAPIEsqlRuleCreateProps) error {
+	v.Type = "Security_Detections_API_EsqlRuleCreateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIRuleCreateProps) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t SecurityDetectionsAPIRuleCreateProps) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "Security_Detections_API_EqlRuleCreateProps":
+		return t.AsSecurityDetectionsAPIEqlRuleCreateProps()
+	case "Security_Detections_API_EsqlRuleCreateProps":
+		return t.AsSecurityDetectionsAPIEsqlRuleCreateProps()
+	case "Security_Detections_API_MachineLearningRuleCreateProps":
+		return t.AsSecurityDetectionsAPIMachineLearningRuleCreateProps()
+	case "Security_Detections_API_NewTermsRuleCreateProps":
+		return t.AsSecurityDetectionsAPINewTermsRuleCreateProps()
+	case "Security_Detections_API_QueryRuleCreateProps":
+		return t.AsSecurityDetectionsAPIQueryRuleCreateProps()
+	case "Security_Detections_API_SavedQueryRuleCreateProps":
+		return t.AsSecurityDetectionsAPISavedQueryRuleCreateProps()
+	case "Security_Detections_API_ThreatMatchRuleCreateProps":
+		return t.AsSecurityDetectionsAPIThreatMatchRuleCreateProps()
+	case "Security_Detections_API_ThresholdRuleCreateProps":
+		return t.AsSecurityDetectionsAPIThresholdRuleCreateProps()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t SecurityDetectionsAPIRuleCreateProps) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIRuleCreateProps) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIEqlRule returns the union data inside the SecurityDetectionsAPIRuleResponse as a SecurityDetectionsAPIEqlRule
+func (t SecurityDetectionsAPIRuleResponse) AsSecurityDetectionsAPIEqlRule() (SecurityDetectionsAPIEqlRule, error) {
+	var body SecurityDetectionsAPIEqlRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEqlRule overwrites any union data inside the SecurityDetectionsAPIRuleResponse as the provided SecurityDetectionsAPIEqlRule
+func (t *SecurityDetectionsAPIRuleResponse) FromSecurityDetectionsAPIEqlRule(v SecurityDetectionsAPIEqlRule) error {
+	v.Type = "Security_Detections_API_EqlRule"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEqlRule performs a merge with any union data inside the SecurityDetectionsAPIRuleResponse, using the provided SecurityDetectionsAPIEqlRule
+func (t *SecurityDetectionsAPIRuleResponse) MergeSecurityDetectionsAPIEqlRule(v SecurityDetectionsAPIEqlRule) error {
+	v.Type = "Security_Detections_API_EqlRule"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIQueryRule returns the union data inside the SecurityDetectionsAPIRuleResponse as a SecurityDetectionsAPIQueryRule
+func (t SecurityDetectionsAPIRuleResponse) AsSecurityDetectionsAPIQueryRule() (SecurityDetectionsAPIQueryRule, error) {
+	var body SecurityDetectionsAPIQueryRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIQueryRule overwrites any union data inside the SecurityDetectionsAPIRuleResponse as the provided SecurityDetectionsAPIQueryRule
+func (t *SecurityDetectionsAPIRuleResponse) FromSecurityDetectionsAPIQueryRule(v SecurityDetectionsAPIQueryRule) error {
+	v.Type = "Security_Detections_API_QueryRule"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIQueryRule performs a merge with any union data inside the SecurityDetectionsAPIRuleResponse, using the provided SecurityDetectionsAPIQueryRule
+func (t *SecurityDetectionsAPIRuleResponse) MergeSecurityDetectionsAPIQueryRule(v SecurityDetectionsAPIQueryRule) error {
+	v.Type = "Security_Detections_API_QueryRule"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPISavedQueryRule returns the union data inside the SecurityDetectionsAPIRuleResponse as a SecurityDetectionsAPISavedQueryRule
+func (t SecurityDetectionsAPIRuleResponse) AsSecurityDetectionsAPISavedQueryRule() (SecurityDetectionsAPISavedQueryRule, error) {
+	var body SecurityDetectionsAPISavedQueryRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPISavedQueryRule overwrites any union data inside the SecurityDetectionsAPIRuleResponse as the provided SecurityDetectionsAPISavedQueryRule
+func (t *SecurityDetectionsAPIRuleResponse) FromSecurityDetectionsAPISavedQueryRule(v SecurityDetectionsAPISavedQueryRule) error {
+	v.Type = "Security_Detections_API_SavedQueryRule"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPISavedQueryRule performs a merge with any union data inside the SecurityDetectionsAPIRuleResponse, using the provided SecurityDetectionsAPISavedQueryRule
+func (t *SecurityDetectionsAPIRuleResponse) MergeSecurityDetectionsAPISavedQueryRule(v SecurityDetectionsAPISavedQueryRule) error {
+	v.Type = "Security_Detections_API_SavedQueryRule"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIThresholdRule returns the union data inside the SecurityDetectionsAPIRuleResponse as a SecurityDetectionsAPIThresholdRule
+func (t SecurityDetectionsAPIRuleResponse) AsSecurityDetectionsAPIThresholdRule() (SecurityDetectionsAPIThresholdRule, error) {
+	var body SecurityDetectionsAPIThresholdRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIThresholdRule overwrites any union data inside the SecurityDetectionsAPIRuleResponse as the provided SecurityDetectionsAPIThresholdRule
+func (t *SecurityDetectionsAPIRuleResponse) FromSecurityDetectionsAPIThresholdRule(v SecurityDetectionsAPIThresholdRule) error {
+	v.Type = "Security_Detections_API_ThresholdRule"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIThresholdRule performs a merge with any union data inside the SecurityDetectionsAPIRuleResponse, using the provided SecurityDetectionsAPIThresholdRule
+func (t *SecurityDetectionsAPIRuleResponse) MergeSecurityDetectionsAPIThresholdRule(v SecurityDetectionsAPIThresholdRule) error {
+	v.Type = "Security_Detections_API_ThresholdRule"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIThreatMatchRule returns the union data inside the SecurityDetectionsAPIRuleResponse as a SecurityDetectionsAPIThreatMatchRule
+func (t SecurityDetectionsAPIRuleResponse) AsSecurityDetectionsAPIThreatMatchRule() (SecurityDetectionsAPIThreatMatchRule, error) {
+	var body SecurityDetectionsAPIThreatMatchRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIThreatMatchRule overwrites any union data inside the SecurityDetectionsAPIRuleResponse as the provided SecurityDetectionsAPIThreatMatchRule
+func (t *SecurityDetectionsAPIRuleResponse) FromSecurityDetectionsAPIThreatMatchRule(v SecurityDetectionsAPIThreatMatchRule) error {
+	v.Type = "Security_Detections_API_ThreatMatchRule"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIThreatMatchRule performs a merge with any union data inside the SecurityDetectionsAPIRuleResponse, using the provided SecurityDetectionsAPIThreatMatchRule
+func (t *SecurityDetectionsAPIRuleResponse) MergeSecurityDetectionsAPIThreatMatchRule(v SecurityDetectionsAPIThreatMatchRule) error {
+	v.Type = "Security_Detections_API_ThreatMatchRule"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIMachineLearningRule returns the union data inside the SecurityDetectionsAPIRuleResponse as a SecurityDetectionsAPIMachineLearningRule
+func (t SecurityDetectionsAPIRuleResponse) AsSecurityDetectionsAPIMachineLearningRule() (SecurityDetectionsAPIMachineLearningRule, error) {
+	var body SecurityDetectionsAPIMachineLearningRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIMachineLearningRule overwrites any union data inside the SecurityDetectionsAPIRuleResponse as the provided SecurityDetectionsAPIMachineLearningRule
+func (t *SecurityDetectionsAPIRuleResponse) FromSecurityDetectionsAPIMachineLearningRule(v SecurityDetectionsAPIMachineLearningRule) error {
+	v.Type = "Security_Detections_API_MachineLearningRule"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIMachineLearningRule performs a merge with any union data inside the SecurityDetectionsAPIRuleResponse, using the provided SecurityDetectionsAPIMachineLearningRule
+func (t *SecurityDetectionsAPIRuleResponse) MergeSecurityDetectionsAPIMachineLearningRule(v SecurityDetectionsAPIMachineLearningRule) error {
+	v.Type = "Security_Detections_API_MachineLearningRule"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPINewTermsRule returns the union data inside the SecurityDetectionsAPIRuleResponse as a SecurityDetectionsAPINewTermsRule
+func (t SecurityDetectionsAPIRuleResponse) AsSecurityDetectionsAPINewTermsRule() (SecurityDetectionsAPINewTermsRule, error) {
+	var body SecurityDetectionsAPINewTermsRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPINewTermsRule overwrites any union data inside the SecurityDetectionsAPIRuleResponse as the provided SecurityDetectionsAPINewTermsRule
+func (t *SecurityDetectionsAPIRuleResponse) FromSecurityDetectionsAPINewTermsRule(v SecurityDetectionsAPINewTermsRule) error {
+	v.Type = "Security_Detections_API_NewTermsRule"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPINewTermsRule performs a merge with any union data inside the SecurityDetectionsAPIRuleResponse, using the provided SecurityDetectionsAPINewTermsRule
+func (t *SecurityDetectionsAPIRuleResponse) MergeSecurityDetectionsAPINewTermsRule(v SecurityDetectionsAPINewTermsRule) error {
+	v.Type = "Security_Detections_API_NewTermsRule"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIEsqlRule returns the union data inside the SecurityDetectionsAPIRuleResponse as a SecurityDetectionsAPIEsqlRule
+func (t SecurityDetectionsAPIRuleResponse) AsSecurityDetectionsAPIEsqlRule() (SecurityDetectionsAPIEsqlRule, error) {
+	var body SecurityDetectionsAPIEsqlRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEsqlRule overwrites any union data inside the SecurityDetectionsAPIRuleResponse as the provided SecurityDetectionsAPIEsqlRule
+func (t *SecurityDetectionsAPIRuleResponse) FromSecurityDetectionsAPIEsqlRule(v SecurityDetectionsAPIEsqlRule) error {
+	v.Type = "Security_Detections_API_EsqlRule"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEsqlRule performs a merge with any union data inside the SecurityDetectionsAPIRuleResponse, using the provided SecurityDetectionsAPIEsqlRule
+func (t *SecurityDetectionsAPIRuleResponse) MergeSecurityDetectionsAPIEsqlRule(v SecurityDetectionsAPIEsqlRule) error {
+	v.Type = "Security_Detections_API_EsqlRule"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIRuleResponse) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t SecurityDetectionsAPIRuleResponse) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "Security_Detections_API_EqlRule":
+		return t.AsSecurityDetectionsAPIEqlRule()
+	case "Security_Detections_API_EsqlRule":
+		return t.AsSecurityDetectionsAPIEsqlRule()
+	case "Security_Detections_API_MachineLearningRule":
+		return t.AsSecurityDetectionsAPIMachineLearningRule()
+	case "Security_Detections_API_NewTermsRule":
+		return t.AsSecurityDetectionsAPINewTermsRule()
+	case "Security_Detections_API_QueryRule":
+		return t.AsSecurityDetectionsAPIQueryRule()
+	case "Security_Detections_API_SavedQueryRule":
+		return t.AsSecurityDetectionsAPISavedQueryRule()
+	case "Security_Detections_API_ThreatMatchRule":
+		return t.AsSecurityDetectionsAPIThreatMatchRule()
+	case "Security_Detections_API_ThresholdRule":
+		return t.AsSecurityDetectionsAPIThresholdRule()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t SecurityDetectionsAPIRuleResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIRuleResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIExternalRuleSource returns the union data inside the SecurityDetectionsAPIRuleSource as a SecurityDetectionsAPIExternalRuleSource
+func (t SecurityDetectionsAPIRuleSource) AsSecurityDetectionsAPIExternalRuleSource() (SecurityDetectionsAPIExternalRuleSource, error) {
+	var body SecurityDetectionsAPIExternalRuleSource
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIExternalRuleSource overwrites any union data inside the SecurityDetectionsAPIRuleSource as the provided SecurityDetectionsAPIExternalRuleSource
+func (t *SecurityDetectionsAPIRuleSource) FromSecurityDetectionsAPIExternalRuleSource(v SecurityDetectionsAPIExternalRuleSource) error {
+	v.Type = "Security_Detections_API_ExternalRuleSource"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIExternalRuleSource performs a merge with any union data inside the SecurityDetectionsAPIRuleSource, using the provided SecurityDetectionsAPIExternalRuleSource
+func (t *SecurityDetectionsAPIRuleSource) MergeSecurityDetectionsAPIExternalRuleSource(v SecurityDetectionsAPIExternalRuleSource) error {
+	v.Type = "Security_Detections_API_ExternalRuleSource"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIInternalRuleSource returns the union data inside the SecurityDetectionsAPIRuleSource as a SecurityDetectionsAPIInternalRuleSource
+func (t SecurityDetectionsAPIRuleSource) AsSecurityDetectionsAPIInternalRuleSource() (SecurityDetectionsAPIInternalRuleSource, error) {
+	var body SecurityDetectionsAPIInternalRuleSource
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIInternalRuleSource overwrites any union data inside the SecurityDetectionsAPIRuleSource as the provided SecurityDetectionsAPIInternalRuleSource
+func (t *SecurityDetectionsAPIRuleSource) FromSecurityDetectionsAPIInternalRuleSource(v SecurityDetectionsAPIInternalRuleSource) error {
+	v.Type = "Security_Detections_API_InternalRuleSource"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIInternalRuleSource performs a merge with any union data inside the SecurityDetectionsAPIRuleSource, using the provided SecurityDetectionsAPIInternalRuleSource
+func (t *SecurityDetectionsAPIRuleSource) MergeSecurityDetectionsAPIInternalRuleSource(v SecurityDetectionsAPIInternalRuleSource) error {
+	v.Type = "Security_Detections_API_InternalRuleSource"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIRuleSource) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t SecurityDetectionsAPIRuleSource) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "Security_Detections_API_ExternalRuleSource":
+		return t.AsSecurityDetectionsAPIExternalRuleSource()
+	case "Security_Detections_API_InternalRuleSource":
+		return t.AsSecurityDetectionsAPIInternalRuleSource()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t SecurityDetectionsAPIRuleSource) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIRuleSource) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIEqlRuleUpdateProps returns the union data inside the SecurityDetectionsAPIRuleUpdateProps as a SecurityDetectionsAPIEqlRuleUpdateProps
+func (t SecurityDetectionsAPIRuleUpdateProps) AsSecurityDetectionsAPIEqlRuleUpdateProps() (SecurityDetectionsAPIEqlRuleUpdateProps, error) {
+	var body SecurityDetectionsAPIEqlRuleUpdateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEqlRuleUpdateProps overwrites any union data inside the SecurityDetectionsAPIRuleUpdateProps as the provided SecurityDetectionsAPIEqlRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) FromSecurityDetectionsAPIEqlRuleUpdateProps(v SecurityDetectionsAPIEqlRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_EqlRuleUpdateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEqlRuleUpdateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleUpdateProps, using the provided SecurityDetectionsAPIEqlRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) MergeSecurityDetectionsAPIEqlRuleUpdateProps(v SecurityDetectionsAPIEqlRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_EqlRuleUpdateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIQueryRuleUpdateProps returns the union data inside the SecurityDetectionsAPIRuleUpdateProps as a SecurityDetectionsAPIQueryRuleUpdateProps
+func (t SecurityDetectionsAPIRuleUpdateProps) AsSecurityDetectionsAPIQueryRuleUpdateProps() (SecurityDetectionsAPIQueryRuleUpdateProps, error) {
+	var body SecurityDetectionsAPIQueryRuleUpdateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIQueryRuleUpdateProps overwrites any union data inside the SecurityDetectionsAPIRuleUpdateProps as the provided SecurityDetectionsAPIQueryRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) FromSecurityDetectionsAPIQueryRuleUpdateProps(v SecurityDetectionsAPIQueryRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_QueryRuleUpdateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIQueryRuleUpdateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleUpdateProps, using the provided SecurityDetectionsAPIQueryRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) MergeSecurityDetectionsAPIQueryRuleUpdateProps(v SecurityDetectionsAPIQueryRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_QueryRuleUpdateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPISavedQueryRuleUpdateProps returns the union data inside the SecurityDetectionsAPIRuleUpdateProps as a SecurityDetectionsAPISavedQueryRuleUpdateProps
+func (t SecurityDetectionsAPIRuleUpdateProps) AsSecurityDetectionsAPISavedQueryRuleUpdateProps() (SecurityDetectionsAPISavedQueryRuleUpdateProps, error) {
+	var body SecurityDetectionsAPISavedQueryRuleUpdateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPISavedQueryRuleUpdateProps overwrites any union data inside the SecurityDetectionsAPIRuleUpdateProps as the provided SecurityDetectionsAPISavedQueryRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) FromSecurityDetectionsAPISavedQueryRuleUpdateProps(v SecurityDetectionsAPISavedQueryRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_SavedQueryRuleUpdateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPISavedQueryRuleUpdateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleUpdateProps, using the provided SecurityDetectionsAPISavedQueryRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) MergeSecurityDetectionsAPISavedQueryRuleUpdateProps(v SecurityDetectionsAPISavedQueryRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_SavedQueryRuleUpdateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIThresholdRuleUpdateProps returns the union data inside the SecurityDetectionsAPIRuleUpdateProps as a SecurityDetectionsAPIThresholdRuleUpdateProps
+func (t SecurityDetectionsAPIRuleUpdateProps) AsSecurityDetectionsAPIThresholdRuleUpdateProps() (SecurityDetectionsAPIThresholdRuleUpdateProps, error) {
+	var body SecurityDetectionsAPIThresholdRuleUpdateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIThresholdRuleUpdateProps overwrites any union data inside the SecurityDetectionsAPIRuleUpdateProps as the provided SecurityDetectionsAPIThresholdRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) FromSecurityDetectionsAPIThresholdRuleUpdateProps(v SecurityDetectionsAPIThresholdRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_ThresholdRuleUpdateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIThresholdRuleUpdateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleUpdateProps, using the provided SecurityDetectionsAPIThresholdRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) MergeSecurityDetectionsAPIThresholdRuleUpdateProps(v SecurityDetectionsAPIThresholdRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_ThresholdRuleUpdateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIThreatMatchRuleUpdateProps returns the union data inside the SecurityDetectionsAPIRuleUpdateProps as a SecurityDetectionsAPIThreatMatchRuleUpdateProps
+func (t SecurityDetectionsAPIRuleUpdateProps) AsSecurityDetectionsAPIThreatMatchRuleUpdateProps() (SecurityDetectionsAPIThreatMatchRuleUpdateProps, error) {
+	var body SecurityDetectionsAPIThreatMatchRuleUpdateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIThreatMatchRuleUpdateProps overwrites any union data inside the SecurityDetectionsAPIRuleUpdateProps as the provided SecurityDetectionsAPIThreatMatchRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) FromSecurityDetectionsAPIThreatMatchRuleUpdateProps(v SecurityDetectionsAPIThreatMatchRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_ThreatMatchRuleUpdateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIThreatMatchRuleUpdateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleUpdateProps, using the provided SecurityDetectionsAPIThreatMatchRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) MergeSecurityDetectionsAPIThreatMatchRuleUpdateProps(v SecurityDetectionsAPIThreatMatchRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_ThreatMatchRuleUpdateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIMachineLearningRuleUpdateProps returns the union data inside the SecurityDetectionsAPIRuleUpdateProps as a SecurityDetectionsAPIMachineLearningRuleUpdateProps
+func (t SecurityDetectionsAPIRuleUpdateProps) AsSecurityDetectionsAPIMachineLearningRuleUpdateProps() (SecurityDetectionsAPIMachineLearningRuleUpdateProps, error) {
+	var body SecurityDetectionsAPIMachineLearningRuleUpdateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIMachineLearningRuleUpdateProps overwrites any union data inside the SecurityDetectionsAPIRuleUpdateProps as the provided SecurityDetectionsAPIMachineLearningRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) FromSecurityDetectionsAPIMachineLearningRuleUpdateProps(v SecurityDetectionsAPIMachineLearningRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_MachineLearningRuleUpdateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIMachineLearningRuleUpdateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleUpdateProps, using the provided SecurityDetectionsAPIMachineLearningRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) MergeSecurityDetectionsAPIMachineLearningRuleUpdateProps(v SecurityDetectionsAPIMachineLearningRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_MachineLearningRuleUpdateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPINewTermsRuleUpdateProps returns the union data inside the SecurityDetectionsAPIRuleUpdateProps as a SecurityDetectionsAPINewTermsRuleUpdateProps
+func (t SecurityDetectionsAPIRuleUpdateProps) AsSecurityDetectionsAPINewTermsRuleUpdateProps() (SecurityDetectionsAPINewTermsRuleUpdateProps, error) {
+	var body SecurityDetectionsAPINewTermsRuleUpdateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPINewTermsRuleUpdateProps overwrites any union data inside the SecurityDetectionsAPIRuleUpdateProps as the provided SecurityDetectionsAPINewTermsRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) FromSecurityDetectionsAPINewTermsRuleUpdateProps(v SecurityDetectionsAPINewTermsRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_NewTermsRuleUpdateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPINewTermsRuleUpdateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleUpdateProps, using the provided SecurityDetectionsAPINewTermsRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) MergeSecurityDetectionsAPINewTermsRuleUpdateProps(v SecurityDetectionsAPINewTermsRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_NewTermsRuleUpdateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIEsqlRuleUpdateProps returns the union data inside the SecurityDetectionsAPIRuleUpdateProps as a SecurityDetectionsAPIEsqlRuleUpdateProps
+func (t SecurityDetectionsAPIRuleUpdateProps) AsSecurityDetectionsAPIEsqlRuleUpdateProps() (SecurityDetectionsAPIEsqlRuleUpdateProps, error) {
+	var body SecurityDetectionsAPIEsqlRuleUpdateProps
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIEsqlRuleUpdateProps overwrites any union data inside the SecurityDetectionsAPIRuleUpdateProps as the provided SecurityDetectionsAPIEsqlRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) FromSecurityDetectionsAPIEsqlRuleUpdateProps(v SecurityDetectionsAPIEsqlRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_EsqlRuleUpdateProps"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIEsqlRuleUpdateProps performs a merge with any union data inside the SecurityDetectionsAPIRuleUpdateProps, using the provided SecurityDetectionsAPIEsqlRuleUpdateProps
+func (t *SecurityDetectionsAPIRuleUpdateProps) MergeSecurityDetectionsAPIEsqlRuleUpdateProps(v SecurityDetectionsAPIEsqlRuleUpdateProps) error {
+	v.Type = "Security_Detections_API_EsqlRuleUpdateProps"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIRuleUpdateProps) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t SecurityDetectionsAPIRuleUpdateProps) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "Security_Detections_API_EqlRuleUpdateProps":
+		return t.AsSecurityDetectionsAPIEqlRuleUpdateProps()
+	case "Security_Detections_API_EsqlRuleUpdateProps":
+		return t.AsSecurityDetectionsAPIEsqlRuleUpdateProps()
+	case "Security_Detections_API_MachineLearningRuleUpdateProps":
+		return t.AsSecurityDetectionsAPIMachineLearningRuleUpdateProps()
+	case "Security_Detections_API_NewTermsRuleUpdateProps":
+		return t.AsSecurityDetectionsAPINewTermsRuleUpdateProps()
+	case "Security_Detections_API_QueryRuleUpdateProps":
+		return t.AsSecurityDetectionsAPIQueryRuleUpdateProps()
+	case "Security_Detections_API_SavedQueryRuleUpdateProps":
+		return t.AsSecurityDetectionsAPISavedQueryRuleUpdateProps()
+	case "Security_Detections_API_ThreatMatchRuleUpdateProps":
+		return t.AsSecurityDetectionsAPIThreatMatchRuleUpdateProps()
+	case "Security_Detections_API_ThresholdRuleUpdateProps":
+		return t.AsSecurityDetectionsAPIThresholdRuleUpdateProps()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t SecurityDetectionsAPIRuleUpdateProps) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIRuleUpdateProps) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIThresholdField0 returns the union data inside the SecurityDetectionsAPIThresholdField as a SecurityDetectionsAPIThresholdField0
+func (t SecurityDetectionsAPIThresholdField) AsSecurityDetectionsAPIThresholdField0() (SecurityDetectionsAPIThresholdField0, error) {
+	var body SecurityDetectionsAPIThresholdField0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIThresholdField0 overwrites any union data inside the SecurityDetectionsAPIThresholdField as the provided SecurityDetectionsAPIThresholdField0
+func (t *SecurityDetectionsAPIThresholdField) FromSecurityDetectionsAPIThresholdField0(v SecurityDetectionsAPIThresholdField0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIThresholdField0 performs a merge with any union data inside the SecurityDetectionsAPIThresholdField, using the provided SecurityDetectionsAPIThresholdField0
+func (t *SecurityDetectionsAPIThresholdField) MergeSecurityDetectionsAPIThresholdField0(v SecurityDetectionsAPIThresholdField0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIThresholdField1 returns the union data inside the SecurityDetectionsAPIThresholdField as a SecurityDetectionsAPIThresholdField1
+func (t SecurityDetectionsAPIThresholdField) AsSecurityDetectionsAPIThresholdField1() (SecurityDetectionsAPIThresholdField1, error) {
+	var body SecurityDetectionsAPIThresholdField1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIThresholdField1 overwrites any union data inside the SecurityDetectionsAPIThresholdField as the provided SecurityDetectionsAPIThresholdField1
+func (t *SecurityDetectionsAPIThresholdField) FromSecurityDetectionsAPIThresholdField1(v SecurityDetectionsAPIThresholdField1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIThresholdField1 performs a merge with any union data inside the SecurityDetectionsAPIThresholdField, using the provided SecurityDetectionsAPIThresholdField1
+func (t *SecurityDetectionsAPIThresholdField) MergeSecurityDetectionsAPIThresholdField1(v SecurityDetectionsAPIThresholdField1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPIThresholdField) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPIThresholdField) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
 }
 
 // AsAgentPolicyPackagePolicies1Inputs1StreamsVars0 returns the union data inside the AgentPolicy_PackagePolicies_1_Inputs_1_Streams_Vars_AdditionalProperties as a AgentPolicyPackagePolicies1Inputs1StreamsVars0
@@ -18228,6 +25958,22 @@ type ClientInterface interface {
 
 	UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteRule request
+	DeleteRule(ctx context.Context, spaceId SpaceId, params *DeleteRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReadRule request
+	ReadRule(ctx context.Context, spaceId SpaceId, params *ReadRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRuleWithBody request with any body
+	CreateRuleWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateRule(ctx context.Context, spaceId SpaceId, body CreateRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateRuleWithBody request with any body
+	UpdateRuleWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateRule(ctx context.Context, spaceId SpaceId, body UpdateRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostMaintenanceWindowWithBody request with any body
 	PostMaintenanceWindowWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -18977,6 +26723,150 @@ func (c *Client) UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, vie
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteRule(ctx context.Context, spaceId SpaceId, params *DeleteRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRuleRequest(c.Server, spaceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReadRule(ctx context.Context, spaceId SpaceId, params *ReadRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReadRuleRequest(c.Server, spaceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRuleWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRuleRequestWithBody(c.Server, spaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRule(ctx context.Context, spaceId SpaceId, body CreateRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRuleRequest(c.Server, spaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateRuleWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRuleRequestWithBody(c.Server, spaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateRule(ctx context.Context, spaceId SpaceId, body UpdateRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRuleRequest(c.Server, spaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostMaintenanceWindowWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostMaintenanceWindowRequestWithBody(c.Server, spaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostMaintenanceWindow(ctx context.Context, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostMaintenanceWindowRequest(c.Server, spaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteMaintenanceWindowIdRequest(c.Server, spaceId, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetMaintenanceWindowIdRequest(c.Server, spaceId, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchMaintenanceWindowIdWithBody(ctx context.Context, spaceId SpaceId, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchMaintenanceWindowIdRequestWithBody(c.Server, spaceId, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchMaintenanceWindowIdRequest(c.Server, spaceId, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // NewDeleteAgentConfigurationRequest calls the generic DeleteAgentConfiguration builder with application/json body
 func NewDeleteAgentConfigurationRequest(server string, params *DeleteAgentConfigurationParams, body DeleteAgentConfigurationJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -19143,78 +27033,6 @@ func NewCreateUpdateAgentConfigurationRequestWithBody(server string, params *Cre
 	}
 
 	return req, nil
-}
-
-func (c *Client) PostMaintenanceWindowWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostMaintenanceWindowRequestWithBody(c.Server, spaceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PostMaintenanceWindow(ctx context.Context, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostMaintenanceWindowRequest(c.Server, spaceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteMaintenanceWindowIdRequest(c.Server, spaceId, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetMaintenanceWindowIdRequest(c.Server, spaceId, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PatchMaintenanceWindowIdWithBody(ctx context.Context, spaceId SpaceId, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchMaintenanceWindowIdRequestWithBody(c.Server, spaceId, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PatchMaintenanceWindowId(ctx context.Context, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchMaintenanceWindowIdRequest(c.Server, spaceId, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
 }
 
 // NewGetFleetAgentPoliciesRequest generates requests for GetFleetAgentPolicies
@@ -21528,6 +29346,244 @@ func NewUpdateDataViewDefaultRequestWithBody(server string, spaceId SpaceId, vie
 	return req, nil
 }
 
+// NewDeleteRuleRequest generates requests for DeleteRule
+func NewDeleteRuleRequest(server string, spaceId SpaceId, params *DeleteRuleParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/detection_engine/rules", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Id != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "id", runtime.ParamLocationQuery, *params.Id); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RuleId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "rule_id", runtime.ParamLocationQuery, *params.RuleId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReadRuleRequest generates requests for ReadRule
+func NewReadRuleRequest(server string, spaceId SpaceId, params *ReadRuleParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/detection_engine/rules", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Id != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "id", runtime.ParamLocationQuery, *params.Id); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RuleId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "rule_id", runtime.ParamLocationQuery, *params.RuleId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateRuleRequest calls the generic CreateRule builder with application/json body
+func NewCreateRuleRequest(server string, spaceId SpaceId, body CreateRuleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateRuleRequestWithBody(server, spaceId, "application/json", bodyReader)
+}
+
+// NewCreateRuleRequestWithBody generates requests for CreateRule with any type of body
+func NewCreateRuleRequestWithBody(server string, spaceId SpaceId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/detection_engine/rules", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewUpdateRuleRequest calls the generic UpdateRule builder with application/json body
+func NewUpdateRuleRequest(server string, spaceId SpaceId, body UpdateRuleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateRuleRequestWithBody(server, spaceId, "application/json", bodyReader)
+}
+
+// NewUpdateRuleRequestWithBody generates requests for UpdateRule with any type of body
+func NewUpdateRuleRequestWithBody(server string, spaceId SpaceId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "spaceId", runtime.ParamLocationPath, spaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/detection_engine/rules", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewPostMaintenanceWindowRequest calls the generic PostMaintenanceWindow builder with application/json body
 func NewPostMaintenanceWindowRequest(server string, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -21918,6 +29974,22 @@ type ClientWithResponsesInterface interface {
 	UpdateDataViewDefaultWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
 
 	UpdateDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
+
+	// DeleteRuleWithResponse request
+	DeleteRuleWithResponse(ctx context.Context, spaceId SpaceId, params *DeleteRuleParams, reqEditors ...RequestEditorFn) (*DeleteRuleResponse, error)
+
+	// ReadRuleWithResponse request
+	ReadRuleWithResponse(ctx context.Context, spaceId SpaceId, params *ReadRuleParams, reqEditors ...RequestEditorFn) (*ReadRuleResponse, error)
+
+	// CreateRuleWithBodyWithResponse request with any body
+	CreateRuleWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRuleResponse, error)
+
+	CreateRuleWithResponse(ctx context.Context, spaceId SpaceId, body CreateRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRuleResponse, error)
+
+	// UpdateRuleWithBodyWithResponse request with any body
+	UpdateRuleWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRuleResponse, error)
+
+	UpdateRuleWithResponse(ctx context.Context, spaceId SpaceId, body UpdateRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRuleResponse, error)
 
 	// PostMaintenanceWindowWithBodyWithResponse request with any body
 	PostMaintenanceWindowWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error)
@@ -23274,47 +31346,92 @@ func (r UpdateDataViewDefaultResponse) StatusCode() int {
 	return 0
 }
 
-// DeleteAgentConfigurationWithBodyWithResponse request with arbitrary body returning *DeleteAgentConfigurationResponse
-func (c *ClientWithResponses) DeleteAgentConfigurationWithBodyWithResponse(ctx context.Context, params *DeleteAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAgentConfigurationResponse, error) {
-	rsp, err := c.DeleteAgentConfigurationWithBody(ctx, params, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteAgentConfigurationResponse(rsp)
+type DeleteRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SecurityDetectionsAPIRuleResponse
 }
 
-func (c *ClientWithResponses) DeleteAgentConfigurationWithResponse(ctx context.Context, params *DeleteAgentConfigurationParams, body DeleteAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteAgentConfigurationResponse, error) {
-	rsp, err := c.DeleteAgentConfiguration(ctx, params, body, reqEditors...)
-	if err != nil {
-		return nil, err
+// Status returns HTTPResponse.Status
+func (r DeleteRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
-	return ParseDeleteAgentConfigurationResponse(rsp)
+	return http.StatusText(0)
 }
 
-// GetAgentConfigurationsWithResponse request returning *GetAgentConfigurationsResponse
-func (c *ClientWithResponses) GetAgentConfigurationsWithResponse(ctx context.Context, params *GetAgentConfigurationsParams, reqEditors ...RequestEditorFn) (*GetAgentConfigurationsResponse, error) {
-	rsp, err := c.GetAgentConfigurations(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
 	}
-	return ParseGetAgentConfigurationsResponse(rsp)
+	return 0
 }
 
-// CreateUpdateAgentConfigurationWithBodyWithResponse request with arbitrary body returning *CreateUpdateAgentConfigurationResponse
-func (c *ClientWithResponses) CreateUpdateAgentConfigurationWithBodyWithResponse(ctx context.Context, params *CreateUpdateAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUpdateAgentConfigurationResponse, error) {
-	rsp, err := c.CreateUpdateAgentConfigurationWithBody(ctx, params, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateUpdateAgentConfigurationResponse(rsp)
+type ReadRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SecurityDetectionsAPIRuleResponse
 }
 
-func (c *ClientWithResponses) CreateUpdateAgentConfigurationWithResponse(ctx context.Context, params *CreateUpdateAgentConfigurationParams, body CreateUpdateAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUpdateAgentConfigurationResponse, error) {
-	rsp, err := c.CreateUpdateAgentConfiguration(ctx, params, body, reqEditors...)
-	if err != nil {
-		return nil, err
+// Status returns HTTPResponse.Status
+func (r ReadRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
-	return ParseCreateUpdateAgentConfigurationResponse(rsp)
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReadRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SecurityDetectionsAPIRuleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SecurityDetectionsAPIRuleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type PostMaintenanceWindowResponse struct {
@@ -23594,6 +31711,49 @@ func (r PatchMaintenanceWindowIdResponse) StatusCode() int {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
+}
+
+// DeleteAgentConfigurationWithBodyWithResponse request with arbitrary body returning *DeleteAgentConfigurationResponse
+func (c *ClientWithResponses) DeleteAgentConfigurationWithBodyWithResponse(ctx context.Context, params *DeleteAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAgentConfigurationResponse, error) {
+	rsp, err := c.DeleteAgentConfigurationWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAgentConfigurationResponse(rsp)
+}
+
+func (c *ClientWithResponses) DeleteAgentConfigurationWithResponse(ctx context.Context, params *DeleteAgentConfigurationParams, body DeleteAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteAgentConfigurationResponse, error) {
+	rsp, err := c.DeleteAgentConfiguration(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAgentConfigurationResponse(rsp)
+}
+
+// GetAgentConfigurationsWithResponse request returning *GetAgentConfigurationsResponse
+func (c *ClientWithResponses) GetAgentConfigurationsWithResponse(ctx context.Context, params *GetAgentConfigurationsParams, reqEditors ...RequestEditorFn) (*GetAgentConfigurationsResponse, error) {
+	rsp, err := c.GetAgentConfigurations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentConfigurationsResponse(rsp)
+}
+
+// CreateUpdateAgentConfigurationWithBodyWithResponse request with arbitrary body returning *CreateUpdateAgentConfigurationResponse
+func (c *ClientWithResponses) CreateUpdateAgentConfigurationWithBodyWithResponse(ctx context.Context, params *CreateUpdateAgentConfigurationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUpdateAgentConfigurationResponse, error) {
+	rsp, err := c.CreateUpdateAgentConfigurationWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUpdateAgentConfigurationResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateUpdateAgentConfigurationWithResponse(ctx context.Context, params *CreateUpdateAgentConfigurationParams, body CreateUpdateAgentConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUpdateAgentConfigurationResponse, error) {
+	rsp, err := c.CreateUpdateAgentConfiguration(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUpdateAgentConfigurationResponse(rsp)
 }
 
 // GetFleetAgentPoliciesWithResponse request returning *GetFleetAgentPoliciesResponse
@@ -24084,6 +32244,110 @@ func (c *ClientWithResponses) UpdateDataViewDefaultWithResponse(ctx context.Cont
 	return ParseUpdateDataViewDefaultResponse(rsp)
 }
 
+// DeleteRuleWithResponse request returning *DeleteRuleResponse
+func (c *ClientWithResponses) DeleteRuleWithResponse(ctx context.Context, spaceId SpaceId, params *DeleteRuleParams, reqEditors ...RequestEditorFn) (*DeleteRuleResponse, error) {
+	rsp, err := c.DeleteRule(ctx, spaceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteRuleResponse(rsp)
+}
+
+// ReadRuleWithResponse request returning *ReadRuleResponse
+func (c *ClientWithResponses) ReadRuleWithResponse(ctx context.Context, spaceId SpaceId, params *ReadRuleParams, reqEditors ...RequestEditorFn) (*ReadRuleResponse, error) {
+	rsp, err := c.ReadRule(ctx, spaceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReadRuleResponse(rsp)
+}
+
+// CreateRuleWithBodyWithResponse request with arbitrary body returning *CreateRuleResponse
+func (c *ClientWithResponses) CreateRuleWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRuleResponse, error) {
+	rsp, err := c.CreateRuleWithBody(ctx, spaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRuleResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateRuleWithResponse(ctx context.Context, spaceId SpaceId, body CreateRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRuleResponse, error) {
+	rsp, err := c.CreateRule(ctx, spaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRuleResponse(rsp)
+}
+
+// UpdateRuleWithBodyWithResponse request with arbitrary body returning *UpdateRuleResponse
+func (c *ClientWithResponses) UpdateRuleWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRuleResponse, error) {
+	rsp, err := c.UpdateRuleWithBody(ctx, spaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRuleResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateRuleWithResponse(ctx context.Context, spaceId SpaceId, body UpdateRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRuleResponse, error) {
+	rsp, err := c.UpdateRule(ctx, spaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRuleResponse(rsp)
+}
+
+// PostMaintenanceWindowWithBodyWithResponse request with arbitrary body returning *PostMaintenanceWindowResponse
+func (c *ClientWithResponses) PostMaintenanceWindowWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error) {
+	rsp, err := c.PostMaintenanceWindowWithBody(ctx, spaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostMaintenanceWindowResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostMaintenanceWindowWithResponse(ctx context.Context, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error) {
+	rsp, err := c.PostMaintenanceWindow(ctx, spaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostMaintenanceWindowResponse(rsp)
+}
+
+// DeleteMaintenanceWindowIdWithResponse request returning *DeleteMaintenanceWindowIdResponse
+func (c *ClientWithResponses) DeleteMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*DeleteMaintenanceWindowIdResponse, error) {
+	rsp, err := c.DeleteMaintenanceWindowId(ctx, spaceId, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteMaintenanceWindowIdResponse(rsp)
+}
+
+// GetMaintenanceWindowIdWithResponse request returning *GetMaintenanceWindowIdResponse
+func (c *ClientWithResponses) GetMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*GetMaintenanceWindowIdResponse, error) {
+	rsp, err := c.GetMaintenanceWindowId(ctx, spaceId, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetMaintenanceWindowIdResponse(rsp)
+}
+
+// PatchMaintenanceWindowIdWithBodyWithResponse request with arbitrary body returning *PatchMaintenanceWindowIdResponse
+func (c *ClientWithResponses) PatchMaintenanceWindowIdWithBodyWithResponse(ctx context.Context, spaceId SpaceId, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchMaintenanceWindowIdResponse, error) {
+	rsp, err := c.PatchMaintenanceWindowIdWithBody(ctx, spaceId, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchMaintenanceWindowIdResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchMaintenanceWindowIdResponse, error) {
+	rsp, err := c.PatchMaintenanceWindowId(ctx, spaceId, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchMaintenanceWindowIdResponse(rsp)
+}
+
 // ParseDeleteAgentConfigurationResponse parses an HTTP response from a DeleteAgentConfigurationWithResponse call
 func ParseDeleteAgentConfigurationResponse(rsp *http.Response) (*DeleteAgentConfigurationResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24237,58 +32501,6 @@ func ParseCreateUpdateAgentConfigurationResponse(rsp *http.Response) (*CreateUpd
 	}
 
 	return response, nil
-}
-
-// PostMaintenanceWindowWithBodyWithResponse request with arbitrary body returning *PostMaintenanceWindowResponse
-func (c *ClientWithResponses) PostMaintenanceWindowWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error) {
-	rsp, err := c.PostMaintenanceWindowWithBody(ctx, spaceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePostMaintenanceWindowResponse(rsp)
-}
-
-func (c *ClientWithResponses) PostMaintenanceWindowWithResponse(ctx context.Context, spaceId SpaceId, body PostMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*PostMaintenanceWindowResponse, error) {
-	rsp, err := c.PostMaintenanceWindow(ctx, spaceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePostMaintenanceWindowResponse(rsp)
-}
-
-// DeleteMaintenanceWindowIdWithResponse request returning *DeleteMaintenanceWindowIdResponse
-func (c *ClientWithResponses) DeleteMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*DeleteMaintenanceWindowIdResponse, error) {
-	rsp, err := c.DeleteMaintenanceWindowId(ctx, spaceId, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteMaintenanceWindowIdResponse(rsp)
-}
-
-// GetMaintenanceWindowIdWithResponse request returning *GetMaintenanceWindowIdResponse
-func (c *ClientWithResponses) GetMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, reqEditors ...RequestEditorFn) (*GetMaintenanceWindowIdResponse, error) {
-	rsp, err := c.GetMaintenanceWindowId(ctx, spaceId, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetMaintenanceWindowIdResponse(rsp)
-}
-
-// PatchMaintenanceWindowIdWithBodyWithResponse request with arbitrary body returning *PatchMaintenanceWindowIdResponse
-func (c *ClientWithResponses) PatchMaintenanceWindowIdWithBodyWithResponse(ctx context.Context, spaceId SpaceId, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchMaintenanceWindowIdResponse, error) {
-	rsp, err := c.PatchMaintenanceWindowIdWithBody(ctx, spaceId, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePatchMaintenanceWindowIdResponse(rsp)
-}
-
-func (c *ClientWithResponses) PatchMaintenanceWindowIdWithResponse(ctx context.Context, spaceId SpaceId, id string, body PatchMaintenanceWindowIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchMaintenanceWindowIdResponse, error) {
-	rsp, err := c.PatchMaintenanceWindowId(ctx, spaceId, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePatchMaintenanceWindowIdResponse(rsp)
 }
 
 // ParseGetFleetAgentPoliciesResponse parses an HTTP response from a GetFleetAgentPoliciesWithResponse call
@@ -25837,6 +34049,110 @@ func ParseUpdateDataViewDefaultResponse(rsp *http.Response) (*UpdateDataViewDefa
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteRuleResponse parses an HTTP response from a DeleteRuleWithResponse call
+func ParseDeleteRuleResponse(rsp *http.Response) (*DeleteRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecurityDetectionsAPIRuleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReadRuleResponse parses an HTTP response from a ReadRuleWithResponse call
+func ParseReadRuleResponse(rsp *http.Response) (*ReadRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReadRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecurityDetectionsAPIRuleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateRuleResponse parses an HTTP response from a CreateRuleWithResponse call
+func ParseCreateRuleResponse(rsp *http.Response) (*CreateRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecurityDetectionsAPIRuleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateRuleResponse parses an HTTP response from a UpdateRuleWithResponse call
+func ParseUpdateRuleResponse(rsp *http.Response) (*UpdateRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecurityDetectionsAPIRuleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 

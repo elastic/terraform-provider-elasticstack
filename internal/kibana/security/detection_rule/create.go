@@ -31,13 +31,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Create the rule
-	var ruleId *string
-	if !data.RuleId.IsNull() && !data.RuleId.IsUnknown() {
-		id := data.RuleId.ValueString()
-		ruleId = &id
-	}
-
-	result, diags := CreateSecurityDetectionRule(ctx, r.client, spaceId, ruleId, apiRequest)
+	result, diags := CreateSecurityDetectionRule(ctx, r.client, spaceId, apiRequest)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

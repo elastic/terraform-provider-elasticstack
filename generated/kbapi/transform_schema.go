@@ -584,6 +584,7 @@ func transformFilterPaths(schema *Schema) {
 		"/api/maintenance_window/{id}":                   {"delete", "get", "patch"},
 		"/api/actions/connector/{id}":                    {"get", "put", "post", "delete"},
 		"/api/actions/connectors":                        {"get"},
+		"/api/detection_engine/rules":                    {"get", "post", "put", "delete"},
 	}
 
 	for path, pathInfo := range schema.Paths {
@@ -734,6 +735,7 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/maintenance_window/{id}",
 		"/api/actions/connector/{id}",
 		"/api/actions/connectors",
+		"/api/detection_engine/rules",
 	}
 
 	// Add a spaceId parameter if not already present
