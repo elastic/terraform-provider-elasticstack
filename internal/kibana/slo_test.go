@@ -58,6 +58,8 @@ func TestAccResourceSlo(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "1m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_field", "event.ingested"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.prevent_initial_backfill", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
 				),
 			},
@@ -77,6 +79,8 @@ func TestAccResourceSlo(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_field", "event.ingested"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.prevent_initial_backfill", "false"),
 				),
 			},
 			{
@@ -729,6 +733,8 @@ func getSLOConfig(vars sloVars) string {
 		settings {
 			sync_delay = "5m"
 			frequency = "5m"
+			sync_field = "event.ingested"
+			prevent_initial_backfill = true
 		}
 		`
 	} else {

@@ -1,46 +1,46 @@
-# HistoricalSummaryRequest
+# BulkDeleteRequest
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**List** | **[]string** | The list of SLO identifiers to get the historical summary for | 
+**List** | **[]string** | An array of SLO Definition id | 
 
 ## Methods
 
-### NewHistoricalSummaryRequest
+### NewBulkDeleteRequest
 
-`func NewHistoricalSummaryRequest(list []string, ) *HistoricalSummaryRequest`
+`func NewBulkDeleteRequest(list []string, ) *BulkDeleteRequest`
 
-NewHistoricalSummaryRequest instantiates a new HistoricalSummaryRequest object
+NewBulkDeleteRequest instantiates a new BulkDeleteRequest object
 This constructor will assign default values to properties that have it defined,
 and makes sure properties required by API are set, but the set of arguments
 will change when the set of required properties is changed
 
-### NewHistoricalSummaryRequestWithDefaults
+### NewBulkDeleteRequestWithDefaults
 
-`func NewHistoricalSummaryRequestWithDefaults() *HistoricalSummaryRequest`
+`func NewBulkDeleteRequestWithDefaults() *BulkDeleteRequest`
 
-NewHistoricalSummaryRequestWithDefaults instantiates a new HistoricalSummaryRequest object
+NewBulkDeleteRequestWithDefaults instantiates a new BulkDeleteRequest object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
 ### GetList
 
-`func (o *HistoricalSummaryRequest) GetList() []string`
+`func (o *BulkDeleteRequest) GetList() []string`
 
 GetList returns the List field if non-nil, zero value otherwise.
 
 ### GetListOk
 
-`func (o *HistoricalSummaryRequest) GetListOk() (*[]string, bool)`
+`func (o *BulkDeleteRequest) GetListOk() (*[]string, bool)`
 
 GetListOk returns a tuple with the List field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetList
 
-`func (o *HistoricalSummaryRequest) SetList(v []string)`
+`func (o *BulkDeleteRequest) SetList(v []string)`
 
 SetList sets List field to given value.
 
