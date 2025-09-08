@@ -165,26 +165,6 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledMetrics)
 	}
 
-	if utils.IsKnown(model.SupportsAgentless) && !feat.SupportsSupportsAgentless {
-		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-			diag.NewAttributeErrorDiagnostic(
-				path.Root("supports_agentless"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-			),
-		}
-	}
-
-	if utils.IsKnown(model.InactivityTimeout) && !feat.SupportsInactivityTimeout {
-		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-			diag.NewAttributeErrorDiagnostic(
-				path.Root("inactivity_timeout"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
-			),
-		}
-	}
-
 	body := kbapi.PostFleetAgentPoliciesJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
@@ -195,8 +175,32 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
-		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
-		InactivityTimeout:  model.InactivityTimeout.ValueFloat32Pointer(),
+	}
+
+	if utils.IsKnown(model.SupportsAgentless) {
+		if !feat.SupportsSupportsAgentless {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("supports_agentless"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+				),
+			}
+		}
+		body.SupportsAgentless = model.SupportsAgentless.ValueBoolPointer()
+	}
+
+	if utils.IsKnown(model.InactivityTimeout) {
+		if !feat.SupportsInactivityTimeout {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("inactivity_timeout"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
+				),
+			}
+		}
+		body.InactivityTimeout = model.InactivityTimeout.ValueFloat32Pointer()
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
@@ -217,26 +221,6 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 		monitoring = append(monitoring, kbapi.Metrics)
 	}
 
-	if utils.IsKnown(model.SupportsAgentless) && !feat.SupportsSupportsAgentless {
-		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-			diag.NewAttributeErrorDiagnostic(
-				path.Root("supports_agentless"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-			),
-		}
-	}
-
-	if utils.IsKnown(model.InactivityTimeout) && !feat.SupportsInactivityTimeout {
-		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-			diag.NewAttributeErrorDiagnostic(
-				path.Root("inactivity_timeout"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
-			),
-		}
-	}
-
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
@@ -246,8 +230,32 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
-		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
-		InactivityTimeout:  model.InactivityTimeout.ValueFloat32Pointer(),
+	}
+
+	if utils.IsKnown(model.SupportsAgentless) {
+		if !feat.SupportsSupportsAgentless {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("supports_agentless"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+				),
+			}
+		}
+		body.SupportsAgentless = model.SupportsAgentless.ValueBoolPointer()
+	}
+
+	if utils.IsKnown(model.InactivityTimeout) {
+		if !feat.SupportsInactivityTimeout {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("inactivity_timeout"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
+				),
+			}
+		}
+		body.InactivityTimeout = model.InactivityTimeout.ValueFloat32Pointer()
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
