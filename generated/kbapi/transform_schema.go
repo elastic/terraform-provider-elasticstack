@@ -108,6 +108,7 @@ func (s Schema) MustGetPath(path string) *Path {
 type Path struct {
 	Parameters []Map `yaml:"parameters,omitempty"`
 	Get        Map   `yaml:"get,omitempty"`
+	Patch      Map   `yaml:"patch,omitempty"`
 	Post       Map   `yaml:"post,omitempty"`
 	Put        Map   `yaml:"put,omitempty"`
 	Delete     Map   `yaml:"delete,omitempty"`
@@ -123,6 +124,9 @@ func (p Path) Endpoints(yield func(key string, endpoint Map) bool) {
 	if p.Put != nil {
 		yield("put", p.Put)
 	}
+	if p.Patch != nil {
+		yield("patch", p.Patch)
+	}
 	if p.Delete != nil {
 		yield("delete", p.Delete)
 	}
@@ -136,6 +140,8 @@ func (p Path) GetEndpoint(method string) Map {
 		return p.Post
 	case "put":
 		return p.Put
+	case "patch":
+		return p.Patch
 	case "delete":
 		return p.Delete
 	default:
@@ -160,6 +166,8 @@ func (p *Path) SetEndpoint(method string, endpoint Map) {
 		p.Post = endpoint
 	case "put":
 		p.Put = endpoint
+	case "patch":
+		p.Patch = endpoint
 	case "delete":
 		p.Delete = endpoint
 	default:
@@ -572,6 +580,8 @@ func transformFilterPaths(schema *Schema) {
 		"/api/synthetics/params":                         {"post"},
 		"/api/synthetics/params/{id}":                    {"get", "put", "delete"},
 		"/api/apm/settings/agent-configuration":          {"get", "put", "delete"},
+		"/api/maintenance_window":                        {"post"},
+		"/api/maintenance_window/{id}":                   {"delete", "get", "patch"},
 		"/api/actions/connector/{id}":                    {"get", "put", "post", "delete"},
 		"/api/actions/connectors":                        {"get"},
 		"/api/detection_engine/rules":                    {"get", "put", "post", "delete"},
@@ -721,6 +731,8 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/data_views",
 		"/api/data_views/data_view",
 		"/api/data_views/data_view/{viewId}",
+		"/api/maintenance_window",
+		"/api/maintenance_window/{id}",
 		"/api/actions/connector/{id}",
 		"/api/actions/connectors",
 	}
