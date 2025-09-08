@@ -25,21 +25,22 @@ type globalDataTagsItemModel struct {
 }
 
 type agentPolicyModel struct {
-	ID                 types.String `tfsdk:"id"`
-	PolicyID           types.String `tfsdk:"policy_id"`
-	Name               types.String `tfsdk:"name"`
-	Namespace          types.String `tfsdk:"namespace"`
-	Description        types.String `tfsdk:"description"`
-	DataOutputId       types.String `tfsdk:"data_output_id"`
-	MonitoringOutputId types.String `tfsdk:"monitoring_output_id"`
-	FleetServerHostId  types.String `tfsdk:"fleet_server_host_id"`
-	DownloadSourceId   types.String `tfsdk:"download_source_id"`
-	MonitorLogs        types.Bool   `tfsdk:"monitor_logs"`
-	MonitorMetrics     types.Bool   `tfsdk:"monitor_metrics"`
-	SysMonitoring      types.Bool   `tfsdk:"sys_monitoring"`
-	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
-	SupportsAgentless  types.Bool   `tfsdk:"supports_agentless"`
-	GlobalDataTags     types.Map    `tfsdk:"global_data_tags"` //> globalDataTagsModel
+	ID                 types.String  `tfsdk:"id"`
+	PolicyID           types.String  `tfsdk:"policy_id"`
+	Name               types.String  `tfsdk:"name"`
+	Namespace          types.String  `tfsdk:"namespace"`
+	Description        types.String  `tfsdk:"description"`
+	DataOutputId       types.String  `tfsdk:"data_output_id"`
+	MonitoringOutputId types.String  `tfsdk:"monitoring_output_id"`
+	FleetServerHostId  types.String  `tfsdk:"fleet_server_host_id"`
+	DownloadSourceId   types.String  `tfsdk:"download_source_id"`
+	MonitorLogs        types.Bool    `tfsdk:"monitor_logs"`
+	MonitorMetrics     types.Bool    `tfsdk:"monitor_metrics"`
+	SysMonitoring      types.Bool    `tfsdk:"sys_monitoring"`
+	SkipDestroy        types.Bool    `tfsdk:"skip_destroy"`
+	SupportsAgentless  types.Bool    `tfsdk:"supports_agentless"`
+	InactivityTimeout  types.Float32 `tfsdk:"inactivity_timeout"`
+	GlobalDataTags     types.Map     `tfsdk:"global_data_tags"` //> globalDataTagsModel
 }
 
 func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
@@ -73,6 +74,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
 	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
+	model.InactivityTimeout = types.Float32PointerValue(data.InactivityTimeout)
 	if utils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
 		var map0 = make(map[string]globalDataTagsItemModel)
@@ -183,6 +185,7 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
 		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
+		InactivityTimeout:  model.InactivityTimeout.ValueFloat32Pointer(),
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
@@ -223,6 +226,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
 		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
+		InactivityTimeout:  model.InactivityTimeout.ValueFloat32Pointer(),
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)

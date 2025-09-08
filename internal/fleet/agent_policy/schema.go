@@ -97,6 +97,11 @@ func getSchema() schema.Schema {
 					boolplanmodifier.RequiresReplace(),
 				},
 			},
+			"inactivity_timeout": schema.Float32Attribute{
+				Description: "The inactivity timeout (in seconds) for the agent policy. If an agent does not report within this time period, it will be considered inactive.",
+				Computed:    true,
+				Optional:    true,
+			},
 			"global_data_tags": schema.MapNestedAttribute{
 				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42}",
 				NestedObject: schema.NestedAttributeObject{
