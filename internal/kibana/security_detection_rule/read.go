@@ -157,6 +157,7 @@ func (r *securityDetectionRuleResource) updateDataFromRule(ctx context.Context, 
 	// Update author
 	if len(rule.Author) > 0 {
 		authorList := make([]string, len(rule.Author))
+		//nolint:staticcheck // Type conversion required, can't use copy()
 		for i, author := range rule.Author {
 			authorList[i] = author
 		}
@@ -170,6 +171,7 @@ func (r *securityDetectionRuleResource) updateDataFromRule(ctx context.Context, 
 	// Update tags
 	if len(rule.Tags) > 0 {
 		tagsList := make([]string, len(rule.Tags))
+		//nolint:staticcheck // Type conversion required, can't use copy()
 		for i, tag := range rule.Tags {
 			tagsList[i] = tag
 		}
@@ -183,6 +185,7 @@ func (r *securityDetectionRuleResource) updateDataFromRule(ctx context.Context, 
 	// Update false positives
 	if len(rule.FalsePositives) > 0 {
 		fpList := make([]string, len(rule.FalsePositives))
+		//nolint:staticcheck // Type conversion required, can't use copy()
 		for i, fp := range rule.FalsePositives {
 			fpList[i] = fp
 		}

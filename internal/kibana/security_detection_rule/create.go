@@ -137,6 +137,7 @@ func (r *securityDetectionRuleResource) buildCreateProps(ctx context.Context, da
 		diags.Append(data.Index.ElementsAs(ctx, &indexList, false)...)
 		if !diags.HasError() && len(indexList) > 0 {
 			indexPatterns := make(kbapi.SecurityDetectionsAPIIndexPatternArray, len(indexList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, idx := range indexList {
 				indexPatterns[i] = idx
 			}
@@ -150,6 +151,7 @@ func (r *securityDetectionRuleResource) buildCreateProps(ctx context.Context, da
 		diags.Append(data.Author.ElementsAs(ctx, &authorList, false)...)
 		if !diags.HasError() && len(authorList) > 0 {
 			authorArray := make(kbapi.SecurityDetectionsAPIRuleAuthorArray, len(authorList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, author := range authorList {
 				authorArray[i] = author
 			}
@@ -163,6 +165,7 @@ func (r *securityDetectionRuleResource) buildCreateProps(ctx context.Context, da
 		diags.Append(data.Tags.ElementsAs(ctx, &tagsList, false)...)
 		if !diags.HasError() && len(tagsList) > 0 {
 			tagsArray := make(kbapi.SecurityDetectionsAPIRuleTagArray, len(tagsList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, tag := range tagsList {
 				tagsArray[i] = tag
 			}
@@ -176,6 +179,7 @@ func (r *securityDetectionRuleResource) buildCreateProps(ctx context.Context, da
 		diags.Append(data.FalsePositives.ElementsAs(ctx, &fpList, false)...)
 		if !diags.HasError() && len(fpList) > 0 {
 			fpArray := make(kbapi.SecurityDetectionsAPIRuleFalsePositiveArray, len(fpList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, fp := range fpList {
 				fpArray[i] = fp
 			}
@@ -189,6 +193,7 @@ func (r *securityDetectionRuleResource) buildCreateProps(ctx context.Context, da
 		diags.Append(data.References.ElementsAs(ctx, &refList, false)...)
 		if !diags.HasError() && len(refList) > 0 {
 			refArray := make(kbapi.SecurityDetectionsAPIRuleReferenceArray, len(refList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, ref := range refList {
 				refArray[i] = ref
 			}

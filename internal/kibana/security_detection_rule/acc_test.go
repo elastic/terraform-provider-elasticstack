@@ -1,7 +1,6 @@
 package security_detection_rule_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 

@@ -134,6 +134,7 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 		diags.Append(data.Index.ElementsAs(ctx, &indexList, false)...)
 		if !diags.HasError() {
 			indexPatterns := make(kbapi.SecurityDetectionsAPIIndexPatternArray, len(indexList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, idx := range indexList {
 				indexPatterns[i] = idx
 			}
@@ -147,6 +148,7 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 		diags.Append(data.Author.ElementsAs(ctx, &authorList, false)...)
 		if !diags.HasError() {
 			authorArray := make(kbapi.SecurityDetectionsAPIRuleAuthorArray, len(authorList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, author := range authorList {
 				authorArray[i] = author
 			}
@@ -160,6 +162,7 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 		diags.Append(data.Tags.ElementsAs(ctx, &tagsList, false)...)
 		if !diags.HasError() {
 			tagsArray := make(kbapi.SecurityDetectionsAPIRuleTagArray, len(tagsList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, tag := range tagsList {
 				tagsArray[i] = tag
 			}
@@ -173,6 +176,7 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 		diags.Append(data.FalsePositives.ElementsAs(ctx, &fpList, false)...)
 		if !diags.HasError() {
 			fpArray := make(kbapi.SecurityDetectionsAPIRuleFalsePositiveArray, len(fpList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, fp := range fpList {
 				fpArray[i] = fp
 			}
@@ -186,6 +190,7 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 		diags.Append(data.References.ElementsAs(ctx, &refList, false)...)
 		if !diags.HasError() {
 			refArray := make(kbapi.SecurityDetectionsAPIRuleReferenceArray, len(refList))
+			//nolint:staticcheck // Type conversion required, can't use copy()
 			for i, ref := range refList {
 				refArray[i] = ref
 			}
