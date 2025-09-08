@@ -700,6 +700,7 @@ const (
 	PackageInfoInstallationInfoInstalledEsTypeIndex               PackageInfoInstallationInfoInstalledEsType = "index"
 	PackageInfoInstallationInfoInstalledEsTypeIndexTemplate       PackageInfoInstallationInfoInstalledEsType = "index_template"
 	PackageInfoInstallationInfoInstalledEsTypeIngestPipeline      PackageInfoInstallationInfoInstalledEsType = "ingest_pipeline"
+	PackageInfoInstallationInfoInstalledEsTypeKnowledgeBase       PackageInfoInstallationInfoInstalledEsType = "knowledge_base"
 	PackageInfoInstallationInfoInstalledEsTypeMlModel             PackageInfoInstallationInfoInstalledEsType = "ml_model"
 	PackageInfoInstallationInfoInstalledEsTypeTransform           PackageInfoInstallationInfoInstalledEsType = "transform"
 )
@@ -795,6 +796,7 @@ const (
 	PackageListItemInstallationInfoInstalledEsTypeIndex               PackageListItemInstallationInfoInstalledEsType = "index"
 	PackageListItemInstallationInfoInstalledEsTypeIndexTemplate       PackageListItemInstallationInfoInstalledEsType = "index_template"
 	PackageListItemInstallationInfoInstalledEsTypeIngestPipeline      PackageListItemInstallationInfoInstalledEsType = "ingest_pipeline"
+	PackageListItemInstallationInfoInstalledEsTypeKnowledgeBase       PackageListItemInstallationInfoInstalledEsType = "knowledge_base"
 	PackageListItemInstallationInfoInstalledEsTypeMlModel             PackageListItemInstallationInfoInstalledEsType = "ml_model"
 	PackageListItemInstallationInfoInstalledEsTypeTransform           PackageListItemInstallationInfoInstalledEsType = "transform"
 )
@@ -8916,6 +8918,7 @@ type PackageInfo_InstallationInfo struct {
 	LatestInstallFailedAttempts     *[]PackageInfo_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
 	Name                            string                                                                          `json:"name"`
 	Namespaces                      *[]string                                                                       `json:"namespaces,omitempty"`
+	PreviousVersion                 *string                                                                         `json:"previous_version,omitempty"`
 	Type                            string                                                                          `json:"type"`
 	UpdatedAt                       *string                                                                         `json:"updated_at,omitempty"`
 	VerificationKeyId               *string                                                                         `json:"verification_key_id,omitempty"`
@@ -9155,6 +9158,7 @@ type PackageListItem_InstallationInfo struct {
 	LatestInstallFailedAttempts     *[]PackageListItem_InstallationInfo_LatestInstallFailedAttempts_Item                `json:"latest_install_failed_attempts,omitempty"`
 	Name                            string                                                                              `json:"name"`
 	Namespaces                      *[]string                                                                           `json:"namespaces,omitempty"`
+	PreviousVersion                 *string                                                                             `json:"previous_version,omitempty"`
 	Type                            string                                                                              `json:"type"`
 	UpdatedAt                       *string                                                                             `json:"updated_at,omitempty"`
 	VerificationKeyId               *string                                                                             `json:"verification_key_id,omitempty"`
@@ -16098,6 +16102,14 @@ func (a *PackageInfo_InstallationInfo) UnmarshalJSON(b []byte) error {
 		delete(object, "namespaces")
 	}
 
+	if raw, found := object["previous_version"]; found {
+		err = json.Unmarshal(raw, &a.PreviousVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'previous_version': %w", err)
+		}
+		delete(object, "previous_version")
+	}
+
 	if raw, found := object["type"]; found {
 		err = json.Unmarshal(raw, &a.Type)
 		if err != nil {
@@ -16235,6 +16247,13 @@ func (a PackageInfo_InstallationInfo) MarshalJSON() ([]byte, error) {
 		object["namespaces"], err = json.Marshal(a.Namespaces)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'namespaces': %w", err)
+		}
+	}
+
+	if a.PreviousVersion != nil {
+		object["previous_version"], err = json.Marshal(a.PreviousVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'previous_version': %w", err)
 		}
 	}
 
@@ -18352,6 +18371,14 @@ func (a *PackageListItem_InstallationInfo) UnmarshalJSON(b []byte) error {
 		delete(object, "namespaces")
 	}
 
+	if raw, found := object["previous_version"]; found {
+		err = json.Unmarshal(raw, &a.PreviousVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'previous_version': %w", err)
+		}
+		delete(object, "previous_version")
+	}
+
 	if raw, found := object["type"]; found {
 		err = json.Unmarshal(raw, &a.Type)
 		if err != nil {
@@ -18489,6 +18516,13 @@ func (a PackageListItem_InstallationInfo) MarshalJSON() ([]byte, error) {
 		object["namespaces"], err = json.Marshal(a.Namespaces)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'namespaces': %w", err)
+		}
+	}
+
+	if a.PreviousVersion != nil {
+		object["previous_version"], err = json.Marshal(a.PreviousVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'previous_version': %w", err)
 		}
 	}
 
