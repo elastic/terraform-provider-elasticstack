@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security/detection_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
@@ -112,6 +113,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		server_host.NewResource,
 		system_user.NewSystemUserResource,
 		maintenance_window.NewResource,
+		detection_rule.NewSecurityDetectionRuleResource,
 		enrich.NewEnrichPolicyResource,
 		role_mapping.NewRoleMappingResource,
 	}
