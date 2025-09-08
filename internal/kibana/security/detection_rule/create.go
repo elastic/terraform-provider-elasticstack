@@ -62,7 +62,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 
 func dataToAPIRequest(ctx context.Context, data *SecurityDetectionRuleData) (*SecurityDetectionRuleRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	
+
 	req := &SecurityDetectionRuleRequest{
 		Name:        data.Name.ValueString(),
 		Description: data.Description.ValueString(),
@@ -248,7 +248,7 @@ func apiResponseToData(ctx context.Context, result *SecurityDetectionRuleRespons
 	}
 
 	// Handle arrays
-	if result.Index != nil && len(result.Index) > 0 {
+	if len(result.Index) > 0 {
 		indexValues := make([]types.String, len(result.Index))
 		for i, idx := range result.Index {
 			indexValues[i] = types.StringValue(idx)
@@ -259,7 +259,7 @@ func apiResponseToData(ctx context.Context, result *SecurityDetectionRuleRespons
 		data.Index, _ = types.ListValueFrom(ctx, types.StringType, []types.String{types.StringValue("*")})
 	}
 
-	if result.Tags != nil && len(result.Tags) > 0 {
+	if len(result.Tags) > 0 {
 		tagValues := make([]types.String, len(result.Tags))
 		for i, tag := range result.Tags {
 			tagValues[i] = types.StringValue(tag)
@@ -269,7 +269,7 @@ func apiResponseToData(ctx context.Context, result *SecurityDetectionRuleRespons
 		data.Tags, _ = types.ListValueFrom(ctx, types.StringType, []types.String{})
 	}
 
-	if result.Author != nil && len(result.Author) > 0 {
+	if len(result.Author) > 0 {
 		authorValues := make([]types.String, len(result.Author))
 		for i, author := range result.Author {
 			authorValues[i] = types.StringValue(author)
@@ -279,7 +279,7 @@ func apiResponseToData(ctx context.Context, result *SecurityDetectionRuleRespons
 		data.Author, _ = types.ListValueFrom(ctx, types.StringType, []types.String{})
 	}
 
-	if result.References != nil && len(result.References) > 0 {
+	if len(result.References) > 0 {
 		refValues := make([]types.String, len(result.References))
 		for i, ref := range result.References {
 			refValues[i] = types.StringValue(ref)
@@ -289,7 +289,7 @@ func apiResponseToData(ctx context.Context, result *SecurityDetectionRuleRespons
 		data.References, _ = types.ListValueFrom(ctx, types.StringType, []types.String{})
 	}
 
-	if result.FalsePositives != nil && len(result.FalsePositives) > 0 {
+	if len(result.FalsePositives) > 0 {
 		fpValues := make([]types.String, len(result.FalsePositives))
 		for i, fp := range result.FalsePositives {
 			fpValues[i] = types.StringValue(fp)
@@ -299,7 +299,7 @@ func apiResponseToData(ctx context.Context, result *SecurityDetectionRuleRespons
 		data.FalsePositives, _ = types.ListValueFrom(ctx, types.StringType, []types.String{})
 	}
 
-	if result.ExceptionsList != nil && len(result.ExceptionsList) > 0 {
+	if len(result.ExceptionsList) > 0 {
 		// Convert exceptions to strings (simplified)
 		excValues := make([]types.String, len(result.ExceptionsList))
 		for i, exc := range result.ExceptionsList {

@@ -35,7 +35,7 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 	// If rule not found, remove from state
 	if result == nil {
 		tflog.Warn(ctx, "Security detection rule not found, removing from state", map[string]interface{}{
-			"rule_id": ruleId,
+			"rule_id":  ruleId,
 			"space_id": spaceId,
 		})
 		resp.State.RemoveResource(ctx)
@@ -49,8 +49,8 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	// Set space_id from the composite ID
-	data.SpaceId = data.SpaceId // Keep the original value from config
+	// Set space_id from the composite ID (keep existing value from config)
+	// data.SpaceId remains unchanged
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
