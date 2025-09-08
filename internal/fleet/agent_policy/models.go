@@ -17,6 +17,7 @@ import (
 type features struct {
 	SupportsGlobalDataTags    bool
 	SupportsSupportsAgentless bool
+	SupportsInactivityTimeout bool
 }
 
 type globalDataTagsItemModel struct {
@@ -174,6 +175,16 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		}
 	}
 
+	if utils.IsKnown(model.InactivityTimeout) && !feat.SupportsInactivityTimeout {
+		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+			diag.NewAttributeErrorDiagnostic(
+				path.Root("inactivity_timeout"),
+				"Unsupported Elasticsearch version",
+				fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
+			),
+		}
+	}
+
 	body := kbapi.PostFleetAgentPoliciesJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
@@ -212,6 +223,16 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 				path.Root("supports_agentless"),
 				"Unsupported Elasticsearch version",
 				fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+			),
+		}
+	}
+
+	if utils.IsKnown(model.InactivityTimeout) && !feat.SupportsInactivityTimeout {
+		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+			diag.NewAttributeErrorDiagnostic(
+				path.Root("inactivity_timeout"),
+				"Unsupported Elasticsearch version",
+				fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
 			),
 		}
 	}

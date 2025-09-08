@@ -144,7 +144,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"skip_destroy"},
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionInactivityTimeout),
 				Config:   testAccResourceAgentPolicyCreateWithInactivityTimeout(policyName, false, 120),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
