@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomaly_detector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role_mapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/system_user"
@@ -116,5 +117,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		maintenance_window.NewResource,
 		enrich.NewEnrichPolicyResource,
 		role_mapping.NewRoleMappingResource,
+		anomaly_detector.NewAnomalyDetectorJobResource,
 	}
 }
