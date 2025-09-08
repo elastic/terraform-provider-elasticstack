@@ -131,7 +131,9 @@ func (p Path) Endpoints(yield func(key string, endpoint Map) bool) {
 		}
 	}
 	if p.Patch != nil {
-		yield("patch", p.Patch)
+		if !yield("patch", p.Patch) {
+			return
+		}
 	}
 	if p.Delete != nil {
 		if !yield("delete", p.Delete) {
