@@ -3,7 +3,9 @@ package detection_rule
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -13,8 +15,42 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	// TODO: Implement actual API call to read security detection rule
-	// For now, just keep the current state
-	
+	// Parse the composite ID
+	compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	spaceId := compId.ClusterId
+	ruleId := compId.ResourceId
+
+	// Get the rule from the API
+	result, diags := GetSecurityDetectionRule(ctx, r.client, spaceId, ruleId)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If rule not found, remove from state
+	if result == nil {
+		tflog.Warn(ctx, "Security detection rule not found, removing from state", map[string]interface{}{
+			"rule_id": ruleId,
+			"space_id": spaceId,
+		})
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	// Update the data with the response
+	diags = apiResponseToData(ctx, result, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Set space_id from the composite ID
+	data.SpaceId = data.SpaceId // Keep the original value from config
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
