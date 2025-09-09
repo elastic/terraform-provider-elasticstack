@@ -77,8 +77,9 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
 			"elasticstack_elasticsearch_info":                               cluster.DataSourceClusterInfo(),
 
-			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
-			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
+			"elasticstack_kibana_action_connector":     kibana.DataSourceConnector(),
+			"elasticstack_kibana_export_saved_objects": kibana.DataSourceExportSavedObjects(),
+			"elasticstack_kibana_security_role":        kibana.DataSourceRole(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
