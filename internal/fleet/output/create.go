@@ -22,7 +22,7 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	body, diags := planModel.toAPICreateModel(ctx)
+	body, diags := planModel.toAPICreateModel(ctx, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

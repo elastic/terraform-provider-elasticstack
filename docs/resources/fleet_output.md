@@ -47,14 +47,83 @@ resource "elasticstack_fleet_output" "test_output" {
 - `default_integrations` (Boolean) Make this output the default for agent integrations.
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
 - `hosts` (List of String) A list of hosts.
+- `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))
 - `output_id` (String) Unique identifier of the output.
-- `ssl` (Block List) SSL configuration. (see [below for nested schema](#nestedblock--ssl))
+- `ssl` (Attributes) SSL configuration. (see [below for nested schema](#nestedatt--ssl))
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
 
-<a id="nestedblock--ssl"></a>
+<a id="nestedatt--kafka"></a>
+### Nested Schema for `kafka`
+
+Optional:
+
+- `auth_type` (String) Authentication type for Kafka output.
+- `broker_timeout` (Number) Kafka broker timeout.
+- `client_id` (String) Kafka client ID.
+- `compression` (String) Compression type for Kafka output.
+- `compression_level` (Number) Compression level for Kafka output.
+- `connection_type` (String) Connection type for Kafka output.
+- `hash` (Attributes List) Hash configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--hash))
+- `headers` (Attributes List) Headers for Kafka messages. (see [below for nested schema](#nestedatt--kafka--headers))
+- `key` (String) Key field for Kafka messages.
+- `partition` (String) Partition strategy for Kafka output.
+- `password` (String, Sensitive) Password for Kafka authentication.
+- `random` (Attributes List) Random configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--random))
+- `required_acks` (Number) Number of acknowledgments required for Kafka output.
+- `round_robin` (Attributes List) Round robin configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--round_robin))
+- `sasl` (Attributes List) SASL configuration for Kafka authentication. (see [below for nested schema](#nestedatt--kafka--sasl))
+- `timeout` (Number) Timeout for Kafka output.
+- `topic` (String) Kafka topic.
+- `username` (String) Username for Kafka authentication.
+- `version` (String) Kafka version.
+
+<a id="nestedatt--kafka--hash"></a>
+### Nested Schema for `kafka.hash`
+
+Optional:
+
+- `hash` (String) Hash field.
+- `random` (Boolean) Use random hash.
+
+
+<a id="nestedatt--kafka--headers"></a>
+### Nested Schema for `kafka.headers`
+
+Required:
+
+- `key` (String) Header key.
+- `value` (String) Header value.
+
+
+<a id="nestedatt--kafka--random"></a>
+### Nested Schema for `kafka.random`
+
+Optional:
+
+- `group_events` (Number) Number of events to group.
+
+
+<a id="nestedatt--kafka--round_robin"></a>
+### Nested Schema for `kafka.round_robin`
+
+Optional:
+
+- `group_events` (Number) Number of events to group.
+
+
+<a id="nestedatt--kafka--sasl"></a>
+### Nested Schema for `kafka.sasl`
+
+Optional:
+
+- `mechanism` (String) SASL mechanism.
+
+
+
+<a id="nestedatt--ssl"></a>
 ### Nested Schema for `ssl`
 
 Required:
