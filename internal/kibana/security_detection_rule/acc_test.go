@@ -1,10 +1,15 @@
 package security_detection_rule_test
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -20,7 +25,6 @@ func TestAccResourceSecurityDetectionRule(t *testing.T) {
 			{
 				Config: testAccSecurityDetectionRuleConfig_basic("test-rule"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSecurityDetectionRuleExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", "test-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
@@ -38,7 +42,6 @@ func TestAccResourceSecurityDetectionRule(t *testing.T) {
 			{
 				Config: testAccSecurityDetectionRuleConfig_update("test-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSecurityDetectionRuleExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", "test-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
@@ -49,31 +52,50 @@ func TestAccResourceSecurityDetectionRule(t *testing.T) {
 	})
 }
 
-func testAccCheckSecurityDetectionRuleExists(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("not found: %s", resourceName)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("resource ID not set")
-		}
-
-		// In a real test, we would make an API call to verify the resource exists
-		// For now, we just check that the ID is set
-		return nil
-	}
-}
-
 func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
+
+	kbClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return err
+	}
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_kibana_security_detection_rule" {
 			continue
 		}
 
-		// In a real test, we would make an API call to verify the resource is deleted
-		// For now, we just return nil
+		// Parse ID to get space_id and rule_id
+		parts := strings.Split(rs.Primary.ID, "/")
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid resource ID format: %s", rs.Primary.ID)
+		}
+		ruleId := parts[1]
+
+		// Check if the rule still exists
+		ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uuid.MustParse(ruleId))
+		params := &kbapi.ReadRuleParams{
+			Id: &ruleObjectId,
+		}
+
+		response, err := kbClient.API.ReadRuleWithResponse(context.Background(), params)
+		if err != nil {
+			return fmt.Errorf("failed to read security detection rule: %v", err)
+		}
+
+		// If the rule still exists (status 200), it means destroy failed
+		if response.StatusCode() == 200 {
+			return fmt.Errorf("security detection rule (%s) still exists", ruleId)
+		}
+
+		// If we get a 404, that's expected - the rule was properly destroyed
+		// Any other status code indicates an error
+		if response.StatusCode() != 404 {
+			return fmt.Errorf("unexpected status code when checking security detection rule: %d", response.StatusCode())
+		}
 	}
 
 	return nil
