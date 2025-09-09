@@ -46,7 +46,7 @@ output "role" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `enabled` (Boolean) Mappings that have `enabled` set to `false` are ignored when role mapping is performed.
 - `metadata` (String) Additional metadata that helps define which roles are assigned to each user. Keys beginning with `_` are reserved for system usage.
 - `role_templates` (String) A list of mustache templates that will be evaluated to determine the roles names that should granted to the users that match the role mapping rules.
