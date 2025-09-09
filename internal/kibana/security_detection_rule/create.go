@@ -7,7 +7,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -66,9 +65,6 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	// Set ID for the resource
-	data.Id = types.StringValue(fmt.Sprintf("%s/%s", data.SpaceId.ValueString(), ruleResponse.Id))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

@@ -118,7 +118,8 @@ func (r *securityDetectionRuleResource) parseRuleResponse(ctx context.Context, r
 func (r *securityDetectionRuleResource) updateDataFromRule(ctx context.Context, data *SecurityDetectionRuleData, rule *kbapi.SecurityDetectionsAPIQueryRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Update core fields
+	data.Id = types.StringValue(fmt.Sprintf("%s/%s", data.SpaceId.ValueString(), rule.Id))
+
 	data.RuleId = types.StringValue(string(rule.RuleId))
 	data.Name = types.StringValue(string(rule.Name))
 	data.Type = types.StringValue(string(rule.Type))
