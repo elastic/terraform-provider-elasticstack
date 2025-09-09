@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -74,10 +75,16 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
 	queryRuleQuery := kbapi.SecurityDetectionsAPIRuleQuery(data.Query.ValueString())
-	ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uuid.MustParse(data.RuleId.ValueString()))
-	// Convert data to QueryRuleUpdateProps since we're only supporting query rules initially
+	var resourceId = data.Id.ValueString()
+
+	// Parse ID to get space_id and rule_id
+	_, resourceId, resourceIdDiags := r.parseResourceId(data.Id.ValueString())
+	diags.Append(resourceIdDiags...)
+
+	var id = kbapi.SecurityDetectionsAPIRuleObjectId(uuid.MustParse(resourceId))
+
 	queryRule := kbapi.SecurityDetectionsAPIQueryRuleUpdateProps{
-		Id:          &ruleObjectId,
+		Id:          &id,
 		Name:        kbapi.SecurityDetectionsAPIRuleName(data.Name.ValueString()),
 		Description: kbapi.SecurityDetectionsAPIRuleDescription(data.Description.ValueString()),
 		Type:        kbapi.SecurityDetectionsAPIQueryRuleUpdatePropsType("query"),
@@ -87,8 +94,8 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 	}
 
 	// For updates, we need to include the rule_id
-	ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(data.RuleId.ValueString())
-	queryRule.RuleId = &ruleId
+	// ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(data.RuleId.ValueString())
+	// queryRule.RuleId = &ruleId
 
 	// Set enabled status
 	if !data.Enabled.IsNull() {

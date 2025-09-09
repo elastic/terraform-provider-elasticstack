@@ -30,6 +30,9 @@ func GetSchema() schema.Schema {
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"space_id": schema.StringAttribute{
 				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used.",
