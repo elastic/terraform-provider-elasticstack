@@ -27,14 +27,25 @@ func TestAccDataSourceKibanaExportSavedObjects(t *testing.T) {
 }
 
 const testAccDataSourceKibanaExportSavedObjectsConfig = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_data_view" "test" {
+  data_view_id = "test-data-view-*"
+  name         = "test-data-view"
+  title        = "test-*"
+}
+
 data "elasticstack_kibana_export_saved_objects" "test" {
   space_id = "default"
   exclude_export_details = true
   include_references_deep = true
   objects = jsonencode([
     {
-      "type": "dashboard",
-      "id": "test-dashboard-id"
+      "type": "index-pattern",
+      "id": elasticstack_kibana_data_view.test.data_view_id
     }
   ])
 }
