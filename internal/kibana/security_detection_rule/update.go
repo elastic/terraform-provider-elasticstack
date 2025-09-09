@@ -92,9 +92,12 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 		Severity:    kbapi.SecurityDetectionsAPISeverity(data.Severity.ValueString()),
 	}
 
-	// For updates, we need to include the rule_id
-	// ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(data.RuleId.ValueString())
-	// queryRule.RuleId = &ruleId
+	// For updates, we need to include the rule_id if it's set
+	if !data.RuleId.IsNull() && !data.RuleId.IsUnknown() {
+		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(data.RuleId.ValueString())
+		queryRule.RuleId = &ruleId
+		queryRule.Id = nil // if rule_id is set, we cant send id
+	}
 
 	// Set enabled status
 	if !data.Enabled.IsNull() {
