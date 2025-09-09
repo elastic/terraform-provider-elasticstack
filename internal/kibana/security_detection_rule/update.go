@@ -75,7 +75,6 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
 	queryRuleQuery := kbapi.SecurityDetectionsAPIRuleQuery(data.Query.ValueString())
-	var resourceId = data.Id.ValueString()
 
 	// Parse ID to get space_id and rule_id
 	_, resourceId, resourceIdDiags := r.parseResourceId(data.Id.ValueString())
