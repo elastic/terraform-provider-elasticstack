@@ -32,10 +32,12 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_kibana_data_view" "test" {
-  data_view_id = "test-data-view-*"
-  name         = "test-data-view"
-  title        = "test-*"
+resource "elasticstack_kibana_action_connector" "test" {
+	name              = "test-export-connector"
+	connector_type_id = ".slack"
+	secrets = jsonencode({
+	  webhookUrl = "https://example.com"
+	})
 }
 
 data "elasticstack_kibana_export_saved_objects" "test" {
@@ -44,8 +46,8 @@ data "elasticstack_kibana_export_saved_objects" "test" {
   include_references_deep = true
   objects = jsonencode([
     {
-      "type": "index-pattern",
-      "id": elasticstack_kibana_data_view.test.data_view_id
+      "type": "action",
+      "id": elasticstack_kibana_action_connector.test.connector_id
     }
   ])
 }
