@@ -211,10 +211,6 @@ func (r *securityDetectionRuleResource) buildUpdateProps(ctx context.Context, da
 	if !data.Setup.IsNull() {
 		setup := kbapi.SecurityDetectionsAPISetupGuide(data.Setup.ValueString())
 		queryRule.Setup = &setup
-	} else {
-		// Set to empty string if not provided (required field in update)
-		setup := kbapi.SecurityDetectionsAPISetupGuide("")
-		queryRule.Setup = &setup
 	}
 
 	// Set max signals

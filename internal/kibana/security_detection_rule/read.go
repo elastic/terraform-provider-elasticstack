@@ -223,7 +223,12 @@ func (r *securityDetectionRuleResource) updateDataFromRule(ctx context.Context, 
 		data.Note = types.StringNull()
 	}
 
-	data.Setup = types.StringValue(string(rule.Setup))
+	// Handle setup field - if empty, set to null to maintain consistency with optional schema
+	if string(rule.Setup) != "" {
+		data.Setup = types.StringValue(string(rule.Setup))
+	} else {
+		data.Setup = types.StringNull()
+	}
 
 	return diags
 }
