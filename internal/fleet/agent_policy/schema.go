@@ -3,6 +3,7 @@ package agent_policy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -96,6 +97,12 @@ func getSchema() schema.Schema {
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
+			},
+			"inactivity_timeout": schema.StringAttribute{
+				Description: "The inactivity timeout for the agent policy. If an agent does not report within this time period, it will be considered inactive. Supports duration strings (e.g., '30s', '2m', '1h').",
+				Computed:    true,
+				Optional:    true,
+				CustomType:  customtypes.DurationType{},
 			},
 			"global_data_tags": schema.MapNestedAttribute{
 				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42}",

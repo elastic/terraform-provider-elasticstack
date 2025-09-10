@@ -12,6 +12,7 @@
 - Support setting an explit `connector_id` in `elasticstack_kibana_action_connector`. This attribute already existed, but was being ignored by the provider. Setting the attribute will return an error in Elastic Stack v8.8 and lower since creating a connector with an explicit ID is not supported. ([1260](https://github.com/elastic/terraform-provider-elasticstack/pull/1260))
 - Migrate `elasticstack_kibana_action_connector` to the Terraform plugin framework ([#1269](https://github.com/elastic/terraform-provider-elasticstack/pull/1269))
 - Migrate `elasticstack_elasticsearch_security_role_mapping` resource and data source to Terraform Plugin Framework ([#1279](https://github.com/elastic/terraform-provider-elasticstack/pull/1279))
+- Add support for `inactivity_timeout` in `elasticstack_fleet_agent_policy` ([#641](https://github.com/elastic/terraform-provider-elasticstack/issues/641))
 
 ## [0.11.17] - 2025-07-21
 
