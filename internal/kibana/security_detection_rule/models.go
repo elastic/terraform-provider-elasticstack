@@ -56,12 +56,12 @@ type SecurityDetectionRuleData struct {
 	TiebreakerField types.String `tfsdk:"tiebreaker_field"`
 
 	// Machine Learning-specific fields
-	AnomalyThreshold      types.Int64 `tfsdk:"anomaly_threshold"`
-	MachineLearningJobId  types.List  `tfsdk:"machine_learning_job_id"`
+	AnomalyThreshold     types.Int64 `tfsdk:"anomaly_threshold"`
+	MachineLearningJobId types.List  `tfsdk:"machine_learning_job_id"`
 
 	// New Terms-specific fields
-	NewTermsFields      types.List   `tfsdk:"new_terms_fields"`
-	HistoryWindowStart  types.String `tfsdk:"history_window_start"`
+	NewTermsFields     types.List   `tfsdk:"new_terms_fields"`
+	HistoryWindowStart types.String `tfsdk:"history_window_start"`
 
 	// Saved Query-specific fields
 	SavedId types.String `tfsdk:"saved_id"`
@@ -91,7 +91,7 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.Sec
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
 	ruleType := d.Type.ValueString()
-	
+
 	switch ruleType {
 	case "query":
 		return d.toQueryRuleCreateProps(ctx)
@@ -476,7 +476,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		diags.Append(diag...)
 		if !diags.HasError() {
 			threshold := kbapi.SecurityDetectionsAPIThreshold{}
-			
+
 			if valueAttr, ok := thresholdAttrs["value"]; ok && utils.IsKnown(valueAttr.(types.Int64)) {
 				threshold.Value = kbapi.SecurityDetectionsAPIThresholdValue(valueAttr.(types.Int64).ValueInt64())
 			}
@@ -663,6 +663,25 @@ func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.Sec
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
+	ruleType := d.Type.ValueString()
+
+	// For now, only query rules are fully implemented
+	// TODO: Add support for other rule types
+	if ruleType != "query" {
+		diags.AddError(
+			"Unsupported rule type for updates",
+			fmt.Sprintf("Rule type '%s' is not yet fully implemented for updates. Currently only 'query' rules are supported.", ruleType),
+		)
+		return updateProps, diags
+	}
+
+	return d.toQueryRuleUpdateProps(ctx)
+}
+
+func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
+
 	queryRuleQuery := kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString())
 
 	// Parse ID to get space_id and rule_id
@@ -693,13 +712,9 @@ func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.Sec
 		queryRule.Id = nil // if rule_id is set, we cant send id
 	}
 
-	// Set enabled status
-	if utils.IsKnown(d.Enabled) {
-		enabled := kbapi.SecurityDetectionsAPIIsRuleEnabled(d.Enabled.ValueBool())
-		queryRule.Enabled = &enabled
-	}
+	d.setCommonUpdateProps(ctx, &queryRule.Actions, &queryRule.RuleId, &queryRule.Enabled, &queryRule.From, &queryRule.To, &queryRule.Interval, &queryRule.Index, &queryRule.Author, &queryRule.Tags, &queryRule.FalsePositives, &queryRule.References, &queryRule.License, &queryRule.Note, &queryRule.Setup, &queryRule.MaxSignals, &queryRule.Version, &diags)
 
-	// Set query language
+	// Set query-specific fields
 	if utils.IsKnown(d.Language) {
 		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
 		switch d.Language.ValueString() {
@@ -713,89 +728,9 @@ func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.Sec
 		queryRule.Language = &language
 	}
 
-	// Set time range
-	if utils.IsKnown(d.From) {
-		from := kbapi.SecurityDetectionsAPIRuleIntervalFrom(d.From.ValueString())
-		queryRule.From = &from
-	}
-
-	if utils.IsKnown(d.To) {
-		to := kbapi.SecurityDetectionsAPIRuleIntervalTo(d.To.ValueString())
-		queryRule.To = &to
-	}
-
-	// Set interval
-	if utils.IsKnown(d.Interval) {
-		interval := kbapi.SecurityDetectionsAPIRuleInterval(d.Interval.ValueString())
-		queryRule.Interval = &interval
-	}
-
-	// Set index patterns
-	if utils.IsKnown(d.Index) {
-		indexList := utils.ListTypeAs[string](ctx, d.Index, path.Root("index"), &diags)
-		if !diags.HasError() {
-			queryRule.Index = &indexList
-		}
-	}
-
-	// Set author
-	if utils.IsKnown(d.Author) {
-		authorList := utils.ListTypeAs[string](ctx, d.Author, path.Root("author"), &diags)
-		if !diags.HasError() {
-			queryRule.Author = &authorList
-		}
-	}
-
-	// Set tags
-	if utils.IsKnown(d.Tags) {
-		tagsList := utils.ListTypeAs[string](ctx, d.Tags, path.Root("tags"), &diags)
-		if !diags.HasError() {
-			queryRule.Tags = &tagsList
-		}
-	}
-
-	// Set false positives
-	if utils.IsKnown(d.FalsePositives) {
-		fpList := utils.ListTypeAs[string](ctx, d.FalsePositives, path.Root("false_positives"), &diags)
-		if !diags.HasError() {
-			queryRule.FalsePositives = &fpList
-		}
-	}
-
-	// Set references
-	if utils.IsKnown(d.References) {
-		refList := utils.ListTypeAs[string](ctx, d.References, path.Root("references"), &diags)
-		if !diags.HasError() {
-			queryRule.References = &refList
-		}
-	}
-
-	// Set optional string fields
-	if utils.IsKnown(d.License) {
-		license := kbapi.SecurityDetectionsAPIRuleLicense(d.License.ValueString())
-		queryRule.License = &license
-	}
-
-	if utils.IsKnown(d.Note) {
-		note := kbapi.SecurityDetectionsAPIInvestigationGuide(d.Note.ValueString())
-		queryRule.Note = &note
-	}
-
-	if utils.IsKnown(d.Setup) {
-		setup := kbapi.SecurityDetectionsAPISetupGuide(d.Setup.ValueString())
-		queryRule.Setup = &setup
-	}
-
-	// Set max signals
-	if utils.IsKnown(d.MaxSignals) {
-		maxSignals := kbapi.SecurityDetectionsAPIMaxSignals(d.MaxSignals.ValueInt64())
-		queryRule.MaxSignals = &maxSignals
-	}
-
-	// Set version
-	if utils.IsKnown(d.Version) {
-		version := kbapi.SecurityDetectionsAPIRuleVersion(d.Version.ValueInt64())
-		queryRule.Version = &version
+	if utils.IsKnown(d.SavedId) {
+		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
+		queryRule.SavedId = &savedId
 	}
 
 	// Convert to union type
@@ -803,11 +738,124 @@ func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.Sec
 	if err != nil {
 		diags.AddError(
 			"Error building update properties",
-			"Could not convert rule properties: "+err.Error(),
+			"Could not convert query rule properties: "+err.Error(),
 		)
 	}
 
 	return updateProps, diags
+}
+
+// Helper function to set common update properties across all rule types
+func (d SecurityDetectionRuleData) setCommonUpdateProps(
+	ctx context.Context,
+	actions **[]kbapi.SecurityDetectionsAPIRuleAction,
+	ruleId **kbapi.SecurityDetectionsAPIRuleSignatureId,
+	enabled **kbapi.SecurityDetectionsAPIIsRuleEnabled,
+	from **kbapi.SecurityDetectionsAPIRuleIntervalFrom,
+	to **kbapi.SecurityDetectionsAPIRuleIntervalTo,
+	interval **kbapi.SecurityDetectionsAPIRuleInterval,
+	index **[]string,
+	author **[]string,
+	tags **[]string,
+	falsePositives **[]string,
+	references **[]string,
+	license **kbapi.SecurityDetectionsAPIRuleLicense,
+	note **kbapi.SecurityDetectionsAPIInvestigationGuide,
+	setup **kbapi.SecurityDetectionsAPISetupGuide,
+	maxSignals **kbapi.SecurityDetectionsAPIMaxSignals,
+	version **kbapi.SecurityDetectionsAPIRuleVersion,
+	diags *diag.Diagnostics,
+) {
+	// Set enabled status
+	if utils.IsKnown(d.Enabled) {
+		isEnabled := kbapi.SecurityDetectionsAPIIsRuleEnabled(d.Enabled.ValueBool())
+		*enabled = &isEnabled
+	}
+
+	// Set time range
+	if utils.IsKnown(d.From) {
+		fromTime := kbapi.SecurityDetectionsAPIRuleIntervalFrom(d.From.ValueString())
+		*from = &fromTime
+	}
+
+	if utils.IsKnown(d.To) {
+		toTime := kbapi.SecurityDetectionsAPIRuleIntervalTo(d.To.ValueString())
+		*to = &toTime
+	}
+
+	// Set interval
+	if utils.IsKnown(d.Interval) {
+		intervalTime := kbapi.SecurityDetectionsAPIRuleInterval(d.Interval.ValueString())
+		*interval = &intervalTime
+	}
+
+	// Set index patterns (if index pointer is provided)
+	if index != nil && utils.IsKnown(d.Index) {
+		indexList := utils.ListTypeAs[string](ctx, d.Index, path.Root("index"), diags)
+		if !diags.HasError() {
+			*index = &indexList
+		}
+	}
+
+	// Set author
+	if author != nil && utils.IsKnown(d.Author) {
+		authorList := utils.ListTypeAs[string](ctx, d.Author, path.Root("author"), diags)
+		if !diags.HasError() {
+			*author = &authorList
+		}
+	}
+
+	// Set tags
+	if tags != nil && utils.IsKnown(d.Tags) {
+		tagsList := utils.ListTypeAs[string](ctx, d.Tags, path.Root("tags"), diags)
+		if !diags.HasError() {
+			*tags = &tagsList
+		}
+	}
+
+	// Set false positives
+	if falsePositives != nil && utils.IsKnown(d.FalsePositives) {
+		fpList := utils.ListTypeAs[string](ctx, d.FalsePositives, path.Root("false_positives"), diags)
+		if !diags.HasError() {
+			*falsePositives = &fpList
+		}
+	}
+
+	// Set references
+	if references != nil && utils.IsKnown(d.References) {
+		refList := utils.ListTypeAs[string](ctx, d.References, path.Root("references"), diags)
+		if !diags.HasError() {
+			*references = &refList
+		}
+	}
+
+	// Set optional string fields
+	if license != nil && utils.IsKnown(d.License) {
+		ruleLicense := kbapi.SecurityDetectionsAPIRuleLicense(d.License.ValueString())
+		*license = &ruleLicense
+	}
+
+	if note != nil && utils.IsKnown(d.Note) {
+		ruleNote := kbapi.SecurityDetectionsAPIInvestigationGuide(d.Note.ValueString())
+		*note = &ruleNote
+	}
+
+	if setup != nil && utils.IsKnown(d.Setup) {
+		ruleSetup := kbapi.SecurityDetectionsAPISetupGuide(d.Setup.ValueString())
+		*setup = &ruleSetup
+	}
+
+	// Set max signals
+	if maxSignals != nil && utils.IsKnown(d.MaxSignals) {
+		maxSig := kbapi.SecurityDetectionsAPIMaxSignals(d.MaxSignals.ValueInt64())
+		*maxSignals = &maxSig
+	}
+
+	// Set version
+	if version != nil && utils.IsKnown(d.Version) {
+		ruleVersion := kbapi.SecurityDetectionsAPIRuleVersion(d.Version.ValueInt64())
+		*version = &ruleVersion
+	}
 }
 
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQueryRule) diag.Diagnostics {
