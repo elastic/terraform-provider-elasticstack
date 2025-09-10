@@ -225,7 +225,7 @@ docker-clean: ## Try to remove provisioned nodes and assigned network
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name elasticstack
 
 
 .PHONY: gen
