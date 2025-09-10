@@ -51,4 +51,4 @@ output "saved_objects" {
 ### Read-Only
 
 - `exported_objects` (String) The exported objects in NDJSON format.
-- `id` (String) Identifier for the data source.
+- `id` (String) Generated ID for the export.
