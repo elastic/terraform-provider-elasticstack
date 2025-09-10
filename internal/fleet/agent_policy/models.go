@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -78,8 +79,8 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
 	if data.InactivityTimeout != nil {
 		// Convert seconds to duration string
-		durationStr := fmt.Sprintf("%.0fs", *data.InactivityTimeout)
-		model.InactivityTimeout = customtypes.NewDurationValue(durationStr)
+		d := time.Duration(*data.InactivityTimeout * float32(time.Second)).Truncate(time.Second)
+		model.InactivityTimeout = customtypes.NewDurationValue(d.String())
 	} else {
 		model.InactivityTimeout = customtypes.NewDurationNull()
 	}
