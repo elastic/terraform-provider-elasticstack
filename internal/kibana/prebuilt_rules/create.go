@@ -14,6 +14,24 @@ func (r *PrebuiltRuleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
+	serverVersion, diags := r.client.ServerVersion(ctx)
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
+		return
+	}
+
+	serverFlavor, diags := r.client.ServerFlavor(ctx)
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
+		return
+	}
+
+	diags = validatePrebuiltRulesServer(serverVersion, serverFlavor)
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
+		return
+	}
+
 	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
