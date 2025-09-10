@@ -16,13 +16,14 @@ func (r *PrebuiltRuleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	isSupported, sdkDiags := r.client.EnforceMinVersion(ctx, version.Must(version.NewVersion("8.0.0")))
+	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
 	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if !isSupported {
+	minVersion := version.Must(version.NewVersion("8.0.0"))
+	if serverVersion.LessThan(minVersion) {
 		resp.Diagnostics.AddError("Unsupported server version", "Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource")
 		return
 	}
