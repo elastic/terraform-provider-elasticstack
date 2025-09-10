@@ -14,19 +14,17 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	serverVersion, diags := r.client.ServerVersion(ctx)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	if sdkDiags.HasError() {
 		return
 	}
 
-	serverFlavor, diags := r.client.ServerFlavor(ctx)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	serverFlavor, sdkDiags := r.client.ServerFlavor(ctx)
+	if sdkDiags.HasError() {
 		return
 	}
 
-	diags = validatePrebuiltRulesServer(serverVersion, serverFlavor)
+	diags := validatePrebuiltRulesServer(serverVersion, serverFlavor)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
