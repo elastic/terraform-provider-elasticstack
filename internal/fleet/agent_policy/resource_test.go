@@ -145,7 +145,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionInactivityTimeout),
-				Config:   testAccResourceAgentPolicyCreateWithInactivityTimeout(policyName, false, 120),
+				Config:   testAccResourceAgentPolicyCreateWithInactivityTimeout(policyName, false, "2m"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -153,7 +153,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "inactivity_timeout", "120"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "inactivity_timeout", "2m"),
 				),
 			},
 			{
@@ -308,7 +308,7 @@ data "elasticstack_fleet_enrollment_tokens" "test_policy" {
 `, fmt.Sprintf("Policy %s", id), skipDestroy)
 }
 
-func testAccResourceAgentPolicyCreateWithInactivityTimeout(id string, skipDestroy bool, inactivityTimeout float32) string {
+func testAccResourceAgentPolicyCreateWithInactivityTimeout(id string, skipDestroy bool, inactivityTimeout string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -322,7 +322,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = true
   monitor_metrics = false
   skip_destroy = %t
-  inactivity_timeout = %g
+  inactivity_timeout = "%s"
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -26,22 +27,22 @@ type globalDataTagsItemModel struct {
 }
 
 type agentPolicyModel struct {
-	ID                 types.String  `tfsdk:"id"`
-	PolicyID           types.String  `tfsdk:"policy_id"`
-	Name               types.String  `tfsdk:"name"`
-	Namespace          types.String  `tfsdk:"namespace"`
-	Description        types.String  `tfsdk:"description"`
-	DataOutputId       types.String  `tfsdk:"data_output_id"`
-	MonitoringOutputId types.String  `tfsdk:"monitoring_output_id"`
-	FleetServerHostId  types.String  `tfsdk:"fleet_server_host_id"`
-	DownloadSourceId   types.String  `tfsdk:"download_source_id"`
-	MonitorLogs        types.Bool    `tfsdk:"monitor_logs"`
-	MonitorMetrics     types.Bool    `tfsdk:"monitor_metrics"`
-	SysMonitoring      types.Bool    `tfsdk:"sys_monitoring"`
-	SkipDestroy        types.Bool    `tfsdk:"skip_destroy"`
-	SupportsAgentless  types.Bool    `tfsdk:"supports_agentless"`
-	InactivityTimeout  types.Float32 `tfsdk:"inactivity_timeout"`
-	GlobalDataTags     types.Map     `tfsdk:"global_data_tags"` //> globalDataTagsModel
+	ID                 types.String         `tfsdk:"id"`
+	PolicyID           types.String         `tfsdk:"policy_id"`
+	Name               types.String         `tfsdk:"name"`
+	Namespace          types.String         `tfsdk:"namespace"`
+	Description        types.String         `tfsdk:"description"`
+	DataOutputId       types.String         `tfsdk:"data_output_id"`
+	MonitoringOutputId types.String         `tfsdk:"monitoring_output_id"`
+	FleetServerHostId  types.String         `tfsdk:"fleet_server_host_id"`
+	DownloadSourceId   types.String         `tfsdk:"download_source_id"`
+	MonitorLogs        types.Bool           `tfsdk:"monitor_logs"`
+	MonitorMetrics     types.Bool           `tfsdk:"monitor_metrics"`
+	SysMonitoring      types.Bool           `tfsdk:"sys_monitoring"`
+	SkipDestroy        types.Bool           `tfsdk:"skip_destroy"`
+	SupportsAgentless  types.Bool           `tfsdk:"supports_agentless"`
+	InactivityTimeout  customtypes.Duration `tfsdk:"inactivity_timeout"`
+	GlobalDataTags     types.Map            `tfsdk:"global_data_tags"` //> globalDataTagsModel
 }
 
 func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
@@ -75,7 +76,13 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
 	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
-	model.InactivityTimeout = types.Float32PointerValue(data.InactivityTimeout)
+	if data.InactivityTimeout != nil {
+		// Convert seconds to duration string
+		durationStr := fmt.Sprintf("%.0fs", *data.InactivityTimeout)
+		model.InactivityTimeout = customtypes.NewDurationValue(durationStr)
+	} else {
+		model.InactivityTimeout = customtypes.NewDurationNull()
+	}
 	if utils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
 		var map0 = make(map[string]globalDataTagsItemModel)
@@ -200,7 +207,12 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 				),
 			}
 		}
-		body.InactivityTimeout = model.InactivityTimeout.ValueFloat32Pointer()
+		duration, diags := model.InactivityTimeout.Parse()
+		if diags.HasError() {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
+		}
+		seconds := float32(duration.Seconds())
+		body.InactivityTimeout = &seconds
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
@@ -255,7 +267,12 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 				),
 			}
 		}
-		body.InactivityTimeout = model.InactivityTimeout.ValueFloat32Pointer()
+		duration, diags := model.InactivityTimeout.Parse()
+		if diags.HasError() {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
+		}
+		seconds := float32(duration.Seconds())
+		body.InactivityTimeout = &seconds
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)

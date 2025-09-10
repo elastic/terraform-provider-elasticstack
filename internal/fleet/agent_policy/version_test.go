@@ -2,6 +2,7 @@ package agent_policy
 
 import (
 	"context"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"testing"
@@ -35,7 +36,7 @@ func TestInactivityTimeoutVersionValidation(t *testing.T) {
 	model := &agentPolicyModel{
 		Name:              types.StringValue("test"),
 		Namespace:         types.StringValue("default"),
-		InactivityTimeout: types.Float32Value(120.0),
+		InactivityTimeout: customtypes.NewDurationValue("2m"),
 	}
 
 	// Create features with inactivity timeout NOT supported
