@@ -25,7 +25,7 @@ data "elasticstack_kibana_export_saved_objects" "example" {
   objects = jsonencode([
     {
       "type" : "dashboard",
-      "id" : "7c5f07ee-7e41-4d50-ae1f-dfe54cc87209"
+      "id" : "7c5f07ee-7e41-4d50-ae1f-dfe54cc87208"
     }
   ])
 }
