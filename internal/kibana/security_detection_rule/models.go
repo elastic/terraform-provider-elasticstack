@@ -665,17 +665,19 @@ func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.Sec
 
 	ruleType := d.Type.ValueString()
 
-	// For now, only query rules are fully implemented
-	// TODO: Add support for other rule types
-	if ruleType != "query" {
+	switch ruleType {
+	case "query":
+		return d.toQueryRuleUpdateProps(ctx)
+	case "eql":
+		return d.toEqlRuleUpdateProps(ctx)
+	default:
+		// Other rule types are not yet fully implemented for updates
 		diags.AddError(
 			"Unsupported rule type for updates",
-			fmt.Sprintf("Rule type '%s' is not yet fully implemented for updates. Currently only 'query' rules are supported.", ruleType),
+			fmt.Sprintf("Rule type '%s' is not yet fully implemented for updates. Currently only 'query' and 'eql' rules are supported.", ruleType),
 		)
 		return updateProps, diags
 	}
-
-	return d.toQueryRuleUpdateProps(ctx)
 }
 
 func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
@@ -739,6 +741,59 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 		diags.AddError(
 			"Error building update properties",
 			"Could not convert query rule properties: "+err.Error(),
+		)
+	}
+
+	return updateProps, diags
+}
+
+func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
+
+	// Parse ID to get space_id and rule_id
+	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
+	diags.Append(resourceIdDiags...)
+
+	uid, err := uuid.Parse(compId.ResourceId)
+	if err != nil {
+		diags.AddError("ID was not a valid UUID", err.Error())
+		return updateProps, diags
+	}
+	var id = kbapi.SecurityDetectionsAPIRuleObjectId(uid)
+
+	eqlRule := kbapi.SecurityDetectionsAPIEqlRuleUpdateProps{
+		Id:          &id,
+		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
+		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Type:        kbapi.SecurityDetectionsAPIEqlRuleUpdatePropsType("eql"),
+		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Language:    kbapi.SecurityDetectionsAPIEqlQueryLanguage("eql"),
+		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
+		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
+	}
+
+	// For updates, we need to include the rule_id if it's set
+	if utils.IsKnown(d.RuleId) {
+		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
+		eqlRule.RuleId = &ruleId
+		eqlRule.Id = nil // if rule_id is set, we cant send id
+	}
+
+	d.setCommonUpdateProps(ctx, &eqlRule.Actions, &eqlRule.RuleId, &eqlRule.Enabled, &eqlRule.From, &eqlRule.To, &eqlRule.Interval, &eqlRule.Index, &eqlRule.Author, &eqlRule.Tags, &eqlRule.FalsePositives, &eqlRule.References, &eqlRule.License, &eqlRule.Note, &eqlRule.Setup, &eqlRule.MaxSignals, &eqlRule.Version, &diags)
+
+	// Set EQL-specific fields
+	if utils.IsKnown(d.TiebreakerField) {
+		tiebreakerField := kbapi.SecurityDetectionsAPITiebreakerField(d.TiebreakerField.ValueString())
+		eqlRule.TiebreakerField = &tiebreakerField
+	}
+
+	// Convert to union type
+	err = updateProps.FromSecurityDetectionsAPIEqlRuleUpdateProps(eqlRule)
+	if err != nil {
+		diags.AddError(
+			"Error building update properties",
+			"Could not convert EQL rule properties: "+err.Error(),
 		)
 	}
 
@@ -858,7 +913,24 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 	}
 }
 
-func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQueryRule) diag.Diagnostics {
+func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, rule interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	switch r := rule.(type) {
+	case *kbapi.SecurityDetectionsAPIQueryRule:
+		return d.updateFromQueryRule(ctx, r)
+	case *kbapi.SecurityDetectionsAPIEqlRule:
+		return d.updateFromEqlRule(ctx, r)
+	default:
+		diags.AddError(
+			"Unsupported rule type",
+			"Cannot update data from unsupported rule type",
+		)
+		return diags
+	}
+}
+
+func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQueryRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	compId := clients.CompositeId{
@@ -945,4 +1017,112 @@ func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, rule *kb
 	}
 
 	return diags
+}
+
+func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEqlRule) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	compId := clients.CompositeId{
+		ClusterId:  d.SpaceId.ValueString(),
+		ResourceId: rule.Id.String(),
+	}
+	d.Id = types.StringValue(compId.String())
+
+	d.RuleId = types.StringValue(string(rule.RuleId))
+	d.Name = types.StringValue(string(rule.Name))
+	d.Type = types.StringValue(string(rule.Type))
+	d.Query = types.StringValue(rule.Query)
+	d.Language = types.StringValue(string(rule.Language))
+	d.Enabled = types.BoolValue(bool(rule.Enabled))
+	d.From = types.StringValue(string(rule.From))
+	d.To = types.StringValue(string(rule.To))
+	d.Interval = types.StringValue(string(rule.Interval))
+	d.Description = types.StringValue(string(rule.Description))
+	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
+	d.Severity = types.StringValue(string(rule.Severity))
+	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
+	d.Version = types.Int64Value(int64(rule.Version))
+
+	// Update read-only fields
+	d.CreatedAt = types.StringValue(rule.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
+	d.CreatedBy = types.StringValue(rule.CreatedBy)
+	d.UpdatedAt = types.StringValue(rule.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
+	d.UpdatedBy = types.StringValue(rule.UpdatedBy)
+	d.Revision = types.Int64Value(int64(rule.Revision))
+
+	// Update index patterns
+	if rule.Index != nil && len(*rule.Index) > 0 {
+		d.Index = utils.ListValueFrom(ctx, *rule.Index, types.StringType, path.Root("index"), &diags)
+	} else {
+		d.Index = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	// Update author
+	if len(rule.Author) > 0 {
+		d.Author = utils.ListValueFrom(ctx, rule.Author, types.StringType, path.Root("author"), &diags)
+	} else {
+		d.Author = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	// Update tags
+	if len(rule.Tags) > 0 {
+		d.Tags = utils.ListValueFrom(ctx, rule.Tags, types.StringType, path.Root("tags"), &diags)
+	} else {
+		d.Tags = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	// Update false positives
+	if len(rule.FalsePositives) > 0 {
+		d.FalsePositives = utils.ListValueFrom(ctx, rule.FalsePositives, types.StringType, path.Root("false_positives"), &diags)
+	} else {
+		d.FalsePositives = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	// Update references
+	if len(rule.References) > 0 {
+		d.References = utils.ListValueFrom(ctx, rule.References, types.StringType, path.Root("references"), &diags)
+	} else {
+		d.References = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	// Update optional string fields
+	if rule.License != nil {
+		d.License = types.StringValue(string(*rule.License))
+	} else {
+		d.License = types.StringNull()
+	}
+
+	if rule.Note != nil {
+		d.Note = types.StringValue(string(*rule.Note))
+	} else {
+		d.Note = types.StringNull()
+	}
+
+	// Handle setup field - if empty, set to null to maintain consistency with optional schema
+	if string(rule.Setup) != "" {
+		d.Setup = types.StringValue(string(rule.Setup))
+	} else {
+		d.Setup = types.StringNull()
+	}
+
+	// EQL-specific fields
+	if rule.TiebreakerField != nil {
+		d.TiebreakerField = types.StringValue(string(*rule.TiebreakerField))
+	} else {
+		d.TiebreakerField = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to extract rule ID from any rule type
+func extractRuleId(rule interface{}) (string, error) {
+	switch r := rule.(type) {
+	case *kbapi.SecurityDetectionsAPIQueryRule:
+		return r.Id.String(), nil
+	case *kbapi.SecurityDetectionsAPIEqlRule:
+		return r.Id.String(), nil
+	default:
+		return "", fmt.Errorf("unsupported rule type for ID extraction")
+	}
 }

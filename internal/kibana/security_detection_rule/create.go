@@ -60,9 +60,18 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Set the ID based on the created rule
+	ruleId, err := extractRuleId(ruleResponse)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error extracting rule ID",
+			"Could not extract ID from created rule: "+err.Error(),
+		)
+		return
+	}
+
 	compId := clients.CompositeId{
 		ClusterId:  data.SpaceId.ValueString(),
-		ResourceId: ruleResponse.Id.String(),
+		ResourceId: ruleId,
 	}
 	data.Id = types.StringValue(compId.String())
 
