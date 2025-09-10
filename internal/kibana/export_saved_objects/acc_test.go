@@ -1,4 +1,4 @@
-package kibana_test
+package export_saved_objects_test
 
 import (
 	"testing"
