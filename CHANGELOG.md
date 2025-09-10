@@ -1,5 +1,6 @@
 ## [Unreleased]
 
+- Create `elasticstack_kibana_prebuilt_rule` resource ([#1296](https://github.com/elastic/terraform-provider-elasticstack/pull/1296))
 - Create `elasticstack_kibana_maintenance_window` resource. ([#1224](https://github.com/elastic/terraform-provider-elasticstack/pull/1224))
 - Add support for `solution` field in `elasticstack_kibana_space` resource and data source ([#1102](https://github.com/elastic/terraform-provider-elasticstack/issues/1102))
 - Add `slo_id` validation to `elasticstack_kibana_slo` ([#1221](https://github.com/elastic/terraform-provider-elasticstack/pull/1221))
