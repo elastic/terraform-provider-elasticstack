@@ -56,12 +56,12 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"type": schema.StringAttribute{
-				MarkdownDescription: "Rule type. Currently only 'query' is supported.",
+				MarkdownDescription: "Rule type. Supported types: query, eql, esql, machine_learning, new_terms, saved_query, threat_match, threshold.",
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString("query"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("query"),
+					stringvalidator.OneOf("query", "eql", "esql", "machine_learning", "new_terms", "saved_query", "threat_match", "threshold"),
 				},
 			},
 			"query": schema.StringAttribute{
@@ -215,6 +215,229 @@ func GetSchema() schema.Schema {
 			"revision": schema.Int64Attribute{
 				MarkdownDescription: "The rule's revision number.",
 				Computed:            true,
+			},
+
+			// EQL-specific fields
+			"tiebreaker_field": schema.StringAttribute{
+				MarkdownDescription: "Sets the tiebreaker field. Required for EQL rules when event.dataset is not provided.",
+				Optional:            true,
+			},
+
+			// Machine Learning-specific fields
+			"anomaly_threshold": schema.Int64Attribute{
+				MarkdownDescription: "Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100. Required for machine_learning rules.",
+				Optional:            true,
+				Validators: []validator.Int64{
+					int64validator.Between(0, 100),
+				},
+			},
+			"machine_learning_job_id": schema.ListAttribute{
+				ElementType:         types.StringType,
+				MarkdownDescription: "Machine learning job ID(s) the rule monitors for anomaly scores. Required for machine_learning rules.",
+				Optional:            true,
+			},
+
+			// New Terms-specific fields
+			"new_terms_fields": schema.ListAttribute{
+				ElementType:         types.StringType,
+				MarkdownDescription: "Field names containing the new terms. Required for new_terms rules.",
+				Optional:            true,
+			},
+			"history_window_start": schema.StringAttribute{
+				MarkdownDescription: "Start date to use when checking if a term has been seen before. Supports relative dates like 'now-30d'. Required for new_terms rules.",
+				Optional:            true,
+			},
+
+			// Saved Query-specific fields
+			"saved_id": schema.StringAttribute{
+				MarkdownDescription: "Identifier of the saved query used for the rule. Required for saved_query rules.",
+				Optional:            true,
+			},
+
+			// Threat Match-specific fields
+			"threat_index": schema.ListAttribute{
+				ElementType:         types.StringType,
+				MarkdownDescription: "Array of index patterns for the threat intelligence indices. Required for threat_match rules.",
+				Optional:            true,
+			},
+			"threat_query": schema.StringAttribute{
+				MarkdownDescription: "Query used to filter threat intelligence data. Optional for threat_match rules.",
+				Optional:            true,
+			},
+			"threat_mapping": schema.ListNestedAttribute{
+				MarkdownDescription: "Array of threat mappings that specify how to match events with threat intelligence. Required for threat_match rules.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"entries": schema.ListNestedAttribute{
+							MarkdownDescription: "Array of mapping entries.",
+							Required:            true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"field": schema.StringAttribute{
+										MarkdownDescription: "Event field to match.",
+										Required:            true,
+									},
+									"type": schema.StringAttribute{
+										MarkdownDescription: "Type of match (mapping).",
+										Required:            true,
+										Validators: []validator.String{
+											stringvalidator.OneOf("mapping"),
+										},
+									},
+									"value": schema.StringAttribute{
+										MarkdownDescription: "Threat intelligence field to match against.",
+										Required:            true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"threat_filters": schema.ListAttribute{
+				ElementType:         types.StringType,
+				MarkdownDescription: "Additional filters for threat intelligence data. Optional for threat_match rules.",
+				Optional:            true,
+			},
+			"threat_indicator_path": schema.StringAttribute{
+				MarkdownDescription: "Path to the threat indicator in the indicator documents. Optional for threat_match rules.",
+				Optional:            true,
+			},
+			"concurrent_searches": schema.Int64Attribute{
+				MarkdownDescription: "Number of concurrent searches for threat intelligence. Optional for threat_match rules.",
+				Optional:            true,
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
+			},
+			"items_per_search": schema.Int64Attribute{
+				MarkdownDescription: "Number of items to search for in each concurrent search. Optional for threat_match rules.",
+				Optional:            true,
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
+			},
+
+			// Threshold-specific fields
+			"threshold": schema.SingleNestedAttribute{
+				MarkdownDescription: "Threshold settings for the rule. Required for threshold rules.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"field": schema.ListAttribute{
+						ElementType:         types.StringType,
+						MarkdownDescription: "Field(s) to use for threshold aggregation.",
+						Optional:            true,
+					},
+					"value": schema.Int64Attribute{
+						MarkdownDescription: "The threshold value from which an alert is generated.",
+						Required:            true,
+						Validators: []validator.Int64{
+							int64validator.AtLeast(1),
+						},
+					},
+					"cardinality": schema.ListNestedAttribute{
+						MarkdownDescription: "Cardinality settings for threshold rule.",
+						Optional:            true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"field": schema.StringAttribute{
+									MarkdownDescription: "The field on which to calculate and compare the cardinality.",
+									Required:            true,
+								},
+								"value": schema.Int64Attribute{
+									MarkdownDescription: "The threshold cardinality value.",
+									Required:            true,
+									Validators: []validator.Int64{
+										int64validator.AtLeast(1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+
+			// Optional timeline fields (common across multiple rule types)
+			"timeline_id": schema.StringAttribute{
+				MarkdownDescription: "Timeline template ID for the rule.",
+				Optional:            true,
+			},
+			"timeline_title": schema.StringAttribute{
+				MarkdownDescription: "Timeline template title for the rule.",
+				Optional:            true,
+			},
+
+			// Threat field (common across multiple rule types)
+			"threat": schema.ListNestedAttribute{
+				MarkdownDescription: "MITRE ATT&CK framework threat information.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"framework": schema.StringAttribute{
+							MarkdownDescription: "Threat framework (typically 'MITRE ATT&CK').",
+							Required:            true,
+						},
+						"tactic": schema.SingleNestedAttribute{
+							MarkdownDescription: "MITRE ATT&CK tactic information.",
+							Required:            true,
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									MarkdownDescription: "MITRE ATT&CK tactic ID.",
+									Required:            true,
+								},
+								"name": schema.StringAttribute{
+									MarkdownDescription: "MITRE ATT&CK tactic name.",
+									Required:            true,
+								},
+								"reference": schema.StringAttribute{
+									MarkdownDescription: "MITRE ATT&CK tactic reference URL.",
+									Required:            true,
+								},
+							},
+						},
+						"technique": schema.ListNestedAttribute{
+							MarkdownDescription: "MITRE ATT&CK technique information.",
+							Optional:            true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"id": schema.StringAttribute{
+										MarkdownDescription: "MITRE ATT&CK technique ID.",
+										Required:            true,
+									},
+									"name": schema.StringAttribute{
+										MarkdownDescription: "MITRE ATT&CK technique name.",
+										Required:            true,
+									},
+									"reference": schema.StringAttribute{
+										MarkdownDescription: "MITRE ATT&CK technique reference URL.",
+										Required:            true,
+									},
+									"subtechnique": schema.ListNestedAttribute{
+										MarkdownDescription: "MITRE ATT&CK sub-technique information.",
+										Optional:            true,
+										NestedObject: schema.NestedAttributeObject{
+											Attributes: map[string]schema.Attribute{
+												"id": schema.StringAttribute{
+													MarkdownDescription: "MITRE ATT&CK sub-technique ID.",
+													Required:            true,
+												},
+												"name": schema.StringAttribute{
+													MarkdownDescription: "MITRE ATT&CK sub-technique name.",
+													Required:            true,
+												},
+												"reference": schema.StringAttribute{
+													MarkdownDescription: "MITRE ATT&CK sub-technique reference URL.",
+													Required:            true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
