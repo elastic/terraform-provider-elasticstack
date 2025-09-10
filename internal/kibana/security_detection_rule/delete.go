@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -18,7 +19,7 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 	}
 
 	// Parse ID to get space_id and rule_id
-	_, ruleId, diags := r.parseResourceId(data.Id.ValueString())
+	compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -35,7 +36,12 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 	}
 
 	// Delete the rule
-	ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uuid.MustParse(ruleId))
+	uid, err := uuid.Parse(compId.ResourceId)
+	if err != nil {
+		resp.Diagnostics.AddError("ID was not a valid UUID", err.Error())
+		return
+	}
+	ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uid)
 	params := &kbapi.DeleteRuleParams{
 		Id: &ruleObjectId,
 	}
