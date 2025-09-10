@@ -59,6 +59,21 @@ Carefully read the issue and think hard about a plan to solve it before coding. 
 - Write additional tests if needed to capture important behaviors or edge cases.
 - Ensure all tests pass before finalizing.
 
+### 6.1 Acceptance Testing Requirements
+When running acceptance tests (`make testacc`), ensure the following:
+
+
+- **Environment Variables** - The following environment variables are required for acceptance tests:
+  - `ELASTICSEARCH_ENDPOINTS` (default: http://localhost:9200)
+  - `ELASTICSEARCH_USERNAME` (default: elastic) 
+  - `ELASTICSEARCH_PASSWORD` (default: password)
+  - `KIBANA_ENDPOINT` (default: http://localhost:5601)
+  - `TF_ACC` (must be set to "1" to enable acceptance tests)
+- **Ensure a valid environment if using `go test`** - Check if the required environment variables are set, if not use the defaults specified above. 
+- **Always finish with `make testacc`** - This will run all tests. Make sure all tests pass before considering a task complete.
+- **Pre-set Environment Variables** - Default environment variables are configured in the Makefile. If these defaults are suitable for your testing environment, `make testacc` will work directly without additional setup
+- **Docker Environment** - For isolated testing with guaranteed environment setup, use `make docker-testacc` which starts Elasticsearch and Kibana containers automatically
+
 ## 7. Final Verification
 - Confirm the root cause is fixed.
 - Review your solution for logic correctness and robustness.
