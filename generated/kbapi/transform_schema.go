@@ -812,6 +812,20 @@ func transformKibanaPaths(schema *Schema) {
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
 
+	schema.Components.Set("schemas.Security_Detections_API_RuleResponse.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRule",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRule",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRule",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRule",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRule",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRule",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRule",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRule",
+		},
+		"propertyName": "type",
+	})
+
 }
 
 func removeBrokenDiscriminator(schema *Schema) {
@@ -826,10 +840,7 @@ func removeBrokenDiscriminator(schema *Schema) {
 		"Security_AI_Assistant_API_KnowledgeBaseEntryResponse",
 		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateProps",
 		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateRouteProps",
-		"Security_Detections_API_RuleCreateProps",
-		"Security_Detections_API_RuleResponse",
 		"Security_Detections_API_RuleSource",
-		"Security_Detections_API_RuleUpdateProps",
 		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
 		"Security_Exceptions_API_ExceptionListItemEntry",
 	}

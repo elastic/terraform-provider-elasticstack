@@ -93,38 +93,15 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 
 func (r *securityDetectionRuleResource) parseRuleResponse(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) (interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	rule, error := response.ValueByDiscriminator()
+	if error != nil {
+		diags.AddError(
+			"Error determining rule type",
+			"Could not determine the type of the security detection rule from the API response: "+error.Error(),
+		)
 
-	// Try to determine the rule type and parse accordingly
-	// First try query rule
-	if queryRule, err := response.AsSecurityDetectionsAPIQueryRule(); err == nil {
-		return &queryRule, diags
+		return nil, diags
 	}
 
-	// Try EQL rule
-	if eqlRule, err := response.AsSecurityDetectionsAPIEqlRule(); err == nil {
-		return &eqlRule, diags
-	}
-
-	// Try other rule types and provide helpful error messages
-	ruleTypeErr := "Could not parse rule response as any supported rule type."
-
-	if _, esqlErr := response.AsSecurityDetectionsAPIEsqlRule(); esqlErr == nil {
-		ruleTypeErr = "This appears to be an ESQL rule, which is not yet fully supported for read operations."
-	} else if _, mlErr := response.AsSecurityDetectionsAPIMachineLearningRule(); mlErr == nil {
-		ruleTypeErr = "This appears to be a Machine Learning rule, which is not yet fully supported for read operations."
-	} else if _, newTermsErr := response.AsSecurityDetectionsAPINewTermsRule(); newTermsErr == nil {
-		ruleTypeErr = "This appears to be a New Terms rule, which is not yet fully supported for read operations."
-	} else if _, savedQueryErr := response.AsSecurityDetectionsAPISavedQueryRule(); savedQueryErr == nil {
-		ruleTypeErr = "This appears to be a Saved Query rule, which is not yet fully supported for read operations."
-	} else if _, threatMatchErr := response.AsSecurityDetectionsAPIThreatMatchRule(); threatMatchErr == nil {
-		ruleTypeErr = "This appears to be a Threat Match rule, which is not yet fully supported for read operations."
-	} else if _, thresholdErr := response.AsSecurityDetectionsAPIThresholdRule(); thresholdErr == nil {
-		ruleTypeErr = "This appears to be a Threshold rule, which is not yet fully supported for read operations."
-	}
-
-	diags.AddError(
-		"Error parsing rule response",
-		ruleTypeErr+" Currently only query and EQL rules are fully supported.",
-	)
-	return nil, diags
+	return &rule, diags
 }
