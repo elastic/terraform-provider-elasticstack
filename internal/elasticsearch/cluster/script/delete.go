@@ -27,5 +27,5 @@ func (r *scriptResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(elasticsearch.DeleteScriptFw(ctx, client, compId.ResourceId)...)
+	resp.Diagnostics.Append(elasticsearch.DeleteScript(ctx, client, compId.ResourceId)...)
 }

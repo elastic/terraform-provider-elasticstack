@@ -235,33 +235,33 @@ func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]
 	return clusterSettings, diags
 }
 
-func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, diag.Diagnostics) {
+func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, fwdiag.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
 	}
 	res, err := esClient.GetScript(id, esClient.GetScript.WithContext(ctx))
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get script", err.Error())}
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
+	if diags := utils.CheckErrorFromFW(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
 		return nil, diags
 	}
 	var scriptResponse struct {
 		Script *models.Script `json:"script"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&scriptResponse); err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to decode script response", err.Error())}
 	}
 
 	return scriptResponse.Script, nil
 }
 
-func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) diag.Diagnostics {
+func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) fwdiag.Diagnostics {
 	req := struct {
 		Script *models.Script `json:"script"`
 	}{
@@ -269,52 +269,51 @@ func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models
 	}
 	scriptBytes, err := json.Marshal(req)
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to marshal script", err.Error())}
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
 	}
 	res, err := esClient.PutScript(script.ID, bytes.NewReader(scriptBytes), esClient.PutScript.WithContext(ctx), esClient.PutScript.WithScriptContext(script.Context))
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to put script", err.Error())}
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to put stored script"); diags.HasError() {
+	if diags := utils.CheckErrorFromFW(res, "Unable to put stored script"); diags.HasError() {
 		return diags
 	}
 	return nil
 }
 
-func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) diag.Diagnostics {
+func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
 	}
 	res, err := esClient.DeleteScript(id, esClient.DeleteScript.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to delete script", err.Error())}
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete script: %s", id)); diags.HasError() {
+	if diags := utils.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete script: %s", id)); diags.HasError() {
 		return diags
 	}
 	return nil
 }
 
-// Framework versions that return framework diagnostics
-
-func PutScriptFw(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) fwdiag.Diagnostics {
-	sdkDiags := PutScript(ctx, apiClient, script)
-	return utils.FrameworkDiagsFromSDK(sdkDiags)
+// SDK-compatible wrapper functions for legacy SDKv2 script resource
+func GetScriptSDK(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, diag.Diagnostics) {
+	script, fwDiags := GetScript(ctx, apiClient, id)
+	return script, utils.SDKDiagsFromFramework(fwDiags)
 }
 
-func GetScriptFw(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, fwdiag.Diagnostics) {
-	script, sdkDiags := GetScript(ctx, apiClient, id)
-	return script, utils.FrameworkDiagsFromSDK(sdkDiags)
+func PutScriptSDK(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) diag.Diagnostics {
+	fwDiags := PutScript(ctx, apiClient, script)
+	return utils.SDKDiagsFromFramework(fwDiags)
 }
 
-func DeleteScriptFw(ctx context.Context, apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
-	sdkDiags := DeleteScript(ctx, apiClient, id)
-	return utils.FrameworkDiagsFromSDK(sdkDiags)
+func DeleteScriptSDK(ctx context.Context, apiClient *clients.ApiClient, id string) diag.Diagnostics {
+	fwDiags := DeleteScript(ctx, apiClient, id)
+	return utils.SDKDiagsFromFramework(fwDiags)
 }

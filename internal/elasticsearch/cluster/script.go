@@ -77,7 +77,7 @@ func resourceScriptRead(ctx context.Context, d *schema.ResourceData, meta interf
 		return diags
 	}
 
-	script, diags := elasticsearch.GetScript(ctx, client, compId.ResourceId)
+	script, diags := elasticsearch.GetScriptSDK(ctx, client, compId.ResourceId)
 	if script == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Script "%s" not found, removing from state`, compId.ResourceId))
 		d.SetId("")
@@ -129,7 +129,7 @@ func resourceScriptPut(ctx context.Context, d *schema.ResourceData, meta interfa
 	if scriptContext, ok := d.GetOk("context"); ok {
 		script.Context = scriptContext.(string)
 	}
-	if diags := elasticsearch.PutScript(ctx, client, &script); diags.HasError() {
+	if diags := elasticsearch.PutScriptSDK(ctx, client, &script); diags.HasError() {
 		return diags
 	}
 
@@ -147,5 +147,5 @@ func resourceScriptDelete(ctx context.Context, d *schema.ResourceData, meta inte
 	if diags.HasError() {
 		return diags
 	}
-	return elasticsearch.DeleteScript(ctx, client, compId.ResourceId)
+	return elasticsearch.DeleteScriptSDK(ctx, client, compId.ResourceId)
 }
