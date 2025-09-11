@@ -43,10 +43,13 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	// Update computed values from status
-	resp.Diagnostics.Append(model.populateFromStatus(ctx, status)...)
-	if resp.Diagnostics.HasError() {
-		return
+	model.populateFromStatus(ctx, status)
+
+	if needsRuleUpdate(ctx, client, spaceID) {
+		resp.Diagnostics.Append(installPrebuiltRules(ctx, client, spaceID)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)

@@ -42,20 +42,6 @@ func (r *PrebuiltRuleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	// Enable/disable rules based on tags if specified
-	tags, tagDiags := model.getTags(ctx)
-	resp.Diagnostics.Append(tagDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if len(tags) > 0 {
-		resp.Diagnostics.Append(manageRulesByTags(ctx, client, spaceID, tags)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-
 	// Set the resource ID to the space ID
 	model.ID = model.SpaceID
 
@@ -66,10 +52,7 @@ func (r *PrebuiltRuleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	resp.Diagnostics.Append(model.populateFromStatus(ctx, status)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	model.populateFromStatus(ctx, status)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }

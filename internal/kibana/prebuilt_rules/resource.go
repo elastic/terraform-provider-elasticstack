@@ -29,5 +29,5 @@ func (r *PrebuiltRuleResource) Configure(ctx context.Context, req resource.Confi
 }
 
 func (r *PrebuiltRuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_prebuilt_rule")
+	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_install_prebuilt_rules")
 }
