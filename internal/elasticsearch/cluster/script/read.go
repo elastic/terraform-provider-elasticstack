@@ -50,17 +50,16 @@ func (r *scriptResource) Read(ctx context.Context, req resource.ReadRequest, res
 	data.Source = types.StringValue(script.Source)
 
 	// Handle params if returned by the API
-	if script.Params != nil && len(script.Params) > 0 {
+	if len(script.Params) > 0 {
 		paramsBytes, err := json.Marshal(script.Params)
 		if err != nil {
 			resp.Diagnostics.AddError("Error marshaling script params", err.Error())
 			return
 		}
 		data.Params = types.StringValue(string(paramsBytes))
-	} else if !data.Params.IsNull() {
-		// If params were set but API doesn't return them, preserve from state
-		// This maintains backwards compatibility
 	}
+	// Note: If params were set but API doesn't return them, they are preserved from state
+	// This maintains backwards compatibility
 
 	// Note: context is not returned by the Elasticsearch API (json:"-" in model)
 	// It's only used during script creation, so we preserve it from state
