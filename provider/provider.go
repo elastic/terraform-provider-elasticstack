@@ -92,9 +92,8 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_security_user":       security.ResourceUser(),
 			"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository": cluster.ResourceSnapshotRepository(),
-			// "elasticstack_elasticsearch_script":              cluster.ResourceScript(), // Migrated to Plugin Framework
-			"elasticstack_elasticsearch_transform": transform.ResourceTransform(),
-			"elasticstack_elasticsearch_watch":     watcher.ResourceWatch(),
+			"elasticstack_elasticsearch_transform":           transform.ResourceTransform(),
+			"elasticstack_elasticsearch_watch":               watcher.ResourceWatch(),
 
 			"elasticstack_kibana_alerting_rule": kibana.ResourceAlertingRule(),
 			"elasticstack_kibana_space":         kibana.ResourceSpace(),

@@ -5,7 +5,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -28,6 +27,5 @@ func (r *scriptResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	sdkDiags := elasticsearch.DeleteScript(ctx, client, compId.ResourceId)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(elasticsearch.DeleteScriptFw(ctx, client, compId.ResourceId)...)
 }

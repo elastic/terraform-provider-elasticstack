@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -299,4 +300,21 @@ func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) 
 		return diags
 	}
 	return nil
+}
+
+// Framework versions that return framework diagnostics
+
+func PutScriptFw(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) fwdiag.Diagnostics {
+	sdkDiags := PutScript(ctx, apiClient, script)
+	return utils.FrameworkDiagsFromSDK(sdkDiags)
+}
+
+func GetScriptFw(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, fwdiag.Diagnostics) {
+	script, sdkDiags := GetScript(ctx, apiClient, id)
+	return script, utils.FrameworkDiagsFromSDK(sdkDiags)
+}
+
+func DeleteScriptFw(ctx context.Context, apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
+	sdkDiags := DeleteScript(ctx, apiClient, id)
+	return utils.FrameworkDiagsFromSDK(sdkDiags)
 }

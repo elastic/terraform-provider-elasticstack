@@ -3,6 +3,7 @@ package script
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -11,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 )
 
 func (r *scriptResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -50,9 +50,7 @@ func GetSchema() schema.Schema {
 			"params": schema.StringAttribute{
 				MarkdownDescription: "Parameters for the script or search template.",
 				Optional:            true,
-				Validators: []validator.String{
-					validators.StringIsJSON{},
-				},
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"context": schema.StringAttribute{
 				MarkdownDescription: "Context in which the script or search template should run.",
