@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -27,21 +28,45 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	// Get the rule using kbapi client
-	kbClient, err := r.client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error getting Kibana client",
-			"Could not get Kibana OAPI client: "+err.Error(),
-		)
+	// Use the extracted read method
+	readData, diags := r.read(ctx, compId.ResourceId, compId.ClusterId)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read the rule
-	uid, err := uuid.Parse(compId.ResourceId)
-	if err != nil {
-		resp.Diagnostics.AddError("ID was not a valid UUID", err.Error())
+	// Check if the rule was found (empty data indicates 404)
+	if readData.RuleId.IsNull() {
+		// Rule was deleted outside of Terraform
+		resp.State.RemoveResource(ctx)
 		return
+	}
+
+	// Set the composite ID and state
+	readData.Id = data.Id
+	resp.Diagnostics.Append(resp.State.Set(ctx, &readData)...)
+}
+
+// read extracts the core functionality of reading a security detection rule
+func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, spaceId string) (SecurityDetectionRuleData, diag.Diagnostics) {
+	var data SecurityDetectionRuleData
+	var diags diag.Diagnostics
+
+	// Get the rule using kbapi client
+	kbClient, err := r.client.GetKibanaOapiClient()
+	if err != nil {
+		diags.AddError(
+			"Error getting Kibana client",
+			"Could not get Kibana OAPI client: "+err.Error(),
+		)
+		return data, diags
+	}
+
+	// Read the rule
+	uid, err := uuid.Parse(resourceId)
+	if err != nil {
+		diags.AddError("ID was not a valid UUID", err.Error())
+		return data, diags
 	}
 	ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uid)
 	params := &kbapi.ReadRuleParams{
@@ -50,45 +75,47 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 
 	response, err := kbClient.API.ReadRuleWithResponse(ctx, params)
 	if err != nil {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Error reading security detection rule",
 			"Could not read security detection rule: "+err.Error(),
 		)
-		return
+		return data, diags
 	}
 
 	if response.StatusCode() == 404 {
-		// Rule was deleted outside of Terraform
-		resp.State.RemoveResource(ctx)
-		return
+		// Rule was deleted - return empty data to indicate this
+		return data, diags
 	}
 
 	if response.StatusCode() != 200 {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Error reading security detection rule",
 			fmt.Sprintf("API returned status %d: %s", response.StatusCode(), string(response.Body)),
 		)
-		return
+		return data, diags
 	}
 
 	// Parse the response
-	ruleResponse, diags := r.parseRuleResponse(ctx, response.JSON200)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	ruleResponse, parseDiags := r.parseRuleResponse(ctx, response.JSON200)
+	diags.Append(parseDiags...)
+	if diags.HasError() {
+		return data, diags
 	}
 
 	// Update the data with response values
-	diags = data.updateFromRule(ctx, ruleResponse)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	updateDiags := data.updateFromRule(ctx, ruleResponse)
+
+	data.MachineLearningJobId = types.ListValueMust(types.StringType, []attr.Value{})
+
+	diags.Append(updateDiags...)
+	if diags.HasError() {
+		return data, diags
 	}
 
 	// Ensure space_id is set correctly
-	data.SpaceId = types.StringValue(compId.ClusterId)
+	data.SpaceId = types.StringValue(spaceId)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	return data, diags
 }
 
 func (r *securityDetectionRuleResource) parseRuleResponse(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) (interface{}, diag.Diagnostics) {
@@ -103,5 +130,5 @@ func (r *securityDetectionRuleResource) parseRuleResponse(ctx context.Context, r
 		return nil, diags
 	}
 
-	return &rule, diags
+	return rule, diags
 }

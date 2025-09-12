@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -50,18 +52,20 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 		return
 	}
 
-	// Use Read logic to populate the state with fresh data from the API
-	readReq := resource.ReadRequest{
-		State: resp.State,
-	}
-	var readResp resource.ReadResponse
-	readReq.State.Set(ctx, &data)
-	r.Read(ctx, readReq, &readResp)
-
-	resp.Diagnostics.Append(readResp.Diagnostics...)
+	// Parse ID to get space_id and rule_id
+	compId, resourceIdDiags := clients.CompositeIdFromStrFw(data.Id.ValueString())
+	diags.Append(resourceIdDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.State = readResp.State
+	uid, err := uuid.Parse(compId.ResourceId)
+
+	readData, diags := r.read(ctx, uid.String(), data.SpaceId.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &readData)...)
 }

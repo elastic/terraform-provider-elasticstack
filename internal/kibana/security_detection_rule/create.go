@@ -74,19 +74,11 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		ResourceId: id,
 	}
 	data.Id = types.StringValue(compId.String())
-
-	// Use Read logic to populate the state with fresh data from the API
-	readReq := resource.ReadRequest{
-		State: resp.State,
-	}
-	var readResp resource.ReadResponse
-	readReq.State.Set(ctx, &data)
-	r.Read(ctx, readReq, &readResp)
-
-	resp.Diagnostics.Append(readResp.Diagnostics...)
+	readData, diags := r.read(ctx, id, data.SpaceId.ValueString())
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.State = readResp.State
+	resp.Diagnostics.Append(resp.State.Set(ctx, &readData)...)
 }
