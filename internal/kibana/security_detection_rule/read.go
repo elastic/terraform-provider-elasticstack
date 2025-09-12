@@ -7,7 +7,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -51,6 +50,8 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, spaceId string) (SecurityDetectionRuleData, diag.Diagnostics) {
 	var data SecurityDetectionRuleData
 	var diags diag.Diagnostics
+
+	data.initializeAllFieldsToDefaults(ctx, &diags)
 
 	// Get the rule using kbapi client
 	kbClient, err := r.client.GetKibanaOapiClient()
@@ -105,8 +106,6 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 	// Update the data with response values
 	updateDiags := data.updateFromRule(ctx, ruleResponse)
 
-	data.MachineLearningJobId = types.ListValueMust(types.StringType, []attr.Value{})
-
 	diags.Append(updateDiags...)
 	if diags.HasError() {
 		return data, diags
@@ -114,6 +113,13 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 
 	// Ensure space_id is set correctly
 	data.SpaceId = types.StringValue(spaceId)
+
+	compId := clients.CompositeId{
+		ResourceId: resourceId,
+		ClusterId:  spaceId,
+	}
+
+	data.Id = types.StringValue(compId.String())
 
 	return data, diags
 }
