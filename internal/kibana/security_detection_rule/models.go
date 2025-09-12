@@ -1383,22 +1383,22 @@ func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, rule int
 	var diags diag.Diagnostics
 
 	switch r := rule.(type) {
-	case *kbapi.SecurityDetectionsAPIQueryRule:
-		return d.updateFromQueryRule(ctx, r)
-	case *kbapi.SecurityDetectionsAPIEqlRule:
-		return d.updateFromEqlRule(ctx, r)
-	case *kbapi.SecurityDetectionsAPIEsqlRule:
-		return d.updateFromEsqlRule(ctx, r)
-	case *kbapi.SecurityDetectionsAPIMachineLearningRule:
-		return d.updateFromMachineLearningRule(ctx, r)
-	case *kbapi.SecurityDetectionsAPINewTermsRule:
-		return d.updateFromNewTermsRule(ctx, r)
-	case *kbapi.SecurityDetectionsAPISavedQueryRule:
-		return d.updateFromSavedQueryRule(ctx, r)
-	case *kbapi.SecurityDetectionsAPIThreatMatchRule:
-		return d.updateFromThreatMatchRule(ctx, r)
-	case *kbapi.SecurityDetectionsAPIThresholdRule:
-		return d.updateFromThresholdRule(ctx, r)
+	case kbapi.SecurityDetectionsAPIQueryRule:
+		return d.updateFromQueryRule(ctx, &r)
+	case kbapi.SecurityDetectionsAPIEqlRule:
+		return d.updateFromEqlRule(ctx, &r)
+	case kbapi.SecurityDetectionsAPIEsqlRule:
+		return d.updateFromEsqlRule(ctx, &r)
+	case kbapi.SecurityDetectionsAPIMachineLearningRule:
+		return d.updateFromMachineLearningRule(ctx, &r)
+	case kbapi.SecurityDetectionsAPINewTermsRule:
+		return d.updateFromNewTermsRule(ctx, &r)
+	case kbapi.SecurityDetectionsAPISavedQueryRule:
+		return d.updateFromSavedQueryRule(ctx, &r)
+	case kbapi.SecurityDetectionsAPIThreatMatchRule:
+		return d.updateFromThreatMatchRule(ctx, &r)
+	case kbapi.SecurityDetectionsAPIThresholdRule:
+		return d.updateFromThresholdRule(ctx, &r)
 	default:
 		diags.AddError(
 			"Unsupported rule type",
@@ -2225,23 +2225,166 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 // Helper function to extract rule ID from any rule type
 func extractId(rule interface{}) (string, error) {
 	switch r := rule.(type) {
-	case *kbapi.SecurityDetectionsAPIQueryRule:
+	case kbapi.SecurityDetectionsAPIQueryRule:
 		return r.Id.String(), nil
-	case *kbapi.SecurityDetectionsAPIEqlRule:
+	case kbapi.SecurityDetectionsAPIEqlRule:
 		return r.Id.String(), nil
-	case *kbapi.SecurityDetectionsAPIEsqlRule:
+	case kbapi.SecurityDetectionsAPIEsqlRule:
 		return r.Id.String(), nil
-	case *kbapi.SecurityDetectionsAPIMachineLearningRule:
+	case kbapi.SecurityDetectionsAPIMachineLearningRule:
 		return r.Id.String(), nil
-	case *kbapi.SecurityDetectionsAPINewTermsRule:
+	case kbapi.SecurityDetectionsAPINewTermsRule:
 		return r.Id.String(), nil
-	case *kbapi.SecurityDetectionsAPISavedQueryRule:
+	case kbapi.SecurityDetectionsAPISavedQueryRule:
 		return r.Id.String(), nil
-	case *kbapi.SecurityDetectionsAPIThreatMatchRule:
+	case kbapi.SecurityDetectionsAPIThreatMatchRule:
 		return r.Id.String(), nil
-	case *kbapi.SecurityDetectionsAPIThresholdRule:
+	case kbapi.SecurityDetectionsAPIThresholdRule:
 		return r.Id.String(), nil
 	default:
 		return "", fmt.Errorf("unsupported rule type for ID extraction")
+	}
+}
+
+// Helper function to initialize fields that should be set to default values for all rule types
+func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults(ctx context.Context, diags *diag.Diagnostics) {
+
+	// Initialize fields that should be empty lists for all rule types initially
+	if !utils.IsKnown(d.Author) {
+		d.Author = types.ListNull(types.StringType)
+	}
+	if !utils.IsKnown(d.Tags) {
+		d.Tags = types.ListNull(types.StringType)
+	}
+	if !utils.IsKnown(d.FalsePositives) {
+		d.FalsePositives = types.ListNull(types.StringType)
+	}
+	if !utils.IsKnown(d.References) {
+		d.References = types.ListNull(types.StringType)
+	}
+
+	// Initialize all type-specific fields to null/empty by default
+	d.initializeTypeSpecificFieldsToDefaults(ctx, diags)
+}
+
+// Helper function to initialize type-specific fields to default/null values
+func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx context.Context, diags *diag.Diagnostics) {
+	// EQL-specific fields
+	if !utils.IsKnown(d.TiebreakerField) {
+		d.TiebreakerField = types.StringNull()
+	}
+
+	// Machine Learning-specific fields
+	if !utils.IsKnown(d.AnomalyThreshold) {
+		d.AnomalyThreshold = types.Int64Null()
+	}
+	if !utils.IsKnown(d.MachineLearningJobId) {
+		d.MachineLearningJobId = types.ListNull(types.StringType)
+	}
+
+	// New Terms-specific fields
+	if !utils.IsKnown(d.NewTermsFields) {
+		d.NewTermsFields = types.ListNull(types.StringType)
+	}
+	if !utils.IsKnown(d.HistoryWindowStart) {
+		d.HistoryWindowStart = types.StringNull()
+	}
+
+	// Saved Query-specific fields
+	if !utils.IsKnown(d.SavedId) {
+		d.SavedId = types.StringNull()
+	}
+
+	// Threat Match-specific fields
+	if !utils.IsKnown(d.ThreatIndex) {
+		d.ThreatIndex = types.ListNull(types.StringType)
+	}
+	if !utils.IsKnown(d.ThreatQuery) {
+		d.ThreatQuery = types.StringNull()
+	}
+	if !utils.IsKnown(d.ThreatMapping) {
+		d.ThreatMapping = types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"entries": types.ListType{
+					ElemType: types.ObjectType{
+						AttrTypes: map[string]attr.Type{
+							"field": types.StringType,
+							"type":  types.StringType,
+							"value": types.StringType,
+						},
+					},
+				},
+			},
+		})
+	}
+	if !utils.IsKnown(d.ThreatFilters) {
+		d.ThreatFilters = types.ListNull(types.StringType)
+	}
+	if !utils.IsKnown(d.ThreatIndicatorPath) {
+		d.ThreatIndicatorPath = types.StringNull()
+	}
+	if !utils.IsKnown(d.ConcurrentSearches) {
+		d.ConcurrentSearches = types.Int64Null()
+	}
+	if !utils.IsKnown(d.ItemsPerSearch) {
+		d.ItemsPerSearch = types.Int64Null()
+	}
+
+	// Threshold-specific fields
+	if !utils.IsKnown(d.Threshold) {
+		d.Threshold = types.ObjectNull(map[string]attr.Type{
+			"value": types.Int64Type,
+			"field": types.ListType{ElemType: types.StringType},
+			"cardinality": types.ListType{
+				ElemType: types.ObjectType{
+					AttrTypes: map[string]attr.Type{
+						"field": types.StringType,
+						"value": types.Int64Type,
+					},
+				},
+			},
+		})
+	}
+
+	// Timeline fields (common across multiple rule types)
+	if !utils.IsKnown(d.TimelineId) {
+		d.TimelineId = types.StringNull()
+	}
+	if !utils.IsKnown(d.TimelineTitle) {
+		d.TimelineTitle = types.StringNull()
+	}
+
+	// Threat field (common across multiple rule types) - MITRE ATT&CK framework
+	if !utils.IsKnown(d.Threat) {
+		d.Threat = types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"framework": types.StringType,
+				"tactic": types.ObjectType{
+					AttrTypes: map[string]attr.Type{
+						"id":        types.StringType,
+						"name":      types.StringType,
+						"reference": types.StringType,
+					},
+				},
+				"technique": types.ListType{
+					ElemType: types.ObjectType{
+						AttrTypes: map[string]attr.Type{
+							"id":        types.StringType,
+							"name":      types.StringType,
+							"reference": types.StringType,
+							"subtechnique": types.ListType{
+								ElemType: types.ObjectType{
+									AttrTypes: map[string]attr.Type{
+										"id":        types.StringType,
+										"name":      types.StringType,
+										"reference": types.StringType,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
 	}
 }
