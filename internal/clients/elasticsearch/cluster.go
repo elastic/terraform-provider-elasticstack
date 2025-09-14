@@ -301,19 +301,3 @@ func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) 
 	}
 	return nil
 }
-
-// SDK-compatible wrapper functions for legacy SDKv2 script resource
-func GetScriptSDK(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, diag.Diagnostics) {
-	script, fwDiags := GetScript(ctx, apiClient, id)
-	return script, utils.SDKDiagsFromFramework(fwDiags)
-}
-
-func PutScriptSDK(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) diag.Diagnostics {
-	fwDiags := PutScript(ctx, apiClient, script)
-	return utils.SDKDiagsFromFramework(fwDiags)
-}
-
-func DeleteScriptSDK(ctx context.Context, apiClient *clients.ApiClient, id string) diag.Diagnostics {
-	fwDiags := DeleteScript(ctx, apiClient, id)
-	return utils.SDKDiagsFromFramework(fwDiags)
-}
