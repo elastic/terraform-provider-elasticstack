@@ -89,7 +89,4 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 func (r *scriptResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	diags := r.update(ctx, req.Plan, &resp.State)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
