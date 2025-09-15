@@ -83,7 +83,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		// Convert seconds to duration string
 		seconds := int64(*data.InactivityTimeout)
 		d := time.Duration(seconds) * time.Second
-		model.InactivityTimeout = customtypes.NewDurationValue(d.String())
+		model.InactivityTimeout = customtypes.NewDurationValue(d.Truncate(time.Second).String())
 	} else {
 		model.InactivityTimeout = customtypes.NewDurationNull()
 	}
@@ -91,7 +91,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		// Convert seconds to duration string
 		seconds := int64(*data.UnenrollTimeout)
 		d := time.Duration(seconds) * time.Second
-		model.UnenrollmentTimeout = customtypes.NewDurationValue(d.String())
+		model.UnenrollmentTimeout = customtypes.NewDurationValue(d.Truncate(time.Second).String())
 	} else {
 		model.UnenrollmentTimeout = customtypes.NewDurationNull()
 	}
