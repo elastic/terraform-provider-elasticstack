@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 type SecurityDetectionRuleData struct {
@@ -84,6 +83,30 @@ type SecurityDetectionRuleData struct {
 
 	// Threat field (common across multiple rule types)
 	Threat types.List `tfsdk:"threat"`
+}
+type SecurityDetectionRuleTfData struct {
+	ThreatMapping types.List `tfsdk:"threat_mapping"`
+}
+
+type SecurityDetectionRuleTfDataItem struct {
+	Entries types.List `tfsdk:"entries"`
+}
+
+type SecurityDetectionRuleTfDataItemEntry struct {
+	Field types.String `tfsdk:"field"`
+	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
+}
+
+type ThresholdModel struct {
+	Field       types.List  `tfsdk:"field"`
+	Value       types.Int64 `tfsdk:"value"`
+	Cardinality types.List  `tfsdk:"cardinality"`
+}
+
+type CardinalityModel struct {
+	Field types.String `tfsdk:"field"`
+	Value types.Int64  `tfsdk:"value"`
 }
 
 func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -402,6 +425,44 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		}
 	}
 
+	if utils.IsKnown(d.ThreatMapping) && len(d.ThreatMapping.Elements()) > 0 {
+		threatMapping := make([]SecurityDetectionRuleTfDataItem, len(d.ThreatMapping.Elements()))
+
+		threatMappingDiags := d.ThreatMapping.ElementsAs(ctx, &threatMapping, false)
+		if !threatMappingDiags.HasError() {
+
+			apiThreatMapping := make(kbapi.SecurityDetectionsAPIThreatMapping, 0)
+			for _, mapping := range threatMapping {
+				if mapping.Entries.IsNull() || mapping.Entries.IsUnknown() {
+					continue
+				}
+
+				entries := make([]SecurityDetectionRuleTfDataItemEntry, len(mapping.Entries.Elements()))
+				entryDiag := mapping.Entries.ElementsAs(ctx, &entries, false)
+				diags = append(diags, entryDiag...)
+
+				apiThreatMappingEntries := make([]kbapi.SecurityDetectionsAPIThreatMappingEntry, 0)
+				for _, entry := range entries {
+
+					apiMapping := kbapi.SecurityDetectionsAPIThreatMappingEntry{
+						Field: kbapi.SecurityDetectionsAPINonEmptyString(entry.Field.ValueString()),
+						Type:  kbapi.SecurityDetectionsAPIThreatMappingEntryType(entry.Type.ValueString()),
+						Value: kbapi.SecurityDetectionsAPINonEmptyString(entry.Value.ValueString()),
+					}
+					apiThreatMappingEntries = append(apiThreatMappingEntries, apiMapping)
+
+				}
+
+				apiThreatMapping = append(apiThreatMapping, struct {
+					Entries []kbapi.SecurityDetectionsAPIThreatMappingEntry `json:"entries"`
+				}{Entries: apiThreatMappingEntries})
+			}
+
+			threatMatchRule.ThreatMapping = apiThreatMapping
+		}
+		diags.Append(threatMappingDiags...)
+	}
+
 	d.setCommonCreateProps(ctx, &threatMatchRule.Actions, &threatMatchRule.RuleId, &threatMatchRule.Enabled, &threatMatchRule.From, &threatMatchRule.To, &threatMatchRule.Interval, &threatMatchRule.Index, &threatMatchRule.Author, &threatMatchRule.Tags, &threatMatchRule.FalsePositives, &threatMatchRule.References, &threatMatchRule.License, &threatMatchRule.Note, &threatMatchRule.Setup, &threatMatchRule.MaxSignals, &threatMatchRule.Version, &diags)
 
 	// Set threat-specific fields
@@ -470,40 +531,60 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 
 	// Set threshold - this is required for threshold rules
 	if utils.IsKnown(d.Threshold) {
-		// Parse threshold object
-		var thresholdAttrs map[string]attr.Value
-		diag := d.Threshold.As(ctx, &thresholdAttrs, basetypes.ObjectAsOptions{})
-		diags.Append(diag...)
-		if !diags.HasError() {
-			threshold := kbapi.SecurityDetectionsAPIThreshold{}
+		threshold := utils.ObjectTypeToStruct(ctx, d.Threshold, path.Root("threshold"), &diags,
+			func(item ThresholdModel, meta utils.ObjectMeta) kbapi.SecurityDetectionsAPIThreshold {
+				threshold := kbapi.SecurityDetectionsAPIThreshold{
+					Value: kbapi.SecurityDetectionsAPIThresholdValue(item.Value.ValueInt64()),
+				}
 
-			if valueAttr, ok := thresholdAttrs["value"]; ok && utils.IsKnown(valueAttr.(types.Int64)) {
-				threshold.Value = kbapi.SecurityDetectionsAPIThresholdValue(valueAttr.(types.Int64).ValueInt64())
-			}
-
-			if fieldAttr, ok := thresholdAttrs["field"]; ok && utils.IsKnown(fieldAttr.(types.List)) {
-				fieldList := utils.ListTypeAs[string](ctx, fieldAttr.(types.List), path.Root("threshold").AtName("field"), &diags)
-				if !diags.HasError() && len(fieldList) > 0 {
-					var thresholdField kbapi.SecurityDetectionsAPIThresholdField
-					if len(fieldList) == 1 {
-						err := thresholdField.FromSecurityDetectionsAPIThresholdField0(fieldList[0])
-						if err != nil {
-							diags.AddError("Error setting threshold field", err.Error())
+				// Handle threshold field(s)
+				if utils.IsKnown(item.Field) {
+					fieldList := utils.ListTypeToSlice_String(ctx, item.Field, meta.Path.AtName("field"), meta.Diags)
+					if len(fieldList) > 0 {
+						var thresholdField kbapi.SecurityDetectionsAPIThresholdField
+						if len(fieldList) == 1 {
+							err := thresholdField.FromSecurityDetectionsAPIThresholdField0(fieldList[0])
+							if err != nil {
+								meta.Diags.AddError("Error setting threshold field", err.Error())
+							} else {
+								threshold.Field = thresholdField
+							}
 						} else {
-							threshold.Field = thresholdField
-						}
-					} else {
-						err := thresholdField.FromSecurityDetectionsAPIThresholdField1(fieldList)
-						if err != nil {
-							diags.AddError("Error setting threshold fields", err.Error())
-						} else {
-							threshold.Field = thresholdField
+							err := thresholdField.FromSecurityDetectionsAPIThresholdField1(fieldList)
+							if err != nil {
+								meta.Diags.AddError("Error setting threshold fields", err.Error())
+							} else {
+								threshold.Field = thresholdField
+							}
 						}
 					}
 				}
-			}
 
-			thresholdRule.Threshold = threshold
+				// Handle cardinality (optional)
+				if utils.IsKnown(item.Cardinality) {
+					cardinalityList := utils.ListTypeToSlice(ctx, item.Cardinality, meta.Path.AtName("cardinality"), meta.Diags,
+						func(item CardinalityModel, meta utils.ListMeta) struct {
+							Field string `json:"field"`
+							Value int    `json:"value"`
+						} {
+							return struct {
+								Field string `json:"field"`
+								Value int    `json:"value"`
+							}{
+								Field: item.Field.ValueString(),
+								Value: int(item.Value.ValueInt64()),
+							}
+						})
+					if len(cardinalityList) > 0 {
+						threshold.Cardinality = (*kbapi.SecurityDetectionsAPIThresholdCardinality)(&cardinalityList)
+					}
+				}
+
+				return threshold
+			})
+
+		if threshold != nil {
+			thresholdRule.Threshold = *threshold
 		}
 	}
 
@@ -1109,6 +1190,45 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		}
 	}
 
+	// TODO consolidate w/ create props
+	if utils.IsKnown(d.ThreatMapping) && len(d.ThreatMapping.Elements()) > 0 {
+		threatMapping := make([]SecurityDetectionRuleTfDataItem, len(d.ThreatMapping.Elements()))
+
+		threatMappingDiags := d.ThreatMapping.ElementsAs(ctx, &threatMapping, false)
+		if !threatMappingDiags.HasError() {
+
+			apiThreatMapping := make(kbapi.SecurityDetectionsAPIThreatMapping, 0)
+			for _, mapping := range threatMapping {
+				if mapping.Entries.IsNull() || mapping.Entries.IsUnknown() {
+					continue
+				}
+
+				entries := make([]SecurityDetectionRuleTfDataItemEntry, len(mapping.Entries.Elements()))
+				entryDiag := mapping.Entries.ElementsAs(ctx, &entries, false)
+				diags = append(diags, entryDiag...)
+
+				apiThreatMappingEntries := make([]kbapi.SecurityDetectionsAPIThreatMappingEntry, 0)
+				for _, entry := range entries {
+
+					apiMapping := kbapi.SecurityDetectionsAPIThreatMappingEntry{
+						Field: kbapi.SecurityDetectionsAPINonEmptyString(entry.Field.ValueString()),
+						Type:  kbapi.SecurityDetectionsAPIThreatMappingEntryType(entry.Type.ValueString()),
+						Value: kbapi.SecurityDetectionsAPINonEmptyString(entry.Value.ValueString()),
+					}
+					apiThreatMappingEntries = append(apiThreatMappingEntries, apiMapping)
+
+				}
+
+				apiThreatMapping = append(apiThreatMapping, struct {
+					Entries []kbapi.SecurityDetectionsAPIThreatMappingEntry `json:"entries"`
+				}{Entries: apiThreatMappingEntries})
+			}
+
+			threatMatchRule.ThreatMapping = apiThreatMapping
+		}
+		diags.Append(threatMappingDiags...)
+	}
+
 	d.setCommonUpdateProps(ctx, &threatMatchRule.Actions, &threatMatchRule.RuleId, &threatMatchRule.Enabled, &threatMatchRule.From, &threatMatchRule.To, &threatMatchRule.Interval, &threatMatchRule.Index, &threatMatchRule.Author, &threatMatchRule.Tags, &threatMatchRule.FalsePositives, &threatMatchRule.References, &threatMatchRule.License, &threatMatchRule.Note, &threatMatchRule.Setup, &threatMatchRule.MaxSignals, &threatMatchRule.Version, &diags)
 
 	// Set threat-specific fields
@@ -1196,40 +1316,60 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 
 	// Set threshold - this is required for threshold rules
 	if utils.IsKnown(d.Threshold) {
-		// Parse threshold object
-		var thresholdAttrs map[string]attr.Value
-		diag := d.Threshold.As(ctx, &thresholdAttrs, basetypes.ObjectAsOptions{})
-		diags.Append(diag...)
-		if !diags.HasError() {
-			threshold := kbapi.SecurityDetectionsAPIThreshold{}
+		threshold := utils.ObjectTypeToStruct(ctx, d.Threshold, path.Root("threshold"), &diags,
+			func(item ThresholdModel, meta utils.ObjectMeta) kbapi.SecurityDetectionsAPIThreshold {
+				threshold := kbapi.SecurityDetectionsAPIThreshold{
+					Value: kbapi.SecurityDetectionsAPIThresholdValue(item.Value.ValueInt64()),
+				}
 
-			if valueAttr, ok := thresholdAttrs["value"]; ok && utils.IsKnown(valueAttr.(types.Int64)) {
-				threshold.Value = kbapi.SecurityDetectionsAPIThresholdValue(valueAttr.(types.Int64).ValueInt64())
-			}
-
-			if fieldAttr, ok := thresholdAttrs["field"]; ok && utils.IsKnown(fieldAttr.(types.List)) {
-				fieldList := utils.ListTypeAs[string](ctx, fieldAttr.(types.List), path.Root("threshold").AtName("field"), &diags)
-				if !diags.HasError() && len(fieldList) > 0 {
-					var thresholdField kbapi.SecurityDetectionsAPIThresholdField
-					if len(fieldList) == 1 {
-						err := thresholdField.FromSecurityDetectionsAPIThresholdField0(fieldList[0])
-						if err != nil {
-							diags.AddError("Error setting threshold field", err.Error())
+				// Handle threshold field(s)
+				if utils.IsKnown(item.Field) {
+					fieldList := utils.ListTypeToSlice_String(ctx, item.Field, meta.Path.AtName("field"), meta.Diags)
+					if len(fieldList) > 0 {
+						var thresholdField kbapi.SecurityDetectionsAPIThresholdField
+						if len(fieldList) == 1 {
+							err := thresholdField.FromSecurityDetectionsAPIThresholdField0(fieldList[0])
+							if err != nil {
+								meta.Diags.AddError("Error setting threshold field", err.Error())
+							} else {
+								threshold.Field = thresholdField
+							}
 						} else {
-							threshold.Field = thresholdField
-						}
-					} else {
-						err := thresholdField.FromSecurityDetectionsAPIThresholdField1(fieldList)
-						if err != nil {
-							diags.AddError("Error setting threshold fields", err.Error())
-						} else {
-							threshold.Field = thresholdField
+							err := thresholdField.FromSecurityDetectionsAPIThresholdField1(fieldList)
+							if err != nil {
+								meta.Diags.AddError("Error setting threshold fields", err.Error())
+							} else {
+								threshold.Field = thresholdField
+							}
 						}
 					}
 				}
-			}
 
-			thresholdRule.Threshold = threshold
+				// Handle cardinality (optional)
+				if utils.IsKnown(item.Cardinality) {
+					cardinalityList := utils.ListTypeToSlice(ctx, item.Cardinality, meta.Path.AtName("cardinality"), meta.Diags,
+						func(item CardinalityModel, meta utils.ListMeta) struct {
+							Field string `json:"field"`
+							Value int    `json:"value"`
+						} {
+							return struct {
+								Field string `json:"field"`
+								Value int    `json:"value"`
+							}{
+								Field: item.Field.ValueString(),
+								Value: int(item.Value.ValueInt64()),
+							}
+						})
+					if len(cardinalityList) > 0 {
+						threshold.Cardinality = (*kbapi.SecurityDetectionsAPIThresholdCardinality)(&cardinalityList)
+					}
+				}
+
+				return threshold
+			})
+
+		if threshold != nil {
+			thresholdRule.Threshold = *threshold
 		}
 	}
 
@@ -2096,6 +2236,15 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 		d.Setup = types.StringNull()
 	}
 
+	// Convert threat mapping
+	if len(rule.ThreatMapping) > 0 {
+		listValue, threatMappingDiags := convertThreatMappingToModel(ctx, rule.ThreatMapping)
+		diags.Append(threatMappingDiags...)
+		if !threatMappingDiags.HasError() {
+			d.ThreatMapping = listValue
+		}
+	}
+
 	return diags
 }
 
@@ -2138,31 +2287,11 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	}
 
 	// Threshold-specific fields
-	thresholdAttrs := map[string]attr.Value{
-		"value": types.Int64Value(int64(rule.Threshold.Value)),
+	thresholdObj, thresholdDiags := convertThresholdToModel(ctx, rule.Threshold)
+	diags.Append(thresholdDiags...)
+	if !thresholdDiags.HasError() {
+		d.Threshold = thresholdObj
 	}
-
-	// Handle threshold field - can be single string or array
-	// Try to extract as single field first, then as array
-	if singleField, err := rule.Threshold.Field.AsSecurityDetectionsAPIThresholdField0(); err == nil {
-		// Single field
-		thresholdAttrs["field"] = utils.ListValueFrom(ctx, []string{string(singleField)}, types.StringType, path.Root("threshold").AtName("field"), &diags)
-	} else if multipleFields, err := rule.Threshold.Field.AsSecurityDetectionsAPIThresholdField1(); err == nil {
-		// Multiple fields
-		fieldStrings := make([]string, len(multipleFields))
-		for i, field := range multipleFields {
-			fieldStrings[i] = string(field)
-		}
-		thresholdAttrs["field"] = utils.ListValueFrom(ctx, fieldStrings, types.StringType, path.Root("threshold").AtName("field"), &diags)
-	} else {
-		thresholdAttrs["field"] = types.ListValueMust(types.StringType, []attr.Value{})
-	}
-
-	thresholdObjType := map[string]attr.Type{
-		"value": types.Int64Type,
-		"field": types.ListType{ElemType: types.StringType},
-	}
-	d.Threshold = types.ObjectValueMust(thresholdObjType, thresholdAttrs)
 
 	// Optional saved query ID
 	if rule.SavedId != nil {
@@ -2386,5 +2515,125 @@ func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx c
 				},
 			},
 		})
+	}
+}
+
+// convertThreatMappingToModel converts kbapi.SecurityDetectionsAPIThreatMapping to the terraform model
+func convertThreatMappingToModel(ctx context.Context, apiThreatMappings kbapi.SecurityDetectionsAPIThreatMapping) (types.List, diag.Diagnostics) {
+	var threatMappings []SecurityDetectionRuleTfDataItem
+
+	for _, apiMapping := range apiThreatMappings {
+		var entries []SecurityDetectionRuleTfDataItemEntry
+
+		for _, apiEntry := range apiMapping.Entries {
+			entries = append(entries, SecurityDetectionRuleTfDataItemEntry{
+				Field: types.StringValue(string(apiEntry.Field)),
+				Type:  types.StringValue(string(apiEntry.Type)),
+				Value: types.StringValue(string(apiEntry.Value)),
+			})
+		}
+
+		entriesListValue, diags := types.ListValueFrom(ctx, threatMappingEntryElementType(), entries)
+		if diags.HasError() {
+			return types.ListNull(threatMappingElementType()), diags
+		}
+
+		threatMappings = append(threatMappings, SecurityDetectionRuleTfDataItem{
+			Entries: entriesListValue,
+		})
+	}
+
+	listValue, diags := types.ListValueFrom(ctx, threatMappingElementType(), threatMappings)
+	return listValue, diags
+}
+
+// convertThresholdToModel converts kbapi.SecurityDetectionsAPIThreshold to the terraform model
+func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDetectionsAPIThreshold) (types.Object, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Handle threshold field - can be single string or array
+	var fieldList types.List
+	if singleField, err := apiThreshold.Field.AsSecurityDetectionsAPIThresholdField0(); err == nil {
+		// Single field
+		fieldList = utils.SliceToListType_String(ctx, []string{string(singleField)}, path.Root("threshold").AtName("field"), &diags)
+	} else if multipleFields, err := apiThreshold.Field.AsSecurityDetectionsAPIThresholdField1(); err == nil {
+		// Multiple fields
+		fieldStrings := make([]string, len(multipleFields))
+		for i, field := range multipleFields {
+			fieldStrings[i] = string(field)
+		}
+		fieldList = utils.SliceToListType_String(ctx, fieldStrings, path.Root("threshold").AtName("field"), &diags)
+	} else {
+		fieldList = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	// Handle cardinality (optional)
+	var cardinalityList types.List
+	if apiThreshold.Cardinality != nil && len(*apiThreshold.Cardinality) > 0 {
+		cardinalityList = utils.SliceToListType(ctx, *apiThreshold.Cardinality, cardinalityElementType(), path.Root("threshold").AtName("cardinality"), &diags,
+			func(item struct {
+				Field string `json:"field"`
+				Value int    `json:"value"`
+			}, meta utils.ListMeta) CardinalityModel {
+				return CardinalityModel{
+					Field: types.StringValue(item.Field),
+					Value: types.Int64Value(int64(item.Value)),
+				}
+			})
+	} else {
+		cardinalityList = types.ListNull(cardinalityElementType())
+	}
+
+	thresholdModel := ThresholdModel{
+		Field:       fieldList,
+		Value:       types.Int64Value(int64(apiThreshold.Value)),
+		Cardinality: cardinalityList,
+	}
+
+	thresholdObject, objDiags := types.ObjectValueFrom(ctx, thresholdElementType(), thresholdModel)
+	diags.Append(objDiags...)
+	return thresholdObject, diags
+}
+
+// threatMappingElementType returns the element type for threat mapping
+func threatMappingElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"entries": types.ListType{
+				ElemType: threatMappingEntryElementType(),
+			},
+		},
+	}
+}
+
+// threatMappingEntryElementType returns the element type for threat mapping entries
+func threatMappingEntryElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"field": types.StringType,
+			"type":  types.StringType,
+			"value": types.StringType,
+		},
+	}
+}
+
+// thresholdElementType returns the element type for threshold
+func thresholdElementType() map[string]attr.Type {
+	return map[string]attr.Type{
+		"field": types.ListType{ElemType: types.StringType},
+		"value": types.Int64Type,
+		"cardinality": types.ListType{
+			ElemType: cardinalityElementType(),
+		},
+	}
+}
+
+// cardinalityElementType returns the element type for cardinality
+func cardinalityElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"field": types.StringType,
+			"value": types.Int64Type,
+		},
 	}
 }
