@@ -60,6 +60,10 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 	}
 
 	uid, err := uuid.Parse(compId.ResourceId)
+	if err != nil {
+		resp.Diagnostics.AddError("ID was not a valid UUID", err.Error())
+		return
+	}
 
 	readData, diags := r.read(ctx, uid.String(), data.SpaceId.ValueString())
 	resp.Diagnostics.Append(diags...)
