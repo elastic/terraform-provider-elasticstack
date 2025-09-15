@@ -59,6 +59,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `skip_destroy` (Boolean) Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.
 - `supports_agentless` (Boolean) Set to true to enable agentless data collection.
 - `sys_monitoring` (Boolean) Enable collection of system logs and metrics.
+- `unenrollment_timeout` (String) The unenrollment timeout for the agent policy. If an agent is inactive for this period, it will be automatically unenrolled. Supports duration strings (e.g., '30s', '2m', '1h').
 
 ### Read-Only
 
