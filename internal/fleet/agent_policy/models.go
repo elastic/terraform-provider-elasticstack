@@ -81,14 +81,16 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
 	if data.InactivityTimeout != nil {
 		// Convert seconds to duration string
-		d := time.Duration(*data.InactivityTimeout * float32(time.Second)).Truncate(time.Second)
+		seconds := int64(*data.InactivityTimeout)
+		d := time.Duration(seconds) * time.Second
 		model.InactivityTimeout = customtypes.NewDurationValue(d.String())
 	} else {
 		model.InactivityTimeout = customtypes.NewDurationNull()
 	}
 	if data.UnenrollTimeout != nil {
 		// Convert seconds to duration string
-		d := time.Duration(*data.UnenrollTimeout * float32(time.Second)).Truncate(time.Second)
+		seconds := int64(*data.UnenrollTimeout)
+		d := time.Duration(seconds) * time.Second
 		model.UnenrollmentTimeout = customtypes.NewDurationValue(d.String())
 	} else {
 		model.UnenrollmentTimeout = customtypes.NewDurationNull()

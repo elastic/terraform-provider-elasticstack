@@ -166,7 +166,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "unenrollment_timeout", "10m"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "unenrollment_timeout", "300s"),
 				),
 			},
 			{
@@ -179,8 +179,8 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "inactivity_timeout", "5m"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "unenrollment_timeout", "15m"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "inactivity_timeout", "120s"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "unenrollment_timeout", "900s"),
 				),
 			},
 			{
@@ -373,7 +373,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = true
   monitor_metrics = false
   skip_destroy = false
-  unenrollment_timeout = "10m"
+  unenrollment_timeout = "300s"
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
@@ -575,8 +575,8 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs = false
   monitor_metrics = true
   skip_destroy = false
-  inactivity_timeout = "5m"
-  unenrollment_timeout = "15m"
+  inactivity_timeout = "120s"
+  unenrollment_timeout = "900s"
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
