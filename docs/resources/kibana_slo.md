@@ -439,6 +439,7 @@ Optional:
 Optional:
 
 - `frequency` (String)
+- `prevent_initial_backfill` (Boolean) Prevents the underlying ES transform from attempting to backfill data on start, which can sometimes be resource-intensive or time-consuming and unnecessary
 - `sync_delay` (String)
 
 
