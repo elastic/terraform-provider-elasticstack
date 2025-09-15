@@ -399,13 +399,13 @@ Required:
 
 Required:
 
-- `aggregation` (String)
-- `field` (String)
-- `name` (String)
+- `aggregation` (String) The aggregation type for this metric. One of: sum, doc_count. Determines which other fields are required:
+- `name` (String) The unique name for this metric. Used as a variable in the equation field.
 
 Optional:
 
-- `filter` (String)
+- `field` (String) Field to aggregate. Must NOT be set for doc_count.
+- `filter` (String) Optional KQL filter for this metric.
 
 
 
@@ -422,13 +422,13 @@ Required:
 
 Required:
 
-- `aggregation` (String)
-- `field` (String)
-- `name` (String)
+- `aggregation` (String) The aggregation type for this metric. One of: sum, doc_count. Determines which other fields are required:
+- `name` (String) The unique name for this metric. Used as a variable in the equation field.
 
 Optional:
 
-- `filter` (String)
+- `field` (String) Field to aggregate. Must NOT be set for doc_count.
+- `filter` (String) Optional KQL filter for this metric.
 
 
 
