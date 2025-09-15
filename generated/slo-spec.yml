@@ -2,15 +2,17 @@ openapi: 3.0.1
 info:
   title: SLOs
   description: OpenAPI schema for SLOs endpoints
-  version: '1.0'
+  version: '1.1'
   contact:
     name: Actionable Observability Team
   license:
     name: Elastic License 2.0
     url: https://www.elastic.co/licensing/elastic-license
 servers:
-  - url: http://localhost:5601
-    description: local
+  - url: https://{kibana_url}
+    variables:
+      kibana_url:
+        default: localhost:5601
 security:
   - basicAuth: []
   - apiKeyAuth: []
@@ -20,7 +22,7 @@ tags:
 paths:
   /s/{spaceId}/api/observability/slos:
     post:
-      summary: Creates an SLO.
+      summary: Create an SLO
       operationId: createSloOp
       description: |
         You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
@@ -66,10 +68,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/409_response'
-      servers:
-        - url: https://localhost:5601
     get:
-      summary: Retrieves a paginated list of SLOs
+      summary: Get a paginated list of SLOs
       operationId: findSlosOp
       description: |
         You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
@@ -84,16 +84,30 @@ paths:
           schema:
             type: string
           example: 'slo.name:latency* and slo.tags : "prod"'
+        - name: size
+          in: query
+          description: The page size to use for cursor-based pagination, must be greater or equal than 1
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - name: searchAfter
+          in: query
+          description: The cursor to use for fetching the results from, when using a cursor-base pagination.
+          schema:
+            type: array
+            items:
+              type: string
         - name: page
           in: query
-          description: The page number to return
+          description: The page to use for pagination, must be greater or equal than 1
           schema:
             type: integer
             default: 1
           example: 1
         - name: perPage
           in: query
-          description: The number of SLOs to return per page
+          description: Number of SLOs returned by page
           schema:
             type: integer
             default: 25
@@ -121,6 +135,11 @@ paths:
               - desc
             default: asc
           example: asc
+        - name: hideStale
+          in: query
+          description: Hide stale SLOs from the list as defined by stale SLO threshold in SLO settings
+          schema:
+            type: boolean
       responses:
         '200':
           description: Successful request
@@ -154,7 +173,7 @@ paths:
                 $ref: '#/components/schemas/404_response'
   /s/{spaceId}/api/observability/slos/{sloId}:
     get:
-      summary: Retrieves a SLO
+      summary: Get an SLO
       operationId: getSloOp
       description: |
         You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
@@ -176,7 +195,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/slo_response'
+                $ref: '#/components/schemas/slo_with_summary_response'
         '400':
           description: Bad request
           content:
@@ -202,7 +221,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/404_response'
     put:
-      summary: Updates an SLO
+      summary: Update an SLO
       operationId: updateSloOp
       description: |
         You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
@@ -224,7 +243,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/slo_response'
+                $ref: '#/components/schemas/slo_definition_response'
         '400':
           description: Bad request
           content:
@@ -250,7 +269,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/404_response'
     delete:
-      summary: Deletes an SLO
+      summary: Delete an SLO
       operationId: deleteSloOp
       description: |
         You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
@@ -289,7 +308,7 @@ paths:
                 $ref: '#/components/schemas/404_response'
   /s/{spaceId}/api/observability/slos/{sloId}/enable:
     post:
-      summary: Enables an SLO
+      summary: Enable an SLO
       operationId: enableSloOp
       description: |
         You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
@@ -328,7 +347,7 @@ paths:
                 $ref: '#/components/schemas/404_response'
   /s/{spaceId}/api/observability/slos/{sloId}/disable:
     post:
-      summary: Disables an SLO
+      summary: Disable an SLO
       operationId: disableSloOp
       description: |
         You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
@@ -339,7 +358,7 @@ paths:
         - $ref: '#/components/parameters/space_id'
         - $ref: '#/components/parameters/slo_id'
       responses:
-        '200':
+        '204':
           description: Successful request
         '400':
           description: Bad request
@@ -365,12 +384,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/404_response'
-  /s/{spaceId}/internal/observability/slos/_historical_summary:
+  /s/{spaceId}/api/observability/slos/{sloId}/_reset:
     post:
-      summary: Retrieves the historical summary for a list of SLOs
-      operationId: historicalSummaryOp
+      summary: Reset an SLO
+      operationId: resetSloOp
       description: |
-        You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+        You must have the `write` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+      tags:
+        - slo
+      parameters:
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/space_id'
+        - $ref: '#/components/parameters/slo_id'
+      responses:
+        '200':
+          description: Successful request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/slo_definition_response'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+        '401':
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+        '403':
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+        '404':
+          description: Not found response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404_response'
+  /s/{spaceId}/api/observability/slos/_bulk_purge_rollup:
+    post:
+      summary: Batch delete rollup and summary data
+      operationId: deleteRollupDataOp
+      description: |
+        The deletion occurs for the specified list of `sloId`. You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
       tags:
         - slo
       parameters:
@@ -381,14 +443,81 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/historical_summary_request'
+              $ref: '#/components/schemas/bulk_purge_rollup_request'
       responses:
         '200':
           description: Successful request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/historical_summary_response'
+                $ref: '#/components/schemas/bulk_purge_rollup_response'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+        '401':
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+        '403':
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+  /s/{spaceId}/internal/observability/slos/_definitions:
+    get:
+      summary: Get the SLO definitions
+      operationId: getDefinitionsOp
+      description: |
+        You must have the `read` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+      tags:
+        - slo
+      parameters:
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/space_id'
+        - name: includeOutdatedOnly
+          in: query
+          description: Indicates if the API returns only outdated SLO or all SLO definitions
+          schema:
+            type: boolean
+          example: true
+        - name: tags
+          in: query
+          description: Filters the SLOs by tag
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Filters the SLOs by name
+          schema:
+            type: string
+          example: my service availability
+        - name: page
+          in: query
+          description: The page to use for pagination, must be greater or equal than 1
+          schema:
+            type: number
+          example: 1
+        - name: perPage
+          in: query
+          description: Number of SLOs returned by page
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+          example: 100
+      responses:
+        '200':
+          description: Successful request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_slo_definitions_response'
         '400':
           description: Bad request
           content:
@@ -409,10 +538,10 @@ paths:
                 $ref: '#/components/schemas/403_response'
   /s/{spaceId}/api/observability/slos/_delete_instances:
     post:
-      summary: Batch delete rollup and summary data for the matching list of sloId and instanceId
+      summary: Batch delete rollup and summary data
       operationId: deleteSloInstancesOp
       description: |
-        You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
+        The deletion occurs for the specified list of `sloId` and `instanceId`. You must have `all` privileges for the **SLOs** feature in the **Observability** section of the Kibana feature privileges.
       tags:
         - slo
       parameters:
@@ -445,8 +574,91 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/403_response'
-      servers:
-        - url: https://localhost:5601
+  /s/{spaceId}/api/observability/slos/_bulk_delete:
+    post:
+      summary: Bulk delete SLO definitions and their associated summary and rollup data.
+      operationId: bulkDeleteOp
+      description: |
+        Bulk delete SLO definitions and their associated summary and rollup data.  This endpoint initiates a bulk deletion operation for SLOs, which may take some time to complete.  The status of the operation can be checked using the `GET /api/slo/_bulk_delete/{taskId}` endpoint.
+      tags:
+        - slo
+      parameters:
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/space_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bulk_delete_request'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bulk_delete_response'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+        '401':
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+        '403':
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
+  /s/{spaceId}/api/observability/slos/_bulk_delete/{taskId}:
+    get:
+      summary: Retrieve the status of the bulk deletion
+      operationId: bulkDeleteStatusOp
+      description: |
+        Retrieve the status of the bulk deletion operation for SLOs.  This endpoint returns the status of the bulk deletion operation, including whether it is completed and the results of the operation.
+      tags:
+        - slo
+      parameters:
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/space_id'
+        - name: taskId
+          in: path
+          description: The task id of the bulk delete operation
+          required: true
+          schema:
+            type: string
+            example: 8853df00-ae2e-11ed-90af-09bb6422b258
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bulk_delete_status_response'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400_response'
+        '401':
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401_response'
+        '403':
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/403_response'
 components:
   securitySchemes:
     basicAuth:
@@ -529,12 +741,96 @@ components:
           description: The type of indicator.
           type: string
           example: sli.apm.transactionDuration
+    filter_meta:
+      title: FilterMeta
+      description: Defines properties for a filter
+      type: object
+      properties:
+        alias:
+          type: string
+          nullable: true
+        disabled:
+          type: boolean
+        negate:
+          type: boolean
+        controlledBy:
+          type: string
+        group:
+          type: string
+        index:
+          type: string
+        isMultiIndex:
+          type: boolean
+        type:
+          type: string
+        key:
+          type: string
+        params:
+          type: object
+        value:
+          type: string
+        field:
+          type: string
+    filter:
+      title: Filter
+      description: Defines properties for a filter
+      type: object
+      properties:
+        query:
+          type: object
+        meta:
+          $ref: '#/components/schemas/filter_meta'
+    kql_with_filters:
+      title: KQL with filters
+      description: Defines properties for a filter
+      oneOf:
+        - description: the KQL query to filter the documents with.
+          type: string
+          example: 'field.environment : "production" and service.name : "my-service"'
+        - type: object
+          properties:
+            kqlQuery:
+              type: string
+            filters:
+              type: array
+              items:
+                $ref: '#/components/schemas/filter'
+    kql_with_filters_good:
+      title: KQL query for good events
+      description: The KQL query used to define the good events.
+      oneOf:
+        - description: the KQL query to filter the documents with.
+          type: string
+          example: 'request.latency <= 150 and request.status_code : "2xx"'
+        - type: object
+          properties:
+            kqlQuery:
+              type: string
+            filters:
+              type: array
+              items:
+                $ref: '#/components/schemas/filter'
+    kql_with_filters_total:
+      title: KQL query for all events
+      description: The KQL query used to define all events.
+      oneOf:
+        - description: the KQL query to filter the documents with.
+          type: string
+          example: 'field.environment : "production" and service.name : "my-service"'
+        - type: object
+          properties:
+            kqlQuery:
+              type: string
+            filters:
+              type: array
+              items:
+                $ref: '#/components/schemas/filter'
     indicator_properties_custom_kql:
-      title: Custom KQL
+      title: Custom Query
       required:
         - type
         - params
-      description: Defines properties for a custom KQL indicator type
+      description: Defines properties for a custom query indicator type
       type: object
       properties:
         params:
@@ -551,18 +847,16 @@ components:
               description: The index or index pattern to use
               type: string
               example: my-service-*
+            dataViewId:
+              description: The kibana data view id to use, primarily used to include data view runtime mappings. Make sure to save SLO again if you add/update run time fields to the data view and if those fields are being used in slo queries.
+              type: string
+              example: 03b80ab3-003d-498b-881c-3beedbaf1162
             filter:
-              description: the KQL query to filter the documents with.
-              type: string
-              example: 'field.environment : "production" and service.name : "my-service"'
+              $ref: '#/components/schemas/kql_with_filters'
             good:
-              description: the KQL query used to define the good events.
-              type: string
-              example: 'request.latency <= 150 and request.status_code : "2xx"'
+              $ref: '#/components/schemas/kql_with_filters_good'
             total:
-              description: the KQL query used to define all events.
-              type: string
-              example: ''
+              $ref: '#/components/schemas/kql_with_filters_total'
             timestampField:
               description: |
                 The timestamp field used in the source indice.
@@ -646,6 +940,10 @@ components:
               description: The index or index pattern to use
               type: string
               example: my-service-*
+            dataViewId:
+              description: The kibana data view id to use, primarily used to include data view runtime mappings. Make sure to save SLO again if you add/update run time fields to the data view and if those fields are being used in slo queries.
+              type: string
+              example: 03b80ab3-003d-498b-881c-3beedbaf1162
             filter:
               description: the KQL query to filter the documents with.
               type: string
@@ -679,11 +977,12 @@ components:
                         example: A
                         pattern: ^[A-Z]$
                       aggregation:
-                        description: The aggregation type of the metric. Only valid option is "sum"
+                        description: The aggregation type of the metric.
                         type: string
                         example: sum
                         enum:
                           - sum
+                          - doc_count
                       field:
                         description: The field of the metric.
                         type: string
@@ -691,7 +990,7 @@ components:
                       filter:
                         description: The filter to apply to the metric.
                         type: string
-                        example: 'processor.outcome: "success"'
+                        example: 'processor.outcome: *'
                 equation:
                   description: The equation to calculate the "good" metric.
                   type: string
@@ -720,11 +1019,12 @@ components:
                         example: A
                         pattern: ^[A-Z]$
                       aggregation:
-                        description: The aggregation type of the metric. Only valid option is "sum"
+                        description: The aggregation type of the metric.
                         type: string
                         example: sum
                         enum:
                           - sum
+                          - doc_count
                       field:
                         description: The field of the metric.
                         type: string
@@ -763,6 +1063,10 @@ components:
               description: The index or index pattern to use
               type: string
               example: my-service-*
+            dataViewId:
+              description: The kibana data view id to use, primarily used to include data view runtime mappings. Make sure to save SLO again if you add/update run time fields to the data view and if those fields are being used in slo queries.
+              type: string
+              example: 03b80ab3-003d-498b-881c-3beedbaf1162
             filter:
               description: the KQL query to filter the documents with.
               type: string
@@ -838,39 +1142,6 @@ components:
           description: The type of indicator.
           type: string
           example: sli.histogram.custom
-    timeslice_metric_basic_metric_with_field:
-      title: Timeslice Metric Basic Metric with Field
-      required:
-        - name
-        - aggregation
-        - field
-      type: object
-      properties:
-        name:
-          description: The name of the metric. Only valid options are A-Z
-          type: string
-          example: A
-          pattern: ^[A-Z]$
-        aggregation:
-          description: The aggregation type of the metric.
-          type: string
-          example: sum
-          enum:
-            - sum
-            - avg
-            - min
-            - max
-            - std_deviation
-            - last_value
-            - cardinality
-        field:
-          description: The field of the metric.
-          type: string
-          example: processor.processed
-        filter:
-          description: The filter to apply to the metric.
-          type: string
-          example: 'processor.outcome: "success"'
     timeslice_metric_percentile_metric:
       title: Timeslice Metric Percentile Metric
       required:
@@ -925,6 +1196,39 @@ components:
           description: The filter to apply to the metric.
           type: string
           example: 'processor.outcome: "success"'
+    timeslice_metric_basic_metric_with_field:
+      title: Timeslice Metric Basic Metric with Field
+      required:
+        - name
+        - aggregation
+        - field
+      type: object
+      properties:
+        name:
+          description: The name of the metric. Only valid options are A-Z
+          type: string
+          example: A
+          pattern: ^[A-Z]$
+        aggregation:
+          description: The aggregation type of the metric.
+          type: string
+          example: sum
+          enum:
+            - sum
+            - avg
+            - min
+            - max
+            - std_deviation
+            - last_value
+            - cardinality
+        field:
+          description: The field of the metric.
+          type: string
+          example: processor.processed
+        filter:
+          description: The filter to apply to the metric.
+          type: string
+          example: 'processor.outcome: "success"'
     indicator_properties_timeslice_metric:
       title: Timeslice metric
       required:
@@ -946,6 +1250,10 @@ components:
               description: The index or index pattern to use
               type: string
               example: my-service-*
+            dataViewId:
+              description: The kibana data view id to use, primarily used to include data view runtime mappings. Make sure to save SLO again if you add/update run time fields to the data view and if those fields are being used in slo queries.
+              type: string
+              example: 03b80ab3-003d-498b-881c-3beedbaf1162
             filter:
               description: the KQL query to filter the documents with.
               type: string
@@ -1043,10 +1351,16 @@ components:
         target:
           description: the target objective between 0 and 1 excluded
           type: number
+          minimum: 0
+          maximum: 100
+          exclusiveMinimum: true
+          exclusiveMaximum: true
           example: 0.99
         timesliceTarget:
           description: the target objective for each slice when using a timeslices budgeting method
           type: number
+          minimum: 0
+          maximum: 100
           example: 0.995
         timesliceWindow:
           description: the duration of each slice when using a timeslices budgeting method, as {duraton}{unit}
@@ -1057,14 +1371,25 @@ components:
       description: Defines properties for SLO settings.
       type: object
       properties:
-        syncDelay:
-          description: The synch delay to apply to the transform. Default 1m
+        syncField:
+          description: The date field that is used to identify new documents in the source. It is strongly recommended to use a field that contains the ingest timestamp. If you use a different field, you might need to set the delay such that it accounts for data transmission delays. When unspecified, we use the indicator timestamp field.
           type: string
+          example: event.ingested
+        syncDelay:
+          description: The time delay in minutes between the current time and the latest source data time. Increasing the value will delay any alerting. The default value is 1 minute. The minimum value is 1m and the maximum is 359m. It should always be greater then source index refresh interval.
+          type: string
+          default: 1m
           example: 5m
         frequency:
-          description: Configure how often the transform runs, default 1m
+          description: The interval between checks for changes in the source data. The minimum value is 1m and the maximum is 59m. The default value is 1 minute.
           type: string
+          default: 1m
           example: 5m
+        preventInitialBackfill:
+          description: Start aggregating data from the time the SLO is created, instead of backfilling data from the beginning of the time window.
+          type: boolean
+          default: false
+          example: true
     summary_status:
       title: summary status
       type: string
@@ -1115,7 +1440,20 @@ components:
           example: 0.9836
         errorBudget:
           $ref: '#/components/schemas/error_budget'
-    slo_response:
+    group_by:
+      title: Group by
+      description: optional group by field or fields to use to generate an SLO per distinct value
+      example:
+        - - service.name
+        - service.name
+        - - service.name
+          - service.environment
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string
+    slo_with_summary_response:
       title: SLO response
       type: object
       required:
@@ -1135,6 +1473,7 @@ components:
         - tags
         - createdAt
         - updatedAt
+        - version
       properties:
         id:
           description: The identifier of the SLO.
@@ -1184,13 +1523,7 @@ components:
           type: boolean
           example: true
         groupBy:
-          description: optional group by field to use to generate an SLO per distinct value
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: string
-          example: some.field
+          $ref: '#/components/schemas/group_by'
         instanceId:
           description: the value derived from the groupBy field, if present, otherwise '*'
           type: string
@@ -1208,12 +1541,22 @@ components:
           description: The last update date
           type: string
           example: '2023-01-12T10:03:19.000Z'
+        version:
+          description: The internal SLO version
+          type: number
+          example: 2
     find_slo_response:
       title: Find SLO response
       description: |
         A paginated response of SLOs matching the query.
       type: object
       properties:
+        size:
+          type: number
+          example: 25
+          description: Size provided for cursor based pagination
+        searchAfter:
+          type: string
         page:
           type: number
           example: 1
@@ -1226,7 +1569,7 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/slo_response'
+            $ref: '#/components/schemas/slo_with_summary_response'
     400_response:
       title: Bad request
       type: object
@@ -1335,13 +1678,7 @@ components:
         settings:
           $ref: '#/components/schemas/settings'
         groupBy:
-          description: optional group by field to use to generate an SLO per distinct value
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: string
-          example: some.field
+          $ref: '#/components/schemas/group_by'
         tags:
           description: List of tags
           type: array
@@ -1402,48 +1739,197 @@ components:
         settings:
           $ref: '#/components/schemas/settings'
         groupBy:
-          description: optional group by field to use to generate an SLO per distinct value
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: string
-          example: some.field
+          $ref: '#/components/schemas/group_by'
         tags:
           description: List of tags
           type: array
           items:
             type: string
-    historical_summary_request:
-      title: Historical summary request
+    slo_definition_response:
+      title: SLO definition response
       type: object
       required:
-        - list
+        - id
+        - name
+        - description
+        - indicator
+        - timeWindow
+        - budgetingMethod
+        - objective
+        - settings
+        - revision
+        - enabled
+        - groupBy
+        - tags
+        - createdAt
+        - updatedAt
+        - version
       properties:
-        list:
-          description: The list of SLO identifiers to get the historical summary for
+        id:
+          description: The identifier of the SLO.
+          type: string
+          example: 8853df00-ae2e-11ed-90af-09bb6422b258
+        name:
+          description: The name of the SLO.
+          type: string
+          example: My Service SLO
+        description:
+          description: The description of the SLO.
+          type: string
+          example: My SLO description
+        indicator:
+          discriminator:
+            propertyName: type
+            mapping:
+              sli.apm.transactionErrorRate: '#/components/schemas/indicator_properties_apm_availability'
+              sli.kql.custom: '#/components/schemas/indicator_properties_custom_kql'
+              sli.apm.transactionDuration: '#/components/schemas/indicator_properties_apm_latency'
+              sli.metric.custom: '#/components/schemas/indicator_properties_custom_metric'
+              sli.histogram.custom: '#/components/schemas/indicator_properties_histogram'
+              sli.metric.timeslice: '#/components/schemas/indicator_properties_timeslice_metric'
+          oneOf:
+            - $ref: '#/components/schemas/indicator_properties_custom_kql'
+            - $ref: '#/components/schemas/indicator_properties_apm_availability'
+            - $ref: '#/components/schemas/indicator_properties_apm_latency'
+            - $ref: '#/components/schemas/indicator_properties_custom_metric'
+            - $ref: '#/components/schemas/indicator_properties_histogram'
+            - $ref: '#/components/schemas/indicator_properties_timeslice_metric'
+        timeWindow:
+          $ref: '#/components/schemas/time_window'
+        budgetingMethod:
+          $ref: '#/components/schemas/budgeting_method'
+        objective:
+          $ref: '#/components/schemas/objective'
+        settings:
+          $ref: '#/components/schemas/settings'
+        revision:
+          description: The SLO revision
+          type: number
+          example: 2
+        enabled:
+          description: Indicate if the SLO is enabled
+          type: boolean
+          example: true
+        groupBy:
+          $ref: '#/components/schemas/group_by'
+        tags:
+          description: List of tags
           type: array
           items:
             type: string
-            example: 8853df00-ae2e-11ed-90af-09bb6422b258
-    historical_summary_response:
-      title: Historical summary response
+        createdAt:
+          description: The creation date
+          type: string
+          example: '2023-01-12T10:03:19.000Z'
+        updatedAt:
+          description: The last update date
+          type: string
+          example: '2023-01-12T10:03:19.000Z'
+        version:
+          description: The internal SLO version
+          type: number
+          example: 2
+    bulk_purge_rollup_request:
+      title: Bulk Purge Rollup data request
+      description: |
+        The bulk purge rollup data request takes a list of SLO ids and a purge policy, then deletes the rollup data according to the purge policy. This API can be used to remove the staled data of an instance SLO that no longer get updated.
       type: object
-      additionalProperties:
-        type: array
-        items:
+      required:
+        - list
+        - purgePolicy
+      properties:
+        list:
+          description: An array of slo ids
+          type: array
+          items:
+            type: string
+            description: The SLO Definition id
+            example: 8853df00-ae2e-11ed-90af-09bb6422b258
+        purgePolicy:
+          description: Policy that dictates which SLI documents to purge based on age
           type: object
+          oneOf:
+            - type: object
+              properties:
+                purgeType:
+                  type: string
+                  description: Specifies whether documents will be purged based on a specific age or on a timestamp
+                  enum:
+                    - fixed-age
+                age:
+                  type: string
+                  description: The duration to determine which documents to purge, formatted as {duration}{unit}. This value should be greater than or equal to the time window of every SLO provided.
+                  example: 7d
+            - type: object
+              properties:
+                purgeType:
+                  type: string
+                  description: Specifies whether documents will be purged based on a specific age or on a timestamp
+                  enum:
+                    - fixed-time
+                timestamp:
+                  type: string
+                  description: The timestamp to determine which documents to purge, formatted in ISO. This value should be older than the applicable time window of every SLO provided.
+                  example: '2024-12-31T00:00:00.000Z'
+    bulk_purge_rollup_response:
+      title: Bulk Purge Rollup data response
+      description: |
+        The bulk purge rollup data response returns a task id from the elasticsearch deleteByQuery response.
+      type: object
+      properties:
+        taskId:
+          type: string
+          description: The task id of the purge operation
+          example: 8853df00-ae2e-11ed-90af-09bb6422b258
+    find_slo_definitions_response:
+      title: Find SLO definitions response
+      description: |
+        A paginated response of SLO definitions matching the query.
+      type: object
+      oneOf:
+        - type: object
           properties:
-            date:
-              type: string
-              example: '2022-01-01T00:00:00.000Z'
-            status:
-              $ref: '#/components/schemas/summary_status'
-            sliValue:
+            page:
               type: number
-              example: 0.9836
-            errorBudget:
-              $ref: '#/components/schemas/error_budget'
+              example: 1
+            perPage:
+              type: number
+              example: 25
+            total:
+              type: number
+              example: 34
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/slo_with_summary_response'
+        - type: object
+          properties:
+            page:
+              type: number
+              default: 1
+              description: for backward compability
+            perPage:
+              type: number
+              example: 25
+              description: for backward compability
+            size:
+              type: number
+              example: 25
+            searchAfter:
+              type: array
+              items:
+                type: string
+              example:
+                - some-slo-id
+                - other-cursor-id
+              description: the cursor to provide to get the next paged results
+            total:
+              type: number
+              example: 34
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/slo_with_summary_response'
     delete_slo_instances_request:
       title: Delete SLO instances request
       description: |
@@ -1469,3 +1955,59 @@ components:
                 description: The SLO instance identifier
                 type: string
                 example: 8853df00-ae2e-11ed-90af-09bb6422b258
+    bulk_delete_request:
+      title: Bulk delete SLO request
+      description: |
+        The bulk delete SLO request takes a list of SLOs Definition id to delete.
+      type: object
+      required:
+        - list
+      properties:
+        list:
+          description: An array of SLO Definition id
+          type: array
+          items:
+            type: string
+            example: 8853df00-ae2e-11ed-90af-09bb6422b258
+            description: The SLO Definition id
+    bulk_delete_response:
+      title: Bulk delete SLO response
+      description: |
+        The bulk delete SLO response returns a taskId that can be used to poll for its status
+      type: object
+      properties:
+        taskId:
+          type: string
+          example: d08506b7-f0e8-4f8b-a06a-a83940f4db91
+          description: The taskId of the bulk delete operation
+    bulk_delete_status_response:
+      title: The status of the bulk deletion
+      description: Indicates if the bulk deletion is completed, with the detailed results of the operation.
+      type: object
+      properties:
+        isDone:
+          type: boolean
+          example: true
+          description: Indicates if the bulk deletion operation is completed
+        error:
+          type: string
+          example: Task not found
+          description: The error message if the bulk deletion operation failed
+        results:
+          description: The results of the bulk deletion operation, including the success status and any errors for each SLO
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: d08506b7-f0e8-4f8b-a06a-a83940f4db91
+                description: The ID of the SLO that was deleted
+              success:
+                type: boolean
+                example: true
+                description: The result of the deletion operation for this SLO
+              error:
+                type: string
+                example: SLO [d08506b7-f0e8-4f8b-a06a-a83940f4db91] not found
+                description: The error message if the deletion operation failed for this SLO

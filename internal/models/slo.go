@@ -8,7 +8,7 @@ type Slo struct {
 	SloID           string
 	Name            string
 	Description     string
-	Indicator       slo.SloResponseIndicator
+	Indicator       slo.SloWithSummaryResponseIndicator
 	TimeWindow      slo.TimeWindow
 	BudgetingMethod slo.BudgetingMethod
 	Objective       slo.Objective
