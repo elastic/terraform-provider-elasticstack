@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -46,8 +47,14 @@ func getSchemaV1() schema.Schema {
 				Required:    true,
 			},
 			"agent_policy_id": schema.StringAttribute{
-				Description: "ID of the agent policy.",
-				Required:    true,
+				Description:        "ID of the agent policy.",
+				DeprecationMessage: "Use agent_policy_ids instead. This field will be removed in a future version.",
+				Optional:           true,
+			},
+			"agent_policy_ids": schema.ListAttribute{
+				Description: "List of agent policy IDs.",
+				ElementType: types.StringType,
+				Optional:    true,
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the integration policy.",

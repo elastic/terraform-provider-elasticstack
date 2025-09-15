@@ -18,6 +18,7 @@ type integrationPolicyModel struct {
 	Name               types.String         `tfsdk:"name"`
 	Namespace          types.String         `tfsdk:"namespace"`
 	AgentPolicyID      types.String         `tfsdk:"agent_policy_id"`
+	AgentPolicyIDs     types.List           `tfsdk:"agent_policy_ids"`
 	Description        types.String         `tfsdk:"description"`
 	Enabled            types.Bool           `tfsdk:"enabled"`
 	Force              types.Bool           `tfsdk:"force"`
@@ -45,7 +46,38 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	model.PolicyID = types.StringValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringPointerValue(data.Namespace)
-	model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
+
+	// Only populate the agent policy field that was originally configured
+	// to avoid Terraform detecting inconsistent state
+	originallyUsedAgentPolicyID := !model.AgentPolicyID.IsNull() && !model.AgentPolicyID.IsUnknown()
+	originallyUsedAgentPolicyIDs := !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown()
+
+	if originallyUsedAgentPolicyID && !originallyUsedAgentPolicyIDs {
+		// Only set agent_policy_id if it was originally used
+		model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
+	} else if originallyUsedAgentPolicyIDs && !originallyUsedAgentPolicyID {
+		// Only set agent_policy_ids if it was originally used
+		if data.PolicyIds != nil {
+			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *data.PolicyIds)
+			diags.Append(d...)
+			model.AgentPolicyIDs = agentPolicyIDs
+		} else {
+			model.AgentPolicyIDs = types.ListNull(types.StringType)
+		}
+	} else {
+		// Handle edge cases: both fields configured or neither configured
+		// Default to the behavior based on API response structure
+		if data.PolicyIds != nil && len(*data.PolicyIds) > 1 {
+			// Multiple policy IDs, use agent_policy_ids
+			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *data.PolicyIds)
+			diags.Append(d...)
+			model.AgentPolicyIDs = agentPolicyIDs
+		} else {
+			// Single policy ID, use agent_policy_id
+			model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
+		}
+	}
+
 	model.Description = types.StringPointerValue(data.Description)
 	model.Enabled = types.BoolValue(data.Enabled)
 	model.IntegrationName = types.StringValue(data.Package.Name)
@@ -94,7 +126,18 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 			Version: model.IntegrationVersion.ValueString(),
 		},
 		PolicyId: model.AgentPolicyID.ValueStringPointer(),
-		Vars:     utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
+		PolicyIds: func() *[]string {
+			if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+				var policyIDs []string
+				d := model.AgentPolicyIDs.ElementsAs(ctx, &policyIDs, false)
+				diags.Append(d...)
+				return &policyIDs
+			}
+			// Return empty array instead of nil when agent_policy_ids is not defined
+			emptyArray := []string{}
+			return &emptyArray
+		}(),
+		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
 	}
 
 	if isUpdate {
