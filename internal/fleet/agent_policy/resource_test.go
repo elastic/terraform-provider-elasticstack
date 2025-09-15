@@ -157,6 +157,33 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionUnenrollmentTimeout),
+				Config:   testAccResourceAgentPolicyCreateWithUnenrollmentTimeout(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Unenrollment Timeout"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "unenrollment_timeout", "10m"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionUnenrollmentTimeout),
+				Config:   testAccResourceAgentPolicyUpdateWithTimeouts(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Both Timeouts"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "inactivity_timeout", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "unenrollment_timeout", "15m"),
+				),
+			},
+			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
 				Config:   testAccResourceAgentPolicyCreateWithGlobalDataTags(policyNameGlobalDataTags, false),
 				Check: resource.ComposeTestCheckFunc(
@@ -323,6 +350,30 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_metrics = false
   skip_destroy = false
   inactivity_timeout = "2m"
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+
+`, fmt.Sprintf("Policy %s", id))
+}
+
+func testAccResourceAgentPolicyCreateWithUnenrollmentTimeout(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name        = "%s"
+  namespace   = "default"
+  description = "Test Agent Policy with Unenrollment Timeout"
+  monitor_logs = true
+  monitor_metrics = false
+  skip_destroy = false
+  unenrollment_timeout = "10m"
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test_policy" {
@@ -508,4 +559,29 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func testAccResourceAgentPolicyUpdateWithTimeouts(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name        = "%s"
+  namespace   = "default"
+  description = "Test Agent Policy with Both Timeouts"
+  monitor_logs = false
+  monitor_metrics = true
+  skip_destroy = false
+  inactivity_timeout = "5m"
+  unenrollment_timeout = "15m"
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+
+`, fmt.Sprintf("Updated Policy %s", id))
 }
