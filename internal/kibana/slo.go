@@ -16,7 +16,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var SLOSupportsMultipleGroupByMinVersion = version.Must(version.NewVersion("8.14.0"))
+var (
+	SLOSupportsMultipleGroupByMinVersion        = version.Must(version.NewVersion("8.14.0"))
+	SLOSupportsPreventInitialBackfillMinVersion = version.Must(version.NewVersion("8.15.0"))
+)
 
 func ResourceSlo() *schema.Resource {
 	return &schema.Resource{
@@ -856,6 +859,13 @@ func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 
+	// Version check for prevent_initial_backfill
+	if _, ok := d.GetOk("settings.0.prevent_initial_backfill"); ok {
+		if !serverVersion.GreaterThanOrEqual(SLOSupportsPreventInitialBackfillMinVersion) {
+			return diag.Errorf("The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion)
+		}
+	}
+
 	supportsMultipleGroupBy := serverVersion.GreaterThanOrEqual(SLOSupportsMultipleGroupByMinVersion)
 	if len(slo.GroupBy) > 1 && !supportsMultipleGroupBy {
 		return diag.Errorf("multiple group_by fields are not supported in this version of the Elastic Stack. Multiple group_by fields requires %s", SLOSupportsMultipleGroupByMinVersion)
@@ -886,6 +896,17 @@ func resourceSloUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 	serverVersion, diags := client.ServerVersion(ctx)
 	if diags.HasError() {
 		return diags
+	}
+
+	// Version check for prevent_initial_backfill
+	if d.Get("settings.0.prevent_initial_backfill") != nil {
+		if v, ok := d.GetOk("settings.0.prevent_initial_backfill"); ok {
+			if vBool, ok := v.(bool); ok && vBool {
+				if !serverVersion.GreaterThanOrEqual(SLOSupportsPreventInitialBackfillMinVersion) {
+					return diag.Errorf("The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion)
+				}
+			}
+		}
 	}
 
 	supportsMultipleGroupBy := serverVersion.GreaterThanOrEqual(SLOSupportsMultipleGroupByMinVersion)

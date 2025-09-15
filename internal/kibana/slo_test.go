@@ -253,6 +253,32 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 	})
 }
 
+func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSloDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsPreventInitialBackfillMinVersion),
+				Config: getSLOConfig(sloVars{
+					name:                          sloName,
+					indicatorType:                 "metric_custom_indicator",
+					settingsEnabled:               true,
+					groupBy:                       []string{"some.field", "some.other.field"},
+					includePreventInitialBackfill: true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.prevent_initial_backfill", "true"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
@@ -714,23 +740,29 @@ func checkResourceSloDestroy(s *terraform.State) error {
 }
 
 type sloVars struct {
-	name                    string
-	indicatorType           string
-	settingsEnabled         bool
-	tags                    []string
-	groupBy                 []string
-	useSingleElementGroupBy bool
+	name                          string
+	indicatorType                 string
+	settingsEnabled               bool
+	tags                          []string
+	groupBy                       []string
+	useSingleElementGroupBy       bool
+	includePreventInitialBackfill bool
 }
 
 func getSLOConfig(vars sloVars) string {
 	var settings string
 	if vars.settingsEnabled {
-		settings = `
+		preventInitialBackfill := ""
+		if vars.includePreventInitialBackfill {
+			preventInitialBackfill = "prevent_initial_backfill = true"
+		}
+		settings = fmt.Sprintf(`
 		settings {
 			sync_delay = "5m"
 			frequency = "5m"
+			%s
 		}
-		`
+		`, preventInitialBackfill)
 	} else {
 		settings = ""
 	}
