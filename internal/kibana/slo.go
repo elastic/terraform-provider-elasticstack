@@ -860,7 +860,7 @@ func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 	}
 
 	// Version check for prevent_initial_backfill
-	if _, ok := d.GetOk("settings.0.prevent_initial_backfill"); ok {
+	if slo.Settings.PreventInitialBackfill != nil {
 		if !serverVersion.GreaterThanOrEqual(SLOSupportsPreventInitialBackfillMinVersion) {
 			return diag.Errorf("The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion)
 		}
@@ -899,13 +899,9 @@ func resourceSloUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 	}
 
 	// Version check for prevent_initial_backfill
-	if d.Get("settings.0.prevent_initial_backfill") != nil {
-		if v, ok := d.GetOk("settings.0.prevent_initial_backfill"); ok {
-			if vBool, ok := v.(bool); ok && vBool {
-				if !serverVersion.GreaterThanOrEqual(SLOSupportsPreventInitialBackfillMinVersion) {
-					return diag.Errorf("The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion)
-				}
-			}
+	if slo.Settings.PreventInitialBackfill != nil {
+		if !serverVersion.GreaterThanOrEqual(SLOSupportsPreventInitialBackfillMinVersion) {
+			return diag.Errorf("The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion)
 		}
 	}
 
