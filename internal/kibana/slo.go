@@ -596,14 +596,6 @@ func transformOrNil[T any](path string, d *schema.ResourceData, transform func(i
 	return nil
 }
 
-func getOrNilBool(path string, d *schema.ResourceData) *bool {
-	if v, ok := d.GetOk(path); ok {
-		b := v.(bool)
-		return &b
-	}
-	return nil
-}
-
 func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
