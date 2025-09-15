@@ -826,6 +826,34 @@ func transformKibanaPaths(schema *Schema) {
 		"propertyName": "type",
 	})
 
+	schema.Components.Set("schemas.Security_Detections_API_RuleCreateProps.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRuleCreateProps",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRuleCreateProps",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRuleCreateProps",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRuleCreateProps",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRuleCreateProps",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRuleCreateProps",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRuleCreateProps",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRuleCreateProps",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_RuleUpdateProps.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRuleUpdateProps",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRuleUpdateProps",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRuleUpdateProps",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRuleUpdateProps",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRuleUpdateProps",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRuleUpdateProps",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRuleUpdateProps",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRuleUpdateProps",
+		},
+		"propertyName": "type",
+	})
+
 }
 
 func removeBrokenDiscriminator(schema *Schema) {
