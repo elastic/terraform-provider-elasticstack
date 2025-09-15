@@ -57,24 +57,24 @@ func GetSchema() schema.Schema {
 			},
 			"type": schema.StringAttribute{
 				MarkdownDescription: "Rule type. Supported types: query, eql, esql, machine_learning, new_terms, saved_query, threat_match, threshold.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("query"),
+				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("query", "eql", "esql", "machine_learning", "new_terms", "saved_query", "threat_match", "threshold"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"query": schema.StringAttribute{
 				MarkdownDescription: "The query language definition.",
-				Required:            true,
+				Optional:            true,
 			},
 			"language": schema.StringAttribute{
 				MarkdownDescription: "The query language (KQL or Lucene).",
 				Optional:            true,
 				Computed:            true,
-				Default:             stringdefault.StaticString("kuery"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("kuery", "lucene"),
+					stringvalidator.OneOf("kuery", "lucene", "eql", "esql"),
 				},
 			},
 			"index": schema.ListAttribute{
@@ -82,8 +82,6 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Indices on which the rule functions.",
 				Optional:            true,
 				Computed:            true,
-				// Default to empty list - will use Security Solution default indices
-				Default: listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
 			"enabled": schema.BoolAttribute{
 				MarkdownDescription: "Determines whether the rule is enabled.",
@@ -303,6 +301,7 @@ func GetSchema() schema.Schema {
 			"threat_indicator_path": schema.StringAttribute{
 				MarkdownDescription: "Path to the threat indicator in the indicator documents. Optional for threat_match rules.",
 				Optional:            true,
+				Computed:            true,
 			},
 			"concurrent_searches": schema.Int64Attribute{
 				MarkdownDescription: "Number of concurrent searches for threat intelligence. Optional for threat_match rules.",
