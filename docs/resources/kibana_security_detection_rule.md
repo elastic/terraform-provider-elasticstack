@@ -12,6 +12,8 @@ Creates or updates a Kibana security detection rule. Security detection rules ar
 
 See the [Elastic Security detection rules documentation](https://www.elastic.co/guide/en/security/current/rules-api-create.html) for more details.
 
+Note that this Terraform resource only supports Kibana versions >= 8.11.0 
+
 ## Example Usage
 
 ### Basic Detection Rule

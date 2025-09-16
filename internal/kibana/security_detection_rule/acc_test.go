@@ -9,10 +9,14 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+var minVersionSupport = version.Must(version.NewVersion("8.11.0"))
 
 func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 	resourceName := "elasticstack_kibana_security_detection_rule.test"
@@ -23,7 +27,8 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityDetectionRuleConfig_query("test-query-rule"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_query("test-query-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
@@ -41,7 +46,8 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSecurityDetectionRuleConfig_queryUpdate("test-query-rule-updated"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_queryUpdate("test-query-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test query security detection rule"),
@@ -62,7 +68,8 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityDetectionRuleConfig_eql("test-eql-rule"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_eql("test-eql-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "eql"),
@@ -79,7 +86,8 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSecurityDetectionRuleConfig_eqlUpdate("test-eql-rule-updated"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_eqlUpdate("test-eql-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"powershell.exe\""),
@@ -101,7 +109,8 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityDetectionRuleConfig_esql("test-esql-rule"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_esql("test-esql-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "esql"),
@@ -116,7 +125,8 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSecurityDetectionRuleConfig_esqlUpdate("test-esql-rule-updated"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_esqlUpdate("test-esql-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"logout\" | STATS count(*) BY user.name, source.ip"),
@@ -138,7 +148,8 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityDetectionRuleConfig_machineLearning("test-ml-rule"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_machineLearning("test-ml-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "machine_learning"),
@@ -153,7 +164,8 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSecurityDetectionRuleConfig_machineLearningUpdate("test-ml-rule-updated"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_machineLearningUpdate("test-ml-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test ML security detection rule"),
@@ -177,7 +189,8 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityDetectionRuleConfig_newTerms("test-new-terms-rule"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_newTerms("test-new-terms-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "new_terms"),
@@ -195,7 +208,8 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSecurityDetectionRuleConfig_newTermsUpdate("test-new-terms-rule-updated"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_newTermsUpdate("test-new-terms-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "user.name:* AND source.ip:*"),
@@ -222,7 +236,8 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityDetectionRuleConfig_savedQuery("test-saved-query-rule"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_savedQuery("test-saved-query-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "saved_query"),
@@ -237,7 +252,8 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSecurityDetectionRuleConfig_savedQueryUpdate("test-saved-query-rule-updated"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_savedQueryUpdate("test-saved-query-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:*"),
@@ -262,7 +278,8 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityDetectionRuleConfig_threatMatch("test-threat-match-rule"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_threatMatch("test-threat-match-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
@@ -283,7 +300,8 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSecurityDetectionRuleConfig_threatMatchUpdate("test-threat-match-rule-updated"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_threatMatchUpdate("test-threat-match-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "destination.ip:* OR source.ip:*"),
@@ -312,7 +330,8 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityDetectionRuleConfig_threshold("test-threshold-rule"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_threshold("test-threshold-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "threshold"),
@@ -330,7 +349,8 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSecurityDetectionRuleConfig_thresholdUpdate("test-threshold-rule-updated"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_thresholdUpdate("test-threshold-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:(login OR logout)"),
