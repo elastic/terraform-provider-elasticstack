@@ -31,149 +31,224 @@ func TestAccResourceSlo(t *testing.T) {
 	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
-	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSloDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
-				Config:   getSLOConfig(sloVars{name: sloName, indicatorType: "apm_latency_indicator"}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "slo_id", "id-"+sloName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "description", "fully sick SLO"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.environment", "production"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.service", "my-service"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_type", "request"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_name", "GET /sup/dawg"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.index", "my-index-"+sloName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.threshold", "500"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.duration", "7d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.type", "rolling"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "budgeting_method", "timeslices"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.target", "0.999"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_target", "0.95"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "1m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "1m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
-				),
-			},
-			{ //check that name can be updated
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
-				Config: getSLOConfig(sloVars{
-					name:          fmt.Sprintf("updated-%s", sloName),
-					indicatorType: "apm_latency_indicator",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("updated-%s", sloName)),
-				),
-			},
-			{ //check that settings can be updated from api-computed defaults
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
-				Config:   getSLOConfig(sloVars{name: sloName, indicatorType: "apm_latency_indicator", settingsEnabled: true}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "5m"),
-				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
-				Config:   getSLOConfig(sloVars{name: sloName, indicatorType: "apm_availability_indicator", settingsEnabled: true}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.environment", "production"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.service", "my-service"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.transaction_type", "request"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.transaction_name", "GET /sup/dawg"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.index", "my-index-"+sloName),
-				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
-				Config:   getSLOConfig(sloVars{name: sloName, indicatorType: "kql_custom_indicator", settingsEnabled: true}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.total", "*"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.filter", "labels.groupId: group-0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
-				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints),
-				Config:   getSLOConfig(sloVars{name: sloName, indicatorType: "histogram_custom_indicator", settingsEnabled: true}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.index", "my-index-"+sloName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.field", "test"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.aggregation", "value_count"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.filter", "latency < 300"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.from"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.to"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.total.0.field", "test"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.total.0.aggregation", "value_count"),
-				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints),
-				Config: getSLOConfig(sloVars{
-					name:            sloName,
-					indicatorType:   "metric_custom_indicator",
-					settingsEnabled: true,
-					groupBy:         []string{"some.field"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.name", "A"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.aggregation", "sum"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.field", "processor.processed"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.1.name", "B"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.1.aggregation", "sum"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.1.field", "processor.processed"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.equation", "A + B"),
+	for _, testWithDataViewID := range []bool{true, false} {
+		t.Run("with-data-view-id="+fmt.Sprint(testWithDataViewID), func(t *testing.T) {
+			dataviewCheckFunc := func(indicator string) resource.TestCheckFunc {
+				if !testWithDataViewID {
+					return func(s *terraform.State) error {
+						return nil
+					}
+				}
 
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.name", "A"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.aggregation", "sum"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.field", "processor.accepted"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.1.name", "B"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.1.aggregation", "sum"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.1.field", "processor.accepted"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.equation", "A + B"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.0", "some.field"),
-				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints),
-				Config: getSLOConfig(sloVars{
-					name:            sloName,
-					indicatorType:   "metric_custom_indicator",
-					settingsEnabled: true,
-					tags:            []string{"tag-1", "another_tag"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.0", "tag-1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.1", "another_tag"),
-				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: getSLOConfig(sloVars{
-					name:            sloName,
-					indicatorType:   "timeslice_metric_indicator",
-					settingsEnabled: true,
-					tags:            []string{"tag-1", "another_tag"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index-"+sloName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.name", "A"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "sum"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "A"),
-				),
-			},
-		},
-	})
+				return resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", indicator+".0.data_view_id", "my-data-view-id")
+			}
+			sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+			resource.Test(t, resource.TestCase{
+				PreCheck:                 func() { acctest.PreCheck(t) },
+				CheckDestroy:             checkResourceSloDestroy,
+				ProtoV6ProviderFactories: acctest.Providers,
+				Steps: []resource.TestStep{
+					{
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "apm_latency_indicator", includeDataViewID: testWithDataViewID}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "slo_id", "id-"+sloName),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "description", "fully sick SLO"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.environment", "production"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.service", "my-service"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_type", "request"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_name", "GET /sup/dawg"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.index", "my-index-"+sloName),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.threshold", "500"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.duration", "7d"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.type", "rolling"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "budgeting_method", "timeslices"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.target", "0.999"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_target", "0.95"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "1m"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "1m"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
+						),
+					},
+					{ //check that name can be updated
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{
+							name:              fmt.Sprintf("updated-%s", sloName),
+							indicatorType:     "apm_latency_indicator",
+							includeDataViewID: testWithDataViewID,
+						}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("updated-%s", sloName)),
+						),
+					},
+					{ //check that settings can be updated from api-computed defaults
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "apm_latency_indicator", settingsEnabled: true, includeDataViewID: testWithDataViewID}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "5m"),
+						),
+					},
+					{
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "apm_availability_indicator", settingsEnabled: true, includeDataViewID: testWithDataViewID}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.environment", "production"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.service", "my-service"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.transaction_type", "request"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.transaction_name", "GET /sup/dawg"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.index", "my-index-"+sloName),
+						),
+					},
+					{
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "kql_custom_indicator", settingsEnabled: true, includeDataViewID: testWithDataViewID}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
+							dataviewCheckFunc("kql_custom_indicator"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.total", "*"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.filter", "labels.groupId: group-0"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
+						),
+					},
+					{
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "histogram_custom_indicator", settingsEnabled: true, includeDataViewID: testWithDataViewID}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.index", "my-index-"+sloName),
+							dataviewCheckFunc("histogram_custom_indicator"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.field", "test"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.aggregation", "value_count"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.filter", "latency < 300"),
+							resource.TestCheckResourceAttrSet("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.from"),
+							resource.TestCheckResourceAttrSet("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.to"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.total.0.field", "test"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.total.0.aggregation", "value_count"),
+						),
+					},
+					{
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{
+							name:              sloName,
+							indicatorType:     "metric_custom_indicator",
+							settingsEnabled:   true,
+							groupBy:           []string{"some.field"},
+							includeDataViewID: testWithDataViewID,
+						}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
+							dataviewCheckFunc("metric_custom_indicator"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.name", "A"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.aggregation", "sum"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.field", "processor.processed"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.1.name", "B"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.1.aggregation", "sum"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.1.field", "processor.processed"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.equation", "A + B"),
+
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.name", "A"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.aggregation", "sum"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.field", "processor.accepted"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.1.name", "B"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.1.aggregation", "sum"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.1.field", "processor.accepted"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.equation", "A + B"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.#", "1"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.0", "some.field"),
+						),
+					},
+					{
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{
+							name:              sloName,
+							indicatorType:     "metric_custom_indicator",
+							settingsEnabled:   true,
+							tags:              []string{"tag-1", "another_tag"},
+							includeDataViewID: testWithDataViewID,
+						}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.0", "tag-1"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.1", "another_tag"),
+						),
+					},
+					{
+						SkipFunc: func() (bool, error) {
+							if !testWithDataViewID {
+								return versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion)()
+							}
+
+							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+						},
+						Config: getSLOConfig(sloVars{
+							name:              sloName,
+							indicatorType:     "timeslice_metric_indicator",
+							settingsEnabled:   true,
+							tags:              []string{"tag-1", "another_tag"},
+							includeDataViewID: testWithDataViewID,
+						}),
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index-"+sloName),
+							dataviewCheckFunc("timeslice_metric_indicator"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.name", "A"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "sum"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "A"),
+						),
+					},
+				},
+			})
+		})
+	}
 }
 
 func TestAccResourceSloGroupBy(t *testing.T) {
@@ -197,6 +272,8 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 					settingsEnabled:         true,
 					groupBy:                 []string{"some.field"},
 					useSingleElementGroupBy: true,
+					includeDataViewID:       false,
+					// Do not set data_view_id for this test, as it is not supported in this provider version
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
@@ -222,10 +299,12 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsMultipleGroupByMinVersion),
 				Config: getSLOConfig(sloVars{
-					name:            sloName,
-					indicatorType:   "metric_custom_indicator",
-					settingsEnabled: true,
-					groupBy:         []string{"some.field", "some.other.field"},
+					name:              sloName,
+					indicatorType:     "metric_custom_indicator",
+					settingsEnabled:   true,
+					groupBy:           []string{"some.field", "some.other.field"},
+					includeDataViewID: false,
+					// Do not set data_view_id for this test, as it is not supported in this provider version
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
@@ -720,6 +799,7 @@ type sloVars struct {
 	tags                    []string
 	groupBy                 []string
 	useSingleElementGroupBy bool
+	includeDataViewID       bool
 }
 
 func getSLOConfig(vars sloVars) string {
@@ -755,6 +835,11 @@ func getSLOConfig(vars sloVars) string {
 		groupByOption = "group_by = " + groupByVal
 	} else {
 		groupByOption = ""
+	}
+
+	dataViewID := ""
+	if vars.includeDataViewID {
+		dataViewID = "data_view_id = \"my-data-view-id\""
 	}
 
 	configTemplate := `
@@ -804,126 +889,131 @@ func getSLOConfig(vars sloVars) string {
 		switch indicatorType {
 		case "apm_latency_indicator":
 			indicator = fmt.Sprintf(`
-		apm_latency_indicator {
-			  environment     = "production"
-			  service         = "my-service"
-			  transaction_type = "request"
-			  transaction_name = "GET /sup/dawg"
-			  index           = "my-index-%s"
-			  threshold       = 500
-		  }
-		  `, vars.name)
+	       apm_latency_indicator {
+		     environment     = "production"
+		     service         = "my-service"
+		     transaction_type = "request"
+		     transaction_name = "GET /sup/dawg"
+		     index           = "my-index-%s"
+		     threshold       = 500
+		 }
+		 `, vars.name)
 
 		case "apm_availability_indicator":
 			indicator = fmt.Sprintf(`
-		apm_availability_indicator {
-			  environment     = "production"
-			  service         = "my-service"
-			  transaction_type = "request"
-			  transaction_name = "GET /sup/dawg"
-			  index           = "my-index-%s"
-		  }
-		  `, vars.name)
+	       apm_availability_indicator {
+		     environment     = "production"
+		     service         = "my-service"
+		     transaction_type = "request"
+		     transaction_name = "GET /sup/dawg"
+		     index           = "my-index-%s"
+		 }
+		 `, vars.name)
 
 		case "kql_custom_indicator":
 			indicator = fmt.Sprintf(`
-		kql_custom_indicator {
-			index = "my-index-%s"
-			good = "latency < 300"
-			total = "*"
-			filter = "labels.groupId: group-0"
-			timestamp_field = "custom_timestamp"
-		  }
-		  `, vars.name)
+	       kql_custom_indicator {
+		       index = "my-index-%s"
+		       %s
+		       good = "latency < 300"
+		       total = "*"
+		       filter = "labels.groupId: group-0"
+		       timestamp_field = "custom_timestamp"
+		 }
+		 `, vars.name, dataViewID)
 
 		case "histogram_custom_indicator":
 			indicator = fmt.Sprintf(`
-		histogram_custom_indicator {
-			index = "my-index-%s"
-			good {
-				field = "test"
-				aggregation = "value_count"
-				filter = "latency < 300"
-			}
-			total {
-				field = "test"
-				aggregation = "value_count"
-			}
-			filter = "labels.groupId: group-0"
-			timestamp_field = "custom_timestamp"
-		  }
-		  `, vars.name)
+	       histogram_custom_indicator {
+		       index = "my-index-%s"
+		       %s
+		       good {
+			       field = "test"
+			       aggregation = "value_count"
+			       filter = "latency < 300"
+		       }
+		       total {
+			       field = "test"
+			       aggregation = "value_count"
+		       }
+		       filter = "labels.groupId: group-0"
+		       timestamp_field = "custom_timestamp"
+		 }
+		 `, vars.name, dataViewID)
 
 		case "histogram_custom_indicator_agg_fail":
 			indicator = fmt.Sprintf(`
-		histogram_custom_indicator {
-			index = "my-index-%s"
-			good {
-				field = "test"
-				aggregation = "supdawg"
-				filter = "latency < 300"
-				from = 0
-				to = 10
-			}
-			total {
-				field = "test"
-				aggregation = "supdawg"
-			}
-			filter = "labels.groupId: group-0"
-			timestamp_field = "custom_timestamp"
-		  }
-		  `, vars.name)
+	       histogram_custom_indicator {
+		       index = "my-index-%s"
+		       %s
+		       good {
+			       field = "test"
+			       aggregation = "supdawg"
+			       filter = "latency < 300"
+			       from = 0
+			       to = 10
+		       }
+		       total {
+			       field = "test"
+			       aggregation = "supdawg"
+		       }
+		       filter = "labels.groupId: group-0"
+		       timestamp_field = "custom_timestamp"
+		 }
+		 `, vars.name, dataViewID)
 
 		case "metric_custom_indicator":
 			indicator = fmt.Sprintf(`
-		metric_custom_indicator {
-			index = "my-index-%s"
-			good {
-				metrics {
-						name = "A"
-						aggregation = "sum"
-						field = "processor.processed"
-				}
-				metrics {
-						name = "B"
-						aggregation = "sum"
-						field = "processor.processed"
-				}
-				equation = "A + B"
-			}
+	       metric_custom_indicator {
+		       index = "my-index-%s"
+		       %s
+		       good {
+			       metrics {
+				       name = "A"
+				       aggregation = "sum"
+				       field = "processor.processed"
+			       }
+			       metrics {
+				       name = "B"
+				       aggregation = "sum"
+				       field = "processor.processed"
+			       }
+			       equation = "A + B"
+		       }
 
-			total {
-				metrics {
-						name = "A"
-						aggregation = "sum"
-						field = "processor.accepted"
-				}
-				metrics {
-						name = "B"
-						aggregation = "sum"
-						field = "processor.accepted"
-				}
-				equation = "A + B"
-			}
-		}
-		  `, vars.name)
+		       total {
+			       metrics {
+				       name = "A"
+				       aggregation = "sum"
+				       field = "processor.accepted"
+			       }
+			       metrics {
+				       name = "B"
+				       aggregation = "sum"
+				       field = "processor.accepted"
+			       }
+			       equation = "A + B"
+		       }
+	       }
+		 `, vars.name, dataViewID)
 		case "timeslice_metric_indicator":
 			indicator = fmt.Sprintf(`
-		timeslice_metric_indicator {
-			index = "my-index-%s"
-			timestamp_field = "@timestamp"
-			metric {
-				metrics {
-					name = "A"
-					aggregation = "sum"
-					field = "latency"
-				}
-				equation = "A"
-				comparator = "GT"
-				threshold = 100
-			}
-		}
-		  `, vars.name)
+	       timeslice_metric_indicator {
+		       index = "my-index-%s"
+		       %s
+		       timestamp_field = "@timestamp"
+		       metric {
+			       metrics {
+				       name = "A"
+				       aggregation = "sum"
+				       field = "latency"
+			       }
+			       equation = "A"
+			       comparator = "GT"
+			       threshold = 100
+		       }
+	       }
+		 `, vars.name, dataViewID)
 		}
 		return indicator
 	}
