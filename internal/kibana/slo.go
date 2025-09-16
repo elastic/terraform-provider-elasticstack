@@ -16,7 +16,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var SLOSupportsMultipleGroupByMinVersion = version.Must(version.NewVersion("8.14.0"))
+var (
+	SLOSupportsMultipleGroupByMinVersion = version.Must(version.NewVersion("8.14.0"))
+	SLOSupportsDataViewIDMinVersion      = version.Must(version.NewVersion("8.15.0"))
+)
 
 func ResourceSlo() *schema.Resource {
 	return &schema.Resource{
@@ -113,6 +116,11 @@ func getSchema() map[string]*schema.Schema {
 					"index": {
 						Type:     schema.TypeString,
 						Required: true,
+					},
+					"data_view_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Description: "Optional data view id to use for this indicator.",
 					},
 					"filter": {
 						Type:     schema.TypeString,
@@ -214,6 +222,11 @@ func getSchema() map[string]*schema.Schema {
 					"index": {
 						Type:     schema.TypeString,
 						Required: true,
+					},
+					"data_view_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Description: "Optional data view id to use for this indicator.",
 					},
 					"filter": {
 						Type:     schema.TypeString,
@@ -375,6 +388,11 @@ func getSchema() map[string]*schema.Schema {
 						Type:     schema.TypeString,
 						Required: true,
 					},
+					"data_view_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Description: "Optional data view id to use for this indicator.",
+					},
 					"filter": {
 						Type:     schema.TypeString,
 						Optional: true,
@@ -407,6 +425,11 @@ func getSchema() map[string]*schema.Schema {
 					"index": {
 						Type:     schema.TypeString,
 						Required: true,
+					},
+					"data_view_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Description: "Optional data view id to use for this indicator.",
 					},
 					"timestamp_field": {
 						Type:     schema.TypeString,
@@ -577,18 +600,16 @@ func getSchema() map[string]*schema.Schema {
 	}
 }
 
-func getOrNilString(path string, d *schema.ResourceData) *string {
-	if v, ok := d.GetOk(path); ok {
-		str := v.(string)
-		return &str
-	}
-	return nil
+func getOrNil[T any](path string, d *schema.ResourceData) *T {
+	return transformOrNil[T](path, d, func(v interface{}) T {
+		return v.(T)
+	})
 }
 
-func getOrNilFloat(path string, d *schema.ResourceData) *float64 {
+func transformOrNil[T any](path string, d *schema.ResourceData, transform func(interface{}) T) *T {
 	if v, ok := d.GetOk(path); ok {
-		f := v.(float64)
-		return &f
+		val := transform(v)
+		return &val
 	}
 	return nil
 }
@@ -596,7 +617,7 @@ func getOrNilFloat(path string, d *schema.ResourceData) *float64 {
 func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var indicator slo.SloResponseIndicator
+	var indicator slo.SloWithSummaryResponseIndicator
 	var indicatorType string
 	for key := range indicatorAddressToType {
 		_, exists := d.GetOk(key)
@@ -607,21 +628,32 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 
 	switch indicatorType {
 	case "kql_custom_indicator":
-		indicator = slo.SloResponseIndicator{
+		indicator = slo.SloWithSummaryResponseIndicator{
 			IndicatorPropertiesCustomKql: &slo.IndicatorPropertiesCustomKql{
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesCustomKqlParams{
-					Index:          d.Get(indicatorType + ".0.index").(string),
-					Filter:         getOrNilString(indicatorType+".0.filter", d),
-					Good:           d.Get(indicatorType + ".0.good").(string),
-					Total:          d.Get(indicatorType + ".0.total").(string),
+					Index:      d.Get(indicatorType + ".0.index").(string),
+					DataViewId: getOrNil[string](indicatorType+".0.data_view_id", d),
+					Filter: transformOrNil[slo.KqlWithFilters](
+						indicatorType+".0.filter", d,
+						func(v interface{}) slo.KqlWithFilters {
+							return slo.KqlWithFilters{
+								String: utils.Pointer(v.(string)),
+							}
+						}),
+					Good: slo.KqlWithFiltersGood{
+						String: utils.Pointer(d.Get(indicatorType + ".0.good").(string)),
+					},
+					Total: slo.KqlWithFiltersTotal{
+						String: utils.Pointer(d.Get(indicatorType + ".0.total").(string)),
+					},
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 				},
 			},
 		}
 
 	case "apm_availability_indicator":
-		indicator = slo.SloResponseIndicator{
+		indicator = slo.SloWithSummaryResponseIndicator{
 			IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesApmAvailabilityParams{
@@ -629,14 +661,14 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 					Environment:     d.Get(indicatorType + ".0.environment").(string),
 					TransactionType: d.Get(indicatorType + ".0.transaction_type").(string),
 					TransactionName: d.Get(indicatorType + ".0.transaction_name").(string),
-					Filter:          getOrNilString(indicatorType+".0.filter", d),
+					Filter:          getOrNil[string](indicatorType+".0.filter", d),
 					Index:           d.Get(indicatorType + ".0.index").(string),
 				},
 			},
 		}
 
 	case "apm_latency_indicator":
-		indicator = slo.SloResponseIndicator{
+		indicator = slo.SloWithSummaryResponseIndicator{
 			IndicatorPropertiesApmLatency: &slo.IndicatorPropertiesApmLatency{
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesApmLatencyParams{
@@ -644,7 +676,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 					Environment:     d.Get(indicatorType + ".0.environment").(string),
 					TransactionType: d.Get(indicatorType + ".0.transaction_type").(string),
 					TransactionName: d.Get(indicatorType + ".0.transaction_name").(string),
-					Filter:          getOrNilString(indicatorType+".0.filter", d),
+					Filter:          getOrNil[string](indicatorType+".0.filter", d),
 					Index:           d.Get(indicatorType + ".0.index").(string),
 					Threshold:       float64(d.Get(indicatorType + ".0.threshold").(int)),
 				},
@@ -652,26 +684,27 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		}
 
 	case "histogram_custom_indicator":
-		indicator = slo.SloResponseIndicator{
+		indicator = slo.SloWithSummaryResponseIndicator{
 			IndicatorPropertiesHistogram: &slo.IndicatorPropertiesHistogram{
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesHistogramParams{
-					Filter:         getOrNilString(indicatorType+".0.filter", d),
+					Filter:         getOrNil[string](indicatorType+".0.filter", d),
 					Index:          d.Get(indicatorType + ".0.index").(string),
+					DataViewId:     getOrNil[string](indicatorType+".0.data_view_id", d),
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 					Good: slo.IndicatorPropertiesHistogramParamsGood{
 						Field:       d.Get(indicatorType + ".0.good.0.field").(string),
 						Aggregation: d.Get(indicatorType + ".0.good.0.aggregation").(string),
-						Filter:      getOrNilString(indicatorType+".0.good.0.filter", d),
-						From:        getOrNilFloat(indicatorType+".0.good.0.from", d),
-						To:          getOrNilFloat(indicatorType+".0.good.0.to", d),
+						Filter:      getOrNil[string](indicatorType+".0.good.0.filter", d),
+						From:        getOrNil[float64](indicatorType+".0.good.0.from", d),
+						To:          getOrNil[float64](indicatorType+".0.good.0.to", d),
 					},
 					Total: slo.IndicatorPropertiesHistogramParamsTotal{
 						Field:       d.Get(indicatorType + ".0.total.0.field").(string),
 						Aggregation: d.Get(indicatorType + ".0.total.0.aggregation").(string),
-						Filter:      getOrNilString(indicatorType+".0.total.0.filter", d),
-						From:        getOrNilFloat(indicatorType+".0.total.0.from", d),
-						To:          getOrNilFloat(indicatorType+".0.total.0.to", d),
+						Filter:      getOrNil[string](indicatorType+".0.total.0.filter", d),
+						From:        getOrNil[float64](indicatorType+".0.total.0.from", d),
+						To:          getOrNil[float64](indicatorType+".0.total.0.to", d),
 					},
 				},
 			},
@@ -686,26 +719,27 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 				Name:        d.Get(indicatorType + ".0.good.0.metrics." + idx + ".name").(string),
 				Field:       d.Get(indicatorType + ".0.good.0.metrics." + idx + ".field").(string),
 				Aggregation: d.Get(indicatorType + ".0.good.0.metrics." + idx + ".aggregation").(string),
-				Filter:      getOrNilString(indicatorType+".0.good.0.metrics."+idx+".filter", d),
+				Filter:      getOrNil[string](indicatorType+".0.good.0.metrics."+idx+".filter", d),
 			})
 		}
 		totalMetricsRaw := d.Get(indicatorType + ".0.total.0.metrics").([]interface{})
-		var totalMetrics []slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner
+		var totalMetrics []slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner
 		for n := range totalMetricsRaw {
 			idx := fmt.Sprint(n)
-			totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsTotalMetricsInner{
+			totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
 				Name:        d.Get(indicatorType + ".0.total.0.metrics." + idx + ".name").(string),
 				Field:       d.Get(indicatorType + ".0.total.0.metrics." + idx + ".field").(string),
 				Aggregation: d.Get(indicatorType + ".0.total.0.metrics." + idx + ".aggregation").(string),
-				Filter:      getOrNilString(indicatorType+".0.total.0.metrics."+idx+".filter", d),
+				Filter:      getOrNil[string](indicatorType+".0.total.0.metrics."+idx+".filter", d),
 			})
 		}
-		indicator = slo.SloResponseIndicator{
+		indicator = slo.SloWithSummaryResponseIndicator{
 			IndicatorPropertiesCustomMetric: &slo.IndicatorPropertiesCustomMetric{
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesCustomMetricParams{
-					Filter:         getOrNilString(indicatorType+".0.filter", d),
+					Filter:         getOrNil[string](indicatorType+".0.filter", d),
 					Index:          d.Get(indicatorType + ".0.index").(string),
+					DataViewId:     getOrNil[string](indicatorType+".0.data_view_id", d),
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 					Good: slo.IndicatorPropertiesCustomMetricParamsGood{
 						Equation: d.Get(indicatorType + ".0.good.0.equation").(string),
@@ -756,13 +790,14 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 				return models.Slo{}, diag.Errorf("metrics[%d]: unsupported aggregation '%s'", i, agg)
 			}
 		}
-		indicator = slo.SloResponseIndicator{
+		indicator = slo.SloWithSummaryResponseIndicator{
 			IndicatorPropertiesTimesliceMetric: &slo.IndicatorPropertiesTimesliceMetric{
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesTimesliceMetricParams{
 					Index:          params["index"].(string),
+					DataViewId:     getOrNil[string]("timeslice_metric_indicator.0.data_view_id", d),
 					TimestampField: params["timestamp_field"].(string),
-					Filter:         getOrNilString("timeslice_metric_indicator.0.filter", d),
+					Filter:         getOrNil[string]("timeslice_metric_indicator.0.filter", d),
 					Metric: slo.IndicatorPropertiesTimesliceMetricParamsMetric{
 						Metrics:    metrics,
 						Equation:   metricBlock["equation"].(string),
@@ -784,13 +819,13 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 
 	objective := slo.Objective{
 		Target:          d.Get("objective.0.target").(float64),
-		TimesliceTarget: getOrNilFloat("objective.0.timeslice_target", d),
-		TimesliceWindow: getOrNilString("objective.0.timeslice_window", d),
+		TimesliceTarget: getOrNil[float64]("objective.0.timeslice_target", d),
+		TimesliceWindow: getOrNil[string]("objective.0.timeslice_window", d),
 	}
 
 	settings := slo.Settings{
-		SyncDelay: getOrNilString("settings.0.sync_delay", d),
-		Frequency: getOrNilString("settings.0.frequency", d),
+		SyncDelay: getOrNil[string]("settings.0.sync_delay", d),
+		Frequency: getOrNil[string]("settings.0.frequency", d),
 	}
 
 	budgetingMethod := slo.BudgetingMethod(d.Get("budgeting_method").(string))
@@ -807,7 +842,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 	}
 
 	// Explicitly set SLO object id if provided, otherwise we'll use the autogenerated ID from the Kibana API response
-	if sloID := getOrNilString("slo_id", d); sloID != nil && *sloID != "" {
+	if sloID := getOrNil[string]("slo_id", d); sloID != nil && *sloID != "" {
 		slo.SloID = *sloID
 	}
 
@@ -842,6 +877,16 @@ func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diags
 	}
 
+	// Version check for data_view_id support
+	if !serverVersion.GreaterThanOrEqual(SLOSupportsDataViewIDMinVersion) {
+		// Check all indicator types that support data_view_id
+		for _, indicatorType := range []string{"metric_custom_indicator", "histogram_custom_indicator", "kql_custom_indicator", "timeslice_metric_indicator"} {
+			if v, ok := d.GetOk(indicatorType + ".0.data_view_id"); ok && v != "" {
+				return diag.Errorf("data_view_id is not supported for %s on Elastic Stack versions < %s", indicatorType, SLOSupportsDataViewIDMinVersion)
+			}
+		}
+	}
+
 	supportsMultipleGroupBy := serverVersion.GreaterThanOrEqual(SLOSupportsMultipleGroupByMinVersion)
 	if len(slo.GroupBy) > 1 && !supportsMultipleGroupBy {
 		return diag.Errorf("multiple group_by fields are not supported in this version of the Elastic Stack. Multiple group_by fields requires %s", SLOSupportsMultipleGroupByMinVersion)
@@ -872,6 +917,15 @@ func resourceSloUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 	serverVersion, diags := client.ServerVersion(ctx)
 	if diags.HasError() {
 		return diags
+	}
+
+	// Version check for data_view_id support
+	if !serverVersion.GreaterThanOrEqual(SLOSupportsDataViewIDMinVersion) {
+		for _, indicatorType := range []string{"metric_custom_indicator", "histogram_custom_indicator", "kql_custom_indicator", "timeslice_metric_indicator"} {
+			if v, ok := d.GetOk(indicatorType + ".0.data_view_id"); ok && v != "" {
+				return diag.Errorf("data_view_id is not supported for %s on Elastic Stack versions < %s", indicatorType, SLOSupportsDataViewIDMinVersion)
+			}
+		}
 	}
 
 	supportsMultipleGroupBy := serverVersion.GreaterThanOrEqual(SLOSupportsMultipleGroupByMinVersion)
@@ -942,13 +996,17 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 	case s.Indicator.IndicatorPropertiesCustomKql != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomKql.Type]
 		params := s.Indicator.IndicatorPropertiesCustomKql.Params
-		indicator = append(indicator, map[string]interface{}{
+		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
-			"filter":          params.Filter,
-			"good":            params.Good,
-			"total":           params.Total,
+			"filter":          params.Filter.String,
+			"good":            params.Good.String,
+			"total":           params.Total.String,
 			"timestamp_field": params.TimestampField,
-		})
+		}
+		if params.DataViewId != nil {
+			indicatorMap["data_view_id"] = *params.DataViewId
+		}
+		indicator = append(indicator, indicatorMap)
 
 	case s.Indicator.IndicatorPropertiesHistogram != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesHistogram.Type]
@@ -967,13 +1025,17 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"from":        params.Total.From,
 			"to":          params.Total.To,
 		}}
-		indicator = append(indicator, map[string]interface{}{
+		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
 			"filter":          params.Filter,
 			"timestamp_field": params.TimestampField,
 			"good":            good,
 			"total":           total,
-		})
+		}
+		if params.DataViewId != nil {
+			indicatorMap["data_view_id"] = *params.DataViewId
+		}
+		indicator = append(indicator, indicatorMap)
 
 	case s.Indicator.IndicatorPropertiesCustomMetric != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomMetric.Type]
@@ -1004,13 +1066,17 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"equation": params.Total.Equation,
 			"metrics":  totalMetrics,
 		}}
-		indicator = append(indicator, map[string]interface{}{
+		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
 			"filter":          params.Filter,
 			"timestamp_field": params.TimestampField,
 			"good":            good,
 			"total":           total,
-		})
+		}
+		if params.DataViewId != nil {
+			indicatorMap["data_view_id"] = *params.DataViewId
+		}
+		indicator = append(indicator, indicatorMap)
 
 	case s.Indicator.IndicatorPropertiesTimesliceMetric != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesTimesliceMetric.Type]
@@ -1041,12 +1107,16 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"comparator": params.Metric.Comparator,
 			"threshold":  params.Metric.Threshold,
 		}
-		indicator = append(indicator, map[string]interface{}{
+		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
 			"timestamp_field": params.TimestampField,
 			"filter":          params.Filter,
 			"metric":          []interface{}{metricBlock},
-		})
+		}
+		if params.DataViewId != nil {
+			indicatorMap["data_view_id"] = *params.DataViewId
+		}
+		indicator = append(indicator, indicatorMap)
 
 	default:
 		return diag.Errorf("indicator not set")
