@@ -890,7 +890,7 @@ func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 			return diag.Errorf("The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion)
 		}
 	}
-  
+
 	// Version check for data_view_id support
 	if !serverVersion.GreaterThanOrEqual(SLOSupportsDataViewIDMinVersion) {
 		// Check all indicator types that support data_view_id

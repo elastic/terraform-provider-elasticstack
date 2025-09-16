@@ -825,7 +825,7 @@ type sloVars struct {
 	tags                          []string
 	groupBy                       []string
 	useSingleElementGroupBy       bool
-	includeDataViewID       bool
+	includeDataViewID             bool
 	includePreventInitialBackfill bool
 }
 
