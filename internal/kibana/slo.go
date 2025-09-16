@@ -19,6 +19,7 @@ import (
 var (
 	SLOSupportsMultipleGroupByMinVersion        = version.Must(version.NewVersion("8.14.0"))
 	SLOSupportsPreventInitialBackfillMinVersion = version.Must(version.NewVersion("8.15.0"))
+	SLOSupportsDataViewIDMinVersion             = version.Must(version.NewVersion("8.15.0"))
 )
 
 func ResourceSlo() *schema.Resource {
@@ -116,6 +117,11 @@ func getSchema() map[string]*schema.Schema {
 					"index": {
 						Type:     schema.TypeString,
 						Required: true,
+					},
+					"data_view_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Description: "Optional data view id to use for this indicator.",
 					},
 					"filter": {
 						Type:     schema.TypeString,
@@ -217,6 +223,11 @@ func getSchema() map[string]*schema.Schema {
 					"index": {
 						Type:     schema.TypeString,
 						Required: true,
+					},
+					"data_view_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Description: "Optional data view id to use for this indicator.",
 					},
 					"filter": {
 						Type:     schema.TypeString,
@@ -378,6 +389,11 @@ func getSchema() map[string]*schema.Schema {
 						Type:     schema.TypeString,
 						Required: true,
 					},
+					"data_view_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Description: "Optional data view id to use for this indicator.",
+					},
 					"filter": {
 						Type:     schema.TypeString,
 						Optional: true,
@@ -410,6 +426,11 @@ func getSchema() map[string]*schema.Schema {
 					"index": {
 						Type:     schema.TypeString,
 						Required: true,
+					},
+					"data_view_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Description: "Optional data view id to use for this indicator.",
 					},
 					"timestamp_field": {
 						Type:     schema.TypeString,
@@ -617,7 +638,8 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 			IndicatorPropertiesCustomKql: &slo.IndicatorPropertiesCustomKql{
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesCustomKqlParams{
-					Index: d.Get(indicatorType + ".0.index").(string),
+					Index:      d.Get(indicatorType + ".0.index").(string),
+					DataViewId: getOrNil[string](indicatorType+".0.data_view_id", d),
 					Filter: transformOrNil[slo.KqlWithFilters](
 						indicatorType+".0.filter", d,
 						func(v interface{}) slo.KqlWithFilters {
@@ -674,6 +696,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 				Params: slo.IndicatorPropertiesHistogramParams{
 					Filter:         getOrNil[string](indicatorType+".0.filter", d),
 					Index:          d.Get(indicatorType + ".0.index").(string),
+					DataViewId:     getOrNil[string](indicatorType+".0.data_view_id", d),
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 					Good: slo.IndicatorPropertiesHistogramParamsGood{
 						Field:       d.Get(indicatorType + ".0.good.0.field").(string),
@@ -722,6 +745,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 				Params: slo.IndicatorPropertiesCustomMetricParams{
 					Filter:         getOrNil[string](indicatorType+".0.filter", d),
 					Index:          d.Get(indicatorType + ".0.index").(string),
+					DataViewId:     getOrNil[string](indicatorType+".0.data_view_id", d),
 					TimestampField: d.Get(indicatorType + ".0.timestamp_field").(string),
 					Good: slo.IndicatorPropertiesCustomMetricParamsGood{
 						Equation: d.Get(indicatorType + ".0.good.0.equation").(string),
@@ -777,6 +801,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 				Type: indicatorAddressToType[indicatorType],
 				Params: slo.IndicatorPropertiesTimesliceMetricParams{
 					Index:          params["index"].(string),
+					DataViewId:     getOrNil[string]("timeslice_metric_indicator.0.data_view_id", d),
 					TimestampField: params["timestamp_field"].(string),
 					Filter:         getOrNil[string]("timeslice_metric_indicator.0.filter", d),
 					Metric: slo.IndicatorPropertiesTimesliceMetricParamsMetric{
@@ -865,6 +890,16 @@ func resourceSloCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 			return diag.Errorf("The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion)
 		}
 	}
+  
+	// Version check for data_view_id support
+	if !serverVersion.GreaterThanOrEqual(SLOSupportsDataViewIDMinVersion) {
+		// Check all indicator types that support data_view_id
+		for _, indicatorType := range []string{"metric_custom_indicator", "histogram_custom_indicator", "kql_custom_indicator", "timeslice_metric_indicator"} {
+			if v, ok := d.GetOk(indicatorType + ".0.data_view_id"); ok && v != "" {
+				return diag.Errorf("data_view_id is not supported for %s on Elastic Stack versions < %s", indicatorType, SLOSupportsDataViewIDMinVersion)
+			}
+		}
+	}
 
 	supportsMultipleGroupBy := serverVersion.GreaterThanOrEqual(SLOSupportsMultipleGroupByMinVersion)
 	if len(slo.GroupBy) > 1 && !supportsMultipleGroupBy {
@@ -902,6 +937,15 @@ func resourceSloUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 	if slo.Settings.PreventInitialBackfill != nil {
 		if !serverVersion.GreaterThanOrEqual(SLOSupportsPreventInitialBackfillMinVersion) {
 			return diag.Errorf("The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion)
+		}
+	}
+
+	// Version check for data_view_id support
+	if !serverVersion.GreaterThanOrEqual(SLOSupportsDataViewIDMinVersion) {
+		for _, indicatorType := range []string{"metric_custom_indicator", "histogram_custom_indicator", "kql_custom_indicator", "timeslice_metric_indicator"} {
+			if v, ok := d.GetOk(indicatorType + ".0.data_view_id"); ok && v != "" {
+				return diag.Errorf("data_view_id is not supported for %s on Elastic Stack versions < %s", indicatorType, SLOSupportsDataViewIDMinVersion)
+			}
 		}
 	}
 
@@ -973,13 +1017,17 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 	case s.Indicator.IndicatorPropertiesCustomKql != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomKql.Type]
 		params := s.Indicator.IndicatorPropertiesCustomKql.Params
-		indicator = append(indicator, map[string]interface{}{
+		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
 			"filter":          params.Filter.String,
 			"good":            params.Good.String,
 			"total":           params.Total.String,
 			"timestamp_field": params.TimestampField,
-		})
+		}
+		if params.DataViewId != nil {
+			indicatorMap["data_view_id"] = *params.DataViewId
+		}
+		indicator = append(indicator, indicatorMap)
 
 	case s.Indicator.IndicatorPropertiesHistogram != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesHistogram.Type]
@@ -998,13 +1046,17 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"from":        params.Total.From,
 			"to":          params.Total.To,
 		}}
-		indicator = append(indicator, map[string]interface{}{
+		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
 			"filter":          params.Filter,
 			"timestamp_field": params.TimestampField,
 			"good":            good,
 			"total":           total,
-		})
+		}
+		if params.DataViewId != nil {
+			indicatorMap["data_view_id"] = *params.DataViewId
+		}
+		indicator = append(indicator, indicatorMap)
 
 	case s.Indicator.IndicatorPropertiesCustomMetric != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesCustomMetric.Type]
@@ -1035,13 +1087,17 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"equation": params.Total.Equation,
 			"metrics":  totalMetrics,
 		}}
-		indicator = append(indicator, map[string]interface{}{
+		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
 			"filter":          params.Filter,
 			"timestamp_field": params.TimestampField,
 			"good":            good,
 			"total":           total,
-		})
+		}
+		if params.DataViewId != nil {
+			indicatorMap["data_view_id"] = *params.DataViewId
+		}
+		indicator = append(indicator, indicatorMap)
 
 	case s.Indicator.IndicatorPropertiesTimesliceMetric != nil:
 		indicatorAddress = indicatorTypeToAddress[s.Indicator.IndicatorPropertiesTimesliceMetric.Type]
@@ -1072,12 +1128,16 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			"comparator": params.Metric.Comparator,
 			"threshold":  params.Metric.Threshold,
 		}
-		indicator = append(indicator, map[string]interface{}{
+		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
 			"timestamp_field": params.TimestampField,
 			"filter":          params.Filter,
 			"metric":          []interface{}{metricBlock},
-		})
+		}
+		if params.DataViewId != nil {
+			indicatorMap["data_view_id"] = *params.DataViewId
+		}
+		indicator = append(indicator, indicatorMap)
 
 	default:
 		return diag.Errorf("indicator not set")

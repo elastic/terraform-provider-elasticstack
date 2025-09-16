@@ -104,6 +104,12 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				CustomType:  customtypes.DurationType{},
 			},
+			"unenrollment_timeout": schema.StringAttribute{
+				Description: "The unenrollment timeout for the agent policy. If an agent is inactive for this period, it will be automatically unenrolled. Supports duration strings (e.g., '30s', '2m', '1h').",
+				Computed:    true,
+				Optional:    true,
+				CustomType:  customtypes.DurationType{},
+			},
 			"global_data_tags": schema.MapNestedAttribute{
 				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42}",
 				NestedObject: schema.NestedAttributeObject{
