@@ -323,6 +323,7 @@ Required:
 
 Optional:
 
+- `data_view_id` (String) Optional data view id to use for this indicator.
 - `filter` (String)
 - `timestamp_field` (String)
 
@@ -366,6 +367,7 @@ Required:
 
 Optional:
 
+- `data_view_id` (String) Optional data view id to use for this indicator.
 - `filter` (String)
 - `good` (String)
 - `timestamp_field` (String)
@@ -383,6 +385,7 @@ Required:
 
 Optional:
 
+- `data_view_id` (String) Optional data view id to use for this indicator.
 - `filter` (String)
 - `timestamp_field` (String)
 
@@ -439,6 +442,7 @@ Optional:
 Optional:
 
 - `frequency` (String)
+- `prevent_initial_backfill` (Boolean) Prevents the underlying ES transform from attempting to backfill data on start, which can sometimes be resource-intensive or time-consuming and unnecessary
 - `sync_delay` (String)
 
 
@@ -453,6 +457,7 @@ Required:
 
 Optional:
 
+- `data_view_id` (String) Optional data view id to use for this indicator.
 - `filter` (String)
 
 <a id="nestedblock--timeslice_metric_indicator--metric"></a>

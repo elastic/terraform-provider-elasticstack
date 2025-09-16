@@ -19,9 +19,10 @@ var (
 )
 
 var (
-	MinVersionGlobalDataTags    = version.Must(version.NewVersion("8.15.0"))
-	MinSupportsAgentlessVersion = version.Must(version.NewVersion("8.15.0"))
-	MinVersionInactivityTimeout = version.Must(version.NewVersion("8.7.0"))
+	MinVersionGlobalDataTags      = version.Must(version.NewVersion("8.15.0"))
+	MinSupportsAgentlessVersion   = version.Must(version.NewVersion("8.15.0"))
+	MinVersionInactivityTimeout   = version.Must(version.NewVersion("8.7.0"))
+	MinVersionUnenrollmentTimeout = version.Must(version.NewVersion("8.15.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -63,9 +64,15 @@ func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag
 		return features{}, utils.FrameworkDiagsFromSDK(diags)
 	}
 
+	supportsUnenrollmentTimeout, diags := r.client.EnforceMinVersion(ctx, MinVersionUnenrollmentTimeout)
+	if diags.HasError() {
+		return features{}, utils.FrameworkDiagsFromSDK(diags)
+	}
+
 	return features{
-		SupportsGlobalDataTags:    supportsGDT,
-		SupportsSupportsAgentless: supportsSupportsAgentless,
-		SupportsInactivityTimeout: supportsInactivityTimeout,
+		SupportsGlobalDataTags:      supportsGDT,
+		SupportsSupportsAgentless:   supportsSupportsAgentless,
+		SupportsInactivityTimeout:   supportsInactivityTimeout,
+		SupportsUnenrollmentTimeout: supportsUnenrollmentTimeout,
 	}, nil
 }
