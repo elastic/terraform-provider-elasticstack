@@ -10,7 +10,12 @@ import (
 )
 
 func (r *integrationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema.Description = "Manage installation of a Fleet integration package."
+	resp.Schema.Description = `Installs or uninstalls a Fleet integration package. The Kibana Fleet UI can be
+used to view available packages. Additional information for managing integration
+packages can be found [here](https://www.elastic.co/guide/en/fleet/current/install-uninstall-integration-assets.html).
+
+To prevent the package from being uninstalled when the resource is destroyed,
+set ` + "`skip_destroy` to `true`."
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
 			Description: "The ID of this resource.",

@@ -2,6 +2,7 @@ package kibana
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -21,6 +22,9 @@ import (
 var frequencyMinSupportedVersion = version.Must(version.NewVersion("8.6.0"))
 var alertsFilterMinSupportedVersion = version.Must(version.NewVersion("8.9.0"))
 var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
+
+//go:embed alerting.md
+var resourceRuleDescription string
 
 func ResourceAlertingRule() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -224,8 +228,7 @@ func ResourceAlertingRule() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Creates a Kibana rule. See https://www.elastic.co/guide/en/kibana/master/create-rule-api.html",
-
+		Description:   resourceRuleDescription,
 		CreateContext: resourceRuleCreate,
 		UpdateContext: resourceRuleUpdate,
 		ReadContext:   resourceRuleRead,

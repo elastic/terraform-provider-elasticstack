@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"strings"
 
@@ -11,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+//go:embed processor_date_data_source.md
+var dateDataSourceDescription string
 
 func DataSourceProcessorDate() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -97,8 +101,7 @@ func DataSourceProcessorDate() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Parses dates from fields, and then uses the date or timestamp as the timestamp for the document. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/date-processor.html",
-
+		Description: dateDataSourceDescription,
 		ReadContext: dataSourceProcessorDateRead,
 
 		Schema: processorSchema,

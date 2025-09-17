@@ -161,7 +161,7 @@ func DataSourceTemplate() *schema.Resource {
 	utils.AddConnectionSchema(templateSchema)
 
 	return &schema.Resource{
-		Description: "Retrieves index template definition. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-template.html",
+		Description: "Retrieves information about an existing index template definition. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-template.html",
 		ReadContext: dataSourceIndexTemplateRead,
 		Schema:      templateSchema,
 	}

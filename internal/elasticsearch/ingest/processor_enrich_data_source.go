@@ -97,7 +97,7 @@ func DataSourceProcessorEnrich() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "The enrich processor can enrich documents with data from another index. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-processor.html",
+		Description: "Helper data source which can be used to create the configuration for an enrich processor. The enrich processor can enrich documents with data from another index. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-processor.html",
 
 		ReadContext: dataSourceProcessorEnrichRead,
 

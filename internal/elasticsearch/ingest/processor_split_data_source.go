@@ -86,7 +86,7 @@ func DataSourceProcessorSplit() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Splits a field into an array using a separator character. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/split-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a split processor. This processor splits a field into an array using a separator character. See the [split processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/split-processor.html) for more details.",
 
 		ReadContext: dataSourceProcessorSplitRead,
 
