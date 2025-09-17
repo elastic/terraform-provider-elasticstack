@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_rename Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a rename processor. This processor renames an existing field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/rename-processor.html
+  Helper data source which can be used to create the configuration for a rename processor. This processor renames an existing field. See the rename processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/rename-processor.html for more details.
 ---
 
 # elasticstack_elasticsearch_ingest_processor_rename (Data Source)
 
-Helper data source which can be used to create the configuration for a rename processor. This processor renames an existing field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/rename-processor.html
+Helper data source which can be used to create the configuration for a rename processor. This processor renames an existing field. See the [rename processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/rename-processor.html) for more details.
 
 ## Example Usage
 

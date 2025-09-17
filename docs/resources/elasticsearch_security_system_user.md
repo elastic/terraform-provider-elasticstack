@@ -4,13 +4,13 @@
 page_title: "elasticstack_elasticsearch_security_system_user Resource - terraform-provider-elasticstack"
 subcategory: "Security"
 description: |-
-  Updates system user's password and enablement. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html
+  Updates system user's password and enablement. See the built-in users documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html for more details.
   Since this resource is to manage built-in users, destroy will not delete the underlying Elasticsearch and will only remove it from Terraform state.
 ---
 
 # elasticstack_elasticsearch_security_system_user (Resource)
 
-Updates system user's password and enablement. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html
+Updates system user's password and enablement. See the [built-in users documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html) for more details.
 
 Since this resource is to manage built-in users, destroy will not delete the underlying Elasticsearch and will only remove it from Terraform state.
 
@@ -40,14 +40,14 @@ resource "elasticstack_elasticsearch_security_system_user" "kibana_system" {
 
 ### Required
 
-- `username` (String) An identifier for the system user (see https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html).
+- `username` (String) An identifier for the system user (see the [built-in users documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html)).
 
 ### Optional
 
 - `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `enabled` (Boolean) Specifies whether the user is enabled. The default value is true.
 - `password` (String, Sensitive) The user's password. Passwords must be at least 6 characters long.
-- `password_hash` (String, Sensitive) A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings).
+- `password_hash` (String, Sensitive) A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see the [security settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings)).
 
 ### Read-Only
 

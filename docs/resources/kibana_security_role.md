@@ -3,18 +3,18 @@
 page_title: "elasticstack_kibana_security_role Resource - terraform-provider-elasticstack"
 subcategory: "Kibana"
 description: |-
-  Creates or updates a Kibana role. See https://www.elastic.co/guide/en/kibana/master/role-management-api-put.html
-  For Features, see: https://www.elastic.co/guide/en/kibana/current/features-api-get.html
-  For Security Privileges, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/security-privileges.html
+  Creates or updates a Kibana role. See the role management API documentation https://www.elastic.co/guide/en/kibana/master/role-management-api-put.html for more details.
+  For Features, see the features API documentation https://www.elastic.co/guide/en/kibana/current/features-api-get.html.
+  For Security Privileges, see the security privileges documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-privileges.html.
 ---
 
 # elasticstack_kibana_security_role (Resource)
 
-Creates or updates a Kibana role. See https://www.elastic.co/guide/en/kibana/master/role-management-api-put.html
+Creates or updates a Kibana role. See the [role management API documentation](https://www.elastic.co/guide/en/kibana/master/role-management-api-put.html) for more details.
 
-For Features, see: https://www.elastic.co/guide/en/kibana/current/features-api-get.html
+For Features, see the [features API documentation](https://www.elastic.co/guide/en/kibana/current/features-api-get.html).
 
-For Security Privileges, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/security-privileges.html
+For Security Privileges, see the [security privileges documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-privileges.html).
 
 ## Example Usage
 

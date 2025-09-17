@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_security_api_key Resource - terraform-provider-elasticstack"
 subcategory: "Security"
 description: |-
-  Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html
+  Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See the security API create API key documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html and create cross-cluster API key documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html for more details.
 ---
 
 # elasticstack_elasticsearch_security_api_key (Resource)
 
-Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html
+Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See the [security API create API key documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html) and [create cross-cluster API key documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html) for more details.
 
 ## Example Usage
 

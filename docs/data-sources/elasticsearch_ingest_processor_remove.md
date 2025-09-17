@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_remove Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a remove processor. This processor removes existing fields. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/remove-processor.html
+  Helper data source which can be used to create the configuration for a remove processor. This processor removes existing fields. See the remove processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/remove-processor.html for more details.
 ---
 
 # elasticstack_elasticsearch_ingest_processor_remove (Data Source)
 
-Helper data source which can be used to create the configuration for a remove processor. This processor removes existing fields. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/remove-processor.html
+Helper data source which can be used to create the configuration for a remove processor. This processor removes existing fields. See the [remove processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/remove-processor.html) for more details.
 
 ## Example Usage
 

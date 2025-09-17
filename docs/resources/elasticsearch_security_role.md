@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_security_role Resource - terraform-provider-elasticstack"
 subcategory: "Security"
 description: |-
-  Adds and updates roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html
+  Adds and updates roles in the native realm. See the security API put role documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html for more details.
 ---
 
 # elasticstack_elasticsearch_security_role (Resource)
 
-Adds and updates roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html
+Adds and updates roles in the native realm. See the [security API put role documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html) for more details.
 
 ## Example Usage
 

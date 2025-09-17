@@ -4,12 +4,12 @@
 page_title: "elasticstack_fleet_enrollment_tokens Data Source - terraform-provider-elasticstack"
 subcategory: "Fleet"
 description: |-
-  Retrieves Elasticsearch API keys used to enroll Elastic Agents in Fleet. See: https://www.elastic.co/guide/en/fleet/current/fleet-enrollment-tokens.html
+  Retrieves Elasticsearch API keys used to enroll Elastic Agents in Fleet. See the Fleet enrollment tokens documentation https://www.elastic.co/guide/en/fleet/current/fleet-enrollment-tokens.html for more details.
 ---
 
 # elasticstack_fleet_enrollment_tokens (Data Source)
 
-Retrieves Elasticsearch API keys used to enroll Elastic Agents in Fleet. See: https://www.elastic.co/guide/en/fleet/current/fleet-enrollment-tokens.html
+Retrieves Elasticsearch API keys used to enroll Elastic Agents in Fleet. See the [Fleet enrollment tokens documentation](https://www.elastic.co/guide/en/fleet/current/fleet-enrollment-tokens.html) for more details.
 
 ## Example Usage
 

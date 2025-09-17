@@ -4,7 +4,7 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_convert Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a convert processor. This processor converts a field in the currently ingested document to a different type, such as converting a string to an integer. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/convert-processor.html
+  Helper data source which can be used to create the configuration for a convert processor. This processor converts a field in the currently ingested document to a different type, such as converting a string to an integer. See the convert processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/convert-processor.html for more details.
   The supported types include:
   integerlongfloatdoublestringbooleanipauto
   Specifying boolean will set the field to true if its string value is equal to true (ignoring case), to false if its string value is equal to false (ignoring case), or it will throw an exception otherwise.
@@ -14,7 +14,7 @@ description: |-
 
 # elasticstack_elasticsearch_ingest_processor_convert (Data Source)
 
-Helper data source which can be used to create the configuration for a convert processor. This processor converts a field in the currently ingested document to a different type, such as converting a string to an integer. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/convert-processor.html
+Helper data source which can be used to create the configuration for a convert processor. This processor converts a field in the currently ingested document to a different type, such as converting a string to an integer. See the [convert processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/convert-processor.html) for more details.
 
 The supported types include: 
 - `integer`

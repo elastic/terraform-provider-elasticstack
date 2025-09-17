@@ -4,12 +4,12 @@
 page_title: "elasticstack_kibana_security_role Data Source - terraform-provider-elasticstack"
 subcategory: "Kibana"
 description: |-
-  Retrieve a specific role. See, https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html
+  Retrieve a specific role. See the role management API documentation https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html for more details.
 ---
 
 # elasticstack_kibana_security_role (Data Source)
 
-Retrieve a specific role. See, https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html
+Retrieve a specific role. See the [role management API documentation](https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html) for more details.
 
 ## Example Usage
 

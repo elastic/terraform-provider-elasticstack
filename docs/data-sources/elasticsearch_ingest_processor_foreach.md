@@ -4,7 +4,7 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_foreach Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a foreach processor. This processor runs an ingest processor on each element of an array or object. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/foreach-processor.html
+  Helper data source which can be used to create the configuration for a foreach processor. This processor runs an ingest processor on each element of an array or object. See the foreach processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/foreach-processor.html for more details.
   All ingest processors can run on array or object elements. However, if the number of elements is unknown, it can be cumbersome to process each one in the same way.
   The foreach processor lets you specify a field containing array or object values and a processor to run on each element in the field.
   Access keys and values
@@ -15,7 +15,7 @@ description: |-
 
 # elasticstack_elasticsearch_ingest_processor_foreach (Data Source)
 
-Helper data source which can be used to create the configuration for a foreach processor. This processor runs an ingest processor on each element of an array or object. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/foreach-processor.html
+Helper data source which can be used to create the configuration for a foreach processor. This processor runs an ingest processor on each element of an array or object. See the [foreach processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/foreach-processor.html) for more details.
 
 All ingest processors can run on array or object elements. However, if the number of elements is unknown, it can be cumbersome to process each one in the same way.
 

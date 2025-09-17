@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_urldecode Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a URL-decode processor. This processor URL-decodes a string. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/urldecode-processor.html
+  Helper data source which can be used to create the configuration for a URL-decode processor. This processor URL-decodes a string. See the URL decode processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/urldecode-processor.html for more details.
 ---
 
 # elasticstack_elasticsearch_ingest_processor_urldecode (Data Source)
 
-Helper data source which can be used to create the configuration for a URL-decode processor. This processor URL-decodes a string. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/urldecode-processor.html
+Helper data source which can be used to create the configuration for a URL-decode processor. This processor URL-decodes a string. See the [URL decode processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/urldecode-processor.html) for more details.
 
 ## Example Usage
 

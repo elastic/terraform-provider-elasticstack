@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_security_user Resource - terraform-provider-elasticstack"
 subcategory: "Security"
 description: |-
-  Adds and updates users in the native realm. These users are commonly referred to as native users. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html
+  Adds and updates users in the native realm. These users are commonly referred to as native users. See the security user API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html for more details.
 ---
 
 # elasticstack_elasticsearch_security_user (Resource)
 
-Adds and updates users in the native realm. These users are commonly referred to as native users. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html
+Adds and updates users in the native realm. These users are commonly referred to as native users. See the [security user API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html) for more details.
 
 ## Example Usage
 
@@ -60,7 +60,7 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 ### Required
 
 - `roles` (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
-- `username` (String) An identifier for the user (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params).
+- `username` (String) An identifier for the user see the [security API put user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params) for more details.
 
 ### Optional
 

@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_kv Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a KV processor. This processor helps automatically parse messages (or specific event fields) which are of the foo=bar variety. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/kv-processor.html
+  Helper data source which can be used to create the configuration for a KV processor. This processor helps automatically parse messages (or specific event fields) which are of the foo=bar variety. See the KV processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/kv-processor.html for more details.
 ---
 
 # elasticstack_elasticsearch_ingest_processor_kv (Data Source)
 
-Helper data source which can be used to create the configuration for a KV processor. This processor helps automatically parse messages (or specific event fields) which are of the foo=bar variety. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/kv-processor.html
+Helper data source which can be used to create the configuration for a KV processor. This processor helps automatically parse messages (or specific event fields) which are of the foo=bar variety. See the [KV processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/kv-processor.html) for more details.
 
 ## Example Usage
 

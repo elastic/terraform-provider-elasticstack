@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_lowercase Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a lowercase processor. This processor converts a string to its lowercase equivalent. If the field is an array of strings, all members of the array will be converted. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/lowercase-processor.html
+  Helper data source which can be used to create the configuration for a lowercase processor. This processor converts a string to its lowercase equivalent. If the field is an array of strings, all members of the array will be converted. See the lowercase processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/lowercase-processor.html for more details.
 ---
 
 # elasticstack_elasticsearch_ingest_processor_lowercase (Data Source)
 
-Helper data source which can be used to create the configuration for a lowercase processor. This processor converts a string to its lowercase equivalent. If the field is an array of strings, all members of the array will be converted. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/lowercase-processor.html
+Helper data source which can be used to create the configuration for a lowercase processor. This processor converts a string to its lowercase equivalent. If the field is an array of strings, all members of the array will be converted. See the [lowercase processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/lowercase-processor.html) for more details.
 
 ## Example Usage
 

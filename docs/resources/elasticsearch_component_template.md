@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_component_template Resource - terraform-provider-elasticstack"
 subcategory: "Index"
 description: |-
-  Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html
+  Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See the component template documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html for more details.
 ---
 
 # elasticstack_elasticsearch_component_template (Resource)
 
-Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html
+Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See the [component template documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) for more details.
 
 ## Example Usage
 
@@ -65,14 +65,14 @@ Optional:
 
 - `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
 - `mappings` (String) Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details
-- `settings` (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
+- `settings` (String) Configuration options for the index. See the [index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) for more details.
 
 <a id="nestedblock--template--alias"></a>
 ### Nested Schema for `template.alias`
 
 Required:
 
-- `name` (String) The alias name. Index alias names support date math. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html
+- `name` (String) The alias name. Index alias names support date math. See the [date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) for more details.
 
 Optional:
 

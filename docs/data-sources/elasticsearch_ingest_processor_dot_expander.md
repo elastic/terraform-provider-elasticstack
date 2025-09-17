@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_dot_expander Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a dot expander processor. This processor expands a field with dots into an object field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/dot-expand-processor.html
+  Helper data source which can be used to create the configuration for a dot expander processor. This processor expands a field with dots into an object field. See the dot expand processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/dot-expand-processor.html for more details.
 ---
 
 # elasticstack_elasticsearch_ingest_processor_dot_expander (Data Source)
 
-Helper data source which can be used to create the configuration for a dot expander processor. This processor expands a field with dots into an object field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/dot-expand-processor.html
+Helper data source which can be used to create the configuration for a dot expander processor. This processor expands a field with dots into an object field. See the [dot expand processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/dot-expand-processor.html) for more details.
 
 ## Example Usage
 

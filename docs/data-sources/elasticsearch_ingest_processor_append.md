@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_append Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for an append processor. This processor appends one or more values to an existing array if the field already exists and it is an array. Converts a scalar to an array and appends one or more values to it if the field exists and it is a scalar. Creates an array containing the provided values if the field doesn’t exist. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/append-processor.html
+  Helper data source which can be used to create the configuration for an append processor. This processor appends one or more values to an existing array if the field already exists and it is an array. Converts a scalar to an array and appends one or more values to it if the field exists and it is a scalar. Creates an array containing the provided values if the field doesn’t exist. See the append processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/append-processor.html for more details.
 ---
 
 # elasticstack_elasticsearch_ingest_processor_append (Data Source)
 
-Helper data source which can be used to create the configuration for an append processor. This processor appends one or more values to an existing array if the field already exists and it is an array. Converts a scalar to an array and appends one or more values to it if the field exists and it is a scalar. Creates an array containing the provided values if the field doesn’t exist. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/append-processor.html
+Helper data source which can be used to create the configuration for an append processor. This processor appends one or more values to an existing array if the field already exists and it is an array. Converts a scalar to an array and appends one or more values to it if the field exists and it is a scalar. Creates an array containing the provided values if the field doesn’t exist. See the [append processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/append-processor.html) for more details.
 
 ## Example Usage
 

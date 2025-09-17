@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_enrich_policy Data Source - terraform-provider-elasticstack"
 subcategory: "Enrich"
 description: |-
-  Returns information about an enrich policy. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/get-enrich-policy-api.html
+  Returns information about an enrich policy. See the enrich policy API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/get-enrich-policy-api.html for more details.
 ---
 
 # elasticstack_elasticsearch_enrich_policy (Data Source)
 
-Returns information about an enrich policy. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/get-enrich-policy-api.html
+Returns information about an enrich policy. See the [enrich policy API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/get-enrich-policy-api.html) for more details.
 
 ## Example Usage
 

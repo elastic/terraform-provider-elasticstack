@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_ingest_processor_split Data Source - terraform-provider-elasticstack"
 subcategory: "Ingest"
 description: |-
-  Helper data source which can be used to create the configuration for a split processor. This processor splits a field into an array using a separator character. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/split-processor.html
+  Helper data source which can be used to create the configuration for a split processor. This processor splits a field into an array using a separator character. See the split processor documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/split-processor.html for more details.
 ---
 
 # elasticstack_elasticsearch_ingest_processor_split (Data Source)
 
-Helper data source which can be used to create the configuration for a split processor. This processor splits a field into an array using a separator character. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/split-processor.html
+Helper data source which can be used to create the configuration for a split processor. This processor splits a field into an array using a separator character. See the [split processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/split-processor.html) for more details.
 
 ## Example Usage
 
