@@ -71,9 +71,25 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 	}
 
 	handleVar := func(key string, mval map[string]any, vars map[string]any) {
-		refID := mval["id"].(string)
-		if original, ok := secrets[refID]; ok {
-			vars[key] = original
+		// Handle single secret reference: {"id": "refID", "isSecretRef": true}
+		if refID, ok := mval["id"].(string); ok {
+			if original, ok := secrets[refID]; ok {
+				vars[key] = original
+			}
+			return
+		}
+
+		// Handle list secret reference: {"ids": ["a", "b"], "isSecretRef": true}
+		if refIDs, ok := mval["ids"].([]any); ok {
+			resolvedValues := make([]any, 0, len(refIDs))
+			for _, refIDInterface := range refIDs {
+				if refID, ok := refIDInterface.(string); ok {
+					if original, ok := secrets[refID]; ok {
+						resolvedValues = append(resolvedValues, original)
+					}
+				}
+			}
+			vars[key] = resolvedValues
 		}
 	}
 
@@ -136,8 +152,23 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 				}
 			}
 
-			refID := mval["id"].(string)
-			secrets[refID] = original
+			// Handle single secret reference: {"id": "refID", "isSecretRef": true}
+			if refID, ok := mval["id"].(string); ok {
+				secrets[refID] = original
+				return
+			}
+
+			// Handle list secret reference: {"ids": ["a", "b"], "isSecretRef": true}
+			if refIDs, ok := mval["ids"].([]any); ok {
+				// For list secrets, the original should be an array
+				if originalArray, ok := original.([]any); ok {
+					for i, refIDInterface := range refIDs {
+						if refID, ok := refIDInterface.(string); ok && i < len(originalArray) {
+							secrets[refID] = originalArray[i]
+						}
+					}
+				}
+			}
 		}
 	}
 
