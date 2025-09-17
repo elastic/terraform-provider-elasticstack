@@ -132,7 +132,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Computed:    true,
 		},
 		"location_mode": {
-			Description:  "Location mode. `primary_only` or `secondary_only`. See: https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy",
+			Description:  "Location mode. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.",
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "primary_only",
@@ -263,7 +263,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			},
 		},
 		"gcs": {
-			Description:   "Support for using the Google Cloud Storage service as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-gcs.html",
+			Description:   "Support for using the Google Cloud Storage service as a repository for Snapshot/Restore. See the [repository GCS plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-gcs.html) for more details.",
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -275,7 +275,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			},
 		},
 		"azure": {
-			Description:   "Support for using Azure Blob storage as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-azure.html",
+			Description:   "Support for using Azure Blob storage as a repository for Snapshot/Restore. See the [repository Azure plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-azure.html) for more details.",
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -287,7 +287,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			},
 		},
 		"s3": {
-			Description:   "Support for using AWS S3 as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3-repository.html",
+			Description:   "Support for using AWS S3 as a repository for Snapshot/Restore. See the [repository S3 plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3-repository.html) for more details.",
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -299,7 +299,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			},
 		},
 		"hdfs": {
-			Description:   "Support for using HDFS File System as a repository for Snapshot/Restore. See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-hdfs.html",
+			Description:   "Support for using HDFS File System as a repository for Snapshot/Restore. See the [repository HDFS plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-hdfs.html) for more details.",
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -315,7 +315,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 	utils.AddConnectionSchema(snapRepoSchema)
 
 	return &schema.Resource{
-		Description: "Registers or updates a snapshot repository. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/put-snapshot-repo-api.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshots-register-repository.html",
+		Description: "Registers or updates a snapshot repository. See the [put snapshot repository API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/put-snapshot-repo-api.html) and [register repository documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshots-register-repository.html) for more details.",
 
 		CreateContext: resourceSnapRepoPut,
 		UpdateContext: resourceSnapRepoPut,

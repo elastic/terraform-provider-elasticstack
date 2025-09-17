@@ -36,7 +36,7 @@ func GetSchema() schema.Schema {
 				Computed:            true,
 			},
 			"username": schema.StringAttribute{
-				MarkdownDescription: "An identifier for the system user (see https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html).",
+				MarkdownDescription: "An identifier for the system user (see the [built-in users documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html)).",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -56,7 +56,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"password_hash": schema.StringAttribute{
-				MarkdownDescription: "A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings).",
+				MarkdownDescription: "A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see the [security settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings)).",
 				Optional:            true,
 				Sensitive:           true,
 				Validators: []validator.String{

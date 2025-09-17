@@ -75,7 +75,7 @@ func ResourceSpace() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Creates a Kibana space. See, https://www.elastic.co/guide/en/kibana/master/spaces-api-post.html",
+		Description: "Creates a Kibana space. See the [spaces API documentation](https://www.elastic.co/guide/en/kibana/master/spaces-api-post.html) for more details.",
 
 		CreateContext: resourceSpaceUpsert,
 		UpdateContext: resourceSpaceUpsert,

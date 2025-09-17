@@ -75,7 +75,7 @@ func DataSourceProcessorUppercase() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for an uppercase processor. This processor converts a string to its uppercase equivalent. If the field is an array of strings, all members of the array will be converted. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/uppercase-processor.html",
+		Description: "Helper data source which can be used to create the configuration for an uppercase processor. This processor converts a string to its uppercase equivalent. If the field is an array of strings, all members of the array will be converted. See the [uppercase processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/uppercase-processor.html) for more details.",
 
 		ReadContext: dataSourceProcessorUppercaseRead,
 

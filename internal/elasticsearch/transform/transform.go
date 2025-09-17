@@ -115,7 +115,7 @@ func ResourceTransform() *schema.Resource {
 							validation.StringLenBetween(1, 255),
 							validation.StringNotInSlice([]string{".", ".."}, true),
 							validation.StringMatch(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-							validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"),
+							validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see the [indices create API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params) for more details"),
 						),
 					},
 					"aliases": {

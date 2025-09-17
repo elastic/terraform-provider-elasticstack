@@ -1,4 +1,4 @@
-Helper data source which can be used to create the configuration for a convert processor. This processor converts a field in the currently ingested document to a different type, such as converting a string to an integer. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/convert-processor.html
+Helper data source which can be used to create the configuration for a convert processor. This processor converts a field in the currently ingested document to a different type, such as converting a string to an integer. See the [convert processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/convert-processor.html) for more details.
 
 The supported types include: 
 - `integer`

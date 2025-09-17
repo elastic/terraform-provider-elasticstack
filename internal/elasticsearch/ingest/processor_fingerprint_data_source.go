@@ -92,7 +92,7 @@ func DataSourceProcessorFingerprint() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for a fingerprint processor. This processor computes a hash of the document’s content. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/fingerprint-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a fingerprint processor. This processor computes a hash of the document’s content. See the [fingerprint processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/fingerprint-processor.html) for more details.",
 
 		ReadContext: dataSourceProcessorFingerprintRead,
 

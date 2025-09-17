@@ -1,4 +1,4 @@
-Helper data source which can be used to create the configuration for a date index name processor. The purpose of this processor is to point documents to the right time based index based on a date or timestamp field in a document by using the date math index name support. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/date-index-name-processor.html
+Helper data source which can be used to create the configuration for a date index name processor. The purpose of this processor is to point documents to the right time based index based on a date or timestamp field in a document by using the date math index name support. See the [date index name processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-index-name-processor.html) for more details.
 
 The processor sets the _index metadata field with a date math index name expression based on the provided index name prefix, a date or timestamp field in the documents being processed and the provided date rounding.
 
