@@ -77,7 +77,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 			},
 			"role_descriptors": schema.StringAttribute{
 				Description: "Role descriptors for this API key.",
-				CustomType:  jsontypes.NormalizedType{},
+				CustomType:  RoleDescriptorsType{},
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{
