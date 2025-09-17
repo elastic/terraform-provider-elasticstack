@@ -1,0 +1,3 @@
+Helper data source which can be used to create the configuration for a CSV processor. This processor extracts fields from CSV line out of a single text field within a document. Any empty field in CSV will be skipped. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/csv-processor.html
+
+If the `trim` option is enabled then any whitespace in the beginning and in the end of each unquoted field will be trimmed. For example with configuration above, a value of A, B will result in field field2 having value {nbsp}B (with space at the beginning). If trim is enabled A, B will result in field field2 having value B (no whitespace). Quoted fields will be left untouched.

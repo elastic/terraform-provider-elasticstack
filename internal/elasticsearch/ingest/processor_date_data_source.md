@@ -1,0 +1,3 @@
+Helper data source which can be used to create the configuration for a date processor. This processor parses dates from fields, and then uses the date or timestamp as the timestamp for the document. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/date-processor.html
+
+By default, the date processor adds the parsed date as a new field called `@timestamp`. You can specify a different field by setting the `target_field` configuration parameter. Multiple date formats are supported as part of the same date processor definition. They will be used sequentially to attempt parsing the date field, in the same order they were defined as part of the processor definition.

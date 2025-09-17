@@ -2,6 +2,7 @@ package transform
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -303,7 +304,7 @@ func ResourceTransform() *schema.Resource {
 
 	return &schema.Resource{
 		Schema:      transformSchema,
-		Description: "Manages Elasticsearch transforms. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/transforms.html",
+		Description: transformDescription,
 
 		CreateContext: resourceTransformCreate,
 		ReadContext:   resourceTransformRead,
@@ -877,3 +878,6 @@ func isSettingAllowed(ctx context.Context, settingName string, serverVersion *ve
 
 	return true
 }
+
+//go:embed transform.md
+var transformDescription string

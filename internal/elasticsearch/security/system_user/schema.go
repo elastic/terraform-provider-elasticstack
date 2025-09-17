@@ -2,6 +2,7 @@ package system_user
 
 import (
 	"context"
+	_ "embed"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -16,13 +17,16 @@ import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
+//go:embed resource-description.md
+var systemUserResourceDescription string
+
 func (r *systemUserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = GetSchema()
 }
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Updates system user's password and enablement. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html",
+		MarkdownDescription: systemUserResourceDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},

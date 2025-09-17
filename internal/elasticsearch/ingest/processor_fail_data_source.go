@@ -64,7 +64,7 @@ func DataSourceProcessorFail() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Raises an exception. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/fail-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a fail processor. This processor raises an exception. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/fail-processor.html",
 
 		ReadContext: dataSourceProcessorFailRead,
 

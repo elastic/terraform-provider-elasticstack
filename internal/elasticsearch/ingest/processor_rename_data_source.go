@@ -75,7 +75,7 @@ func DataSourceProcessorRename() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Renames an existing field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/rename-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a rename processor. This processor renames an existing field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/rename-processor.html",
 
 		ReadContext: dataSourceProcessorRenameRead,
 

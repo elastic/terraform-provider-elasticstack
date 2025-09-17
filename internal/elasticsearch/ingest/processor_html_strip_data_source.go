@@ -75,7 +75,7 @@ func DataSourceProcessorHtmlStrip() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Removes HTML tags from the field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/htmlstrip-processor.html",
+		Description: "Helper data source which can be used to create the configuration for an HTML strip processor. This processor removes HTML tags from the field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/htmlstrip-processor.html",
 
 		ReadContext: dataSourceProcessorHtmlStripRead,
 

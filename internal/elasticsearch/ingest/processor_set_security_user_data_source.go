@@ -73,7 +73,7 @@ func DataSourceProcessorSetSecurityUser() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Sets user-related details (such as username, roles, email, full_name, metadata, api_key, realm and authentication_type) from the current authenticated user to the current document by pre-processing the ingest. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-node-set-security-user-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a set security user processor. This processor sets user-related details (such as username, roles, email, full_name, metadata, api_key, realm and authentication_type) from the current authenticated user to the current document by pre-processing the ingest. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-node-set-security-user-processor.html",
 
 		ReadContext: dataSourceProcessorSetSecurityUserRead,
 

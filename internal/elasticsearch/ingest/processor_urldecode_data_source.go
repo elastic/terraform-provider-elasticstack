@@ -75,7 +75,7 @@ func DataSourceProcessorUrldecode() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "URL-decodes a string. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/urldecode-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a URL-decode processor. This processor URL-decodes a string. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/urldecode-processor.html",
 
 		ReadContext: dataSourceProcessorUrldecodeRead,
 

@@ -24,7 +24,7 @@ var (
 
 func ResourceSlo() *schema.Resource {
 	return &schema.Resource{
-		Description: "Creates an SLO.",
+		Description: `Creates or updates a Kibana SLO. See the [Kibana SLO docs](https://www.elastic.co/guide/en/observability/current/slo.html) and [dev docs](https://github.com/elastic/kibana/blob/main/x-pack/plugins/observability/dev_docs/slo.md) for more information.`,
 
 		CreateContext: resourceSloCreate,
 		UpdateContext: resourceSloUpdate,

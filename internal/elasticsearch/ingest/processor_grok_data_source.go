@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"strings"
 
@@ -11,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+//go:embed processor_grok_data_source.md
+var grokDataSourceDescription string
 
 func DataSourceProcessorGrok() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -99,7 +103,7 @@ func DataSourceProcessorGrok() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Extracts structured fields out of a single text field within a document. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/grok-processor.html",
+		Description: grokDataSourceDescription,
 
 		ReadContext: dataSourceProcessorGrokRead,
 
