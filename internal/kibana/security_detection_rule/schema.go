@@ -25,7 +25,7 @@ func (r *securityDetectionRuleResource) Schema(_ context.Context, _ resource.Sch
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Creates or updates a Kibana security detection rule. See https://www.elastic.co/guide/en/security/current/rules-api-create.html",
+		MarkdownDescription: "Creates or updates a Kibana security detection rule. See the [rules API documentation](https://www.elastic.co/guide/en/security/current/rules-api-create.html) for more details.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
