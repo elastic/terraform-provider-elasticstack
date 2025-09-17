@@ -64,7 +64,7 @@ func DataSourceProcessorPipeline() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Executes another pipeline. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/pipeline-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a pipeline processor. This processor executes another pipeline. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/pipeline-processor.html",
 
 		ReadContext: dataSourceProcessorPipelineRead,
 

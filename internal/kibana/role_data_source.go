@@ -225,7 +225,7 @@ func DataSourceRole() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Retrieve a specific role. See, https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html",
+		Description: "Retrieve a specific role. See the [role management API documentation](https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html) for more details.",
 		ReadContext: dataSourceSecurityRoleRead,
 		Schema:      roleSchema,
 	}

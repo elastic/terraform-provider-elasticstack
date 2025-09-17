@@ -14,6 +14,7 @@
 - Migrate `elasticstack_elasticsearch_security_role_mapping` resource and data source to Terraform Plugin Framework ([#1279](https://github.com/elastic/terraform-provider-elasticstack/pull/1279))
 - Add support for `inactivity_timeout` in `elasticstack_fleet_agent_policy` ([#641](https://github.com/elastic/terraform-provider-elasticstack/issues/641))
 - Add support for `kafka` output types in `elasticstack_fleet_output` ([#1302](https://github.com/elastic/terraform-provider-elasticstack/pull/1302))
+- Add support for `prevent_initial_backfill` to `elasticstack_kibana_slo` ([#1071](https://github.com/elastic/terraform-provider-elasticstack/pull/1071))
 - [Refactor] Regenerate the SLO client using the current OpenAPI spec ([#1303](https://github.com/elastic/terraform-provider-elasticstack/pull/1303))
 - Add support for `data_view_id` in the `elasticstack_kibana_slo` resource ([#1305](https://github.com/elastic/terraform-provider-elasticstack/pull/1305))
 - Add support for `unenrollment_timeout` in `elasticstack_fleet_agent_policy` ([#1169](https://github.com/elastic/terraform-provider-elasticstack/issues/1169))

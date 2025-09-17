@@ -2,6 +2,7 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
+// You can provide the ingest pipeline processors as plain JSON objects.
 resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
   name        = "my_ingest_pipeline"
   description = "My first ingest pipeline managed by Terraform"
@@ -24,5 +25,25 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
     }}
 EOF
     ,
+  ]
+}
+
+// Or you can use the provided data sources to create the processor data sources.
+data "elasticstack_elasticsearch_ingest_processor_set" "set_count" {
+  field = "count"
+  value = 1
+}
+
+data "elasticstack_elasticsearch_ingest_processor_json" "parse_string_source" {
+  field        = "string_source"
+  target_field = "json_target"
+}
+
+resource "elasticstack_elasticsearch_ingest_pipeline" "ingest" {
+  name = "set-parse"
+
+  processors = [
+    data.elasticstack_elasticsearch_ingest_processor_set.set_count.json,
+    data.elasticstack_elasticsearch_ingest_processor_json.parse_string_source.json
   ]
 }
