@@ -55,19 +55,15 @@ resource "elasticstack_fleet_output" "kafka_advanced" {
     ]
 
     # Hash-based partitioning
-    hash = [
-      {
-        hash   = "host.name"
-        random = false
-      }
-    ]
+    hash = {
+      hash   = "host.name"
+      random = false
+    }
 
     # SASL configuration
-    sasl = [
-      {
-        mechanism = "SCRAM-SHA-256"
-      }
-    ]
+    sasl = {
+      mechanism = "SCRAM-SHA-256"
+    }
   }
 
   # SSL configuration (reusing common SSL block)

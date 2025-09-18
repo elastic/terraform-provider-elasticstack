@@ -142,19 +142,15 @@ resource "elasticstack_fleet_output" "kafka_advanced" {
     ]
 
     # Hash-based partitioning
-    hash = [
-      {
-        hash   = "host.name"
-        random = false
-      }
-    ]
+    hash = {
+      hash   = "host.name"
+      random = false
+    }
 
     # SASL configuration
-    sasl = [
-      {
-        mechanism = "SCRAM-SHA-256"
-      }
-    ]
+    sasl = {
+      mechanism = "SCRAM-SHA-256"
+    }
   }
 
   # SSL configuration (reusing common SSL block)
@@ -234,15 +230,15 @@ Optional:
 - `compression` (String) Compression type for Kafka output.
 - `compression_level` (Number) Compression level for Kafka output.
 - `connection_type` (String) Connection type for Kafka output.
-- `hash` (Attributes List) Hash configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--hash))
+- `hash` (Attributes) Hash configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--hash))
 - `headers` (Attributes List) Headers for Kafka messages. (see [below for nested schema](#nestedatt--kafka--headers))
 - `key` (String) Key field for Kafka messages.
 - `partition` (String) Partition strategy for Kafka output.
 - `password` (String, Sensitive) Password for Kafka authentication.
-- `random` (Attributes List) Random configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--random))
+- `random` (Attributes) Random configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--random))
 - `required_acks` (Number) Number of acknowledgments required for Kafka output.
-- `round_robin` (Attributes List) Round robin configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--round_robin))
-- `sasl` (Attributes List) SASL configuration for Kafka authentication. (see [below for nested schema](#nestedatt--kafka--sasl))
+- `round_robin` (Attributes) Round robin configuration for Kafka partition. (see [below for nested schema](#nestedatt--kafka--round_robin))
+- `sasl` (Attributes) SASL configuration for Kafka authentication. (see [below for nested schema](#nestedatt--kafka--sasl))
 - `timeout` (Number) Timeout for Kafka output.
 - `topic` (String) Kafka topic.
 - `username` (String) Username for Kafka authentication.
