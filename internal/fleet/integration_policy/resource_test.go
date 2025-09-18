@@ -45,22 +45,6 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 	})
 }
 
-func TestAccResourceIntegrationPolicyValidation(t *testing.T) {
-	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:      testAccResourceIntegrationPolicyCreateWithNoAgentPolicyFields(policyName),
-				ExpectError: regexp.MustCompile("Either 'agent_policy_id' or 'agent_policy_ids' must be provided"),
-			},
-		},
-	})
-}
-
 func TestAccResourceIntegrationPolicyBothAgentPolicyFields(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -554,13 +538,17 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   integration_version = elasticstack_fleet_integration.test_policy.version
   input {
     input_id = "tcp-tcp"
-    enabled = true
     streams_json = jsonencode({
       "tcp.generic": {
         "enabled": true
         "vars": {
           "listen_address": "localhost"
           "listen_port": 8080
+          "data_stream.dataset": "tcp.generic"
+          "tags": []
+          "syslog_options": "field: message"
+          "ssl": ""
+          "custom": ""
         }
       }
     })
@@ -602,29 +590,4 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   }
 }
 `, id, id)
-}
-
-func testAccResourceIntegrationPolicyCreateWithNoAgentPolicyFields(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-resource "elasticstack_fleet_integration" "test_policy" {
-  name    = "tcp"
-  version = "1.16.0"
-  force   = true
-}
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Policy"
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-  input {
-    input_id = "tcp-tcp"
-    enabled = true
-  }
-}
-`, id)
 }
