@@ -1542,8 +1542,17 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 	}
 }
 
-func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, rule interface{}) diag.Diagnostics {
+func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
 	var diags diag.Diagnostics
+
+	rule, err := response.ValueByDiscriminator()
+	if err != nil {
+		diags.AddError(
+			"Error determining rule type",
+			"Could not determine the type of the security detection rule from the API response: "+err.Error(),
+		)
+		return diags
+	}
 
 	switch r := rule.(type) {
 	case kbapi.SecurityDetectionsAPIQueryRule:
@@ -2375,27 +2384,45 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 }
 
 // Helper function to extract rule ID from any rule type
-func extractId(rule interface{}) (string, error) {
+func extractId(response *kbapi.SecurityDetectionsAPIRuleResponse) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	rule, err := response.ValueByDiscriminator()
+	if err != nil {
+		diags.AddError(
+			"Error determining rule type",
+			"Could not determine the type of the security detection rule from the API response: "+err.Error(),
+		)
+		return "", diags
+	}
+
+	var id string
 	switch r := rule.(type) {
 	case kbapi.SecurityDetectionsAPIQueryRule:
-		return r.Id.String(), nil
+		id = r.Id.String()
 	case kbapi.SecurityDetectionsAPIEqlRule:
-		return r.Id.String(), nil
+		id = r.Id.String()
 	case kbapi.SecurityDetectionsAPIEsqlRule:
-		return r.Id.String(), nil
+		id = r.Id.String()
 	case kbapi.SecurityDetectionsAPIMachineLearningRule:
-		return r.Id.String(), nil
+		id = r.Id.String()
 	case kbapi.SecurityDetectionsAPINewTermsRule:
-		return r.Id.String(), nil
+		id = r.Id.String()
 	case kbapi.SecurityDetectionsAPISavedQueryRule:
-		return r.Id.String(), nil
+		id = r.Id.String()
 	case kbapi.SecurityDetectionsAPIThreatMatchRule:
-		return r.Id.String(), nil
+		id = r.Id.String()
 	case kbapi.SecurityDetectionsAPIThresholdRule:
-		return r.Id.String(), nil
+		id = r.Id.String()
 	default:
-		return "", fmt.Errorf("unsupported rule type for ID extraction")
+		diags.AddError(
+			"Unsupported rule type for ID extraction",
+			fmt.Sprintf("Cannot extract ID from unsupported rule type: %T", r),
+		)
+		return "", diags
 	}
+
+	return id, diags
 }
 
 // Helper function to initialize fields that should be set to default values for all rule types

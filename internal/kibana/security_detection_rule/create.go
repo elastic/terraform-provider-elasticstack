@@ -53,19 +53,15 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Parse the response to get the ID, then use Read logic for consistency
-	ruleResponse, diags := r.parseRuleResponse(ctx, response.JSON200)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Set the ID based on the created rule
-	id, err := extractId(ruleResponse)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error extracting rule ID",
-			"Could not extract ID from created rule: "+err.Error(),
-		)
+	id, diags := extractId(response.JSON200)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

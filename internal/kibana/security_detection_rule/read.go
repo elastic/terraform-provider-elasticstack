@@ -97,15 +97,7 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 	}
 
 	// Parse the response
-	ruleResponse, parseDiags := r.parseRuleResponse(ctx, response.JSON200)
-	diags.Append(parseDiags...)
-	if diags.HasError() {
-		return data, diags
-	}
-
-	// Update the data with response values
-	updateDiags := data.updateFromRule(ctx, ruleResponse)
-
+	updateDiags := data.updateFromRule(ctx, response.JSON200)
 	diags.Append(updateDiags...)
 	if diags.HasError() {
 		return data, diags
@@ -122,19 +114,4 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 	data.Id = types.StringValue(compId.String())
 
 	return data, diags
-}
-
-func (r *securityDetectionRuleResource) parseRuleResponse(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) (interface{}, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	rule, error := response.ValueByDiscriminator()
-	if error != nil {
-		diags.AddError(
-			"Error determining rule type",
-			"Could not determine the type of the security detection rule from the API response: "+error.Error(),
-		)
-
-		return nil, diags
-	}
-
-	return rule, diags
 }
