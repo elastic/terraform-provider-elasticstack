@@ -50,7 +50,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	model.Enabled = types.BoolValue(data.Enabled)
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
-	model.VarsJson = utils.MapToNormalizedType(utils.Deref(data.Vars), path.Root("vars_json"), &diags)
+	model.VarsJson = normalizeVarsJson(model.VarsJson, utils.MapToNormalizedType(utils.Deref(data.Vars), path.Root("vars_json"), &diags))
 
 	model.populateInputFromAPI(ctx, data.Inputs, &diags)
 
@@ -64,7 +64,7 @@ func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, i
 				InputID:     types.StringValue(meta.Key),
 				Enabled:     types.BoolPointerValue(inputData.Enabled),
 				StreamsJson: utils.MapToNormalizedType(utils.Deref(inputData.Streams), meta.Path.AtName("streams_json"), diags),
-				VarsJson:    utils.MapToNormalizedType(utils.Deref(inputData.Vars), meta.Path.AtName("vars_json"), diags),
+				VarsJson:    normalizeVarsJson(model.VarsJson, utils.MapToNormalizedType(utils.Deref(inputData.Vars), meta.Path.AtName("vars_json"), diags)),
 			}
 		})
 	if newInputs == nil {
@@ -146,4 +146,17 @@ func sortInputs(incoming []integrationPolicyInputModel, existing []integrationPo
 
 		return iIdx < jIdx
 	})
+}
+
+// normalizeVarsJson handles the case where both nil (from API) and "{}" (from config)
+// represent an empty JSON object. If the existing value is "{}" and the incoming
+// value is null (from API returning nil), preserve the "{}" to avoid unwanted diffs.
+func normalizeVarsJson(existing jsontypes.Normalized, incoming jsontypes.Normalized) jsontypes.Normalized {
+	if incoming.IsNull() && !existing.IsNull() && !existing.IsUnknown() {
+		existingValue := existing.ValueString()
+		if existingValue == "{}" {
+			return jsontypes.NewNormalizedValue("{}")
+		}
+	}
+	return incoming
 }
