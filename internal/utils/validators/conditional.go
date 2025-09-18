@@ -96,8 +96,8 @@ func (v conditionalRequirement) ValidateString(ctx context.Context, request vali
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
-// ValidateFloat64 performs the validation for float64 attributes.
-func (v conditionalRequirement) ValidateFloat64(ctx context.Context, request validator.Float64Request, response *validator.Float64Response) {
+// ValidateInt64 performs the validation for int64 attributes.
+func (v conditionalRequirement) ValidateInt64(ctx context.Context, request validator.Int64Request, response *validator.Int64Response) {
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
@@ -131,32 +131,14 @@ func StringConditionalRequirementSingle(dependentPath path.Path, requiredValue s
 	return StringConditionalRequirement(dependentPath, []string{requiredValue})
 }
 
-// Float64ConditionalRequirement returns a validator which ensures that a float64 attribute
-// can only be set if another attribute at the specified path equals one of the specified values.
-//
-// The dependentPath parameter should use path.Root() to specify the attribute path.
-// For example: path.Root("compression")
-//
-// Example usage:
-//
-//	"compression_level": schema.Float64Attribute{
-//		Optional: true,
-//		Validators: []validator.Float64{
-//			validators.Float64ConditionalRequirement(
-//				path.Root("compression"),
-//				[]string{"gzip"},
-//				"compression_level can only be set when compression is 'gzip'",
-//			),
-//		},
-//	},
-func Float64ConditionalRequirement(dependentPath path.Path, allowedValues []string) validator.Float64 {
+func Int64ConditionalRequirement(dependentPath path.Path, allowedValues []string) validator.Int64 {
 	return conditionalRequirement{
 		dependentPath: dependentPath,
 		allowedValues: allowedValues,
 	}
 }
 
-// Float64ConditionalRequirementSingle is a convenience function for when there's only one allowed value.
-func Float64ConditionalRequirementSingle(dependentPath path.Path, requiredValue string) validator.Float64 {
-	return Float64ConditionalRequirement(dependentPath, []string{requiredValue})
+// Int64ConditionalRequirementSingle is a convenience function for when there's only one allowed value.
+func Int64ConditionalRequirementSingle(dependentPath path.Path, requiredValue string) validator.Int64 {
+	return Int64ConditionalRequirement(dependentPath, []string{requiredValue})
 }

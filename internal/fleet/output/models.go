@@ -27,54 +27,10 @@ type outputModel struct {
 	Kafka                types.Object `tfsdk:"kafka"` //> outputKafkaModel
 }
 
-type outputKafkaModel struct {
-	AuthType         types.String  `tfsdk:"auth_type"`
-	BrokerTimeout    types.Float64 `tfsdk:"broker_timeout"`
-	ClientId         types.String  `tfsdk:"client_id"`
-	Compression      types.String  `tfsdk:"compression"`
-	CompressionLevel types.Float64 `tfsdk:"compression_level"`
-	ConnectionType   types.String  `tfsdk:"connection_type"`
-	Topic            types.String  `tfsdk:"topic"`
-	Partition        types.String  `tfsdk:"partition"`
-	RequiredAcks     types.Int64   `tfsdk:"required_acks"`
-	Timeout          types.Float64 `tfsdk:"timeout"`
-	Version          types.String  `tfsdk:"version"`
-	Username         types.String  `tfsdk:"username"`
-	Password         types.String  `tfsdk:"password"`
-	Key              types.String  `tfsdk:"key"`
-	Headers          types.List    `tfsdk:"headers"`     //> outputHeadersModel
-	Hash             types.List    `tfsdk:"hash"`        //> outputHashModel
-	Random           types.List    `tfsdk:"random"`      //> outputRandomModel
-	RoundRobin       types.List    `tfsdk:"round_robin"` //> outputRoundRobinModel
-	Sasl             types.List    `tfsdk:"sasl"`        //> outputSaslModel
-}
-
 type outputSslModel struct {
 	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` //> string
 	Certificate            types.String `tfsdk:"certificate"`
 	Key                    types.String `tfsdk:"key"`
-}
-
-type outputHeadersModel struct {
-	Key   types.String `tfsdk:"key"`
-	Value types.String `tfsdk:"value"`
-}
-
-type outputHashModel struct {
-	Hash   types.String `tfsdk:"hash"`
-	Random types.Bool   `tfsdk:"random"`
-}
-
-type outputRandomModel struct {
-	GroupEvents types.Float64 `tfsdk:"group_events"`
-}
-
-type outputRoundRobinModel struct {
-	GroupEvents types.Float64 `tfsdk:"group_events"`
-}
-
-type outputSaslModel struct {
-	Mechanism types.String `tfsdk:"mechanism"`
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
@@ -165,56 +121,29 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 		// Kafka-specific fields - initialize kafka nested object
 		kafkaModel := outputKafkaModel{}
 		kafkaModel.AuthType = types.StringValue(string(data.AuthType))
-		if data.BrokerTimeout != nil {
-			kafkaModel.BrokerTimeout = types.Float64Value(float64(*data.BrokerTimeout))
-		} else {
-			kafkaModel.BrokerTimeout = types.Float64Null()
-		}
+		kafkaModel.BrokerTimeout = types.Float32PointerValue(data.BrokerTimeout)
 		kafkaModel.ClientId = types.StringPointerValue(data.ClientId)
-		if data.Compression != nil {
-			kafkaModel.Compression = types.StringValue(string(*data.Compression))
-		} else {
-			kafkaModel.Compression = types.StringNull()
-		}
+		kafkaModel.Compression = types.StringPointerValue((*string)(data.Compression))
 		// Handle CompressionLevel
 		if data.CompressionLevel != nil {
-			kafkaModel.CompressionLevel = types.Float64Value(float64(*data.CompressionLevel))
+			kafkaModel.CompressionLevel = types.Int64Value(int64(*data.CompressionLevel))
 		} else {
-			kafkaModel.CompressionLevel = types.Float64Null()
+			kafkaModel.CompressionLevel = types.Int64Null()
 		}
 		// Handle ConnectionType
-		if data.ConnectionType != nil {
-			kafkaModel.ConnectionType = types.StringValue(*data.ConnectionType)
-		} else {
-			kafkaModel.ConnectionType = types.StringNull()
-		}
+		kafkaModel.ConnectionType = types.StringPointerValue(data.ConnectionType)
 		kafkaModel.Topic = types.StringPointerValue(data.Topic)
-		if data.Partition != nil {
-			kafkaModel.Partition = types.StringValue(string(*data.Partition))
-		} else {
-			kafkaModel.Partition = types.StringNull()
-		}
+		kafkaModel.Partition = types.StringPointerValue((*string)(data.Partition))
 		if data.RequiredAcks != nil {
 			kafkaModel.RequiredAcks = types.Int64Value(int64(*data.RequiredAcks))
 		} else {
 			kafkaModel.RequiredAcks = types.Int64Null()
 		}
-		if data.Timeout != nil {
-			kafkaModel.Timeout = types.Float64Value(float64(*data.Timeout))
-		} else {
-			kafkaModel.Timeout = types.Float64Null()
-		}
+
+		kafkaModel.Timeout = types.Float32PointerValue(data.Timeout)
 		kafkaModel.Version = types.StringPointerValue(data.Version)
-		if data.Username != nil {
-			kafkaModel.Username = types.StringValue(*data.Username)
-		} else {
-			kafkaModel.Username = types.StringNull()
-		}
-		if data.Password != nil {
-			kafkaModel.Password = types.StringValue(*data.Password)
-		} else {
-			kafkaModel.Password = types.StringNull()
-		}
+		kafkaModel.Username = types.StringPointerValue(data.Username)
+		kafkaModel.Password = types.StringPointerValue(data.Password)
 		kafkaModel.Key = types.StringPointerValue(data.Key)
 
 		// Handle headers
@@ -235,66 +164,66 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 
 		// Handle hash
 		if data.Hash != nil {
-			hashModels := []outputHashModel{{
+			hashModel := outputHashModel{
 				Hash:   types.StringPointerValue(data.Hash.Hash),
 				Random: types.BoolPointerValue(data.Hash.Random),
-			}}
-			list, nd := types.ListValueFrom(ctx, getHashAttrTypes(), hashModels)
+			}
+			obj, nd := types.ObjectValueFrom(ctx, getHashAttrTypes(), hashModel)
 			diags.Append(nd...)
-			kafkaModel.Hash = list
+			kafkaModel.Hash = obj
 		} else {
-			kafkaModel.Hash = types.ListNull(getHashAttrTypes())
+			kafkaModel.Hash = types.ObjectNull(getHashAttrTypes())
 		}
 
 		// Handle random
 		if data.Random != nil {
-			randomModels := []outputRandomModel{{
+			randomModel := outputRandomModel{
 				GroupEvents: func() types.Float64 {
 					if data.Random.GroupEvents != nil {
 						return types.Float64Value(float64(*data.Random.GroupEvents))
 					}
 					return types.Float64Null()
 				}(),
-			}}
-			list, nd := types.ListValueFrom(ctx, getRandomAttrTypes(), randomModels)
+			}
+			obj, nd := types.ObjectValueFrom(ctx, getRandomAttrTypes(), randomModel)
 			diags.Append(nd...)
-			kafkaModel.Random = list
+			kafkaModel.Random = obj
 		} else {
-			kafkaModel.Random = types.ListNull(getRandomAttrTypes())
+			kafkaModel.Random = types.ObjectNull(getRandomAttrTypes())
 		}
 
 		// Handle round_robin
 		if data.RoundRobin != nil {
-			roundRobinModels := []outputRoundRobinModel{{
+			roundRobinModel := outputRoundRobinModel{
 				GroupEvents: func() types.Float64 {
 					if data.RoundRobin.GroupEvents != nil {
 						return types.Float64Value(float64(*data.RoundRobin.GroupEvents))
 					}
 					return types.Float64Null()
 				}(),
-			}}
-			list, nd := types.ListValueFrom(ctx, getRoundRobinAttrTypes(), roundRobinModels)
+			}
+			obj, nd := types.ObjectValueFrom(ctx, getRoundRobinAttrTypes(), roundRobinModel)
 			diags.Append(nd...)
-			kafkaModel.RoundRobin = list
+			kafkaModel.RoundRobin = obj
 		} else {
-			kafkaModel.RoundRobin = types.ListNull(getRoundRobinAttrTypes())
+			kafkaModel.RoundRobin = types.ObjectNull(getRoundRobinAttrTypes())
 		}
 
 		// Handle sasl
 		if data.Sasl != nil {
-			saslModels := []outputSaslModel{{
+			saslModel := outputSaslModel{
 				Mechanism: func() types.String {
 					if data.Sasl.Mechanism != nil {
 						return types.StringValue(string(*data.Sasl.Mechanism))
 					}
 					return types.StringNull()
 				}(),
-			}}
-			list, nd := types.ListValueFrom(ctx, getSaslAttrTypes(), saslModels)
+			}
+			obj, nd := types.ObjectValueFrom(ctx, getSaslAttrTypes(), saslModel)
 			diags.Append(nd...)
-			kafkaModel.Sasl = list
+			kafkaModel.Sasl = obj
 		} else {
-			kafkaModel.Sasl = types.ListNull(getSaslAttrTypes())
+			kafkaModel.Sasl = types.ObjectNull(getSaslAttrTypes())
 		}
 
 		// Set the kafka nested object on the main model
@@ -309,268 +238,57 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	return
 }
 
-func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.ApiClient) (union kbapi.NewOutputUnion, diags diag.Diagnostics) {
-	doSsl := func() *kbapi.NewOutputSsl {
-		if utils.IsKnown(model.Ssl) {
-			sslModel := utils.ObjectTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
-			if sslModel != nil {
-				return &kbapi.NewOutputSsl{
-					Certificate:            sslModel.Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModel.CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
-					Key:                    sslModel.Key.ValueStringPointer(),
-				}
-			}
-		}
-		return nil
-	}
-
+func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.ApiClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	outputType := model.Type.ValueString()
+
 	switch outputType {
 	case "elasticsearch":
-		body := kbapi.NewOutputElasticsearch{
-			Type:                 kbapi.NewOutputElasticsearchTypeElasticsearch,
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
-			Id:                   model.OutputID.ValueStringPointer(),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueString(),
-			Ssl:                  doSsl(),
-		}
-
-		err := union.FromNewOutputElasticsearch(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
+		return model.toAPICreateElasticsearchModel(ctx)
 	case "logstash":
-		body := kbapi.NewOutputLogstash{
-			Type:                 kbapi.NewOutputLogstashTypeLogstash,
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
-			Id:                   model.OutputID.ValueStringPointer(),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueString(),
-			Ssl:                  doSsl(),
-		}
-
-		err := union.FromNewOutputLogstash(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
+		return model.toAPICreateLogstashModel(ctx)
 	case "kafka":
-		// Check minimum version requirement for Kafka output type
-		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputKafka); versionDiags.HasError() {
-			diags.Append(utils.FrameworkDiagsFromSDK(versionDiags)...)
-			return
-		} else if !supported {
-			diags.AddError("Unsupported version for Kafka output",
-				fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()))
-			return
+		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
+			return kbapi.NewOutputUnion{}, diags
 		}
 
-		// Extract kafka model from nested structure
-		var kafkaModel outputKafkaModel
-		if !model.Kafka.IsNull() {
-			kafkaObj := utils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
-			kafkaModel = *kafkaObj
+		return model.toAPICreateKafkaModel(ctx)
+	default:
+		return kbapi.NewOutputUnion{}, diag.Diagnostics{
+			diag.NewErrorDiagnostic(fmt.Sprintf("unhandled output type: %s", outputType), ""),
+		}
+	}
+}
+
+func assertKafkaSupport(ctx context.Context, client *clients.ApiClient) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Check minimum version requirement for Kafka output type
+	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputKafka); versionDiags.HasError() {
+		diags.Append(utils.FrameworkDiagsFromSDK(versionDiags)...)
+		return diags
+	} else if !supported {
+		diags.AddError("Unsupported version for Kafka output",
+			fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()))
+		return diags
+	}
+
+	return nil
+}
+
+func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.ApiClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
+	outputType := model.Type.ValueString()
+
+	switch outputType {
+	case "elasticsearch":
+		return model.toAPIUpdateElasticsearchModel(ctx)
+	case "logstash":
+		return model.toAPIUpdateLogstashModel(ctx)
+	case "kafka":
+		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
+			return kbapi.UpdateOutputUnion{}, diags
 		}
 
-		// Helper functions for Kafka-specific complex types
-		doHeaders := func() *[]struct {
-			Key   string `json:"key"`
-			Value string `json:"value"`
-		} {
-			if utils.IsKnown(kafkaModel.Headers) {
-				headerModels := utils.ListTypeAs[outputHeadersModel](ctx, kafkaModel.Headers, path.Root("kafka").AtName("headers"), &diags)
-				if len(headerModels) > 0 {
-					headers := make([]struct {
-						Key   string `json:"key"`
-						Value string `json:"value"`
-					}, len(headerModels))
-					for i, h := range headerModels {
-						headers[i] = struct {
-							Key   string `json:"key"`
-							Value string `json:"value"`
-						}{
-							Key:   h.Key.ValueString(),
-							Value: h.Value.ValueString(),
-						}
-					}
-					return &headers
-				}
-			}
-			return nil
-		}
-
-		doHash := func() *struct {
-			Hash   *string `json:"hash,omitempty"`
-			Random *bool   `json:"random,omitempty"`
-		} {
-			if utils.IsKnown(kafkaModel.Hash) {
-				hashModels := utils.ListTypeAs[outputHashModel](ctx, kafkaModel.Hash, path.Root("kafka").AtName("hash"), &diags)
-				if len(hashModels) > 0 {
-					return &struct {
-						Hash   *string `json:"hash,omitempty"`
-						Random *bool   `json:"random,omitempty"`
-					}{
-						Hash:   hashModels[0].Hash.ValueStringPointer(),
-						Random: hashModels[0].Random.ValueBoolPointer(),
-					}
-				}
-			}
-			return nil
-		}
-
-		doRandom := func() *struct {
-			GroupEvents *float32 `json:"group_events,omitempty"`
-		} {
-			if utils.IsKnown(kafkaModel.Random) {
-				randomModels := utils.ListTypeAs[outputRandomModel](ctx, kafkaModel.Random, path.Root("kafka").AtName("random"), &diags)
-				if len(randomModels) > 0 {
-					return &struct {
-						GroupEvents *float32 `json:"group_events,omitempty"`
-					}{
-						GroupEvents: func() *float32 {
-							if !randomModels[0].GroupEvents.IsNull() {
-								val := float32(randomModels[0].GroupEvents.ValueFloat64())
-								return &val
-							}
-							return nil
-						}(),
-					}
-				}
-			}
-			return nil
-		}
-
-		doRoundRobin := func() *struct {
-			GroupEvents *float32 `json:"group_events,omitempty"`
-		} {
-			if utils.IsKnown(kafkaModel.RoundRobin) {
-				roundRobinModels := utils.ListTypeAs[outputRoundRobinModel](ctx, kafkaModel.RoundRobin, path.Root("kafka").AtName("round_robin"), &diags)
-				if len(roundRobinModels) > 0 {
-					return &struct {
-						GroupEvents *float32 `json:"group_events,omitempty"`
-					}{
-						GroupEvents: func() *float32 {
-							if !roundRobinModels[0].GroupEvents.IsNull() {
-								val := float32(roundRobinModels[0].GroupEvents.ValueFloat64())
-								return &val
-							}
-							return nil
-						}(),
-					}
-				}
-			}
-			return nil
-		}
-
-		doSasl := func() *struct {
-			Mechanism *kbapi.NewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
-		} {
-			if utils.IsKnown(kafkaModel.Sasl) {
-				saslModels := utils.ListTypeAs[outputSaslModel](ctx, kafkaModel.Sasl, path.Root("kafka").AtName("sasl"), &diags)
-				if len(saslModels) > 0 && !saslModels[0].Mechanism.IsNull() {
-					mechanism := kbapi.NewOutputKafkaSaslMechanism(saslModels[0].Mechanism.ValueString())
-					return &struct {
-						Mechanism *kbapi.NewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
-					}{
-						Mechanism: &mechanism,
-					}
-				}
-			}
-			return nil
-		}
-
-		body := kbapi.NewOutputKafka{
-			Type:                 kbapi.NewOutputKafkaTypeKafka,
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
-			Id:                   model.OutputID.ValueStringPointer(),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueString(),
-			Ssl:                  doSsl(),
-			// Kafka-specific fields
-			AuthType: func() kbapi.NewOutputKafkaAuthType {
-				if !kafkaModel.AuthType.IsNull() {
-					return kbapi.NewOutputKafkaAuthType(kafkaModel.AuthType.ValueString())
-				}
-				return kbapi.NewOutputKafkaAuthTypeNone
-			}(),
-			BrokerTimeout: func() *float32 {
-				if !kafkaModel.BrokerTimeout.IsNull() {
-					val := float32(kafkaModel.BrokerTimeout.ValueFloat64())
-					return &val
-				}
-				return nil
-			}(),
-			ClientId: kafkaModel.ClientId.ValueStringPointer(),
-			Compression: func() *kbapi.NewOutputKafkaCompression {
-				if !kafkaModel.Compression.IsNull() {
-					comp := kbapi.NewOutputKafkaCompression(kafkaModel.Compression.ValueString())
-					return &comp
-				}
-				return nil
-			}(),
-			CompressionLevel: func() *float32 {
-				if !kafkaModel.CompressionLevel.IsNull() && !kafkaModel.Compression.IsNull() && kafkaModel.Compression.ValueString() == "gzip" {
-					val := float32(kafkaModel.CompressionLevel.ValueFloat64())
-					return &val
-				}
-				return nil
-			}(),
-			ConnectionType: kafkaModel.ConnectionType.ValueStringPointer(),
-			Topic:          kafkaModel.Topic.ValueStringPointer(),
-			Partition: func() *kbapi.NewOutputKafkaPartition {
-				if !kafkaModel.Partition.IsNull() {
-					part := kbapi.NewOutputKafkaPartition(kafkaModel.Partition.ValueString())
-					return &part
-				}
-				return nil
-			}(),
-			RequiredAcks: func() *kbapi.NewOutputKafkaRequiredAcks {
-				if !kafkaModel.RequiredAcks.IsNull() {
-					acks := kbapi.NewOutputKafkaRequiredAcks(kafkaModel.RequiredAcks.ValueInt64())
-					return &acks
-				}
-				return nil
-			}(),
-			Timeout: func() *float32 {
-				if !kafkaModel.Timeout.IsNull() {
-					val := float32(kafkaModel.Timeout.ValueFloat64())
-					return &val
-				}
-				return nil
-			}(),
-			Version:    kafkaModel.Version.ValueStringPointer(),
-			Username:   kafkaModel.Username.ValueStringPointer(),
-			Password:   kafkaModel.Password.ValueStringPointer(),
-			Key:        kafkaModel.Key.ValueStringPointer(),
-			Headers:    doHeaders(),
-			Hash:       doHash(),
-			Random:     doRandom(),
-			RoundRobin: doRoundRobin(),
-			Sasl:       doSasl(),
-		}
-
-		err := union.FromNewOutputKafka(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
+		return model.toAPIUpdateKafkaModel(ctx)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")
 	}
@@ -578,269 +296,362 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.A
 	return
 }
 
-func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.ApiClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
-	doSsl := func() *kbapi.UpdateOutputSsl {
-		if utils.IsKnown(model.Ssl) {
-			sslModel := utils.ObjectTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
-			if sslModel != nil {
-				return &kbapi.UpdateOutputSsl{
-					Certificate:            sslModel.Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModel.CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
-					Key:                    sslModel.Key.ValueStringPointer(),
-				}
-			}
-		}
-		return nil
+func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
+	ssl, diags := model.toAPISSL(ctx)
+	if diags.HasError() {
+		return kbapi.NewOutputUnion{}, diags
 	}
 
-	outputType := model.Type.ValueString()
-	switch outputType {
-	case "elasticsearch":
-		body := kbapi.UpdateOutputElasticsearch{
-			Type:                 utils.Pointer(kbapi.Elasticsearch),
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueStringPointer(),
-			Ssl:                  doSsl(),
-		}
-
-		err := union.FromUpdateOutputElasticsearch(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
-	case "logstash":
-		body := kbapi.UpdateOutputLogstash{
-			Type:                 utils.Pointer(kbapi.Logstash),
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueStringPointer(),
-			Ssl:                  doSsl(),
-		}
-
-		err := union.FromUpdateOutputLogstash(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
-	case "kafka":
-		// Check minimum version requirement for Kafka output type
-		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputKafka); versionDiags.HasError() {
-			diags.Append(utils.FrameworkDiagsFromSDK(versionDiags)...)
-			return
-		} else if !supported {
-			diags.AddError("Unsupported version for Kafka output",
-				fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()))
-			return
-		}
-
-		// Extract kafka model from nested structure
-		var kafkaModel outputKafkaModel
-		if !model.Kafka.IsNull() {
-			kafkaObj := utils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
-			kafkaModel = *kafkaObj
-		}
-
-		// Helper functions for Kafka-specific complex types (Update version)
-		doHeaders := func() *[]struct {
-			Key   string `json:"key"`
-			Value string `json:"value"`
-		} {
-			if utils.IsKnown(kafkaModel.Headers) {
-				headerModels := utils.ListTypeAs[outputHeadersModel](ctx, kafkaModel.Headers, path.Root("kafka").AtName("headers"), &diags)
-				if len(headerModels) > 0 {
-					headers := make([]struct {
-						Key   string `json:"key"`
-						Value string `json:"value"`
-					}, len(headerModels))
-					for i, h := range headerModels {
-						headers[i] = struct {
-							Key   string `json:"key"`
-							Value string `json:"value"`
-						}{
-							Key:   h.Key.ValueString(),
-							Value: h.Value.ValueString(),
-						}
-					}
-					return &headers
-				}
-			}
-			return nil
-		}
-
-		doHash := func() *struct {
-			Hash   *string `json:"hash,omitempty"`
-			Random *bool   `json:"random,omitempty"`
-		} {
-			if utils.IsKnown(kafkaModel.Hash) {
-				hashModels := utils.ListTypeAs[outputHashModel](ctx, kafkaModel.Hash, path.Root("kafka").AtName("hash"), &diags)
-				if len(hashModels) > 0 {
-					return &struct {
-						Hash   *string `json:"hash,omitempty"`
-						Random *bool   `json:"random,omitempty"`
-					}{
-						Hash:   hashModels[0].Hash.ValueStringPointer(),
-						Random: hashModels[0].Random.ValueBoolPointer(),
-					}
-				}
-			}
-			return nil
-		}
-
-		doRandom := func() *struct {
-			GroupEvents *float32 `json:"group_events,omitempty"`
-		} {
-			if utils.IsKnown(kafkaModel.Random) {
-				randomModels := utils.ListTypeAs[outputRandomModel](ctx, kafkaModel.Random, path.Root("kafka").AtName("random"), &diags)
-				if len(randomModels) > 0 {
-					return &struct {
-						GroupEvents *float32 `json:"group_events,omitempty"`
-					}{
-						GroupEvents: func() *float32 {
-							if !randomModels[0].GroupEvents.IsNull() {
-								val := float32(randomModels[0].GroupEvents.ValueFloat64())
-								return &val
-							}
-							return nil
-						}(),
-					}
-				}
-			}
-			return nil
-		}
-
-		doRoundRobin := func() *struct {
-			GroupEvents *float32 `json:"group_events,omitempty"`
-		} {
-			if utils.IsKnown(kafkaModel.RoundRobin) {
-				roundRobinModels := utils.ListTypeAs[outputRoundRobinModel](ctx, kafkaModel.RoundRobin, path.Root("kafka").AtName("round_robin"), &diags)
-				if len(roundRobinModels) > 0 {
-					return &struct {
-						GroupEvents *float32 `json:"group_events,omitempty"`
-					}{
-						GroupEvents: func() *float32 {
-							if !roundRobinModels[0].GroupEvents.IsNull() {
-								val := float32(roundRobinModels[0].GroupEvents.ValueFloat64())
-								return &val
-							}
-							return nil
-						}(),
-					}
-				}
-			}
-			return nil
-		}
-
-		doSasl := func() *struct {
-			Mechanism *kbapi.UpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
-		} {
-			if utils.IsKnown(kafkaModel.Sasl) {
-				saslModels := utils.ListTypeAs[outputSaslModel](ctx, kafkaModel.Sasl, path.Root("kafka").AtName("sasl"), &diags)
-				if len(saslModels) > 0 && !saslModels[0].Mechanism.IsNull() {
-					mechanism := kbapi.UpdateOutputKafkaSaslMechanism(saslModels[0].Mechanism.ValueString())
-					return &struct {
-						Mechanism *kbapi.UpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
-					}{
-						Mechanism: &mechanism,
-					}
-				}
-			}
-			return nil
-		}
-
-		body := kbapi.UpdateOutputKafka{
-			Type:                 utils.Pointer(kbapi.Kafka),
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueString(),
-			Ssl:                  doSsl(),
-			// Kafka-specific fields
-			AuthType: func() *kbapi.UpdateOutputKafkaAuthType {
-				if !kafkaModel.AuthType.IsNull() {
-					authType := kbapi.UpdateOutputKafkaAuthType(kafkaModel.AuthType.ValueString())
-					return &authType
-				}
-				return nil
-			}(),
-			BrokerTimeout: func() *float32 {
-				if !kafkaModel.BrokerTimeout.IsNull() {
-					val := float32(kafkaModel.BrokerTimeout.ValueFloat64())
-					return &val
-				}
-				return nil
-			}(),
-			ClientId: kafkaModel.ClientId.ValueStringPointer(),
-			Compression: func() *kbapi.UpdateOutputKafkaCompression {
-				if !kafkaModel.Compression.IsNull() {
-					comp := kbapi.UpdateOutputKafkaCompression(kafkaModel.Compression.ValueString())
-					return &comp
-				}
-				return nil
-			}(),
-			CompressionLevel: func() *float32 {
-				if !kafkaModel.CompressionLevel.IsNull() && !kafkaModel.Compression.IsNull() && kafkaModel.Compression.ValueString() == "gzip" {
-					val := float32(kafkaModel.CompressionLevel.ValueFloat64())
-					return &val
-				}
-				return nil
-			}(),
-			ConnectionType: kafkaModel.ConnectionType.ValueStringPointer(),
-			Topic:          kafkaModel.Topic.ValueStringPointer(),
-			Partition: func() *kbapi.UpdateOutputKafkaPartition {
-				if !kafkaModel.Partition.IsNull() {
-					part := kbapi.UpdateOutputKafkaPartition(kafkaModel.Partition.ValueString())
-					return &part
-				}
-				return nil
-			}(),
-			RequiredAcks: func() *kbapi.UpdateOutputKafkaRequiredAcks {
-				if !kafkaModel.RequiredAcks.IsNull() {
-					acks := kbapi.UpdateOutputKafkaRequiredAcks(kafkaModel.RequiredAcks.ValueInt64())
-					return &acks
-				}
-				return nil
-			}(),
-			Timeout: func() *float32 {
-				if !kafkaModel.Timeout.IsNull() {
-					val := float32(kafkaModel.Timeout.ValueFloat64())
-					return &val
-				}
-				return nil
-			}(),
-			Version:    kafkaModel.Version.ValueStringPointer(),
-			Username:   kafkaModel.Username.ValueStringPointer(),
-			Password:   kafkaModel.Password.ValueStringPointer(),
-			Key:        kafkaModel.Key.ValueStringPointer(),
-			Headers:    doHeaders(),
-			Hash:       doHash(),
-			Random:     doRandom(),
-			RoundRobin: doRoundRobin(),
-			Sasl:       doSasl(),
-		}
-
-		err := union.FromUpdateOutputKafka(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
-	default:
-		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")
+	body := kbapi.NewOutputElasticsearch{
+		Type:                 kbapi.NewOutputElasticsearchTypeElasticsearch,
+		CaSha256:             model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
+		Id:                   model.OutputID.ValueStringPointer(),
+		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                 model.Name.ValueString(),
+		Ssl:                  ssl,
 	}
 
-	return
+	var union kbapi.NewOutputUnion
+	err := union.FromNewOutputElasticsearch(body)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return kbapi.NewOutputUnion{}, diags
+	}
+
+	return union, diags
+}
+
+func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
+	ssl, diags := model.toAPISSL(ctx)
+	if diags.HasError() {
+		return kbapi.NewOutputUnion{}, diags
+	}
+	body := kbapi.NewOutputLogstash{
+		Type:                 kbapi.NewOutputLogstashTypeLogstash,
+		CaSha256:             model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
+		Id:                   model.OutputID.ValueStringPointer(),
+		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                 model.Name.ValueString(),
+		Ssl:                  ssl,
+	}
+
+	var union kbapi.NewOutputUnion
+	err := union.FromNewOutputLogstash(body)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return kbapi.NewOutputUnion{}, diags
+	}
+
+	return union, diags
+}
+
+func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
+	ssl, diags := model.toAPISSL(ctx)
+	if diags.HasError() {
+		return kbapi.NewOutputUnion{}, diags
+	}
+
+	// Extract kafka model from nested structure
+	var kafkaModel outputKafkaModel
+	if !model.Kafka.IsNull() {
+		kafkaObj := utils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
+		kafkaModel = *kafkaObj
+	}
+
+	hash, hashDiags := kafkaModel.toAPIHash(ctx)
+	diags.Append(hashDiags...)
+
+	headers, headersDiags := kafkaModel.toAPIHeaders(ctx)
+	diags.Append(headersDiags...)
+
+	random, randomDiags := kafkaModel.toAPIRandom(ctx)
+	diags.Append(randomDiags...)
+
+	roundRobin, rrDiags := kafkaModel.toAPIRoundRobin(ctx)
+	diags.Append(rrDiags...)
+
+	sasl, saslDiags := kafkaModel.toAPISasl(ctx)
+	diags.Append(saslDiags...)
+
+	body := kbapi.NewOutputKafka{
+		Type:                 kbapi.NewOutputKafkaTypeKafka,
+		CaSha256:             model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
+		Id:                   model.OutputID.ValueStringPointer(),
+		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                 model.Name.ValueString(),
+		Ssl:                  ssl,
+		// Kafka-specific fields
+		AuthType: kafkaModel.toAuthType(),
+		BrokerTimeout: func() *float32 {
+			if !utils.IsKnown(kafkaModel.BrokerTimeout) {
+				return nil
+			}
+			val := kafkaModel.BrokerTimeout.ValueFloat32()
+			return &val
+		}(),
+		ClientId: kafkaModel.ClientId.ValueStringPointer(),
+		Compression: func() *kbapi.NewOutputKafkaCompression {
+			if !utils.IsKnown(kafkaModel.Compression) {
+				return nil
+			}
+			comp := kbapi.NewOutputKafkaCompression(kafkaModel.Compression.ValueString())
+			return &comp
+		}(),
+		CompressionLevel: func() *int {
+			if !utils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
+				return nil
+			}
+
+			val := int(kafkaModel.CompressionLevel.ValueInt64())
+			return &val
+		}(),
+		ConnectionType: kafkaModel.ConnectionType.ValueStringPointer(),
+		Topic:          kafkaModel.Topic.ValueStringPointer(),
+		Partition: func() *kbapi.NewOutputKafkaPartition {
+			if !utils.IsKnown(kafkaModel.Partition) {
+				return nil
+			}
+			part := kbapi.NewOutputKafkaPartition(kafkaModel.Partition.ValueString())
+			return &part
+		}(),
+		RequiredAcks: func() *kbapi.NewOutputKafkaRequiredAcks {
+			if !utils.IsKnown(kafkaModel.RequiredAcks) {
+				return nil
+			}
+			val := kbapi.NewOutputKafkaRequiredAcks(kafkaModel.RequiredAcks.ValueInt64())
+			return &val
+		}(),
+		Timeout: func() *float32 {
+			if !utils.IsKnown(kafkaModel.Timeout) {
+				return nil
+			}
+
+			val := kafkaModel.Timeout.ValueFloat32()
+			return &val
+		}(),
+		Version:    kafkaModel.Version.ValueStringPointer(),
+		Username:   kafkaModel.Username.ValueStringPointer(),
+		Password:   kafkaModel.Password.ValueStringPointer(),
+		Key:        kafkaModel.Key.ValueStringPointer(),
+		Headers:    headers,
+		Hash:       hash,
+		Random:     random,
+		RoundRobin: roundRobin,
+		Sasl:       sasl,
+	}
+
+	var union kbapi.NewOutputUnion
+	err := union.FromNewOutputKafka(body)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return kbapi.NewOutputUnion{}, diags
+	}
+
+	return union, diags
+}
+
+func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
+	ssl, diags := model.toUpdateAPISSL(ctx)
+	if diags.HasError() {
+		return kbapi.UpdateOutputUnion{}, diags
+	}
+	body := kbapi.UpdateOutputElasticsearch{
+		Type:                 utils.Pointer(kbapi.Elasticsearch),
+		CaSha256:             model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                 model.Name.ValueStringPointer(),
+		Ssl:                  ssl,
+	}
+
+	var union kbapi.UpdateOutputUnion
+	err := union.FromUpdateOutputElasticsearch(body)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return kbapi.UpdateOutputUnion{}, diags
+	}
+
+	return union, diags
+}
+
+func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
+	ssl, diags := model.toUpdateAPISSL(ctx)
+	if diags.HasError() {
+		return kbapi.UpdateOutputUnion{}, diags
+	}
+	body := kbapi.UpdateOutputLogstash{
+		Type:                 utils.Pointer(kbapi.Logstash),
+		CaSha256:             model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                 model.Name.ValueStringPointer(),
+		Ssl:                  ssl,
+	}
+
+	var union kbapi.UpdateOutputUnion
+	err := union.FromUpdateOutputLogstash(body)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return kbapi.UpdateOutputUnion{}, diags
+	}
+
+	return union, diags
+}
+
+func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
+	ssl, diags := model.toUpdateAPISSL(ctx)
+	if diags.HasError() {
+		return kbapi.UpdateOutputUnion{}, diags
+	}
+
+	// Extract kafka model from nested structure
+	var kafkaModel outputKafkaModel
+	if !model.Kafka.IsNull() {
+		kafkaObj := utils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
+		kafkaModel = *kafkaObj
+	}
+
+	hash, hashDiags := kafkaModel.toAPIHash(ctx)
+	diags.Append(hashDiags...)
+
+	headers, headersDiags := kafkaModel.toAPIHeaders(ctx)
+	diags.Append(headersDiags...)
+
+	random, randomDiags := kafkaModel.toAPIRandom(ctx)
+	diags.Append(randomDiags...)
+
+	roundRobin, rrDiags := kafkaModel.toAPIRoundRobin(ctx)
+	diags.Append(rrDiags...)
+
+	sasl, saslDiags := kafkaModel.toUpdateAPISasl(ctx)
+	diags.Append(saslDiags...)
+
+	body := kbapi.UpdateOutputKafka{
+		Type:                 utils.Pointer(kbapi.Kafka),
+		CaSha256:             model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                 model.Name.ValueString(),
+		Ssl:                  ssl,
+		// Kafka-specific fields
+		AuthType: kafkaModel.toUpdateAuthType(),
+		BrokerTimeout: func() *float32 {
+			if !utils.IsKnown(kafkaModel.BrokerTimeout) {
+				return nil
+			}
+			val := kafkaModel.BrokerTimeout.ValueFloat32()
+			return &val
+		}(),
+		ClientId: kafkaModel.ClientId.ValueStringPointer(),
+		Compression: func() *kbapi.UpdateOutputKafkaCompression {
+			if !utils.IsKnown(kafkaModel.Compression) {
+				return nil
+			}
+			comp := kbapi.UpdateOutputKafkaCompression(kafkaModel.Compression.ValueString())
+			return &comp
+		}(),
+		CompressionLevel: func() *int {
+			if !utils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
+				return nil
+			}
+			val := int(kafkaModel.CompressionLevel.ValueInt64())
+			return &val
+		}(),
+		ConnectionType: kafkaModel.ConnectionType.ValueStringPointer(),
+		Topic:          kafkaModel.Topic.ValueStringPointer(),
+		Partition: func() *kbapi.UpdateOutputKafkaPartition {
+			if !utils.IsKnown(kafkaModel.Partition) {
+				return nil
+			}
+			part := kbapi.UpdateOutputKafkaPartition(kafkaModel.Partition.ValueString())
+			return &part
+		}(),
+		RequiredAcks: func() *kbapi.UpdateOutputKafkaRequiredAcks {
+			if !utils.IsKnown(kafkaModel.RequiredAcks) {
+				return nil
+			}
+			val := kbapi.UpdateOutputKafkaRequiredAcks(kafkaModel.RequiredAcks.ValueInt64())
+			return &val
+		}(),
+		Timeout: func() *float32 {
+			if !utils.IsKnown(kafkaModel.Timeout) {
+				return nil
+			}
+			val := kafkaModel.Timeout.ValueFloat32()
+			return &val
+		}(),
+		Version:    kafkaModel.Version.ValueStringPointer(),
+		Username:   kafkaModel.Username.ValueStringPointer(),
+		Password:   kafkaModel.Password.ValueStringPointer(),
+		Key:        kafkaModel.Key.ValueStringPointer(),
+		Headers:    headers,
+		Hash:       hash,
+		Random:     random,
+		RoundRobin: roundRobin,
+		Sasl:       sasl,
+	}
+
+	var union kbapi.UpdateOutputUnion
+	err := union.FromUpdateOutputKafka(body)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return kbapi.UpdateOutputUnion{}, diags
+	}
+
+	return union, diags
+}
+
+func (model outputModel) toAPISSL(ctx context.Context) (*kbapi.NewOutputSsl, diag.Diagnostics) {
+	if !utils.IsKnown(model.Ssl) {
+		return nil, nil
+	}
+	var diags diag.Diagnostics
+	sslModel := utils.ObjectTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	if sslModel == nil {
+		return nil, diags
+	}
+
+	return &kbapi.NewOutputSsl{
+		Certificate:            sslModel.Certificate.ValueStringPointer(),
+		CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModel.CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
+		Key:                    sslModel.Key.ValueStringPointer(),
+	}, diags
+}
+
+func (model outputModel) toUpdateAPISSL(ctx context.Context) (*kbapi.UpdateOutputSsl, diag.Diagnostics) {
+	ssl, diags := model.toAPISSL(ctx)
+	if diags.HasError() || ssl == nil {
+		return nil, diags
+	}
+
+	return &kbapi.UpdateOutputSsl{
+		Certificate:            ssl.Certificate,
+		CertificateAuthorities: ssl.CertificateAuthorities,
+		Key:                    ssl.Key,
+	}, diags
 }

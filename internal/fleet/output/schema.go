@@ -12,7 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float32planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -120,12 +121,12 @@ func getSchema() schema.Schema {
 							stringvalidator.OneOf("none", "user_pass", "ssl", "kerberos"),
 						},
 					},
-					"broker_timeout": schema.Float64Attribute{
+					"broker_timeout": schema.Float32Attribute{
 						Description: "Kafka broker timeout.",
 						Optional:    true,
 						Computed:    true,
-						PlanModifiers: []planmodifier.Float64{
-							float64planmodifier.UseStateForUnknown(),
+						PlanModifiers: []planmodifier.Float32{
+							float32planmodifier.UseStateForUnknown(),
 						},
 					},
 					"client_id": schema.StringAttribute{
@@ -143,15 +144,15 @@ func getSchema() schema.Schema {
 							stringvalidator.OneOf("gzip", "snappy", "lz4", "none"),
 						},
 					},
-					"compression_level": schema.Float64Attribute{
+					"compression_level": schema.Int64Attribute{
 						Description: "Compression level for Kafka output.",
 						Optional:    true,
 						Computed:    true,
-						PlanModifiers: []planmodifier.Float64{
-							float64planmodifier.UseStateForUnknown(),
+						PlanModifiers: []planmodifier.Int64{
+							int64planmodifier.UseStateForUnknown(),
 						},
-						Validators: []validator.Float64{
-							validators.Float64ConditionalRequirement(
+						Validators: []validator.Int64{
+							validators.Int64ConditionalRequirement(
 								path.Root("kafka").AtName("compression"),
 								[]string{"gzip"},
 							),
@@ -186,12 +187,12 @@ func getSchema() schema.Schema {
 							int64validator.OneOf(-1, 0, 1),
 						},
 					},
-					"timeout": schema.Float64Attribute{
+					"timeout": schema.Float32Attribute{
 						Description: "Timeout for Kafka output.",
 						Optional:    true,
 						Computed:    true,
-						PlanModifiers: []planmodifier.Float64{
-							float64planmodifier.UseStateForUnknown(),
+						PlanModifiers: []planmodifier.Float32{
+							float32planmodifier.UseStateForUnknown(),
 						},
 					},
 					"version": schema.StringAttribute{
@@ -235,69 +236,49 @@ func getSchema() schema.Schema {
 							},
 						},
 					},
-					"hash": schema.ListNestedAttribute{
+					"hash": schema.SingleNestedAttribute{
 						Description: "Hash configuration for Kafka partition.",
 						Optional:    true,
-						Validators: []validator.List{
-							listvalidator.SizeAtMost(1),
-						},
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"hash": schema.StringAttribute{
-									Description: "Hash field.",
-									Optional:    true,
-								},
-								"random": schema.BoolAttribute{
-									Description: "Use random hash.",
-									Optional:    true,
-								},
+						Attributes: map[string]schema.Attribute{
+							"hash": schema.StringAttribute{
+								Description: "Hash field.",
+								Optional:    true,
+							},
+							"random": schema.BoolAttribute{
+								Description: "Use random hash.",
+								Optional:    true,
 							},
 						},
 					},
-					"random": schema.ListNestedAttribute{
+					"random": schema.SingleNestedAttribute{
 						Description: "Random configuration for Kafka partition.",
 						Optional:    true,
-						Validators: []validator.List{
-							listvalidator.SizeAtMost(1),
-						},
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"group_events": schema.Float64Attribute{
-									Description: "Number of events to group.",
-									Optional:    true,
-								},
+						Attributes: map[string]schema.Attribute{
+							"group_events": schema.Float64Attribute{
+								Description: "Number of events to group.",
+								Optional:    true,
 							},
 						},
 					},
-					"round_robin": schema.ListNestedAttribute{
+					"round_robin": schema.SingleNestedAttribute{
 						Description: "Round robin configuration for Kafka partition.",
 						Optional:    true,
-						Validators: []validator.List{
-							listvalidator.SizeAtMost(1),
-						},
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"group_events": schema.Float64Attribute{
-									Description: "Number of events to group.",
-									Optional:    true,
-								},
+						Attributes: map[string]schema.Attribute{
+							"group_events": schema.Float64Attribute{
+								Description: "Number of events to group.",
+								Optional:    true,
 							},
 						},
 					},
-					"sasl": schema.ListNestedAttribute{
+					"sasl": schema.SingleNestedAttribute{
 						Description: "SASL configuration for Kafka authentication.",
 						Optional:    true,
-						Validators: []validator.List{
-							listvalidator.SizeAtMost(1),
-						},
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"mechanism": schema.StringAttribute{
-									Description: "SASL mechanism.",
-									Optional:    true,
-									Validators: []validator.String{
-										stringvalidator.OneOf("PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"),
-									},
+						Attributes: map[string]schema.Attribute{
+							"mechanism": schema.StringAttribute{
+								Description: "SASL mechanism.",
+								Optional:    true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"),
 								},
 							},
 						},
@@ -316,20 +297,20 @@ func getHeadersAttrTypes() attr.Type {
 	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["headers"].GetType().(attr.TypeWithElementType).ElementType()
 }
 
-func getHashAttrTypes() attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["hash"].GetType().(attr.TypeWithElementType).ElementType()
+func getHashAttrTypes() map[string]attr.Type {
+	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["hash"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getRandomAttrTypes() attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["random"].GetType().(attr.TypeWithElementType).ElementType()
+func getRandomAttrTypes() map[string]attr.Type {
+	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["random"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getRoundRobinAttrTypes() attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["round_robin"].GetType().(attr.TypeWithElementType).ElementType()
+func getRoundRobinAttrTypes() map[string]attr.Type {
+	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["round_robin"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getSaslAttrTypes() attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["sasl"].GetType().(attr.TypeWithElementType).ElementType()
+func getSaslAttrTypes() map[string]attr.Type {
+	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["sasl"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getKafkaAttrTypes() map[string]attr.Type {

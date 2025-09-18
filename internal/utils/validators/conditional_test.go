@@ -153,12 +153,12 @@ func TestStringConditionalRequirement_Description(t *testing.T) {
 	}
 }
 
-func TestFloat64ConditionalRequirement(t *testing.T) {
+func TestInt64ConditionalRequirement(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
 		name           string
-		currentValue   types.Float64
+		currentValue   types.Int64
 		dependentValue types.String
 		expectedError  bool
 	}
@@ -166,37 +166,37 @@ func TestFloat64ConditionalRequirement(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:           "valid - current null, dependent any value",
-			currentValue:   types.Float64Null(),
+			currentValue:   types.Int64Null(),
 			dependentValue: types.StringValue("none"),
 			expectedError:  false,
 		},
 		{
 			name:           "valid - current unknown, dependent any value",
-			currentValue:   types.Float64Unknown(),
+			currentValue:   types.Int64Unknown(),
 			dependentValue: types.StringValue("none"),
 			expectedError:  false,
 		},
 		{
 			name:           "valid - current set, dependent matches required value",
-			currentValue:   types.Float64Value(6.0),
+			currentValue:   types.Int64Value(6),
 			dependentValue: types.StringValue("gzip"),
 			expectedError:  false,
 		},
 		{
 			name:           "invalid - current set, dependent doesn't match required value",
-			currentValue:   types.Float64Value(6.0),
+			currentValue:   types.Int64Value(6),
 			dependentValue: types.StringValue("none"),
 			expectedError:  true,
 		},
 		{
 			name:           "invalid - current set, dependent is null",
-			currentValue:   types.Float64Value(6.0),
+			currentValue:   types.Int64Value(6),
 			dependentValue: types.StringNull(),
 			expectedError:  true,
 		},
 		{
 			name:           "invalid - current set, dependent is unknown",
-			currentValue:   types.Float64Value(6.0),
+			currentValue:   types.Int64Value(6),
 			dependentValue: types.StringUnknown(),
 			expectedError:  true,
 		},
@@ -250,21 +250,21 @@ func TestFloat64ConditionalRequirement(t *testing.T) {
 			}
 
 			// Create validator
-			v := Float64ConditionalRequirement(
+			v := Int64ConditionalRequirement(
 				path.Root("compression"),
 				[]string{"gzip"},
 			)
 
 			// Create validation request
-			request := validator.Float64Request{
+			request := validator.Int64Request{
 				Path:        path.Root("compression_level"),
 				ConfigValue: testCase.currentValue,
 				Config:      config,
 			}
 
 			// Run validation
-			response := &validator.Float64Response{}
-			v.ValidateFloat64(context.Background(), request, response)
+			response := &validator.Int64Response{}
+			v.ValidateInt64(context.Background(), request, response)
 
 			// Check result
 			if testCase.expectedError {

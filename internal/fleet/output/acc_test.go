@@ -281,9 +281,9 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.headers.0.value", "us-west-1"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.headers.1.key", "service"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.headers.1.value", "beats"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.0.hash", "event.hash"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.0.random", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl.0.mechanism", "SCRAM-SHA-256"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.hash", "event.hash"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.random", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl.mechanism", "SCRAM-SHA-256"),
 				),
 			},
 		},
@@ -513,14 +513,14 @@ resource "elasticstack_fleet_output" "test_output" {
       }
     ]
   
-    hash = [{
+    hash = {
       hash   = "event.hash"
       random = false
-    }]
+    }
   
-    sasl = [{
+    sasl = {
       mechanism = "SCRAM-SHA-256"
-    }]
+    }
   }
 }
 `, id, id)
