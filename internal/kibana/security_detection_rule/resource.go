@@ -4,8 +4,13 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
+
+var _ resource.Resource = &securityDetectionRuleResource{}
+var _ resource.ResourceWithConfigure = &securityDetectionRuleResource{}
+var _ resource.ResourceWithImportState = &securityDetectionRuleResource{}
 
 func NewSecurityDetectionRuleResource() resource.Resource {
 	return &securityDetectionRuleResource{}
@@ -23,4 +28,8 @@ func (r *securityDetectionRuleResource) Configure(_ context.Context, req resourc
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
+}
+
+func (r *securityDetectionRuleResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
 }
