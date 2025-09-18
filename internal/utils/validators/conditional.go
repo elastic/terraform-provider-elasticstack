@@ -16,9 +16,8 @@ import (
 // can only be set if another attribute at a specified path equals one of the specified values.
 // This is a shared implementation that can be used for both string and float64 validators.
 type conditionalRequirement struct {
-	dependentPath  path.Path
-	allowedValues  []string
-	failureMessage string
+	dependentPath path.Path
+	allowedValues []string
 }
 
 // Description describes the validation in plain text formatting.
@@ -61,33 +60,28 @@ func (v conditionalRequirement) validate(ctx context.Context, config tfsdk.Confi
 	}
 
 	if !isAllowed {
-		if v.failureMessage != "" {
-			diags.AddAttributeError(p, "Invalid Configuration", v.failureMessage)
+		if len(v.allowedValues) == 1 {
+			diags.AddAttributeError(p, "Invalid Configuration",
+				fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
+					p,
+					v.dependentPath,
+					v.allowedValues[0],
+					v.dependentPath,
+					dependentValueStr,
+				),
+			)
 			return diags
 		} else {
-			if len(v.allowedValues) == 1 {
-				diags.AddAttributeError(p, "Invalid Configuration",
-					fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
-						p,
-						v.dependentPath,
-						v.allowedValues[0],
-						v.dependentPath,
-						dependentValueStr,
-					),
-				)
-				return diags
-			} else {
-				diags.AddAttributeError(p, "Invalid Configuration",
-					fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
-						p,
-						v.dependentPath,
-						v.allowedValues[0],
-						v.dependentPath,
-						dependentValueStr,
-					),
-				)
-				return diags
-			}
+			diags.AddAttributeError(p, "Invalid Configuration",
+				fmt.Sprintf("Attribute %s can only be set when %s is one of %v, but %s is %q",
+					p,
+					v.dependentPath,
+					v.allowedValues,
+					v.dependentPath,
+					dependentValueStr,
+				),
+			)
+			return diags
 		}
 	}
 
@@ -125,17 +119,16 @@ func (v conditionalRequirement) ValidateFloat64(ctx context.Context, request val
 //			),
 //		},
 //	},
-func StringConditionalRequirement(dependentPath path.Path, allowedValues []string, failureMessage string) validator.String {
+func StringConditionalRequirement(dependentPath path.Path, allowedValues []string) validator.String {
 	return conditionalRequirement{
-		dependentPath:  dependentPath,
-		allowedValues:  allowedValues,
-		failureMessage: failureMessage,
+		dependentPath: dependentPath,
+		allowedValues: allowedValues,
 	}
 }
 
 // StringConditionalRequirementSingle is a convenience function for when there's only one allowed value.
-func StringConditionalRequirementSingle(dependentPath path.Path, requiredValue string, failureMessage string) validator.String {
-	return StringConditionalRequirement(dependentPath, []string{requiredValue}, failureMessage)
+func StringConditionalRequirementSingle(dependentPath path.Path, requiredValue string) validator.String {
+	return StringConditionalRequirement(dependentPath, []string{requiredValue})
 }
 
 // Float64ConditionalRequirement returns a validator which ensures that a float64 attribute
@@ -156,15 +149,14 @@ func StringConditionalRequirementSingle(dependentPath path.Path, requiredValue s
 //			),
 //		},
 //	},
-func Float64ConditionalRequirement(dependentPath path.Path, allowedValues []string, failureMessage string) validator.Float64 {
+func Float64ConditionalRequirement(dependentPath path.Path, allowedValues []string) validator.Float64 {
 	return conditionalRequirement{
-		dependentPath:  dependentPath,
-		allowedValues:  allowedValues,
-		failureMessage: failureMessage,
+		dependentPath: dependentPath,
+		allowedValues: allowedValues,
 	}
 }
 
 // Float64ConditionalRequirementSingle is a convenience function for when there's only one allowed value.
-func Float64ConditionalRequirementSingle(dependentPath path.Path, requiredValue string, failureMessage string) validator.Float64 {
-	return Float64ConditionalRequirement(dependentPath, []string{requiredValue}, failureMessage)
+func Float64ConditionalRequirementSingle(dependentPath path.Path, requiredValue string) validator.Float64 {
+	return Float64ConditionalRequirement(dependentPath, []string{requiredValue})
 }

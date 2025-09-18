@@ -112,7 +112,6 @@ func TestStringConditionalRequirement(t *testing.T) {
 			v := StringConditionalRequirement(
 				path.Root("auth_type"),
 				[]string{"none"},
-				"connection_type can only be set when auth_type is 'none'",
 			)
 
 			// Create validation request
@@ -144,7 +143,6 @@ func TestStringConditionalRequirement_Description(t *testing.T) {
 	v := StringConditionalRequirement(
 		path.Root("auth_type"),
 		[]string{"none"},
-		"connection_type can only be set when auth_type is 'none'",
 	)
 
 	description := v.Description(context.Background())
@@ -255,7 +253,6 @@ func TestFloat64ConditionalRequirement(t *testing.T) {
 			v := Float64ConditionalRequirement(
 				path.Root("compression"),
 				[]string{"gzip"},
-				"compression_level can only be set when compression is 'gzip'",
 			)
 
 			// Create validation request

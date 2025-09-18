@@ -154,7 +154,6 @@ func getSchema() schema.Schema {
 							validators.Float64ConditionalRequirement(
 								path.Root("kafka").AtName("compression"),
 								[]string{"gzip"},
-								"compression_level can only be set when compression is 'gzip'",
 							),
 						},
 					},
@@ -166,7 +165,6 @@ func getSchema() schema.Schema {
 							validators.StringConditionalRequirementSingle(
 								path.Root("kafka").AtName("auth_type"),
 								"none",
-								"connection_type can only be set when auth_type is 'none'",
 							),
 						},
 					},
