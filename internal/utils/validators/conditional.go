@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -31,139 +34,77 @@ func (v conditionalRequirement) MarkdownDescription(ctx context.Context) string 
 	return v.Description(ctx)
 }
 
+func (v conditionalRequirement) validate(ctx context.Context, config tfsdk.Config, val attr.Value, p path.Path) diag.Diagnostics {
+	if val.IsNull() || val.IsUnknown() {
+		return nil
+	}
+
+	// Get the value at the dependent path
+	var dependentValue types.String
+	diags := config.GetAttribute(ctx, v.dependentPath, &dependentValue)
+	if diags.HasError() {
+		return diags
+	}
+
+	// If dependent value is null, unknown, or doesn't match any allowed values,
+	// then the current attribute should not be set
+	dependentValueStr := dependentValue.ValueString()
+	isAllowed := false
+
+	if !dependentValue.IsNull() && !dependentValue.IsUnknown() {
+		for _, allowedValue := range v.allowedValues {
+			if dependentValueStr == allowedValue {
+				isAllowed = true
+				break
+			}
+		}
+	}
+
+	if !isAllowed {
+		if v.failureMessage != "" {
+			diags.AddAttributeError(p, "Invalid Configuration", v.failureMessage)
+			return diags
+		} else {
+			if len(v.allowedValues) == 1 {
+				diags.AddAttributeError(p, "Invalid Configuration",
+					fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
+						p,
+						v.dependentPath,
+						v.allowedValues[0],
+						v.dependentPath,
+						dependentValueStr,
+					),
+				)
+				return diags
+			} else {
+				diags.AddAttributeError(p, "Invalid Configuration",
+					fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
+						p,
+						v.dependentPath,
+						v.allowedValues[0],
+						v.dependentPath,
+						dependentValueStr,
+					),
+				)
+				return diags
+			}
+		}
+	}
+
+	return nil
+}
+
 // validateConditionalRequirement was an attempt at shared logic but is not used
 // The validation logic is implemented directly in ValidateString and ValidateFloat64 methods
 
 // ValidateString performs the validation for string attributes.
 func (v conditionalRequirement) ValidateString(ctx context.Context, request validator.StringRequest, response *validator.StringResponse) {
-	// If the current attribute is null or unknown, no validation needed
-	if request.ConfigValue.IsNull() || request.ConfigValue.IsUnknown() {
-		return
-	}
-
-	// Get the value at the dependent path
-	var dependentValue types.String
-	diags := request.Config.GetAttribute(ctx, v.dependentPath, &dependentValue)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	// If dependent value is null, unknown, or doesn't match any allowed values,
-	// then the current attribute should not be set
-	dependentValueStr := dependentValue.ValueString()
-	isAllowed := false
-
-	if !dependentValue.IsNull() && !dependentValue.IsUnknown() {
-		for _, allowedValue := range v.allowedValues {
-			if dependentValueStr == allowedValue {
-				isAllowed = true
-				break
-			}
-		}
-	}
-
-	if !isAllowed {
-		if v.failureMessage != "" {
-			response.Diagnostics.AddAttributeError(
-				request.Path,
-				"Invalid Configuration",
-				v.failureMessage,
-			)
-		} else {
-			if len(v.allowedValues) == 1 {
-				response.Diagnostics.AddAttributeError(
-					request.Path,
-					"Invalid Configuration",
-					fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
-						request.Path,
-						v.dependentPath,
-						v.allowedValues[0],
-						v.dependentPath,
-						dependentValueStr,
-					),
-				)
-			} else {
-				response.Diagnostics.AddAttributeError(
-					request.Path,
-					"Invalid Configuration",
-					fmt.Sprintf("Attribute %s can only be set when %s is one of %v, but %s is %q",
-						request.Path,
-						v.dependentPath,
-						v.allowedValues,
-						v.dependentPath,
-						dependentValueStr,
-					),
-				)
-			}
-		}
-	}
+	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
 // ValidateFloat64 performs the validation for float64 attributes.
 func (v conditionalRequirement) ValidateFloat64(ctx context.Context, request validator.Float64Request, response *validator.Float64Response) {
-	// If the current attribute is null or unknown, no validation needed
-	if request.ConfigValue.IsNull() || request.ConfigValue.IsUnknown() {
-		return
-	}
-
-	// Get the value at the dependent path
-	var dependentValue types.String
-	diags := request.Config.GetAttribute(ctx, v.dependentPath, &dependentValue)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	// If dependent value is null, unknown, or doesn't match any allowed values,
-	// then the current attribute should not be set
-	dependentValueStr := dependentValue.ValueString()
-	isAllowed := false
-
-	if !dependentValue.IsNull() && !dependentValue.IsUnknown() {
-		for _, allowedValue := range v.allowedValues {
-			if dependentValueStr == allowedValue {
-				isAllowed = true
-				break
-			}
-		}
-	}
-
-	if !isAllowed {
-		if v.failureMessage != "" {
-			response.Diagnostics.AddAttributeError(
-				request.Path,
-				"Invalid Configuration",
-				v.failureMessage,
-			)
-		} else {
-			if len(v.allowedValues) == 1 {
-				response.Diagnostics.AddAttributeError(
-					request.Path,
-					"Invalid Configuration",
-					fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
-						request.Path,
-						v.dependentPath,
-						v.allowedValues[0],
-						v.dependentPath,
-						dependentValueStr,
-					),
-				)
-			} else {
-				response.Diagnostics.AddAttributeError(
-					request.Path,
-					"Invalid Configuration",
-					fmt.Sprintf("Attribute %s can only be set when %s is one of %v, but %s is %q",
-						request.Path,
-						v.dependentPath,
-						v.allowedValues,
-						v.dependentPath,
-						dependentValueStr,
-					),
-				)
-			}
-		}
-	}
+	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
 // StringConditionalRequirement returns a validator which ensures that a string attribute
