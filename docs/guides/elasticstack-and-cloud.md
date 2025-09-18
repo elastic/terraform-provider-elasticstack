@@ -26,7 +26,7 @@ terraform {
     }
     elasticstack = {
       source  = "elastic/elasticstack"
-      version = "~>0.11"
+      version = "0.12.3"
     }
   }
 }
@@ -91,6 +91,10 @@ provider "elasticstack" {
     username  = ec_deployment.cluster.elasticsearch_username
     password  = ec_deployment.cluster.elasticsearch_password
   }
+
+  kibana {
+    endpoints = ["${ec_deployment.cluster.kibana.https_endpoint}"]
+  }
 }
 
 provider "elasticstack" {
@@ -103,6 +107,214 @@ provider "elasticstack" {
   }
   alias = "monitoring"
 }
+
+#	resource "elasticstack_kibana_action_connector" "test" {
+#	  name         = "test connector 1"
+#	  config = jsonencode({
+#		createIncidentJson = "{}"
+#		createIncidentResponseKey = "key"
+#		createIncidentUrl = "https://www.elastic.co/"
+#		getIncidentResponseExternalTitleKey = "title"
+#		getIncidentUrl = "https://www.elastic.co/"
+#		updateIncidentJson = "{}"
+#		updateIncidentUrl = "https://elasticsearch.com/"
+#		viewIncidentUrl = "https://www.elastic.co/"
+#		createIncidentMethod = "put"
+#	  })
+#	  secrets = jsonencode({
+#		user = "user2"
+#		password = "password2"
+#	  })
+#	  connector_type_id = ".cases-webhook"
+#	}
+#
+#  	resource "elasticstack_kibana_action_connector" "test2" {
+#	  name         = "test connector 2"
+#    connector_id = "1d30b67b-f90b-4e28-87c2-137cba361509"
+#	  config = jsonencode({
+#		createIncidentJson = "{}"
+#		createIncidentResponseKey = "key"
+#		createIncidentUrl = "https://www.elastic.co/"
+#		getIncidentResponseExternalTitleKey = "title"
+#		getIncidentUrl = "https://www.elastic.co/"
+#		updateIncidentJson = "{}"
+#		updateIncidentUrl = "https://elasticsearch.com/"
+#		viewIncidentUrl = "https://www.elastic.co/"
+#		createIncidentMethod = "put"
+#	  })
+#	  secrets = jsonencode({
+#		user = "user2"
+#		password = "password2"
+#	  })
+#	  connector_type_id = ".cases-webhook"
+#	}
+#
+#resource "elasticstack_elasticsearch_security_api_key" "cross_cluster_key" {
+#  name = "My Cross-Cluster API Key"
+#  type = "cross_cluster"
+#  # Define access permissions for cross-cluster operations
+#  access = {
+#    # Grant replication access to specific indices
+#    replication = [
+#      {
+#        names = ["archive-test-1-*"]
+#      }
+#    ]
+#
+#    search = [
+#      {
+#        names = ["log-1-*", "metrics-1-*"]
+#      }
+#    ]
+#  }
+#  # Set the expiration for the API key
+#  expiration = "30d"
+#  # Set arbitrary metadata
+#  metadata = jsonencode({
+#    description = "Cross-cluster key for production environment"
+#    environment = "production"
+#    team        = "platform"
+#  })
+#}
+#output "cross_cluster_api_key" {
+#  value     = elasticstack_elasticsearch_security_api_key.cross_cluster_key
+#  sensitive = true
+#}
+
+#resource "elasticstack_kibana_action_connector" "my-new-connector7" {
+#  name              = "human-uuid"
+##  connector_id      = "lugoz-safes-rusin-bubov-fytex-cydeb"
+# connector_id      = "abc69090-6342-4f3f-b236-a3fd48635227"
+#  connector_type_id = ".slack_api"
+#  secrets = jsonencode({
+#    token = "dummy value"
+#  })
+#}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "Test Detection Rule (updated 17)"
+  description = "A test detection rule"
+  type        = "query"
+  severity    = "medium"
+  risk_score  = 50
+  enabled     = true
+  query       = "user.name:*"
+  language    = "kuery"
+
+  tags = ["test", "terraform"]
+}
+
+#resource "elasticstack_kibana_security_detection_rule" "test" {
+#  name         = "Test Threat Match Rule"
+#  type         = "threat_match"
+#  query        = "destination.ip:*"
+#  language     = "kuery"
+#  enabled      = true
+#  description  = "Test threat match security detection rule"
+#  severity     = "high"
+#  risk_score   = 80
+#  from         = "now-6m"
+#  to           = "now"
+#  interval     = "5m"
+#  index        = ["logs-*"]
+#  threat_index = ["threat-intel-*"]
+#  threat_query = "threat.indicator.type:ip"
+#  
+#  threat_mapping = [
+#    {
+#      entries = [
+#        {
+#          field = "destination.ip"
+#          type  = "mapping"
+#          value = "threat.indicator.ip"
+#        }
+#      ]
+#    }
+#  ]
+#}
+
+#resource "elasticstack_kibana_security_detection_rule" "test" {
+#  name        = "Test Threshold Rule"
+#  type        = "threshold"
+#  query       = "event.action:login"
+#  language    = "kuery"
+#  enabled     = true
+#  description = "Test threshold security detection rule"
+#  severity    = "medium"
+#  risk_score  = 55
+#  from        = "now-6m"
+#  to          = "now"
+#  interval    = "5m"
+#  index       = ["logs-*"]
+#
+#  threshold = {
+#    value = 10
+#    field = ["user.name"]
+#    #cardinality = [ # TODO test without cardinality
+#    #  {
+#    #    field = "source.ip"
+#    #    value = 5
+#    #  }
+#    #]
+#  }
+#}
+
+#resource "elasticstack_kibana_security_detection_rule" "example" {
+#  name        = "Suspicious Process Activity"
+#  description = "Detects suspicious process execution patterns"
+#  type        = "query"
+#  query       = "process.name : (cmd.exe or powershell.exe) and user.name : admin*"
+#  language    = "kuery"
+#  severity    = "high"
+#  risk        = 75
+#  enabled     = true
+#  
+#  tags        = ["security", "windows", "process"]
+#  interval    = "5m"
+#  from        = "now-6m"
+#  to          = "now"
+#  
+#  author      = ["Security Team"]
+#  references  = ["https://attack.mitre.org/techniques/T1059/"]
+#}
+
+#resource "elasticstack_kibana_security_detection_rule" "test" {
+#  name         = "TEST "
+#  type         = "threat_match"
+#  query        = "destination.ip:*"
+#  language     = "kuery"
+#  enabled      = true
+#  description  = "Test threat match security detection rule"
+#  severity     = "high"
+#  risk_score   = 80
+#  from         = "now-6m"
+#  to           = "now"
+#  interval     = "5m"
+#  index        = ["logs-*"]
+#  threat_index = ["threat-intel-*"]
+#  threat_query = "threat.indicator.type:ip"
+#
+#  threat_mapping = [
+#    {
+#      entries = [
+#        {
+#          field = "destination.ip"
+#          type  = "mapping"
+#          value = "threat.indicator.ip"
+#        }
+#      ]
+#    },
+#    {
+#      entries = [
+#        {
+#          field = "source.ip"
+#          type  = "mapping"
+#          value = "threat.indicator.ip"
+#        }
+#      ]
+#    }
+#  ]
+#}
 ```
 
 Notice that the Elastic Stack  provider setup with empty `elasticsearch {}` block, since we'll be using an `elasticsearch_connection` block
