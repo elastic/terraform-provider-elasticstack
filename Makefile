@@ -15,7 +15,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 9.0.3
+STACK_VERSION ?= 9.1.3
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
