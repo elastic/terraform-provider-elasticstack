@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -13,7 +13,7 @@ import (
 func GetDataViews(ctx context.Context, client *Client, spaceID string) ([]kbapi.GetDataViewsResponseItem, diag.Diagnostics) {
 	resp, err := client.API.GetAllDataViewsDefaultWithResponse(ctx, spaceID)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -28,7 +28,7 @@ func GetDataViews(ctx context.Context, client *Client, spaceID string) ([]kbapi.
 func GetDataView(ctx context.Context, client *Client, spaceID string, viewID string) (*kbapi.DataViewsDataViewResponseObject, diag.Diagnostics) {
 	resp, err := client.API.GetDataViewDefaultWithResponse(ctx, spaceID, viewID)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -45,7 +45,7 @@ func GetDataView(ctx context.Context, client *Client, spaceID string, viewID str
 func CreateDataView(ctx context.Context, client *Client, spaceID string, req kbapi.DataViewsCreateDataViewRequestObject) (*kbapi.DataViewsDataViewResponseObject, diag.Diagnostics) {
 	resp, err := client.API.CreateDataViewDefaultwWithResponse(ctx, spaceID, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -60,7 +60,7 @@ func CreateDataView(ctx context.Context, client *Client, spaceID string, req kba
 func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID string, req kbapi.DataViewsUpdateDataViewRequestObject) (*kbapi.DataViewsDataViewResponseObject, diag.Diagnostics) {
 	resp, err := client.API.UpdateDataViewDefaultWithResponse(ctx, spaceID, viewID, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -75,7 +75,7 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 func DeleteDataView(ctx context.Context, client *Client, spaceID string, viewID string) diag.Diagnostics {
 	resp, err := client.API.DeleteDataViewDefaultWithResponse(ctx, spaceID, viewID)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {

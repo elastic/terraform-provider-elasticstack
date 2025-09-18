@@ -6,7 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -100,7 +100,7 @@ func assertKafkaSupport(ctx context.Context, client *clients.ApiClient) diag.Dia
 
 	// Check minimum version requirement for Kafka output type
 	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputKafka); versionDiags.HasError() {
-		diags.Append(utils.FrameworkDiagsFromSDK(versionDiags)...)
+		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
 		return diags
 	} else if !supported {
 		diags.AddError("Unsupported version for Kafka output",

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -104,7 +105,7 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 
 		c, fwDiags := ConnectorResponseToModel(spaceID, &connector)
 		if fwDiags.HasError() {
-			return nil, utils.SDKDiagsFromFramework(fwDiags)
+			return nil, diagutil.SDKDiagsFromFramework(fwDiags)
 		}
 
 		foundConnectors = append(foundConnectors, c)

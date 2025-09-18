@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -19,7 +20,7 @@ var (
 func GetEnrollmentTokens(ctx context.Context, client *Client) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -38,7 +39,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 
 	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, &params)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -53,7 +54,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 func GetAgentPolicy(ctx context.Context, client *Client, id string) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -74,7 +75,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 
 	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -89,7 +90,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -108,7 +109,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 
 	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -125,7 +126,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 func GetOutput(ctx context.Context, client *Client, id string) (*kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -142,7 +143,7 @@ func GetOutput(ctx context.Context, client *Client, id string) (*kbapi.OutputUni
 func CreateOutput(ctx context.Context, client *Client, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -157,7 +158,7 @@ func CreateOutput(ctx context.Context, client *Client, req kbapi.NewOutputUnion)
 func UpdateOutput(ctx context.Context, client *Client, id string, req kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -172,7 +173,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, req kbapi.Upda
 func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -189,7 +190,7 @@ func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnosti
 func GetFleetServerHost(ctx context.Context, client *Client, id string) (*kbapi.ServerHost, diag.Diagnostics) {
 	resp, err := client.API.GetFleetFleetServerHostsItemidWithResponse(ctx, id)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -206,7 +207,7 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string) (*kbapi.
 func CreateFleetServerHost(ctx context.Context, client *Client, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
 	resp, err := client.API.PostFleetFleetServerHostsWithResponse(ctx, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -221,7 +222,7 @@ func CreateFleetServerHost(ctx context.Context, client *Client, req kbapi.PostFl
 func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
 	resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -236,7 +237,7 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req k
 func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetFleetServerHostsItemidWithResponse(ctx, id)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -257,7 +258,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string) (*kbapi.Pa
 
 	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -278,7 +279,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackageP
 
 	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -297,7 +298,7 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req kba
 
 	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -316,7 +317,7 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 
 	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -335,14 +336,14 @@ func GetPackage(ctx context.Context, client *Client, name, version string) (*kba
 
 	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	case http.StatusNotFound:
-		return nil, utils.FrameworkDiagFromError(ErrPackageNotFound)
+		return nil, diagutil.FrameworkDiagFromError(ErrPackageNotFound)
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
@@ -357,7 +358,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 
 	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -372,7 +373,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 func Uninstall(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -400,7 +401,7 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool) ([]kbapi.
 
 	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
