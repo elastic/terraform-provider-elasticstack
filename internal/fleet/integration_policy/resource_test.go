@@ -20,7 +20,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
+var (
+	minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
+	minVersionSqlIntegration    = version.Must(version.NewVersion("9.1.0"))
+)
 
 func TestJsonTypes(t *testing.T) {
 	mapBytes, err := json.Marshal(map[string]string{})
@@ -127,53 +130,92 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:   testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-1","endpoint":"endpoint","secret_access_key":"created %s","session_token":"placeholder"}`, policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "aws_logs-aws-cloudwatch"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":true,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}}}`),
-				),
+	t.Run("single valued secrets", func(t *testing.T) {
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { acctest.PreCheck(t) },
+			CheckDestroy:             checkResourceIntegrationPolicyDestroy,
+			ProtoV6ProviderFactories: acctest.Providers,
+			Steps: []resource.TestStep{
+				{
+					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					Config:   testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-1","endpoint":"endpoint","secret_access_key":"created %s","session_token":"placeholder"}`, policyName)),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "aws_logs-aws-cloudwatch"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
+						resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":true,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}}}`),
+					),
+				},
+				{
+					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					Config:   testAccResourceIntegrationPolicySecretsUpdate(policyName, "updated"),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-2","endpoint":"endpoint","secret_access_key":"updated %s","session_token":"placeholder"}`, policyName)),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "aws_logs-aws-cloudwatch"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "false"),
+						resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":false,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"2m","start_position":"beginning","tags":["forwarded"]}}}`),
+					),
+				},
+				{
+					SkipFunc:                versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
+					Config:                  testAccResourceIntegrationPolicyUpdate(policyName),
+					ImportState:             true,
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"vars_json"},
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", regexp.MustCompile(`{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-2","endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`)),
+					),
+				},
 			},
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:   testAccResourceIntegrationPolicySecretsUpdate(policyName, "updated"),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-2","endpoint":"endpoint","secret_access_key":"updated %s","session_token":"placeholder"}`, policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "aws_logs-aws-cloudwatch"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "false"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":false,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"2m","start_position":"beginning","tags":["forwarded"]}}}`),
-				),
+		})
+	})
+
+	t.Run("multi-valued secrets", func(t *testing.T) {
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { acctest.PreCheck(t) },
+			CheckDestroy:             checkResourceIntegrationPolicyDestroy,
+			ProtoV6ProviderFactories: acctest.Providers,
+			Steps: []resource.TestStep{
+				{
+					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration),
+					Config:   testAccResourceIntegrationPolicySecretsIds(policyName, "created"),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "SQL Integration Policy"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "sql"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.1.0"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "sql-sql/metrics"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
+						resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"sql.sql":{"enabled":true,"vars":{"data_stream.dataset":"sql","driver":"mysql","hosts":["root:test@tcp(127.0.0.1:3306)/"],"merge_results":false,"period":"1m","processors":"","sql_queries":"- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%'\n  response_format: variables\n        \n","ssl":""}}}`),
+					),
+				},
+				{
+					SkipFunc: func() (bool, error) {
+						return versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration)()
+					},
+					ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
+					Config:                  testAccResourceIntegrationPolicySecretsIds(policyName, "created"),
+					ImportState:             true,
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"input.0.streams_json"},
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", regexp.MustCompile(`"hosts":{"ids":["\S+"],"isSecretRef":true}`)),
+					),
+				},
 			},
-			{
-				SkipFunc:                versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
-				Config:                  testAccResourceIntegrationPolicyUpdate(policyName),
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"vars_json"},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", regexp.MustCompile(`{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-2","endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`)),
-				),
-			},
-		},
+		})
 	})
 }
 
@@ -450,4 +492,40 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   }
 }
 `, common, id, key, id)
+}
+
+func testAccResourceIntegrationPolicySecretsIds(id string, key string) string {
+	common := testAccResourceIntegrationPolicyCommon(id, "sql", "1.1.0")
+	return fmt.Sprintf(`
+%s
+
+resource "elasticstack_fleet_integration_policy" "test_policy" {
+  name            = "%s"
+  namespace       = "default"
+  description     = "SQL Integration Policy"
+  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+  integration_name    = elasticstack_fleet_integration.test_policy.name
+  integration_version = elasticstack_fleet_integration.test_policy.version
+ 
+  input {
+    input_id  = "sql-sql/metrics"
+      enabled   = true
+      streams_json = jsonencode({
+        "sql.sql" : {
+          "enabled" : true,
+          "vars" : {
+            "hosts" : ["root:test@tcp(127.0.0.1:3306)/"],
+            "period" : "1m",
+            "driver" : "mysql",
+            "sql_queries" : "- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%%'\n  response_format: variables\n        \n",
+            "merge_results" : false,
+            "ssl" : "",
+            "data_stream.dataset" : "sql",
+            "processors" : ""
+          }
+        }
+      })
+  }
+}
+`, common, id)
 }
