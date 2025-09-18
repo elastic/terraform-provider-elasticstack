@@ -36,7 +36,7 @@ type tfModel struct {
 	KeyID                   types.String         `tfsdk:"key_id"`
 	Name                    types.String         `tfsdk:"name"`
 	Type                    types.String         `tfsdk:"type"`
-	RoleDescriptors         jsontypes.Normalized `tfsdk:"role_descriptors"`
+	RoleDescriptors         RoleDescriptorsValue `tfsdk:"role_descriptors"`
 	Expiration              types.String         `tfsdk:"expiration"`
 	ExpirationTimestamp     types.Int64          `tfsdk:"expiration_timestamp"`
 	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
@@ -205,7 +205,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 	model.Metadata = jsontypes.NewNormalizedNull()
 
 	if serverVersion.GreaterThanOrEqual(MinVersionReturningRoleDescriptors) {
-		model.RoleDescriptors = jsontypes.NewNormalizedNull()
+		model.RoleDescriptors = NewRoleDescriptorsNull()
 
 		if apiKey.RolesDescriptors != nil {
 			descriptors, diags := marshalNormalizedJsonValue(apiKey.RolesDescriptors)
@@ -213,7 +213,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 				return diags
 			}
 
-			model.RoleDescriptors = descriptors
+			model.RoleDescriptors = NewRoleDescriptorsValue(descriptors.ValueString())
 		}
 	}
 

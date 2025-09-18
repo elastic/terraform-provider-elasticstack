@@ -2,6 +2,7 @@ package transform
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -114,7 +115,7 @@ func ResourceTransform() *schema.Resource {
 							validation.StringLenBetween(1, 255),
 							validation.StringNotInSlice([]string{".", ".."}, true),
 							validation.StringMatch(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-							validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"),
+							validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see the [indices create API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params) for more details"),
 						),
 					},
 					"aliases": {
@@ -303,7 +304,7 @@ func ResourceTransform() *schema.Resource {
 
 	return &schema.Resource{
 		Schema:      transformSchema,
-		Description: "Manages Elasticsearch transforms. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/transforms.html",
+		Description: transformDescription,
 
 		CreateContext: resourceTransformCreate,
 		ReadContext:   resourceTransformRead,
@@ -877,3 +878,6 @@ func isSettingAllowed(ctx context.Context, settingName string, serverVersion *ve
 
 	return true
 }
+
+//go:embed transform.md
+var transformDescription string

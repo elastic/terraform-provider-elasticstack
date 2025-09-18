@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Index** | **string** | The index or index pattern to use | 
+**DataViewId** | Pointer to **string** | The kibana data view id to use, primarily used to include data view runtime mappings. Make sure to save SLO again if you add/update run time fields to the data view and if those fields are being used in slo queries. | [optional] 
 **Filter** | Pointer to **string** | the KQL query to filter the documents with. | [optional] 
 **TimestampField** | **string** | The timestamp field used in the source indice.  | 
 **Metric** | [**IndicatorPropertiesTimesliceMetricParamsMetric**](IndicatorPropertiesTimesliceMetricParamsMetric.md) |  | 
@@ -47,6 +48,31 @@ and a boolean to check if the value has been set.
 
 SetIndex sets Index field to given value.
 
+
+### GetDataViewId
+
+`func (o *IndicatorPropertiesTimesliceMetricParams) GetDataViewId() string`
+
+GetDataViewId returns the DataViewId field if non-nil, zero value otherwise.
+
+### GetDataViewIdOk
+
+`func (o *IndicatorPropertiesTimesliceMetricParams) GetDataViewIdOk() (*string, bool)`
+
+GetDataViewIdOk returns a tuple with the DataViewId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDataViewId
+
+`func (o *IndicatorPropertiesTimesliceMetricParams) SetDataViewId(v string)`
+
+SetDataViewId sets DataViewId field to given value.
+
+### HasDataViewId
+
+`func (o *IndicatorPropertiesTimesliceMetricParams) HasDataViewId() bool`
+
+HasDataViewId returns a boolean if a field has been set.
 
 ### GetFilter
 

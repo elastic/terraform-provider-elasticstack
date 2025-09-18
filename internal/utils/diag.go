@@ -94,6 +94,32 @@ func FrameworkDiagsFromSDK(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
 	return diags
 }
 
+func SDKDiagsFromFramework(fwDiags fwdiag.Diagnostics) sdkdiag.Diagnostics {
+	var diags sdkdiag.Diagnostics
+
+	for _, fwDiag := range fwDiags {
+		var sdkDiag sdkdiag.Diagnostic
+
+		if fwDiag.Severity() == fwdiag.SeverityError {
+			sdkDiag = sdkdiag.Diagnostic{
+				Severity: sdkdiag.Error,
+				Summary:  fwDiag.Summary(),
+				Detail:   fwDiag.Detail(),
+			}
+		} else {
+			sdkDiag = sdkdiag.Diagnostic{
+				Severity: sdkdiag.Warning,
+				Summary:  fwDiag.Summary(),
+				Detail:   fwDiag.Detail(),
+			}
+		}
+
+		diags = append(diags, sdkDiag)
+	}
+
+	return diags
+}
+
 func FrameworkDiagFromError(err error) fwdiag.Diagnostics {
 	if err == nil {
 		return nil

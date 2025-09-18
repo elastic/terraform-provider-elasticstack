@@ -10,7 +10,15 @@
 - Add support for managing cross_cluster API keys in `elasticstack_elasticsearch_security_api_key` ([#1252](https://github.com/elastic/terraform-provider-elasticstack/pull/1252))
 - Allow version changes without a destroy/create cycle with `elasticstack_fleet_integration` ([#1255](https://github.com/elastic/terraform-provider-elasticstack/pull/1255)). This fixes an issue where it was impossible to upgrade integrations which are used by an integration policy.
 - Add `namespace` attribute to `elasticstack_kibana_synthetics_monitor` resource to support setting data stream namespace independently from `space_id` ([#1247](https://github.com/elastic/terraform-provider-elasticstack/pull/1247))
+- Support setting an explit `connector_id` in `elasticstack_kibana_action_connector`. This attribute already existed, but was being ignored by the provider. Setting the attribute will return an error in Elastic Stack v8.8 and lower since creating a connector with an explicit ID is not supported. ([1260](https://github.com/elastic/terraform-provider-elasticstack/pull/1260))
+- Migrate `elasticstack_kibana_action_connector` to the Terraform plugin framework ([#1269](https://github.com/elastic/terraform-provider-elasticstack/pull/1269))
 - Migrate `elasticstack_elasticsearch_security_role_mapping` resource and data source to Terraform Plugin Framework ([#1279](https://github.com/elastic/terraform-provider-elasticstack/pull/1279))
+- Add support for `inactivity_timeout` in `elasticstack_fleet_agent_policy` ([#641](https://github.com/elastic/terraform-provider-elasticstack/issues/641))
+- Add support for `prevent_initial_backfill` to `elasticstack_kibana_slo` ([#1071](https://github.com/elastic/terraform-provider-elasticstack/pull/1071))
+- [Refactor] Regenerate the SLO client using the current OpenAPI spec ([#1303](https://github.com/elastic/terraform-provider-elasticstack/pull/1303))
+- Add support for `data_view_id` in the `elasticstack_kibana_slo` resource ([#1305](https://github.com/elastic/terraform-provider-elasticstack/pull/1305))
+- Add support for `unenrollment_timeout` in `elasticstack_fleet_agent_policy` ([#1169](https://github.com/elastic/terraform-provider-elasticstack/issues/1169))
+- Handle default value for `allow_restricted_indices` in `elasticstack_elasticsearch_security_api_key` ([#1315](https://github.com/elastic/terraform-provider-elasticstack/pull/1315))
 
 ## [0.11.17] - 2025-07-21
 

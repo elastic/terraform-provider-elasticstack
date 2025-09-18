@@ -1,6 +1,7 @@
 package private_location
 
 import (
+	_ "embed"
 	"strings"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
@@ -24,7 +25,7 @@ type tfModelV0 struct {
 
 func privateLocationSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Synthetics private location config, see https://www.elastic.co/guide/en/kibana/current/create-private-location-api.html for more details",
+		MarkdownDescription: syntheticsPrivateLocationDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -98,3 +99,6 @@ func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
 		Geo:           synthetics.FromSyntheticGeoConfig(pLoc.Geo),
 	}
 }
+
+//go:embed resource-description.md
+var syntheticsPrivateLocationDescription string

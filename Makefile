@@ -225,7 +225,7 @@ docker-clean: ## Try to remove provisioned nodes and assigned network
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
 
 .PHONY: gen
@@ -350,7 +350,7 @@ generate-slo-client: tools ## generate Kibana slo client
 		-o /local/generated/slo \
 		 --type-mappings=float32=float64
 	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
-	@ go fmt ./generated/...
+	@ go fmt ./generated/slo/...
 
 .PHONY: generate-clients
 generate-clients: generate-alerting-client generate-slo-client generate-connectors-client ## generate all clients

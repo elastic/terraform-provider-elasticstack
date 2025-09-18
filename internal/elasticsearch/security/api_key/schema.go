@@ -32,7 +32,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 func (r *Resource) getSchema(version int64) schema.Schema {
 	return schema.Schema{
 		Version:     version,
-		Description: "Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html",
+		Description: "Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See the [security API create API key documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html) and [create cross-cluster API key documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html) for more details.",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},
@@ -77,7 +77,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 			},
 			"role_descriptors": schema.StringAttribute{
 				Description: "Role descriptors for this API key.",
-				CustomType:  jsontypes.NormalizedType{},
+				CustomType:  RoleDescriptorsType{},
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{

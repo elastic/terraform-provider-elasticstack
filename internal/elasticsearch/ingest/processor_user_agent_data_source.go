@@ -61,7 +61,7 @@ func DataSourceProcessorUserAgent() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Extracts details from the user agent string a browser sends with its web requests. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/user-agent-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a user agent processor. This processor extracts details from the user agent string a browser sends with its web requests. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/user-agent-processor.html",
 
 		ReadContext: dataSourceProcessorUserAgentRead,
 

@@ -5,12 +5,17 @@ import (
 	"encoding/json"
 	"strings"
 
+	_ "embed"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+//go:embed processor_community_id_data_source.md
+var communityIdDataSourceDescription string
 
 func DataSourceProcessorCommunityId() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -117,7 +122,7 @@ func DataSourceProcessorCommunityId() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Computes the Community ID for network flow data as defined in the Community ID Specification. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/community-id-processor.html",
+		Description: communityIdDataSourceDescription,
 
 		ReadContext: dataSourceProcessorCommunityIdRead,
 
