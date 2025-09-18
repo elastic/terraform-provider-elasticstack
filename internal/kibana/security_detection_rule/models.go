@@ -181,6 +181,23 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.Sec
 	}
 }
 
+// getKQLQueryLanguage maps language string to kbapi.SecurityDetectionsAPIKqlQueryLanguage
+func (d SecurityDetectionRuleData) getKQLQueryLanguage() *kbapi.SecurityDetectionsAPIKqlQueryLanguage {
+	if utils.IsKnown(d.Language) {
+		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
+		switch d.Language.ValueString() {
+		case "kuery":
+			language = "kuery"
+		case "lucene":
+			language = "lucene"
+		default:
+			language = "kuery"
+		}
+		return &language
+	}
+	return nil
+}
+
 func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
@@ -215,18 +232,7 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 	}, &diags)
 
 	// Set query-specific fields
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		queryRule.Language = &language
-	}
+	queryRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
 		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
@@ -457,18 +463,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 	}, &diags)
 
 	// Set query language
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		newTermsRule.Language = &language
-	}
+	newTermsRule.Language = d.getKQLQueryLanguage()
 
 	// Convert to union type
 	err := createProps.FromSecurityDetectionsAPINewTermsRuleCreateProps(newTermsRule)
@@ -521,18 +516,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 	}
 
 	// Set query language
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		savedQueryRule.Language = &language
-	}
+	savedQueryRule.Language = d.getKQLQueryLanguage()
 
 	// Convert to union type
 	err := createProps.FromSecurityDetectionsAPISavedQueryRuleCreateProps(savedQueryRule)
@@ -615,18 +599,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 	}
 
 	// Set query language
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		threatMatchRule.Language = &language
-	}
+	threatMatchRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
 		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
@@ -684,18 +657,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 	}, &diags)
 
 	// Set query language
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		thresholdRule.Language = &language
-	}
+	thresholdRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
 		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
@@ -904,18 +866,7 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 	}, &diags)
 
 	// Set query-specific fields
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		queryRule.Language = &language
-	}
+	queryRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
 		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
@@ -1222,18 +1173,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 	}, &diags)
 
 	// Set query language
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		newTermsRule.Language = &language
-	}
+	newTermsRule.Language = d.getKQLQueryLanguage()
 
 	// Convert to union type
 	err = updateProps.FromSecurityDetectionsAPINewTermsRuleUpdateProps(newTermsRule)
@@ -1305,18 +1245,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 	}
 
 	// Set query language
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		savedQueryRule.Language = &language
-	}
+	savedQueryRule.Language = d.getKQLQueryLanguage()
 
 	// Convert to union type
 	err = updateProps.FromSecurityDetectionsAPISavedQueryRuleUpdateProps(savedQueryRule)
@@ -1419,18 +1348,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 	}
 
 	// Set query language
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		threatMatchRule.Language = &language
-	}
+	threatMatchRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
 		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
@@ -1507,18 +1425,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 	}, &diags)
 
 	// Set query language
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		thresholdRule.Language = &language
-	}
+	thresholdRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
 		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
