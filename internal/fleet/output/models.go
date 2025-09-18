@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -21,14 +21,9 @@ type outputModel struct {
 	CaTrustedFingerprint types.String `tfsdk:"ca_trusted_fingerprint"`
 	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
 	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
-	Ssl                  types.List   `tfsdk:"ssl"` //> outputSslModel
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
-}
-
-type outputSslModel struct {
-	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` //> string
-	Certificate            types.String `tfsdk:"certificate"`
-	Key                    types.String `tfsdk:"key"`
+	Ssl                  types.Object `tfsdk:"ssl"`   //> outputSslModel
+	Kafka                types.Object `tfsdk:"kafka"` //> outputKafkaModel
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
@@ -36,131 +31,63 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 		return
 	}
 
-	doSsl := func(ssl *kbapi.OutputSsl) types.List {
-		if ssl != nil {
-			p := path.Root("ssl")
-			sslModels := []outputSslModel{{
-				CertificateAuthorities: utils.SliceToListType_String(ctx, utils.Deref(ssl.CertificateAuthorities), p.AtName("certificate_authorities"), &diags),
-				Certificate:            types.StringPointerValue(ssl.Certificate),
-				Key:                    types.StringPointerValue(ssl.Key),
-			}}
-			list, nd := types.ListValueFrom(ctx, getSslAttrTypes(), sslModels)
-			diags.Append(nd...)
-			return list
-		} else {
-			return types.ListNull(getSslAttrTypes())
-		}
-	}
-
-	discriminator, err := union.Discriminator()
+	output, err := union.ValueByDiscriminator()
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return
 	}
 
-	switch discriminator {
-	case "elasticsearch":
-		data, err := union.AsOutputElasticsearch()
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
+	switch output := output.(type) {
+	case kbapi.OutputElasticsearch:
+		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
 
-		model.ID = types.StringPointerValue(data.Id)
-		model.OutputID = types.StringPointerValue(data.Id)
-		model.Name = types.StringValue(data.Name)
-		model.Type = types.StringValue(string(data.Type))
-		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
-		model.CaSha256 = types.StringPointerValue(data.CaSha256)
-		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
-		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-		model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-		model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-		model.Ssl = doSsl(data.Ssl)
+	case kbapi.OutputLogstash:
+		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
 
-	case "logstash":
-		data, err := union.AsOutputLogstash()
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
-		model.ID = types.StringPointerValue(data.Id)
-		model.OutputID = types.StringPointerValue(data.Id)
-		model.Name = types.StringValue(data.Name)
-		model.Type = types.StringValue(string(data.Type))
-		model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
-		model.CaSha256 = types.StringPointerValue(data.CaSha256)
-		model.CaTrustedFingerprint = types.StringPointerValue(data.CaTrustedFingerprint)
-		model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-		model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-		model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-		model.Ssl = doSsl(data.Ssl)
-
+	case kbapi.OutputKafka:
+		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
 	default:
-		diags.AddError(fmt.Sprintf("unhandled output type: %s", discriminator), "")
+		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
 	}
 
 	return
 }
 
-func (model outputModel) toAPICreateModel(ctx context.Context) (union kbapi.NewOutputUnion, diags diag.Diagnostics) {
-	doSsl := func() *kbapi.NewOutputSsl {
-		if utils.IsKnown(model.Ssl) {
-			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
-			if len(sslModels) > 0 {
-				return &kbapi.NewOutputSsl{
-					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
-					Key:                    sslModels[0].Key.ValueStringPointer(),
-				}
-			}
-		}
-		return nil
-	}
-
+func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.ApiClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	outputType := model.Type.ValueString()
+
 	switch outputType {
 	case "elasticsearch":
-		body := kbapi.NewOutputElasticsearch{
-			Type:                 kbapi.NewOutputElasticsearchTypeElasticsearch,
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
-			Id:                   model.OutputID.ValueStringPointer(),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueString(),
-			Ssl:                  doSsl(),
-		}
-
-		err := union.FromNewOutputElasticsearch(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
+		return model.toAPICreateElasticsearchModel(ctx)
 	case "logstash":
-		body := kbapi.NewOutputLogstash{
-			Type:                 kbapi.NewOutputLogstashTypeLogstash,
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
-			Id:                   model.OutputID.ValueStringPointer(),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueString(),
-			Ssl:                  doSsl(),
+		return model.toAPICreateLogstashModel(ctx)
+	case "kafka":
+		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
+			return kbapi.NewOutputUnion{}, diags
 		}
 
-		err := union.FromNewOutputLogstash(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
+		return model.toAPICreateKafkaModel(ctx)
+	default:
+		return kbapi.NewOutputUnion{}, diag.Diagnostics{
+			diag.NewErrorDiagnostic(fmt.Sprintf("unhandled output type: %s", outputType), ""),
+		}
+	}
+}
+
+func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.ApiClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
+	outputType := model.Type.ValueString()
+
+	switch outputType {
+	case "elasticsearch":
+		return model.toAPIUpdateElasticsearchModel(ctx)
+	case "logstash":
+		return model.toAPIUpdateLogstashModel(ctx)
+	case "kafka":
+		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
+			return kbapi.UpdateOutputUnion{}, diags
 		}
 
+		return model.toAPIUpdateKafkaModel(ctx)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")
 	}
@@ -168,64 +95,18 @@ func (model outputModel) toAPICreateModel(ctx context.Context) (union kbapi.NewO
 	return
 }
 
-func (model outputModel) toAPIUpdateModel(ctx context.Context) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
-	doSsl := func() *kbapi.UpdateOutputSsl {
-		if utils.IsKnown(model.Ssl) {
-			sslModels := utils.ListTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), &diags)
-			if len(sslModels) > 0 {
-				return &kbapi.UpdateOutputSsl{
-					Certificate:            sslModels[0].Certificate.ValueStringPointer(),
-					CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModels[0].CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
-					Key:                    sslModels[0].Key.ValueStringPointer(),
-				}
-			}
-		}
-		return nil
+func assertKafkaSupport(ctx context.Context, client *clients.ApiClient) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Check minimum version requirement for Kafka output type
+	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputKafka); versionDiags.HasError() {
+		diags.Append(utils.FrameworkDiagsFromSDK(versionDiags)...)
+		return diags
+	} else if !supported {
+		diags.AddError("Unsupported version for Kafka output",
+			fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()))
+		return diags
 	}
 
-	outputType := model.Type.ValueString()
-	switch outputType {
-	case "elasticsearch":
-		body := kbapi.UpdateOutputElasticsearch{
-			Type:                 utils.Pointer(kbapi.Elasticsearch),
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueStringPointer(),
-			Ssl:                  doSsl(),
-		}
-
-		err := union.FromUpdateOutputElasticsearch(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
-	case "logstash":
-		body := kbapi.UpdateOutputLogstash{
-			Type:                 utils.Pointer(kbapi.Logstash),
-			CaSha256:             model.CaSha256.ValueStringPointer(),
-			CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-			ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-			Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
-			IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-			IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-			Name:                 model.Name.ValueStringPointer(),
-			Ssl:                  doSsl(),
-		}
-
-		err := union.FromUpdateOutputLogstash(body)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return
-		}
-
-	default:
-		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")
-	}
-
-	return
+	return nil
 }
