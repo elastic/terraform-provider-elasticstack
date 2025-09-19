@@ -415,6 +415,9 @@ func newKibanaSyntheticsMonitorDeleteFunc(c *resty.Client) KibanaSyntheticsMonit
 		}
 
 		result, err := unmarshal(resp, []MonitorDeleteStatus{})
+		if err != nil {
+			return nil, err
+		}
 		return *result, err
 	}
 }
@@ -481,6 +484,9 @@ func newKibanaSyntheticsParameterDeleteFunc(c *resty.Client) KibanaSyntheticsPar
 		}
 
 		result, err := unmarshal(resp, []ParameterDeleteStatus{})
+		if err != nil {
+			return nil, err
+		}
 		return *result, err
 	}
 }
