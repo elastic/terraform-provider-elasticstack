@@ -202,19 +202,19 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.Sec
 
 // getKQLQueryLanguage maps language string to kbapi.SecurityDetectionsAPIKqlQueryLanguage
 func (d SecurityDetectionRuleData) getKQLQueryLanguage() *kbapi.SecurityDetectionsAPIKqlQueryLanguage {
-	if utils.IsKnown(d.Language) {
-		var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
-		switch d.Language.ValueString() {
-		case "kuery":
-			language = "kuery"
-		case "lucene":
-			language = "lucene"
-		default:
-			language = "kuery"
-		}
-		return &language
+	if !utils.IsKnown(d.Language) {
+		return nil
+	} 
+	var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
+	switch d.Language.ValueString() {
+	case "kuery":
+		language = "kuery"
+	case "lucene":
+		language = "lucene"
+	default:
+		language = "kuery"
 	}
-	return nil
+	return &language
 }
 
 func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
