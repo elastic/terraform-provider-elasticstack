@@ -100,7 +100,7 @@ func newKibanaRoleManagementGetFunc(c *resty.Client) KibanaRoleManagementGet {
 			if resp.StatusCode() == 404 {
 				return nil, nil
 			}
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		kibanaRole := &KibanaRole{}
 		err = json.Unmarshal(resp.Body(), kibanaRole)
@@ -124,7 +124,7 @@ func newKibanaRoleManagementListFunc(c *resty.Client) KibanaRoleManagementList {
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		kibanaRoles := make(KibanaRoles, 0, 1)
 		err = json.Unmarshal(resp.Body(), &kibanaRoles)
@@ -165,7 +165,7 @@ func newKibanaRoleManagementCreateOrUpdateFunc(c *resty.Client) KibanaRoleManage
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 
 		// Retrive the object to return it
@@ -197,7 +197,7 @@ func newKibanaRoleManagementDeleteFunc(c *resty.Client) KibanaRoleManagementDele
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return NewAPIError(resp.StatusCode(), resp.Status())
+			return NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 
 		return nil

@@ -85,7 +85,7 @@ func newKibanaSavedObjectGetFunc(c *resty.Client) KibanaSavedObjectGet {
 			if resp.StatusCode() == 404 {
 				return nil, nil
 			}
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 
 		}
 		var data map[string]interface{}
@@ -165,7 +165,7 @@ func newKibanaSavedObjectFindFunc(c *resty.Client) KibanaSavedObjectFind {
 			if resp.StatusCode() == 404 {
 				return nil, nil
 			}
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 
 		}
 		var data map[string]interface{}
@@ -214,7 +214,7 @@ func newKibanaSavedObjectCreateFunc(c *resty.Client) KibanaSavedObjectCreate {
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		var dataResponse map[string]interface{}
 		err = json.Unmarshal(resp.Body(), &dataResponse)
@@ -263,7 +263,7 @@ func newKibanaSavedObjectUpdateFunc(c *resty.Client) KibanaSavedObjectUpdate {
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		var dataResponse map[string]interface{}
 		err = json.Unmarshal(resp.Body(), &dataResponse)
@@ -304,7 +304,7 @@ func newKibanaSavedObjectDeleteFunc(c *resty.Client) KibanaSavedObjectDelete {
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return NewAPIError(resp.StatusCode(), resp.Status())
+			return NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		var dataResponse map[string]interface{}
 		err = json.Unmarshal(resp.Body(), &dataResponse)
@@ -356,7 +356,7 @@ func newKibanaSavedObjectExportFunc(c *resty.Client) KibanaSavedObjectExport {
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 
 		data := resp.Body()
@@ -396,7 +396,7 @@ func newKibanaSavedObjectImportFunc(c *resty.Client) KibanaSavedObjectImport {
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		var dataResponse map[string]interface{}
 		err = json.Unmarshal(resp.Body(), &dataResponse)

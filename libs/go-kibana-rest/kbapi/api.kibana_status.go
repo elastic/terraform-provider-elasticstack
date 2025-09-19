@@ -29,7 +29,7 @@ func newKibanaStatusGetFunc(c *resty.Client) KibanaStatusGet {
 			if resp.StatusCode() == 404 {
 				return nil, nil
 			}
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		kibanaStatus := make(KibanaStatus)
 		err = json.Unmarshal(resp.Body(), &kibanaStatus)
