@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -13,6 +13,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// V0 model structures - used regular string types for JSON fields
+type integrationPolicyModelV0 struct {
+	ID                 types.String `tfsdk:"id"`
+	PolicyID           types.String `tfsdk:"policy_id"`
+	Name               types.String `tfsdk:"name"`
+	Namespace          types.String `tfsdk:"namespace"`
+	AgentPolicyID      types.String `tfsdk:"agent_policy_id"`
+	Description        types.String `tfsdk:"description"`
+	Enabled            types.Bool   `tfsdk:"enabled"`
+	Force              types.Bool   `tfsdk:"force"`
+	IntegrationName    types.String `tfsdk:"integration_name"`
+	IntegrationVersion types.String `tfsdk:"integration_version"`
+	Input              types.List   `tfsdk:"input"` //> integrationPolicyInputModelV0
+	VarsJson           types.String `tfsdk:"vars_json"`
+}
+
+type integrationPolicyInputModelV0 struct {
+	InputID     types.String `tfsdk:"input_id"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
+	StreamsJson types.String `tfsdk:"streams_json"`
+	VarsJson    types.String `tfsdk:"vars_json"`
+}
 
 func getSchemaV0() *schema.Schema {
 	return &schema.Schema{
@@ -45,70 +68,84 @@ func getSchemaV0() *schema.Schema {
 	}
 }
 
-func getInputTypeV0() attr.Type {
-	return getSchemaV0().Blocks["input"].Type().(attr.TypeWithElementType).ElementType()
-}
-
-type integrationPolicyModelV0 struct {
-	ID                 types.String `tfsdk:"id"`
-	PolicyID           types.String `tfsdk:"policy_id"`
-	Name               types.String `tfsdk:"name"`
-	Namespace          types.String `tfsdk:"namespace"`
-	AgentPolicyID      types.String `tfsdk:"agent_policy_id"`
-	Description        types.String `tfsdk:"description"`
-	Enabled            types.Bool   `tfsdk:"enabled"`
-	Force              types.Bool   `tfsdk:"force"`
-	IntegrationName    types.String `tfsdk:"integration_name"`
-	IntegrationVersion types.String `tfsdk:"integration_version"`
-	Input              types.List   `tfsdk:"input"` //> integrationPolicyInputModelV0
-	VarsJson           types.String `tfsdk:"vars_json"`
-}
-
-type integrationPolicyInputModelV0 struct {
-	InputID     types.String `tfsdk:"input_id"`
-	Enabled     types.Bool   `tfsdk:"enabled"`
-	StreamsJson types.String `tfsdk:"streams_json"`
-	VarsJson    types.String `tfsdk:"vars_json"`
-}
-
 // The schema between V0 and V1 is mostly the same, however vars_json and
 // streams_json saved "" values to the state when null values were in the
 // config. jsontypes.Normalized correctly states this is invalid JSON.
 func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	var stateModel integrationPolicyModelV0
+	var stateModelV0 integrationPolicyModelV0
 
-	diags := req.State.Get(ctx, &stateModel)
+	diags := req.State.Get(ctx, &stateModelV0)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if varsJSON := stateModel.VarsJson.ValueStringPointer(); varsJSON != nil {
+	// Convert V0 model to V1 model
+	stateModelV1 := integrationPolicyModel{
+		ID:                 stateModelV0.ID,
+		PolicyID:           stateModelV0.PolicyID,
+		Name:               stateModelV0.Name,
+		Namespace:          stateModelV0.Namespace,
+		AgentPolicyID:      stateModelV0.AgentPolicyID,
+		AgentPolicyIDs:     types.ListNull(types.StringType), // V0 didn't have agent_policy_ids
+		Description:        stateModelV0.Description,
+		Enabled:            stateModelV0.Enabled,
+		Force:              stateModelV0.Force,
+		IntegrationName:    stateModelV0.IntegrationName,
+		IntegrationVersion: stateModelV0.IntegrationVersion,
+	}
+
+	// Convert vars_json from string to normalized JSON type
+	if varsJSON := stateModelV0.VarsJson.ValueStringPointer(); varsJSON != nil {
 		if *varsJSON == "" {
-			stateModel.VarsJson = types.StringNull()
+			stateModelV1.VarsJson = jsontypes.NewNormalizedNull()
+		} else {
+			stateModelV1.VarsJson = jsontypes.NewNormalizedValue(*varsJSON)
 		}
+	} else {
+		stateModelV1.VarsJson = jsontypes.NewNormalizedNull()
 	}
 
-	inputs := utils.ListTypeAs[integrationPolicyInputModelV0](ctx, stateModel.Input, path.Root("input"), &resp.Diagnostics)
-	for index, input := range inputs {
-		if varsJSON := input.VarsJson.ValueStringPointer(); varsJSON != nil {
+	// Convert inputs from V0 to V1
+	inputsV0 := utils.ListTypeAs[integrationPolicyInputModelV0](ctx, stateModelV0.Input, path.Root("input"), &resp.Diagnostics)
+	var inputsV1 []integrationPolicyInputModel
+
+	for _, inputV0 := range inputsV0 {
+		inputV1 := integrationPolicyInputModel{
+			InputID: inputV0.InputID,
+			Enabled: inputV0.Enabled,
+		}
+
+		// Convert vars_json
+		if varsJSON := inputV0.VarsJson.ValueStringPointer(); varsJSON != nil {
 			if *varsJSON == "" {
-				input.VarsJson = types.StringNull()
+				inputV1.VarsJson = jsontypes.NewNormalizedNull()
+			} else {
+				inputV1.VarsJson = jsontypes.NewNormalizedValue(*varsJSON)
 			}
+		} else {
+			inputV1.VarsJson = jsontypes.NewNormalizedNull()
 		}
-		if streamsJSON := input.StreamsJson.ValueStringPointer(); streamsJSON != nil {
+
+		// Convert streams_json
+		if streamsJSON := inputV0.StreamsJson.ValueStringPointer(); streamsJSON != nil {
 			if *streamsJSON == "" {
-				input.StreamsJson = types.StringNull()
+				inputV1.StreamsJson = jsontypes.NewNormalizedNull()
+			} else {
+				inputV1.StreamsJson = jsontypes.NewNormalizedValue(*streamsJSON)
 			}
+		} else {
+			inputV1.StreamsJson = jsontypes.NewNormalizedNull()
 		}
-		inputs[index] = input
+
+		inputsV1 = append(inputsV1, inputV1)
 	}
 
-	stateModel.Input = utils.ListValueFrom(ctx, inputs, getInputTypeV0(), path.Root("input"), &resp.Diagnostics)
+	stateModelV1.Input = utils.ListValueFrom(ctx, inputsV1, getInputTypeV1(), path.Root("input"), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = resp.State.Set(ctx, stateModel)
+	diags = resp.State.Set(ctx, stateModelV1)
 	resp.Diagnostics.Append(diags...)
 }
