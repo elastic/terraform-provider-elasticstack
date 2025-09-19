@@ -86,6 +86,9 @@ type SecurityDetectionRuleData struct {
 
 	// Actions field (common across all rule types)
 	Actions types.List `tfsdk:"actions"`
+
+	// Exceptions list field (common across all rule types)
+	ExceptionsList types.List `tfsdk:"exceptions_list"`
 }
 type SecurityDetectionRuleTfData struct {
 	ThreatMapping types.List `tfsdk:"threat_mapping"`
@@ -128,6 +131,13 @@ type ActionFrequencyModel struct {
 	Throttle   types.String `tfsdk:"throttle"`
 }
 
+type ExceptionsListModel struct {
+	Id            types.String `tfsdk:"id"`
+	ListId        types.String `tfsdk:"list_id"`
+	NamespaceType types.String `tfsdk:"namespace_type"`
+	Type          types.String `tfsdk:"type"`
+}
+
 // CommonCreateProps holds all the field pointers for setting common create properties
 type CommonCreateProps struct {
 	Actions        **[]kbapi.SecurityDetectionsAPIRuleAction
@@ -146,6 +156,7 @@ type CommonCreateProps struct {
 	Setup          **kbapi.SecurityDetectionsAPISetupGuide
 	MaxSignals     **kbapi.SecurityDetectionsAPIMaxSignals
 	Version        **kbapi.SecurityDetectionsAPIRuleVersion
+	ExceptionsList **[]kbapi.SecurityDetectionsAPIRuleExceptionList
 }
 
 // CommonUpdateProps holds all the field pointers for setting common update properties
@@ -166,6 +177,7 @@ type CommonUpdateProps struct {
 	Setup          **kbapi.SecurityDetectionsAPISetupGuide
 	MaxSignals     **kbapi.SecurityDetectionsAPIMaxSignals
 	Version        **kbapi.SecurityDetectionsAPIRuleVersion
+	ExceptionsList **[]kbapi.SecurityDetectionsAPIRuleExceptionList
 }
 
 func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -204,7 +216,7 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.Sec
 func (d SecurityDetectionRuleData) getKQLQueryLanguage() *kbapi.SecurityDetectionsAPIKqlQueryLanguage {
 	if !utils.IsKnown(d.Language) {
 		return nil
-	} 
+	}
 	var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
 	switch d.Language.ValueString() {
 	case "kuery":
@@ -248,6 +260,7 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 		Setup:          &queryRule.Setup,
 		MaxSignals:     &queryRule.MaxSignals,
 		Version:        &queryRule.Version,
+		ExceptionsList: &queryRule.ExceptionsList,
 	}, &diags)
 
 	// Set query-specific fields
@@ -301,6 +314,7 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 		Setup:          &eqlRule.Setup,
 		MaxSignals:     &eqlRule.MaxSignals,
 		Version:        &eqlRule.Version,
+		ExceptionsList: &eqlRule.ExceptionsList,
 	}, &diags)
 
 	// Set EQL-specific fields
@@ -352,6 +366,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 		Setup:          &esqlRule.Setup,
 		MaxSignals:     &esqlRule.MaxSignals,
 		Version:        &esqlRule.Version,
+		ExceptionsList: &esqlRule.ExceptionsList,
 	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -424,6 +439,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		Setup:          &mlRule.Setup,
 		MaxSignals:     &mlRule.MaxSignals,
 		Version:        &mlRule.Version,
+		ExceptionsList: &mlRule.ExceptionsList,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -479,6 +495,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		Setup:          &newTermsRule.Setup,
 		MaxSignals:     &newTermsRule.MaxSignals,
 		Version:        &newTermsRule.Version,
+		ExceptionsList: &newTermsRule.ExceptionsList,
 	}, &diags)
 
 	// Set query language
@@ -526,6 +543,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		Setup:          &savedQueryRule.Setup,
 		MaxSignals:     &savedQueryRule.MaxSignals,
 		Version:        &savedQueryRule.Version,
+		ExceptionsList: &savedQueryRule.ExceptionsList,
 	}, &diags)
 
 	// Set optional query for saved query rules
@@ -595,6 +613,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		Setup:          &threatMatchRule.Setup,
 		MaxSignals:     &threatMatchRule.MaxSignals,
 		Version:        &threatMatchRule.Version,
+		ExceptionsList: &threatMatchRule.ExceptionsList,
 	}, &diags)
 
 	// Set threat-specific fields
@@ -673,6 +692,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		Setup:          &thresholdRule.Setup,
 		MaxSignals:     &thresholdRule.MaxSignals,
 		Version:        &thresholdRule.Version,
+		ExceptionsList: &thresholdRule.ExceptionsList,
 	}, &diags)
 
 	// Set query language
@@ -806,6 +826,15 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 			*props.Actions = &actions
 		}
 	}
+
+	// Set exceptions list
+	if props.ExceptionsList != nil && utils.IsKnown(d.ExceptionsList) {
+		exceptionsList, exceptionsListDiags := d.exceptionsListToApi(ctx)
+		diags.Append(exceptionsListDiags...)
+		if !exceptionsListDiags.HasError() && len(exceptionsList) > 0 {
+			*props.ExceptionsList = &exceptionsList
+		}
+	}
 }
 
 func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
@@ -891,6 +920,7 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 		Setup:          &queryRule.Setup,
 		MaxSignals:     &queryRule.MaxSignals,
 		Version:        &queryRule.Version,
+		ExceptionsList: &queryRule.ExceptionsList,
 	}, &diags)
 
 	// Set query-specific fields
@@ -963,6 +993,7 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kb
 		Setup:          &eqlRule.Setup,
 		MaxSignals:     &eqlRule.MaxSignals,
 		Version:        &eqlRule.Version,
+		ExceptionsList: &eqlRule.ExceptionsList,
 	}, &diags)
 
 	// Set EQL-specific fields
@@ -1033,6 +1064,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (k
 		Setup:          &esqlRule.Setup,
 		MaxSignals:     &esqlRule.MaxSignals,
 		Version:        &esqlRule.Version,
+		ExceptionsList: &esqlRule.ExceptionsList,
 	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -1124,6 +1156,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		Setup:          &mlRule.Setup,
 		MaxSignals:     &mlRule.MaxSignals,
 		Version:        &mlRule.Version,
+		ExceptionsList: &mlRule.ExceptionsList,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -1198,6 +1231,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		Setup:          &newTermsRule.Setup,
 		MaxSignals:     &newTermsRule.MaxSignals,
 		Version:        &newTermsRule.Version,
+		ExceptionsList: &newTermsRule.ExceptionsList,
 	}, &diags)
 
 	// Set query language
@@ -1264,6 +1298,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		Setup:          &savedQueryRule.Setup,
 		MaxSignals:     &savedQueryRule.MaxSignals,
 		Version:        &savedQueryRule.Version,
+		ExceptionsList: &savedQueryRule.ExceptionsList,
 	}, &diags)
 
 	// Set optional query for saved query rules
@@ -1352,6 +1387,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		Setup:          &threatMatchRule.Setup,
 		MaxSignals:     &threatMatchRule.MaxSignals,
 		Version:        &threatMatchRule.Version,
+		ExceptionsList: &threatMatchRule.ExceptionsList,
 	}, &diags)
 
 	// Set threat-specific fields
@@ -1449,6 +1485,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		Setup:          &thresholdRule.Setup,
 		MaxSignals:     &thresholdRule.MaxSignals,
 		Version:        &thresholdRule.Version,
+		ExceptionsList: &thresholdRule.ExceptionsList,
 	}, &diags)
 
 	// Set query language
@@ -1574,6 +1611,15 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		diags.Append(actionDiags...)
 		if !actionDiags.HasError() && len(actions) > 0 {
 			*props.Actions = &actions
+		}
+	}
+
+	// Set exceptions list
+	if props.ExceptionsList != nil && utils.IsKnown(d.ExceptionsList) {
+		exceptionsList, exceptionsListDiags := d.exceptionsListToApi(ctx)
+		diags.Append(exceptionsListDiags...)
+		if !exceptionsListDiags.HasError() && len(exceptionsList) > 0 {
+			*props.ExceptionsList = &exceptionsList
 		}
 	}
 }
@@ -1706,6 +1752,10 @@ func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rul
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
 	diags.Append(actionDiags...)
 
+	// Update exceptions list
+	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	diags.Append(exceptionsListDiags...)
+
 	return diags
 }
 
@@ -1806,6 +1856,10 @@ func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule 
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
 	diags.Append(actionDiags...)
 
+	// Update exceptions list
+	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	diags.Append(exceptionsListDiags...)
+
 	return diags
 }
 
@@ -1894,6 +1948,10 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	// Update actions
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
 	diags.Append(actionDiags...)
+
+	// Update exceptions list
+	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	diags.Append(exceptionsListDiags...)
 
 	return diags
 }
@@ -2003,6 +2061,10 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
 	diags.Append(actionDiags...)
 
+	// Update exceptions list
+	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	diags.Append(exceptionsListDiags...)
+
 	return diags
 }
 
@@ -2103,6 +2165,10 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	// Update actions
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
 	diags.Append(actionDiags...)
+
+	// Update exceptions list
+	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	diags.Append(exceptionsListDiags...)
 
 	return diags
 }
@@ -2205,6 +2271,10 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	// Update actions
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
 	diags.Append(actionDiags...)
+
+	// Update exceptions list
+	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	diags.Append(exceptionsListDiags...)
 
 	return diags
 }
@@ -2341,6 +2411,10 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
 	diags.Append(actionDiags...)
 
+	// Update exceptions list
+	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	diags.Append(exceptionsListDiags...)
+
 	return diags
 }
 
@@ -2447,6 +2521,10 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	// Update actions
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
 	diags.Append(actionDiags...)
+
+	// Update exceptions list
+	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	diags.Append(exceptionsListDiags...)
 
 	return diags
 }
@@ -2638,6 +2716,11 @@ func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx c
 	// Actions field (common across all rule types)
 	if !utils.IsKnown(d.Actions) {
 		d.Actions = types.ListNull(actionElementType())
+	}
+
+	// Exceptions list field (common across all rule types)
+	if !utils.IsKnown(d.ExceptionsList) {
+		d.ExceptionsList = types.ListNull(exceptionsListElementType())
 	}
 }
 
@@ -3107,4 +3190,94 @@ func actionFrequencyElementType() map[string]attr.Type {
 		"summary":     types.BoolType,
 		"throttle":    types.StringType,
 	}
+}
+
+// Helper function to process exceptions list configuration for all rule types
+func (d SecurityDetectionRuleData) exceptionsListToApi(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleExceptionList, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(d.ExceptionsList) || len(d.ExceptionsList.Elements()) == 0 {
+		return nil, diags
+	}
+
+	apiExceptionsList := utils.ListTypeToSlice(ctx, d.ExceptionsList, path.Root("exceptions_list"), &diags,
+		func(exception ExceptionsListModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRuleExceptionList {
+			if exception.Id.IsNull() || exception.ListId.IsNull() || exception.NamespaceType.IsNull() || exception.Type.IsNull() {
+				return kbapi.SecurityDetectionsAPIRuleExceptionList{}
+			}
+
+			apiException := kbapi.SecurityDetectionsAPIRuleExceptionList{
+				Id:            exception.Id.ValueString(),
+				ListId:        exception.ListId.ValueString(),
+				NamespaceType: kbapi.SecurityDetectionsAPIRuleExceptionListNamespaceType(exception.NamespaceType.ValueString()),
+				Type:          kbapi.SecurityDetectionsAPIExceptionListType(exception.Type.ValueString()),
+			}
+
+			return apiException
+		})
+
+	// Filter out empty exceptions (where required fields were null)
+	validExceptions := make([]kbapi.SecurityDetectionsAPIRuleExceptionList, 0)
+	for _, exception := range apiExceptionsList {
+		if exception.Id != "" && exception.ListId != "" {
+			validExceptions = append(validExceptions, exception)
+		}
+	}
+
+	return validExceptions, diags
+}
+
+// convertExceptionsListToModel converts kbapi.SecurityDetectionsAPIRuleExceptionList slice to Terraform model
+func convertExceptionsListToModel(ctx context.Context, apiExceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if len(apiExceptionsList) == 0 {
+		return types.ListNull(exceptionsListElementType()), diags
+	}
+
+	exceptions := make([]ExceptionsListModel, 0)
+
+	for _, apiException := range apiExceptionsList {
+		exception := ExceptionsListModel{
+			Id:            types.StringValue(apiException.Id),
+			ListId:        types.StringValue(apiException.ListId),
+			NamespaceType: types.StringValue(string(apiException.NamespaceType)),
+			Type:          types.StringValue(string(apiException.Type)),
+		}
+
+		exceptions = append(exceptions, exception)
+	}
+
+	listValue, listDiags := types.ListValueFrom(ctx, exceptionsListElementType(), exceptions)
+	diags.Append(listDiags...)
+	return listValue, diags
+}
+
+// exceptionsListElementType returns the element type for exceptions list
+func exceptionsListElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":             types.StringType,
+			"list_id":        types.StringType,
+			"namespace_type": types.StringType,
+			"type":           types.StringType,
+		},
+	}
+}
+
+// Helper function to update exceptions list from API response
+func (d *SecurityDetectionRuleData) updateExceptionsListFromApi(ctx context.Context, exceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if len(exceptionsList) > 0 {
+		exceptionsListValue, exceptionsListDiags := convertExceptionsListToModel(ctx, exceptionsList)
+		diags.Append(exceptionsListDiags...)
+		if !exceptionsListDiags.HasError() {
+			d.ExceptionsList = exceptionsListValue
+		}
+	} else {
+		d.ExceptionsList = types.ListNull(exceptionsListElementType())
+	}
+
+	return diags
 }

@@ -255,6 +255,38 @@ func GetSchema() schema.Schema {
 				},
 			},
 
+			// Exceptions list field (common across all rule types)
+			"exceptions_list": schema.ListNestedAttribute{
+				MarkdownDescription: "Array of exception containers to prevent the rule from generating alerts.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							MarkdownDescription: "The exception container ID.",
+							Required:            true,
+						},
+						"list_id": schema.StringAttribute{
+							MarkdownDescription: "The exception container's list ID.",
+							Required:            true,
+						},
+						"namespace_type": schema.StringAttribute{
+							MarkdownDescription: "The namespace type for the exception container.",
+							Required:            true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("single", "agnostic"),
+							},
+						},
+						"type": schema.StringAttribute{
+							MarkdownDescription: "The type of exception container.",
+							Required:            true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("detection", "endpoint", "endpoint_events", "endpoint_host_isolation_exceptions", "endpoint_blocklists", "endpoint_trusted_apps"),
+							},
+						},
+					},
+				},
+			},
+
 			// Read-only fields
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: "The time the rule was created.",

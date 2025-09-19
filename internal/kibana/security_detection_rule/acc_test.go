@@ -54,6 +54,11 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test query security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "exception-list-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "test-exception-list"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "single"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
 				),
 			},
 		},
@@ -95,6 +100,15 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test EQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "critical"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "90"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "endpoint-exception-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "endpoint-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "agnostic"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.id", "detection-exception-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.list_id", "detection-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.namespace_type", "single"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.type", "detection"),
 				),
 			},
 		},
@@ -134,6 +148,11 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test ESQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "80"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "esql-exception-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "esql-rule-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "single"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
 				),
 			},
 		},
@@ -175,6 +194,11 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "80"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.1", "test-ml-job-2"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "ml-exception-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "ml-rule-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "agnostic"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
 				),
 			},
 		},
@@ -222,6 +246,11 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.1", "source.ip"),
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-30d"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "new-terms-exception-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "new-terms-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "single"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
 				),
 			},
 		},
@@ -264,6 +293,11 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id-updated"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "saved-query-exception-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "saved-query-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "agnostic"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
 				),
 			},
 		},
@@ -316,6 +350,11 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:(ip OR domain)"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.1.entries.0.field", "source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "threat-exception-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "threat-intel-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "agnostic"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
 				),
 			},
 		},
@@ -363,6 +402,15 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "20"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.1", "source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "threshold-exception-1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "threshold-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "single"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.id", "endpoint-exception-2"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.list_id", "endpoint-threshold-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.namespace_type", "agnostic"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.type", "endpoint"),
 				),
 			},
 		},
@@ -481,6 +529,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "automation"]
   license     = "Elastic License v2"
+  
+  exceptions_list = [
+    {
+      id             = "exception-list-1"
+      list_id        = "test-exception-list"
+      namespace_type = "single"
+      type           = "detection"
+    }
+  ]
 }
 `, name)
 }
@@ -532,6 +589,21 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author           = ["Test Author"]
   tags             = ["test", "eql", "automation"]
   license          = "Elastic License v2"
+  
+  exceptions_list = [
+    {
+      id             = "endpoint-exception-1"
+      list_id        = "endpoint-exceptions"
+      namespace_type = "agnostic"
+      type           = "endpoint"
+    },
+    {
+      id             = "detection-exception-1"
+      list_id        = "detection-exceptions"
+      namespace_type = "single"
+      type           = "detection"
+    }
+  ]
 }
 `, name)
 }
@@ -579,6 +651,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "esql", "automation"]
   license     = "Elastic License v2"
+  
+  exceptions_list = [
+    {
+      id             = "esql-exception-1"
+      list_id        = "esql-rule-exceptions"
+      namespace_type = "single"
+      type           = "detection"
+    }
+  ]
 }
 `, name)
 }
@@ -626,6 +707,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author                   = ["Test Author"]
   tags                     = ["test", "ml", "automation"]
   license                  = "Elastic License v2"
+  
+  exceptions_list = [
+    {
+      id             = "ml-exception-1"
+      list_id        = "ml-rule-exceptions"
+      namespace_type = "agnostic"
+      type           = "detection"
+    }
+  ]
 }
 `, name)
 }
@@ -679,6 +769,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author              = ["Test Author"]
   tags                = ["test", "new-terms", "automation"]
   license             = "Elastic License v2"
+  
+  exceptions_list = [
+    {
+      id             = "new-terms-exception-1"
+      list_id        = "new-terms-exceptions"
+      namespace_type = "single"
+      type           = "detection"
+    }
+  ]
 }
 `, name)
 }
@@ -728,6 +827,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "saved-query", "automation"]
   license     = "Elastic License v2"
+  
+  exceptions_list = [
+    {
+      id             = "saved-query-exception-1"
+      list_id        = "saved-query-exceptions"
+      namespace_type = "agnostic"
+      type           = "detection"
+    }
+  ]
 }
 `, name)
 }
@@ -814,6 +922,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       ]
     }
   ]
+  
+  exceptions_list = [
+    {
+      id             = "threat-exception-1"
+      list_id        = "threat-intel-exceptions"
+      namespace_type = "agnostic"
+      type           = "detection"
+    }
+  ]
 }
 `, name)
 }
@@ -873,6 +990,21 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     value = 20
     field = ["user.name", "source.ip"]
   }
+  
+  exceptions_list = [
+    {
+      id             = "threshold-exception-1"
+      list_id        = "threshold-exceptions"
+      namespace_type = "single"
+      type           = "detection"
+    },
+    {
+      id             = "endpoint-exception-2"
+      list_id        = "endpoint-threshold-exceptions"
+      namespace_type = "agnostic"
+      type           = "endpoint"
+    }
+  ]
 }
 `, name)
 }
@@ -940,6 +1072,13 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					// Check updated action attributes
 					resource.TestCheckResourceAttr(resourceName, "actions.0.params.message", "UPDATED CRITICAL Alert: Security event detected"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.throttle", "5m"),
+					
+					// Check exceptions list attributes
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "test-action-exception"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "action-rule-exceptions"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "single"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
 				),
 			},
 		},
@@ -1062,6 +1201,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
         summary     = true
         throttle    = "5m"
       }
+    }
+  ]
+  
+  exceptions_list = [
+    {
+      id             = "test-action-exception"
+      list_id        = "action-rule-exceptions"
+      namespace_type = "single"
+      type           = "detection"
     }
   ]
 }
