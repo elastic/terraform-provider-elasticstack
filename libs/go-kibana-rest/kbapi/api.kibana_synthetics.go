@@ -509,9 +509,9 @@ func handleKibanaError(err error, resp *resty.Response) error {
 		kibanaErr := KibanaError{}
 		err := json.Unmarshal(resp.Body(), &kibanaErr)
 		if err != nil {
-			return NewAPIError(resp.StatusCode(), resp.Status(), err)
+			return NewAPIError(resp.StatusCode(), "status: %s, err: %s", resp.Status(), err)
 		}
-		return NewAPIError(resp.StatusCode(), kibanaErr.Message, kibanaErr.Error)
+		return NewAPIError(resp.StatusCode(), "message: %s, err: %s", kibanaErr.Message, kibanaErr.Error)
 	}
 	return nil
 }
