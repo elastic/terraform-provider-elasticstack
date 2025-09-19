@@ -83,6 +83,9 @@ type SecurityDetectionRuleData struct {
 
 	// Threat field (common across multiple rule types)
 	Threat types.List `tfsdk:"threat"`
+
+	// Actions field (common across all rule types)
+	Actions types.List `tfsdk:"actions"`
 }
 type SecurityDetectionRuleTfData struct {
 	ThreatMapping types.List `tfsdk:"threat_mapping"`
@@ -107,6 +110,22 @@ type ThresholdModel struct {
 type CardinalityModel struct {
 	Field types.String `tfsdk:"field"`
 	Value types.Int64  `tfsdk:"value"`
+}
+
+type ActionModel struct {
+	ActionTypeId types.String `tfsdk:"action_type_id"`
+	Id           types.String `tfsdk:"id"`
+	Params       types.Map    `tfsdk:"params"`
+	Group        types.String `tfsdk:"group"`
+	Uuid         types.String `tfsdk:"uuid"`
+	AlertsFilter types.Map    `tfsdk:"alerts_filter"`
+	Frequency    types.Object `tfsdk:"frequency"`
+}
+
+type ActionFrequencyModel struct {
+	NotifyWhen types.String `tfsdk:"notify_when"`
+	Summary    types.Bool   `tfsdk:"summary"`
+	Throttle   types.String `tfsdk:"throttle"`
 }
 
 // CommonCreateProps holds all the field pointers for setting common create properties
@@ -778,6 +797,15 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 		ruleVersion := kbapi.SecurityDetectionsAPIRuleVersion(d.Version.ValueInt64())
 		*props.Version = &ruleVersion
 	}
+
+	// Set actions
+	if props.Actions != nil && utils.IsKnown(d.Actions) {
+		actions, actionDiags := d.actionsToApi(ctx)
+		diags.Append(actionDiags...)
+		if !actionDiags.HasError() && len(actions) > 0 {
+			*props.Actions = &actions
+		}
+	}
 }
 
 func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
@@ -1299,7 +1327,6 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		}
 	}
 
-	// TODO consolidate w/ create props
 	if utils.IsKnown(d.ThreatMapping) && len(d.ThreatMapping.Elements()) > 0 {
 		apiThreatMapping, threatMappingDiags := d.threatMappingToApi(ctx)
 		if !threatMappingDiags.HasError() {
@@ -1540,6 +1567,15 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		ruleVersion := kbapi.SecurityDetectionsAPIRuleVersion(d.Version.ValueInt64())
 		*props.Version = &ruleVersion
 	}
+
+	// Set actions
+	if props.Actions != nil && utils.IsKnown(d.Actions) {
+		actions, actionDiags := d.actionsToApi(ctx)
+		diags.Append(actionDiags...)
+		if !actionDiags.HasError() && len(actions) > 0 {
+			*props.Actions = &actions
+		}
+	}
 }
 
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
@@ -1666,6 +1702,10 @@ func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rul
 		d.Setup = types.StringNull()
 	}
 
+	// Update actions
+	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	diags.Append(actionDiags...)
+
 	return diags
 }
 
@@ -1762,6 +1802,10 @@ func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule 
 		d.TiebreakerField = types.StringNull()
 	}
 
+	// Update actions
+	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	diags.Append(actionDiags...)
+
 	return diags
 }
 
@@ -1846,6 +1890,10 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	} else {
 		d.Setup = types.StringNull()
 	}
+
+	// Update actions
+	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	diags.Append(actionDiags...)
 
 	return diags
 }
@@ -1951,6 +1999,10 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 		d.Setup = types.StringNull()
 	}
 
+	// Update actions
+	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	diags.Append(actionDiags...)
+
 	return diags
 }
 
@@ -2047,6 +2099,10 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	} else {
 		d.Setup = types.StringNull()
 	}
+
+	// Update actions
+	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	diags.Append(actionDiags...)
 
 	return diags
 }
@@ -2145,6 +2201,10 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	} else {
 		d.Setup = types.StringNull()
 	}
+
+	// Update actions
+	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	diags.Append(actionDiags...)
 
 	return diags
 }
@@ -2277,6 +2337,10 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 		}
 	}
 
+	// Update actions
+	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	diags.Append(actionDiags...)
+
 	return diags
 }
 
@@ -2379,6 +2443,10 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	} else {
 		d.Setup = types.StringNull()
 	}
+
+	// Update actions
+	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	diags.Append(actionDiags...)
 
 	return diags
 }
@@ -2565,6 +2633,11 @@ func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx c
 				},
 			},
 		})
+	}
+
+	// Actions field (common across all rule types)
+	if !utils.IsKnown(d.Actions) {
+		d.Actions = types.ListNull(actionElementType())
 	}
 }
 
@@ -2789,4 +2862,249 @@ func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbap
 	}
 
 	return apiThreatMapping, diags
+}
+
+// Helper function to process actions configuration for all rule types
+func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(d.Actions) || len(d.Actions.Elements()) == 0 {
+		return nil, diags
+	}
+
+	apiActions := utils.ListTypeToSlice(ctx, d.Actions, path.Root("actions"), &diags,
+		func(action ActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRuleAction {
+			if action.ActionTypeId.IsNull() || action.Id.IsNull() {
+				return kbapi.SecurityDetectionsAPIRuleAction{}
+			}
+
+			apiAction := kbapi.SecurityDetectionsAPIRuleAction{
+				ActionTypeId: action.ActionTypeId.ValueString(),
+				Id:           kbapi.SecurityDetectionsAPIRuleActionId(action.Id.ValueString()),
+			}
+
+			// Convert params map
+			if utils.IsKnown(action.Params) {
+				paramsStringMap := make(map[string]string)
+				paramsDiags := action.Params.ElementsAs(meta.Context, &paramsStringMap, false)
+				if !paramsDiags.HasError() {
+					paramsMap := make(map[string]interface{})
+					for k, v := range paramsStringMap {
+						paramsMap[k] = v
+					}
+					apiAction.Params = kbapi.SecurityDetectionsAPIRuleActionParams(paramsMap)
+				}
+				meta.Diags.Append(paramsDiags...)
+			}
+
+			// Set optional fields
+			if utils.IsKnown(action.Group) {
+				group := kbapi.SecurityDetectionsAPIRuleActionGroup(action.Group.ValueString())
+				apiAction.Group = &group
+			}
+
+			if utils.IsKnown(action.Uuid) {
+				uuid := kbapi.SecurityDetectionsAPINonEmptyString(action.Uuid.ValueString())
+				apiAction.Uuid = &uuid
+			}
+
+			if utils.IsKnown(action.AlertsFilter) {
+				alertsFilterStringMap := make(map[string]string)
+				alertsFilterDiags := action.AlertsFilter.ElementsAs(meta.Context, &alertsFilterStringMap, false)
+				if !alertsFilterDiags.HasError() {
+					alertsFilterMap := make(map[string]interface{})
+					for k, v := range alertsFilterStringMap {
+						alertsFilterMap[k] = v
+					}
+					apiAlertsFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter(alertsFilterMap)
+					apiAction.AlertsFilter = &apiAlertsFilter
+				}
+				meta.Diags.Append(alertsFilterDiags...)
+			}
+
+			// Handle frequency using ObjectTypeToStruct
+			if utils.IsKnown(action.Frequency) {
+				frequency := utils.ObjectTypeToStruct(meta.Context, action.Frequency, meta.Path.AtName("frequency"), meta.Diags,
+					func(frequencyModel ActionFrequencyModel, freqMeta utils.ObjectMeta) kbapi.SecurityDetectionsAPIRuleActionFrequency {
+						apiFreq := kbapi.SecurityDetectionsAPIRuleActionFrequency{
+							NotifyWhen: kbapi.SecurityDetectionsAPIRuleActionNotifyWhen(frequencyModel.NotifyWhen.ValueString()),
+							Summary:    frequencyModel.Summary.ValueBool(),
+						}
+
+						// Handle throttle - can be string or specific values
+						if utils.IsKnown(frequencyModel.Throttle) {
+							throttleStr := frequencyModel.Throttle.ValueString()
+							var throttle kbapi.SecurityDetectionsAPIRuleActionThrottle
+							if throttleStr == "no_actions" || throttleStr == "rule" {
+								// Use the enum value
+								var throttle0 kbapi.SecurityDetectionsAPIRuleActionThrottle0
+								if throttleStr == "no_actions" {
+									throttle0 = kbapi.SecurityDetectionsAPIRuleActionThrottle0NoActions
+								} else {
+									throttle0 = kbapi.SecurityDetectionsAPIRuleActionThrottle0Rule
+								}
+								err := throttle.FromSecurityDetectionsAPIRuleActionThrottle0(throttle0)
+								if err != nil {
+									freqMeta.Diags.AddError("Error setting throttle enum", err.Error())
+								}
+							} else {
+								// Use the time interval string
+								throttle1 := kbapi.SecurityDetectionsAPIRuleActionThrottle1(throttleStr)
+								err := throttle.FromSecurityDetectionsAPIRuleActionThrottle1(throttle1)
+								if err != nil {
+									freqMeta.Diags.AddError("Error setting throttle interval", err.Error())
+								}
+							}
+							apiFreq.Throttle = throttle
+						}
+
+						return apiFreq
+					})
+
+				if frequency != nil {
+					apiAction.Frequency = frequency
+				}
+			}
+
+			return apiAction
+		})
+
+	// Filter out empty actions (where ActionTypeId or Id was null)
+	validActions := make([]kbapi.SecurityDetectionsAPIRuleAction, 0)
+	for _, action := range apiActions {
+		if action.ActionTypeId != "" && action.Id != "" {
+			validActions = append(validActions, action)
+		}
+	}
+
+	return validActions, diags
+}
+
+// convertActionsToModel converts kbapi.SecurityDetectionsAPIRuleAction slice to Terraform model
+func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetectionsAPIRuleAction) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if len(apiActions) == 0 {
+		return types.ListNull(actionElementType()), diags
+	}
+
+	actions := make([]ActionModel, 0)
+
+	for _, apiAction := range apiActions {
+		action := ActionModel{
+			ActionTypeId: types.StringValue(apiAction.ActionTypeId),
+			Id:           types.StringValue(string(apiAction.Id)),
+		}
+
+		// Convert params
+		if apiAction.Params != nil {
+			paramsMap := make(map[string]attr.Value)
+			for k, v := range apiAction.Params {
+				if v != nil {
+					paramsMap[k] = types.StringValue(fmt.Sprintf("%v", v))
+				}
+			}
+			paramsValue, paramsDiags := types.MapValue(types.StringType, paramsMap)
+			diags.Append(paramsDiags...)
+			action.Params = paramsValue
+		} else {
+			action.Params = types.MapNull(types.StringType)
+		}
+
+		// Set optional fields
+		if apiAction.Group != nil {
+			action.Group = types.StringValue(string(*apiAction.Group))
+		} else {
+			action.Group = types.StringNull()
+		}
+
+		if apiAction.Uuid != nil {
+			action.Uuid = types.StringValue(string(*apiAction.Uuid))
+		} else {
+			action.Uuid = types.StringNull()
+		}
+
+		if apiAction.AlertsFilter != nil {
+			alertsFilterMap := make(map[string]attr.Value)
+			for k, v := range *apiAction.AlertsFilter {
+				if v != nil {
+					alertsFilterMap[k] = types.StringValue(fmt.Sprintf("%v", v))
+				}
+			}
+			alertsFilterValue, alertsFilterDiags := types.MapValue(types.StringType, alertsFilterMap)
+			diags.Append(alertsFilterDiags...)
+			action.AlertsFilter = alertsFilterValue
+		} else {
+			action.AlertsFilter = types.MapNull(types.StringType)
+		}
+
+		// Convert frequency
+		if apiAction.Frequency != nil {
+			var throttleStr string
+			if throttle0, err := apiAction.Frequency.Throttle.AsSecurityDetectionsAPIRuleActionThrottle0(); err == nil {
+				throttleStr = string(throttle0)
+			} else if throttle1, err := apiAction.Frequency.Throttle.AsSecurityDetectionsAPIRuleActionThrottle1(); err == nil {
+				throttleStr = string(throttle1)
+			}
+
+			frequencyModel := ActionFrequencyModel{
+				NotifyWhen: types.StringValue(string(apiAction.Frequency.NotifyWhen)),
+				Summary:    types.BoolValue(apiAction.Frequency.Summary),
+				Throttle:   types.StringValue(throttleStr),
+			}
+
+			frequencyObj, frequencyDiags := types.ObjectValueFrom(ctx, actionFrequencyElementType(), frequencyModel)
+			diags.Append(frequencyDiags...)
+			action.Frequency = frequencyObj
+		} else {
+			action.Frequency = types.ObjectNull(actionFrequencyElementType())
+		}
+
+		actions = append(actions, action)
+	}
+
+	listValue, listDiags := types.ListValueFrom(ctx, actionElementType(), actions)
+	diags.Append(listDiags...)
+	return listValue, diags
+}
+
+// actionElementType returns the element type for actions
+func actionElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"action_type_id": types.StringType,
+			"id":             types.StringType,
+			"params":         types.MapType{ElemType: types.StringType},
+			"group":          types.StringType,
+			"uuid":           types.StringType,
+			"alerts_filter":  types.MapType{ElemType: types.StringType},
+			"frequency":      types.ObjectType{AttrTypes: actionFrequencyElementType()},
+		},
+	}
+}
+
+// Helper function to update actions from API response
+func (d *SecurityDetectionRuleData) updateActionsFromApi(ctx context.Context, actions []kbapi.SecurityDetectionsAPIRuleAction) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if len(actions) > 0 {
+		actionsListValue, actionDiags := convertActionsToModel(ctx, actions)
+		diags.Append(actionDiags...)
+		if !actionDiags.HasError() {
+			d.Actions = actionsListValue
+		}
+	} else {
+		d.Actions = types.ListNull(actionElementType())
+	}
+
+	return diags
+}
+
+// actionFrequencyElementType returns the element type for action frequency
+func actionFrequencyElementType() map[string]attr.Type {
+	return map[string]attr.Type{
+		"notify_when": types.StringType,
+		"summary":     types.BoolType,
+		"throttle":    types.StringType,
+	}
 }

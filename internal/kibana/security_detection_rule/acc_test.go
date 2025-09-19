@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -380,37 +381,55 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 	}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_kibana_security_detection_rule" {
-			continue
-		}
+		switch rs.Type {
+		case "elasticstack_kibana_security_detection_rule":
+			// Parse ID to get space_id and rule_id
+			parts := strings.Split(rs.Primary.ID, "/")
+			if len(parts) != 2 {
+				return fmt.Errorf("invalid resource ID format: %s", rs.Primary.ID)
+			}
+			ruleId := parts[1]
 
-		// Parse ID to get space_id and rule_id
-		parts := strings.Split(rs.Primary.ID, "/")
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid resource ID format: %s", rs.Primary.ID)
-		}
-		ruleId := parts[1]
+			// Check if the rule still exists
+			ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uuid.MustParse(ruleId))
+			params := &kbapi.ReadRuleParams{
+				Id: &ruleObjectId,
+			}
 
-		// Check if the rule still exists
-		ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uuid.MustParse(ruleId))
-		params := &kbapi.ReadRuleParams{
-			Id: &ruleObjectId,
-		}
+			response, err := kbClient.API.ReadRuleWithResponse(context.Background(), params)
+			if err != nil {
+				return fmt.Errorf("failed to read security detection rule: %v", err)
+			}
 
-		response, err := kbClient.API.ReadRuleWithResponse(context.Background(), params)
-		if err != nil {
-			return fmt.Errorf("failed to read security detection rule: %v", err)
-		}
+			// If the rule still exists (status 200), it means destroy failed
+			if response.StatusCode() == 200 {
+				return fmt.Errorf("security detection rule (%s) still exists", ruleId)
+			}
 
-		// If the rule still exists (status 200), it means destroy failed
-		if response.StatusCode() == 200 {
-			return fmt.Errorf("security detection rule (%s) still exists", ruleId)
-		}
+			// If we get a 404, that's expected - the rule was properly destroyed
+			// Any other status code indicates an error
+			if response.StatusCode() != 404 {
+				return fmt.Errorf("unexpected status code when checking security detection rule: %d", response.StatusCode())
+			}
 
-		// If we get a 404, that's expected - the rule was properly destroyed
-		// Any other status code indicates an error
-		if response.StatusCode() != 404 {
-			return fmt.Errorf("unexpected status code when checking security detection rule: %d", response.StatusCode())
+		case "elasticstack_kibana_action_connector":
+			// Parse ID to get space_id and connector_id
+			compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+
+			// Get connector client from the Kibana OAPI client
+			oapiClient, err := client.GetKibanaOapiClient()
+			if err != nil {
+				return err
+			}
+
+			connector, diags := kibana_oapi.GetConnector(context.Background(), oapiClient, compId.ResourceId, compId.ClusterId)
+			if diags.HasError() {
+				return fmt.Errorf("failed to get connector: %v", diags)
+			}
+
+			if connector != nil {
+				return fmt.Errorf("action connector (%s) still exists", compId.ResourceId)
+			}
 		}
 	}
 
@@ -854,6 +873,197 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     value = 20
     field = ["user.name", "source.ip"]
   }
+}
+`, name)
+}
+
+func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	connectorResourceName := "elasticstack_kibana_action_connector.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_withConnectorAction("test-rule-with-action"),
+				Check: resource.ComposeTestCheckFunc(
+					// Check connector attributes
+					resource.TestCheckResourceAttr(connectorResourceName, "name", "test connector 1"),
+					resource.TestCheckResourceAttr(connectorResourceName, "connector_id", "1d30b67b-f90b-4e28-87c2-137cba361509"),
+					resource.TestCheckResourceAttr(connectorResourceName, "connector_type_id", ".cases-webhook"),
+					resource.TestCheckResourceAttrSet(connectorResourceName, "config"),
+					resource.TestCheckResourceAttrSet(connectorResourceName, "secrets"),
+
+					// Check security detection rule attributes
+					resource.TestCheckResourceAttr(resourceName, "name", "test-rule-with-action"),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "user.name:*"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Test security detection rule with connector action"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "50"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+
+					// Check action attributes
+					resource.TestCheckResourceAttr(resourceName, "actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.action_type_id", ".cases-webhook"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.id", "1d30b67b-f90b-4e28-87c2-137cba361509"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.group", "default"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.params.message", "CRITICAL EQL Alert: PowerShell process detected"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.notify_when", "onActiveAlert"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.summary", "true"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.throttle", "10m"),
+
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_withConnectorActionUpdate("test-rule-with-action-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					// Check updated rule attributes
+					resource.TestCheckResourceAttr(resourceName, "name", "test-rule-with-action-updated"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated test security detection rule with connector action"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
+					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "tags.0", "test"),
+					resource.TestCheckResourceAttr(resourceName, "tags.1", "terraform"),
+
+					// Check updated action attributes
+					resource.TestCheckResourceAttr(resourceName, "actions.0.params.message", "UPDATED CRITICAL Alert: Security event detected"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.throttle", "5m"),
+				),
+			},
+		},
+	})
+}
+
+func testAccSecurityDetectionRuleConfig_withConnectorAction(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_action_connector" "test" {
+  name         = "test connector 1"
+  connector_id = "1d30b67b-f90b-4e28-87c2-137cba361509"
+  config = jsonencode({
+    createIncidentJson = "{}"
+    createIncidentResponseKey = "key"
+    createIncidentUrl = "https://www.elastic.co/"
+    getIncidentResponseExternalTitleKey = "title"
+    getIncidentUrl = "https://www.elastic.co/"
+    updateIncidentJson = "{}"
+    updateIncidentUrl = "https://elasticsearch.com/"
+    viewIncidentUrl = "https://www.elastic.co/"
+    createIncidentMethod = "put"
+  })
+  secrets = jsonencode({
+    user = "user2"
+    password = "password2"
+  })
+  connector_type_id = ".cases-webhook"
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  description = "Test security detection rule with connector action"
+  type        = "query"
+  severity    = "medium"
+  risk_score  = 50
+  enabled     = true
+  query       = "user.name:*"
+  language    = "kuery"
+  from        = "now-6m"
+  to          = "now"
+  interval    = "5m"
+  index       = ["logs-*"]
+
+  actions = [
+    {
+      action_type_id = ".cases-webhook"
+      id             = "${elasticstack_kibana_action_connector.test.connector_id}"
+      params = {
+        message = "CRITICAL EQL Alert: PowerShell process detected"
+      }
+      group = "default"
+      frequency = {
+        notify_when = "onActiveAlert"
+        summary     = true
+        throttle    = "10m"
+      }
+    }
+  ]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_withConnectorActionUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_action_connector" "test" {
+  name         = "test connector 1"
+  connector_id = "1d30b67b-f90b-4e28-87c2-137cba361509"
+  config = jsonencode({
+    createIncidentJson = "{}"
+    createIncidentResponseKey = "key"
+    createIncidentUrl = "https://www.elastic.co/"
+    getIncidentResponseExternalTitleKey = "title"
+    getIncidentUrl = "https://www.elastic.co/"
+    updateIncidentJson = "{}"
+    updateIncidentUrl = "https://elasticsearch.com/"
+    viewIncidentUrl = "https://www.elastic.co/"
+    createIncidentMethod = "put"
+  })
+  secrets = jsonencode({
+    user = "user2"
+    password = "password2"
+  })
+  connector_type_id = ".cases-webhook"
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  description = "Updated test security detection rule with connector action"
+  type        = "query"
+  severity    = "high"
+  risk_score  = 75
+  enabled     = true
+  query       = "user.name:*"
+  language    = "kuery"
+  from        = "now-6m"
+  to          = "now"
+  interval    = "5m"
+  index       = ["logs-*"]
+  
+  tags = ["test", "terraform"]
+
+  actions = [
+    {
+      action_type_id = ".cases-webhook"
+      id             = "${elasticstack_kibana_action_connector.test.connector_id}"
+      params = {
+        message = "UPDATED CRITICAL Alert: Security event detected"
+      }
+      group = "default"
+      frequency = {
+        notify_when = "onActiveAlert"
+        summary     = true
+        throttle    = "5m"
+      }
+    }
+  ]
 }
 `, name)
 }
