@@ -71,5 +71,13 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &readData)...)
+	if readData == nil {
+		resp.Diagnostics.AddError(
+			"Error reading updated security detection rule",
+			"Could not read security detection rule after update",
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }

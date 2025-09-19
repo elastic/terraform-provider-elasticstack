@@ -34,8 +34,8 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	// Check if the rule was found (empty data indicates 404)
-	if readData.RuleId.IsNull() {
+	// Check if the rule was found (nil data indicates 404)
+	if readData == nil {
 		// Rule was deleted outside of Terraform
 		resp.State.RemoveResource(ctx)
 		return
@@ -43,14 +43,14 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 
 	// Set the composite ID and state
 	readData.Id = data.Id
-	resp.Diagnostics.Append(resp.State.Set(ctx, &readData)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }
 
 // read extracts the core functionality of reading a security detection rule
-func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, spaceId string) (SecurityDetectionRuleData, diag.Diagnostics) {
-	var data SecurityDetectionRuleData
+func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, spaceId string) (*SecurityDetectionRuleData, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	data := &SecurityDetectionRuleData{}
 	data.initializeAllFieldsToDefaults(ctx, &diags)
 
 	// Get the rule using kbapi client
@@ -60,14 +60,14 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 			"Error getting Kibana client",
 			"Could not get Kibana OAPI client: "+err.Error(),
 		)
-		return data, diags
+		return nil, diags
 	}
 
 	// Read the rule
 	uid, err := uuid.Parse(resourceId)
 	if err != nil {
 		diags.AddError("ID was not a valid UUID", err.Error())
-		return data, diags
+		return nil, diags
 	}
 	ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uid)
 	params := &kbapi.ReadRuleParams{
@@ -80,12 +80,12 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 			"Error reading security detection rule",
 			"Could not read security detection rule: "+err.Error(),
 		)
-		return data, diags
+		return nil, diags
 	}
 
 	if response.StatusCode() == 404 {
-		// Rule was deleted - return empty data to indicate this
-		return data, diags
+		// Rule was deleted - return nil to indicate this
+		return nil, diags
 	}
 
 	if response.StatusCode() != 200 {
@@ -93,14 +93,14 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 			"Error reading security detection rule",
 			fmt.Sprintf("API returned status %d: %s", response.StatusCode(), string(response.Body)),
 		)
-		return data, diags
+		return nil, diags
 	}
 
 	// Parse the response
 	updateDiags := data.updateFromRule(ctx, response.JSON200)
 	diags.Append(updateDiags...)
 	if diags.HasError() {
-		return data, diags
+		return nil, diags
 	}
 
 	// Ensure space_id is set correctly
