@@ -90,6 +90,9 @@ type SecurityDetectionRuleData struct {
 
 	// Exceptions list field (common across all rule types)
 	ExceptionsList types.List `tfsdk:"exceptions_list"`
+
+	// Building block type field (common across all rule types)
+	BuildingBlockType types.String `tfsdk:"building_block_type"`
 }
 type SecurityDetectionRuleTfData struct {
 	ThreatMapping types.List `tfsdk:"threat_mapping"`
@@ -148,46 +151,48 @@ type RiskScoreMappingModel struct {
 
 // CommonCreateProps holds all the field pointers for setting common create properties
 type CommonCreateProps struct {
-	Actions          **[]kbapi.SecurityDetectionsAPIRuleAction
-	RuleId           **kbapi.SecurityDetectionsAPIRuleSignatureId
-	Enabled          **kbapi.SecurityDetectionsAPIIsRuleEnabled
-	From             **kbapi.SecurityDetectionsAPIRuleIntervalFrom
-	To               **kbapi.SecurityDetectionsAPIRuleIntervalTo
-	Interval         **kbapi.SecurityDetectionsAPIRuleInterval
-	Index            **[]string
-	Author           **[]string
-	Tags             **[]string
-	FalsePositives   **[]string
-	References       **[]string
-	License          **kbapi.SecurityDetectionsAPIRuleLicense
-	Note             **kbapi.SecurityDetectionsAPIInvestigationGuide
-	Setup            **kbapi.SecurityDetectionsAPISetupGuide
-	MaxSignals       **kbapi.SecurityDetectionsAPIMaxSignals
-	Version          **kbapi.SecurityDetectionsAPIRuleVersion
-	ExceptionsList   **[]kbapi.SecurityDetectionsAPIRuleExceptionList
-	RiskScoreMapping **kbapi.SecurityDetectionsAPIRiskScoreMapping
+	Actions           **[]kbapi.SecurityDetectionsAPIRuleAction
+	RuleId            **kbapi.SecurityDetectionsAPIRuleSignatureId
+	Enabled           **kbapi.SecurityDetectionsAPIIsRuleEnabled
+	From              **kbapi.SecurityDetectionsAPIRuleIntervalFrom
+	To                **kbapi.SecurityDetectionsAPIRuleIntervalTo
+	Interval          **kbapi.SecurityDetectionsAPIRuleInterval
+	Index             **[]string
+	Author            **[]string
+	Tags              **[]string
+	FalsePositives    **[]string
+	References        **[]string
+	License           **kbapi.SecurityDetectionsAPIRuleLicense
+	Note              **kbapi.SecurityDetectionsAPIInvestigationGuide
+	Setup             **kbapi.SecurityDetectionsAPISetupGuide
+	MaxSignals        **kbapi.SecurityDetectionsAPIMaxSignals
+	Version           **kbapi.SecurityDetectionsAPIRuleVersion
+	ExceptionsList    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
+	RiskScoreMapping  **kbapi.SecurityDetectionsAPIRiskScoreMapping
+	BuildingBlockType **kbapi.SecurityDetectionsAPIBuildingBlockType
 }
 
 // CommonUpdateProps holds all the field pointers for setting common update properties
 type CommonUpdateProps struct {
-	Actions          **[]kbapi.SecurityDetectionsAPIRuleAction
-	RuleId           **kbapi.SecurityDetectionsAPIRuleSignatureId
-	Enabled          **kbapi.SecurityDetectionsAPIIsRuleEnabled
-	From             **kbapi.SecurityDetectionsAPIRuleIntervalFrom
-	To               **kbapi.SecurityDetectionsAPIRuleIntervalTo
-	Interval         **kbapi.SecurityDetectionsAPIRuleInterval
-	Index            **[]string
-	Author           **[]string
-	Tags             **[]string
-	FalsePositives   **[]string
-	References       **[]string
-	License          **kbapi.SecurityDetectionsAPIRuleLicense
-	Note             **kbapi.SecurityDetectionsAPIInvestigationGuide
-	Setup            **kbapi.SecurityDetectionsAPISetupGuide
-	MaxSignals       **kbapi.SecurityDetectionsAPIMaxSignals
-	Version          **kbapi.SecurityDetectionsAPIRuleVersion
-	ExceptionsList   **[]kbapi.SecurityDetectionsAPIRuleExceptionList
-	RiskScoreMapping **kbapi.SecurityDetectionsAPIRiskScoreMapping
+	Actions           **[]kbapi.SecurityDetectionsAPIRuleAction
+	RuleId            **kbapi.SecurityDetectionsAPIRuleSignatureId
+	Enabled           **kbapi.SecurityDetectionsAPIIsRuleEnabled
+	From              **kbapi.SecurityDetectionsAPIRuleIntervalFrom
+	To                **kbapi.SecurityDetectionsAPIRuleIntervalTo
+	Interval          **kbapi.SecurityDetectionsAPIRuleInterval
+	Index             **[]string
+	Author            **[]string
+	Tags              **[]string
+	FalsePositives    **[]string
+	References        **[]string
+	License           **kbapi.SecurityDetectionsAPIRuleLicense
+	Note              **kbapi.SecurityDetectionsAPIInvestigationGuide
+	Setup             **kbapi.SecurityDetectionsAPISetupGuide
+	MaxSignals        **kbapi.SecurityDetectionsAPIMaxSignals
+	Version           **kbapi.SecurityDetectionsAPIRuleVersion
+	ExceptionsList    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
+	RiskScoreMapping  **kbapi.SecurityDetectionsAPIRiskScoreMapping
+	BuildingBlockType **kbapi.SecurityDetectionsAPIBuildingBlockType
 }
 
 func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -254,24 +259,25 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 	}
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:          &queryRule.Actions,
-		RuleId:           &queryRule.RuleId,
-		Enabled:          &queryRule.Enabled,
-		From:             &queryRule.From,
-		To:               &queryRule.To,
-		Interval:         &queryRule.Interval,
-		Index:            &queryRule.Index,
-		Author:           &queryRule.Author,
-		Tags:             &queryRule.Tags,
-		FalsePositives:   &queryRule.FalsePositives,
-		References:       &queryRule.References,
-		License:          &queryRule.License,
-		Note:             &queryRule.Note,
-		Setup:            &queryRule.Setup,
-		MaxSignals:       &queryRule.MaxSignals,
-		Version:          &queryRule.Version,
-		ExceptionsList:   &queryRule.ExceptionsList,
-		RiskScoreMapping: &queryRule.RiskScoreMapping,
+		Actions:           &queryRule.Actions,
+		RuleId:            &queryRule.RuleId,
+		Enabled:           &queryRule.Enabled,
+		From:              &queryRule.From,
+		To:                &queryRule.To,
+		Interval:          &queryRule.Interval,
+		Index:             &queryRule.Index,
+		Author:            &queryRule.Author,
+		Tags:              &queryRule.Tags,
+		FalsePositives:    &queryRule.FalsePositives,
+		References:        &queryRule.References,
+		License:           &queryRule.License,
+		Note:              &queryRule.Note,
+		Setup:             &queryRule.Setup,
+		MaxSignals:        &queryRule.MaxSignals,
+		Version:           &queryRule.Version,
+		ExceptionsList:    &queryRule.ExceptionsList,
+		RiskScoreMapping:  &queryRule.RiskScoreMapping,
+		BuildingBlockType: &queryRule.BuildingBlockType,
 	}, &diags)
 
 	// Set query-specific fields
@@ -309,24 +315,25 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 	}
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:          &eqlRule.Actions,
-		RuleId:           &eqlRule.RuleId,
-		Enabled:          &eqlRule.Enabled,
-		From:             &eqlRule.From,
-		To:               &eqlRule.To,
-		Interval:         &eqlRule.Interval,
-		Index:            &eqlRule.Index,
-		Author:           &eqlRule.Author,
-		Tags:             &eqlRule.Tags,
-		FalsePositives:   &eqlRule.FalsePositives,
-		References:       &eqlRule.References,
-		License:          &eqlRule.License,
-		Note:             &eqlRule.Note,
-		Setup:            &eqlRule.Setup,
-		MaxSignals:       &eqlRule.MaxSignals,
-		Version:          &eqlRule.Version,
-		ExceptionsList:   &eqlRule.ExceptionsList,
-		RiskScoreMapping: &eqlRule.RiskScoreMapping,
+		Actions:           &eqlRule.Actions,
+		RuleId:            &eqlRule.RuleId,
+		Enabled:           &eqlRule.Enabled,
+		From:              &eqlRule.From,
+		To:                &eqlRule.To,
+		Interval:          &eqlRule.Interval,
+		Index:             &eqlRule.Index,
+		Author:            &eqlRule.Author,
+		Tags:              &eqlRule.Tags,
+		FalsePositives:    &eqlRule.FalsePositives,
+		References:        &eqlRule.References,
+		License:           &eqlRule.License,
+		Note:              &eqlRule.Note,
+		Setup:             &eqlRule.Setup,
+		MaxSignals:        &eqlRule.MaxSignals,
+		Version:           &eqlRule.Version,
+		ExceptionsList:    &eqlRule.ExceptionsList,
+		RiskScoreMapping:  &eqlRule.RiskScoreMapping,
+		BuildingBlockType: &eqlRule.BuildingBlockType,
 	}, &diags)
 
 	// Set EQL-specific fields
@@ -362,24 +369,25 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 	}
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:          &esqlRule.Actions,
-		RuleId:           &esqlRule.RuleId,
-		Enabled:          &esqlRule.Enabled,
-		From:             &esqlRule.From,
-		To:               &esqlRule.To,
-		Interval:         &esqlRule.Interval,
-		Index:            nil, // ESQL rules don't use index patterns
-		Author:           &esqlRule.Author,
-		Tags:             &esqlRule.Tags,
-		FalsePositives:   &esqlRule.FalsePositives,
-		References:       &esqlRule.References,
-		License:          &esqlRule.License,
-		Note:             &esqlRule.Note,
-		Setup:            &esqlRule.Setup,
-		MaxSignals:       &esqlRule.MaxSignals,
-		Version:          &esqlRule.Version,
-		ExceptionsList:   &esqlRule.ExceptionsList,
-		RiskScoreMapping: &esqlRule.RiskScoreMapping,
+		Actions:           &esqlRule.Actions,
+		RuleId:            &esqlRule.RuleId,
+		Enabled:           &esqlRule.Enabled,
+		From:              &esqlRule.From,
+		To:                &esqlRule.To,
+		Interval:          &esqlRule.Interval,
+		Index:             nil, // ESQL rules don't use index patterns
+		Author:            &esqlRule.Author,
+		Tags:              &esqlRule.Tags,
+		FalsePositives:    &esqlRule.FalsePositives,
+		References:        &esqlRule.References,
+		License:           &esqlRule.License,
+		Note:              &esqlRule.Note,
+		Setup:             &esqlRule.Setup,
+		MaxSignals:        &esqlRule.MaxSignals,
+		Version:           &esqlRule.Version,
+		ExceptionsList:    &esqlRule.ExceptionsList,
+		RiskScoreMapping:  &esqlRule.RiskScoreMapping,
+		BuildingBlockType: &esqlRule.BuildingBlockType,
 	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -436,24 +444,25 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 	}
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:          &mlRule.Actions,
-		RuleId:           &mlRule.RuleId,
-		Enabled:          &mlRule.Enabled,
-		From:             &mlRule.From,
-		To:               &mlRule.To,
-		Interval:         &mlRule.Interval,
-		Index:            nil, // ML rules don't use index patterns
-		Author:           &mlRule.Author,
-		Tags:             &mlRule.Tags,
-		FalsePositives:   &mlRule.FalsePositives,
-		References:       &mlRule.References,
-		License:          &mlRule.License,
-		Note:             &mlRule.Note,
-		Setup:            &mlRule.Setup,
-		MaxSignals:       &mlRule.MaxSignals,
-		Version:          &mlRule.Version,
-		ExceptionsList:   &mlRule.ExceptionsList,
-		RiskScoreMapping: &mlRule.RiskScoreMapping,
+		Actions:           &mlRule.Actions,
+		RuleId:            &mlRule.RuleId,
+		Enabled:           &mlRule.Enabled,
+		From:              &mlRule.From,
+		To:                &mlRule.To,
+		Interval:          &mlRule.Interval,
+		Index:             nil, // ML rules don't use index patterns
+		Author:            &mlRule.Author,
+		Tags:              &mlRule.Tags,
+		FalsePositives:    &mlRule.FalsePositives,
+		References:        &mlRule.References,
+		License:           &mlRule.License,
+		Note:              &mlRule.Note,
+		Setup:             &mlRule.Setup,
+		MaxSignals:        &mlRule.MaxSignals,
+		Version:           &mlRule.Version,
+		ExceptionsList:    &mlRule.ExceptionsList,
+		RiskScoreMapping:  &mlRule.RiskScoreMapping,
+		BuildingBlockType: &mlRule.BuildingBlockType,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -493,24 +502,25 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 	}
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:          &newTermsRule.Actions,
-		RuleId:           &newTermsRule.RuleId,
-		Enabled:          &newTermsRule.Enabled,
-		From:             &newTermsRule.From,
-		To:               &newTermsRule.To,
-		Interval:         &newTermsRule.Interval,
-		Index:            &newTermsRule.Index,
-		Author:           &newTermsRule.Author,
-		Tags:             &newTermsRule.Tags,
-		FalsePositives:   &newTermsRule.FalsePositives,
-		References:       &newTermsRule.References,
-		License:          &newTermsRule.License,
-		Note:             &newTermsRule.Note,
-		Setup:            &newTermsRule.Setup,
-		MaxSignals:       &newTermsRule.MaxSignals,
-		Version:          &newTermsRule.Version,
-		ExceptionsList:   &newTermsRule.ExceptionsList,
-		RiskScoreMapping: &newTermsRule.RiskScoreMapping,
+		Actions:           &newTermsRule.Actions,
+		RuleId:            &newTermsRule.RuleId,
+		Enabled:           &newTermsRule.Enabled,
+		From:              &newTermsRule.From,
+		To:                &newTermsRule.To,
+		Interval:          &newTermsRule.Interval,
+		Index:             &newTermsRule.Index,
+		Author:            &newTermsRule.Author,
+		Tags:              &newTermsRule.Tags,
+		FalsePositives:    &newTermsRule.FalsePositives,
+		References:        &newTermsRule.References,
+		License:           &newTermsRule.License,
+		Note:              &newTermsRule.Note,
+		Setup:             &newTermsRule.Setup,
+		MaxSignals:        &newTermsRule.MaxSignals,
+		Version:           &newTermsRule.Version,
+		ExceptionsList:    &newTermsRule.ExceptionsList,
+		RiskScoreMapping:  &newTermsRule.RiskScoreMapping,
+		BuildingBlockType: &newTermsRule.BuildingBlockType,
 	}, &diags)
 
 	// Set query language
@@ -542,24 +552,25 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 	}
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:          &savedQueryRule.Actions,
-		RuleId:           &savedQueryRule.RuleId,
-		Enabled:          &savedQueryRule.Enabled,
-		From:             &savedQueryRule.From,
-		To:               &savedQueryRule.To,
-		Interval:         &savedQueryRule.Interval,
-		Index:            &savedQueryRule.Index,
-		Author:           &savedQueryRule.Author,
-		Tags:             &savedQueryRule.Tags,
-		FalsePositives:   &savedQueryRule.FalsePositives,
-		References:       &savedQueryRule.References,
-		License:          &savedQueryRule.License,
-		Note:             &savedQueryRule.Note,
-		Setup:            &savedQueryRule.Setup,
-		MaxSignals:       &savedQueryRule.MaxSignals,
-		Version:          &savedQueryRule.Version,
-		ExceptionsList:   &savedQueryRule.ExceptionsList,
-		RiskScoreMapping: &savedQueryRule.RiskScoreMapping,
+		Actions:           &savedQueryRule.Actions,
+		RuleId:            &savedQueryRule.RuleId,
+		Enabled:           &savedQueryRule.Enabled,
+		From:              &savedQueryRule.From,
+		To:                &savedQueryRule.To,
+		Interval:          &savedQueryRule.Interval,
+		Index:             &savedQueryRule.Index,
+		Author:            &savedQueryRule.Author,
+		Tags:              &savedQueryRule.Tags,
+		FalsePositives:    &savedQueryRule.FalsePositives,
+		References:        &savedQueryRule.References,
+		License:           &savedQueryRule.License,
+		Note:              &savedQueryRule.Note,
+		Setup:             &savedQueryRule.Setup,
+		MaxSignals:        &savedQueryRule.MaxSignals,
+		Version:           &savedQueryRule.Version,
+		ExceptionsList:    &savedQueryRule.ExceptionsList,
+		RiskScoreMapping:  &savedQueryRule.RiskScoreMapping,
+		BuildingBlockType: &savedQueryRule.BuildingBlockType,
 	}, &diags)
 
 	// Set optional query for saved query rules
@@ -613,24 +624,25 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 	}
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:          &threatMatchRule.Actions,
-		RuleId:           &threatMatchRule.RuleId,
-		Enabled:          &threatMatchRule.Enabled,
-		From:             &threatMatchRule.From,
-		To:               &threatMatchRule.To,
-		Interval:         &threatMatchRule.Interval,
-		Index:            &threatMatchRule.Index,
-		Author:           &threatMatchRule.Author,
-		Tags:             &threatMatchRule.Tags,
-		FalsePositives:   &threatMatchRule.FalsePositives,
-		References:       &threatMatchRule.References,
-		License:          &threatMatchRule.License,
-		Note:             &threatMatchRule.Note,
-		Setup:            &threatMatchRule.Setup,
-		MaxSignals:       &threatMatchRule.MaxSignals,
-		Version:          &threatMatchRule.Version,
-		ExceptionsList:   &threatMatchRule.ExceptionsList,
-		RiskScoreMapping: &threatMatchRule.RiskScoreMapping,
+		Actions:           &threatMatchRule.Actions,
+		RuleId:            &threatMatchRule.RuleId,
+		Enabled:           &threatMatchRule.Enabled,
+		From:              &threatMatchRule.From,
+		To:                &threatMatchRule.To,
+		Interval:          &threatMatchRule.Interval,
+		Index:             &threatMatchRule.Index,
+		Author:            &threatMatchRule.Author,
+		Tags:              &threatMatchRule.Tags,
+		FalsePositives:    &threatMatchRule.FalsePositives,
+		References:        &threatMatchRule.References,
+		License:           &threatMatchRule.License,
+		Note:              &threatMatchRule.Note,
+		Setup:             &threatMatchRule.Setup,
+		MaxSignals:        &threatMatchRule.MaxSignals,
+		Version:           &threatMatchRule.Version,
+		ExceptionsList:    &threatMatchRule.ExceptionsList,
+		RiskScoreMapping:  &threatMatchRule.RiskScoreMapping,
+		BuildingBlockType: &threatMatchRule.BuildingBlockType,
 	}, &diags)
 
 	// Set threat-specific fields
@@ -693,24 +705,25 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 	}
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:          &thresholdRule.Actions,
-		RuleId:           &thresholdRule.RuleId,
-		Enabled:          &thresholdRule.Enabled,
-		From:             &thresholdRule.From,
-		To:               &thresholdRule.To,
-		Interval:         &thresholdRule.Interval,
-		Index:            &thresholdRule.Index,
-		Author:           &thresholdRule.Author,
-		Tags:             &thresholdRule.Tags,
-		FalsePositives:   &thresholdRule.FalsePositives,
-		References:       &thresholdRule.References,
-		License:          &thresholdRule.License,
-		Note:             &thresholdRule.Note,
-		Setup:            &thresholdRule.Setup,
-		MaxSignals:       &thresholdRule.MaxSignals,
-		Version:          &thresholdRule.Version,
-		ExceptionsList:   &thresholdRule.ExceptionsList,
-		RiskScoreMapping: &thresholdRule.RiskScoreMapping,
+		Actions:           &thresholdRule.Actions,
+		RuleId:            &thresholdRule.RuleId,
+		Enabled:           &thresholdRule.Enabled,
+		From:              &thresholdRule.From,
+		To:                &thresholdRule.To,
+		Interval:          &thresholdRule.Interval,
+		Index:             &thresholdRule.Index,
+		Author:            &thresholdRule.Author,
+		Tags:              &thresholdRule.Tags,
+		FalsePositives:    &thresholdRule.FalsePositives,
+		References:        &thresholdRule.References,
+		License:           &thresholdRule.License,
+		Note:              &thresholdRule.Note,
+		Setup:             &thresholdRule.Setup,
+		MaxSignals:        &thresholdRule.MaxSignals,
+		Version:           &thresholdRule.Version,
+		ExceptionsList:    &thresholdRule.ExceptionsList,
+		RiskScoreMapping:  &thresholdRule.RiskScoreMapping,
+		BuildingBlockType: &thresholdRule.BuildingBlockType,
 	}, &diags)
 
 	// Set query language
@@ -862,6 +875,12 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 			*props.RiskScoreMapping = &riskScoreMapping
 		}
 	}
+
+	// Set building block type
+	if props.BuildingBlockType != nil && utils.IsKnown(d.BuildingBlockType) {
+		buildingBlockType := kbapi.SecurityDetectionsAPIBuildingBlockType(d.BuildingBlockType.ValueString())
+		*props.BuildingBlockType = &buildingBlockType
+	}
 }
 
 func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
@@ -931,24 +950,25 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:          &queryRule.Actions,
-		RuleId:           &queryRule.RuleId,
-		Enabled:          &queryRule.Enabled,
-		From:             &queryRule.From,
-		To:               &queryRule.To,
-		Interval:         &queryRule.Interval,
-		Index:            &queryRule.Index,
-		Author:           &queryRule.Author,
-		Tags:             &queryRule.Tags,
-		FalsePositives:   &queryRule.FalsePositives,
-		References:       &queryRule.References,
-		License:          &queryRule.License,
-		Note:             &queryRule.Note,
-		Setup:            &queryRule.Setup,
-		MaxSignals:       &queryRule.MaxSignals,
-		Version:          &queryRule.Version,
-		ExceptionsList:   &queryRule.ExceptionsList,
-		RiskScoreMapping: &queryRule.RiskScoreMapping,
+		Actions:           &queryRule.Actions,
+		RuleId:            &queryRule.RuleId,
+		Enabled:           &queryRule.Enabled,
+		From:              &queryRule.From,
+		To:                &queryRule.To,
+		Interval:          &queryRule.Interval,
+		Index:             &queryRule.Index,
+		Author:            &queryRule.Author,
+		Tags:              &queryRule.Tags,
+		FalsePositives:    &queryRule.FalsePositives,
+		References:        &queryRule.References,
+		License:           &queryRule.License,
+		Note:              &queryRule.Note,
+		Setup:             &queryRule.Setup,
+		MaxSignals:        &queryRule.MaxSignals,
+		Version:           &queryRule.Version,
+		ExceptionsList:    &queryRule.ExceptionsList,
+		RiskScoreMapping:  &queryRule.RiskScoreMapping,
+		BuildingBlockType: &queryRule.BuildingBlockType,
 	}, &diags)
 
 	// Set query-specific fields
@@ -1005,24 +1025,25 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kb
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:          &eqlRule.Actions,
-		RuleId:           &eqlRule.RuleId,
-		Enabled:          &eqlRule.Enabled,
-		From:             &eqlRule.From,
-		To:               &eqlRule.To,
-		Interval:         &eqlRule.Interval,
-		Index:            &eqlRule.Index,
-		Author:           &eqlRule.Author,
-		Tags:             &eqlRule.Tags,
-		FalsePositives:   &eqlRule.FalsePositives,
-		References:       &eqlRule.References,
-		License:          &eqlRule.License,
-		Note:             &eqlRule.Note,
-		Setup:            &eqlRule.Setup,
-		MaxSignals:       &eqlRule.MaxSignals,
-		Version:          &eqlRule.Version,
-		ExceptionsList:   &eqlRule.ExceptionsList,
-		RiskScoreMapping: &eqlRule.RiskScoreMapping,
+		Actions:           &eqlRule.Actions,
+		RuleId:            &eqlRule.RuleId,
+		Enabled:           &eqlRule.Enabled,
+		From:              &eqlRule.From,
+		To:                &eqlRule.To,
+		Interval:          &eqlRule.Interval,
+		Index:             &eqlRule.Index,
+		Author:            &eqlRule.Author,
+		Tags:              &eqlRule.Tags,
+		FalsePositives:    &eqlRule.FalsePositives,
+		References:        &eqlRule.References,
+		License:           &eqlRule.License,
+		Note:              &eqlRule.Note,
+		Setup:             &eqlRule.Setup,
+		MaxSignals:        &eqlRule.MaxSignals,
+		Version:           &eqlRule.Version,
+		ExceptionsList:    &eqlRule.ExceptionsList,
+		RiskScoreMapping:  &eqlRule.RiskScoreMapping,
+		BuildingBlockType: &eqlRule.BuildingBlockType,
 	}, &diags)
 
 	// Set EQL-specific fields
@@ -1077,24 +1098,25 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (k
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:          &esqlRule.Actions,
-		RuleId:           &esqlRule.RuleId,
-		Enabled:          &esqlRule.Enabled,
-		From:             &esqlRule.From,
-		To:               &esqlRule.To,
-		Interval:         &esqlRule.Interval,
-		Index:            nil, // ESQL rules don't use index patterns
-		Author:           &esqlRule.Author,
-		Tags:             &esqlRule.Tags,
-		FalsePositives:   &esqlRule.FalsePositives,
-		References:       &esqlRule.References,
-		License:          &esqlRule.License,
-		Note:             &esqlRule.Note,
-		Setup:            &esqlRule.Setup,
-		MaxSignals:       &esqlRule.MaxSignals,
-		Version:          &esqlRule.Version,
-		ExceptionsList:   &esqlRule.ExceptionsList,
-		RiskScoreMapping: &esqlRule.RiskScoreMapping,
+		Actions:           &esqlRule.Actions,
+		RuleId:            &esqlRule.RuleId,
+		Enabled:           &esqlRule.Enabled,
+		From:              &esqlRule.From,
+		To:                &esqlRule.To,
+		Interval:          &esqlRule.Interval,
+		Index:             nil, // ESQL rules don't use index patterns
+		Author:            &esqlRule.Author,
+		Tags:              &esqlRule.Tags,
+		FalsePositives:    &esqlRule.FalsePositives,
+		References:        &esqlRule.References,
+		License:           &esqlRule.License,
+		Note:              &esqlRule.Note,
+		Setup:             &esqlRule.Setup,
+		MaxSignals:        &esqlRule.MaxSignals,
+		Version:           &esqlRule.Version,
+		ExceptionsList:    &esqlRule.ExceptionsList,
+		RiskScoreMapping:  &esqlRule.RiskScoreMapping,
+		BuildingBlockType: &esqlRule.BuildingBlockType,
 	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -1170,24 +1192,25 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:          &mlRule.Actions,
-		RuleId:           &mlRule.RuleId,
-		Enabled:          &mlRule.Enabled,
-		From:             &mlRule.From,
-		To:               &mlRule.To,
-		Interval:         &mlRule.Interval,
-		Index:            nil, // ML rules don't use index patterns
-		Author:           &mlRule.Author,
-		Tags:             &mlRule.Tags,
-		FalsePositives:   &mlRule.FalsePositives,
-		References:       &mlRule.References,
-		License:          &mlRule.License,
-		Note:             &mlRule.Note,
-		Setup:            &mlRule.Setup,
-		MaxSignals:       &mlRule.MaxSignals,
-		Version:          &mlRule.Version,
-		ExceptionsList:   &mlRule.ExceptionsList,
-		RiskScoreMapping: &mlRule.RiskScoreMapping,
+		Actions:           &mlRule.Actions,
+		RuleId:            &mlRule.RuleId,
+		Enabled:           &mlRule.Enabled,
+		From:              &mlRule.From,
+		To:                &mlRule.To,
+		Interval:          &mlRule.Interval,
+		Index:             nil, // ML rules don't use index patterns
+		Author:            &mlRule.Author,
+		Tags:              &mlRule.Tags,
+		FalsePositives:    &mlRule.FalsePositives,
+		References:        &mlRule.References,
+		License:           &mlRule.License,
+		Note:              &mlRule.Note,
+		Setup:             &mlRule.Setup,
+		MaxSignals:        &mlRule.MaxSignals,
+		Version:           &mlRule.Version,
+		ExceptionsList:    &mlRule.ExceptionsList,
+		RiskScoreMapping:  &mlRule.RiskScoreMapping,
+		BuildingBlockType: &mlRule.BuildingBlockType,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -1246,24 +1269,25 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:          &newTermsRule.Actions,
-		RuleId:           &newTermsRule.RuleId,
-		Enabled:          &newTermsRule.Enabled,
-		From:             &newTermsRule.From,
-		To:               &newTermsRule.To,
-		Interval:         &newTermsRule.Interval,
-		Index:            &newTermsRule.Index,
-		Author:           &newTermsRule.Author,
-		Tags:             &newTermsRule.Tags,
-		FalsePositives:   &newTermsRule.FalsePositives,
-		References:       &newTermsRule.References,
-		License:          &newTermsRule.License,
-		Note:             &newTermsRule.Note,
-		Setup:            &newTermsRule.Setup,
-		MaxSignals:       &newTermsRule.MaxSignals,
-		Version:          &newTermsRule.Version,
-		ExceptionsList:   &newTermsRule.ExceptionsList,
-		RiskScoreMapping: &newTermsRule.RiskScoreMapping,
+		Actions:           &newTermsRule.Actions,
+		RuleId:            &newTermsRule.RuleId,
+		Enabled:           &newTermsRule.Enabled,
+		From:              &newTermsRule.From,
+		To:                &newTermsRule.To,
+		Interval:          &newTermsRule.Interval,
+		Index:             &newTermsRule.Index,
+		Author:            &newTermsRule.Author,
+		Tags:              &newTermsRule.Tags,
+		FalsePositives:    &newTermsRule.FalsePositives,
+		References:        &newTermsRule.References,
+		License:           &newTermsRule.License,
+		Note:              &newTermsRule.Note,
+		Setup:             &newTermsRule.Setup,
+		MaxSignals:        &newTermsRule.MaxSignals,
+		Version:           &newTermsRule.Version,
+		ExceptionsList:    &newTermsRule.ExceptionsList,
+		RiskScoreMapping:  &newTermsRule.RiskScoreMapping,
+		BuildingBlockType: &newTermsRule.BuildingBlockType,
 	}, &diags)
 
 	// Set query language
@@ -1314,24 +1338,25 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:          &savedQueryRule.Actions,
-		RuleId:           &savedQueryRule.RuleId,
-		Enabled:          &savedQueryRule.Enabled,
-		From:             &savedQueryRule.From,
-		To:               &savedQueryRule.To,
-		Interval:         &savedQueryRule.Interval,
-		Index:            &savedQueryRule.Index,
-		Author:           &savedQueryRule.Author,
-		Tags:             &savedQueryRule.Tags,
-		FalsePositives:   &savedQueryRule.FalsePositives,
-		References:       &savedQueryRule.References,
-		License:          &savedQueryRule.License,
-		Note:             &savedQueryRule.Note,
-		Setup:            &savedQueryRule.Setup,
-		MaxSignals:       &savedQueryRule.MaxSignals,
-		Version:          &savedQueryRule.Version,
-		ExceptionsList:   &savedQueryRule.ExceptionsList,
-		RiskScoreMapping: &savedQueryRule.RiskScoreMapping,
+		Actions:           &savedQueryRule.Actions,
+		RuleId:            &savedQueryRule.RuleId,
+		Enabled:           &savedQueryRule.Enabled,
+		From:              &savedQueryRule.From,
+		To:                &savedQueryRule.To,
+		Interval:          &savedQueryRule.Interval,
+		Index:             &savedQueryRule.Index,
+		Author:            &savedQueryRule.Author,
+		Tags:              &savedQueryRule.Tags,
+		FalsePositives:    &savedQueryRule.FalsePositives,
+		References:        &savedQueryRule.References,
+		License:           &savedQueryRule.License,
+		Note:              &savedQueryRule.Note,
+		Setup:             &savedQueryRule.Setup,
+		MaxSignals:        &savedQueryRule.MaxSignals,
+		Version:           &savedQueryRule.Version,
+		ExceptionsList:    &savedQueryRule.ExceptionsList,
+		RiskScoreMapping:  &savedQueryRule.RiskScoreMapping,
+		BuildingBlockType: &savedQueryRule.BuildingBlockType,
 	}, &diags)
 
 	// Set optional query for saved query rules
@@ -1404,24 +1429,25 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:          &threatMatchRule.Actions,
-		RuleId:           &threatMatchRule.RuleId,
-		Enabled:          &threatMatchRule.Enabled,
-		From:             &threatMatchRule.From,
-		To:               &threatMatchRule.To,
-		Interval:         &threatMatchRule.Interval,
-		Index:            &threatMatchRule.Index,
-		Author:           &threatMatchRule.Author,
-		Tags:             &threatMatchRule.Tags,
-		FalsePositives:   &threatMatchRule.FalsePositives,
-		References:       &threatMatchRule.References,
-		License:          &threatMatchRule.License,
-		Note:             &threatMatchRule.Note,
-		Setup:            &threatMatchRule.Setup,
-		MaxSignals:       &threatMatchRule.MaxSignals,
-		Version:          &threatMatchRule.Version,
-		ExceptionsList:   &threatMatchRule.ExceptionsList,
-		RiskScoreMapping: &threatMatchRule.RiskScoreMapping,
+		Actions:           &threatMatchRule.Actions,
+		RuleId:            &threatMatchRule.RuleId,
+		Enabled:           &threatMatchRule.Enabled,
+		From:              &threatMatchRule.From,
+		To:                &threatMatchRule.To,
+		Interval:          &threatMatchRule.Interval,
+		Index:             &threatMatchRule.Index,
+		Author:            &threatMatchRule.Author,
+		Tags:              &threatMatchRule.Tags,
+		FalsePositives:    &threatMatchRule.FalsePositives,
+		References:        &threatMatchRule.References,
+		License:           &threatMatchRule.License,
+		Note:              &threatMatchRule.Note,
+		Setup:             &threatMatchRule.Setup,
+		MaxSignals:        &threatMatchRule.MaxSignals,
+		Version:           &threatMatchRule.Version,
+		ExceptionsList:    &threatMatchRule.ExceptionsList,
+		RiskScoreMapping:  &threatMatchRule.RiskScoreMapping,
+		BuildingBlockType: &threatMatchRule.BuildingBlockType,
 	}, &diags)
 
 	// Set threat-specific fields
@@ -1503,24 +1529,25 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:          &thresholdRule.Actions,
-		RuleId:           &thresholdRule.RuleId,
-		Enabled:          &thresholdRule.Enabled,
-		From:             &thresholdRule.From,
-		To:               &thresholdRule.To,
-		Interval:         &thresholdRule.Interval,
-		Index:            &thresholdRule.Index,
-		Author:           &thresholdRule.Author,
-		Tags:             &thresholdRule.Tags,
-		FalsePositives:   &thresholdRule.FalsePositives,
-		References:       &thresholdRule.References,
-		License:          &thresholdRule.License,
-		Note:             &thresholdRule.Note,
-		Setup:            &thresholdRule.Setup,
-		MaxSignals:       &thresholdRule.MaxSignals,
-		Version:          &thresholdRule.Version,
-		ExceptionsList:   &thresholdRule.ExceptionsList,
-		RiskScoreMapping: &thresholdRule.RiskScoreMapping,
+		Actions:           &thresholdRule.Actions,
+		RuleId:            &thresholdRule.RuleId,
+		Enabled:           &thresholdRule.Enabled,
+		From:              &thresholdRule.From,
+		To:                &thresholdRule.To,
+		Interval:          &thresholdRule.Interval,
+		Index:             &thresholdRule.Index,
+		Author:            &thresholdRule.Author,
+		Tags:              &thresholdRule.Tags,
+		FalsePositives:    &thresholdRule.FalsePositives,
+		References:        &thresholdRule.References,
+		License:           &thresholdRule.License,
+		Note:              &thresholdRule.Note,
+		Setup:             &thresholdRule.Setup,
+		MaxSignals:        &thresholdRule.MaxSignals,
+		Version:           &thresholdRule.Version,
+		ExceptionsList:    &thresholdRule.ExceptionsList,
+		RiskScoreMapping:  &thresholdRule.RiskScoreMapping,
+		BuildingBlockType: &thresholdRule.BuildingBlockType,
 	}, &diags)
 
 	// Set query language
@@ -1666,6 +1693,12 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 			*props.RiskScoreMapping = &riskScoreMapping
 		}
 	}
+
+	// Set building block type
+	if props.BuildingBlockType != nil && utils.IsKnown(d.BuildingBlockType) {
+		buildingBlockType := kbapi.SecurityDetectionsAPIBuildingBlockType(d.BuildingBlockType.ValueString())
+		*props.BuildingBlockType = &buildingBlockType
+	}
 }
 
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
@@ -1729,6 +1762,13 @@ func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rul
 	d.Severity = types.StringValue(string(rule.Severity))
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
 	d.Version = types.Int64Value(int64(rule.Version))
+
+	// Update building block type
+	if rule.BuildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
 
 	// Update read-only fields
 	d.CreatedAt = utils.TimeToStringValue(rule.CreatedAt)
@@ -1830,6 +1870,13 @@ func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule 
 	d.Severity = types.StringValue(string(rule.Severity))
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
 	d.Version = types.Int64Value(int64(rule.Version))
+
+	// Update building block type
+	if rule.BuildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
 
 	// Update read-only fields
 	d.CreatedAt = utils.TimeToStringValue(rule.CreatedAt)
@@ -1939,6 +1986,13 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
 	d.Version = types.Int64Value(int64(rule.Version))
 
+	// Update building block type
+	if rule.BuildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
+
 	// Update read-only fields
 	d.CreatedAt = types.StringValue(rule.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
 	d.CreatedBy = types.StringValue(rule.CreatedBy)
@@ -2031,6 +2085,13 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	d.Description = types.StringValue(string(rule.Description))
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
 	d.Severity = types.StringValue(string(rule.Severity))
+
+	// Update building block type
+	if rule.BuildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
 	d.Version = types.Int64Value(int64(rule.Version))
 
@@ -2143,6 +2204,13 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
+
+	// Update building block type
+	if rule.BuildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
 	d.From = types.StringValue(string(rule.From))
 	d.To = types.StringValue(string(rule.To))
 	d.Interval = types.StringValue(string(rule.Interval))
@@ -2252,6 +2320,13 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	d.SavedId = types.StringValue(string(rule.SavedId))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
 	d.From = types.StringValue(string(rule.From))
+
+	// Update building block type
+	if rule.BuildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
 	d.To = types.StringValue(string(rule.To))
 	d.Interval = types.StringValue(string(rule.Interval))
 	d.Description = types.StringValue(string(rule.Description))
@@ -2359,6 +2434,13 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update building block type
+	if rule.BuildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
@@ -2505,6 +2587,13 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
+
+	// Update building block type
+	if rule.BuildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
 	d.From = types.StringValue(string(rule.From))
 	d.To = types.StringValue(string(rule.To))
 	d.Interval = types.StringValue(string(rule.Interval))
@@ -2662,6 +2751,11 @@ func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults(ctx context.Co
 	}
 	if !utils.IsKnown(d.References) {
 		d.References = types.ListNull(types.StringType)
+	}
+
+	// Initialize building block type to null by default
+	if !utils.IsKnown(d.BuildingBlockType) {
+		d.BuildingBlockType = types.StringNull()
 	}
 
 	// Initialize all type-specific fields to null/empty by default

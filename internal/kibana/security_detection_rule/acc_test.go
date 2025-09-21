@@ -48,6 +48,9 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "85"),
 
+					// Verify building_block_type is not set by default
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
@@ -1431,6 +1434,135 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       type           = "detection"
     }
   ]
+}
+`, name)
+}
+
+func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_buildingBlockType("test-building-block-rule"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule"),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "process.name:*"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Test building block security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "building_block_type", "default"),
+
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_buildingBlockTypeUpdate("test-building-block-rule-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "query", "process.name:* AND user.name:*"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated test building block security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "40"),
+					resource.TestCheckResourceAttr(resourceName, "building_block_type", "default"),
+					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "tags.0", "building-block"),
+					resource.TestCheckResourceAttr(resourceName, "tags.1", "test"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_buildingBlockTypeRemoved("test-building-block-rule-no-type"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-no-type"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Test rule without building block type"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+		},
+	})
+}
+
+func testAccSecurityDetectionRuleConfig_buildingBlockType(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name                = "%s"
+  type                = "query"
+  query               = "process.name:*"
+  language            = "kuery"
+  enabled             = true
+  description         = "Test building block security detection rule"
+  severity            = "low"
+  risk_score          = 21
+  from                = "now-6m"
+  to                  = "now"
+  interval            = "5m"
+  index               = ["logs-*"]
+  building_block_type = "default"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_buildingBlockTypeUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name                = "%s"
+  type                = "query"
+  query               = "process.name:* AND user.name:*"
+  language            = "kuery"
+  enabled             = true
+  description         = "Updated test building block security detection rule"
+  severity            = "medium"
+  risk_score          = 40
+  from                = "now-6m"
+  to                  = "now"
+  interval            = "5m"
+  index               = ["logs-*"]
+  building_block_type = "default"
+  author              = ["Test Author"]
+  tags                = ["building-block", "test"]
+  license             = "Elastic License v2"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_buildingBlockTypeRemoved(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "query"
+  query       = "process.name:*"
+  language    = "kuery"
+  enabled     = true
+  description = "Test rule without building block type"
+  severity    = "medium"
+  risk_score  = 50
+  from        = "now-6m"
+  to          = "now"
+  interval    = "5m"
+  index       = ["logs-*"]
 }
 `, name)
 }

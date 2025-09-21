@@ -317,6 +317,15 @@ func GetSchema() schema.Schema {
 				},
 			},
 
+			// Building block type field (common across all rule types)
+			"building_block_type": schema.StringAttribute{
+				MarkdownDescription: "Determines if the rule acts as a building block. If set, value must be `default`. Building-block alerts are not displayed in the UI by default and are used as a foundation for other rules.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("default"),
+				},
+			},
+
 			// Read-only fields
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: "The time the rule was created.",
