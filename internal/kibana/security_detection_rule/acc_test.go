@@ -40,6 +40,14 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "50"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.severity"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "high"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "85"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
@@ -54,11 +62,13 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test query security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "exception-list-1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "test-exception-list"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "single"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.risk_level"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "critical"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
 				),
 			},
 		},
@@ -87,6 +97,14 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "70"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "winlogbeat-*"),
 					resource.TestCheckResourceAttr(resourceName, "tiebreaker_field", "@timestamp"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "process.executable"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "C:\\Windows\\System32\\cmd.exe"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "75"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -100,15 +118,13 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test EQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "critical"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "90"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "endpoint-exception-1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "endpoint-exceptions"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "agnostic"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "endpoint"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.id", "detection-exception-1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.list_id", "detection-exceptions"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.namespace_type", "single"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.type", "detection"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "process.parent.name"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "cmd.exe"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
 				),
 			},
 		},
@@ -135,6 +151,14 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Test ESQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "60"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "user.domain"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "admin"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "80"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -148,6 +172,14 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test ESQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "80"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.outcome"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "failure"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
+
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "esql-exception-1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "esql-rule-exceptions"),
@@ -179,6 +211,14 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "90"),
 					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "75"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "ml.anomaly_score"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "critical"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "100"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -194,6 +234,14 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "80"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.1", "test-ml-job-2"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "ml.is_anomaly"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "true"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
+
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "ml-exception-1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "ml-rule-exceptions"),
@@ -228,6 +276,14 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-14d"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "user.type"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "service_account"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "65"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -246,11 +302,17 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.1", "source.ip"),
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-30d"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "new-terms-exception-1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "new-terms-exceptions"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "single"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "user.roles"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "admin"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.1.field", "source.geo.country_name"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.1.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.1.value", "CN"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.1.risk_score", "85"),
 				),
 			},
 		},
@@ -277,6 +339,14 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "30"),
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.category"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "authentication"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "45"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -293,6 +363,14 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id-updated"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.type"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "access"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "70"),
+
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "saved-query-exception-1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "saved-query-exceptions"),
@@ -330,6 +408,14 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.type", "mapping"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.value", "threat.indicator.ip"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "threat.indicator.confidence"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "85"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -350,11 +436,13 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:(ip OR domain)"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.1.entries.0.field", "source.ip"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "threat-exception-1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "threat-intel-exceptions"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "agnostic"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "threat.indicator.confidence"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "high"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "100"),
 				),
 			},
 		},
@@ -384,6 +472,14 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "10"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.outcome"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "success"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "45"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -402,15 +498,13 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "20"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.1", "source.ip"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "threshold-exception-1"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.list_id", "threshold-exceptions"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.namespace_type", "single"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.type", "detection"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.id", "endpoint-exception-2"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.list_id", "endpoint-threshold-exceptions"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.namespace_type", "agnostic"),
-					resource.TestCheckResourceAttr(resourceName, "exceptions_list.1.type", "endpoint"),
+
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.outcome"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "failure"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "90"),
 				),
 			},
 		},
@@ -503,6 +597,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to          = "now"
   interval    = "5m"
   index       = ["logs-*"]
+
+  risk_score_mapping = [
+    {
+      field      = "event.severity"
+      operator   = "equals"
+      value      = "high"
+      risk_score = 85
+    }
+  ]
 }
 `, name)
 }
@@ -529,13 +632,13 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "automation"]
   license     = "Elastic License v2"
-  
-  exceptions_list = [
+
+  risk_score_mapping = [
     {
-      id             = "exception-list-1"
-      list_id        = "test-exception-list"
-      namespace_type = "single"
-      type           = "detection"
+      field      = "event.risk_level"
+      operator   = "equals"
+      value      = "critical"
+      risk_score = 95
     }
   ]
 }
@@ -562,6 +665,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval         = "5m"
   index            = ["winlogbeat-*"]
   tiebreaker_field = "@timestamp"
+
+  risk_score_mapping = [
+    {
+      field      = "process.executable"
+      operator   = "equals"
+      value      = "C:\\Windows\\System32\\cmd.exe"
+      risk_score = 75
+    }
+  ]
 }
 `, name)
 }
@@ -589,19 +701,13 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author           = ["Test Author"]
   tags             = ["test", "eql", "automation"]
   license          = "Elastic License v2"
-  
-  exceptions_list = [
+
+  risk_score_mapping = [
     {
-      id             = "endpoint-exception-1"
-      list_id        = "endpoint-exceptions"
-      namespace_type = "agnostic"
-      type           = "endpoint"
-    },
-    {
-      id             = "detection-exception-1"
-      list_id        = "detection-exceptions"
-      namespace_type = "single"
-      type           = "detection"
+      field      = "process.parent.name"
+      operator   = "equals"
+      value      = "cmd.exe"
+      risk_score = 95
     }
   ]
 }
@@ -626,6 +732,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from        = "now-6m"
   to          = "now"
   interval    = "5m"
+
+  risk_score_mapping = [
+    {
+      field      = "user.domain"
+      operator   = "equals"
+      value      = "admin"
+      risk_score = 80
+    }
+  ]
 }
 `, name)
 }
@@ -651,6 +766,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "esql", "automation"]
   license     = "Elastic License v2"
+  
+  risk_score_mapping = [
+    {
+      field      = "event.outcome"
+      operator   = "equals"
+      value      = "failure"
+      risk_score = 95
+    }
+  ]
   
   exceptions_list = [
     {
@@ -682,6 +806,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval                 = "5m"
   anomaly_threshold        = 75
   machine_learning_job_id  = ["test-ml-job"]
+
+  risk_score_mapping = [
+    {
+      field      = "ml.anomaly_score"
+      operator   = "equals"
+      value      = "critical"
+      risk_score = 100
+    }
+  ]
 }
 `, name)
 }
@@ -707,6 +840,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author                   = ["Test Author"]
   tags                     = ["test", "ml", "automation"]
   license                  = "Elastic License v2"
+
+  risk_score_mapping = [
+    {
+      field      = "ml.is_anomaly"
+      operator   = "equals"
+      value      = "true"
+      risk_score = 95
+    }
+  ]
   
   exceptions_list = [
     {
@@ -741,6 +883,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   index               = ["logs-*"]
   new_terms_fields    = ["user.name"]
   history_window_start = "now-14d"
+
+  risk_score_mapping = [
+    {
+      field      = "user.type"
+      operator   = "equals"
+      value      = "service_account"
+      risk_score = 65
+    }
+  ]
 }
 `, name)
 }
@@ -769,13 +920,19 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author              = ["Test Author"]
   tags                = ["test", "new-terms", "automation"]
   license             = "Elastic License v2"
-  
-  exceptions_list = [
+
+  risk_score_mapping = [
     {
-      id             = "new-terms-exception-1"
-      list_id        = "new-terms-exceptions"
-      namespace_type = "single"
-      type           = "detection"
+      field      = "user.roles"
+      operator   = "equals"
+      value      = "admin"
+      risk_score = 95
+    },
+    {
+      field      = "source.geo.country_name"
+      operator   = "equals"
+      value      = "CN"
+      risk_score = 85
     }
   ]
 }
@@ -801,6 +958,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval    = "5m"
   index       = ["logs-*"]
   saved_id    = "test-saved-query-id"
+
+  risk_score_mapping = [
+    {
+      field      = "event.category"
+      operator   = "equals"
+      value      = "authentication"
+      risk_score = 45
+    }
+  ]
 }
 `, name)
 }
@@ -827,6 +993,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "saved-query", "automation"]
   license     = "Elastic License v2"
+
+  risk_score_mapping = [
+    {
+      field      = "event.type"
+      operator   = "equals"
+      value      = "access"
+      risk_score = 70
+    }
+  ]
   
   exceptions_list = [
     {
@@ -871,6 +1046,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
           value = "threat.indicator.ip"
         }
       ]
+    }
+  ]
+
+  risk_score_mapping = [
+    {
+      field      = "threat.indicator.confidence"
+      operator   = "equals"
+      value      = "medium"
+      risk_score = 85
     }
   ]
 }
@@ -922,13 +1106,13 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       ]
     }
   ]
-  
-  exceptions_list = [
+
+  risk_score_mapping = [
     {
-      id             = "threat-exception-1"
-      list_id        = "threat-intel-exceptions"
-      namespace_type = "agnostic"
-      type           = "detection"
+      field      = "threat.indicator.confidence"
+      operator   = "equals"
+      value      = "high"
+      risk_score = 100
     }
   ]
 }
@@ -959,6 +1143,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     value = 10
     field = ["user.name"]
   }
+
+  risk_score_mapping = [
+    {
+      field      = "event.outcome"
+      operator   = "equals"
+      value      = "success"
+      risk_score = 45
+    }
+  ]
 }
 `, name)
 }
@@ -990,19 +1183,13 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     value = 20
     field = ["user.name", "source.ip"]
   }
-  
-  exceptions_list = [
+
+  risk_score_mapping = [
     {
-      id             = "threshold-exception-1"
-      list_id        = "threshold-exceptions"
-      namespace_type = "single"
-      type           = "detection"
-    },
-    {
-      id             = "endpoint-exception-2"
-      list_id        = "endpoint-threshold-exceptions"
-      namespace_type = "agnostic"
-      type           = "endpoint"
+      field      = "event.outcome"
+      operator   = "equals"
+      value      = "failure"
+      risk_score = 90
     }
   ]
 }
@@ -1040,6 +1227,13 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "50"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "user.privileged"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "true"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "75"),
+
 					// Check action attributes
 					resource.TestCheckResourceAttr(resourceName, "actions.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.action_type_id", ".cases-webhook"),
@@ -1069,10 +1263,17 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "tags.0", "test"),
 					resource.TestCheckResourceAttr(resourceName, "tags.1", "terraform"),
 
+					// Check risk score mapping
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "user.privileged"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "true"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
+
 					// Check updated action attributes
 					resource.TestCheckResourceAttr(resourceName, "actions.0.params.message", "UPDATED CRITICAL Alert: Security event detected"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.throttle", "5m"),
-					
+
 					// Check exceptions list attributes
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "test-action-exception"),
@@ -1125,6 +1326,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to          = "now"
   interval    = "5m"
   index       = ["logs-*"]
+
+  risk_score_mapping = [
+    {
+      field      = "user.privileged"
+      operator   = "equals"
+      value      = "true"
+      risk_score = 75
+    }
+  ]
 
   actions = [
     {
@@ -1187,6 +1397,15 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   index       = ["logs-*"]
   
   tags = ["test", "terraform"]
+
+  risk_score_mapping = [
+    {
+      field      = "user.privileged"
+      operator   = "equals"
+      value      = "true"
+      risk_score = 95
+    }
+  ]
 
   actions = [
     {

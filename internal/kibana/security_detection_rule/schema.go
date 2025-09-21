@@ -46,7 +46,7 @@ func GetSchema() schema.Schema {
 			"rule_id": schema.StringAttribute{
 				MarkdownDescription: "A stable unique identifier for the rule object. If omitted, a UUID is generated.",
 				Optional:            true,
-				Computed:            true,
+				Computed:            true, //
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -127,6 +127,36 @@ func GetSchema() schema.Schema {
 				Default:             int64default.StaticInt64(50),
 				Validators: []validator.Int64{
 					int64validator.Between(0, 100),
+				},
+			},
+			"risk_score_mapping": schema.ListNestedAttribute{
+				MarkdownDescription: "Array of risk score mappings to override the default risk score based on source event field values.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"field": schema.StringAttribute{
+							MarkdownDescription: "Source event field used to override the default risk_score.",
+							Required:            true,
+						},
+						"operator": schema.StringAttribute{
+							MarkdownDescription: "Operator to use for field value matching. Currently only 'equals' is supported.",
+							Required:            true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("equals"),
+							},
+						},
+						"value": schema.StringAttribute{
+							MarkdownDescription: "Value to match against the field.",
+							Required:            true,
+						},
+						"risk_score": schema.Int64Attribute{
+							MarkdownDescription: "Risk score to use when the field matches the value (0-100). If omitted, uses the rule's default risk_score.",
+							Optional:            true,
+							Validators: []validator.Int64{
+								int64validator.Between(0, 100),
+							},
+						},
+					},
 				},
 			},
 			"severity": schema.StringAttribute{
