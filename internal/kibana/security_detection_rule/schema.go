@@ -76,6 +76,18 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Alerts index namespace. Available for all rule types.",
 				Optional:            true,
 			},
+			"rule_name_override": schema.StringAttribute{
+				MarkdownDescription: "Override the rule name in Kibana. Available for all rule types.",
+				Optional:            true,
+			},
+			"timestamp_override": schema.StringAttribute{
+				MarkdownDescription: "Field name to use for timestamp override. Available for all rule types.",
+				Optional:            true,
+			},
+			"timestamp_override_fallback_disabled": schema.BoolAttribute{
+				MarkdownDescription: "Disables timestamp override fallback. Available for all rule types.",
+				Optional:            true,
+			},
 			"query": schema.StringAttribute{
 				MarkdownDescription: "The query language definition.",
 				Optional:            true,

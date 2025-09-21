@@ -42,6 +42,9 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "test-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "test-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom Query Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "@timestamp"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -69,6 +72,9 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom Query Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "event.ingested"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "false"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -106,6 +112,9 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "tiebreaker_field", "@timestamp"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "eql-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "eql-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom EQL Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "process.start"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "false"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -127,6 +136,9 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test EQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "critical"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "90"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom EQL Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "process.end"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -161,6 +173,9 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "60"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "esql-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom ESQL Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "event.created"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -182,6 +197,9 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test ESQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "80"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom ESQL Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "event.start"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "false"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -222,6 +240,9 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "75"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "ml-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom ML Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "ml.job_id"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "false"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -245,6 +266,9 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "80"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.1", "test-ml-job-2"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom ML Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "ml.anomaly_score"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -289,6 +313,9 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-14d"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "new-terms-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "new-terms-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom New Terms Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "user.created"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -315,6 +342,9 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.1", "source.ip"),
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-30d"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom New Terms Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "user.last_login"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "false"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "2"),
@@ -354,6 +384,9 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "saved-query-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "saved-query-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom Saved Query Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "event.start"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "false"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -380,6 +413,9 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-saved-query-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-saved-query-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom Saved Query Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "event.end"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -422,6 +458,9 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "threat-match-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "threat-match-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom Threat Match Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "threat.indicator.first_seen"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "threat_index.0", "threat-intel-*"),
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:ip"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
@@ -452,6 +491,9 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.1", "network-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-threat-match-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-threat-match-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom Threat Match Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "threat.indicator.last_seen"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "threat_index.0", "threat-intel-*"),
 					resource.TestCheckResourceAttr(resourceName, "threat_index.1", "ioc-*"),
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:(ip OR domain)"),
@@ -493,6 +535,9 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "threshold-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "threshold-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom Threshold Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "event.created"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "10"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 
@@ -520,6 +565,9 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-threshold-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-threshold-namespace"),
+					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom Threshold Rule Name"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "event.start"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "20"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.1", "source.ip"),
@@ -624,6 +672,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   index        = ["logs-*"]
   data_view_id = "test-data-view-id"
   namespace    = "test-namespace"
+  rule_name_override = "Custom Query Rule Name"
+  timestamp_override = "@timestamp"
+  timestamp_override_fallback_disabled = true
 
   risk_score_mapping = [
     {
@@ -661,6 +712,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   license     = "Elastic License v2"
   data_view_id = "updated-data-view-id"
   namespace    = "updated-namespace"
+  rule_name_override = "Updated Custom Query Rule Name"
+  timestamp_override = "event.ingested"
+  timestamp_override_fallback_disabled = false
 
   risk_score_mapping = [
     {
@@ -696,6 +750,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   tiebreaker_field = "@timestamp"
   data_view_id     = "eql-data-view-id"
   namespace        = "eql-namespace"
+  rule_name_override = "Custom EQL Rule Name"
+  timestamp_override = "process.start"
+  timestamp_override_fallback_disabled = false
 
   risk_score_mapping = [
     {
@@ -732,6 +789,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author           = ["Test Author"]
   tags             = ["test", "eql", "automation"]
   license          = "Elastic License v2"
+  rule_name_override = "Updated Custom EQL Rule Name"
+  timestamp_override = "process.end"
+  timestamp_override_fallback_disabled = true
 
   risk_score_mapping = [
     {
@@ -764,6 +824,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to          = "now"
   interval    = "5m"
   namespace   = "esql-namespace"
+  rule_name_override = "Custom ESQL Rule Name"
+  timestamp_override = "event.created"
+  timestamp_override_fallback_disabled = true
 
   risk_score_mapping = [
     {
@@ -798,6 +861,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "esql", "automation"]
   license     = "Elastic License v2"
+  rule_name_override = "Updated Custom ESQL Rule Name"
+  timestamp_override = "event.start"
+  timestamp_override_fallback_disabled = false
   
   risk_score_mapping = [
     {
@@ -839,6 +905,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   anomaly_threshold        = 75
   machine_learning_job_id  = ["test-ml-job"]
   namespace                = "ml-namespace"
+  rule_name_override = "Custom ML Rule Name"
+  timestamp_override = "ml.job_id"
+  timestamp_override_fallback_disabled = false
 
   risk_score_mapping = [
     {
@@ -873,6 +942,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author                   = ["Test Author"]
   tags                     = ["test", "ml", "automation"]
   license                  = "Elastic License v2"
+  rule_name_override = "Updated Custom ML Rule Name"
+  timestamp_override = "ml.anomaly_score"
+  timestamp_override_fallback_disabled = true
 
   risk_score_mapping = [
     {
@@ -918,6 +990,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   history_window_start = "now-14d"
   data_view_id        = "new-terms-data-view-id"
   namespace           = "new-terms-namespace"
+  rule_name_override = "Custom New Terms Rule Name"
+  timestamp_override = "user.created"
+  timestamp_override_fallback_disabled = true
 
   risk_score_mapping = [
     {
@@ -955,6 +1030,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author              = ["Test Author"]
   tags                = ["test", "new-terms", "automation"]
   license             = "Elastic License v2"
+  rule_name_override = "Updated Custom New Terms Rule Name"
+  timestamp_override = "user.last_login"
+  timestamp_override_fallback_disabled = false
 
   risk_score_mapping = [
     {
@@ -995,6 +1073,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   saved_id     = "test-saved-query-id"
   data_view_id = "saved-query-data-view-id"
   namespace    = "saved-query-namespace"
+  rule_name_override = "Custom Saved Query Rule Name"
+  timestamp_override = "event.start"
+  timestamp_override_fallback_disabled = false
 
   risk_score_mapping = [
     {
@@ -1032,6 +1113,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author       = ["Test Author"]
   tags        = ["test", "saved-query", "automation"]
   license     = "Elastic License v2"
+  rule_name_override = "Updated Custom Saved Query Rule Name"
+  timestamp_override = "event.end"
+  timestamp_override_fallback_disabled = true
 
   risk_score_mapping = [
     {
@@ -1075,6 +1159,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   index        = ["logs-*"]
   data_view_id = "threat-match-data-view-id"
   namespace    = "threat-match-namespace"
+  rule_name_override = "Custom Threat Match Rule Name"
+  timestamp_override = "threat.indicator.first_seen"
+  timestamp_override_fallback_disabled = true
   threat_index = ["threat-intel-*"]
   threat_query = "threat.indicator.type:ip"
   
@@ -1128,6 +1215,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author       = ["Test Author"]
   tags         = ["test", "threat-match", "automation"]
   license      = "Elastic License v2"
+  rule_name_override = "Updated Custom Threat Match Rule Name"
+  timestamp_override = "threat.indicator.last_seen"
+  timestamp_override_fallback_disabled = false
   
   threat_mapping = [
     {
@@ -1183,6 +1273,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   index        = ["logs-*"]
   data_view_id = "threshold-data-view-id"
   namespace    = "threshold-namespace"
+  rule_name_override = "Custom Threshold Rule Name"
+  timestamp_override = "event.created"
+  timestamp_override_fallback_disabled = false
   
   threshold = {
     value = 10
@@ -1225,6 +1318,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author       = ["Test Author"]
   tags        = ["test", "threshold", "automation"]
   license     = "Elastic License v2"
+  rule_name_override = "Updated Custom Threshold Rule Name"
+  timestamp_override = "event.start"
+  timestamp_override_fallback_disabled = true
   
   threshold = {
     value = 20
