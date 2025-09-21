@@ -93,6 +93,12 @@ type SecurityDetectionRuleData struct {
 
 	// Building block type field (common across all rule types)
 	BuildingBlockType types.String `tfsdk:"building_block_type"`
+
+	// Data view ID field (common across all rule types)
+	DataViewId types.String `tfsdk:"data_view_id"`
+
+	// Namespace field (common across all rule types)
+	Namespace types.String `tfsdk:"namespace"`
 }
 type SecurityDetectionRuleTfData struct {
 	ThreatMapping types.List `tfsdk:"threat_mapping"`
@@ -170,6 +176,8 @@ type CommonCreateProps struct {
 	ExceptionsList    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
 	RiskScoreMapping  **kbapi.SecurityDetectionsAPIRiskScoreMapping
 	BuildingBlockType **kbapi.SecurityDetectionsAPIBuildingBlockType
+	DataViewId        **kbapi.SecurityDetectionsAPIDataViewId
+	Namespace         **kbapi.SecurityDetectionsAPIAlertsIndexNamespace
 }
 
 // CommonUpdateProps holds all the field pointers for setting common update properties
@@ -193,6 +201,8 @@ type CommonUpdateProps struct {
 	ExceptionsList    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
 	RiskScoreMapping  **kbapi.SecurityDetectionsAPIRiskScoreMapping
 	BuildingBlockType **kbapi.SecurityDetectionsAPIBuildingBlockType
+	DataViewId        **kbapi.SecurityDetectionsAPIDataViewId
+	Namespace         **kbapi.SecurityDetectionsAPIAlertsIndexNamespace
 }
 
 func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -278,6 +288,8 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 		ExceptionsList:    &queryRule.ExceptionsList,
 		RiskScoreMapping:  &queryRule.RiskScoreMapping,
 		BuildingBlockType: &queryRule.BuildingBlockType,
+		DataViewId:        &queryRule.DataViewId,
+		Namespace:         &queryRule.Namespace,
 	}, &diags)
 
 	// Set query-specific fields
@@ -334,6 +346,8 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 		ExceptionsList:    &eqlRule.ExceptionsList,
 		RiskScoreMapping:  &eqlRule.RiskScoreMapping,
 		BuildingBlockType: &eqlRule.BuildingBlockType,
+		DataViewId:        &eqlRule.DataViewId,
+		Namespace:         &eqlRule.Namespace,
 	}, &diags)
 
 	// Set EQL-specific fields
@@ -388,6 +402,8 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 		ExceptionsList:    &esqlRule.ExceptionsList,
 		RiskScoreMapping:  &esqlRule.RiskScoreMapping,
 		BuildingBlockType: &esqlRule.BuildingBlockType,
+		DataViewId:        nil, // ESQL rules don't have DataViewId
+		Namespace:         &esqlRule.Namespace,
 	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -463,6 +479,8 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		ExceptionsList:    &mlRule.ExceptionsList,
 		RiskScoreMapping:  &mlRule.RiskScoreMapping,
 		BuildingBlockType: &mlRule.BuildingBlockType,
+		DataViewId:        nil, // ML rules don't have DataViewId
+		Namespace:         &mlRule.Namespace,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -521,6 +539,8 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		ExceptionsList:    &newTermsRule.ExceptionsList,
 		RiskScoreMapping:  &newTermsRule.RiskScoreMapping,
 		BuildingBlockType: &newTermsRule.BuildingBlockType,
+		DataViewId:        &newTermsRule.DataViewId,
+		Namespace:         &newTermsRule.Namespace,
 	}, &diags)
 
 	// Set query language
@@ -571,6 +591,8 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		ExceptionsList:    &savedQueryRule.ExceptionsList,
 		RiskScoreMapping:  &savedQueryRule.RiskScoreMapping,
 		BuildingBlockType: &savedQueryRule.BuildingBlockType,
+		DataViewId:        &savedQueryRule.DataViewId,
+		Namespace:         &savedQueryRule.Namespace,
 	}, &diags)
 
 	// Set optional query for saved query rules
@@ -643,6 +665,8 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		ExceptionsList:    &threatMatchRule.ExceptionsList,
 		RiskScoreMapping:  &threatMatchRule.RiskScoreMapping,
 		BuildingBlockType: &threatMatchRule.BuildingBlockType,
+		DataViewId:        &threatMatchRule.DataViewId,
+		Namespace:         &threatMatchRule.Namespace,
 	}, &diags)
 
 	// Set threat-specific fields
@@ -724,6 +748,8 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		ExceptionsList:    &thresholdRule.ExceptionsList,
 		RiskScoreMapping:  &thresholdRule.RiskScoreMapping,
 		BuildingBlockType: &thresholdRule.BuildingBlockType,
+		DataViewId:        &thresholdRule.DataViewId,
+		Namespace:         &thresholdRule.Namespace,
 	}, &diags)
 
 	// Set query language
@@ -881,6 +907,18 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 		buildingBlockType := kbapi.SecurityDetectionsAPIBuildingBlockType(d.BuildingBlockType.ValueString())
 		*props.BuildingBlockType = &buildingBlockType
 	}
+
+	// Set data view ID
+	if props.DataViewId != nil && utils.IsKnown(d.DataViewId) {
+		dataViewId := kbapi.SecurityDetectionsAPIDataViewId(d.DataViewId.ValueString())
+		*props.DataViewId = &dataViewId
+	}
+
+	// Set namespace
+	if props.Namespace != nil && utils.IsKnown(d.Namespace) {
+		namespace := kbapi.SecurityDetectionsAPIAlertsIndexNamespace(d.Namespace.ValueString())
+		*props.Namespace = &namespace
+	}
 }
 
 func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
@@ -969,6 +1007,8 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 		ExceptionsList:    &queryRule.ExceptionsList,
 		RiskScoreMapping:  &queryRule.RiskScoreMapping,
 		BuildingBlockType: &queryRule.BuildingBlockType,
+		DataViewId:        &queryRule.DataViewId,
+		Namespace:         &queryRule.Namespace,
 	}, &diags)
 
 	// Set query-specific fields
@@ -1044,6 +1084,8 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kb
 		ExceptionsList:    &eqlRule.ExceptionsList,
 		RiskScoreMapping:  &eqlRule.RiskScoreMapping,
 		BuildingBlockType: &eqlRule.BuildingBlockType,
+		DataViewId:        &eqlRule.DataViewId,
+		Namespace:         &eqlRule.Namespace,
 	}, &diags)
 
 	// Set EQL-specific fields
@@ -1117,6 +1159,8 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (k
 		ExceptionsList:    &esqlRule.ExceptionsList,
 		RiskScoreMapping:  &esqlRule.RiskScoreMapping,
 		BuildingBlockType: &esqlRule.BuildingBlockType,
+		DataViewId:        nil, // ESQL rules don't have DataViewId
+		Namespace:         &esqlRule.Namespace,
 	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -1211,6 +1255,8 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		ExceptionsList:    &mlRule.ExceptionsList,
 		RiskScoreMapping:  &mlRule.RiskScoreMapping,
 		BuildingBlockType: &mlRule.BuildingBlockType,
+		DataViewId:        nil, // ML rules don't have DataViewId
+		Namespace:         &mlRule.Namespace,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -1288,6 +1334,8 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		ExceptionsList:    &newTermsRule.ExceptionsList,
 		RiskScoreMapping:  &newTermsRule.RiskScoreMapping,
 		BuildingBlockType: &newTermsRule.BuildingBlockType,
+		DataViewId:        &newTermsRule.DataViewId,
+		Namespace:         &newTermsRule.Namespace,
 	}, &diags)
 
 	// Set query language
@@ -1357,6 +1405,8 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		ExceptionsList:    &savedQueryRule.ExceptionsList,
 		RiskScoreMapping:  &savedQueryRule.RiskScoreMapping,
 		BuildingBlockType: &savedQueryRule.BuildingBlockType,
+		DataViewId:        &savedQueryRule.DataViewId,
+		Namespace:         &savedQueryRule.Namespace,
 	}, &diags)
 
 	// Set optional query for saved query rules
@@ -1448,6 +1498,8 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		ExceptionsList:    &threatMatchRule.ExceptionsList,
 		RiskScoreMapping:  &threatMatchRule.RiskScoreMapping,
 		BuildingBlockType: &threatMatchRule.BuildingBlockType,
+		DataViewId:        &threatMatchRule.DataViewId,
+		Namespace:         &threatMatchRule.Namespace,
 	}, &diags)
 
 	// Set threat-specific fields
@@ -1548,6 +1600,8 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		ExceptionsList:    &thresholdRule.ExceptionsList,
 		RiskScoreMapping:  &thresholdRule.RiskScoreMapping,
 		BuildingBlockType: &thresholdRule.BuildingBlockType,
+		DataViewId:        &thresholdRule.DataViewId,
+		Namespace:         &thresholdRule.Namespace,
 	}, &diags)
 
 	// Set query language
@@ -1699,6 +1753,18 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		buildingBlockType := kbapi.SecurityDetectionsAPIBuildingBlockType(d.BuildingBlockType.ValueString())
 		*props.BuildingBlockType = &buildingBlockType
 	}
+
+	// Set data view ID
+	if props.DataViewId != nil && utils.IsKnown(d.DataViewId) {
+		dataViewId := kbapi.SecurityDetectionsAPIDataViewId(d.DataViewId.ValueString())
+		*props.DataViewId = &dataViewId
+	}
+
+	// Set namespace
+	if props.Namespace != nil && utils.IsKnown(d.Namespace) {
+		namespace := kbapi.SecurityDetectionsAPIAlertsIndexNamespace(d.Namespace.ValueString())
+		*props.Namespace = &namespace
+	}
 }
 
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
@@ -1751,6 +1817,20 @@ func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rul
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update common fields
+	if rule.DataViewId != nil {
+		d.DataViewId = types.StringValue(string(*rule.DataViewId))
+	} else {
+		d.DataViewId = types.StringNull()
+	}
+
+	if rule.Namespace != nil {
+		d.Namespace = types.StringValue(string(*rule.Namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
+
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
@@ -1859,6 +1939,20 @@ func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule 
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update common fields
+	if rule.DataViewId != nil {
+		d.DataViewId = types.StringValue(string(*rule.DataViewId))
+	} else {
+		d.DataViewId = types.StringNull()
+	}
+
+	if rule.Namespace != nil {
+		d.Namespace = types.StringValue(string(*rule.Namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
+
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
@@ -1974,6 +2068,16 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update common fields (ESQL doesn't support DataViewId)
+	d.DataViewId = types.StringNull()
+
+	if rule.Namespace != nil {
+		d.Namespace = types.StringValue(string(*rule.Namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
+
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
@@ -2078,6 +2182,16 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update common fields (ML doesn't support DataViewId)
+	d.DataViewId = types.StringNull()
+
+	if rule.Namespace != nil {
+		d.Namespace = types.StringValue(string(*rule.Namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
+
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
 	d.From = types.StringValue(string(rule.From))
 	d.To = types.StringValue(string(rule.To))
@@ -2201,6 +2315,20 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update common fields
+	if rule.DataViewId != nil {
+		d.DataViewId = types.StringValue(string(*rule.DataViewId))
+	} else {
+		d.DataViewId = types.StringNull()
+	}
+
+	if rule.Namespace != nil {
+		d.Namespace = types.StringValue(string(*rule.Namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
+
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
@@ -2317,6 +2445,20 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update common fields
+	if rule.DataViewId != nil {
+		d.DataViewId = types.StringValue(string(*rule.DataViewId))
+	} else {
+		d.DataViewId = types.StringNull()
+	}
+
+	if rule.Namespace != nil {
+		d.Namespace = types.StringValue(string(*rule.Namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
+
 	d.SavedId = types.StringValue(string(rule.SavedId))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
 	d.From = types.StringValue(string(rule.From))
@@ -2434,6 +2576,19 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update common fields
+	if rule.DataViewId != nil {
+		d.DataViewId = types.StringValue(string(*rule.DataViewId))
+	} else {
+		d.DataViewId = types.StringNull()
+	}
+
+	if rule.Namespace != nil {
+		d.Namespace = types.StringValue(string(*rule.Namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
 
 	// Update building block type
 	if rule.BuildingBlockType != nil {
@@ -2584,6 +2739,20 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	d.RuleId = types.StringValue(string(rule.RuleId))
 	d.Name = types.StringValue(string(rule.Name))
 	d.Type = types.StringValue(string(rule.Type))
+
+	// Update common fields
+	if rule.DataViewId != nil {
+		d.DataViewId = types.StringValue(string(*rule.DataViewId))
+	} else {
+		d.DataViewId = types.StringNull()
+	}
+
+	if rule.Namespace != nil {
+		d.Namespace = types.StringValue(string(*rule.Namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
+
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))

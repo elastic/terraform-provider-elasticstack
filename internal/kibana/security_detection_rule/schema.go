@@ -68,6 +68,14 @@ func GetSchema() schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"data_view_id": schema.StringAttribute{
+				MarkdownDescription: "Data view ID for the rule. Not supported for esql and machine_learning rule types.",
+				Optional:            true,
+			},
+			"namespace": schema.StringAttribute{
+				MarkdownDescription: "Alerts index namespace. Available for all rule types.",
+				Optional:            true,
+			},
 			"query": schema.StringAttribute{
 				MarkdownDescription: "The query language definition.",
 				Optional:            true,

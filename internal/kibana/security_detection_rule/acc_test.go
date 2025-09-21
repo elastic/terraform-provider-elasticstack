@@ -40,6 +40,8 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "50"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "test-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "test-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -65,6 +67,8 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test query security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -100,6 +104,8 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "70"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "winlogbeat-*"),
 					resource.TestCheckResourceAttr(resourceName, "tiebreaker_field", "@timestamp"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "eql-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "eql-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -154,6 +160,7 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Test ESQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "60"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "esql-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -214,6 +221,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "90"),
 					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "75"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "ml-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -279,6 +287,8 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-14d"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "new-terms-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "new-terms-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -342,6 +352,8 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "30"),
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "saved-query-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "saved-query-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -366,6 +378,8 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id-updated"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-saved-query-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-saved-query-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -406,6 +420,8 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "80"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "threat-match-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "threat-match-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "threat_index.0", "threat-intel-*"),
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:ip"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
@@ -434,6 +450,8 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "95"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "index.1", "network-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-threat-match-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-threat-match-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "threat_index.0", "threat-intel-*"),
 					resource.TestCheckResourceAttr(resourceName, "threat_index.1", "ioc-*"),
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:(ip OR domain)"),
@@ -473,6 +491,8 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "threshold-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "threshold-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "10"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 
@@ -498,6 +518,8 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-threshold-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-threshold-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "20"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.1", "source.ip"),
@@ -588,18 +610,20 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
-  name        = "%s"
-  type        = "query"
-  query       = "*:*"
-  language    = "kuery"
-  enabled     = true
-  description = "Test query security detection rule"
-  severity    = "medium"
-  risk_score  = 50
-  from        = "now-6m"
-  to          = "now"
-  interval    = "5m"
-  index       = ["logs-*"]
+  name         = "%s"
+  type         = "query"
+  query        = "*:*"
+  language     = "kuery"
+  enabled      = true
+  description  = "Test query security detection rule"
+  severity     = "medium"
+  risk_score   = 50
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  data_view_id = "test-data-view-id"
+  namespace    = "test-namespace"
 
   risk_score_mapping = [
     {
@@ -635,6 +659,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "automation"]
   license     = "Elastic License v2"
+  data_view_id = "updated-data-view-id"
+  namespace    = "updated-namespace"
 
   risk_score_mapping = [
     {
@@ -668,6 +694,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval         = "5m"
   index            = ["winlogbeat-*"]
   tiebreaker_field = "@timestamp"
+  data_view_id     = "eql-data-view-id"
+  namespace        = "eql-namespace"
 
   risk_score_mapping = [
     {
@@ -735,6 +763,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from        = "now-6m"
   to          = "now"
   interval    = "5m"
+  namespace   = "esql-namespace"
 
   risk_score_mapping = [
     {
@@ -809,6 +838,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval                 = "5m"
   anomaly_threshold        = 75
   machine_learning_job_id  = ["test-ml-job"]
+  namespace                = "ml-namespace"
 
   risk_score_mapping = [
     {
@@ -886,6 +916,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   index               = ["logs-*"]
   new_terms_fields    = ["user.name"]
   history_window_start = "now-14d"
+  data_view_id        = "new-terms-data-view-id"
+  namespace           = "new-terms-namespace"
 
   risk_score_mapping = [
     {
@@ -949,18 +981,20 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
-  name        = "%s"
-  type        = "saved_query"
-  query       = "*:*"
-  enabled     = true
-  description = "Test saved query security detection rule"
-  severity    = "low"
-  risk_score  = 30
-  from        = "now-6m"
-  to          = "now"
-  interval    = "5m"
-  index       = ["logs-*"]
-  saved_id    = "test-saved-query-id"
+  name         = "%s"
+  type         = "saved_query"
+  query        = "*:*"
+  enabled      = true
+  description  = "Test saved query security detection rule"
+  severity     = "low"
+  risk_score   = 30
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  saved_id     = "test-saved-query-id"
+  data_view_id = "saved-query-data-view-id"
+  namespace    = "saved-query-namespace"
 
   risk_score_mapping = [
     {
@@ -981,19 +1015,21 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
-  name        = "%s"
-  type        = "saved_query"
-  query       = "event.action:*"
-  enabled     = true
-  description = "Updated test saved query security detection rule"
-  severity    = "medium"
-  risk_score  = 60
-  from        = "now-6m"
-  to          = "now"
-  interval    = "5m"
-  index       = ["logs-*", "audit-*"]
-  saved_id    = "test-saved-query-id-updated"
-  author      = ["Test Author"]
+  name         = "%s"
+  type         = "saved_query"
+  query        = "event.action:*"
+  enabled      = true
+  description  = "Updated test saved query security detection rule"
+  severity     = "medium"
+  risk_score   = 60
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*", "audit-*"]
+  saved_id     = "test-saved-query-id-updated"
+  data_view_id = "updated-saved-query-data-view-id"
+  namespace    = "updated-saved-query-namespace"
+  author       = ["Test Author"]
   tags        = ["test", "saved-query", "automation"]
   license     = "Elastic License v2"
 
@@ -1037,6 +1073,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to           = "now"
   interval     = "5m"
   index        = ["logs-*"]
+  data_view_id = "threat-match-data-view-id"
+  namespace    = "threat-match-namespace"
   threat_index = ["threat-intel-*"]
   threat_query = "threat.indicator.type:ip"
   
@@ -1083,6 +1121,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to           = "now"
   interval     = "5m"
   index        = ["logs-*", "network-*"]
+  data_view_id = "updated-threat-match-data-view-id"
+  namespace    = "updated-threat-match-namespace"
   threat_index = ["threat-intel-*", "ioc-*"]
   threat_query = "threat.indicator.type:(ip OR domain)"
   author       = ["Test Author"]
@@ -1129,18 +1169,20 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
-  name        = "%s"
-  type        = "threshold"
-  query       = "event.action:login"
-  language    = "kuery"
-  enabled     = true
-  description = "Test threshold security detection rule"
-  severity    = "medium"
-  risk_score  = 55
-  from        = "now-6m"
-  to          = "now"
-  interval    = "5m"
-  index       = ["logs-*"]
+  name         = "%s"
+  type         = "threshold"
+  query        = "event.action:login"
+  language     = "kuery"
+  enabled      = true
+  description  = "Test threshold security detection rule"
+  severity     = "medium"
+  risk_score   = 55
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  data_view_id = "threshold-data-view-id"
+  namespace    = "threshold-namespace"
   
   threshold = {
     value = 10
@@ -1166,19 +1208,21 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
-  name        = "%s"
-  type        = "threshold"
-  query       = "event.action:(login OR logout)"
-  language    = "kuery"
-  enabled     = true
-  description = "Updated test threshold security detection rule"
-  severity    = "high"
-  risk_score  = 75
-  from        = "now-6m"
-  to          = "now"
-  interval    = "5m"
-  index       = ["logs-*", "audit-*"]
-  author      = ["Test Author"]
+  name         = "%s"
+  type         = "threshold"
+  query        = "event.action:(login OR logout)"
+  language     = "kuery"
+  enabled      = true
+  description  = "Updated test threshold security detection rule"
+  severity     = "high"
+  risk_score   = 75
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*", "audit-*"]
+  data_view_id = "updated-threshold-data-view-id"
+  namespace    = "updated-threshold-namespace"
+  author       = ["Test Author"]
   tags        = ["test", "threshold", "automation"]
   license     = "Elastic License v2"
   
@@ -1229,6 +1273,8 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "50"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "connector-action-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "connector-action-namespace"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -1262,6 +1308,8 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test security detection rule with connector action"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-connector-action-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-connector-action-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "tags.0", "test"),
 					resource.TestCheckResourceAttr(resourceName, "tags.1", "terraform"),
@@ -1317,18 +1365,20 @@ resource "elasticstack_kibana_action_connector" "test" {
 }
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
-  name        = "%s"
-  description = "Test security detection rule with connector action"
-  type        = "query"
-  severity    = "medium"
-  risk_score  = 50
-  enabled     = true
-  query       = "user.name:*"
-  language    = "kuery"
-  from        = "now-6m"
-  to          = "now"
-  interval    = "5m"
-  index       = ["logs-*"]
+  name         = "%s"
+  description  = "Test security detection rule with connector action"
+  type         = "query"
+  severity     = "medium"
+  risk_score   = 50
+  enabled      = true
+  query        = "user.name:*"
+  language     = "kuery"
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  data_view_id = "connector-action-data-view-id"
+  namespace    = "connector-action-namespace"
 
   risk_score_mapping = [
     {
@@ -1386,18 +1436,20 @@ resource "elasticstack_kibana_action_connector" "test" {
 }
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
-  name        = "%s"
-  description = "Updated test security detection rule with connector action"
-  type        = "query"
-  severity    = "high"
-  risk_score  = 75
-  enabled     = true
-  query       = "user.name:*"
-  language    = "kuery"
-  from        = "now-6m"
-  to          = "now"
-  interval    = "5m"
-  index       = ["logs-*"]
+  name         = "%s"
+  description  = "Updated test security detection rule with connector action"
+  type         = "query"
+  severity     = "high"
+  risk_score   = 75
+  enabled      = true
+  query        = "user.name:*"
+  language     = "kuery"
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  data_view_id = "updated-connector-action-data-view-id"
+  namespace    = "updated-connector-action-namespace"
   
   tags = ["test", "terraform"]
 
@@ -1459,6 +1511,8 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "building-block-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "building-block-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "building_block_type", "default"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1474,6 +1528,8 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test building block security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "40"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-building-block-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-building-block-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "building_block_type", "default"),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "tags.0", "building-block"),
@@ -1486,6 +1542,8 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-no-type"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test rule without building block type"),
+					resource.TestCheckResourceAttr(resourceName, "data_view_id", "no-building-block-data-view-id"),
+					resource.TestCheckResourceAttr(resourceName, "namespace", "no-building-block-namespace"),
 					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
 				),
 			},
@@ -1512,6 +1570,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to                  = "now"
   interval            = "5m"
   index               = ["logs-*"]
+  data_view_id        = "building-block-data-view-id"
+  namespace           = "building-block-namespace"
   building_block_type = "default"
 }
 `, name)
@@ -1536,6 +1596,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to                  = "now"
   interval            = "5m"
   index               = ["logs-*"]
+  data_view_id        = "updated-building-block-data-view-id"
+  namespace           = "updated-building-block-namespace"
   building_block_type = "default"
   author              = ["Test Author"]
   tags                = ["building-block", "test"]
@@ -1551,18 +1613,22 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
-  name        = "%s"
-  type        = "query"
-  query       = "process.name:*"
-  language    = "kuery"
-  enabled     = true
-  description = "Test rule without building block type"
-  severity    = "medium"
-  risk_score  = 50
-  from        = "now-6m"
-  to          = "now"
-  interval    = "5m"
-  index       = ["logs-*"]
+  name         = "%s"
+  type         = "query"
+  query        = "process.name:*"
+  language     = "kuery"
+  enabled      = true
+  description  = "Test rule without building block type"
+  severity     = "medium"
+  risk_score   = 50
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  data_view_id = "no-building-block-data-view-id"
+  namespace    = "no-building-block-namespace"
 }
 `, name)
 }
+
+
