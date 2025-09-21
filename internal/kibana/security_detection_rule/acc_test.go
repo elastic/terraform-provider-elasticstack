@@ -1630,5 +1630,3 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 `, name)
 }
-
-
