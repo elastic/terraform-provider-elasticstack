@@ -220,6 +220,11 @@ func GetSchema() schema.Schema {
 				Computed:            true,
 				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
+			"investigation_fields": schema.ListAttribute{
+				ElementType:         types.StringType,
+				MarkdownDescription: "Array of field names to include in alert investigation. Available for all rule types.",
+				Optional:            true,
+			},
 			"note": schema.StringAttribute{
 				MarkdownDescription: "Notes to help investigate alerts produced by the rule.",
 				Optional:            true,

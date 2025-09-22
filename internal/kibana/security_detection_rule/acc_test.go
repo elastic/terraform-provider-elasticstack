@@ -53,6 +53,11 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "85"),
 
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
+
 					// Verify building_block_type is not set by default
 					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
 
@@ -82,6 +87,12 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "critical"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
+
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "source.ip"),
 				),
 			},
 		},
@@ -123,6 +134,11 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "C:\\Windows\\System32\\cmd.exe"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "75"),
 
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "process.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "process.executable"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -146,6 +162,12 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "cmd.exe"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
+
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "process.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "process.executable"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "process.parent.name"),
 				),
 			},
 		},
@@ -184,6 +206,11 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "admin"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "80"),
 
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.domain"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -207,6 +234,12 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "failure"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
+
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.domain"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "event.outcome"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "esql-exception-1"),
@@ -251,6 +284,11 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "critical"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "100"),
 
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "ml.anomaly_score"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "ml.job_id"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -276,6 +314,12 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "true"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "95"),
+
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "ml.anomaly_score"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "ml.job_id"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "ml.is_anomaly"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "ml-exception-1"),
@@ -324,6 +368,11 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "service_account"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "65"),
 
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.type"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -356,6 +405,13 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.1.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.1.value", "CN"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.1.risk_score", "85"),
+
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "4"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.type"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.3", "user.roles"),
 				),
 			},
 		},
@@ -395,6 +451,11 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "authentication"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "45"),
 
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "event.category"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -423,6 +484,12 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "access"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "70"),
+
+					// Check investigation fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "host.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "process.name"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "saved-query-exception-1"),
@@ -467,6 +534,11 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.type", "mapping"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.value", "threat.indicator.ip"),
 
+					// Check investigation_fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "destination.ip"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "source.ip"),
+
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "threat.indicator.confidence"),
@@ -499,6 +571,12 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:(ip OR domain)"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.1.entries.0.field", "source.ip"),
+
+					// Check investigation_fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "destination.ip"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "threat.indicator.type"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -541,6 +619,11 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "10"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 
+					// Check investigation_fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
+
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.outcome"),
@@ -571,6 +654,12 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "20"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.1", "source.ip"),
+
+					// Check investigation_fields
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "event.outcome"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -676,6 +765,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "@timestamp"
   timestamp_override_fallback_disabled = true
 
+  investigation_fields = ["user.name", "event.action"]
+
   risk_score_mapping = [
     {
       field      = "event.severity"
@@ -716,6 +807,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "event.ingested"
   timestamp_override_fallback_disabled = false
 
+  investigation_fields = ["user.name", "event.action", "source.ip"]
+
   risk_score_mapping = [
     {
       field      = "event.risk_level"
@@ -753,6 +846,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Custom EQL Rule Name"
   timestamp_override = "process.start"
   timestamp_override_fallback_disabled = false
+
+  investigation_fields = ["process.name", "process.executable"]
 
   risk_score_mapping = [
     {
@@ -793,6 +888,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "process.end"
   timestamp_override_fallback_disabled = true
 
+  investigation_fields = ["process.name", "process.executable", "process.parent.name"]
+
   risk_score_mapping = [
     {
       field      = "process.parent.name"
@@ -827,6 +924,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Custom ESQL Rule Name"
   timestamp_override = "event.created"
   timestamp_override_fallback_disabled = true
+
+  investigation_fields = ["user.name", "user.domain"]
 
   risk_score_mapping = [
     {
@@ -864,6 +963,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom ESQL Rule Name"
   timestamp_override = "event.start"
   timestamp_override_fallback_disabled = false
+  
+  investigation_fields = ["user.name", "user.domain", "event.outcome"]
   
   risk_score_mapping = [
     {
@@ -909,6 +1010,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "ml.job_id"
   timestamp_override_fallback_disabled = false
 
+  investigation_fields = ["ml.anomaly_score", "ml.job_id"]
+
   risk_score_mapping = [
     {
       field      = "ml.anomaly_score"
@@ -945,6 +1048,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom ML Rule Name"
   timestamp_override = "ml.anomaly_score"
   timestamp_override_fallback_disabled = true
+
+  investigation_fields = ["ml.anomaly_score", "ml.job_id", "ml.is_anomaly"]
 
   risk_score_mapping = [
     {
@@ -994,6 +1099,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "user.created"
   timestamp_override_fallback_disabled = true
 
+  investigation_fields = ["user.name", "user.type"]
+
   risk_score_mapping = [
     {
       field      = "user.type"
@@ -1033,6 +1140,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom New Terms Rule Name"
   timestamp_override = "user.last_login"
   timestamp_override_fallback_disabled = false
+
+  investigation_fields = ["user.name", "user.type", "source.ip", "user.roles"]
 
   risk_score_mapping = [
     {
@@ -1077,6 +1186,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "event.start"
   timestamp_override_fallback_disabled = false
 
+  investigation_fields = ["event.category", "event.action"]
+
   risk_score_mapping = [
     {
       field      = "event.category"
@@ -1116,6 +1227,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom Saved Query Rule Name"
   timestamp_override = "event.end"
   timestamp_override_fallback_disabled = true
+
+  investigation_fields = ["host.name", "user.name", "process.name"]
 
   risk_score_mapping = [
     {
@@ -1165,6 +1278,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   threat_index = ["threat-intel-*"]
   threat_query = "threat.indicator.type:ip"
   
+  investigation_fields = ["destination.ip", "source.ip"]
+
   threat_mapping = [
     {
       entries = [
@@ -1219,6 +1334,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "threat.indicator.last_seen"
   timestamp_override_fallback_disabled = false
   
+  investigation_fields = ["destination.ip", "source.ip", "threat.indicator.type"]
+
   threat_mapping = [
     {
       entries = [
@@ -1277,6 +1394,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "event.created"
   timestamp_override_fallback_disabled = false
   
+  investigation_fields = ["user.name", "event.action"]
+
   threshold = {
     value = 10
     field = ["user.name"]
@@ -1322,6 +1441,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "event.start"
   timestamp_override_fallback_disabled = true
   
+  investigation_fields = ["user.name", "source.ip", "event.outcome"]
+
   threshold = {
     value = 20
     field = ["user.name", "source.ip"]
