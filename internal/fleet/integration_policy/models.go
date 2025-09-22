@@ -12,6 +12,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type features struct {
+	SupportsPolicyIds bool
+}
+
 type integrationPolicyModel struct {
 	ID                 types.String         `tfsdk:"id"`
 	PolicyID           types.String         `tfsdk:"policy_id"`
@@ -113,7 +117,7 @@ func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, i
 	}
 }
 
-func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
+func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool, feat features) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	body := kbapi.PackagePolicyRequest{
@@ -133,9 +137,12 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 				diags.Append(d...)
 				return &policyIDs
 			}
-			// Return empty array instead of nil when agent_policy_ids is not defined
-			emptyArray := []string{}
-			return &emptyArray
+			// Only return empty array for 8.15+ when agent_policy_ids is not defined
+			if feat.SupportsPolicyIds {
+				emptyArray := []string{}
+				return &emptyArray
+			}
+			return nil
 		}(),
 		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
 	}

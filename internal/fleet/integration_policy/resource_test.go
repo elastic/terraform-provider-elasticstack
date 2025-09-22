@@ -21,6 +21,7 @@ import (
 )
 
 var minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
+var minVersionIntegrationPolicyIds = version.Must(version.NewVersion("8.15.0"))
 
 func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -31,7 +32,7 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
 				Config:   testAccResourceIntegrationPolicyCreateMultipleAgentPolicies(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
@@ -54,7 +55,7 @@ func TestAccResourceIntegrationPolicyBothAgentPolicyFields(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
 				Config:   testAccResourceIntegrationPolicyCreateWithBothAgentPolicyFields(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
