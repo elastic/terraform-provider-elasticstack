@@ -965,10 +965,11 @@ func transformFleetPaths(schema *Schema) {
 
 	for _, name := range []string{"output", "new_output", "update_output"} {
 		// Ref each index in the anyOf union
+		kafkaComponent := fmt.Sprintf("%s_kafka", name)
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.0", name))
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_remote_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.1", name))
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_kafka", name), fmt.Sprintf("schemas.%s_union.anyOf.3", name))
+		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
 		// Extract child structs
 		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
@@ -993,10 +994,24 @@ func transformFleetPaths(schema *Schema) {
 			  - not: {}
 		*/
 
-		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s_kafka.properties", name))
-		for _, key := range []string{"compression_level", "connection_type", "password", "username"} {
-			props.Set(key, Map{})
+		// https://github.com/elastic/kibana/issues/197153
+		kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
+		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
+		required := schema.Components.MustGetSlice(kafkaRequiredName)
+		for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
+			props.Set(key, Map{
+				"type": apiType,
+			})
+			required = slices.DeleteFunc(required, func(item any) bool {
+				itemStr, ok := item.(string)
+				if !ok {
+					return false
+				}
+
+				return itemStr == key
+			})
 		}
+		schema.Components.Set(kafkaRequiredName, required)
 	}
 
 	// Add the missing discriminator to the response union

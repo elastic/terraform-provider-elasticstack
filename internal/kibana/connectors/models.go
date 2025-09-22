@@ -2,6 +2,7 @@ package connectors
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -26,7 +27,7 @@ type tfModel struct {
 func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
 	compId, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(sdkDiags)
+		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	return compId, nil

@@ -5,7 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -37,7 +37,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	version, sdkDiags := client.ServerVersion(ctx)
-	response.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
 	}

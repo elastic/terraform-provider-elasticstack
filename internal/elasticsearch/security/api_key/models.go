@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -48,7 +49,7 @@ type tfModel struct {
 func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
 	compId, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(sdkDiags)
+		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	return compId, nil
@@ -232,7 +233,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 func marshalNormalizedJsonValue(item any) (jsontypes.Normalized, diag.Diagnostics) {
 	jsonBytes, err := json.Marshal(item)
 	if err != nil {
-		return jsontypes.Normalized{}, utils.FrameworkDiagFromError(err)
+		return jsontypes.Normalized{}, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return jsontypes.NewNormalizedValue(string(jsonBytes)), nil

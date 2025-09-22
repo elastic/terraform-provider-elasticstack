@@ -52,7 +52,6 @@ build-ci: ## build the terraform provider
 .PHONY: build
 build: lint build-ci ## build the terraform provider
 
-
 .PHONY: testacc
 testacc: ## Run acceptance tests
 	TF_ACC=1 go test -v ./... -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
@@ -254,7 +253,10 @@ golangci-lint:
 
 
 .PHONY: lint
-lint: setup golangci-lint check-fmt check-docs ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
+
+.PHONY: check-lint
+check-lint: setup golangci-lint check-fmt check-docs
 
 .PHONY: fmt
 fmt: ## Format code

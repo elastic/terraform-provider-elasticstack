@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -28,7 +28,7 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, logs
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update logstash pipeline"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create or update logstash pipeline"); diags.HasError() {
 		return diags
 	}
 
@@ -49,7 +49,7 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipe
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to find logstash pipeline on cluster."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to find logstash pipeline on cluster."); diags.HasError() {
 		return nil, diags
 	}
 
@@ -83,7 +83,7 @@ func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, p
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete logstash pipeline"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to delete logstash pipeline"); diags.HasError() {
 		return diags
 	}
 	return diags

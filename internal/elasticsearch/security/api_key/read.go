@@ -5,7 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -58,7 +58,7 @@ func (r *Resource) read(ctx context.Context, client *clients.ApiClient, model tf
 	}
 
 	version, sdkDiags := client.ServerVersion(ctx)
-	diags = utils.FrameworkDiagsFromSDK(sdkDiags)
+	diags = diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	if diags.HasError() {
 		return nil, diags
 	}

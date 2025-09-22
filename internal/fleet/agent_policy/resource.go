@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -51,22 +51,22 @@ func (r *agentPolicyResource) ImportState(ctx context.Context, req resource.Impo
 func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag.Diagnostics) {
 	supportsGDT, diags := r.client.EnforceMinVersion(ctx, MinVersionGlobalDataTags)
 	if diags.HasError() {
-		return features{}, utils.FrameworkDiagsFromSDK(diags)
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	supportsSupportsAgentless, diags := r.client.EnforceMinVersion(ctx, MinSupportsAgentlessVersion)
 	if diags.HasError() {
-		return features{}, utils.FrameworkDiagsFromSDK(diags)
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	supportsInactivityTimeout, diags := r.client.EnforceMinVersion(ctx, MinVersionInactivityTimeout)
 	if diags.HasError() {
-		return features{}, utils.FrameworkDiagsFromSDK(diags)
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	supportsUnenrollmentTimeout, diags := r.client.EnforceMinVersion(ctx, MinVersionUnenrollmentTimeout)
 	if diags.HasError() {
-		return features{}, utils.FrameworkDiagsFromSDK(diags)
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	return features{
