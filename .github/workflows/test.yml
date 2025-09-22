@@ -45,7 +45,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Lint
-        run: make lint
+        run: make check-lint
 
   test:
     name: Matrix Acceptance Test
