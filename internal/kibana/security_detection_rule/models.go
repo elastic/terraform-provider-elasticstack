@@ -29,13 +29,16 @@ type SecurityDetectionRuleData struct {
 	Interval types.String `tfsdk:"interval"`
 
 	// Rule content
-	Description      types.String `tfsdk:"description"`
-	RiskScore        types.Int64  `tfsdk:"risk_score"`
-	RiskScoreMapping types.List   `tfsdk:"risk_score_mapping"`
-	Severity         types.String `tfsdk:"severity"`
-	Author           types.List   `tfsdk:"author"`
-	Tags             types.List   `tfsdk:"tags"`
-	License          types.String `tfsdk:"license"`
+	Description         types.String `tfsdk:"description"`
+	RiskScore           types.Int64  `tfsdk:"risk_score"`
+	RiskScoreMapping    types.List   `tfsdk:"risk_score_mapping"`
+	Severity            types.String `tfsdk:"severity"`
+	SeverityMapping     types.List   `tfsdk:"severity_mapping"`
+	Author              types.List   `tfsdk:"author"`
+	Tags                types.List   `tfsdk:"tags"`
+	License             types.String `tfsdk:"license"`
+	RelatedIntegrations types.List   `tfsdk:"related_integrations"`
+	RequiredFields      types.List   `tfsdk:"required_fields"`
 
 	// Optional fields
 	FalsePositives types.List   `tfsdk:"false_positives"`
@@ -165,6 +168,25 @@ type RiskScoreMappingModel struct {
 	RiskScore types.Int64  `tfsdk:"risk_score"`
 }
 
+type RelatedIntegrationModel struct {
+	Package     types.String `tfsdk:"package"`
+	Version     types.String `tfsdk:"version"`
+	Integration types.String `tfsdk:"integration"`
+}
+
+type RequiredFieldModel struct {
+	Name types.String `tfsdk:"name"`
+	Type types.String `tfsdk:"type"`
+	Ecs  types.Bool   `tfsdk:"ecs"`
+}
+
+type SeverityMappingModel struct {
+	Field    types.String `tfsdk:"field"`
+	Operator types.String `tfsdk:"operator"`
+	Value    types.String `tfsdk:"value"`
+	Severity types.String `tfsdk:"severity"`
+}
+
 // CommonCreateProps holds all the field pointers for setting common create properties
 type CommonCreateProps struct {
 	Actions                           **[]kbapi.SecurityDetectionsAPIRuleAction
@@ -185,6 +207,9 @@ type CommonCreateProps struct {
 	Version                           **kbapi.SecurityDetectionsAPIRuleVersion
 	ExceptionsList                    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
 	RiskScoreMapping                  **kbapi.SecurityDetectionsAPIRiskScoreMapping
+	SeverityMapping                   **kbapi.SecurityDetectionsAPISeverityMapping
+	RelatedIntegrations               **kbapi.SecurityDetectionsAPIRelatedIntegrationArray
+	RequiredFields                    **[]kbapi.SecurityDetectionsAPIRequiredFieldInput
 	BuildingBlockType                 **kbapi.SecurityDetectionsAPIBuildingBlockType
 	DataViewId                        **kbapi.SecurityDetectionsAPIDataViewId
 	Namespace                         **kbapi.SecurityDetectionsAPIAlertsIndexNamespace
@@ -214,6 +239,9 @@ type CommonUpdateProps struct {
 	Version                           **kbapi.SecurityDetectionsAPIRuleVersion
 	ExceptionsList                    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
 	RiskScoreMapping                  **kbapi.SecurityDetectionsAPIRiskScoreMapping
+	SeverityMapping                   **kbapi.SecurityDetectionsAPISeverityMapping
+	RelatedIntegrations               **kbapi.SecurityDetectionsAPIRelatedIntegrationArray
+	RequiredFields                    **[]kbapi.SecurityDetectionsAPIRequiredFieldInput
 	BuildingBlockType                 **kbapi.SecurityDetectionsAPIBuildingBlockType
 	DataViewId                        **kbapi.SecurityDetectionsAPIDataViewId
 	Namespace                         **kbapi.SecurityDetectionsAPIAlertsIndexNamespace
@@ -305,6 +333,9 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 		Version:                           &queryRule.Version,
 		ExceptionsList:                    &queryRule.ExceptionsList,
 		RiskScoreMapping:                  &queryRule.RiskScoreMapping,
+		SeverityMapping:                   &queryRule.SeverityMapping,
+		RelatedIntegrations:               &queryRule.RelatedIntegrations,
+		RequiredFields:                    &queryRule.RequiredFields,
 		BuildingBlockType:                 &queryRule.BuildingBlockType,
 		DataViewId:                        &queryRule.DataViewId,
 		Namespace:                         &queryRule.Namespace,
@@ -367,6 +398,9 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 		Version:                           &eqlRule.Version,
 		ExceptionsList:                    &eqlRule.ExceptionsList,
 		RiskScoreMapping:                  &eqlRule.RiskScoreMapping,
+		SeverityMapping:                   &eqlRule.SeverityMapping,
+		RelatedIntegrations:               &eqlRule.RelatedIntegrations,
+		RequiredFields:                    &eqlRule.RequiredFields,
 		BuildingBlockType:                 &eqlRule.BuildingBlockType,
 		DataViewId:                        &eqlRule.DataViewId,
 		Namespace:                         &eqlRule.Namespace,
@@ -427,6 +461,9 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 		Version:                           &esqlRule.Version,
 		ExceptionsList:                    &esqlRule.ExceptionsList,
 		RiskScoreMapping:                  &esqlRule.RiskScoreMapping,
+		SeverityMapping:                   &esqlRule.SeverityMapping,
+		RelatedIntegrations:               &esqlRule.RelatedIntegrations,
+		RequiredFields:                    &esqlRule.RequiredFields,
 		BuildingBlockType:                 &esqlRule.BuildingBlockType,
 		DataViewId:                        nil, // ESQL rules don't have DataViewId
 		Namespace:                         &esqlRule.Namespace,
@@ -508,6 +545,9 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		Version:                           &mlRule.Version,
 		ExceptionsList:                    &mlRule.ExceptionsList,
 		RiskScoreMapping:                  &mlRule.RiskScoreMapping,
+		SeverityMapping:                   &mlRule.SeverityMapping,
+		RelatedIntegrations:               &mlRule.RelatedIntegrations,
+		RequiredFields:                    &mlRule.RequiredFields,
 		BuildingBlockType:                 &mlRule.BuildingBlockType,
 		DataViewId:                        nil, // ML rules don't have DataViewId
 		Namespace:                         &mlRule.Namespace,
@@ -572,6 +612,9 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		Version:                           &newTermsRule.Version,
 		ExceptionsList:                    &newTermsRule.ExceptionsList,
 		RiskScoreMapping:                  &newTermsRule.RiskScoreMapping,
+		SeverityMapping:                   &newTermsRule.SeverityMapping,
+		RelatedIntegrations:               &newTermsRule.RelatedIntegrations,
+		RequiredFields:                    &newTermsRule.RequiredFields,
 		BuildingBlockType:                 &newTermsRule.BuildingBlockType,
 		DataViewId:                        &newTermsRule.DataViewId,
 		Namespace:                         &newTermsRule.Namespace,
@@ -628,6 +671,9 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		Version:                           &savedQueryRule.Version,
 		ExceptionsList:                    &savedQueryRule.ExceptionsList,
 		RiskScoreMapping:                  &savedQueryRule.RiskScoreMapping,
+		SeverityMapping:                   &savedQueryRule.SeverityMapping,
+		RelatedIntegrations:               &savedQueryRule.RelatedIntegrations,
+		RequiredFields:                    &savedQueryRule.RequiredFields,
 		BuildingBlockType:                 &savedQueryRule.BuildingBlockType,
 		DataViewId:                        &savedQueryRule.DataViewId,
 		Namespace:                         &savedQueryRule.Namespace,
@@ -706,6 +752,9 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		Version:                           &threatMatchRule.Version,
 		ExceptionsList:                    &threatMatchRule.ExceptionsList,
 		RiskScoreMapping:                  &threatMatchRule.RiskScoreMapping,
+		SeverityMapping:                   &threatMatchRule.SeverityMapping,
+		RelatedIntegrations:               &threatMatchRule.RelatedIntegrations,
+		RequiredFields:                    &threatMatchRule.RequiredFields,
 		BuildingBlockType:                 &threatMatchRule.BuildingBlockType,
 		DataViewId:                        &threatMatchRule.DataViewId,
 		Namespace:                         &threatMatchRule.Namespace,
@@ -793,6 +842,9 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		Version:                           &thresholdRule.Version,
 		ExceptionsList:                    &thresholdRule.ExceptionsList,
 		RiskScoreMapping:                  &thresholdRule.RiskScoreMapping,
+		SeverityMapping:                   &thresholdRule.SeverityMapping,
+		RelatedIntegrations:               &thresholdRule.RelatedIntegrations,
+		RequiredFields:                    &thresholdRule.RequiredFields,
 		BuildingBlockType:                 &thresholdRule.BuildingBlockType,
 		DataViewId:                        &thresholdRule.DataViewId,
 		Namespace:                         &thresholdRule.Namespace,
@@ -988,6 +1040,33 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 		*props.TimestampOverrideFallbackDisabled = &timestampOverrideFallbackDisabled
 	}
 
+	// Set severity mapping
+	if props.SeverityMapping != nil && utils.IsKnown(d.SeverityMapping) {
+		severityMapping, severityMappingDiags := d.severityMappingToApi(ctx)
+		diags.Append(severityMappingDiags...)
+		if !severityMappingDiags.HasError() && severityMapping != nil && len(*severityMapping) > 0 {
+			*props.SeverityMapping = severityMapping
+		}
+	}
+
+	// Set related integrations
+	if props.RelatedIntegrations != nil && utils.IsKnown(d.RelatedIntegrations) {
+		relatedIntegrations, relatedIntegrationsDiags := d.relatedIntegrationsToApi(ctx)
+		diags.Append(relatedIntegrationsDiags...)
+		if !relatedIntegrationsDiags.HasError() && relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
+			*props.RelatedIntegrations = relatedIntegrations
+		}
+	}
+
+	// Set required fields
+	if props.RequiredFields != nil && utils.IsKnown(d.RequiredFields) {
+		requiredFields, requiredFieldsDiags := d.requiredFieldsToApi(ctx)
+		diags.Append(requiredFieldsDiags...)
+		if !requiredFieldsDiags.HasError() && requiredFields != nil && len(*requiredFields) > 0 {
+			*props.RequiredFields = requiredFields
+		}
+	}
+
 	// Set investigation fields
 	if props.InvestigationFields != nil {
 		investigationFields, investigationFieldsDiags := d.investigationFieldsToApi(ctx)
@@ -1083,6 +1162,9 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 		Version:                           &queryRule.Version,
 		ExceptionsList:                    &queryRule.ExceptionsList,
 		RiskScoreMapping:                  &queryRule.RiskScoreMapping,
+		SeverityMapping:                   &queryRule.SeverityMapping,
+		RelatedIntegrations:               &queryRule.RelatedIntegrations,
+		RequiredFields:                    &queryRule.RequiredFields,
 		BuildingBlockType:                 &queryRule.BuildingBlockType,
 		DataViewId:                        &queryRule.DataViewId,
 		Namespace:                         &queryRule.Namespace,
@@ -1164,6 +1246,9 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kb
 		Version:                           &eqlRule.Version,
 		ExceptionsList:                    &eqlRule.ExceptionsList,
 		RiskScoreMapping:                  &eqlRule.RiskScoreMapping,
+		SeverityMapping:                   &eqlRule.SeverityMapping,
+		RelatedIntegrations:               &eqlRule.RelatedIntegrations,
+		RequiredFields:                    &eqlRule.RequiredFields,
 		BuildingBlockType:                 &eqlRule.BuildingBlockType,
 		DataViewId:                        &eqlRule.DataViewId,
 		Namespace:                         &eqlRule.Namespace,
@@ -1243,6 +1328,9 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (k
 		Version:                           &esqlRule.Version,
 		ExceptionsList:                    &esqlRule.ExceptionsList,
 		RiskScoreMapping:                  &esqlRule.RiskScoreMapping,
+		SeverityMapping:                   &esqlRule.SeverityMapping,
+		RelatedIntegrations:               &esqlRule.RelatedIntegrations,
+		RequiredFields:                    &esqlRule.RequiredFields,
 		BuildingBlockType:                 &esqlRule.BuildingBlockType,
 		DataViewId:                        nil, // ESQL rules don't have DataViewId
 		Namespace:                         &esqlRule.Namespace,
@@ -1338,18 +1426,21 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		References:                        &mlRule.References,
 		License:                           &mlRule.License,
 		Note:                              &mlRule.Note,
-		InvestigationFields:               &mlRule.InvestigationFields,
 		Setup:                             &mlRule.Setup,
 		MaxSignals:                        &mlRule.MaxSignals,
 		Version:                           &mlRule.Version,
 		ExceptionsList:                    &mlRule.ExceptionsList,
 		RiskScoreMapping:                  &mlRule.RiskScoreMapping,
+		SeverityMapping:                   &mlRule.SeverityMapping,
+		RelatedIntegrations:               &mlRule.RelatedIntegrations,
+		RequiredFields:                    &mlRule.RequiredFields,
 		BuildingBlockType:                 &mlRule.BuildingBlockType,
 		DataViewId:                        nil, // ML rules don't have DataViewId
 		Namespace:                         &mlRule.Namespace,
 		RuleNameOverride:                  &mlRule.RuleNameOverride,
 		TimestampOverride:                 &mlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
+		InvestigationFields:               &mlRule.InvestigationFields,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -1427,6 +1518,9 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		Version:                           &newTermsRule.Version,
 		ExceptionsList:                    &newTermsRule.ExceptionsList,
 		RiskScoreMapping:                  &newTermsRule.RiskScoreMapping,
+		SeverityMapping:                   &newTermsRule.SeverityMapping,
+		RelatedIntegrations:               &newTermsRule.RelatedIntegrations,
+		RequiredFields:                    &newTermsRule.RequiredFields,
 		BuildingBlockType:                 &newTermsRule.BuildingBlockType,
 		DataViewId:                        &newTermsRule.DataViewId,
 		Namespace:                         &newTermsRule.Namespace,
@@ -1502,6 +1596,9 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		Version:                           &savedQueryRule.Version,
 		ExceptionsList:                    &savedQueryRule.ExceptionsList,
 		RiskScoreMapping:                  &savedQueryRule.RiskScoreMapping,
+		SeverityMapping:                   &savedQueryRule.SeverityMapping,
+		RelatedIntegrations:               &savedQueryRule.RelatedIntegrations,
+		RequiredFields:                    &savedQueryRule.RequiredFields,
 		BuildingBlockType:                 &savedQueryRule.BuildingBlockType,
 		DataViewId:                        &savedQueryRule.DataViewId,
 		Namespace:                         &savedQueryRule.Namespace,
@@ -1599,6 +1696,9 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		Version:                           &threatMatchRule.Version,
 		ExceptionsList:                    &threatMatchRule.ExceptionsList,
 		RiskScoreMapping:                  &threatMatchRule.RiskScoreMapping,
+		SeverityMapping:                   &threatMatchRule.SeverityMapping,
+		RelatedIntegrations:               &threatMatchRule.RelatedIntegrations,
+		RequiredFields:                    &threatMatchRule.RequiredFields,
 		BuildingBlockType:                 &threatMatchRule.BuildingBlockType,
 		DataViewId:                        &threatMatchRule.DataViewId,
 		Namespace:                         &threatMatchRule.Namespace,
@@ -1705,6 +1805,9 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		Version:                           &thresholdRule.Version,
 		ExceptionsList:                    &thresholdRule.ExceptionsList,
 		RiskScoreMapping:                  &thresholdRule.RiskScoreMapping,
+		SeverityMapping:                   &thresholdRule.SeverityMapping,
+		RelatedIntegrations:               &thresholdRule.RelatedIntegrations,
+		RequiredFields:                    &thresholdRule.RequiredFields,
 		BuildingBlockType:                 &thresholdRule.BuildingBlockType,
 		DataViewId:                        &thresholdRule.DataViewId,
 		Namespace:                         &thresholdRule.Namespace,
@@ -1893,6 +1996,33 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		*props.TimestampOverrideFallbackDisabled = &timestampOverrideFallbackDisabled
 	}
 
+	// Set severity mapping
+	if props.SeverityMapping != nil && utils.IsKnown(d.SeverityMapping) {
+		severityMapping, severityMappingDiags := d.severityMappingToApi(ctx)
+		diags.Append(severityMappingDiags...)
+		if !severityMappingDiags.HasError() && severityMapping != nil && len(*severityMapping) > 0 {
+			*props.SeverityMapping = severityMapping
+		}
+	}
+
+	// Set related integrations
+	if props.RelatedIntegrations != nil && utils.IsKnown(d.RelatedIntegrations) {
+		relatedIntegrations, relatedIntegrationsDiags := d.relatedIntegrationsToApi(ctx)
+		diags.Append(relatedIntegrationsDiags...)
+		if !relatedIntegrationsDiags.HasError() && relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
+			*props.RelatedIntegrations = relatedIntegrations
+		}
+	}
+
+	// Set required fields
+	if props.RequiredFields != nil && utils.IsKnown(d.RequiredFields) {
+		requiredFields, requiredFieldsDiags := d.requiredFieldsToApi(ctx)
+		diags.Append(requiredFieldsDiags...)
+		if !requiredFieldsDiags.HasError() && requiredFields != nil && len(*requiredFields) > 0 {
+			*props.RequiredFields = requiredFields
+		}
+	}
+
 	// Set investigation fields
 	if props.InvestigationFields != nil {
 		investigationFields, investigationFieldsDiags := d.investigationFieldsToApi(ctx)
@@ -2078,6 +2208,18 @@ func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rul
 	riskScoreMappingDiags := d.updateRiskScoreMappingFromApi(ctx, rule.RiskScoreMapping)
 	diags.Append(riskScoreMappingDiags...)
 
+	// Update severity mapping
+	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	diags.Append(severityMappingDiags...)
+
+	// Update related integrations
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+
+	// Update required fields
+	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	diags.Append(requiredFieldsDiags...)
+
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
@@ -2233,6 +2375,18 @@ func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule 
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update severity mapping
+	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	diags.Append(severityMappingDiags...)
+
+	// Update related integrations
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+
+	// Update required fields
+	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	diags.Append(requiredFieldsDiags...)
+
 	return diags
 }
 
@@ -2368,6 +2522,18 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update severity mapping
+	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	diags.Append(severityMappingDiags...)
+
+	// Update related integrations
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+
+	// Update required fields
+	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	diags.Append(requiredFieldsDiags...)
 
 	return diags
 }
@@ -2524,6 +2690,18 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update severity mapping
+	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	diags.Append(severityMappingDiags...)
+
+	// Update related integrations
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+
+	// Update required fields
+	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	diags.Append(requiredFieldsDiags...)
+
 	return diags
 }
 
@@ -2675,6 +2853,18 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update severity mapping
+	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	diags.Append(severityMappingDiags...)
+
+	// Update related integrations
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+
+	// Update required fields
+	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	diags.Append(requiredFieldsDiags...)
 
 	return diags
 }
@@ -2828,6 +3018,18 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update severity mapping
+	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	diags.Append(severityMappingDiags...)
+
+	// Update related integrations
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+
+	// Update required fields
+	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	diags.Append(requiredFieldsDiags...)
 
 	return diags
 }
@@ -3014,6 +3216,18 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update severity mapping
+	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	diags.Append(severityMappingDiags...)
+
+	// Update related integrations
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+
+	// Update required fields
+	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	diags.Append(requiredFieldsDiags...)
+
 	return diags
 }
 
@@ -3172,6 +3386,18 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update severity mapping
+	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	diags.Append(severityMappingDiags...)
+
+	// Update related integrations
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+
+	// Update required fields
+	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	diags.Append(requiredFieldsDiags...)
+
 	return diags
 }
 
@@ -3232,6 +3458,17 @@ func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults(ctx context.Co
 	}
 	if !utils.IsKnown(d.References) {
 		d.References = types.ListNull(types.StringType)
+	}
+
+	// Initialize new common fields with proper empty lists
+	if !utils.IsKnown(d.RelatedIntegrations) {
+		d.RelatedIntegrations = types.ListNull(relatedIntegrationElementType())
+	}
+	if !utils.IsKnown(d.RequiredFields) {
+		d.RequiredFields = types.ListNull(requiredFieldElementType())
+	}
+	if !utils.IsKnown(d.SeverityMapping) {
+		d.SeverityMapping = types.ListNull(severityMappingElementType())
 	}
 
 	// Initialize building block type to null by default
@@ -4032,6 +4269,40 @@ func riskScoreMappingElementType() attr.Type {
 	}
 }
 
+// relatedIntegrationElementType returns the element type for related integrations
+func relatedIntegrationElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"package":     types.StringType,
+			"version":     types.StringType,
+			"integration": types.StringType,
+		},
+	}
+}
+
+// requiredFieldElementType returns the element type for required fields
+func requiredFieldElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name": types.StringType,
+			"type": types.StringType,
+			"ecs":  types.BoolType,
+		},
+	}
+}
+
+// severityMappingElementType returns the element type for severity mapping
+func severityMappingElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"field":    types.StringType,
+			"operator": types.StringType,
+			"value":    types.StringType,
+			"severity": types.StringType,
+		},
+	}
+}
+
 // Helper function to update risk score mapping from API response
 func (d *SecurityDetectionRuleData) updateRiskScoreMappingFromApi(ctx context.Context, riskScoreMapping kbapi.SecurityDetectionsAPIRiskScoreMapping) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -4101,6 +4372,240 @@ func (d *SecurityDetectionRuleData) updateInvestigationFieldsFromApi(ctx context
 		d.InvestigationFields = investigationFieldsValue
 	} else {
 		d.InvestigationFields = types.ListNull(types.StringType)
+	}
+
+	return diags
+}
+
+// Helper function to process related integrations configuration for all rule types
+func (d SecurityDetectionRuleData) relatedIntegrationsToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPIRelatedIntegrationArray, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(d.RelatedIntegrations) || len(d.RelatedIntegrations.Elements()) == 0 {
+		return nil, diags
+	}
+
+	apiRelatedIntegrations := utils.ListTypeToSlice(ctx, d.RelatedIntegrations, path.Root("related_integrations"), &diags,
+		func(integration RelatedIntegrationModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRelatedIntegration {
+			if integration.Package.IsNull() || integration.Version.IsNull() {
+				meta.Diags.AddError("Missing required fields", "Package and version are required for related integrations")
+				return kbapi.SecurityDetectionsAPIRelatedIntegration{}
+			}
+
+			apiIntegration := kbapi.SecurityDetectionsAPIRelatedIntegration{
+				Package: kbapi.SecurityDetectionsAPINonEmptyString(integration.Package.ValueString()),
+				Version: kbapi.SecurityDetectionsAPINonEmptyString(integration.Version.ValueString()),
+			}
+
+			// Set optional integration field if provided
+			if utils.IsKnown(integration.Integration) {
+				integrationName := kbapi.SecurityDetectionsAPINonEmptyString(integration.Integration.ValueString())
+				apiIntegration.Integration = &integrationName
+			}
+
+			return apiIntegration
+		})
+
+	return &apiRelatedIntegrations, diags
+}
+
+// convertRelatedIntegrationsToModel converts kbapi.SecurityDetectionsAPIRelatedIntegrationArray to Terraform model
+func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if apiRelatedIntegrations == nil || len(*apiRelatedIntegrations) == 0 {
+		return types.ListNull(relatedIntegrationElementType()), diags
+	}
+
+	integrations := make([]RelatedIntegrationModel, 0)
+
+	for _, apiIntegration := range *apiRelatedIntegrations {
+		integration := RelatedIntegrationModel{
+			Package: types.StringValue(string(apiIntegration.Package)),
+			Version: types.StringValue(string(apiIntegration.Version)),
+		}
+
+		// Set optional integration field if provided
+		if apiIntegration.Integration != nil {
+			integration.Integration = types.StringValue(string(*apiIntegration.Integration))
+		} else {
+			integration.Integration = types.StringNull()
+		}
+
+		integrations = append(integrations, integration)
+	}
+
+	listValue, listDiags := types.ListValueFrom(ctx, relatedIntegrationElementType(), integrations)
+	diags.Append(listDiags...)
+	return listValue, diags
+}
+
+// Helper function to update related integrations from API response
+func (d *SecurityDetectionRuleData) updateRelatedIntegrationsFromApi(ctx context.Context, relatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
+		relatedIntegrationsValue, relatedIntegrationsDiags := convertRelatedIntegrationsToModel(ctx, relatedIntegrations)
+		diags.Append(relatedIntegrationsDiags...)
+		if !relatedIntegrationsDiags.HasError() {
+			d.RelatedIntegrations = relatedIntegrationsValue
+		}
+	} else {
+		d.RelatedIntegrations = types.ListNull(relatedIntegrationElementType())
+	}
+
+	return diags
+}
+
+// Helper function to process required fields configuration for all rule types
+func (d SecurityDetectionRuleData) requiredFieldsToApi(ctx context.Context) (*[]kbapi.SecurityDetectionsAPIRequiredFieldInput, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(d.RequiredFields) || len(d.RequiredFields.Elements()) == 0 {
+		return nil, diags
+	}
+
+	apiRequiredFields := utils.ListTypeToSlice(ctx, d.RequiredFields, path.Root("required_fields"), &diags,
+		func(field RequiredFieldModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRequiredFieldInput {
+			if field.Name.IsNull() || field.Type.IsNull() {
+				meta.Diags.AddError("Missing required fields", "Name and type are required for required fields")
+				return kbapi.SecurityDetectionsAPIRequiredFieldInput{}
+			}
+
+			return kbapi.SecurityDetectionsAPIRequiredFieldInput{
+				Name: field.Name.ValueString(),
+				Type: field.Type.ValueString(),
+			}
+		})
+
+	return &apiRequiredFields, diags
+}
+
+// convertRequiredFieldsToModel converts kbapi.SecurityDetectionsAPIRequiredFieldArray to Terraform model
+func convertRequiredFieldsToModel(ctx context.Context, apiRequiredFields *kbapi.SecurityDetectionsAPIRequiredFieldArray) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if apiRequiredFields == nil || len(*apiRequiredFields) == 0 {
+		return types.ListNull(requiredFieldElementType()), diags
+	}
+
+	fields := make([]RequiredFieldModel, 0)
+
+	for _, apiField := range *apiRequiredFields {
+		field := RequiredFieldModel{
+			Name: types.StringValue(apiField.Name),
+			Type: types.StringValue(apiField.Type),
+			Ecs:  types.BoolValue(apiField.Ecs),
+		}
+
+		fields = append(fields, field)
+	}
+
+	listValue, listDiags := types.ListValueFrom(ctx, requiredFieldElementType(), fields)
+	diags.Append(listDiags...)
+	return listValue, diags
+}
+
+// Helper function to update required fields from API response
+func (d *SecurityDetectionRuleData) updateRequiredFieldsFromApi(ctx context.Context, requiredFields *kbapi.SecurityDetectionsAPIRequiredFieldArray) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if requiredFields != nil && len(*requiredFields) > 0 {
+		requiredFieldsValue, requiredFieldsDiags := convertRequiredFieldsToModel(ctx, requiredFields)
+		diags.Append(requiredFieldsDiags...)
+		if !requiredFieldsDiags.HasError() {
+			d.RequiredFields = requiredFieldsValue
+		}
+	} else {
+		d.RequiredFields = types.ListNull(requiredFieldElementType())
+	}
+
+	return diags
+}
+
+// Helper function to process severity mapping configuration for all rule types
+func (d SecurityDetectionRuleData) severityMappingToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPISeverityMapping, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(d.SeverityMapping) || len(d.SeverityMapping.Elements()) == 0 {
+		return nil, diags
+	}
+
+	apiSeverityMapping := utils.ListTypeToSlice(ctx, d.SeverityMapping, path.Root("severity_mapping"), &diags,
+		func(mapping SeverityMappingModel, meta utils.ListMeta) struct {
+			Field    string                                             `json:"field"`
+			Operator kbapi.SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
+			Severity kbapi.SecurityDetectionsAPISeverity                `json:"severity"`
+			Value    string                                             `json:"value"`
+		} {
+			if mapping.Field.IsNull() || mapping.Operator.IsNull() || mapping.Value.IsNull() || mapping.Severity.IsNull() {
+				meta.Diags.AddError("Missing required fields", "Field, operator, value, and severity are required for severity mapping")
+				return struct {
+					Field    string                                             `json:"field"`
+					Operator kbapi.SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
+					Severity kbapi.SecurityDetectionsAPISeverity                `json:"severity"`
+					Value    string                                             `json:"value"`
+				}{}
+			}
+
+			return struct {
+				Field    string                                             `json:"field"`
+				Operator kbapi.SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
+				Severity kbapi.SecurityDetectionsAPISeverity                `json:"severity"`
+				Value    string                                             `json:"value"`
+			}{
+				Field:    mapping.Field.ValueString(),
+				Operator: kbapi.SecurityDetectionsAPISeverityMappingOperator(mapping.Operator.ValueString()),
+				Severity: kbapi.SecurityDetectionsAPISeverity(mapping.Severity.ValueString()),
+				Value:    mapping.Value.ValueString(),
+			}
+		})
+
+	// Convert to the expected slice type
+	severityMappingSlice := make(kbapi.SecurityDetectionsAPISeverityMapping, len(apiSeverityMapping))
+	copy(severityMappingSlice, apiSeverityMapping)
+
+	return &severityMappingSlice, diags
+}
+
+// convertSeverityMappingToModel converts kbapi.SecurityDetectionsAPISeverityMapping to Terraform model
+func convertSeverityMappingToModel(ctx context.Context, apiSeverityMapping *kbapi.SecurityDetectionsAPISeverityMapping) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if apiSeverityMapping == nil || len(*apiSeverityMapping) == 0 {
+		return types.ListNull(severityMappingElementType()), diags
+	}
+
+	mappings := make([]SeverityMappingModel, 0)
+
+	for _, apiMapping := range *apiSeverityMapping {
+		mapping := SeverityMappingModel{
+			Field:    types.StringValue(apiMapping.Field),
+			Operator: types.StringValue(string(apiMapping.Operator)),
+			Value:    types.StringValue(apiMapping.Value),
+			Severity: types.StringValue(string(apiMapping.Severity)),
+		}
+
+		mappings = append(mappings, mapping)
+	}
+
+	listValue, listDiags := types.ListValueFrom(ctx, severityMappingElementType(), mappings)
+	diags.Append(listDiags...)
+	return listValue, diags
+}
+
+// Helper function to update severity mapping from API response
+func (d *SecurityDetectionRuleData) updateSeverityMappingFromApi(ctx context.Context, severityMapping *kbapi.SecurityDetectionsAPISeverityMapping) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if severityMapping != nil && len(*severityMapping) > 0 {
+		severityMappingValue, severityMappingDiags := convertSeverityMappingToModel(ctx, severityMapping)
+		diags.Append(severityMappingDiags...)
+		if !severityMappingDiags.HasError() {
+			d.SeverityMapping = severityMappingValue
+		}
+	} else {
+		d.SeverityMapping = types.ListNull(severityMappingElementType())
 	}
 
 	return diags

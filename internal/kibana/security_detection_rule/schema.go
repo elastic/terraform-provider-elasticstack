@@ -188,6 +188,36 @@ func GetSchema() schema.Schema {
 					stringvalidator.OneOf("low", "medium", "high", "critical"),
 				},
 			},
+			"severity_mapping": schema.ListNestedAttribute{
+				MarkdownDescription: "Array of severity mappings to override the default severity based on source event field values.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"field": schema.StringAttribute{
+							MarkdownDescription: "Source event field used to override the default severity.",
+							Required:            true,
+						},
+						"operator": schema.StringAttribute{
+							MarkdownDescription: "Operator to use for field value matching. Currently only 'equals' is supported.",
+							Required:            true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("equals"),
+							},
+						},
+						"value": schema.StringAttribute{
+							MarkdownDescription: "Value to match against the field.",
+							Required:            true,
+						},
+						"severity": schema.StringAttribute{
+							MarkdownDescription: "Severity level to use when the field matches the value.",
+							Required:            true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("low", "medium", "high", "critical"),
+							},
+						},
+					},
+				},
+			},
 			"author": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "The rule's author.",
@@ -205,6 +235,46 @@ func GetSchema() schema.Schema {
 			"license": schema.StringAttribute{
 				MarkdownDescription: "The rule's license.",
 				Optional:            true,
+			},
+			"related_integrations": schema.ListNestedAttribute{
+				MarkdownDescription: "Array of related integrations that provide additional context for the rule.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"package": schema.StringAttribute{
+							MarkdownDescription: "Name of the integration package.",
+							Required:            true,
+						},
+						"version": schema.StringAttribute{
+							MarkdownDescription: "Version of the integration package.",
+							Required:            true,
+						},
+						"integration": schema.StringAttribute{
+							MarkdownDescription: "Name of the specific integration.",
+							Optional:            true,
+						},
+					},
+				},
+			},
+			"required_fields": schema.ListNestedAttribute{
+				MarkdownDescription: "Array of Elasticsearch fields and types that must be present in source indices for the rule to function properly.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							MarkdownDescription: "Name of the Elasticsearch field.",
+							Required:            true,
+						},
+						"type": schema.StringAttribute{
+							MarkdownDescription: "Type of the Elasticsearch field.",
+							Required:            true,
+						},
+						"ecs": schema.BoolAttribute{
+							MarkdownDescription: "Indicates whether the field is ECS-compliant. This is computed by the backend based on the field name and type.",
+							Computed:            true,
+						},
+					},
+				},
 			},
 			"false_positives": schema.ListAttribute{
 				ElementType:         types.StringType,
