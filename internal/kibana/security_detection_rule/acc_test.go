@@ -58,6 +58,28 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
 
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "windows"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "system"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "event.type"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "host.os.type"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "event.severity_level"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "critical"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
+
 					// Verify building_block_type is not set by default
 					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
 
@@ -93,6 +115,38 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "source.ip"),
+
+					// Check related integrations (updated values)
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "linux"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "auditd"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.1.package", "network"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.1.version", "1.5.0"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations.1.integration"),
+
+					// Check required fields (updated values)
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "event.category"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "process.name"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.2.name", "custom.field"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.2.type", "text"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.2.ecs", "false"),
+
+					// Check severity mapping (updated values)
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "alert.severity"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "high"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.1.field", "alert.severity"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.1.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.1.value", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.1.severity", "medium"),
 				),
 			},
 		},
@@ -139,6 +193,28 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "process.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "process.executable"),
 
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "windows"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "system"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "process.name"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "event.type"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "event.severity_level"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "high"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -168,6 +244,28 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "process.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "process.executable"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "process.parent.name"),
+
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "windows"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "system"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "process.parent.name"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "event.category"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "event.severity_level"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "critical"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
 				),
 			},
 		},
@@ -211,6 +309,28 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.domain"),
 
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "system"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "auth"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "event.action"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "user.domain"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "admin"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -240,6 +360,28 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.domain"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "event.outcome"),
+
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "system"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "auth"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "event.outcome"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "event.outcome"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "failure"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "esql-exception-1"),
@@ -289,6 +431,28 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "ml.anomaly_score"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "ml.job_id"),
 
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "ml"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "anomaly_detection"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "ml.anomaly_score"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "double"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "false"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "ml.job_id"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "false"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "ml.anomaly_score"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "critical"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -320,6 +484,28 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "ml.anomaly_score"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "ml.job_id"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "ml.is_anomaly"),
+
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "ml"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "anomaly_detection"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "ml.is_anomaly"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "boolean"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "false"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "ml.job_id"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "false"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "ml.is_anomaly"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "true"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "ml-exception-1"),
@@ -372,6 +558,28 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.type"),
+
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "security"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "users"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "user.type"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "false"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "user.type"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "service_account"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "medium"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
@@ -456,6 +664,28 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "event.category"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
 
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "system"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "logs"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "event.category"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "event.action"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "event.category"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "authentication"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "low"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -490,6 +720,28 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "host.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "process.name"),
+
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "system"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "logs"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "event.type"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "host.name"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "event.type"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "access"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "medium"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "saved-query-exception-1"),
@@ -539,6 +791,28 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "source.ip"),
 
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "threat_intel"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "indicators"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "destination.ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "threat.indicator.ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "threat.indicator.confidence"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "high"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
+
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "threat.indicator.confidence"),
@@ -577,6 +851,31 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "source.ip"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "threat.indicator.type"),
+
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "threat_intel"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "indicators"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "destination.ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.2.name", "threat.indicator.ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.2.type", "ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.2.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "threat.indicator.confidence"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "high"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -624,6 +923,28 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
 
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "system"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "auth"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "event.action"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "event.outcome"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "success"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "medium"),
+
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.field", "event.outcome"),
@@ -660,6 +981,28 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "source.ip"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "event.outcome"),
+
+					// Check related integrations
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "system"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.integration", "auth"),
+
+					// Check required fields
+					resource.TestCheckResourceAttr(resourceName, "required_fields.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.name", "event.action"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.type", "keyword"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.0.ecs", "true"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.name", "source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.type", "ip"),
+					resource.TestCheckResourceAttr(resourceName, "required_fields.1.ecs", "true"),
+
+					// Check severity mapping
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.field", "event.outcome"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "failure"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -775,6 +1118,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       risk_score = 85
     }
   ]
+
+  related_integrations = [
+    {
+      package     = "windows"
+      version     = "1.0.0"
+      integration = "system"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "event.type"
+      type = "keyword"
+    },
+    {
+      name = "host.os.type"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "event.severity_level"
+      operator = "equals"
+      value    = "critical"
+      severity = "critical"
+    }
+  ]
 }
 `, name)
 }
@@ -817,6 +1188,48 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       risk_score = 95
     }
   ]
+
+  related_integrations = [
+    {
+      package     = "linux"
+      version     = "2.0.0"
+      integration = "auditd"
+    },
+    {
+      package     = "network"
+      version     = "1.5.0"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "event.category"
+      type = "keyword"
+    },
+    {
+      name = "process.name"
+      type = "keyword"
+    },
+    {
+      name = "custom.field"
+      type = "text"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "alert.severity"
+      operator = "equals"
+      value    = "high"
+      severity = "high"
+    },
+    {
+      field    = "alert.severity"
+      operator = "equals"
+      value    = "medium"
+      severity = "medium"
+    }
+  ]
 }
 `, name)
 }
@@ -855,6 +1268,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "C:\\Windows\\System32\\cmd.exe"
       risk_score = 75
+    }
+  ]
+
+  related_integrations = [
+    {
+      package     = "windows"
+      version     = "1.0.0"
+      integration = "system"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "process.name"
+      type = "keyword"
+    },
+    {
+      name = "event.type"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "event.severity_level"
+      operator = "equals"
+      value    = "high"
+      severity = "high"
     }
   ]
 }
@@ -898,6 +1339,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       risk_score = 95
     }
   ]
+
+  related_integrations = [
+    {
+      package     = "windows"
+      version     = "2.0.0"
+      integration = "system"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "process.parent.name"
+      type = "keyword"
+    },
+    {
+      name = "event.category"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "event.severity_level"
+      operator = "equals"
+      value    = "critical"
+      severity = "critical"
+    }
+  ]
 }
 `, name)
 }
@@ -933,6 +1402,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "admin"
       risk_score = 80
+    }
+  ]
+
+  related_integrations = [
+    {
+      package     = "system"
+      version     = "1.0.0"
+      integration = "auth"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "user.name"
+      type = "keyword"
+    },
+    {
+      name = "event.action"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "user.domain"
+      operator = "equals"
+      value    = "admin"
+      severity = "high"
     }
   ]
 }
@@ -972,6 +1469,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "failure"
       risk_score = 95
+    }
+  ]
+  
+  related_integrations = [
+    {
+      package     = "system"
+      version     = "2.0.0"
+      integration = "auth"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "user.name"
+      type = "keyword"
+    },
+    {
+      name = "event.outcome"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "event.outcome"
+      operator = "equals"
+      value    = "failure"
+      severity = "critical"
     }
   ]
   
@@ -1020,6 +1545,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       risk_score = 100
     }
   ]
+
+  related_integrations = [
+    {
+      package     = "ml"
+      version     = "1.0.0"
+      integration = "anomaly_detection"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "ml.anomaly_score"
+      type = "double"
+    },
+    {
+      name = "ml.job_id"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "ml.anomaly_score"
+      operator = "equals"
+      value    = "critical"
+      severity = "critical"
+    }
+  ]
 }
 `, name)
 }
@@ -1057,6 +1610,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "true"
       risk_score = 95
+    }
+  ]
+  
+  related_integrations = [
+    {
+      package     = "ml"
+      version     = "2.0.0"
+      integration = "anomaly_detection"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "ml.is_anomaly"
+      type = "boolean"
+    },
+    {
+      name = "ml.job_id"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "ml.is_anomaly"
+      operator = "equals"
+      value    = "true"
+      severity = "high"
     }
   ]
   
@@ -1109,6 +1690,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       risk_score = 65
     }
   ]
+
+  related_integrations = [
+    {
+      package     = "security"
+      version     = "1.0.0"
+      integration = "users"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "user.name"
+      type = "keyword"
+    },
+    {
+      name = "user.type"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "user.type"
+      operator = "equals"
+      value    = "service_account"
+      severity = "medium"
+    }
+  ]
 }
 `, name)
 }
@@ -1157,6 +1766,38 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       risk_score = 85
     }
   ]
+
+  related_integrations = [
+    {
+      package     = "security"
+      version     = "2.0.0"
+      integration = "users"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "user.name"
+      type = "keyword"
+    },
+    {
+      name = "source.ip"
+      type = "ip"
+    },
+    {
+      name = "user.roles"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "user.roles"
+      operator = "equals"
+      value    = "admin"
+      severity = "high"
+    }
+  ]
 }
 `, name)
 }
@@ -1194,6 +1835,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "authentication"
       risk_score = 45
+    }
+  ]
+
+  related_integrations = [
+    {
+      package     = "system"
+      version     = "1.0.0"
+      integration = "logs"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "event.category"
+      type = "keyword"
+    },
+    {
+      name = "event.action"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "event.category"
+      operator = "equals"
+      value    = "authentication"
+      severity = "low"
     }
   ]
 }
@@ -1236,6 +1905,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "access"
       risk_score = 70
+    }
+  ]
+  
+  related_integrations = [
+    {
+      package     = "system"
+      version     = "2.0.0"
+      integration = "logs"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "event.type"
+      type = "keyword"
+    },
+    {
+      name = "host.name"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "event.type"
+      operator = "equals"
+      value    = "access"
+      severity = "medium"
     }
   ]
   
@@ -1298,6 +1995,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "medium"
       risk_score = 85
+    }
+  ]
+
+  related_integrations = [
+    {
+      package     = "threat_intel"
+      version     = "1.0.0"
+      integration = "indicators"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "destination.ip"
+      type = "ip"
+    },
+    {
+      name = "threat.indicator.ip"
+      type = "ip"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "threat.indicator.confidence"
+      operator = "equals"
+      value    = "high"
+      severity = "high"
     }
   ]
 }
@@ -1365,6 +2090,38 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       risk_score = 100
     }
   ]
+
+  related_integrations = [
+    {
+      package     = "threat_intel"
+      version     = "2.0.0"
+      integration = "indicators"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "destination.ip"
+      type = "ip"
+    },
+    {
+      name = "source.ip"
+      type = "ip"
+    },
+    {
+      name = "threat.indicator.ip"
+      type = "ip"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "threat.indicator.confidence"
+      operator = "equals"
+      value    = "high"
+      severity = "critical"
+    }
+  ]
 }
 `, name)
 }
@@ -1407,6 +2164,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "success"
       risk_score = 45
+    }
+  ]
+
+  related_integrations = [
+    {
+      package     = "system"
+      version     = "1.0.0"
+      integration = "auth"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "event.action"
+      type = "keyword"
+    },
+    {
+      name = "user.name"
+      type = "keyword"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "event.outcome"
+      operator = "equals"
+      value    = "success"
+      severity = "medium"
     }
   ]
 }
@@ -1454,6 +2239,34 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator   = "equals"
       value      = "failure"
       risk_score = 90
+    }
+  ]
+
+  related_integrations = [
+    {
+      package     = "system"
+      version     = "2.0.0"
+      integration = "auth"
+    }
+  ]
+
+  required_fields = [
+    {
+      name = "event.action"
+      type = "keyword"
+    },
+    {
+      name = "source.ip"
+      type = "ip"
+    }
+  ]
+
+  severity_mapping = [
+    {
+      field    = "event.outcome"
+      operator = "equals"
+      value    = "failure"
+      severity = "high"
     }
   ]
 }
