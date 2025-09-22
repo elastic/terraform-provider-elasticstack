@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -90,7 +90,7 @@ func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadReq
 	}
 
 	id, sdkDiags := client.ID(ctx, roleMappingName)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

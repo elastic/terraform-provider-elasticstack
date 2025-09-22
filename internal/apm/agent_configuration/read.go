@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -53,7 +53,7 @@ func (r *resourceAgentConfiguration) read(ctx context.Context, state *AgentConfi
 		return nil, diags
 	}
 
-	if httpDiags := utils.CheckHttpErrorFromFW(apiResp.HTTPResponse, "Failed to get APM agent configurations"); httpDiags.HasError() {
+	if httpDiags := diagutil.CheckHttpErrorFromFW(apiResp.HTTPResponse, "Failed to get APM agent configurations"); httpDiags.HasError() {
 		diags.Append(httpDiags...)
 		return nil, diags
 	}

@@ -550,3 +550,73 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 }
 	`, apiKeyName)
 }
+
+func TestAccResourceSecurityApiKeyWithDefaultAllowRestrictedIndices(t *testing.T) {
+	// generate a random name
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
+				Config:   testAccResourceSecurityApiKeyWithoutAllowRestrictedIndices(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
+						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
+							return err
+						}
+
+						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+							"role-default": {
+								Cluster: []string{"monitor"},
+								Indices: []models.IndexPerms{{
+									Names:      []string{"logs-*", "metrics-*"},
+									Privileges: []string{"read", "view_index_metadata"},
+								}},
+							},
+						}
+
+						if !reflect.DeepEqual(testRoleDescriptor, expectedRoleDescriptor) {
+							return fmt.Errorf("role descriptor mismatch:\nexpected: %+v\nactual: %+v", expectedRoleDescriptor, testRoleDescriptor)
+						}
+
+						return nil
+					}),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceSecurityApiKeyWithoutAllowRestrictedIndices(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+
+  role_descriptors = jsonencode({
+    role-default = {
+      cluster = ["monitor"]
+      indices = [{
+        names = ["logs-*", "metrics-*"]
+        privileges = ["read", "view_index_metadata"]
+        # Note: allow_restricted_indices is NOT specified here - should default to false
+      }]
+    }
+  })
+
+  expiration = "2d"
+}
+	`, apiKeyName)
+}

@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -29,7 +29,7 @@ func PutUser(ctx context.Context, apiClient *clients.ApiClient, user *models.Use
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update a user"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create or update a user"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -50,7 +50,7 @@ func GetUser(ctx context.Context, apiClient *clients.ApiClient, username string)
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to get a user."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to get a user."); diags.HasError() {
 		return nil, diags
 	}
 
@@ -83,7 +83,7 @@ func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username stri
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete a user"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to delete a user"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -108,7 +108,7 @@ func EnableUser(ctx context.Context, apiClient *clients.ApiClient, username stri
 		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckErrorFromFW(res, "Unable to enable system user"); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to enable system user"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -133,7 +133,7 @@ func DisableUser(ctx context.Context, apiClient *clients.ApiClient, username str
 		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckErrorFromFW(res, "Unable to disable system user"); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to disable system user"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -170,7 +170,7 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ApiClient, usern
 		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckErrorFromFW(res, "Unable to change user's password"); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to change user's password"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -192,7 +192,7 @@ func PutRole(ctx context.Context, apiClient *clients.ApiClient, role *models.Rol
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create role"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create role"); diags.HasError() {
 		return diags
 	}
 
@@ -215,7 +215,7 @@ func GetRole(ctx context.Context, apiClient *clients.ApiClient, rolename string)
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to get a role."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to get a role."); diags.HasError() {
 		return nil, diags
 	}
 	roles := make(map[string]models.Role)
@@ -245,7 +245,7 @@ func DeleteRole(ctx context.Context, apiClient *clients.ApiClient, rolename stri
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete role"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to delete role"); diags.HasError() {
 		return diags
 	}
 
@@ -270,12 +270,7 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappi
 		return diags
 	}
 	defer res.Body.Close()
-	if sdkDiags := utils.CheckError(res, "Unable to put role mapping"); sdkDiags.HasError() {
-		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
-		return diags
-	}
-
-	return diags
+	return diagutil.CheckErrorFromFW(res, "Unable to put role mapping")
 }
 
 func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) (*models.RoleMapping, fwdiag.Diagnostics) {
@@ -296,8 +291,7 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappi
 	if res.StatusCode == http.StatusNotFound {
 		return nil, diags
 	}
-	if sdkDiags := utils.CheckError(res, "Unable to get a role mapping."); sdkDiags.HasError() {
-		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to get a role mapping."); diags.HasError() {
 		return nil, diags
 	}
 	roleMappings := make(map[string]models.RoleMapping)
@@ -328,37 +322,32 @@ func DeleteRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMa
 		return diags
 	}
 	defer res.Body.Close()
-	if sdkDiags := utils.CheckError(res, "Unable to delete role mapping"); sdkDiags.HasError() {
-		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
-		return diags
-	}
-
-	return diags
+	return diagutil.CheckErrorFromFW(res, "Unable to delete role mapping")
 }
 
 func CreateApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.ApiKeyCreateResponse, fwdiag.Diagnostics) {
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Security.CreateAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create apikey"); diags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckError(res, "Unable to create apikey"); diags.HasError() {
+		return nil, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	var apiKey models.ApiKeyCreateResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return &apiKey, nil
@@ -372,20 +361,20 @@ func UpdateApiKey(apiClient *clients.ApiClient, apikey models.ApiKey) fwdiag.Dia
 	apikey.ID = ""
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Security.UpdateAPIKey(id, esClient.Security.UpdateAPIKey.WithBody(bytes.NewReader(apikeyBytes)))
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to update apikey"); diags.HasError() {
-		return utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckError(res, "Unable to update apikey"); diags.HasError() {
+		return diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	return nil
@@ -394,19 +383,19 @@ func UpdateApiKey(apiClient *clients.ApiClient, apikey models.ApiKey) fwdiag.Dia
 func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse, fwdiag.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	req := esClient.Security.GetAPIKey.WithID(id)
 	res, err := esClient.Security.GetAPIKey(req)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to get an apikey."); diags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckError(res, "Unable to get an apikey."); diags.HasError() {
+		return nil, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	// unmarshal our response to proper type
@@ -414,7 +403,7 @@ func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse,
 		ApiKeys []models.ApiKeyResponse `json:"api_keys"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&apiKeys); err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	if len(apiKeys.ApiKeys) != 1 {
@@ -439,19 +428,19 @@ func DeleteApiKey(apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
 
 	apikeyBytes, err := json.Marshal(apiKeys)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil && res.IsError() {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete an apikey"); diags.HasError() {
-		return utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckError(res, "Unable to delete an apikey"); diags.HasError() {
+		return diagutil.FrameworkDiagsFromSDK(diags)
 	}
 	return nil
 }
@@ -459,26 +448,26 @@ func DeleteApiKey(apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
 func CreateCrossClusterApiKey(apiClient *clients.ApiClient, apikey *models.CrossClusterApiKey) (*models.CrossClusterApiKeyCreateResponse, fwdiag.Diagnostics) {
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Security.CreateCrossClusterAPIKey(bytes.NewReader(apikeyBytes))
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create cross cluster apikey"); diags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to create cross cluster apikey"); diags.HasError() {
+		return nil, diags
 	}
 
 	var apiKey models.CrossClusterApiKeyCreateResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return &apiKey, nil
@@ -492,21 +481,17 @@ func UpdateCrossClusterApiKey(apiClient *clients.ApiClient, apikey models.CrossC
 	apikey.ID = ""
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Security.UpdateCrossClusterAPIKey(id, bytes.NewReader(apikeyBytes))
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to update cross cluster apikey"); diags.HasError() {
-		return utils.FrameworkDiagsFromSDK(diags)
-	}
-
-	return nil
+	return diagutil.CheckErrorFromFW(res, "Unable to update cross cluster apikey")
 }

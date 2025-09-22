@@ -2,6 +2,7 @@ package integration_policy
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -13,6 +14,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+//go:embed resource-description.md
+var integrationPolicyDescription string
+
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchemaV1()
 }
@@ -20,7 +24,7 @@ func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.Sch
 func getSchemaV1() schema.Schema {
 	return schema.Schema{
 		Version:     1,
-		Description: "Creates a new Fleet Integration Policy. See https://www.elastic.co/guide/en/fleet/current/add-integration-to-policy.html",
+		Description: integrationPolicyDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of this resource.",

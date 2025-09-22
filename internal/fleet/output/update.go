@@ -22,7 +22,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx)
+	body, diags := planModel.toAPIUpdateModel(ctx, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

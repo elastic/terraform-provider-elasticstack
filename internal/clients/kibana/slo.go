@@ -7,8 +7,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -29,13 +29,13 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 	}
 	if err != nil {
 		diags := diag.FromErr(err)
-		diags = append(diags, utils.CheckHttpError(res, "unable to create slo with id "+id)...)
+		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+id)...)
 		return nil, diags
 	}
 
 	defer res.Body.Close()
 
-	return sloResponseToModel(spaceID, sloRes), utils.CheckHttpError(res, "Unable to get slo with ID "+string(id))
+	return sloResponseToModel(spaceID, sloRes), diagutil.CheckHttpError(res, "Unable to get slo with ID "+string(id))
 }
 
 func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, spaceId string) diag.Diagnostics {
@@ -49,12 +49,12 @@ func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, 
 	res, err := req.Execute()
 	if err != nil && res == nil {
 		diags := diag.FromErr(err)
-		diags = append(diags, utils.CheckHttpError(res, "unable to create slo with id "+sloId)...)
+		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+sloId)...)
 		return diags
 	}
 
 	defer res.Body.Close()
-	return utils.CheckHttpError(res, "Unable to delete slo with ID "+string(sloId))
+	return diagutil.CheckHttpError(res, "Unable to delete slo with ID "+string(sloId))
 }
 
 func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
@@ -85,12 +85,12 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 
 	if err != nil {
 		diags := diag.FromErr(err)
-		diags = append(diags, utils.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
 		return nil, diags
 	}
 
 	defer res.Body.Close()
-	if diags := utils.CheckHttpError(res, "unable to update slo with id "+s.SloID); diags.HasError() {
+	if diags := diagutil.CheckHttpError(res, "unable to update slo with id "+s.SloID); diags.HasError() {
 		return nil, diags
 	}
 
@@ -129,12 +129,12 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 	sloRes, res, err := req.Execute()
 	if err != nil {
 		diags := diag.FromErr(err)
-		diags = append(diags, utils.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
 		return nil, diags
 	}
 	defer res.Body.Close()
 
-	if diags := utils.CheckHttpError(res, "unable to create slo with id "+s.SloID); diags.HasError() {
+	if diags := diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID); diags.HasError() {
 		return nil, diags
 	}
 

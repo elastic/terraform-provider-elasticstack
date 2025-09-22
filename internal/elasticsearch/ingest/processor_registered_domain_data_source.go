@@ -75,7 +75,7 @@ func DataSourceProcessorRegisteredDomain() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Extracts the registered domain (also known as the effective top-level domain or eTLD), sub-domain, and top-level domain from a fully qualified domain name (FQDN). See: https://www.elastic.co/guide/en/elasticsearch/reference/current/registered-domain-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a registered domain processor. This processor extracts the registered domain (also known as the effective top-level domain or eTLD), sub-domain, and top-level domain from a fully qualified domain name (FQDN). See: https://www.elastic.co/guide/en/elasticsearch/reference/current/registered-domain-processor.html",
 
 		ReadContext: dataSourceProcessorRegisteredDomainRead,
 

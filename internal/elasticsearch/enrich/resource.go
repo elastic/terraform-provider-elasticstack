@@ -44,7 +44,7 @@ func (r *enrichPolicyResource) Schema(_ context.Context, _ resource.SchemaReques
 
 func GetResourceSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Managing Elasticsearch enrich policies. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html",
+		MarkdownDescription: "Managing Elasticsearch enrich policies. See the [enrich API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html) for more details.",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},

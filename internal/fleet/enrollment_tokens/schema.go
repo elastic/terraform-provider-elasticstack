@@ -14,7 +14,7 @@ func (d *enrollmentTokensDataSource) Schema(ctx context.Context, req datasource.
 
 func getSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Retrieves Elasticsearch API keys used to enroll Elastic Agents in Fleet. See: https://www.elastic.co/guide/en/fleet/current/fleet-enrollment-tokens.html",
+		Description: "Retrieves Elasticsearch API keys used to enroll Elastic Agents in Fleet. See the [Fleet enrollment tokens documentation](https://www.elastic.co/guide/en/fleet/current/fleet-enrollment-tokens.html) for more details.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of this resource.",
