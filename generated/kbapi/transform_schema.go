@@ -854,6 +854,14 @@ func transformKibanaPaths(schema *Schema) {
 		"propertyName": "type",
 	})
 
+	schema.Components.Set("schemas.Security_Detections_API_ResponseAction.discriminator", Map{
+		"mapping": Map{
+			".osquery":  "#/components/schemas/Security_Detections_API_OsqueryResponseAction",
+			".endpoint": "#/components/schemas/Security_Detections_API_EndpointResponseAction",
+		},
+		"propertyName": "action_type_id",
+	})
+
 }
 
 func removeBrokenDiscriminator(schema *Schema) {

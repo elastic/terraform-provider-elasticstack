@@ -80,6 +80,17 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "critical"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
 
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", "SELECT * FROM processes WHERE name = 'malicious.exe';"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "300"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.name", "name"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.pid", "pid"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "isolate"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Isolate host due to suspicious activity"),
+
 					// Verify building_block_type is not set by default
 					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
 
@@ -147,6 +158,31 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.1.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.1.value", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.1.severity", "medium"),
+
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.pack_id", "incident_response_pack"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "600"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.host.name", "hostname"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.name", "process_name"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.id", "query1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.query", "SELECT * FROM logged_in_users;"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.platform", "linux"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.version", "4.6.0"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.1.id", "query2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.1.query", "SELECT * FROM processes WHERE state = 'R';"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.1.platform", "linux"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.1.version", "4.6.0"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.1.ecs_mapping.process.pid", "pid"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.1.ecs_mapping.process.command_line", "cmdline"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "kill-process"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Kill suspicious process identified during investigation"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.field", "process.entity_id"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "true"),
 				),
 			},
 		},
@@ -215,6 +251,12 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "high"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
 
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.saved_query_id", "suspicious_processes"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "300"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -266,6 +308,14 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "critical"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
+
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.pack_id", "eql_response_pack"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "450"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.executable", "executable_path"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.parent.name", "parent_name"),
 				),
 			},
 		},
@@ -331,6 +381,17 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "admin"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
 
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", "SELECT * FROM users WHERE username LIKE '%admin%';"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "400"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.domain", "domain"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "isolate"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Isolate host due to suspicious admin activity"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -382,6 +443,15 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "failure"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
+
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.saved_query_id", "failed_login_investigation"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "500"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.event.outcome", "outcome"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.source.ip", "source_ip"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "esql-exception-1"),
@@ -453,6 +523,15 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "critical"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "critical"),
 
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", "SELECT * FROM processes WHERE pid IN (SELECT DISTINCT pid FROM connections WHERE remote_address NOT LIKE '10.%' AND remote_address NOT LIKE '192.168.%' AND remote_address NOT LIKE '127.%');"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "600"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.pid", "pid"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.name", "name"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.ml.anomaly_score", "anomaly_score"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -506,6 +585,23 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "true"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "high"),
+
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.pack_id", "ml_anomaly_investigation"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "700"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.ml.job_id", "job_id"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.ml.is_anomaly", "is_anomaly"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.host.name", "hostname"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.id", "ml_query1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.query", "SELECT * FROM system_info;"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.platform", "linux"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.version", "4.7.0"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "isolate"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Collect process tree for ML anomaly investigation"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "ml-exception-1"),
@@ -581,6 +677,15 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "service_account"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "medium"),
 
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", "SELECT * FROM last WHERE username = '{{user.name}}';"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "350"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.type", "user_type"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.host.name", "hostname"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -620,6 +725,18 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.type"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "source.ip"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.3", "user.roles"),
+
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.saved_query_id", "admin_user_investigation"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "800"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.roles", "roles"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.source.ip", "source_ip"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "isolate"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Isolate host due to new admin user activity from suspicious IP"),
 				),
 			},
 		},
@@ -686,6 +803,15 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "authentication"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "low"),
 
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", "SELECT * FROM logged_in_users WHERE user = '{{user.name}}';"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "250"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.event.category", "category"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.event.action", "action"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -742,6 +868,21 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.value", "access"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.0.severity", "medium"),
+
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.pack_id", "access_investigation_pack"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "400"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.event.type", "type"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.host.name", "hostname"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.id", "access_query1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.query", "SELECT * FROM users WHERE username = '{{user.name}}';"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.platform", "linux"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.version", "4.8.0"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.ecs_mapping.user.id", "uid"),
 
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.0.id", "saved-query-exception-1"),
@@ -820,6 +961,18 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "85"),
 
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", "SELECT * FROM listening_ports WHERE address = '{{destination.ip}}';"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "300"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.destination.ip", "dest_ip"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.threat.indicator.ip", "threat_ip"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.threat.indicator.confidence", "confidence"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "isolate"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Isolate host due to threat match on destination IP"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -883,6 +1036,20 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "100"),
+
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.saved_query_id", "threat_intel_investigation"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "450"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.source.ip", "src_ip"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.destination.ip", "dest_ip"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.threat.indicator.type", "threat_type"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "kill-process"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Kill processes communicating with known threat indicators"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.field", "process.entity_id"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "true"),
 				),
 			},
 		},
@@ -952,6 +1119,15 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "success"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "45"),
 
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", "SELECT * FROM logged_in_users WHERE user = '{{user.name}}' ORDER BY time DESC LIMIT 10;"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "200"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.event.action", "action"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.event.outcome", "outcome"),
+
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
@@ -1010,6 +1186,23 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.operator", "equals"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.value", "failure"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.0.risk_score", "90"),
+
+					// Check response actions
+					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.pack_id", "login_failure_investigation"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "350"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.event.outcome", "outcome"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.source.ip", "source_ip"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.user.name", "username"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.id", "failed_login_query"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.query", "SELECT * FROM last WHERE type = 7 AND username = '{{user.name}}';"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.platform", "linux"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.version", "4.9.0"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "isolate"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Isolate host due to multiple failed login attempts"),
 				),
 			},
 		},
@@ -1146,6 +1339,27 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       severity = "critical"
     }
   ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        query   = "SELECT * FROM processes WHERE name = 'malicious.exe';"
+        timeout = 300
+        ecs_mapping = {
+          "process.name" = "name"
+          "process.pid"  = "pid"
+        }
+      }
+    },
+    {
+      action_type_id = ".endpoint"
+      params = {
+        command = "isolate"
+        comment = "Isolate host due to suspicious activity"
+      }
+    }
+  ]
 }
 `, name)
 }
@@ -1230,6 +1444,50 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       severity = "medium"
     }
   ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        pack_id = "incident_response_pack"
+        timeout = 600
+        ecs_mapping = {
+          "host.name"    = "hostname"
+          "user.name"    = "username"
+          "process.name" = "process_name"
+        }
+        queries = [
+          {
+            id       = "query1"
+            query    = "SELECT * FROM logged_in_users;"
+            platform = "linux"
+            version  = "4.6.0"
+          },
+          {
+            id       = "query2"
+            query    = "SELECT * FROM processes WHERE state = 'R';"
+            platform = "linux"
+            version  = "4.6.0"
+            ecs_mapping = {
+              "process.pid" = "pid"
+              "process.command_line" = "cmdline"
+            }
+          }
+        ]
+      }
+    },
+    {
+      action_type_id = ".endpoint"
+      params = {
+        command = "kill-process"
+        comment = "Kill suspicious process identified during investigation"
+        config = {
+          field     = "process.entity_id"
+          overwrite = true
+        }
+      }
+    }
+  ]
 }
 `, name)
 }
@@ -1296,6 +1554,16 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "high"
       severity = "high"
+    }
+  ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        saved_query_id = "suspicious_processes"
+        timeout        = 300
+      }
     }
   ]
 }
@@ -1367,6 +1635,20 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       severity = "critical"
     }
   ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        pack_id = "eql_response_pack"
+        timeout = 450
+        ecs_mapping = {
+          "process.executable" = "executable_path"
+          "process.parent.name" = "parent_name"
+        }
+      }
+    }
+  ]
 }
 `, name)
 }
@@ -1430,6 +1712,27 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "admin"
       severity = "high"
+    }
+  ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        query   = "SELECT * FROM users WHERE username LIKE '%%admin%%';"
+        timeout = 400
+        ecs_mapping = {
+          "user.name"   = "username"
+          "user.domain" = "domain"
+        }
+      }
+    },
+    {
+      action_type_id = ".endpoint"
+      params = {
+        command = "isolate"
+        comment = "Isolate host due to suspicious admin activity"
+      }
     }
   ]
 }
@@ -1497,6 +1800,21 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "failure"
       severity = "critical"
+    }
+  ]
+  
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        saved_query_id = "failed_login_investigation"
+        timeout        = 500
+        ecs_mapping = {
+          "event.outcome" = "outcome"
+          "user.name"     = "username"
+          "source.ip"     = "source_ip"
+        }
+      }
     }
   ]
   
@@ -1573,6 +1891,21 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       severity = "critical"
     }
   ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        query   = "SELECT * FROM processes WHERE pid IN (SELECT DISTINCT pid FROM connections WHERE remote_address NOT LIKE '10.%%' AND remote_address NOT LIKE '192.168.%%' AND remote_address NOT LIKE '127.%%');"
+        timeout = 600
+        ecs_mapping = {
+          "process.pid"        = "pid"
+          "process.name"       = "name"
+          "ml.anomaly_score"   = "anomaly_score"
+        }
+      }
+    }
+  ]
 }
 `, name)
 }
@@ -1638,6 +1971,36 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "true"
       severity = "high"
+    }
+  ]
+  
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        pack_id = "ml_anomaly_investigation"
+        timeout = 700
+        ecs_mapping = {
+          "ml.job_id"        = "job_id"
+          "ml.is_anomaly"    = "is_anomaly"
+          "host.name"        = "hostname"
+        }
+        queries = [
+          {
+            id       = "ml_query1"
+            query    = "SELECT * FROM system_info;"
+            platform = "linux"
+            version  = "4.7.0"
+          }
+        ]
+      }
+    },
+    {
+      action_type_id = ".endpoint"
+      params = {
+        command = "isolate"
+        comment = "Collect process tree for ML anomaly investigation"
+      }
     }
   ]
   
@@ -1716,6 +2079,21 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "service_account"
       severity = "medium"
+    }
+  ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        query   = "SELECT * FROM last WHERE username = '{{user.name}}';"
+        timeout = 350
+        ecs_mapping = {
+          "user.name" = "username"
+          "user.type" = "user_type"
+          "host.name" = "hostname"
+        }
+      }
     }
   ]
 }
@@ -1798,6 +2176,28 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       severity = "high"
     }
   ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        saved_query_id = "admin_user_investigation"
+        timeout        = 800
+        ecs_mapping = {
+          "user.roles"     = "roles"
+          "source.ip"      = "source_ip"
+          "user.name"      = "username"
+        }
+      }
+    },
+    {
+      action_type_id = ".endpoint"
+      params = {
+        command = "isolate"
+        comment = "Isolate host due to new admin user activity from suspicious IP"
+      }
+    }
+  ]
 }
 `, name)
 }
@@ -1863,6 +2263,21 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "authentication"
       severity = "low"
+    }
+  ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        query   = "SELECT * FROM logged_in_users WHERE user = '{{user.name}}';"
+        timeout = 250
+        ecs_mapping = {
+          "event.category" = "category"
+          "event.action"   = "action"
+          "user.name"      = "username"
+        }
+      }
     }
   ]
 }
@@ -1933,6 +2348,32 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "access"
       severity = "medium"
+    }
+  ]
+  
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        pack_id = "access_investigation_pack"
+        timeout = 400
+        ecs_mapping = {
+          "event.type" = "type"
+          "host.name"  = "hostname"
+          "user.name"  = "username"
+        }
+        queries = [
+          {
+            id       = "access_query1"
+            query    = "SELECT * FROM users WHERE username = '{{user.name}}';"
+            platform = "linux"
+            version  = "4.8.0"
+            ecs_mapping = {
+              "user.id" = "uid"
+            }
+          }
+        ]
+      }
     }
   ]
   
@@ -2023,6 +2464,28 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "high"
       severity = "high"
+    }
+  ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        query   = "SELECT * FROM listening_ports WHERE address = '{{destination.ip}}';"
+        timeout = 300
+        ecs_mapping = {
+          "destination.ip"            = "dest_ip"
+          "threat.indicator.ip"       = "threat_ip"
+          "threat.indicator.confidence" = "confidence"
+        }
+      }
+    },
+    {
+      action_type_id = ".endpoint"
+      params = {
+        command = "isolate"
+        comment = "Isolate host due to threat match on destination IP"
+      }
     }
   ]
 }
@@ -2122,6 +2585,32 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       severity = "critical"
     }
   ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        saved_query_id = "threat_intel_investigation"
+        timeout        = 450
+        ecs_mapping = {
+          "source.ip"                 = "src_ip"
+          "destination.ip"            = "dest_ip"
+          "threat.indicator.type"     = "threat_type"
+        }
+      }
+    },
+    {
+      action_type_id = ".endpoint"
+      params = {
+        command = "kill-process"
+        comment = "Kill processes communicating with known threat indicators"
+        config = {
+          field     = "process.entity_id"
+          overwrite = true
+        }
+      }
+    }
+  ]
 }
 `, name)
 }
@@ -2192,6 +2681,21 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "success"
       severity = "medium"
+    }
+  ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        query   = "SELECT * FROM logged_in_users WHERE user = '{{user.name}}' ORDER BY time DESC LIMIT 10;"
+        timeout = 200
+        ecs_mapping = {
+          "user.name"     = "username"
+          "event.action"  = "action"
+          "event.outcome" = "outcome"
+        }
+      }
     }
   ]
 }
@@ -2267,6 +2771,36 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       operator = "equals"
       value    = "failure"
       severity = "high"
+    }
+  ]
+
+  response_actions = [
+    {
+      action_type_id = ".osquery"
+      params = {
+        pack_id = "login_failure_investigation"
+        timeout = 350
+        ecs_mapping = {
+          "event.outcome" = "outcome"
+          "source.ip"     = "source_ip"
+          "user.name"     = "username"
+        }
+        queries = [
+          {
+            id       = "failed_login_query"
+            query    = "SELECT * FROM last WHERE type = 7 AND username = '{{user.name}}';"
+            platform = "linux"
+            version  = "4.9.0"
+          }
+        ]
+      }
+    },
+    {
+      action_type_id = ".endpoint"
+      params = {
+        command = "isolate"
+        comment = "Isolate host due to multiple failed login attempts"
+      }
     }
   ]
 }

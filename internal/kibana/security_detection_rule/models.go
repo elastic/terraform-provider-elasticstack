@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 type SecurityDetectionRuleData struct {
@@ -91,6 +92,9 @@ type SecurityDetectionRuleData struct {
 	// Actions field (common across all rule types)
 	Actions types.List `tfsdk:"actions"`
 
+	// Response actions field (common across all rule types)
+	ResponseActions types.List `tfsdk:"response_actions"`
+
 	// Exceptions list field (common across all rule types)
 	ExceptionsList types.List `tfsdk:"exceptions_list"`
 
@@ -154,6 +158,41 @@ type ActionFrequencyModel struct {
 	Throttle   types.String `tfsdk:"throttle"`
 }
 
+type ResponseActionModel struct {
+	ActionTypeId types.String `tfsdk:"action_type_id"`
+	Params       types.Object `tfsdk:"params"`
+}
+
+type ResponseActionParamsModel struct {
+	// Osquery params
+	Query        types.String `tfsdk:"query"`
+	PackId       types.String `tfsdk:"pack_id"`
+	SavedQueryId types.String `tfsdk:"saved_query_id"`
+	Timeout      types.Int64  `tfsdk:"timeout"`
+	EcsMapping   types.Map    `tfsdk:"ecs_mapping"`
+	Queries      types.List   `tfsdk:"queries"`
+
+	// Endpoint params
+	Command types.String `tfsdk:"command"`
+	Comment types.String `tfsdk:"comment"`
+	Config  types.Object `tfsdk:"config"`
+}
+
+type OsqueryQueryModel struct {
+	Id         types.String `tfsdk:"id"`
+	Query      types.String `tfsdk:"query"`
+	Platform   types.String `tfsdk:"platform"`
+	Version    types.String `tfsdk:"version"`
+	Removed    types.Bool   `tfsdk:"removed"`
+	Snapshot   types.Bool   `tfsdk:"snapshot"`
+	EcsMapping types.Map    `tfsdk:"ecs_mapping"`
+}
+
+type EndpointProcessConfigModel struct {
+	Field     types.String `tfsdk:"field"`
+	Overwrite types.Bool   `tfsdk:"overwrite"`
+}
+
 type ExceptionsListModel struct {
 	Id            types.String `tfsdk:"id"`
 	ListId        types.String `tfsdk:"list_id"`
@@ -190,6 +229,7 @@ type SeverityMappingModel struct {
 // CommonCreateProps holds all the field pointers for setting common create properties
 type CommonCreateProps struct {
 	Actions                           **[]kbapi.SecurityDetectionsAPIRuleAction
+	ResponseActions                   **[]kbapi.SecurityDetectionsAPIResponseAction
 	RuleId                            **kbapi.SecurityDetectionsAPIRuleSignatureId
 	Enabled                           **kbapi.SecurityDetectionsAPIIsRuleEnabled
 	From                              **kbapi.SecurityDetectionsAPIRuleIntervalFrom
@@ -222,6 +262,7 @@ type CommonCreateProps struct {
 // CommonUpdateProps holds all the field pointers for setting common update properties
 type CommonUpdateProps struct {
 	Actions                           **[]kbapi.SecurityDetectionsAPIRuleAction
+	ResponseActions                   **[]kbapi.SecurityDetectionsAPIResponseAction
 	RuleId                            **kbapi.SecurityDetectionsAPIRuleSignatureId
 	Enabled                           **kbapi.SecurityDetectionsAPIIsRuleEnabled
 	From                              **kbapi.SecurityDetectionsAPIRuleIntervalFrom
@@ -316,6 +357,7 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &queryRule.Actions,
+		ResponseActions:                   &queryRule.ResponseActions,
 		RuleId:                            &queryRule.RuleId,
 		Enabled:                           &queryRule.Enabled,
 		From:                              &queryRule.From,
@@ -381,6 +423,7 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &eqlRule.Actions,
+		ResponseActions:                   &eqlRule.ResponseActions,
 		RuleId:                            &eqlRule.RuleId,
 		Enabled:                           &eqlRule.Enabled,
 		From:                              &eqlRule.From,
@@ -444,6 +487,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &esqlRule.Actions,
+		ResponseActions:                   &esqlRule.ResponseActions,
 		RuleId:                            &esqlRule.RuleId,
 		Enabled:                           &esqlRule.Enabled,
 		From:                              &esqlRule.From,
@@ -528,6 +572,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &mlRule.Actions,
+		ResponseActions:                   &mlRule.ResponseActions,
 		RuleId:                            &mlRule.RuleId,
 		Enabled:                           &mlRule.Enabled,
 		From:                              &mlRule.From,
@@ -595,6 +640,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &newTermsRule.Actions,
+		ResponseActions:                   &newTermsRule.ResponseActions,
 		RuleId:                            &newTermsRule.RuleId,
 		Enabled:                           &newTermsRule.Enabled,
 		From:                              &newTermsRule.From,
@@ -654,6 +700,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &savedQueryRule.Actions,
+		ResponseActions:                   &savedQueryRule.ResponseActions,
 		RuleId:                            &savedQueryRule.RuleId,
 		Enabled:                           &savedQueryRule.Enabled,
 		From:                              &savedQueryRule.From,
@@ -735,6 +782,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &threatMatchRule.Actions,
+		ResponseActions:                   &threatMatchRule.ResponseActions,
 		RuleId:                            &threatMatchRule.RuleId,
 		Enabled:                           &threatMatchRule.Enabled,
 		From:                              &threatMatchRule.From,
@@ -825,6 +873,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &thresholdRule.Actions,
+		ResponseActions:                   &thresholdRule.ResponseActions,
 		RuleId:                            &thresholdRule.RuleId,
 		Enabled:                           &thresholdRule.Enabled,
 		From:                              &thresholdRule.From,
@@ -1075,6 +1124,15 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 		}
 		diags.Append(investigationFieldsDiags...)
 	}
+
+	// Set response actions
+	if props.ResponseActions != nil && utils.IsKnown(d.ResponseActions) {
+		responseActions, responseActionsDiags := d.responseActionsToApi(ctx)
+		diags.Append(responseActionsDiags...)
+		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
+			*props.ResponseActions = &responseActions
+		}
+	}
 }
 
 func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
@@ -1145,6 +1203,7 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &queryRule.Actions,
+		ResponseActions:                   &queryRule.ResponseActions,
 		RuleId:                            &queryRule.RuleId,
 		Enabled:                           &queryRule.Enabled,
 		From:                              &queryRule.From,
@@ -2031,6 +2090,15 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		}
 		diags.Append(investigationFieldsDiags...)
 	}
+
+	// Set response actions
+	if props.ResponseActions != nil && utils.IsKnown(d.ResponseActions) {
+		responseActions, responseActionsDiags := d.responseActionsToApi(ctx)
+		diags.Append(responseActionsDiags...)
+		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
+			*props.ResponseActions = &responseActions
+		}
+	}
 }
 
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
@@ -2224,6 +2292,10 @@ func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rul
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update response actions
+	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	diags.Append(responseActionsDiags...)
+
 	return diags
 }
 
@@ -2387,6 +2459,10 @@ func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule 
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
+	// Update response actions
+	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	diags.Append(responseActionsDiags...)
+
 	return diags
 }
 
@@ -2534,6 +2610,10 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	// Update required fields
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
+
+	// Update response actions
+	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	diags.Append(responseActionsDiags...)
 
 	return diags
 }
@@ -2702,6 +2782,10 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
+	// Update response actions
+	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	diags.Append(responseActionsDiags...)
+
 	return diags
 }
 
@@ -2865,6 +2949,10 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	// Update required fields
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
+
+	// Update response actions
+	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	diags.Append(responseActionsDiags...)
 
 	return diags
 }
@@ -3030,6 +3118,10 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	// Update required fields
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
+
+	// Update response actions
+	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	diags.Append(responseActionsDiags...)
 
 	return diags
 }
@@ -3228,6 +3320,10 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
+	// Update response actions
+	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	diags.Append(responseActionsDiags...)
+
 	return diags
 }
 
@@ -3397,6 +3493,10 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	// Update required fields
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
+
+	// Update response actions
+	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	diags.Append(responseActionsDiags...)
 
 	return diags
 }
@@ -3641,6 +3741,265 @@ func convertThreatMappingToModel(ctx context.Context, apiThreatMappings kbapi.Se
 	return listValue, diags
 }
 
+// updateResponseActionsFromApi updates the ResponseActions field from API response
+func (d *SecurityDetectionRuleData) updateResponseActionsFromApi(ctx context.Context, responseActions *[]kbapi.SecurityDetectionsAPIResponseAction) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if responseActions != nil && len(*responseActions) > 0 {
+		responseActionsValue, responseActionsDiags := convertResponseActionsToModel(ctx, responseActions)
+		diags.Append(responseActionsDiags...)
+		if !responseActionsDiags.HasError() {
+			d.ResponseActions = responseActionsValue
+		}
+	} else {
+		d.ResponseActions = types.ListNull(responseActionElementType())
+	}
+
+	return diags
+}
+
+// convertResponseActionsToModel converts kbapi response actions array to the terraform model
+func convertResponseActionsToModel(ctx context.Context, apiResponseActions *[]kbapi.SecurityDetectionsAPIResponseAction) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if apiResponseActions == nil || len(*apiResponseActions) == 0 {
+		return types.ListNull(responseActionElementType()), diags
+	}
+
+	var responseActions []ResponseActionModel
+
+	for _, apiResponseAction := range *apiResponseActions {
+		var responseAction ResponseActionModel
+
+		// Use ValueByDiscriminator to get the concrete type
+		actionValue, err := apiResponseAction.ValueByDiscriminator()
+		if err != nil {
+			diags.AddError("Failed to get response action discriminator", fmt.Sprintf("Error: %s", err.Error()))
+			continue
+		}
+
+		switch concreteAction := actionValue.(type) {
+		case kbapi.SecurityDetectionsAPIOsqueryResponseAction:
+			convertedAction, convertDiags := convertOsqueryResponseActionToModel(ctx, concreteAction)
+			diags.Append(convertDiags...)
+			if !convertDiags.HasError() {
+				responseAction = convertedAction
+			}
+
+		case kbapi.SecurityDetectionsAPIEndpointResponseAction:
+			convertedAction, convertDiags := convertEndpointResponseActionToModel(ctx, concreteAction)
+			diags.Append(convertDiags...)
+			if !convertDiags.HasError() {
+				responseAction = convertedAction
+			}
+
+		default:
+			diags.AddError("Unknown response action type", fmt.Sprintf("Unsupported response action type: %T", concreteAction))
+			continue
+		}
+
+		responseActions = append(responseActions, responseAction)
+	}
+
+	listValue, listDiags := types.ListValueFrom(ctx, responseActionElementType(), responseActions)
+	if listDiags.HasError() {
+		diags.Append(listDiags...)
+	}
+
+	return listValue, diags
+}
+
+// convertOsqueryResponseActionToModel converts an Osquery response action to the terraform model
+func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbapi.SecurityDetectionsAPIOsqueryResponseAction) (ResponseActionModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var responseAction ResponseActionModel
+
+	responseAction.ActionTypeId = types.StringValue(string(osqueryAction.ActionTypeId))
+
+	// Convert osquery params
+	paramsModel := ResponseActionParamsModel{}
+	if osqueryAction.Params.Query != nil {
+		paramsModel.Query = types.StringPointerValue(osqueryAction.Params.Query)
+	} else {
+		paramsModel.Query = types.StringNull()
+	}
+	if osqueryAction.Params.PackId != nil {
+		paramsModel.PackId = types.StringPointerValue(osqueryAction.Params.PackId)
+	} else {
+		paramsModel.PackId = types.StringNull()
+	}
+	if osqueryAction.Params.SavedQueryId != nil {
+		paramsModel.SavedQueryId = types.StringPointerValue(osqueryAction.Params.SavedQueryId)
+	} else {
+		paramsModel.SavedQueryId = types.StringNull()
+	}
+	if osqueryAction.Params.Timeout != nil {
+		paramsModel.Timeout = types.Int64Value(int64(*osqueryAction.Params.Timeout))
+	} else {
+		paramsModel.Timeout = types.Int64Null()
+	}
+
+	// Convert ECS mapping
+	if osqueryAction.Params.EcsMapping != nil {
+		ecsMappingAttrs := make(map[string]attr.Value)
+		for key, value := range *osqueryAction.Params.EcsMapping {
+			if value.Field != nil {
+				ecsMappingAttrs[key] = types.StringPointerValue(value.Field)
+			} else {
+				ecsMappingAttrs[key] = types.StringNull()
+			}
+		}
+		ecsMappingValue, ecsDiags := types.MapValue(types.StringType, ecsMappingAttrs)
+		if ecsDiags.HasError() {
+			diags.Append(ecsDiags...)
+		} else {
+			paramsModel.EcsMapping = ecsMappingValue
+		}
+	} else {
+		paramsModel.EcsMapping = types.MapNull(types.StringType)
+	}
+
+	// Convert queries array
+	if osqueryAction.Params.Queries != nil {
+		var queries []OsqueryQueryModel
+		for _, apiQuery := range *osqueryAction.Params.Queries {
+			query := OsqueryQueryModel{
+				Id:    types.StringValue(apiQuery.Id),
+				Query: types.StringValue(apiQuery.Query),
+			}
+			if apiQuery.Platform != nil {
+				query.Platform = types.StringPointerValue(apiQuery.Platform)
+			} else {
+				query.Platform = types.StringNull()
+			}
+			if apiQuery.Version != nil {
+				query.Version = types.StringPointerValue(apiQuery.Version)
+			} else {
+				query.Version = types.StringNull()
+			}
+			if apiQuery.Removed != nil {
+				query.Removed = types.BoolPointerValue(apiQuery.Removed)
+			} else {
+				query.Removed = types.BoolNull()
+			}
+			if apiQuery.Snapshot != nil {
+				query.Snapshot = types.BoolPointerValue(apiQuery.Snapshot)
+			} else {
+				query.Snapshot = types.BoolNull()
+			}
+
+			// Convert query ECS mapping
+			if apiQuery.EcsMapping != nil {
+				queryEcsMappingAttrs := make(map[string]attr.Value)
+				for key, value := range *apiQuery.EcsMapping {
+					if value.Field != nil {
+						queryEcsMappingAttrs[key] = types.StringPointerValue(value.Field)
+					} else {
+						queryEcsMappingAttrs[key] = types.StringNull()
+					}
+				}
+				queryEcsMappingValue, queryEcsDiags := types.MapValue(types.StringType, queryEcsMappingAttrs)
+				if queryEcsDiags.HasError() {
+					diags.Append(queryEcsDiags...)
+				} else {
+					query.EcsMapping = queryEcsMappingValue
+				}
+			} else {
+				query.EcsMapping = types.MapNull(types.StringType)
+			}
+
+			queries = append(queries, query)
+		}
+
+		queriesListValue, queriesDiags := types.ListValueFrom(ctx, osqueryQueryElementType(), queries)
+		if queriesDiags.HasError() {
+			diags.Append(queriesDiags...)
+		} else {
+			paramsModel.Queries = queriesListValue
+		}
+	} else {
+		paramsModel.Queries = types.ListNull(osqueryQueryElementType())
+	}
+
+	// Set remaining fields to null since this is osquery
+	paramsModel.Command = types.StringNull()
+	paramsModel.Comment = types.StringNull()
+	paramsModel.Config = types.ObjectNull(endpointProcessConfigElementType().AttrTypes)
+
+	paramsObjectValue, paramsDiags := types.ObjectValueFrom(ctx, responseActionParamsElementType().AttrTypes, paramsModel)
+	if paramsDiags.HasError() {
+		diags.Append(paramsDiags...)
+	} else {
+		responseAction.Params = paramsObjectValue
+	}
+
+	return responseAction, diags
+}
+
+// convertEndpointResponseActionToModel converts an Endpoint response action to the terraform model
+func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kbapi.SecurityDetectionsAPIEndpointResponseAction) (ResponseActionModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var responseAction ResponseActionModel
+
+	responseAction.ActionTypeId = types.StringValue(string(endpointAction.ActionTypeId))
+
+	// Convert endpoint params
+	paramsModel := ResponseActionParamsModel{}
+
+	// TODO use discriminator
+	if processesParams, err := endpointAction.Params.AsSecurityDetectionsAPIProcessesParams(); err == nil && processesParams.Config.Field != "" {
+		paramsModel.Command = types.StringValue(string(processesParams.Command))
+		if processesParams.Comment != nil {
+			paramsModel.Comment = types.StringPointerValue(processesParams.Comment)
+		} else {
+			paramsModel.Comment = types.StringNull()
+		}
+
+		// Convert config
+		configModel := EndpointProcessConfigModel{
+			Field: types.StringValue(processesParams.Config.Field),
+		}
+		if processesParams.Config.Overwrite != nil {
+			configModel.Overwrite = types.BoolPointerValue(processesParams.Config.Overwrite)
+		} else {
+			configModel.Overwrite = types.BoolNull()
+		}
+
+		configObjectValue, configDiags := types.ObjectValueFrom(ctx, endpointProcessConfigElementType().AttrTypes, configModel)
+		if configDiags.HasError() {
+			diags.Append(configDiags...)
+		} else {
+			paramsModel.Config = configObjectValue
+		}
+	} else if defaultParams, err := endpointAction.Params.AsSecurityDetectionsAPIDefaultParams(); err == nil {
+		paramsModel.Command = types.StringValue(string(defaultParams.Command))
+		if defaultParams.Comment != nil {
+			paramsModel.Comment = types.StringPointerValue(defaultParams.Comment)
+		} else {
+			paramsModel.Comment = types.StringNull()
+		}
+		paramsModel.Config = types.ObjectNull(endpointProcessConfigElementType().AttrTypes)
+
+	}
+
+	// Set osquery fields to null since this is endpoint
+	paramsModel.Query = types.StringNull()
+	paramsModel.PackId = types.StringNull()
+	paramsModel.SavedQueryId = types.StringNull()
+	paramsModel.Timeout = types.Int64Null()
+	paramsModel.EcsMapping = types.MapNull(types.StringType)
+	paramsModel.Queries = types.ListNull(osqueryQueryElementType())
+
+	paramsObjectValue, paramsDiags := types.ObjectValueFrom(ctx, responseActionParamsElementType().AttrTypes, paramsModel)
+	if paramsDiags.HasError() {
+		diags.Append(paramsDiags...)
+	} else {
+		responseAction.Params = paramsObjectValue
+	}
+
+	return responseAction, diags
+}
+
 // convertThresholdToModel converts kbapi.SecurityDetectionsAPIThreshold to the terraform model
 func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDetectionsAPIThreshold) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -3728,6 +4087,60 @@ func cardinalityElementType() attr.Type {
 		AttrTypes: map[string]attr.Type{
 			"field": types.StringType,
 			"value": types.Int64Type,
+		},
+	}
+}
+
+// responseActionElementType returns the element type for response actions
+func responseActionElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"action_type_id": types.StringType,
+			"params":         types.ObjectType{AttrTypes: responseActionParamsElementType().AttrTypes},
+		},
+	}
+}
+
+// responseActionParamsElementType returns the element type for response action params
+func responseActionParamsElementType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			// Osquery params
+			"query":          types.StringType,
+			"pack_id":        types.StringType,
+			"saved_query_id": types.StringType,
+			"timeout":        types.Int64Type,
+			"ecs_mapping":    types.MapType{ElemType: types.StringType},
+			"queries":        types.ListType{ElemType: osqueryQueryElementType()},
+			// Endpoint params
+			"command": types.StringType,
+			"comment": types.StringType,
+			"config":  types.ObjectType{AttrTypes: endpointProcessConfigElementType().AttrTypes},
+		},
+	}
+}
+
+// osqueryQueryElementType returns the element type for osquery queries
+func osqueryQueryElementType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":          types.StringType,
+			"query":       types.StringType,
+			"platform":    types.StringType,
+			"version":     types.StringType,
+			"removed":     types.BoolType,
+			"snapshot":    types.BoolType,
+			"ecs_mapping": types.MapType{ElemType: types.StringType},
+		},
+	}
+}
+
+// endpointProcessConfigElementType returns the element type for endpoint process config
+func endpointProcessConfigElementType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"field":     types.StringType,
+			"overwrite": types.BoolType,
 		},
 	}
 }
@@ -3833,6 +4246,237 @@ func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbap
 	}
 
 	return apiThreatMapping, diags
+}
+
+// Helper function to process response actions configuration for all rule types
+func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context) ([]kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(d.ResponseActions) || len(d.ResponseActions.Elements()) == 0 {
+		return nil, diags
+	}
+
+	apiResponseActions := utils.ListTypeToSlice(ctx, d.ResponseActions, path.Root("response_actions"), &diags,
+		func(responseAction ResponseActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIResponseAction {
+			if responseAction.ActionTypeId.IsNull() {
+				return kbapi.SecurityDetectionsAPIResponseAction{}
+			}
+
+			actionTypeId := responseAction.ActionTypeId.ValueString()
+
+			// Extract params using ObjectTypeToStruct
+			if responseAction.Params.IsNull() || responseAction.Params.IsUnknown() {
+				return kbapi.SecurityDetectionsAPIResponseAction{}
+			}
+
+			params := utils.ObjectTypeToStruct(ctx, responseAction.Params, meta.Path.AtName("params"), &diags,
+				func(item ResponseActionParamsModel, meta utils.ObjectMeta) ResponseActionParamsModel {
+					return item
+				})
+
+			if params == nil {
+				return kbapi.SecurityDetectionsAPIResponseAction{}
+			}
+
+			switch actionTypeId {
+			case ".osquery":
+				apiAction, actionDiags := d.buildOsqueryResponseAction(ctx, *params)
+				diags.Append(actionDiags...)
+				return apiAction
+
+			case ".endpoint":
+				apiAction, actionDiags := d.buildEndpointResponseAction(ctx, *params)
+				diags.Append(actionDiags...)
+				return apiAction
+
+			default:
+				diags.AddError(
+					"Unsupported action_type_id in response actions",
+					fmt.Sprintf("action_type_id '%s' is not supported", actionTypeId),
+				)
+				return kbapi.SecurityDetectionsAPIResponseAction{}
+			}
+		})
+
+	return apiResponseActions, diags
+}
+
+// buildOsqueryResponseAction creates an Osquery response action from the terraform model
+func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Context, params ResponseActionParamsModel) (kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	osqueryAction := kbapi.SecurityDetectionsAPIOsqueryResponseAction{
+		ActionTypeId: kbapi.SecurityDetectionsAPIOsqueryResponseActionActionTypeId(".osquery"),
+		Params:       kbapi.SecurityDetectionsAPIOsqueryParams{},
+	}
+
+	// Set osquery-specific params
+	if utils.IsKnown(params.Query) {
+		osqueryAction.Params.Query = params.Query.ValueStringPointer()
+	}
+	if utils.IsKnown(params.PackId) {
+		osqueryAction.Params.PackId = params.PackId.ValueStringPointer()
+	}
+	if utils.IsKnown(params.SavedQueryId) {
+		osqueryAction.Params.SavedQueryId = params.SavedQueryId.ValueStringPointer()
+	}
+	if utils.IsKnown(params.Timeout) {
+		timeout := float32(params.Timeout.ValueInt64())
+		osqueryAction.Params.Timeout = &timeout
+	}
+	if utils.IsKnown(params.EcsMapping) && !params.EcsMapping.IsNull() {
+
+		// Convert map to ECS mapping structure
+		ecsMappingElems := make(map[string]basetypes.StringValue)
+		elemDiags := params.EcsMapping.ElementsAs(ctx, &ecsMappingElems, false)
+		if !elemDiags.HasError() {
+			ecsMapping := make(kbapi.SecurityDetectionsAPIEcsMapping)
+			for key, value := range ecsMappingElems {
+				if stringVal := value; utils.IsKnown(value) {
+					ecsMapping[key] = struct {
+						Field *string                                      `json:"field,omitempty"`
+						Value *kbapi.SecurityDetectionsAPIEcsMapping_Value `json:"value,omitempty"`
+					}{
+						Field: stringVal.ValueStringPointer(),
+					}
+				}
+			}
+			osqueryAction.Params.EcsMapping = &ecsMapping
+		} else {
+			diags.Append(elemDiags...)
+		}
+	}
+	if utils.IsKnown(params.Queries) && !params.Queries.IsNull() {
+		queries := make([]OsqueryQueryModel, len(params.Queries.Elements()))
+		queriesDiags := params.Queries.ElementsAs(ctx, &queries, false)
+		if !queriesDiags.HasError() {
+			apiQueries := make([]kbapi.SecurityDetectionsAPIOsqueryQuery, 0)
+			for _, query := range queries {
+				apiQuery := kbapi.SecurityDetectionsAPIOsqueryQuery{
+					Id:    query.Id.ValueString(),
+					Query: query.Query.ValueString(),
+				}
+				if utils.IsKnown(query.Platform) {
+					apiQuery.Platform = query.Platform.ValueStringPointer()
+				}
+				if utils.IsKnown(query.Version) {
+					apiQuery.Version = query.Version.ValueStringPointer()
+				}
+				if utils.IsKnown(query.Removed) {
+					apiQuery.Removed = query.Removed.ValueBoolPointer()
+				}
+				if utils.IsKnown(query.Snapshot) {
+					apiQuery.Snapshot = query.Snapshot.ValueBoolPointer()
+				}
+				if utils.IsKnown(query.EcsMapping) && !query.EcsMapping.IsNull() {
+					// Convert map to ECS mapping structure for queries
+					queryEcsMappingElems := make(map[string]basetypes.StringValue)
+					queryElemDiags := query.EcsMapping.ElementsAs(ctx, &queryEcsMappingElems, false)
+					if !queryElemDiags.HasError() {
+						queryEcsMapping := make(kbapi.SecurityDetectionsAPIEcsMapping)
+						for key, value := range queryEcsMappingElems {
+							if stringVal := value; utils.IsKnown(value) {
+								queryEcsMapping[key] = struct {
+									Field *string                                      `json:"field,omitempty"`
+									Value *kbapi.SecurityDetectionsAPIEcsMapping_Value `json:"value,omitempty"`
+								}{
+									Field: stringVal.ValueStringPointer(),
+								}
+							}
+						}
+						apiQuery.EcsMapping = &queryEcsMapping
+					}
+				}
+				apiQueries = append(apiQueries, apiQuery)
+			}
+			osqueryAction.Params.Queries = &apiQueries
+		} else {
+			diags = append(diags, queriesDiags...)
+		}
+	}
+
+	var apiResponseAction kbapi.SecurityDetectionsAPIResponseAction
+	err := apiResponseAction.FromSecurityDetectionsAPIOsqueryResponseAction(osqueryAction)
+	if err != nil {
+		diags.AddError("Error converting osquery response action", err.Error())
+	}
+
+	return apiResponseAction, diags
+}
+
+// buildEndpointResponseAction creates an Endpoint response action from the terraform model
+func (d SecurityDetectionRuleData) buildEndpointResponseAction(ctx context.Context, params ResponseActionParamsModel) (kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	endpointAction := kbapi.SecurityDetectionsAPIEndpointResponseAction{
+		ActionTypeId: kbapi.SecurityDetectionsAPIEndpointResponseActionActionTypeId(".endpoint"),
+	}
+
+	// Determine the type of endpoint action based on the command
+	if utils.IsKnown(params.Command) {
+		command := params.Command.ValueString()
+		switch command {
+		case "isolate":
+			// Use DefaultParams for isolate command
+			defaultParams := kbapi.SecurityDetectionsAPIDefaultParams{
+				Command: kbapi.SecurityDetectionsAPIDefaultParamsCommand("isolate"),
+			}
+			if utils.IsKnown(params.Comment) {
+				defaultParams.Comment = params.Comment.ValueStringPointer()
+			}
+			err := endpointAction.Params.FromSecurityDetectionsAPIDefaultParams(defaultParams)
+			if err != nil {
+				diags.AddError("Error setting endpoint default params", err.Error())
+				return kbapi.SecurityDetectionsAPIResponseAction{}, diags
+			}
+
+		case "kill-process", "suspend-process":
+			// Use ProcessesParams for process commands
+			processesParams := kbapi.SecurityDetectionsAPIProcessesParams{
+				Command: kbapi.SecurityDetectionsAPIProcessesParamsCommand(command),
+			}
+			if utils.IsKnown(params.Comment) {
+				processesParams.Comment = params.Comment.ValueStringPointer()
+			}
+
+			// Set config if provided
+			if !params.Config.IsNull() && !params.Config.IsUnknown() {
+				config := utils.ObjectTypeToStruct(ctx, params.Config, path.Root("response_actions").AtName("params").AtName("config"), &diags,
+					func(item EndpointProcessConfigModel, meta utils.ObjectMeta) EndpointProcessConfigModel {
+						return item
+					})
+
+				processesParams.Config = struct {
+					Field     string `json:"field"`
+					Overwrite *bool  `json:"overwrite,omitempty"`
+				}{
+					Field: config.Field.ValueString(),
+				}
+				if utils.IsKnown(config.Overwrite) {
+					processesParams.Config.Overwrite = config.Overwrite.ValueBoolPointer()
+				}
+			}
+
+			err := endpointAction.Params.FromSecurityDetectionsAPIProcessesParams(processesParams)
+			if err != nil {
+				diags.AddError("Error setting endpoint processes params", err.Error())
+				return kbapi.SecurityDetectionsAPIResponseAction{}, diags
+			}
+		default:
+			diags.AddError(
+				"Unsupported params type",
+				fmt.Sprintf("Params type '%s' is not supported", params.Command.ValueString()),
+			)
+		}
+	}
+
+	var apiResponseAction kbapi.SecurityDetectionsAPIResponseAction
+	err := apiResponseAction.FromSecurityDetectionsAPIEndpointResponseAction(endpointAction)
+	if err != nil {
+		diags.AddError("Error converting endpoint response action", err.Error())
+	}
+
+	return apiResponseAction, diags
 }
 
 // Helper function to process actions configuration for all rule types
