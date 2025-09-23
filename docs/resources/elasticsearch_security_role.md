@@ -55,21 +55,21 @@ output "role" {
 
 ### Optional
 
-- `applications` (Block Set) A list of application privilege entries. (see [below for nested schema](#nestedblock--applications))
+- `applications` (Attributes Set) A list of application privilege entries. (see [below for nested schema](#nestedatt--applications))
 - `cluster` (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
 - `description` (String) The description of the role.
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `global` (String) An object defining global privileges.
-- `indices` (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
+- `indices` (Attributes Set) A list of indices permissions entries. (see [below for nested schema](#nestedatt--indices))
 - `metadata` (String) Optional meta-data.
-- `remote_indices` (Block Set) A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedblock--remote_indices))
+- `remote_indices` (Attributes Set) A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedatt--remote_indices))
 - `run_as` (Set of String) A list of users that the owners of this role can impersonate.
 
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource
 
-<a id="nestedblock--applications"></a>
+<a id="nestedatt--applications"></a>
 ### Nested Schema for `applications`
 
 Required:
@@ -100,7 +100,7 @@ Optional:
 - `username` (String) Username to use for API authentication to Elasticsearch.
 
 
-<a id="nestedblock--indices"></a>
+<a id="nestedatt--indices"></a>
 ### Nested Schema for `indices`
 
 Required:
@@ -111,10 +111,10 @@ Required:
 Optional:
 
 - `allow_restricted_indices` (Boolean) Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.
-- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--indices--field_security))
+- `field_security` (Attributes List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--indices--field_security))
 - `query` (String) A search query that defines the documents the owners of the role have read access to.
 
-<a id="nestedblock--indices--field_security"></a>
+<a id="nestedatt--indices--field_security"></a>
 ### Nested Schema for `indices.field_security`
 
 Optional:
@@ -124,7 +124,7 @@ Optional:
 
 
 
-<a id="nestedblock--remote_indices"></a>
+<a id="nestedatt--remote_indices"></a>
 ### Nested Schema for `remote_indices`
 
 Required:
@@ -135,10 +135,10 @@ Required:
 
 Optional:
 
-- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--remote_indices--field_security))
+- `field_security` (Attributes List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--remote_indices--field_security))
 - `query` (String) A search query that defines the documents the owners of the role have read access to.
 
-<a id="nestedblock--remote_indices--field_security"></a>
+<a id="nestedatt--remote_indices--field_security"></a>
 ### Nested Schema for `remote_indices.field_security`
 
 Optional:

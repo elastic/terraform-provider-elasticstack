@@ -211,17 +211,17 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 			}
 
 			indexObj, diags := types.ObjectValue(map[string]attr.Type{
-				"field_security":            types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{"grant": types.SetType{ElemType: types.StringType}, "except": types.SetType{ElemType: types.StringType}}}},
-				"names":                     types.SetType{ElemType: types.StringType},
-				"privileges":                types.SetType{ElemType: types.StringType},
-				"query":                     types.StringType,
-				"allow_restricted_indices":  types.BoolType,
+				"field_security":           types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{"grant": types.SetType{ElemType: types.StringType}, "except": types.SetType{ElemType: types.StringType}}}},
+				"names":                    types.SetType{ElemType: types.StringType},
+				"privileges":               types.SetType{ElemType: types.StringType},
+				"query":                    types.StringType,
+				"allow_restricted_indices": types.BoolType,
 			}, map[string]attr.Value{
-				"field_security":            fieldSecList,
-				"names":                     namesSet,
-				"privileges":                privSet,
-				"query":                     queryVal,
-				"allow_restricted_indices":  allowRestrictedVal,
+				"field_security":           fieldSecList,
+				"names":                    namesSet,
+				"privileges":               privSet,
+				"query":                    queryVal,
+				"allow_restricted_indices": allowRestrictedVal,
 			})
 			resp.Diagnostics.Append(diags...)
 			if resp.Diagnostics.HasError() {
@@ -233,11 +233,11 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 		indicesSet, diags := types.SetValue(types.ObjectType{
 			AttrTypes: map[string]attr.Type{
-				"field_security":            types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{"grant": types.SetType{ElemType: types.StringType}, "except": types.SetType{ElemType: types.StringType}}}},
-				"names":                     types.SetType{ElemType: types.StringType},
-				"privileges":                types.SetType{ElemType: types.StringType},
-				"query":                     types.StringType,
-				"allow_restricted_indices":  types.BoolType,
+				"field_security":           types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{"grant": types.SetType{ElemType: types.StringType}, "except": types.SetType{ElemType: types.StringType}}}},
+				"names":                    types.SetType{ElemType: types.StringType},
+				"privileges":               types.SetType{ElemType: types.StringType},
+				"query":                    types.StringType,
+				"allow_restricted_indices": types.BoolType,
 			},
 		}, indicesElements)
 		resp.Diagnostics.Append(diags...)
@@ -248,11 +248,11 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	} else {
 		data.Indices = types.SetNull(types.ObjectType{
 			AttrTypes: map[string]attr.Type{
-				"field_security":            types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{"grant": types.SetType{ElemType: types.StringType}, "except": types.SetType{ElemType: types.StringType}}}},
-				"names":                     types.SetType{ElemType: types.StringType},
-				"privileges":                types.SetType{ElemType: types.StringType},
-				"query":                     types.StringType,
-				"allow_restricted_indices":  types.BoolType,
+				"field_security":           types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{"grant": types.SetType{ElemType: types.StringType}, "except": types.SetType{ElemType: types.StringType}}}},
+				"names":                    types.SetType{ElemType: types.StringType},
+				"privileges":               types.SetType{ElemType: types.StringType},
+				"query":                    types.StringType,
+				"allow_restricted_indices": types.BoolType,
 			},
 		})
 	}

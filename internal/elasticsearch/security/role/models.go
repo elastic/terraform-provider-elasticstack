@@ -25,11 +25,11 @@ type ApplicationData struct {
 }
 
 type IndexPermsData struct {
-	FieldSecurity           types.List `tfsdk:"field_security"`
-	Names                   types.Set  `tfsdk:"names"`
-	Privileges              types.Set  `tfsdk:"privileges"`
-	Query                   types.String `tfsdk:"query"`
-	AllowRestrictedIndices  types.Bool `tfsdk:"allow_restricted_indices"`
+	FieldSecurity          types.List   `tfsdk:"field_security"`
+	Names                  types.Set    `tfsdk:"names"`
+	Privileges             types.Set    `tfsdk:"privileges"`
+	Query                  types.String `tfsdk:"query"`
+	AllowRestrictedIndices types.Bool   `tfsdk:"allow_restricted_indices"`
 }
 
 type RemoteIndexPermsData struct {
