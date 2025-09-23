@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -294,6 +295,11 @@ func GetSchema() schema.Schema {
 				ElementType:         types.StringType,
 				MarkdownDescription: "Array of field names to include in alert investigation. Available for all rule types.",
 				Optional:            true,
+			},
+			"meta": schema.StringAttribute{
+				MarkdownDescription: "Metadata object for the rule as JSON. Supports all JSON types (string, number, boolean, object, array). Note: This field gets overwritten when saving changes through the Kibana UI. Available for all rule types.",
+				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"note": schema.StringAttribute{
 				MarkdownDescription: "Notes to help investigate alerts produced by the rule.",

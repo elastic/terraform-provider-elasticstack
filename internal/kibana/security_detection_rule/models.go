@@ -2,12 +2,14 @@ package security_detection_rule
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -116,6 +118,9 @@ type SecurityDetectionRuleData struct {
 
 	// Investigation fields (common across all rule types)
 	InvestigationFields types.List `tfsdk:"investigation_fields"`
+
+	// Meta field (common across all rule types) - Metadata object for the rule (gets overwritten when saving changes)
+	Meta jsontypes.Normalized `tfsdk:"meta"`
 }
 type SecurityDetectionRuleTfData struct {
 	ThreatMapping types.List `tfsdk:"threat_mapping"`
@@ -257,6 +262,7 @@ type CommonCreateProps struct {
 	TimestampOverride                 **kbapi.SecurityDetectionsAPITimestampOverride
 	TimestampOverrideFallbackDisabled **kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
 	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
+	Meta                              **kbapi.SecurityDetectionsAPIRuleMetadata
 }
 
 // CommonUpdateProps holds all the field pointers for setting common update properties
@@ -290,6 +296,7 @@ type CommonUpdateProps struct {
 	TimestampOverride                 **kbapi.SecurityDetectionsAPITimestampOverride
 	TimestampOverrideFallbackDisabled **kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
 	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
+	Meta                              **kbapi.SecurityDetectionsAPIRuleMetadata
 }
 
 func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -385,6 +392,7 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 		TimestampOverride:                 &queryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &queryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &queryRule.InvestigationFields,
+		Meta:                              &queryRule.Meta,
 	}, &diags)
 
 	// Set query-specific fields
@@ -451,6 +459,7 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 		TimestampOverride:                 &eqlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &eqlRule.InvestigationFields,
+		Meta:                              &eqlRule.Meta,
 	}, &diags)
 
 	// Set EQL-specific fields
@@ -515,6 +524,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 		TimestampOverride:                 &esqlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &esqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &esqlRule.InvestigationFields,
+		Meta:                              &esqlRule.Meta,
 	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -600,6 +610,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		TimestampOverride:                 &mlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &mlRule.InvestigationFields,
+		Meta:                              &mlRule.Meta,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -668,6 +679,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		TimestampOverride:                 &newTermsRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &newTermsRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &newTermsRule.InvestigationFields,
+		Meta:                              &newTermsRule.Meta,
 	}, &diags)
 
 	// Set query language
@@ -728,6 +740,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		TimestampOverride:                 &savedQueryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &savedQueryRule.InvestigationFields,
+		Meta:                              &savedQueryRule.Meta,
 	}, &diags)
 
 	// Set optional query for saved query rules
@@ -810,6 +823,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		TimestampOverride:                 &threatMatchRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &threatMatchRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &threatMatchRule.InvestigationFields,
+		Meta:                              &threatMatchRule.Meta,
 	}, &diags)
 
 	// Set threat-specific fields
@@ -901,6 +915,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		TimestampOverride:                 &thresholdRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &thresholdRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &thresholdRule.InvestigationFields,
+		Meta:                              &thresholdRule.Meta,
 	}, &diags)
 
 	// Set query language
@@ -1133,6 +1148,15 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 			*props.ResponseActions = &responseActions
 		}
 	}
+
+	// Set meta
+	if props.Meta != nil && utils.IsKnown(d.Meta) {
+		meta, metaDiags := d.metaToApi(ctx)
+		diags.Append(metaDiags...)
+		if !metaDiags.HasError() && meta != nil {
+			*props.Meta = meta
+		}
+	}
 }
 
 func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
@@ -1231,6 +1255,7 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 		TimestampOverride:                 &queryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &queryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &queryRule.InvestigationFields,
+		Meta:                              &queryRule.Meta,
 	}, &diags)
 
 	// Set query-specific fields
@@ -1315,6 +1340,7 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kb
 		TimestampOverride:                 &eqlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &eqlRule.InvestigationFields,
+		Meta:                              &eqlRule.Meta,
 	}, &diags)
 
 	// Set EQL-specific fields
@@ -1397,6 +1423,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (k
 		TimestampOverride:                 &esqlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &esqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &esqlRule.InvestigationFields,
+		Meta:                              &esqlRule.Meta,
 	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -1500,6 +1527,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		TimestampOverride:                 &mlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &mlRule.InvestigationFields,
+		Meta:                              &mlRule.Meta,
 	}, &diags)
 
 	// ML rules don't use index patterns or query
@@ -1572,6 +1600,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		License:                           &newTermsRule.License,
 		Note:                              &newTermsRule.Note,
 		InvestigationFields:               &newTermsRule.InvestigationFields,
+		Meta:                              &newTermsRule.Meta,
 		Setup:                             &newTermsRule.Setup,
 		MaxSignals:                        &newTermsRule.MaxSignals,
 		Version:                           &newTermsRule.Version,
@@ -1650,6 +1679,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		License:                           &savedQueryRule.License,
 		Note:                              &savedQueryRule.Note,
 		InvestigationFields:               &savedQueryRule.InvestigationFields,
+		Meta:                              &savedQueryRule.Meta,
 		Setup:                             &savedQueryRule.Setup,
 		MaxSignals:                        &savedQueryRule.MaxSignals,
 		Version:                           &savedQueryRule.Version,
@@ -1750,6 +1780,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		License:                           &threatMatchRule.License,
 		Note:                              &threatMatchRule.Note,
 		InvestigationFields:               &threatMatchRule.InvestigationFields,
+		Meta:                              &threatMatchRule.Meta,
 		Setup:                             &threatMatchRule.Setup,
 		MaxSignals:                        &threatMatchRule.MaxSignals,
 		Version:                           &threatMatchRule.Version,
@@ -1859,6 +1890,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		License:                           &thresholdRule.License,
 		Note:                              &thresholdRule.Note,
 		InvestigationFields:               &thresholdRule.InvestigationFields,
+		Meta:                              &thresholdRule.Meta,
 		Setup:                             &thresholdRule.Setup,
 		MaxSignals:                        &thresholdRule.MaxSignals,
 		Version:                           &thresholdRule.Version,
@@ -2099,6 +2131,15 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 			*props.ResponseActions = &responseActions
 		}
 	}
+
+	// Set meta
+	if props.Meta != nil && utils.IsKnown(d.Meta) {
+		meta, metaDiags := d.metaToApi(ctx)
+		diags.Append(metaDiags...)
+		if !metaDiags.HasError() && meta != nil {
+			*props.Meta = meta
+		}
+	}
 }
 
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
@@ -2292,6 +2333,10 @@ func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rul
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update meta field
+	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
+	diags.Append(metaDiags...)
+
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
@@ -2447,6 +2492,10 @@ func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule 
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update meta field
+	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
+	diags.Append(metaDiags...)
+
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
 	diags.Append(severityMappingDiags...)
@@ -2598,6 +2647,10 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update meta field
+	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
+	diags.Append(metaDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
@@ -2770,6 +2823,10 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update meta field
+	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
+	diags.Append(metaDiags...)
+
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
 	diags.Append(severityMappingDiags...)
@@ -2937,6 +2994,10 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update meta field
+	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
+	diags.Append(metaDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
@@ -3106,6 +3167,10 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update meta field
+	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
+	diags.Append(metaDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
@@ -3308,6 +3373,10 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
+	// Update meta field
+	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
+	diags.Append(metaDiags...)
+
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
 	diags.Append(severityMappingDiags...)
@@ -3481,6 +3550,10 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update meta field
+	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
+	diags.Append(metaDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
@@ -5226,7 +5299,46 @@ func (d SecurityDetectionRuleData) severityMappingToApi(ctx context.Context) (*k
 	return &severityMappingSlice, diags
 }
 
-// convertSeverityMappingToModel converts kbapi.SecurityDetectionsAPISeverityMapping to Terraform model
+// metaToApi converts the Terraform meta field to the API type
+func (d SecurityDetectionRuleData) metaToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPIRuleMetadata, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(d.Meta) {
+		return nil, diags
+	}
+
+	// Unmarshal the JSON string to map[string]interface{}
+	var metadata kbapi.SecurityDetectionsAPIRuleMetadata
+	unmarshalDiags := d.Meta.Unmarshal(&metadata)
+	diags.Append(unmarshalDiags...)
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return &metadata, diags
+}
+
+// convertMetaFromApi converts the API meta field back to the Terraform type
+func (d *SecurityDetectionRuleData) updateMetaFromApi(ctx context.Context, apiMeta *kbapi.SecurityDetectionsAPIRuleMetadata) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if apiMeta == nil || len(*apiMeta) == 0 {
+		d.Meta = jsontypes.NewNormalizedNull()
+		return diags
+	}
+
+	// Marshal the map[string]interface{} to JSON string
+	jsonBytes, err := json.Marshal(*apiMeta)
+	if err != nil {
+		diags.AddError("Failed to marshal metadata", err.Error())
+		return diags
+	}
+
+	// Create a NormalizedValue from the JSON string
+	d.Meta = jsontypes.NewNormalizedValue(string(jsonBytes))
+	return diags
+} // convertSeverityMappingToModel converts kbapi.SecurityDetectionsAPISeverityMapping to Terraform model
 func convertSeverityMappingToModel(ctx context.Context, apiSeverityMapping *kbapi.SecurityDetectionsAPISeverityMapping) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
