@@ -3946,40 +3946,54 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 	// Convert endpoint params
 	paramsModel := ResponseActionParamsModel{}
 
-	// TODO use discriminator
-	if processesParams, err := endpointAction.Params.AsSecurityDetectionsAPIProcessesParams(); err == nil && processesParams.Config.Field != "" {
-		paramsModel.Command = types.StringValue(string(processesParams.Command))
-		if processesParams.Comment != nil {
-			paramsModel.Comment = types.StringPointerValue(processesParams.Comment)
-		} else {
-			paramsModel.Comment = types.StringNull()
-		}
+	commandParams, err := endpointAction.Params.AsSecurityDetectionsAPIDefaultParams()
+	if err == nil {
+		switch commandParams.Command {
+		case "isolate":
+			defaultParams, err := endpointAction.Params.AsSecurityDetectionsAPIDefaultParams()
+			if err != nil {
+				diags.AddError("Failed to parse endpoint default params", fmt.Sprintf("Error: %s", err.Error()))
+			} else {
+				paramsModel.Command = types.StringValue(string(defaultParams.Command))
+				if defaultParams.Comment != nil {
+					paramsModel.Comment = types.StringPointerValue(defaultParams.Comment)
+				} else {
+					paramsModel.Comment = types.StringNull()
+				}
+				paramsModel.Config = types.ObjectNull(endpointProcessConfigElementType().AttrTypes)
+			}
+		case "kill-process", "suspend-process":
+			processesParams, err := endpointAction.Params.AsSecurityDetectionsAPIProcessesParams()
+			if err != nil {
+				diags.AddError("Failed to parse endpoint processes params", fmt.Sprintf("Error: %s", err.Error()))
+			} else {
+				paramsModel.Command = types.StringValue(string(processesParams.Command))
+				if processesParams.Comment != nil {
+					paramsModel.Comment = types.StringPointerValue(processesParams.Comment)
+				} else {
+					paramsModel.Comment = types.StringNull()
+				}
 
-		// Convert config
-		configModel := EndpointProcessConfigModel{
-			Field: types.StringValue(processesParams.Config.Field),
-		}
-		if processesParams.Config.Overwrite != nil {
-			configModel.Overwrite = types.BoolPointerValue(processesParams.Config.Overwrite)
-		} else {
-			configModel.Overwrite = types.BoolNull()
-		}
+				// Convert config
+				configModel := EndpointProcessConfigModel{
+					Field: types.StringValue(processesParams.Config.Field),
+				}
+				if processesParams.Config.Overwrite != nil {
+					configModel.Overwrite = types.BoolPointerValue(processesParams.Config.Overwrite)
+				} else {
+					configModel.Overwrite = types.BoolNull()
+				}
 
-		configObjectValue, configDiags := types.ObjectValueFrom(ctx, endpointProcessConfigElementType().AttrTypes, configModel)
-		if configDiags.HasError() {
-			diags.Append(configDiags...)
-		} else {
-			paramsModel.Config = configObjectValue
+				configObjectValue, configDiags := types.ObjectValueFrom(ctx, endpointProcessConfigElementType().AttrTypes, configModel)
+				if configDiags.HasError() {
+					diags.Append(configDiags...)
+				} else {
+					paramsModel.Config = configObjectValue
+				}
+			}
 		}
-	} else if defaultParams, err := endpointAction.Params.AsSecurityDetectionsAPIDefaultParams(); err == nil {
-		paramsModel.Command = types.StringValue(string(defaultParams.Command))
-		if defaultParams.Comment != nil {
-			paramsModel.Comment = types.StringPointerValue(defaultParams.Comment)
-		} else {
-			paramsModel.Comment = types.StringNull()
-		}
-		paramsModel.Config = types.ObjectNull(endpointProcessConfigElementType().AttrTypes)
-
+	} else {
+		diags.AddError("Unknown endpoint command", fmt.Sprintf("Unsupported endpoint command: %s. Error: %s", commandParams.Command, err.Error()))
 	}
 
 	// Set osquery fields to null since this is endpoint
