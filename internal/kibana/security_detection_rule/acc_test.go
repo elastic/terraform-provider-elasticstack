@@ -93,6 +93,9 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					// Check meta field
 					checkResourceJSONAttr(resourceName, "meta", `{"custom_field": "test_value", "environment": "testing", "version": "1.0"}`),
 
+					// Check filters field
+					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"must": [{"term": {"event.category": "authentication"}}], "must_not": [{"term": {"event.outcome": "success"}}]}}]`),
+
 					// Check related integrations
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "windows"),
@@ -165,6 +168,9 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					// Check meta field (updated values)
 					checkResourceJSONAttr(resourceName, "meta", `{"custom_field": "updated_value", "environment": "production", "version": "2.0", "team": "security"}`),
 
+					// Check filters field (updated values)
+					checkResourceJSONAttr(resourceName, "filters", `[{"range": {"@timestamp": {"gte": "now-1h", "lte": "now"}}}, {"terms": {"event.action": ["login", "logout", "access"]}}]`),
+
 					// Check related integrations (updated values)
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "linux"),
@@ -223,6 +229,19 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "true"),
 				),
 			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_queryRemoveFilters("test-query-rule-no-filters"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-no-filters"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Test query rule with filters removed"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+
+					// Verify filters field is not present when not specified
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+				),
+			},
 		},
 	})
 }
@@ -269,6 +288,9 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 
 					// Check meta field
 					checkResourceJSONAttr(resourceName, "meta", `{"rule_type": "eql", "process": "monitoring", "severity": "high"}`),
+
+					// Check filters field
+					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"filter": [{"term": {"process.parent.name": "explorer.exe"}}]}}]`),
 
 					// Check related integrations
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
@@ -330,6 +352,9 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 
 					// Check meta field (updated values)
 					checkResourceJSONAttr(resourceName, "meta", `{"rule_type": "eql", "process": "detection", "severity": "critical", "updated": "true"}`),
+
+					// Check filters field (updated values)
+					checkResourceJSONAttr(resourceName, "filters", `[{"exists": {"field": "process.code_signature.trusted"}}, {"term": {"host.os.family": "windows"}}]`),
 
 					// Check related integrations
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
@@ -698,6 +723,9 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					// Check meta field
 					checkResourceJSONAttr(resourceName, "meta", `{"new_terms_type": "user_behavior", "custom_field": "test_value", "detection": "anomaly"}`),
 
+					// Check filters field
+					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"should": [{"wildcard": {"user.domain": "*.internal"}}, {"term": {"user.type": "service_account"}}]}}]`),
+
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-14d"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "new-terms-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "new-terms-namespace"),
@@ -769,6 +797,9 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					// Check meta field (updated values)
 					checkResourceJSONAttr(resourceName, "meta", `{"new_terms_type": "user_behavior", "custom_field": "updated_value", "detection": "anomaly", "updated": "yes"}`),
 
+					// Check filters field (updated values)
+					checkResourceJSONAttr(resourceName, "filters", `[{"geo_distance": {"distance": "1000km", "source.geo.location": {"lat": 40.12, "lon": -71.34}}}]`),
+
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-30d"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom New Terms Rule Name"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "user.last_login"),
@@ -831,6 +862,9 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 
 					// Check meta field
 					checkResourceJSONAttr(resourceName, "meta", `{"saved_query_type": "security", "custom_field": "test_value", "query_origin": "saved"}`),
+
+					// Check filters field
+					checkResourceJSONAttr(resourceName, "filters", `[{"prefix": {"event.action": "user_"}}]`),
 
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "saved-query-data-view-id"),
@@ -899,6 +933,9 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 
 					// Check meta field (updated values)
 					checkResourceJSONAttr(resourceName, "meta", `{"saved_query_type": "security", "custom_field": "updated_value", "query_origin": "saved", "updated": "yes"}`),
+
+					// Check filters field (updated values)
+					checkResourceJSONAttr(resourceName, "filters", `[{"script": {"script": {"source": "doc['event.severity'].value > 2"}}}]`),
 
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
@@ -1004,6 +1041,9 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					// Check meta field
 					checkResourceJSONAttr(resourceName, "meta", `{"threat_type": "indicator_match", "custom_field": "test_value", "intelligence": "external"}`),
 
+					// Check filters field
+					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"must_not": [{"term": {"destination.ip": "127.0.0.1"}}]}}]`),
+
 					// Check investigation_fields
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "destination.ip"),
@@ -1078,6 +1118,9 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 
 					// Check meta field (updated values)
 					checkResourceJSONAttr(resourceName, "meta", `{"threat_type": "indicator_match", "custom_field": "updated_value", "intelligence": "external", "updated": "yes"}`),
+
+					// Check filters field (updated values)
+					checkResourceJSONAttr(resourceName, "filters", `[{"regexp": {"destination.domain": ".*\\.suspicious\\.com"}}]`),
 
 					// Check investigation_fields
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
@@ -1168,6 +1211,9 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					// Check meta field
 					checkResourceJSONAttr(resourceName, "meta", `{"threshold_type": "count_based", "custom_field": "test_value", "monitoring": "enabled"}`),
 
+					// Check filters field
+					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"filter": [{"range": {"event.ingested": {"gte": "now-24h"}}}]}}]`),
+
 					// Check investigation_fields
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
@@ -1237,6 +1283,9 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 
 					// Check meta field (updated values)
 					checkResourceJSONAttr(resourceName, "meta", `{"threshold_type": "count_based", "custom_field": "updated_value", "monitoring": "enabled", "updated": "yes"}`),
+
+					// Check filters field (updated values)
+					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"should": [{"match": {"user.roles": "admin"}}, {"term": {"event.severity": "high"}}], "minimum_should_match": 1}}]`),
 
 					// Check investigation_fields
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
@@ -1393,6 +1442,27 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "version"      = "1.0"
   })
 
+  filters = jsonencode([
+    {
+      "bool" = {
+        "must" = [
+          {
+            "term" = {
+              "event.category" = "authentication"
+            }
+          }
+        ]
+        "must_not" = [
+          {
+            "term" = {
+              "event.outcome" = "success"
+            }
+          }
+        ]
+      }
+    }
+  ])
+
   investigation_fields = ["user.name", "event.action"]
 
   risk_score_mapping = [
@@ -1490,6 +1560,22 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "version"      = "2.0"
     "team"         = "security"
   })
+
+  filters = jsonencode([
+    {
+      "range" = {
+        "@timestamp" = {
+          "gte" = "now-1h"
+          "lte" = "now"
+        }
+      }
+    },
+    {
+      "terms" = {
+        "event.action" = ["login", "logout", "access"]
+      }
+    }
+  ])
 
   investigation_fields = ["user.name", "event.action", "source.ip"]
 
@@ -1623,6 +1709,20 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "severity"    = "high"
   })
 
+  filters = jsonencode([
+    {
+      "bool" = {
+        "filter" = [
+          {
+            "term" = {
+              "process.parent.name" = "explorer.exe"
+            }
+          }
+        ]
+      }
+    }
+  ])
+
   investigation_fields = ["process.name", "process.executable"]
 
   risk_score_mapping = [
@@ -1708,6 +1808,19 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "severity"    = "critical"
     "updated"     = "true"
   })
+
+  filters = jsonencode([
+    {
+      "exists" = {
+        "field" = "process.code_signature.trusted"
+      }
+    },
+    {
+      "term" = {
+        "host.os.family" = "windows"
+      }
+    }
+  ])
 
   investigation_fields = ["process.name", "process.executable", "process.parent.name"]
 
@@ -2187,6 +2300,25 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "detection"      = "anomaly"
   })
 
+  filters = jsonencode([
+    {
+      "bool" = {
+        "should" = [
+          {
+            "wildcard" = {
+              "user.domain" = "*.internal"
+            }
+          },
+          {
+            "term" = {
+              "user.type" = "service_account"
+            }
+          }
+        ]
+      }
+    }
+  ])
+
   investigation_fields = ["user.name", "user.type"]
 
   risk_score_mapping = [
@@ -2278,6 +2410,18 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "detection"      = "anomaly"
     "updated"        = "yes"
   })
+
+  filters = jsonencode([
+    {
+      "geo_distance" = {
+        "distance" = "1000km"
+        "source.geo.location" = {
+          "lat" = 40.12
+          "lon" = -71.34
+        }
+      }
+    }
+  ])
 
   investigation_fields = ["user.name", "user.type", "source.ip", "user.roles"]
 
@@ -2384,6 +2528,14 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "query_origin"     = "saved"
   })
 
+  filters = jsonencode([
+    {
+      "prefix" = {
+        "event.action" = "user_"
+      }
+    }
+  ])
+
   investigation_fields = ["event.category", "event.action"]
 
   risk_score_mapping = [
@@ -2475,6 +2627,16 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "query_origin"     = "saved"
     "updated"          = "yes"
   })
+
+  filters = jsonencode([
+    {
+      "script" = {
+        "script" = {
+          "source" = "doc['event.severity'].value > 2"
+        }
+      }
+    }
+  ])
 
   investigation_fields = ["host.name", "user.name", "process.name"]
 
@@ -2585,6 +2747,20 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "custom_field"   = "test_value"
     "intelligence"   = "external"
   })
+
+  filters = jsonencode([
+    {
+      "bool" = {
+        "must_not" = [
+          {
+            "term" = {
+              "destination.ip" = "127.0.0.1"
+            }
+          }
+        ]
+      }
+    }
+  ])
 
   investigation_fields = ["destination.ip", "source.ip"]
 
@@ -2698,6 +2874,14 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "intelligence"   = "external"
     "updated"        = "yes"
   })
+
+  filters = jsonencode([
+    {
+      "regexp" = {
+        "destination.domain" = ".*\\.suspicious\\.com"
+      }
+    }
+  ])
 
   investigation_fields = ["destination.ip", "source.ip", "threat.indicator.type"]
 
@@ -2823,6 +3007,22 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "monitoring"     = "enabled"
   })
 
+  filters = jsonencode([
+    {
+      "bool" = {
+        "filter" = [
+          {
+            "range" = {
+              "event.ingested" = {
+                "gte" = "now-24h"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ])
+
   investigation_fields = ["user.name", "event.action"]
 
   threshold = {
@@ -2919,6 +3119,26 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     "monitoring"     = "enabled"
     "updated"        = "yes"
   })
+
+  filters = jsonencode([
+    {
+      "bool" = {
+        "should" = [
+          {
+            "match" = {
+              "user.roles" = "admin"
+            }
+          },
+          {
+            "term" = {
+              "event.severity" = "high"
+            }
+          }
+        ]
+        "minimum_should_match" = 1
+      }
+    }
+  ])
 
   investigation_fields = ["user.name", "source.ip", "event.outcome"]
 
@@ -3502,6 +3722,33 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     }
     null_field = null
   })
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_queryRemoveFilters(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "query"
+  query        = "*:*"
+  language     = "kuery"
+  enabled      = true
+  description  = "Test query rule with filters removed"
+  severity     = "medium"
+  risk_score   = 55
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  data_view_id = "no-filters-data-view-id"
+  namespace    = "no-filters-namespace"
+  
+  # Note: No filters field specified - this tests removing filters from a rule
 }
 `, name)
 }
