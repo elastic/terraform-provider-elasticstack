@@ -100,6 +100,9 @@ type SecurityDetectionRuleData struct {
 	// Exceptions list field (common across all rule types)
 	ExceptionsList types.List `tfsdk:"exceptions_list"`
 
+	// Alert suppression field (common across all rule types)
+	AlertSuppression types.Object `tfsdk:"alert_suppression"`
+
 	// Building block type field (common across all rule types)
 	BuildingBlockType types.String `tfsdk:"building_block_type"`
 
@@ -143,6 +146,17 @@ type ThresholdModel struct {
 	Field       types.List  `tfsdk:"field"`
 	Value       types.Int64 `tfsdk:"value"`
 	Cardinality types.List  `tfsdk:"cardinality"`
+}
+
+type AlertSuppressionModel struct {
+	GroupBy               types.List   `tfsdk:"group_by"`
+	Duration              types.Object `tfsdk:"duration"`
+	MissingFieldsStrategy types.String `tfsdk:"missing_fields_strategy"`
+}
+
+type AlertSuppressionDurationModel struct {
+	Value types.Int64  `tfsdk:"value"`
+	Unit  types.String `tfsdk:"unit"`
 }
 
 type CardinalityModel struct {
@@ -234,6 +248,45 @@ type SeverityMappingModel struct {
 	Severity types.String `tfsdk:"severity"`
 }
 
+// Named types for complex object structures to avoid repetition
+var (
+	// CardinalityObjectType represents the cardinality object structure
+	CardinalityObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"field": types.StringType,
+			"value": types.Int64Type,
+		},
+	}
+
+	// DurationObjectType represents the duration object structure
+	DurationObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"value": types.Int64Type,
+			"unit":  types.StringType,
+		},
+	}
+
+	// ThresholdObjectType represents the threshold object structure
+	ThresholdObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"value": types.Int64Type,
+			"field": types.ListType{ElemType: types.StringType},
+			"cardinality": types.ListType{
+				ElemType: CardinalityObjectType,
+			},
+		},
+	}
+
+	// AlertSuppressionObjectType represents the alert suppression object structure
+	AlertSuppressionObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"group_by":                types.ListType{ElemType: types.StringType},
+			"duration":                DurationObjectType,
+			"missing_fields_strategy": types.StringType,
+		},
+	}
+)
+
 // CommonCreateProps holds all the field pointers for setting common create properties
 type CommonCreateProps struct {
 	Actions                           **[]kbapi.SecurityDetectionsAPIRuleAction
@@ -254,6 +307,7 @@ type CommonCreateProps struct {
 	MaxSignals                        **kbapi.SecurityDetectionsAPIMaxSignals
 	Version                           **kbapi.SecurityDetectionsAPIRuleVersion
 	ExceptionsList                    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
+	AlertSuppression                  **kbapi.SecurityDetectionsAPIAlertSuppression
 	RiskScoreMapping                  **kbapi.SecurityDetectionsAPIRiskScoreMapping
 	SeverityMapping                   **kbapi.SecurityDetectionsAPISeverityMapping
 	RelatedIntegrations               **kbapi.SecurityDetectionsAPIRelatedIntegrationArray
@@ -289,6 +343,7 @@ type CommonUpdateProps struct {
 	MaxSignals                        **kbapi.SecurityDetectionsAPIMaxSignals
 	Version                           **kbapi.SecurityDetectionsAPIRuleVersion
 	ExceptionsList                    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
+	AlertSuppression                  **kbapi.SecurityDetectionsAPIAlertSuppression
 	RiskScoreMapping                  **kbapi.SecurityDetectionsAPIRiskScoreMapping
 	SeverityMapping                   **kbapi.SecurityDetectionsAPISeverityMapping
 	RelatedIntegrations               **kbapi.SecurityDetectionsAPIRelatedIntegrationArray
@@ -386,6 +441,7 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 		MaxSignals:                        &queryRule.MaxSignals,
 		Version:                           &queryRule.Version,
 		ExceptionsList:                    &queryRule.ExceptionsList,
+		AlertSuppression:                  &queryRule.AlertSuppression,
 		RiskScoreMapping:                  &queryRule.RiskScoreMapping,
 		SeverityMapping:                   &queryRule.SeverityMapping,
 		RelatedIntegrations:               &queryRule.RelatedIntegrations,
@@ -454,6 +510,7 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 		MaxSignals:                        &eqlRule.MaxSignals,
 		Version:                           &eqlRule.Version,
 		ExceptionsList:                    &eqlRule.ExceptionsList,
+		AlertSuppression:                  &eqlRule.AlertSuppression,
 		RiskScoreMapping:                  &eqlRule.RiskScoreMapping,
 		SeverityMapping:                   &eqlRule.SeverityMapping,
 		RelatedIntegrations:               &eqlRule.RelatedIntegrations,
@@ -520,6 +577,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 		MaxSignals:                        &esqlRule.MaxSignals,
 		Version:                           &esqlRule.Version,
 		ExceptionsList:                    &esqlRule.ExceptionsList,
+		AlertSuppression:                  &esqlRule.AlertSuppression,
 		RiskScoreMapping:                  &esqlRule.RiskScoreMapping,
 		SeverityMapping:                   &esqlRule.SeverityMapping,
 		RelatedIntegrations:               &esqlRule.RelatedIntegrations,
@@ -607,6 +665,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		MaxSignals:                        &mlRule.MaxSignals,
 		Version:                           &mlRule.Version,
 		ExceptionsList:                    &mlRule.ExceptionsList,
+		AlertSuppression:                  &mlRule.AlertSuppression,
 		RiskScoreMapping:                  &mlRule.RiskScoreMapping,
 		SeverityMapping:                   &mlRule.SeverityMapping,
 		RelatedIntegrations:               &mlRule.RelatedIntegrations,
@@ -676,6 +735,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		MaxSignals:                        &newTermsRule.MaxSignals,
 		Version:                           &newTermsRule.Version,
 		ExceptionsList:                    &newTermsRule.ExceptionsList,
+		AlertSuppression:                  &newTermsRule.AlertSuppression,
 		RiskScoreMapping:                  &newTermsRule.RiskScoreMapping,
 		SeverityMapping:                   &newTermsRule.SeverityMapping,
 		RelatedIntegrations:               &newTermsRule.RelatedIntegrations,
@@ -738,6 +798,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		MaxSignals:                        &savedQueryRule.MaxSignals,
 		Version:                           &savedQueryRule.Version,
 		ExceptionsList:                    &savedQueryRule.ExceptionsList,
+		AlertSuppression:                  &savedQueryRule.AlertSuppression,
 		RiskScoreMapping:                  &savedQueryRule.RiskScoreMapping,
 		SeverityMapping:                   &savedQueryRule.SeverityMapping,
 		RelatedIntegrations:               &savedQueryRule.RelatedIntegrations,
@@ -822,6 +883,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		MaxSignals:                        &threatMatchRule.MaxSignals,
 		Version:                           &threatMatchRule.Version,
 		ExceptionsList:                    &threatMatchRule.ExceptionsList,
+		AlertSuppression:                  &threatMatchRule.AlertSuppression,
 		RiskScoreMapping:                  &threatMatchRule.RiskScoreMapping,
 		SeverityMapping:                   &threatMatchRule.SeverityMapping,
 		RelatedIntegrations:               &threatMatchRule.RelatedIntegrations,
@@ -928,7 +990,16 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		InvestigationFields:               &thresholdRule.InvestigationFields,
 		Meta:                              &thresholdRule.Meta,
 		Filters:                           &thresholdRule.Filters,
+		AlertSuppression:                  nil, // Handle specially for threshold rule
 	}, &diags)
+
+	// Handle threshold-specific alert suppression
+	if utils.IsKnown(d.AlertSuppression) {
+		alertSuppression := d.alertSuppressionToThresholdApi(ctx, &diags)
+		if alertSuppression != nil {
+			thresholdRule.AlertSuppression = alertSuppression
+		}
+	}
 
 	// Set query language
 	thresholdRule.Language = d.getKQLQueryLanguage()
@@ -1178,6 +1249,14 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 			*props.Filters = filters
 		}
 	}
+
+	// Set alert suppression
+	if props.AlertSuppression != nil {
+		alertSuppression := d.alertSuppressionToApi(ctx, diags)
+		if alertSuppression != nil {
+			*props.AlertSuppression = alertSuppression
+		}
+	}
 }
 
 func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
@@ -1265,6 +1344,7 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 		MaxSignals:                        &queryRule.MaxSignals,
 		Version:                           &queryRule.Version,
 		ExceptionsList:                    &queryRule.ExceptionsList,
+		AlertSuppression:                  &queryRule.AlertSuppression,
 		RiskScoreMapping:                  &queryRule.RiskScoreMapping,
 		SeverityMapping:                   &queryRule.SeverityMapping,
 		RelatedIntegrations:               &queryRule.RelatedIntegrations,
@@ -1351,6 +1431,7 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kb
 		MaxSignals:                        &eqlRule.MaxSignals,
 		Version:                           &eqlRule.Version,
 		ExceptionsList:                    &eqlRule.ExceptionsList,
+		AlertSuppression:                  &eqlRule.AlertSuppression,
 		RiskScoreMapping:                  &eqlRule.RiskScoreMapping,
 		SeverityMapping:                   &eqlRule.SeverityMapping,
 		RelatedIntegrations:               &eqlRule.RelatedIntegrations,
@@ -1435,6 +1516,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (k
 		MaxSignals:                        &esqlRule.MaxSignals,
 		Version:                           &esqlRule.Version,
 		ExceptionsList:                    &esqlRule.ExceptionsList,
+		AlertSuppression:                  &esqlRule.AlertSuppression,
 		RiskScoreMapping:                  &esqlRule.RiskScoreMapping,
 		SeverityMapping:                   &esqlRule.SeverityMapping,
 		RelatedIntegrations:               &esqlRule.RelatedIntegrations,
@@ -1540,6 +1622,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		MaxSignals:                        &mlRule.MaxSignals,
 		Version:                           &mlRule.Version,
 		ExceptionsList:                    &mlRule.ExceptionsList,
+		AlertSuppression:                  &mlRule.AlertSuppression,
 		RiskScoreMapping:                  &mlRule.RiskScoreMapping,
 		SeverityMapping:                   &mlRule.SeverityMapping,
 		RelatedIntegrations:               &mlRule.RelatedIntegrations,
@@ -1630,6 +1713,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		MaxSignals:                        &newTermsRule.MaxSignals,
 		Version:                           &newTermsRule.Version,
 		ExceptionsList:                    &newTermsRule.ExceptionsList,
+		AlertSuppression:                  &newTermsRule.AlertSuppression,
 		RiskScoreMapping:                  &newTermsRule.RiskScoreMapping,
 		SeverityMapping:                   &newTermsRule.SeverityMapping,
 		RelatedIntegrations:               &newTermsRule.RelatedIntegrations,
@@ -1710,6 +1794,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		MaxSignals:                        &savedQueryRule.MaxSignals,
 		Version:                           &savedQueryRule.Version,
 		ExceptionsList:                    &savedQueryRule.ExceptionsList,
+		AlertSuppression:                  &savedQueryRule.AlertSuppression,
 		RiskScoreMapping:                  &savedQueryRule.RiskScoreMapping,
 		SeverityMapping:                   &savedQueryRule.SeverityMapping,
 		RelatedIntegrations:               &savedQueryRule.RelatedIntegrations,
@@ -1811,6 +1896,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		MaxSignals:                        &threatMatchRule.MaxSignals,
 		Version:                           &threatMatchRule.Version,
 		ExceptionsList:                    &threatMatchRule.ExceptionsList,
+		AlertSuppression:                  &threatMatchRule.AlertSuppression,
 		RiskScoreMapping:                  &threatMatchRule.RiskScoreMapping,
 		SeverityMapping:                   &threatMatchRule.SeverityMapping,
 		RelatedIntegrations:               &threatMatchRule.RelatedIntegrations,
@@ -1933,7 +2019,16 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		TimestampOverride:                 &thresholdRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &thresholdRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &thresholdRule.Filters,
+		AlertSuppression:                  nil, // Handle specially for threshold rule
 	}, &diags)
+
+	// Handle threshold-specific alert suppression
+	if utils.IsKnown(d.AlertSuppression) {
+		alertSuppression := d.alertSuppressionToThresholdApi(ctx, &diags)
+		if alertSuppression != nil {
+			thresholdRule.AlertSuppression = alertSuppression
+		}
+	}
 
 	// Set query language
 	thresholdRule.Language = d.getKQLQueryLanguage()
@@ -2177,6 +2272,14 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 			*props.Filters = filters
 		}
 	}
+
+	// Set alert suppression
+	if props.AlertSuppression != nil {
+		alertSuppression := d.alertSuppressionToApi(ctx, diags)
+		if alertSuppression != nil {
+			*props.AlertSuppression = alertSuppression
+		}
+	}
 }
 
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
@@ -2378,6 +2481,10 @@ func (d *SecurityDetectionRuleData) updateFromQueryRule(ctx context.Context, rul
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
 
+	// Update alert suppression
+	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	diags.Append(alertSuppressionDiags...)
+
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
@@ -2553,6 +2660,10 @@ func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule 
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
+	// Update alert suppression
+	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	diags.Append(alertSuppressionDiags...)
+
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
@@ -2708,6 +2819,10 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	// Update required fields
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
+
+	// Update alert suppression
+	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	diags.Append(alertSuppressionDiags...)
 
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
@@ -2883,6 +2998,10 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	// Update required fields
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
+
+	// Update alert suppression
+	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	diags.Append(alertSuppressionDiags...)
 
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
@@ -3060,6 +3179,10 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
+	// Update alert suppression
+	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	diags.Append(alertSuppressionDiags...)
+
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
@@ -3236,6 +3359,10 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	// Update required fields
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
+
+	// Update alert suppression
+	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	diags.Append(alertSuppressionDiags...)
 
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
@@ -3446,6 +3573,10 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
+	// Update alert suppression
+	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	diags.Append(alertSuppressionDiags...)
+
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
@@ -3628,6 +3759,10 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
+	// Update alert suppression
+	thresholdAlertSuppressionDiags := d.updateThresholdAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	diags.Append(thresholdAlertSuppressionDiags...)
+
 	// Update response actions
 	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
@@ -3779,18 +3914,7 @@ func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx c
 
 	// Threshold-specific fields
 	if !utils.IsKnown(d.Threshold) {
-		d.Threshold = types.ObjectNull(map[string]attr.Type{
-			"value": types.Int64Type,
-			"field": types.ListType{ElemType: types.StringType},
-			"cardinality": types.ListType{
-				ElemType: types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"field": types.StringType,
-						"value": types.Int64Type,
-					},
-				},
-			},
-		})
+		d.Threshold = types.ObjectNull(ThresholdObjectType.AttrTypes)
 	}
 
 	// Timeline fields (common across multiple rule types)
@@ -4220,23 +4344,12 @@ func threatMappingEntryElementType() attr.Type {
 
 // thresholdElementType returns the element type for threshold
 func thresholdElementType() map[string]attr.Type {
-	return map[string]attr.Type{
-		"field": types.ListType{ElemType: types.StringType},
-		"value": types.Int64Type,
-		"cardinality": types.ListType{
-			ElemType: cardinalityElementType(),
-		},
-	}
+	return ThresholdObjectType.AttrTypes
 }
 
 // cardinalityElementType returns the element type for cardinality
 func cardinalityElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"field": types.StringType,
-			"value": types.Int64Type,
-		},
-	}
+	return CardinalityObjectType
 }
 
 // responseActionElementType returns the element type for response actions
@@ -4352,6 +4465,93 @@ func (d SecurityDetectionRuleData) thresholdToApi(ctx context.Context, diags *di
 		})
 
 	return threshold
+}
+
+// Helper function to convert alert suppression from TF data to API type
+func (d SecurityDetectionRuleData) alertSuppressionToApi(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIAlertSuppression {
+	if !utils.IsKnown(d.AlertSuppression) {
+		return nil
+	}
+
+	var model AlertSuppressionModel
+	objDiags := d.AlertSuppression.As(ctx, &model, basetypes.ObjectAsOptions{})
+	diags.Append(objDiags...)
+	if diags.HasError() {
+		return nil
+	}
+
+	suppression := &kbapi.SecurityDetectionsAPIAlertSuppression{}
+
+	// Handle group_by (required)
+	if utils.IsKnown(model.GroupBy) {
+		groupByList := utils.ListTypeToSlice_String(ctx, model.GroupBy, path.Root("alert_suppression").AtName("group_by"), diags)
+		if len(groupByList) > 0 {
+			suppression.GroupBy = groupByList
+		}
+	}
+
+	// Handle duration (optional)
+	if utils.IsKnown(model.Duration) {
+		var durationModel AlertSuppressionDurationModel
+		durationDiags := model.Duration.As(ctx, &durationModel, basetypes.ObjectAsOptions{})
+		diags.Append(durationDiags...)
+		if !diags.HasError() {
+			duration := kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
+				Value: int(durationModel.Value.ValueInt64()),
+				Unit:  kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit(durationModel.Unit.ValueString()),
+			}
+			suppression.Duration = &duration
+		}
+	}
+
+	// Handle missing_fields_strategy (optional)
+	if utils.IsKnown(model.MissingFieldsStrategy) {
+		strategy := kbapi.SecurityDetectionsAPIAlertSuppressionMissingFieldsStrategy(model.MissingFieldsStrategy.ValueString())
+		suppression.MissingFieldsStrategy = &strategy
+	}
+
+	return suppression
+}
+
+// Helper function to convert alert suppression from TF data to threshold-specific API type
+func (d SecurityDetectionRuleData) alertSuppressionToThresholdApi(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIThresholdAlertSuppression {
+	if !utils.IsKnown(d.AlertSuppression) {
+		return nil
+	}
+
+	var model AlertSuppressionModel
+	objDiags := d.AlertSuppression.As(ctx, &model, basetypes.ObjectAsOptions{})
+	diags.Append(objDiags...)
+	if diags.HasError() {
+		return nil
+	}
+
+	suppression := &kbapi.SecurityDetectionsAPIThresholdAlertSuppression{}
+
+	// Handle duration (required for threshold alert suppression)
+	if utils.IsKnown(model.Duration) {
+		var durationModel AlertSuppressionDurationModel
+		durationDiags := model.Duration.As(ctx, &durationModel, basetypes.ObjectAsOptions{})
+		diags.Append(durationDiags...)
+		if !diags.HasError() {
+			duration := kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
+				Value: int(durationModel.Value.ValueInt64()),
+				Unit:  kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit(durationModel.Unit.ValueString()),
+			}
+			suppression.Duration = duration
+		}
+	} else {
+		diags.AddError(
+			"Duration required for threshold alert suppression",
+			"Threshold alert suppression requires a duration to be specified",
+		)
+		return nil
+	}
+
+	// Note: Threshold alert suppression only supports duration field.
+	// GroupBy and MissingFieldsStrategy are not supported for threshold rules.
+
+	return suppression
 }
 
 // Helper function to process threat mapping configuration for threat match rules
@@ -4859,6 +5059,86 @@ func (d *SecurityDetectionRuleData) updateActionsFromApi(ctx context.Context, ac
 	} else {
 		d.Actions = types.ListNull(actionElementType())
 	}
+
+	return diags
+}
+
+func (d *SecurityDetectionRuleData) updateAlertSuppressionFromApi(ctx context.Context, apiSuppression *kbapi.SecurityDetectionsAPIAlertSuppression) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if apiSuppression == nil {
+		d.AlertSuppression = types.ObjectNull(AlertSuppressionObjectType.AttrTypes)
+		return diags
+	}
+
+	model := AlertSuppressionModel{}
+
+	// Convert group_by (required field according to API)
+	if len(apiSuppression.GroupBy) > 0 {
+		groupByList := make([]attr.Value, len(apiSuppression.GroupBy))
+		for i, field := range apiSuppression.GroupBy {
+			groupByList[i] = types.StringValue(field)
+		}
+		model.GroupBy = types.ListValueMust(types.StringType, groupByList)
+	} else {
+		model.GroupBy = types.ListNull(types.StringType)
+	}
+
+	// Convert duration (optional)
+	if apiSuppression.Duration != nil {
+		durationModel := AlertSuppressionDurationModel{
+			Value: types.Int64Value(int64(apiSuppression.Duration.Value)),
+			Unit:  types.StringValue(string(apiSuppression.Duration.Unit)),
+		}
+		durationObj, durationDiags := types.ObjectValueFrom(ctx, DurationObjectType.AttrTypes, durationModel)
+		diags.Append(durationDiags...)
+		model.Duration = durationObj
+	} else {
+		model.Duration = types.ObjectNull(DurationObjectType.AttrTypes)
+	}
+
+	// Convert missing_fields_strategy (optional)
+	if apiSuppression.MissingFieldsStrategy != nil {
+		model.MissingFieldsStrategy = types.StringValue(string(*apiSuppression.MissingFieldsStrategy))
+	} else {
+		model.MissingFieldsStrategy = types.StringNull()
+	}
+
+	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, AlertSuppressionObjectType.AttrTypes, model)
+	diags.Append(objDiags...)
+
+	d.AlertSuppression = alertSuppressionObj
+
+	return diags
+}
+
+func (d *SecurityDetectionRuleData) updateThresholdAlertSuppressionFromApi(ctx context.Context, apiSuppression *kbapi.SecurityDetectionsAPIThresholdAlertSuppression) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if apiSuppression == nil {
+		d.AlertSuppression = types.ObjectNull(AlertSuppressionObjectType.AttrTypes)
+		return diags
+	}
+
+	model := AlertSuppressionModel{}
+
+	// Threshold alert suppression only has duration field, so we set group_by and missing_fields_strategy to null
+	model.GroupBy = types.ListNull(types.StringType)
+	model.MissingFieldsStrategy = types.StringNull()
+
+	// Convert duration (always present in threshold alert suppression)
+	durationModel := AlertSuppressionDurationModel{
+		Value: types.Int64Value(int64(apiSuppression.Duration.Value)),
+		Unit:  types.StringValue(string(apiSuppression.Duration.Unit)),
+	}
+	durationObj, durationDiags := types.ObjectValueFrom(ctx, DurationObjectType.AttrTypes, durationModel)
+	diags.Append(durationDiags...)
+	model.Duration = durationObj
+
+	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, AlertSuppressionObjectType.AttrTypes, model)
+	diags.Append(objDiags...)
+
+	d.AlertSuppression = alertSuppressionObj
 
 	return diags
 }

@@ -537,6 +537,46 @@ func GetSchema() schema.Schema {
 				},
 			},
 
+			// Alert suppression field (common across all rule types)
+			"alert_suppression": schema.SingleNestedAttribute{
+				MarkdownDescription: "Defines alert suppression configuration to reduce duplicate alerts.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"group_by": schema.ListAttribute{
+						MarkdownDescription: "Array of field names to group alerts by for suppression.",
+						Required:            true,
+						ElementType:         types.StringType,
+					},
+					"duration": schema.SingleNestedAttribute{
+						MarkdownDescription: "Duration for which alerts are suppressed.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"value": schema.Int64Attribute{
+								MarkdownDescription: "Duration value.",
+								Required:            true,
+								Validators: []validator.Int64{
+									int64validator.AtLeast(1),
+								},
+							},
+							"unit": schema.StringAttribute{
+								MarkdownDescription: "Duration unit (s, m, h).",
+								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("s", "m", "h"),
+								},
+							},
+						},
+					},
+					"missing_fields_strategy": schema.StringAttribute{
+						MarkdownDescription: "Strategy for handling missing fields in suppression grouping: 'suppress' - only one alert will be created per suppress by bucket, 'doNotSuppress' - per each document a separate alert will be created.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("suppress", "doNotSuppress"),
+						},
+					},
+				},
+			},
+
 			// Building block type field (common across all rule types)
 			"building_block_type": schema.StringAttribute{
 				MarkdownDescription: "Determines if the rule acts as a building block. If set, value must be `default`. Building-block alerts are not displayed in the UI by default and are used as a foundation for other rules.",
