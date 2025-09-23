@@ -55,21 +55,21 @@ output "role" {
 
 ### Optional
 
-- `applications` (Attributes Set) A list of application privilege entries. (see [below for nested schema](#nestedatt--applications))
+- `applications` (Block Set) A list of application privilege entries. (see [below for nested schema](#nestedblock--applications))
 - `cluster` (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
 - `description` (String) The description of the role.
 - `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `global` (String) An object defining global privileges.
-- `indices` (Attributes Set) A list of indices permissions entries. (see [below for nested schema](#nestedatt--indices))
+- `indices` (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
 - `metadata` (String) Optional meta-data.
-- `remote_indices` (Attributes Set) A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedatt--remote_indices))
+- `remote_indices` (Block Set) A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedblock--remote_indices))
 - `run_as` (Set of String) A list of users that the owners of this role can impersonate.
 
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource
 
-<a id="nestedatt--applications"></a>
+<a id="nestedblock--applications"></a>
 ### Nested Schema for `applications`
 
 Required:
@@ -100,7 +100,7 @@ Optional:
 - `username` (String) Username to use for API authentication to Elasticsearch.
 
 
-<a id="nestedatt--indices"></a>
+<a id="nestedblock--indices"></a>
 ### Nested Schema for `indices`
 
 Required:
@@ -124,7 +124,7 @@ Optional:
 
 
 
-<a id="nestedatt--remote_indices"></a>
+<a id="nestedblock--remote_indices"></a>
 ### Nested Schema for `remote_indices`
 
 Required:

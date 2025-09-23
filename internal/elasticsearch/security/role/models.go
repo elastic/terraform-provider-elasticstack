@@ -6,10 +6,40 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var (
+	applicationAttrTypes = map[string]attr.Type{
+		"application": types.StringType,
+		"privileges":  types.SetType{ElemType: types.StringType},
+		"resources":   types.SetType{ElemType: types.StringType},
+	}
+
+	fieldSecurityAttrTypes = map[string]attr.Type{
+		"grant":  types.SetType{ElemType: types.StringType},
+		"except": types.SetType{ElemType: types.StringType},
+	}
+
+	indexPermsAttrTypes = map[string]attr.Type{
+		"field_security":           types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes}},
+		"names":                    types.SetType{ElemType: types.StringType},
+		"privileges":               types.SetType{ElemType: types.StringType},
+		"query":                    jsontypes.NormalizedType{},
+		"allow_restricted_indices": types.BoolType,
+	}
+
+	remoteIndexPermsAttrTypes = map[string]attr.Type{
+		"clusters":       types.SetType{ElemType: types.StringType},
+		"field_security": types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes}},
+		"query":          jsontypes.NormalizedType{},
+		"names":          types.SetType{ElemType: types.StringType},
+		"privileges":     types.SetType{ElemType: types.StringType},
+	}
 )
 
 type RoleData struct {
@@ -61,13 +91,13 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	role.Name = data.Name.ValueString()
 
 	// Description
-	if !data.Description.IsNull() {
+	if utils.IsKnown(data.Description) {
 		description := data.Description.ValueString()
 		role.Description = &description
 	}
 
 	// Applications
-	if !data.Applications.IsNull() {
+	if utils.IsKnown(data.Applications) {
 		var applicationsList []ApplicationData
 		diags.Append(data.Applications.ElementsAs(ctx, &applicationsList, false)...)
 		if diags.HasError() {
@@ -93,7 +123,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Global
-	if !data.Global.IsNull() {
+	if utils.IsKnown(data.Global) {
 		var global map[string]interface{}
 		if err := json.Unmarshal([]byte(data.Global.ValueString()), &global); err != nil {
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing global JSON: %s", err))
@@ -103,7 +133,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Cluster
-	if !data.Cluster.IsNull() {
+	if utils.IsKnown(data.Cluster) {
 		var cluster []string
 		diags.Append(data.Cluster.ElementsAs(ctx, &cluster, false)...)
 		if diags.HasError() {
@@ -113,7 +143,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Indices
-	if !data.Indices.IsNull() {
+	if utils.IsKnown(data.Indices) {
 		var indicesList []IndexPermsData
 		diags.Append(data.Indices.ElementsAs(ctx, &indicesList, false)...)
 		if diags.HasError() {
@@ -134,13 +164,13 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 				Privileges: privileges,
 			}
 
-			if !idx.Query.IsNull() {
+			if utils.IsKnown(idx.Query) {
 				query := idx.Query.ValueString()
 				newIndex.Query = &query
 			}
 
 			// Field Security
-			if !idx.FieldSecurity.IsNull() {
+			if utils.IsKnown(idx.FieldSecurity) {
 				var fieldSecList []FieldSecurityData
 				diags.Append(idx.FieldSecurity.ElementsAs(ctx, &fieldSecList, false)...)
 				if diags.HasError() {
@@ -151,7 +181,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 					fieldSec := fieldSecList[0]
 					fieldSecurity := models.FieldSecurity{}
 
-					if !fieldSec.Grant.IsNull() {
+					if utils.IsKnown(fieldSec.Grant) {
 						var grants []string
 						diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
 						if diags.HasError() {
@@ -160,7 +190,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 						fieldSecurity.Grant = grants
 					}
 
-					if !fieldSec.Except.IsNull() {
+					if utils.IsKnown(fieldSec.Except) {
 						var excepts []string
 						diags.Append(fieldSec.Except.ElementsAs(ctx, &excepts, false)...)
 						if diags.HasError() {
@@ -173,7 +203,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 				}
 			}
 
-			if !idx.AllowRestrictedIndices.IsNull() {
+			if utils.IsKnown(idx.AllowRestrictedIndices) {
 				allowRestrictedIndices := idx.AllowRestrictedIndices.ValueBool()
 				newIndex.AllowRestrictedIndices = &allowRestrictedIndices
 			}
@@ -184,7 +214,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Remote Indices
-	if !data.RemoteIndices.IsNull() {
+	if utils.IsKnown(data.RemoteIndices) {
 		var remoteIndicesList []RemoteIndexPermsData
 		diags.Append(data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)...)
 		if diags.HasError() {
@@ -207,13 +237,13 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 				Privileges: privileges,
 			}
 
-			if !remoteIdx.Query.IsNull() {
+			if utils.IsKnown(remoteIdx.Query) {
 				query := remoteIdx.Query.ValueString()
 				newRemoteIndex.Query = &query
 			}
 
 			// Field Security
-			if !remoteIdx.FieldSecurity.IsNull() {
+			if utils.IsKnown(remoteIdx.FieldSecurity) {
 				var fieldSecList []FieldSecurityData
 				diags.Append(remoteIdx.FieldSecurity.ElementsAs(ctx, &fieldSecList, false)...)
 				if diags.HasError() {
@@ -224,7 +254,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 					fieldSec := fieldSecList[0]
 					remoteFieldSecurity := models.FieldSecurity{}
 
-					if !fieldSec.Grant.IsNull() {
+					if utils.IsKnown(fieldSec.Grant) {
 						var grants []string
 						diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
 						if diags.HasError() {
@@ -233,7 +263,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 						remoteFieldSecurity.Grant = grants
 					}
 
-					if !fieldSec.Except.IsNull() {
+					if utils.IsKnown(fieldSec.Except) {
 						var excepts []string
 						diags.Append(fieldSec.Except.ElementsAs(ctx, &excepts, false)...)
 						if diags.HasError() {
@@ -252,7 +282,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Metadata
-	if !data.Metadata.IsNull() {
+	if utils.IsKnown(data.Metadata) {
 		var metadata map[string]interface{}
 		if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing metadata JSON: %s", err))
@@ -262,7 +292,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Run As
-	if !data.RunAs.IsNull() {
+	if utils.IsKnown(data.RunAs) {
 		var runAs []string
 		diags.Append(data.RunAs.ElementsAs(ctx, &runAs, false)...)
 		if diags.HasError() {
@@ -277,34 +307,6 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 // fromAPIModel converts the API model to the Terraform model
 func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	// Define attribute type maps
-	applicationAttrTypes := map[string]attr.Type{
-		"application": types.StringType,
-		"privileges":  types.SetType{ElemType: types.StringType},
-		"resources":   types.SetType{ElemType: types.StringType},
-	}
-
-	fieldSecurityAttrTypes := map[string]attr.Type{
-		"grant":  types.SetType{ElemType: types.StringType},
-		"except": types.SetType{ElemType: types.StringType},
-	}
-
-	indexPermsAttrTypes := map[string]attr.Type{
-		"field_security":           types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes}},
-		"names":                    types.SetType{ElemType: types.StringType},
-		"privileges":               types.SetType{ElemType: types.StringType},
-		"query":                    jsontypes.NormalizedType{},
-		"allow_restricted_indices": types.BoolType,
-	}
-
-	remoteIndexPermsAttrTypes := map[string]attr.Type{
-		"clusters":       types.SetType{ElemType: types.StringType},
-		"field_security": types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes}},
-		"query":          jsontypes.NormalizedType{},
-		"names":          types.SetType{ElemType: types.StringType},
-		"privileges":     types.SetType{ElemType: types.StringType},
-	}
 
 	data.Name = types.StringValue(role.Name)
 
