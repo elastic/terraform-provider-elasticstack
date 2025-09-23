@@ -4,13 +4,13 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -70,9 +70,7 @@ func GetSchema() schema.Schema {
 			"global": schema.StringAttribute{
 				MarkdownDescription: "An object defining global privileges.",
 				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-				},
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"cluster": schema.SetAttribute{
 				MarkdownDescription: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
@@ -115,6 +113,7 @@ func GetSchema() schema.Schema {
 						"query": schema.StringAttribute{
 							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
 							Optional:            true,
+							CustomType:          jsontypes.NormalizedType{},
 						},
 						"allow_restricted_indices": schema.BoolAttribute{
 							MarkdownDescription: "Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.",
@@ -156,6 +155,7 @@ func GetSchema() schema.Schema {
 						"query": schema.StringAttribute{
 							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
 							Optional:            true,
+							CustomType:          jsontypes.NormalizedType{},
 						},
 						"names": schema.SetAttribute{
 							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
@@ -174,6 +174,7 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Optional meta-data.",
 				Optional:            true,
 				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"run_as": schema.SetAttribute{
 				MarkdownDescription: "A list of users that the owners of this role can impersonate.",
@@ -182,4 +183,21 @@ func GetSchema() schema.Schema {
 			},
 		},
 	}
+}
+
+// Helper functions to get attribute types from schema
+func getApplicationAttrTypes() map[string]attr.Type {
+	return GetSchema().Attributes["applications"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getIndexPermsAttrTypes() map[string]attr.Type {
+	return GetSchema().Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getFieldSecurityAttrTypes() map[string]attr.Type {
+	return getIndexPermsAttrTypes()["field_security"].(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getRemoteIndexPermsAttrTypes() map[string]attr.Type {
+	return GetSchema().Attributes["remote_indices"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

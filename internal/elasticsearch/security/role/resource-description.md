@@ -1,1 +1,1 @@
-Adds and updates roles in the native realm. See the [security API put role documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html) for more details.
+Adds and updates roles in the native realm. See the [role API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html) for more details.
