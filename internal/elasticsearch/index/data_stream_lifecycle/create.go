@@ -5,7 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -32,7 +32,7 @@ func (r Resource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.Stat
 	name := planModel.Name.ValueString()
 	id, sdkDiags := client.ID(ctx, name)
 	if sdkDiags.HasError() {
-		diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return diags
 	}
 

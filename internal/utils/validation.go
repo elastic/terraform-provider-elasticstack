@@ -21,7 +21,7 @@ func StringIsDuration(i interface{}, k string) (warnings []string, errors []erro
 }
 
 // StringIsElasticDuration is a SchemaValidateFunc which tests to make sure the supplied string is valid duration using Elastic time units:
-// d, h, m, s, ms, micros, nanos. (see https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units)
+// d, h, m, s, ms, micros, nanos. (see the [API conventions time units documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units) for more details)
 func StringIsElasticDuration(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {

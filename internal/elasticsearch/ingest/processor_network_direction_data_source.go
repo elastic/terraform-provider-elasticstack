@@ -5,12 +5,17 @@ import (
 	"encoding/json"
 	"strings"
 
+	_ "embed"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+//go:embed processor_network_direction_data_source.md
+var networkDirectionDataSourceDescription string
 
 func DataSourceProcessorNetworkDirection() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -98,8 +103,7 @@ func DataSourceProcessorNetworkDirection() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Calculates the network direction given a source IP address, destination IP address, and a list of internal networks. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/network-direction-processor.html",
-
+		Description: networkDirectionDataSourceDescription,
 		ReadContext: dataSourceProcessorNetworkDirectionRead,
 
 		Schema: processorSchema,

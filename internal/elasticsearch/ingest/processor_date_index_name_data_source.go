@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"strings"
 
@@ -11,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+//go:embed processor_date_index_name_data_source.md
+var dateIndexNameDataSourceDescription string
 
 func DataSourceProcessorDateIndexName() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -101,7 +105,7 @@ func DataSourceProcessorDateIndexName() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "The purpose of this processor is to point documents to the right time based index based on a date or timestamp field in a document by using the date math index name support. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/date-index-name-processor.html",
+		Description: dateIndexNameDataSourceDescription,
 
 		ReadContext: dataSourceProcessorDateIndexNameRead,
 

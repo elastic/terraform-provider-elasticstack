@@ -6,7 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -39,7 +39,7 @@ func (d *enrichPolicyDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 
 func GetDataSourceSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Returns information about an enrich policy. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/get-enrich-policy-api.html",
+		MarkdownDescription: "Returns information about an enrich policy. See the [enrich policy API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/get-enrich-policy-api.html) for more details.",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},
@@ -94,7 +94,7 @@ func (d *enrichPolicyDataSource) Read(ctx context.Context, req datasource.ReadRe
 	}
 
 	id, sdkDiags := client.ID(ctx, policyName)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -102,7 +102,7 @@ func (d *enrichPolicyDataSource) Read(ctx context.Context, req datasource.ReadRe
 
 	// Use the same read logic as the resource
 	policy, sdkDiags := elasticsearch.GetEnrichPolicy(ctx, client, policyName)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -5,7 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -26,7 +26,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 	name := planModel.Name.ValueString()
 	id, sdkDiags := client.ID(ctx, name)
 	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
 	}
 
@@ -39,7 +39,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 
 	serverFlavor, sdkDiags := client.ServerFlavor(ctx)
 	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
 	}
 

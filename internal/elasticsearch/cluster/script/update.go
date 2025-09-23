@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -24,7 +25,7 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 
 	scriptId := data.ScriptId.ValueString()
 	id, sdkDiags := r.client.ID(ctx, scriptId)
-	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}

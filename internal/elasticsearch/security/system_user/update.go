@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -24,7 +25,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 
 	usernameId := data.Username.ValueString()
 	id, sdkDiags := r.client.ID(ctx, usernameId)
-	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
@@ -36,7 +37,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameId)
-	diags.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}

@@ -12,7 +12,7 @@ import (
 
 func (r *resourceAgentConfiguration) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages APM agent configuration.",
+		Description: "Creates or updates an APM agent configuration. See https://www.elastic.co/docs/solutions/observability/apm/apm-agent-central-configuration.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

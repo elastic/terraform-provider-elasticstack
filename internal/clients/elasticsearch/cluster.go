@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -25,7 +25,7 @@ func GetClusterInfo(ctx context.Context, apiClient *clients.ApiClient) (*models.
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
 		return nil, diags
 	}
 
@@ -51,7 +51,7 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, re
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update the snapshot repository"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create or update the snapshot repository"); diags.HasError() {
 		return diags
 	}
 
@@ -73,7 +73,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, na
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get the information about snapshot repository: %s", name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get the information about snapshot repository: %s", name)); diags.HasError() {
 		return nil, diags
 	}
 	snapRepoResponse := make(map[string]models.SnapshotRepository)
@@ -107,7 +107,7 @@ func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient,
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete snapshot repository: %s", name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete snapshot repository: %s", name)); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -130,7 +130,7 @@ func PutSlm(ctx context.Context, apiClient *clients.ApiClient, slm *models.Snaps
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update the SLM"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create or update the SLM"); diags.HasError() {
 		return diags
 	}
 
@@ -152,7 +152,7 @@ func GetSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) (
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to get SLM policy from ES API"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to get SLM policy from ES API"); diags.HasError() {
 		return nil, diags
 	}
 	type SlmResponse = map[string]struct {
@@ -184,7 +184,7 @@ func DeleteSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete SLM policy: %s", slmName)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete SLM policy: %s", slmName)); diags.HasError() {
 		return diags
 	}
 
@@ -206,7 +206,7 @@ func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to update cluster settings."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to update cluster settings."); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -224,7 +224,7 @@ func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to read cluster settings."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to read cluster settings."); diags.HasError() {
 		return nil, diags
 	}
 
@@ -248,7 +248,7 @@ func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*m
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckErrorFromFW(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
 		return nil, diags
 	}
 	var scriptResponse struct {
@@ -280,7 +280,7 @@ func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models
 		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to put script", err.Error())}
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckErrorFromFW(res, "Unable to put stored script"); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to put stored script"); diags.HasError() {
 		return diags
 	}
 	return nil
@@ -296,7 +296,7 @@ func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) 
 		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to delete script", err.Error())}
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete script: %s", id)); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete script: %s", id)); diags.HasError() {
 		return diags
 	}
 	return nil

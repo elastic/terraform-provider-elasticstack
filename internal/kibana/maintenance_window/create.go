@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -29,7 +29,7 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	isSupported, sdkDiags := r.client.EnforceMinVersion(ctx, version.Must(version.NewVersion("9.1.0")))
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

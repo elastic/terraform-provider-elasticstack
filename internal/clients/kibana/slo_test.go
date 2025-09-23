@@ -15,18 +15,18 @@ func Test_sloResponseToModel(t *testing.T) {
 		name          string
 		spaceId       string
 		sloId         string
-		sloResponse   *slo.SloResponse
+		sloResponse   *slo.SloWithSummaryResponse
 		expectedModel *models.Slo
 	}{
 		{
 			name:    "should return a model with the correct values",
 			spaceId: "space-id",
 			sloId:   "slo-id",
-			sloResponse: &slo.SloResponse{
+			sloResponse: &slo.SloWithSummaryResponse{
 				Id:          "slo-id",
 				Name:        "slo-name",
 				Description: "slo-description",
-				Indicator: slo.SloResponseIndicator{
+				Indicator: slo.SloWithSummaryResponseIndicator{
 					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
 						Type: "sli.apm.transactionErrorRate",
 						Params: slo.IndicatorPropertiesApmAvailabilityParams{
@@ -55,7 +55,7 @@ func Test_sloResponseToModel(t *testing.T) {
 				SloID:       "slo-id",
 				Name:        "slo-name",
 				Description: "slo-description",
-				Indicator: slo.SloResponseIndicator{
+				Indicator: slo.SloWithSummaryResponseIndicator{
 					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
 						Type: "sli.apm.transactionErrorRate",
 						Params: slo.IndicatorPropertiesApmAvailabilityParams{
@@ -84,11 +84,11 @@ func Test_sloResponseToModel(t *testing.T) {
 			name:    "should return tags if available",
 			spaceId: "space-id",
 			sloId:   "slo-id",
-			sloResponse: &slo.SloResponse{
+			sloResponse: &slo.SloWithSummaryResponse{
 				Id:          "slo-id",
 				Name:        "slo-name",
 				Description: "slo-description",
-				Indicator: slo.SloResponseIndicator{
+				Indicator: slo.SloWithSummaryResponseIndicator{
 					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
 						Type: "sli.apm.transactionErrorRate",
 						Params: slo.IndicatorPropertiesApmAvailabilityParams{
@@ -118,7 +118,7 @@ func Test_sloResponseToModel(t *testing.T) {
 				SloID:       "slo-id",
 				Name:        "slo-name",
 				Description: "slo-description",
-				Indicator: slo.SloResponseIndicator{
+				Indicator: slo.SloWithSummaryResponseIndicator{
 					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
 						Type: "sli.apm.transactionErrorRate",
 						Params: slo.IndicatorPropertiesApmAvailabilityParams{

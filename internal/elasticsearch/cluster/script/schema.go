@@ -20,7 +20,7 @@ func (r *scriptResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Creates or updates a stored script or search template. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/create-stored-script-api.html",
+		MarkdownDescription: "Creates or updates a stored script or search template. See the [create stored script API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/create-stored-script-api.html) for more details.",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},

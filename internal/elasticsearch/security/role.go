@@ -235,7 +235,7 @@ func ResourceRole() *schema.Resource {
 	utils.AddConnectionSchema(roleSchema)
 
 	return &schema.Resource{
-		Description: "Adds and updates roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html",
+		Description: "Adds and updates roles in the native realm. See the [security API put role documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html) for more details.",
 
 		CreateContext: resourceSecurityRolePut,
 		UpdateContext: resourceSecurityRolePut,
