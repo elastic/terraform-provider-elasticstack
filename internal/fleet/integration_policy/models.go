@@ -2,6 +2,7 @@ package integration_policy
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -53,14 +54,14 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 
 	// Only populate the agent policy field that was originally configured
 	// to avoid Terraform detecting inconsistent state
-	originallyUsedAgentPolicyID := !model.AgentPolicyID.IsNull() && !model.AgentPolicyID.IsUnknown()
-	originallyUsedAgentPolicyIDs := !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown()
 
-	if originallyUsedAgentPolicyID && !originallyUsedAgentPolicyIDs {
-		// Only set agent_policy_id if it was originally used
+	originallyUsedAgentPolicyID := utils.IsKnown(model.AgentPolicyID)
+	originallyUsedAgentPolicyIDs := utils.IsKnown(model.AgentPolicyIDs)
+
+	if originallyUsedAgentPolicyID {
 		model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
-	} else if originallyUsedAgentPolicyIDs && !originallyUsedAgentPolicyID {
-		// Only set agent_policy_ids if it was originally used
+	}
+	if originallyUsedAgentPolicyIDs {
 		if data.PolicyIds != nil {
 			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *data.PolicyIds)
 			diags.Append(d...)
@@ -68,7 +69,9 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 		} else {
 			model.AgentPolicyIDs = types.ListNull(types.StringType)
 		}
-	} else {
+	}
+
+	if !originallyUsedAgentPolicyID && !originallyUsedAgentPolicyIDs {
 		// Handle edge cases: both fields configured or neither configured
 		// Default to the behavior based on API response structure
 		if data.PolicyIds != nil && len(*data.PolicyIds) > 1 {
@@ -76,7 +79,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *data.PolicyIds)
 			diags.Append(d...)
 			model.AgentPolicyIDs = agentPolicyIDs
-		} else {
+		} else if data.PolicyId != nil {
 			// Single policy ID, use agent_policy_id
 			model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
 		}
@@ -119,6 +122,19 @@ func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, i
 
 func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool, feat features) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	// Check if agent_policy_ids is configured and version supports it
+	if utils.IsKnown(model.AgentPolicyIDs) {
+		if !feat.SupportsPolicyIds {
+			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("agent_policy_ids"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Agent policy IDs are only supported in Elastic Stack %s and above", MinVersionPolicyIds),
+				),
+			}
+		}
+	}
 
 	body := kbapi.PackagePolicyRequest{
 		Description: model.Description.ValueStringPointer(),

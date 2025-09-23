@@ -97,7 +97,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 
 ### Optional
 
-- `agent_policy_id` (String, Deprecated) ID of the agent policy.
+- `agent_policy_id` (String) ID of the agent policy.
 - `agent_policy_ids` (List of String) List of agent policy IDs.
 - `description` (String) The description of the integration policy.
 - `enabled` (Boolean) Enable the integration policy.
