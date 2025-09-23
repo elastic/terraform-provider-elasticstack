@@ -278,6 +278,34 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	// Define attribute type maps
+	applicationAttrTypes := map[string]attr.Type{
+		"application": types.StringType,
+		"privileges":  types.SetType{ElemType: types.StringType},
+		"resources":   types.SetType{ElemType: types.StringType},
+	}
+
+	fieldSecurityAttrTypes := map[string]attr.Type{
+		"grant":  types.SetType{ElemType: types.StringType},
+		"except": types.SetType{ElemType: types.StringType},
+	}
+
+	indexPermsAttrTypes := map[string]attr.Type{
+		"field_security":           types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes}},
+		"names":                    types.SetType{ElemType: types.StringType},
+		"privileges":               types.SetType{ElemType: types.StringType},
+		"query":                    jsontypes.NormalizedType{},
+		"allow_restricted_indices": types.BoolType,
+	}
+
+	remoteIndexPermsAttrTypes := map[string]attr.Type{
+		"clusters":       types.SetType{ElemType: types.StringType},
+		"field_security": types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes}},
+		"query":          jsontypes.NormalizedType{},
+		"names":          types.SetType{ElemType: types.StringType},
+		"privileges":     types.SetType{ElemType: types.StringType},
+	}
+
 	data.Name = types.StringValue(role.Name)
 
 	// Description
@@ -299,7 +327,7 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 				return diags
 			}
 
-			appObj, d := types.ObjectValue(getApplicationAttrTypes(), map[string]attr.Value{
+			appObj, d := types.ObjectValue(applicationAttrTypes, map[string]attr.Value{
 				"application": types.StringValue(app.Name),
 				"privileges":  privSet,
 				"resources":   resSet,
@@ -312,14 +340,14 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 			appElements[i] = appObj
 		}
 
-		appSet, d := types.SetValue(types.ObjectType{AttrTypes: getApplicationAttrTypes()}, appElements)
+		appSet, d := types.SetValue(types.ObjectType{AttrTypes: applicationAttrTypes}, appElements)
 		diags.Append(d...)
 		if diags.HasError() {
 			return diags
 		}
 		data.Applications = appSet
 	} else {
-		data.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationAttrTypes()})
+		data.Applications = types.SetNull(types.ObjectType{AttrTypes: applicationAttrTypes})
 	}
 
 	// Cluster
@@ -369,7 +397,12 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 				queryVal = jsontypes.NewNormalizedNull()
 			}
 
-			allowRestrictedVal := types.BoolPointerValue(index.AllowRestrictedIndices)
+			var allowRestrictedVal types.Bool
+			if index.AllowRestrictedIndices != nil {
+				allowRestrictedVal = types.BoolValue(*index.AllowRestrictedIndices)
+			} else {
+				allowRestrictedVal = types.BoolNull()
+			}
 
 			var fieldSecList types.List
 			if index.FieldSecurity != nil {
@@ -385,7 +418,7 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
-				fieldSecObj, d := types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
+				fieldSecObj, d := types.ObjectValue(fieldSecurityAttrTypes, map[string]attr.Value{
 					"grant":  grantSet,
 					"except": exceptSet,
 				})
@@ -394,16 +427,16 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
-				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityAttrTypes()}, []attr.Value{fieldSecObj})
+				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: fieldSecurityAttrTypes}, []attr.Value{fieldSecObj})
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
 				}
 			} else {
-				fieldSecList = types.ListNull(types.ObjectType{AttrTypes: getFieldSecurityAttrTypes()})
+				fieldSecList = types.ListNull(types.ObjectType{AttrTypes: fieldSecurityAttrTypes})
 			}
 
-			indexObj, d := types.ObjectValue(getIndexPermsAttrTypes(), map[string]attr.Value{
+			indexObj, d := types.ObjectValue(indexPermsAttrTypes, map[string]attr.Value{
 				"field_security":           fieldSecList,
 				"names":                    namesSet,
 				"privileges":               privSet,
@@ -418,14 +451,14 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 			indicesElements[i] = indexObj
 		}
 
-		indicesSet, d := types.SetValue(types.ObjectType{AttrTypes: getIndexPermsAttrTypes()}, indicesElements)
+		indicesSet, d := types.SetValue(types.ObjectType{AttrTypes: indexPermsAttrTypes}, indicesElements)
 		diags.Append(d...)
 		if diags.HasError() {
 			return diags
 		}
 		data.Indices = indicesSet
 	} else {
-		data.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsAttrTypes()})
+		data.Indices = types.SetNull(types.ObjectType{AttrTypes: indexPermsAttrTypes})
 	}
 
 	// Remote Indices
@@ -471,7 +504,7 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
-				fieldSecObj, d := types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
+				fieldSecObj, d := types.ObjectValue(fieldSecurityAttrTypes, map[string]attr.Value{
 					"grant":  grantSet,
 					"except": exceptSet,
 				})
@@ -480,16 +513,16 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
-				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityAttrTypes()}, []attr.Value{fieldSecObj})
+				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: fieldSecurityAttrTypes}, []attr.Value{fieldSecObj})
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
 				}
 			} else {
-				fieldSecList = types.ListNull(types.ObjectType{AttrTypes: getFieldSecurityAttrTypes()})
+				fieldSecList = types.ListNull(types.ObjectType{AttrTypes: fieldSecurityAttrTypes})
 			}
 
-			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsAttrTypes(), map[string]attr.Value{
+			remoteIndexObj, d := types.ObjectValue(remoteIndexPermsAttrTypes, map[string]attr.Value{
 				"clusters":       clustersSet,
 				"field_security": fieldSecList,
 				"query":          queryVal,
@@ -504,14 +537,14 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 			remoteIndicesElements[i] = remoteIndexObj
 		}
 
-		remoteIndicesSet, d := types.SetValue(types.ObjectType{AttrTypes: getRemoteIndexPermsAttrTypes()}, remoteIndicesElements)
+		remoteIndicesSet, d := types.SetValue(types.ObjectType{AttrTypes: remoteIndexPermsAttrTypes}, remoteIndicesElements)
 		diags.Append(d...)
 		if diags.HasError() {
 			return diags
 		}
 		data.RemoteIndices = remoteIndicesSet
 	} else {
-		data.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsAttrTypes()})
+		data.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: remoteIndexPermsAttrTypes})
 	}
 
 	// Metadata

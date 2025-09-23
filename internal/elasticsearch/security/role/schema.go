@@ -5,10 +5,8 @@ import (
 	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -28,27 +26,9 @@ func GetSchema() schema.Schema {
 		MarkdownDescription: roleResourceDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
-		},
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource",
-				Computed:            true,
-			},
-			"name": schema.StringAttribute{
-				MarkdownDescription: "The name of the role.",
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"description": schema.StringAttribute{
-				MarkdownDescription: "The description of the role.",
-				Optional:            true,
-			},
-			"applications": schema.SetNestedAttribute{
+			"applications": schema.SetNestedBlock{
 				MarkdownDescription: "A list of application privilege entries.",
-				Optional:            true,
-				NestedObject: schema.NestedAttributeObject{
+				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"application": schema.StringAttribute{
 							MarkdownDescription: "The name of the application to which this entry applies.",
@@ -67,20 +47,9 @@ func GetSchema() schema.Schema {
 					},
 				},
 			},
-			"global": schema.StringAttribute{
-				MarkdownDescription: "An object defining global privileges.",
-				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
-			},
-			"cluster": schema.SetAttribute{
-				MarkdownDescription: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
-				Optional:            true,
-				ElementType:         types.StringType,
-			},
-			"indices": schema.SetNestedAttribute{
+			"indices": schema.SetNestedBlock{
 				MarkdownDescription: "A list of indices permissions entries.",
-				Optional:            true,
-				NestedObject: schema.NestedAttributeObject{
+				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"field_security": schema.ListNestedAttribute{
 							MarkdownDescription: "The document fields that the owners of the role have read access to.",
@@ -118,16 +87,13 @@ func GetSchema() schema.Schema {
 						"allow_restricted_indices": schema.BoolAttribute{
 							MarkdownDescription: "Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.",
 							Optional:            true,
-							Computed:            true,
-							Default:             booldefault.StaticBool(false),
 						},
 					},
 				},
 			},
-			"remote_indices": schema.SetNestedAttribute{
+			"remote_indices": schema.SetNestedBlock{
 				MarkdownDescription: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
-				Optional:            true,
-				NestedObject: schema.NestedAttributeObject{
+				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"clusters": schema.SetAttribute{
 							MarkdownDescription: "A list of cluster aliases to which the permissions in this entry apply.",
@@ -170,6 +136,33 @@ func GetSchema() schema.Schema {
 					},
 				},
 			},
+		},
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				MarkdownDescription: "Internal identifier of the resource",
+				Computed:            true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "The name of the role.",
+				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"description": schema.StringAttribute{
+				MarkdownDescription: "The description of the role.",
+				Optional:            true,
+			},
+			"global": schema.StringAttribute{
+				MarkdownDescription: "An object defining global privileges.",
+				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+			"cluster": schema.SetAttribute{
+				MarkdownDescription: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
+				Optional:            true,
+				ElementType:         types.StringType,
+			},
 			"metadata": schema.StringAttribute{
 				MarkdownDescription: "Optional meta-data.",
 				Optional:            true,
@@ -183,21 +176,4 @@ func GetSchema() schema.Schema {
 			},
 		},
 	}
-}
-
-// Helper functions to get attribute types from schema
-func getApplicationAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["applications"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
-func getIndexPermsAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
-func getFieldSecurityAttrTypes() map[string]attr.Type {
-	return getIndexPermsAttrTypes()["field_security"].(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
-func getRemoteIndexPermsAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["remote_indices"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
