@@ -89,7 +89,7 @@ func ResourceWatch() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Manage Watches. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html",
+		Description: "Manage Watches. See the [Watcher API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html) for more details.",
 
 		CreateContext: resourceWatchPut,
 		UpdateContext: resourceWatchPut,
