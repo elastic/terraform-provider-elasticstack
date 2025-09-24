@@ -7,9 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -209,46 +207,18 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
-	if rule.DataViewId != nil {
-		d.DataViewId = types.StringValue(string(*rule.DataViewId))
-	} else {
-		d.DataViewId = types.StringNull()
-	}
-
-	if rule.Namespace != nil {
-		d.Namespace = types.StringValue(string(*rule.Namespace))
-	} else {
-		d.Namespace = types.StringNull()
-	}
-
-	if rule.RuleNameOverride != nil {
-		d.RuleNameOverride = types.StringValue(string(*rule.RuleNameOverride))
-	} else {
-		d.RuleNameOverride = types.StringNull()
-	}
-
-	if rule.TimestampOverride != nil {
-		d.TimestampOverride = types.StringValue(string(*rule.TimestampOverride))
-	} else {
-		d.TimestampOverride = types.StringNull()
-	}
-
-	if rule.TimestampOverrideFallbackDisabled != nil {
-		d.TimestampOverrideFallbackDisabled = types.BoolValue(bool(*rule.TimestampOverrideFallbackDisabled))
-	} else {
-		d.TimestampOverrideFallbackDisabled = types.BoolNull()
-	}
+	diags.Append(d.updateDataViewIdFromApi(ctx, rule.DataViewId)...)
+	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
+	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
+	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)
+	diags.Append(d.updateTimestampOverrideFallbackDisabledFromApi(ctx, rule.TimestampOverrideFallbackDisabled)...)
 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(bool(rule.Enabled))
 
 	// Update building block type
-	if rule.BuildingBlockType != nil {
-		d.BuildingBlockType = types.StringValue(string(*rule.BuildingBlockType))
-	} else {
-		d.BuildingBlockType = types.StringNull()
-	}
+	diags.Append(d.updateBuildingBlockTypeFromApi(ctx, rule.BuildingBlockType)...)
 	d.From = types.StringValue(string(rule.From))
 	d.To = types.StringValue(string(rule.To))
 	d.Interval = types.StringValue(string(rule.Interval))
@@ -266,11 +236,7 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	d.Revision = types.Int64Value(int64(rule.Revision))
 
 	// Update index patterns
-	if rule.Index != nil && len(*rule.Index) > 0 {
-		d.Index = utils.ListValueFrom(ctx, *rule.Index, types.StringType, path.Root("index"), &diags)
-	} else {
-		d.Index = types.ListValueMust(types.StringType, []attr.Value{})
-	}
+	diags.Append(d.updateIndexFromApi(ctx, rule.Index)...)
 
 	// Threshold-specific fields
 	thresholdObj, thresholdDiags := convertThresholdToModel(ctx, rule.Threshold)
@@ -287,52 +253,21 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	}
 
 	// Update author
-	if len(rule.Author) > 0 {
-		d.Author = utils.ListValueFrom(ctx, rule.Author, types.StringType, path.Root("author"), &diags)
-	} else {
-		d.Author = types.ListValueMust(types.StringType, []attr.Value{})
-	}
+	diags.Append(d.updateAuthorFromApi(ctx, rule.Author)...)
 
 	// Update tags
-	if len(rule.Tags) > 0 {
-		d.Tags = utils.ListValueFrom(ctx, rule.Tags, types.StringType, path.Root("tags"), &diags)
-	} else {
-		d.Tags = types.ListValueMust(types.StringType, []attr.Value{})
-	}
+	diags.Append(d.updateTagsFromApi(ctx, rule.Tags)...)
 
 	// Update false positives
-	if len(rule.FalsePositives) > 0 {
-		d.FalsePositives = utils.ListValueFrom(ctx, rule.FalsePositives, types.StringType, path.Root("false_positives"), &diags)
-	} else {
-		d.FalsePositives = types.ListValueMust(types.StringType, []attr.Value{})
-	}
+	diags.Append(d.updateFalsePositivesFromApi(ctx, rule.FalsePositives)...)
 
 	// Update references
-	if len(rule.References) > 0 {
-		d.References = utils.ListValueFrom(ctx, rule.References, types.StringType, path.Root("references"), &diags)
-	} else {
-		d.References = types.ListValueMust(types.StringType, []attr.Value{})
-	}
+	diags.Append(d.updateReferencesFromApi(ctx, rule.References)...)
 
 	// Update optional string fields
-	if rule.License != nil {
-		d.License = types.StringValue(string(*rule.License))
-	} else {
-		d.License = types.StringNull()
-	}
-
-	if rule.Note != nil {
-		d.Note = types.StringValue(string(*rule.Note))
-	} else {
-		d.Note = types.StringNull()
-	}
-
-	// Handle setup field - if empty, set to null to maintain consistency with optional schema
-	if string(rule.Setup) != "" {
-		d.Setup = types.StringValue(string(rule.Setup))
-	} else {
-		d.Setup = types.StringNull()
-	}
+	diags.Append(d.updateLicenseFromApi(ctx, rule.License)...)
+	diags.Append(d.updateNoteFromApi(ctx, rule.Note)...)
+	diags.Append(d.updateSetupFromApi(ctx, rule.Setup)...)
 
 	// Update actions
 	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)

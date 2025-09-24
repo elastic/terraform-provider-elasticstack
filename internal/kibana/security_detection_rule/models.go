@@ -2938,3 +2938,186 @@ func (d *SecurityDetectionRuleData) updateSeverityMappingFromApi(ctx context.Con
 
 	return diags
 }
+
+// Helper function to update index patterns from API response
+func (d *SecurityDetectionRuleData) updateIndexFromApi(ctx context.Context, index *[]string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if index != nil && len(*index) > 0 {
+		d.Index = utils.ListValueFrom(ctx, *index, types.StringType, path.Root("index"), &diags)
+	} else {
+		d.Index = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	return diags
+}
+
+// Helper function to update author from API response
+func (d *SecurityDetectionRuleData) updateAuthorFromApi(ctx context.Context, author []string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if len(author) > 0 {
+		d.Author = utils.ListValueFrom(ctx, author, types.StringType, path.Root("author"), &diags)
+	} else {
+		d.Author = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	return diags
+}
+
+// Helper function to update tags from API response
+func (d *SecurityDetectionRuleData) updateTagsFromApi(ctx context.Context, tags []string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if len(tags) > 0 {
+		d.Tags = utils.ListValueFrom(ctx, tags, types.StringType, path.Root("tags"), &diags)
+	} else {
+		d.Tags = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	return diags
+}
+
+// Helper function to update false positives from API response
+func (d *SecurityDetectionRuleData) updateFalsePositivesFromApi(ctx context.Context, falsePositives []string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if len(falsePositives) > 0 {
+		d.FalsePositives = utils.ListValueFrom(ctx, falsePositives, types.StringType, path.Root("false_positives"), &diags)
+	} else {
+		d.FalsePositives = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	return diags
+}
+
+// Helper function to update references from API response
+func (d *SecurityDetectionRuleData) updateReferencesFromApi(ctx context.Context, references []string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if len(references) > 0 {
+		d.References = utils.ListValueFrom(ctx, references, types.StringType, path.Root("references"), &diags)
+	} else {
+		d.References = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	return diags
+}
+
+// Helper function to update data view ID from API response
+func (d *SecurityDetectionRuleData) updateDataViewIdFromApi(ctx context.Context, dataViewId *kbapi.SecurityDetectionsAPIDataViewId) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if dataViewId != nil {
+		d.DataViewId = types.StringValue(string(*dataViewId))
+	} else {
+		d.DataViewId = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update namespace from API response
+func (d *SecurityDetectionRuleData) updateNamespaceFromApi(ctx context.Context, namespace *kbapi.SecurityDetectionsAPIAlertsIndexNamespace) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if namespace != nil {
+		d.Namespace = types.StringValue(string(*namespace))
+	} else {
+		d.Namespace = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update rule name override from API response
+func (d *SecurityDetectionRuleData) updateRuleNameOverrideFromApi(ctx context.Context, ruleNameOverride *kbapi.SecurityDetectionsAPIRuleNameOverride) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if ruleNameOverride != nil {
+		d.RuleNameOverride = types.StringValue(string(*ruleNameOverride))
+	} else {
+		d.RuleNameOverride = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update timestamp override from API response
+func (d *SecurityDetectionRuleData) updateTimestampOverrideFromApi(ctx context.Context, timestampOverride *kbapi.SecurityDetectionsAPITimestampOverride) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if timestampOverride != nil {
+		d.TimestampOverride = types.StringValue(string(*timestampOverride))
+	} else {
+		d.TimestampOverride = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update timestamp override fallback disabled from API response
+func (d *SecurityDetectionRuleData) updateTimestampOverrideFallbackDisabledFromApi(ctx context.Context, timestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if timestampOverrideFallbackDisabled != nil {
+		d.TimestampOverrideFallbackDisabled = types.BoolValue(bool(*timestampOverrideFallbackDisabled))
+	} else {
+		d.TimestampOverrideFallbackDisabled = types.BoolNull()
+	}
+
+	return diags
+}
+
+// Helper function to update building block type from API response
+func (d *SecurityDetectionRuleData) updateBuildingBlockTypeFromApi(ctx context.Context, buildingBlockType *kbapi.SecurityDetectionsAPIBuildingBlockType) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if buildingBlockType != nil {
+		d.BuildingBlockType = types.StringValue(string(*buildingBlockType))
+	} else {
+		d.BuildingBlockType = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update license from API response
+func (d *SecurityDetectionRuleData) updateLicenseFromApi(ctx context.Context, license *kbapi.SecurityDetectionsAPIRuleLicense) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if license != nil {
+		d.License = types.StringValue(string(*license))
+	} else {
+		d.License = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update note from API response
+func (d *SecurityDetectionRuleData) updateNoteFromApi(ctx context.Context, note *kbapi.SecurityDetectionsAPIInvestigationGuide) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if note != nil {
+		d.Note = types.StringValue(string(*note))
+	} else {
+		d.Note = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update setup from API response
+func (d *SecurityDetectionRuleData) updateSetupFromApi(ctx context.Context, setup kbapi.SecurityDetectionsAPISetupGuide) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Handle setup field - if empty, set to null to maintain consistency with optional schema
+	if string(setup) != "" {
+		d.Setup = types.StringValue(string(setup))
+	} else {
+		d.Setup = types.StringNull()
+	}
+
+	return diags
+}
