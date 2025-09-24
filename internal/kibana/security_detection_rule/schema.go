@@ -541,7 +541,7 @@ func GetSchema() schema.Schema {
 				Attributes: map[string]schema.Attribute{
 					"group_by": schema.ListAttribute{
 						MarkdownDescription: "Array of field names to group alerts by for suppression.",
-						Required:            true,
+						Optional:            true,
 						ElementType:         types.StringType,
 					},
 					"duration": schema.SingleNestedAttribute{
