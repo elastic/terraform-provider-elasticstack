@@ -1021,6 +1021,16 @@ func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults(ctx context.Co
 		d.BuildingBlockType = types.StringNull()
 	}
 
+	// Actions field (common across all rule types)
+	if !utils.IsKnown(d.Actions) {
+		d.Actions = types.ListNull(actionElementType())
+	}
+
+	// Exceptions list field (common across all rule types)
+	if !utils.IsKnown(d.ExceptionsList) {
+		d.ExceptionsList = types.ListNull(exceptionsListElementType())
+	}
+
 	// Initialize all type-specific fields to null/empty by default
 	d.initializeTypeSpecificFieldsToDefaults(ctx, diags)
 }
@@ -1133,16 +1143,6 @@ func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx c
 				},
 			},
 		})
-	}
-
-	// Actions field (common across all rule types)
-	if !utils.IsKnown(d.Actions) {
-		d.Actions = types.ListNull(actionElementType())
-	}
-
-	// Exceptions list field (common across all rule types)
-	if !utils.IsKnown(d.ExceptionsList) {
-		d.ExceptionsList = types.ListNull(exceptionsListElementType())
 	}
 }
 
