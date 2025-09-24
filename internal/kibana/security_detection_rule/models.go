@@ -1415,6 +1415,7 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kb
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &eqlRule.Actions,
+		ResponseActions:                   &eqlRule.ResponseActions,
 		RuleId:                            &eqlRule.RuleId,
 		Enabled:                           &eqlRule.Enabled,
 		From:                              &eqlRule.From,
@@ -1500,6 +1501,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (k
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &esqlRule.Actions,
+		ResponseActions:                   &esqlRule.ResponseActions,
 		RuleId:                            &esqlRule.RuleId,
 		Enabled:                           &esqlRule.Enabled,
 		From:                              &esqlRule.From,
@@ -1606,6 +1608,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &mlRule.Actions,
+		ResponseActions:                   &mlRule.ResponseActions,
 		RuleId:                            &mlRule.RuleId,
 		Enabled:                           &mlRule.Enabled,
 		From:                              &mlRule.From,
@@ -1695,6 +1698,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &newTermsRule.Actions,
+		ResponseActions:                   &newTermsRule.ResponseActions,
 		RuleId:                            &newTermsRule.RuleId,
 		Enabled:                           &newTermsRule.Enabled,
 		From:                              &newTermsRule.From,
@@ -1776,6 +1780,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &savedQueryRule.Actions,
+		ResponseActions:                   &savedQueryRule.ResponseActions,
 		RuleId:                            &savedQueryRule.RuleId,
 		Enabled:                           &savedQueryRule.Enabled,
 		From:                              &savedQueryRule.From,
@@ -1805,6 +1810,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		RuleNameOverride:                  &savedQueryRule.RuleNameOverride,
 		TimestampOverride:                 &savedQueryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
+		Filters:                           &savedQueryRule.Filters,
 	}, &diags)
 
 	// Set optional query for saved query rules
@@ -1878,6 +1884,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &threatMatchRule.Actions,
+		ResponseActions:                   &threatMatchRule.ResponseActions,
 		RuleId:                            &threatMatchRule.RuleId,
 		Enabled:                           &threatMatchRule.Enabled,
 		From:                              &threatMatchRule.From,
@@ -1990,6 +1997,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &thresholdRule.Actions,
+		ResponseActions:                   &thresholdRule.ResponseActions,
 		RuleId:                            &thresholdRule.RuleId,
 		Enabled:                           &thresholdRule.Enabled,
 		From:                              &thresholdRule.From,
