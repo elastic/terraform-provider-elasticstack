@@ -3875,6 +3875,141 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
+func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_queryMinimal("test-query-rule-minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test query security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+
+					// Verify only required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_queryMinimalUpdate("test-query-rule-minimal-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "event.category:authentication"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test query security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "index.1", "winlogbeat-*"),
+
+					// Verify required fields are still set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are still not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+		},
+	})
+}
+
+func testAccSecurityDetectionRuleConfig_queryMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "query"
+  query       = "*:*"
+  language    = "kuery"
+  enabled     = true
+  description = "Minimal test query security detection rule"
+  severity    = "low"
+  risk_score  = 21
+  from        = "now-6m"
+  to          = "now"
+  interval    = "5m"
+  index       = ["logs-*"]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_queryMinimalUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "query"
+  query       = "event.category:authentication"
+  language    = "kuery"
+  enabled     = false
+  description = "Updated minimal test query security detection rule"
+  severity    = "medium"
+  risk_score  = 55
+  from        = "now-12m"
+  to          = "now"
+  interval    = "10m"
+  index       = ["logs-*", "winlogbeat-*"]
+}
+`, name)
+}
+
 func testAccSecurityDetectionRuleConfig_queryRemoveFilters(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
