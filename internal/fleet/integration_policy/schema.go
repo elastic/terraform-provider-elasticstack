@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 //go:embed resource-description.md
@@ -51,7 +52,12 @@ func getSchemaV1() schema.Schema {
 			},
 			"agent_policy_id": schema.StringAttribute{
 				Description: "ID of the agent policy.",
-				Required:    true,
+				Optional:    true,
+			},
+			"agent_policy_ids": schema.ListAttribute{
+				Description: "List of agent policy IDs.",
+				ElementType: types.StringType,
+				Optional:    true,
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the integration policy.",

@@ -22,7 +22,13 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	body, diags := planModel.toAPIModel(ctx, false)
+	feat, diags := r.buildFeatures(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	body, diags := planModel.toAPIModel(ctx, false, feat)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
