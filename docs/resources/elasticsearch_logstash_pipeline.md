@@ -50,7 +50,7 @@ EOF
 }
 
 output "pipeline" {
-  value = elasticstack_elasticsearch_logstash_pipeline.example.pipeline_id
+  value = elasticstack_elasticsearch_logstash_pipeline_example_pipeline_id
 }
 ```
 
