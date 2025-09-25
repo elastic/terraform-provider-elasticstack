@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -57,16 +56,12 @@ func getSchemaV1() schema.Schema {
 			"agent_policy_id": schema.StringAttribute{
 				Description: "ID of the agent policy.",
 				Optional:    true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
-				},
 			},
 			"agent_policy_ids": schema.ListAttribute{
 				Description: "List of agent policy IDs.",
 				ElementType: types.StringType,
 				Optional:    true,
 				Validators: []validator.List{
-					listvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
 					listvalidator.SizeAtLeast(1),
 				},
 			},
