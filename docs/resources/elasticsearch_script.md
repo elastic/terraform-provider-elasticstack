@@ -55,12 +55,12 @@ resource "elasticstack_elasticsearch_script" "my_search_template" {
 ### Optional
 
 - `context` (String) Context in which the script or search template should run.
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `params` (String) Parameters for the script or search template.
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

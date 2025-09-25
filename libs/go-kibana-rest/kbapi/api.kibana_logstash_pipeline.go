@@ -73,7 +73,7 @@ func newKibanaLogstashPipelineGetFunc(c *resty.Client) KibanaLogstashPipelineGet
 			if resp.StatusCode() == 404 {
 				return nil, nil
 			}
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		logstashPipeline := &LogstashPipeline{}
 		err = json.Unmarshal(resp.Body(), logstashPipeline)
@@ -97,7 +97,7 @@ func newKibanaLogstashPipelineListFunc(c *resty.Client) KibanaLogstashPipelineLi
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		logstashPipelinesList := &LogstashPipelinesList{}
 		err = json.Unmarshal(resp.Body(), logstashPipelinesList)
@@ -140,7 +140,7 @@ func newKibanaLogstashPipelineCreateOrUpdateFunc(c *resty.Client) KibanaLogstash
 
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 
 		// Retrive the object to return it
@@ -174,7 +174,7 @@ func newKibanaLogstashPipelineDeleteFunc(c *resty.Client) KibanaLogstashPipeline
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return NewAPIError(resp.StatusCode(), resp.Status())
+			return NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 
 		return nil

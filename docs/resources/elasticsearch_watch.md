@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_watch Resource - terraform-provider-elasticstack"
 subcategory: "Elasticsearch"
 description: |-
-  Manage Watches. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html
+  Manage Watches. See the Watcher API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html for more details.
 ---
 
 # elasticstack_elasticsearch_watch (Resource)
 
-Manage Watches. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html
+Manage Watches. See the [Watcher API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html) for more details.
 
 ## Example Usage
 
