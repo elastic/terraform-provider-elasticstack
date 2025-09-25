@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -75,7 +75,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		InvestigationFields:               &threatMatchRule.InvestigationFields,
 		Meta:                              &threatMatchRule.Meta,
 		Filters:                           &threatMatchRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set threat-specific fields
 	if utils.IsKnown(d.ThreatQuery) {
@@ -116,7 +116,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -197,7 +197,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		TimestampOverride:                 &threatMatchRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &threatMatchRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &threatMatchRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set threat-specific fields
 	if utils.IsKnown(d.ThreatQuery) {

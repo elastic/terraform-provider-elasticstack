@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -58,7 +58,7 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 		InvestigationFields:               &eqlRule.InvestigationFields,
 		Meta:                              &eqlRule.Meta,
 		Filters:                           &eqlRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set EQL-specific fields
 	if utils.IsKnown(d.TiebreakerField) {
@@ -77,7 +77,7 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context) (kb
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -143,7 +143,7 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context) (kb
 		InvestigationFields:               &eqlRule.InvestigationFields,
 		Meta:                              &eqlRule.Meta,
 		Filters:                           &eqlRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set EQL-specific fields
 	if utils.IsKnown(d.TiebreakerField) {

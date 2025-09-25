@@ -28,7 +28,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Build the create request
-	createProps, diags := data.toCreateProps(ctx)
+	createProps, diags := data.toCreateProps(ctx, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

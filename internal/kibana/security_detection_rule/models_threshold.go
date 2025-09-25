@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -63,7 +63,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		Meta:                              &thresholdRule.Meta,
 		Filters:                           &thresholdRule.Filters,
 		AlertSuppression:                  nil, // Handle specially for threshold rule
-	}, &diags)
+	}, &diags, client)
 
 	// Handle threshold-specific alert suppression
 	if utils.IsKnown(d.AlertSuppression) {
@@ -92,7 +92,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -163,7 +163,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		TimestampOverrideFallbackDisabled: &thresholdRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &thresholdRule.Filters,
 		AlertSuppression:                  nil, // Handle specially for threshold rule
-	}, &diags)
+	}, &diags, client)
 
 	// Handle threshold-specific alert suppression
 	if utils.IsKnown(d.AlertSuppression) {

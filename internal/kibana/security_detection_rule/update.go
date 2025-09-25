@@ -28,7 +28,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 	}
 
 	// Build the update request
-	updateProps, diags := data.toUpdateProps(ctx)
+	updateProps, diags := data.toUpdateProps(ctx, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

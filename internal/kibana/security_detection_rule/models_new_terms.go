@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -68,7 +68,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		InvestigationFields:               &newTermsRule.InvestigationFields,
 		Meta:                              &newTermsRule.Meta,
 		Filters:                           &newTermsRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set query language
 	newTermsRule.Language = d.getKQLQueryLanguage()
@@ -84,7 +84,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -158,7 +158,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		TimestampOverride:                 &newTermsRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &newTermsRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &newTermsRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set query language
 	newTermsRule.Language = d.getKQLQueryLanguage()

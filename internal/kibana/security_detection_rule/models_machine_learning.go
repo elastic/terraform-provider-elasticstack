@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -84,7 +84,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &mlRule.InvestigationFields,
 		Meta:                              &mlRule.Meta,
-	}, &diags)
+	}, &diags, client)
 
 	// ML rules don't use index patterns or query
 
@@ -99,7 +99,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -190,7 +190,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		InvestigationFields:               &mlRule.InvestigationFields,
 		Meta:                              &mlRule.Meta,
 		Filters:                           nil, // ML rules don't have Filters
-	}, &diags)
+	}, &diags, client)
 
 	// ML rules don't use index patterns or query
 

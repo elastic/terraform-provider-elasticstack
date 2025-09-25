@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -58,7 +58,7 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 		InvestigationFields:               &queryRule.InvestigationFields,
 		Meta:                              &queryRule.Meta,
 		Filters:                           &queryRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set query-specific fields
 	queryRule.Language = d.getKQLQueryLanguage()
@@ -80,7 +80,7 @@ func (d SecurityDetectionRuleData) toQueryRuleCreateProps(ctx context.Context) (
 	return createProps, diags
 }
 
-func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -147,7 +147,7 @@ func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context) (
 		InvestigationFields:               &queryRule.InvestigationFields,
 		Meta:                              &queryRule.Meta,
 		Filters:                           &queryRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set query-specific fields
 	queryRule.Language = d.getKQLQueryLanguage()

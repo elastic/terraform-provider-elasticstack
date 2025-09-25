@@ -6,7 +6,10 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -14,6 +17,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// MinVersionResponseActions defines the minimum server version required for response actions
+var MinVersionResponseActions = version.Must(version.NewVersion("8.16.0"))
 
 type SecurityDetectionRuleData struct {
 	Id       types.String `tfsdk:"id"`
@@ -357,7 +363,7 @@ type CommonUpdateProps struct {
 	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
 }
 
-func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -365,21 +371,21 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context) (kbapi.Sec
 
 	switch ruleType {
 	case "query":
-		return d.toQueryRuleCreateProps(ctx)
+		return d.toQueryRuleCreateProps(ctx, client)
 	case "eql":
-		return d.toEqlRuleCreateProps(ctx)
+		return d.toEqlRuleCreateProps(ctx, client)
 	case "esql":
-		return d.toEsqlRuleCreateProps(ctx)
+		return d.toEsqlRuleCreateProps(ctx, client)
 	case "machine_learning":
-		return d.toMachineLearningRuleCreateProps(ctx)
+		return d.toMachineLearningRuleCreateProps(ctx, client)
 	case "new_terms":
-		return d.toNewTermsRuleCreateProps(ctx)
+		return d.toNewTermsRuleCreateProps(ctx, client)
 	case "saved_query":
-		return d.toSavedQueryRuleCreateProps(ctx)
+		return d.toSavedQueryRuleCreateProps(ctx, client)
 	case "threat_match":
-		return d.toThreatMatchRuleCreateProps(ctx)
+		return d.toThreatMatchRuleCreateProps(ctx, client)
 	case "threshold":
-		return d.toThresholdRuleCreateProps(ctx)
+		return d.toThresholdRuleCreateProps(ctx, client)
 	default:
 		diags.AddError(
 			"Unsupported rule type",
@@ -411,6 +417,7 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 	ctx context.Context,
 	props *CommonCreateProps,
 	diags *diag.Diagnostics,
+	client clients.MinVersionEnforceable,
 ) {
 	// Set optional rule_id if provided
 	if props.RuleId != nil && utils.IsKnown(d.RuleId) {
@@ -610,7 +617,7 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 
 	// Set response actions
 	if props.ResponseActions != nil && utils.IsKnown(d.ResponseActions) {
-		responseActions, responseActionsDiags := d.responseActionsToApi(ctx)
+		responseActions, responseActionsDiags := d.responseActionsToApi(ctx, client)
 		diags.Append(responseActionsDiags...)
 		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
 			*props.ResponseActions = &responseActions
@@ -644,7 +651,7 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 	}
 }
 
-func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -652,21 +659,21 @@ func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context) (kbapi.Sec
 
 	switch ruleType {
 	case "query":
-		return d.toQueryRuleUpdateProps(ctx)
+		return d.toQueryRuleUpdateProps(ctx, client)
 	case "eql":
-		return d.toEqlRuleUpdateProps(ctx)
+		return d.toEqlRuleUpdateProps(ctx, client)
 	case "esql":
-		return d.toEsqlRuleUpdateProps(ctx)
+		return d.toEsqlRuleUpdateProps(ctx, client)
 	case "machine_learning":
-		return d.toMachineLearningRuleUpdateProps(ctx)
+		return d.toMachineLearningRuleUpdateProps(ctx, client)
 	case "new_terms":
-		return d.toNewTermsRuleUpdateProps(ctx)
+		return d.toNewTermsRuleUpdateProps(ctx, client)
 	case "saved_query":
-		return d.toSavedQueryRuleUpdateProps(ctx)
+		return d.toSavedQueryRuleUpdateProps(ctx, client)
 	case "threat_match":
-		return d.toThreatMatchRuleUpdateProps(ctx)
+		return d.toThreatMatchRuleUpdateProps(ctx, client)
 	case "threshold":
-		return d.toThresholdRuleUpdateProps(ctx)
+		return d.toThresholdRuleUpdateProps(ctx, client)
 	default:
 		diags.AddError(
 			"Unsupported rule type",
@@ -681,6 +688,7 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 	ctx context.Context,
 	props *CommonUpdateProps,
 	diags *diag.Diagnostics,
+	client clients.MinVersionEnforceable,
 ) {
 	// Set enabled status
 	if props.Enabled != nil && utils.IsKnown(d.Enabled) {
@@ -874,7 +882,7 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 
 	// Set response actions
 	if props.ResponseActions != nil && utils.IsKnown(d.ResponseActions) {
-		responseActions, responseActionsDiags := d.responseActionsToApi(ctx)
+		responseActions, responseActionsDiags := d.responseActionsToApi(ctx, client)
 		diags.Append(responseActionsDiags...)
 		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
 			*props.ResponseActions = &responseActions
@@ -1773,8 +1781,25 @@ func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbap
 }
 
 // Helper function to process response actions configuration for all rule types
-func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context) ([]kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, client clients.MinVersionEnforceable) ([]kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	if client == nil {
+		diags.AddError(
+			"Client is not initialized",
+			"Response actions require a valid API client",
+		)
+		return nil, diags
+	}
+
+	// Check version support for response actions
+	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionResponseActions); versionDiags.HasError() {
+		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		return nil, diags
+	} else if !supported {
+		// Version is not supported, return nil without error
+		return nil, diags
+	}
 
 	if !utils.IsKnown(d.ResponseActions) || len(d.ResponseActions.Elements()) == 0 {
 		return nil, diags

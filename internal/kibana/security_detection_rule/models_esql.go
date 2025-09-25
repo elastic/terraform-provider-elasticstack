@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -59,7 +59,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 		InvestigationFields:               &esqlRule.InvestigationFields,
 		Meta:                              &esqlRule.Meta,
 		Filters:                           nil, // ESQL rules don't support this field
-	}, &diags)
+	}, &diags, client)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
 
@@ -75,7 +75,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context) (k
 	return createProps, diags
 }
 
-func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -141,7 +141,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context) (k
 		InvestigationFields:               &esqlRule.InvestigationFields,
 		Meta:                              &esqlRule.Meta,
 		Filters:                           nil, // ESQL rules don't have Filters
-	}, &diags)
+	}, &diags, client)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
 

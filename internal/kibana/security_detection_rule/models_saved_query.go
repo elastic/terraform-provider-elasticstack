@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -57,7 +57,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		InvestigationFields:               &savedQueryRule.InvestigationFields,
 		Meta:                              &savedQueryRule.Meta,
 		Filters:                           &savedQueryRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set optional query for saved query rules
 	if utils.IsKnown(d.Query) {
@@ -79,7 +79,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -144,7 +144,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		TimestampOverride:                 &savedQueryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &savedQueryRule.Filters,
-	}, &diags)
+	}, &diags, client)
 
 	// Set optional query for saved query rules
 	if utils.IsKnown(d.Query) {

@@ -50,6 +50,7 @@ func checkResourceJSONAttr(name, key, expectedJSON string) resource.TestCheckFun
 }
 
 var minVersionSupport = version.Must(version.NewVersion("8.11.0"))
+var minResponseActionVersionSupport = version.Must(version.NewVersion("8.16.0"))
 
 func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 	resourceName := "elasticstack_kibana_security_detection_rule.test"
@@ -60,7 +61,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_query("test-query-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule"),
@@ -147,7 +148,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_queryUpdate("test-query-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-updated"),
@@ -238,7 +239,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_queryRemoveFilters("test-query-rule-no-filters"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-no-filters"),
@@ -263,7 +264,7 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_eql("test-eql-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule"),
@@ -333,7 +334,7 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_eqlUpdate("test-eql-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-updated"),
@@ -416,7 +417,7 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_esql("test-esql-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule"),
@@ -493,7 +494,7 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_esqlUpdate("test-esql-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-updated"),
@@ -572,7 +573,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_machineLearning("test-ml-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule"),
@@ -647,7 +648,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_machineLearningUpdate("test-ml-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-updated"),
@@ -737,7 +738,7 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_newTerms("test-new-terms-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule"),
@@ -820,7 +821,7 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_newTermsUpdate("test-new-terms-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-updated"),
@@ -888,7 +889,7 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_savedQuery("test-saved-query-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule"),
@@ -968,7 +969,7 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_savedQueryUpdate("test-saved-query-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-updated"),
@@ -1062,7 +1063,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_threatMatch("test-threat-match-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule"),
@@ -1150,7 +1151,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_threatMatchUpdate("test-threat-match-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-updated"),
@@ -1243,7 +1244,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_threshold("test-threshold-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule"),
@@ -1321,7 +1322,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_thresholdUpdate("test-threshold-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-updated"),
@@ -3376,7 +3377,7 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_withConnectorAction("test-rule-with-action"),
 				Check: resource.ComposeTestCheckFunc(
 					// Check connector attributes
@@ -3423,7 +3424,7 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_withConnectorActionUpdate("test-rule-with-action-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					// Check updated rule attributes
@@ -3622,7 +3623,7 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_buildingBlockType("test-building-block-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule"),
@@ -3643,7 +3644,7 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_buildingBlockTypeUpdate("test-building-block-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-updated"),
@@ -3660,7 +3661,7 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_buildingBlockTypeRemoved("test-building-block-rule-no-type"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-no-type"),
@@ -3763,7 +3764,7 @@ func TestAccResourceSecurityDetectionRule_Meta(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_meta("test-meta-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-meta-rule"),
@@ -3813,7 +3814,7 @@ func TestAccResourceSecurityDetectionRule_MetaMixedTypes(t *testing.T) {
 		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				Config:   testAccSecurityDetectionRuleConfig_metaMixedTypes("test-meta-mixed-types-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-meta-mixed-types-rule"),
@@ -4033,6 +4034,812 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   namespace    = "no-filters-namespace"
   
   # Note: No filters field specified - this tests removing filters from a rule
+}
+`, name)
+}
+
+func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_eqlMinimal("test-eql-rule-minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "type", "eql"),
+					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"cmd.exe\""),
+					resource.TestCheckResourceAttr(resourceName, "language", "eql"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test EQL security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "winlogbeat-*"),
+
+					// Verify only required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+					resource.TestCheckNoResourceAttr(resourceName, "tiebreaker_field"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_eqlMinimalUpdate("test-eql-rule-minimal-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"powershell.exe\""),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test EQL security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_esqlMinimal("test-esql-rule-minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "type", "esql"),
+					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"login\" | STATS count(*) BY user.name"),
+					resource.TestCheckResourceAttr(resourceName, "language", "esql"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test ESQL security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+
+					// Verify only required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+					// Note: index is not checked for ESQL as it doesn't use index patterns
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_esqlMinimalUpdate("test-esql-rule-minimal-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"logout\" | STATS count(*) BY user.name, source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test ESQL security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_machineLearningMinimal("test-ml-rule-minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "type", "machine_learning"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test ML security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "75"),
+					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
+
+					// Verify only required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_machineLearningMinimalUpdate("test-ml-rule-minimal-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test ML security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "80"),
+					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
+					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.1", "test-ml-job-2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_newTermsMinimal("test-new-terms-rule-minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "type", "new_terms"),
+					resource.TestCheckResourceAttr(resourceName, "query", "user.name:*"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test new terms security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
+					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-14d"),
+
+					// Verify only required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_newTermsMinimalUpdate("test-new-terms-rule-minimal-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "query", "host.name:*"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test new terms security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "host.name"),
+					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-7d"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_savedQueryMinimal("test-saved-query-rule-minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "type", "saved_query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test saved query security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id"),
+
+					// Verify only required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_savedQueryMinimalUpdate("test-saved-query-rule-minimal-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "query", "event.category:authentication"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test saved query security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id-updated"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_threatMatchMinimal("test-threat-match-rule-minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
+					resource.TestCheckResourceAttr(resourceName, "query", "destination.ip:*"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test threat match security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "threat_index.0", "threat-intel-*"),
+					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:ip"),
+					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
+					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.type", "mapping"),
+					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.value", "threat.indicator.ip"),
+
+					// Verify only required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_threatMatchMinimalUpdate("test-threat-match-rule-minimal-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "query", "source.ip:*"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test threat match security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:domain"),
+					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "source.ip"),
+					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.value", "threat.indicator.domain"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_thresholdMinimal("test-threshold-rule-minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "type", "threshold"),
+					resource.TestCheckResourceAttr(resourceName, "query", "event.action:login"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test threshold security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "threshold.value", "10"),
+					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
+
+					// Verify only required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_thresholdMinimalUpdate("test-threshold-rule-minimal-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "query", "event.action:logout"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test threshold security detection rule"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+					resource.TestCheckResourceAttr(resourceName, "threshold.value", "20"),
+					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "host.name"),
+				),
+			},
+		},
+	})
+}
+
+func testAccSecurityDetectionRuleConfig_eqlMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "eql"
+  query       = "process where process.name == \"cmd.exe\""
+  language    = "eql"
+  enabled     = true
+  description = "Minimal test EQL security detection rule"
+  severity    = "low"
+  risk_score  = 21
+  from        = "now-6m"
+  to          = "now"
+  interval    = "5m"
+  index       = ["winlogbeat-*"]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_eqlMinimalUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "eql"
+  query       = "process where process.name == \"powershell.exe\""
+  language    = "eql"
+  enabled     = true
+  description = "Updated minimal test EQL security detection rule"
+  severity    = "medium"
+  risk_score  = 55
+  from        = "now-12m"
+  to          = "now"
+  interval    = "10m"
+  index       = ["winlogbeat-*", "sysmon-*"]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_esqlMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "esql"
+  query       = "FROM logs-* | WHERE event.action == \"login\" | STATS count(*) BY user.name"
+  language    = "esql"
+  enabled     = true
+  description = "Minimal test ESQL security detection rule"
+  severity    = "low"
+  risk_score  = 21
+  from        = "now-6m"
+  to          = "now"
+  interval    = "5m"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_esqlMinimalUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "esql"
+  query       = "FROM logs-* | WHERE event.action == \"logout\" | STATS count(*) BY user.name, source.ip"
+  language    = "esql"
+  enabled     = false
+  description = "Updated minimal test ESQL security detection rule"
+  severity    = "medium"
+  risk_score  = 55
+  from        = "now-12m"
+  to          = "now"
+  interval    = "10m"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_machineLearningMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name                     = "%s"
+  type                     = "machine_learning"
+  enabled                  = true
+  description              = "Minimal test ML security detection rule"
+  severity                 = "low"
+  risk_score               = 21
+  from                     = "now-6m"
+  to                       = "now"
+  interval                 = "5m"
+  anomaly_threshold        = 75
+  machine_learning_job_id  = ["test-ml-job"]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_machineLearningMinimalUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name                     = "%s"
+  type                     = "machine_learning"
+  enabled                  = false
+  description              = "Updated minimal test ML security detection rule"
+  severity                 = "medium"
+  risk_score               = 55
+  from                     = "now-12m"
+  to                       = "now"
+  interval                 = "10m"
+  anomaly_threshold        = 80
+  machine_learning_job_id  = ["test-ml-job", "test-ml-job-2"]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_newTermsMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name                 = "%s"
+  type                 = "new_terms"
+  query                = "user.name:*"
+  language             = "kuery"
+  enabled              = true
+  description          = "Minimal test new terms security detection rule"
+  severity             = "low"
+  risk_score           = 21
+  from                 = "now-6m"
+  to                   = "now"
+  interval             = "5m"
+  index                = ["logs-*"]
+  new_terms_fields     = ["user.name"]
+  history_window_start = "now-14d"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_newTermsMinimalUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name                 = "%s"
+  type                 = "new_terms"
+  query                = "host.name:*"
+  language             = "kuery"
+  enabled              = false
+  description          = "Updated minimal test new terms security detection rule"
+  severity             = "medium"
+  risk_score           = 55
+  from                 = "now-12m"
+  to                   = "now"
+  interval             = "10m"
+  index                = ["logs-*", "winlogbeat-*"]
+  new_terms_fields     = ["host.name"]
+  history_window_start = "now-7d"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_savedQueryMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "saved_query"
+  query        = "*:*"
+  enabled      = true
+  description  = "Minimal test saved query security detection rule"
+  severity     = "low"
+  risk_score   = 21
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  saved_id     = "test-saved-query-id"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_savedQueryMinimalUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "saved_query"
+  query        = "event.category:authentication"
+  enabled      = false
+  description  = "Updated minimal test saved query security detection rule"
+  severity     = "medium"
+  risk_score   = 55
+  from         = "now-12m"
+  to           = "now"
+  interval     = "10m"
+  index        = ["logs-*", "winlogbeat-*"]
+  saved_id     = "test-saved-query-id-updated"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_threatMatchMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "threat_match"
+  query        = "destination.ip:*"
+  language     = "kuery"
+  enabled      = true
+  description  = "Minimal test threat match security detection rule"
+  severity     = "low"
+  risk_score   = 21
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  threat_index = ["threat-intel-*"]
+  threat_query = "threat.indicator.type:ip"
+  
+  threat_mapping = [
+    {
+      entries = [
+        {
+          field = "destination.ip"
+          type  = "mapping"
+          value = "threat.indicator.ip"
+        }
+      ]
+    }
+  ]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_threatMatchMinimalUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "threat_match"
+  query        = "source.ip:*"
+  language     = "kuery"
+  enabled      = false
+  description  = "Updated minimal test threat match security detection rule"
+  severity     = "medium"
+  risk_score   = 55
+  from         = "now-12m"
+  to           = "now"
+  interval     = "10m"
+  index        = ["logs-*", "winlogbeat-*"]
+  threat_index = ["threat-intel-*", "misp-*"]
+  threat_query = "threat.indicator.type:domain"
+  
+  threat_mapping = [
+    {
+      entries = [
+        {
+          field = "source.ip"
+          type  = "mapping"
+          value = "threat.indicator.domain"
+        }
+      ]
+    }
+  ]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_thresholdMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "threshold"
+  query        = "event.action:login"
+  language     = "kuery"
+  enabled      = true
+  description  = "Minimal test threshold security detection rule"
+  severity     = "low"
+  risk_score   = 21
+  from         = "now-6m"
+  to           = "now"
+  interval     = "5m"
+  index        = ["logs-*"]
+  
+  threshold = {
+    value = 10
+    field = ["user.name"]
+  }
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_thresholdMinimalUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "threshold"
+  query        = "event.action:logout"
+  language     = "kuery"
+  enabled      = false
+  description  = "Updated minimal test threshold security detection rule"
+  severity     = "medium"
+  risk_score   = 55
+  from         = "now-12m"
+  to           = "now"
+  interval     = "10m"
+  index        = ["logs-*", "winlogbeat-*"]
+  
+  threshold = {
+    value = 20
+    field = ["host.name"]
+  }
 }
 `, name)
 }
