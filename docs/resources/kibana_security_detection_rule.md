@@ -213,13 +213,10 @@ Required:
 <a id="nestedatt--alert_suppression"></a>
 ### Nested Schema for `alert_suppression`
 
-Required:
-
-- `group_by` (List of String) Array of field names to group alerts by for suppression.
-
 Optional:
 
 - `duration` (Attributes) Duration for which alerts are suppressed. (see [below for nested schema](#nestedatt--alert_suppression--duration))
+- `group_by` (List of String) Array of field names to group alerts by for suppression.
 - `missing_fields_strategy` (String) Strategy for handling missing fields in suppression grouping: 'suppress' - only one alert will be created per suppress by bucket, 'doNotSuppress' - per each document a separate alert will be created.
 
 <a id="nestedatt--alert_suppression--duration"></a>
