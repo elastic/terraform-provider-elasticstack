@@ -1,0 +1,577 @@
+package role
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var (
+	applicationAttrTypes = map[string]attr.Type{
+		"application": types.StringType,
+		"privileges":  types.SetType{ElemType: types.StringType},
+		"resources":   types.SetType{ElemType: types.StringType},
+	}
+
+	fieldSecurityAttrTypes = map[string]attr.Type{
+		"grant":  types.SetType{ElemType: types.StringType},
+		"except": types.SetType{ElemType: types.StringType},
+	}
+
+	indexPermsAttrTypes = map[string]attr.Type{
+		"field_security":           types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes}},
+		"names":                    types.SetType{ElemType: types.StringType},
+		"privileges":               types.SetType{ElemType: types.StringType},
+		"query":                    jsontypes.NormalizedType{},
+		"allow_restricted_indices": types.BoolType,
+	}
+
+	remoteIndexPermsAttrTypes = map[string]attr.Type{
+		"clusters":       types.SetType{ElemType: types.StringType},
+		"field_security": types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes}},
+		"query":          jsontypes.NormalizedType{},
+		"names":          types.SetType{ElemType: types.StringType},
+		"privileges":     types.SetType{ElemType: types.StringType},
+	}
+)
+
+type RoleData struct {
+	Id                      types.String         `tfsdk:"id"`
+	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
+	Name                    types.String         `tfsdk:"name"`
+	Description             types.String         `tfsdk:"description"`
+	Applications            types.Set            `tfsdk:"applications"`
+	Global                  jsontypes.Normalized `tfsdk:"global"`
+	Cluster                 types.Set            `tfsdk:"cluster"`
+	Indices                 types.Set            `tfsdk:"indices"`
+	RemoteIndices           types.Set            `tfsdk:"remote_indices"`
+	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
+	RunAs                   types.Set            `tfsdk:"run_as"`
+}
+
+type ApplicationData struct {
+	Application types.String `tfsdk:"application"`
+	Privileges  types.Set    `tfsdk:"privileges"`
+	Resources   types.Set    `tfsdk:"resources"`
+}
+
+type IndexPermsData struct {
+	FieldSecurity          types.List           `tfsdk:"field_security"`
+	Names                  types.Set            `tfsdk:"names"`
+	Privileges             types.Set            `tfsdk:"privileges"`
+	Query                  jsontypes.Normalized `tfsdk:"query"`
+	AllowRestrictedIndices types.Bool           `tfsdk:"allow_restricted_indices"`
+}
+
+type RemoteIndexPermsData struct {
+	Clusters      types.Set            `tfsdk:"clusters"`
+	FieldSecurity types.List           `tfsdk:"field_security"`
+	Query         jsontypes.Normalized `tfsdk:"query"`
+	Names         types.Set            `tfsdk:"names"`
+	Privileges    types.Set            `tfsdk:"privileges"`
+}
+
+type FieldSecurityData struct {
+	Grant  types.Set `tfsdk:"grant"`
+	Except types.Set `tfsdk:"except"`
+}
+
+// toAPIModel converts the Terraform model to the API model
+func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var role models.Role
+
+	role.Name = data.Name.ValueString()
+
+	// Description
+	if utils.IsKnown(data.Description) {
+		description := data.Description.ValueString()
+		role.Description = &description
+	}
+
+	// Applications
+	if utils.IsKnown(data.Applications) {
+		var applicationsList []ApplicationData
+		diags.Append(data.Applications.ElementsAs(ctx, &applicationsList, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		applications := make([]models.Application, len(applicationsList))
+		for i, app := range applicationsList {
+			var privileges, resources []string
+			diags.Append(app.Privileges.ElementsAs(ctx, &privileges, false)...)
+			diags.Append(app.Resources.ElementsAs(ctx, &resources, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+
+			applications[i] = models.Application{
+				Name:       app.Application.ValueString(),
+				Privileges: privileges,
+				Resources:  resources,
+			}
+		}
+		role.Applications = applications
+	}
+
+	// Global
+	if utils.IsKnown(data.Global) {
+		var global map[string]interface{}
+		if err := json.Unmarshal([]byte(data.Global.ValueString()), &global); err != nil {
+			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing global JSON: %s", err))
+			return nil, diags
+		}
+		role.Global = global
+	}
+
+	// Cluster
+	if utils.IsKnown(data.Cluster) {
+		var cluster []string
+		diags.Append(data.Cluster.ElementsAs(ctx, &cluster, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		role.Cluster = cluster
+	}
+
+	// Indices
+	if utils.IsKnown(data.Indices) {
+		var indicesList []IndexPermsData
+		diags.Append(data.Indices.ElementsAs(ctx, &indicesList, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		indices := make([]models.IndexPerms, len(indicesList))
+		for i, idx := range indicesList {
+			var names, privileges []string
+			diags.Append(idx.Names.ElementsAs(ctx, &names, false)...)
+			diags.Append(idx.Privileges.ElementsAs(ctx, &privileges, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+
+			newIndex := models.IndexPerms{
+				Names:      names,
+				Privileges: privileges,
+			}
+
+			if utils.IsKnown(idx.Query) {
+				query := idx.Query.ValueString()
+				newIndex.Query = &query
+			}
+
+			// Field Security
+			if utils.IsKnown(idx.FieldSecurity) {
+				var fieldSecList []FieldSecurityData
+				diags.Append(idx.FieldSecurity.ElementsAs(ctx, &fieldSecList, false)...)
+				if diags.HasError() {
+					return nil, diags
+				}
+
+				if len(fieldSecList) > 0 {
+					fieldSec := fieldSecList[0]
+					fieldSecurity := models.FieldSecurity{}
+
+					if utils.IsKnown(fieldSec.Grant) {
+						var grants []string
+						diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
+						if diags.HasError() {
+							return nil, diags
+						}
+						fieldSecurity.Grant = grants
+					}
+
+					if utils.IsKnown(fieldSec.Except) {
+						var excepts []string
+						diags.Append(fieldSec.Except.ElementsAs(ctx, &excepts, false)...)
+						if diags.HasError() {
+							return nil, diags
+						}
+						fieldSecurity.Except = excepts
+					}
+
+					newIndex.FieldSecurity = &fieldSecurity
+				}
+			}
+
+			if utils.IsKnown(idx.AllowRestrictedIndices) {
+				allowRestrictedIndices := idx.AllowRestrictedIndices.ValueBool()
+				newIndex.AllowRestrictedIndices = &allowRestrictedIndices
+			}
+
+			indices[i] = newIndex
+		}
+		role.Indices = indices
+	}
+
+	// Remote Indices
+	if utils.IsKnown(data.RemoteIndices) {
+		var remoteIndicesList []RemoteIndexPermsData
+		diags.Append(data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		remoteIndices := make([]models.RemoteIndexPerms, len(remoteIndicesList))
+		for i, remoteIdx := range remoteIndicesList {
+			var names, clusters, privileges []string
+			diags.Append(remoteIdx.Names.ElementsAs(ctx, &names, false)...)
+			diags.Append(remoteIdx.Clusters.ElementsAs(ctx, &clusters, false)...)
+			diags.Append(remoteIdx.Privileges.ElementsAs(ctx, &privileges, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+
+			newRemoteIndex := models.RemoteIndexPerms{
+				Names:      names,
+				Clusters:   clusters,
+				Privileges: privileges,
+			}
+
+			if utils.IsKnown(remoteIdx.Query) {
+				query := remoteIdx.Query.ValueString()
+				newRemoteIndex.Query = &query
+			}
+
+			// Field Security
+			if utils.IsKnown(remoteIdx.FieldSecurity) {
+				var fieldSecList []FieldSecurityData
+				diags.Append(remoteIdx.FieldSecurity.ElementsAs(ctx, &fieldSecList, false)...)
+				if diags.HasError() {
+					return nil, diags
+				}
+
+				if len(fieldSecList) > 0 {
+					fieldSec := fieldSecList[0]
+					remoteFieldSecurity := models.FieldSecurity{}
+
+					if utils.IsKnown(fieldSec.Grant) {
+						var grants []string
+						diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
+						if diags.HasError() {
+							return nil, diags
+						}
+						remoteFieldSecurity.Grant = grants
+					}
+
+					if utils.IsKnown(fieldSec.Except) {
+						var excepts []string
+						diags.Append(fieldSec.Except.ElementsAs(ctx, &excepts, false)...)
+						if diags.HasError() {
+							return nil, diags
+						}
+						remoteFieldSecurity.Except = excepts
+					}
+
+					newRemoteIndex.FieldSecurity = &remoteFieldSecurity
+				}
+			}
+
+			remoteIndices[i] = newRemoteIndex
+		}
+		role.RemoteIndices = remoteIndices
+	}
+
+	// Metadata
+	if utils.IsKnown(data.Metadata) {
+		var metadata map[string]interface{}
+		if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
+			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing metadata JSON: %s", err))
+			return nil, diags
+		}
+		role.Metadata = metadata
+	}
+
+	// Run As
+	if utils.IsKnown(data.RunAs) {
+		var runAs []string
+		diags.Append(data.RunAs.ElementsAs(ctx, &runAs, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		role.RusAs = runAs
+	}
+
+	return &role, diags
+}
+
+// fromAPIModel converts the API model to the Terraform model
+func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	data.Name = types.StringValue(role.Name)
+
+	// Description
+	data.Description = types.StringPointerValue(role.Description)
+
+	// Applications
+	if len(role.Applications) > 0 {
+		appElements := make([]attr.Value, len(role.Applications))
+		for i, app := range role.Applications {
+			privSet, d := types.SetValueFrom(ctx, types.StringType, app.Privileges)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			resSet, d := types.SetValueFrom(ctx, types.StringType, app.Resources)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			appObj, d := types.ObjectValue(applicationAttrTypes, map[string]attr.Value{
+				"application": types.StringValue(app.Name),
+				"privileges":  privSet,
+				"resources":   resSet,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			appElements[i] = appObj
+		}
+
+		appSet, d := types.SetValue(types.ObjectType{AttrTypes: applicationAttrTypes}, appElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		data.Applications = appSet
+	} else {
+		data.Applications = types.SetNull(types.ObjectType{AttrTypes: applicationAttrTypes})
+	}
+
+	// Cluster
+	if len(role.Cluster) > 0 {
+		clusterSet, d := types.SetValueFrom(ctx, types.StringType, role.Cluster)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		data.Cluster = clusterSet
+	} else {
+		data.Cluster = types.SetNull(types.StringType)
+	}
+
+	// Global
+	if role.Global != nil {
+		global, err := json.Marshal(role.Global)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
+			return diags
+		}
+		data.Global = jsontypes.NewNormalizedValue(string(global))
+	} else {
+		data.Global = jsontypes.NewNormalizedNull()
+	}
+
+	// Indices
+	if len(role.Indices) > 0 {
+		indicesElements := make([]attr.Value, len(role.Indices))
+		for i, index := range role.Indices {
+			namesSet, d := types.SetValueFrom(ctx, types.StringType, index.Names)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			privSet, d := types.SetValueFrom(ctx, types.StringType, index.Privileges)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			var queryVal jsontypes.Normalized
+			if index.Query != nil {
+				queryVal = jsontypes.NewNormalizedValue(*index.Query)
+			} else {
+				queryVal = jsontypes.NewNormalizedNull()
+			}
+
+			var allowRestrictedVal types.Bool
+			if index.AllowRestrictedIndices != nil {
+				allowRestrictedVal = types.BoolValue(*index.AllowRestrictedIndices)
+			} else {
+				allowRestrictedVal = types.BoolNull()
+			}
+
+			var fieldSecList types.List
+			if index.FieldSecurity != nil {
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, index.FieldSecurity.Grant)
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, index.FieldSecurity.Except)
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecObj, d := types.ObjectValue(fieldSecurityAttrTypes, map[string]attr.Value{
+					"grant":  grantSet,
+					"except": exceptSet,
+				})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: fieldSecurityAttrTypes}, []attr.Value{fieldSecObj})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+			} else {
+				fieldSecList = types.ListNull(types.ObjectType{AttrTypes: fieldSecurityAttrTypes})
+			}
+
+			indexObj, d := types.ObjectValue(indexPermsAttrTypes, map[string]attr.Value{
+				"field_security":           fieldSecList,
+				"names":                    namesSet,
+				"privileges":               privSet,
+				"query":                    queryVal,
+				"allow_restricted_indices": allowRestrictedVal,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			indicesElements[i] = indexObj
+		}
+
+		indicesSet, d := types.SetValue(types.ObjectType{AttrTypes: indexPermsAttrTypes}, indicesElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		data.Indices = indicesSet
+	} else {
+		data.Indices = types.SetNull(types.ObjectType{AttrTypes: indexPermsAttrTypes})
+	}
+
+	// Remote Indices
+	if len(role.RemoteIndices) > 0 {
+		remoteIndicesElements := make([]attr.Value, len(role.RemoteIndices))
+		for i, remoteIndex := range role.RemoteIndices {
+			clustersSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Clusters)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			namesSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Names)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			privSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Privileges)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			var queryVal jsontypes.Normalized
+			if remoteIndex.Query != nil {
+				queryVal = jsontypes.NewNormalizedValue(*remoteIndex.Query)
+			} else {
+				queryVal = jsontypes.NewNormalizedNull()
+			}
+
+			var fieldSecList types.List
+			if remoteIndex.FieldSecurity != nil {
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.FieldSecurity.Grant)
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.FieldSecurity.Except)
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecObj, d := types.ObjectValue(fieldSecurityAttrTypes, map[string]attr.Value{
+					"grant":  grantSet,
+					"except": exceptSet,
+				})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: fieldSecurityAttrTypes}, []attr.Value{fieldSecObj})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+			} else {
+				fieldSecList = types.ListNull(types.ObjectType{AttrTypes: fieldSecurityAttrTypes})
+			}
+
+			remoteIndexObj, d := types.ObjectValue(remoteIndexPermsAttrTypes, map[string]attr.Value{
+				"clusters":       clustersSet,
+				"field_security": fieldSecList,
+				"query":          queryVal,
+				"names":          namesSet,
+				"privileges":     privSet,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			remoteIndicesElements[i] = remoteIndexObj
+		}
+
+		remoteIndicesSet, d := types.SetValue(types.ObjectType{AttrTypes: remoteIndexPermsAttrTypes}, remoteIndicesElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		data.RemoteIndices = remoteIndicesSet
+	} else {
+		data.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: remoteIndexPermsAttrTypes})
+	}
+
+	// Metadata
+	if role.Metadata != nil {
+		metadata, err := json.Marshal(role.Metadata)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
+			return diags
+		}
+		data.Metadata = jsontypes.NewNormalizedValue(string(metadata))
+	} else {
+		data.Metadata = jsontypes.NewNormalizedNull()
+	}
+
+	// Run As
+	if len(role.RusAs) > 0 {
+		runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RusAs)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		data.RunAs = runAsSet
+	} else {
+		data.RunAs = types.SetNull(types.StringType)
+	}
+
+	return diags
+}
