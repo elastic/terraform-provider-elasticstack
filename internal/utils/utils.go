@@ -10,6 +10,7 @@ import (
 	"time"
 
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -223,4 +224,10 @@ func NonNilSlice[T any](s []T) []T {
 	}
 
 	return s
+}
+
+// TimeToStringValue formats a time.Time to ISO 8601 format and returns a types.StringValue.
+// This is a convenience function that combines FormatStrictDateTime and types.StringValue.
+func TimeToStringValue(t time.Time) types.String {
+	return types.StringValue(FormatStrictDateTime(t))
 }
