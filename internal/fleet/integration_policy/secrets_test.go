@@ -33,10 +33,12 @@ func TestHandleRespSecrets(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	private := privateData{"secrets": `{"known-secret":"secret"}`}
+	private := privateData{"secrets": `{"known-secret":"secret", "known-secret-1":"secret1", "known-secret-2":"secret2"}`}
 
 	secretRefs := &[]kbapi.PackagePolicySecretRef{
 		{Id: "known-secret"},
+		{Id: "known-secret-1"},
+		{Id: "known-secret-2"},
 	}
 
 	tests := []struct {
@@ -63,6 +65,11 @@ func TestHandleRespSecrets(t *testing.T) {
 			name:  "converts secret",
 			input: Map{"k": Map{"isSecretRef": true, "id": "known-secret"}},
 			want:  Map{"k": "secret"},
+		},
+		{
+			name:  "converts secret with multiple values",
+			input: Map{"k": Map{"isSecretRef": true, "ids": []any{"known-secret-1", "known-secret-2"}}},
+			want:  Map{"k": []any{"secret1", "secret2"}},
 		},
 		{
 			name:  "converts wrapped secret",
@@ -121,7 +128,7 @@ func TestHandleRespSecrets(t *testing.T) {
 			require.Equal(t, want, got)
 
 			// privateData
-			privateWants := privateData{"secrets": `{"known-secret":"secret"}`}
+			privateWants := privateData{"secrets": `{"known-secret":"secret","known-secret-1":"secret1","known-secret-2":"secret2"}`}
 			require.Equal(t, privateWants, private)
 		})
 	}
@@ -134,6 +141,8 @@ func TestHandleReqRespSecrets(t *testing.T) {
 
 	secretRefs := &[]kbapi.PackagePolicySecretRef{
 		{Id: "known-secret"},
+		{Id: "known-secret-1"},
+		{Id: "known-secret-2"},
 	}
 
 	tests := []struct {
@@ -165,6 +174,12 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			reqInput:  Map{"k": "secret"},
 			respInput: Map{"k": Map{"isSecretRef": true, "id": "known-secret"}},
 			want:      Map{"k": "secret"},
+		},
+		{
+			name:      "converts secret with multiple values",
+			reqInput:  Map{"k": []any{"secret1", "secret2"}},
+			respInput: Map{"k": Map{"isSecretRef": true, "ids": []any{"known-secret-1", "known-secret-2"}}},
+			want:      Map{"k": []any{"secret1", "secret2"}},
 		},
 		{
 			name:      "converts wrapped secret",
@@ -236,13 +251,15 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			want = *(*wants.Inputs["input1"].Streams)["stream1"].Vars
 			require.Equal(t, want, got)
 
-			if v, ok := (*req.Vars)["k"]; ok && v == "secret" {
-				privateWants := privateData{"secrets": `{"known-secret":"secret"}`}
-				require.Equal(t, privateWants, private)
-			} else {
-				privateWants := privateData{"secrets": `{}`}
-				require.Equal(t, privateWants, private)
+			privateWants := privateData{"secrets": `{}`}
+			if v, ok := (*req.Vars)["k"]; ok {
+				if s, ok := v.(string); ok && s == "secret" {
+					privateWants = privateData{"secrets": `{"known-secret":"secret"}`}
+				} else if _, ok := v.([]any); ok {
+					privateWants = privateData{"secrets": `{"known-secret-1":"secret1","known-secret-2":"secret2"}`}
+				}
 			}
+			require.Equal(t, privateWants, private)
 		})
 	}
 }
