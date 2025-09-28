@@ -1,4 +1,4 @@
-package anomaly_detector
+package anomaly_detection_job
 
 import (
 	"bytes"
@@ -13,19 +13,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectorJobResource) update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	if !r.resourceReady(&resp.Diagnostics) {
 		return
 	}
 
-	var plan AnomalyDetectorJobTFModel
+	var plan AnomalyDetectionJobTFModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var state AnomalyDetectorJobTFModel
+	var state AnomalyDetectionJobTFModel
 	diags = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -44,7 +44,7 @@ func (r *anomalyDetectorJobResource) update(ctx context.Context, req resource.Up
 	// and model_snapshot_retention_days can be updated.
 
 	// Create update body with only updatable fields
-	updateBody := &AnomalyDetectorJobUpdateAPIModel{}
+	updateBody := &AnomalyDetectionJobUpdateAPIModel{}
 	hasChanges := false
 
 	if !plan.Description.Equal(state.Description) {

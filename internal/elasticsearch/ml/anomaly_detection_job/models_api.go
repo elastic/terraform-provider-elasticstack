@@ -1,14 +1,13 @@
-package anomaly_detector
+package anomaly_detection_job
 
-// AnomalyDetectorJobAPIModel represents the API model for ML anomaly detection jobs
-type AnomalyDetectorJobAPIModel struct {
+// AnomalyDetectionJobAPIModel represents the API model for ML anomaly detection jobs
+type AnomalyDetectionJobAPIModel struct {
 	JobID                                string                   `json:"job_id"`
 	Description                          string                   `json:"description,omitempty"`
 	Groups                               []string                 `json:"groups,omitempty"`
 	AnalysisConfig                       AnalysisConfigAPIModel   `json:"analysis_config"`
 	AnalysisLimits                       *AnalysisLimitsAPIModel  `json:"analysis_limits,omitempty"`
 	DataDescription                      DataDescriptionAPIModel  `json:"data_description"`
-	DatafeedConfig                       *DatafeedConfigAPIModel  `json:"datafeed_config,omitempty"`
 	ModelPlotConfig                      *ModelPlotConfigAPIModel `json:"model_plot_config,omitempty"`
 	AllowLazyOpen                        *bool                    `json:"allow_lazy_open,omitempty"`
 	BackgroundPersistInterval            string                   `json:"background_persist_interval,omitempty"`
@@ -81,24 +80,6 @@ type DataDescriptionAPIModel struct {
 	TimeFormat     string `json:"time_format,omitempty"`
 }
 
-// DatafeedConfigAPIModel represents datafeed configuration in API format
-type DatafeedConfigAPIModel struct {
-	Aggregations           map[string]interface{}          `json:"aggregations,omitempty"`
-	ChunkingConfig         *ChunkingConfigAPIModel         `json:"chunking_config,omitempty"`
-	DatafeedID             string                          `json:"datafeed_id,omitempty"`
-	DelayedDataCheckConfig *DelayedDataCheckConfigAPIModel `json:"delayed_data_check_config,omitempty"`
-	Frequency              string                          `json:"frequency,omitempty"`
-	Indices                []string                        `json:"indices,omitempty"`
-	IndicesOptions         *IndicesOptionsAPIModel         `json:"indices_options,omitempty"`
-	JobID                  string                          `json:"job_id,omitempty"`
-	MaxEmptySearches       *int64                          `json:"max_empty_searches,omitempty"`
-	Query                  map[string]interface{}          `json:"query,omitempty"`
-	QueryDelay             string                          `json:"query_delay,omitempty"`
-	RuntimeMappings        map[string]interface{}          `json:"runtime_mappings,omitempty"`
-	ScriptFields           map[string]interface{}          `json:"script_fields,omitempty"`
-	ScrollSize             *int64                          `json:"scroll_size,omitempty"`
-}
-
 // ChunkingConfigAPIModel represents chunking configuration in API format
 type ChunkingConfigAPIModel struct {
 	Mode     string `json:"mode"`
@@ -132,9 +113,9 @@ type PerPartitionCategorizationAPIModel struct {
 	StopOnWarn *bool `json:"stop_on_warn,omitempty"`
 }
 
-// AnomalyDetectorJobUpdateAPIModel represents the API model for updating ML anomaly detection jobs
+// AnomalyDetectionJobUpdateAPIModel represents the API model for updating ML anomaly detection jobs
 // This includes only the fields that can be updated after job creation
-type AnomalyDetectorJobUpdateAPIModel struct {
+type AnomalyDetectionJobUpdateAPIModel struct {
 	Description                          *string                  `json:"description,omitempty"`
 	Groups                               []string                 `json:"groups,omitempty"`
 	AnalysisLimits                       *AnalysisLimitsAPIModel  `json:"analysis_limits,omitempty"`

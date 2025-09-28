@@ -1,4 +1,4 @@
-package anomaly_detector
+package anomaly_detection_job
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
-func (r *anomalyDetectorJobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *anomalyDetectionJobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = GetSchema()
 }
 
@@ -290,148 +290,6 @@ func GetSchema() schema.Schema {
 					},
 				},
 			},
-			"datafeed_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Defines a datafeed for the anomaly detection job. If Elasticsearch security features are enabled, your datafeed remembers which roles the user who created it had at the time of creation and runs the query using those same roles.",
-				Optional:            true,
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.RequiresReplace(),
-				},
-				Attributes: map[string]schema.Attribute{
-					"datafeed_id": schema.StringAttribute{
-						MarkdownDescription: "A numerical character string that uniquely identifies the datafeed. This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. It must start and end with alphanumeric characters.",
-						Optional:            true,
-						Validators: []validator.String{
-							stringvalidator.RegexMatches(regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`), "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. It must start and end with alphanumeric characters"),
-						},
-					},
-					"indices": schema.ListAttribute{
-						MarkdownDescription: "An array of index names. Wildcards are supported.",
-						Optional:            true,
-						ElementType:         types.StringType,
-					},
-					"query": schema.StringAttribute{
-						MarkdownDescription: "The Elasticsearch query domain-specific language (DSL). This value corresponds to the query object in an Elasticsearch search POST body. All the options that are supported by Elasticsearch can be used, as this object is passed verbatim to Elasticsearch. By default, this property has the following value: {\"match_all\": {\"boost\": 1}}.",
-						CustomType:          jsontypes.NormalizedType{},
-						Optional:            true,
-						Computed:            true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
-					},
-					"aggregations": schema.StringAttribute{
-						MarkdownDescription: "If set, the datafeed performs aggregation searches. Support for aggregations is limited and should be used only with low cardinality data.",
-						Optional:            true,
-						CustomType:          jsontypes.NormalizedType{},
-					},
-					"chunking_config": schema.SingleNestedAttribute{
-						MarkdownDescription: "Datafeeds might be required to search over long time periods, for several months or years. This search is split into time chunks in order to ensure the load on Elasticsearch is managed.",
-						Optional:            true,
-						Computed:            true,
-						PlanModifiers: []planmodifier.Object{
-							objectplanmodifier.UseStateForUnknown(),
-						},
-						Attributes: map[string]schema.Attribute{
-							"mode": schema.StringAttribute{
-								MarkdownDescription: "If the mode is auto, the chunk size is dynamically calculated; this is the recommended value when the datafeed does not use aggregations. If the mode is manual, chunking is applied according to the specified time_span; use this mode when the datafeed uses aggregations. If the mode is off, no chunking is applied.",
-								Required:            true,
-								Validators: []validator.String{
-									stringvalidator.OneOf("auto", "manual", "off"),
-								},
-							},
-							"time_span": schema.StringAttribute{
-								MarkdownDescription: "The time span that each search will be queried for. This setting is only applicable when the mode is set to manual.",
-								Optional:            true,
-							},
-						},
-					},
-					"delayed_data_check_config": schema.SingleNestedAttribute{
-						MarkdownDescription: "Specifies whether the datafeed checks for missing data and the size of the window.",
-						Optional:            true,
-						Computed:            true,
-						PlanModifiers: []planmodifier.Object{
-							objectplanmodifier.UseStateForUnknown(),
-						},
-						Attributes: map[string]schema.Attribute{
-							"enabled": schema.BoolAttribute{
-								MarkdownDescription: "Specifies whether the datafeed periodically checks for delayed data.",
-								Optional:            true,
-								Computed:            true,
-								PlanModifiers: []planmodifier.Bool{
-									boolplanmodifier.UseStateForUnknown(),
-								},
-							},
-							"check_window": schema.StringAttribute{
-								MarkdownDescription: "The window of time that is searched for late data. This window of time ends with the latest finalized bucket.",
-								Optional:            true,
-							},
-						},
-					},
-					"frequency": schema.StringAttribute{
-						MarkdownDescription: "The interval at which scheduled queries are made while the datafeed runs in real time.",
-						Optional:            true,
-					},
-					"indices_options": schema.SingleNestedAttribute{
-						MarkdownDescription: "Specifies index expansion options that are used during search.",
-						Optional:            true,
-						Computed:            true,
-						PlanModifiers: []planmodifier.Object{
-							objectplanmodifier.UseStateForUnknown(),
-						},
-						Attributes: map[string]schema.Attribute{
-							"expand_wildcards": schema.ListAttribute{
-								MarkdownDescription: "Type of index that wildcard patterns can match.",
-								Optional:            true,
-								ElementType:         types.StringType,
-							},
-							"ignore_unavailable": schema.BoolAttribute{
-								MarkdownDescription: "Specifies whether to ignore unavailable indices (missing or closed).",
-								Optional:            true,
-							},
-							"allow_no_indices": schema.BoolAttribute{
-								MarkdownDescription: "Specifies whether to ignore if a wildcard expression matches no indices.",
-								Optional:            true,
-							},
-							"ignore_throttled": schema.BoolAttribute{
-								MarkdownDescription: "Specifies whether to ignore concrete, expanded or aliased indices when frozen.",
-								Optional:            true,
-							},
-						},
-					},
-					"max_empty_searches": schema.Int64Attribute{
-						MarkdownDescription: "If a real-time datafeed has never seen any data (including during any initial training period) then it will automatically stop itself and close the associated job after this many real-time searches that return no documents.",
-						Optional:            true,
-					},
-					"query_delay": schema.StringAttribute{
-						MarkdownDescription: "The number of seconds behind real-time that data is queried.",
-						Optional:            true,
-						Computed:            true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
-					},
-					"runtime_mappings": schema.StringAttribute{
-						MarkdownDescription: "Specifies runtime fields for the datafeed search.",
-						Optional:            true,
-						CustomType:          jsontypes.NormalizedType{},
-					},
-					"script_fields": schema.StringAttribute{
-						MarkdownDescription: "Specifies scripts that evaluate custom expressions and returns script fields to the datafeed.",
-						Optional:            true,
-						CustomType:          jsontypes.NormalizedType{},
-					},
-					"scroll_size": schema.Int64Attribute{
-						MarkdownDescription: "The size parameter that is used in Elasticsearch searches when the datafeed does not use aggregations.",
-						Optional:            true,
-						Computed:            true,
-						Validators: []validator.Int64{
-							int64validator.AtLeast(0),
-						},
-						PlanModifiers: []planmodifier.Int64{
-							int64planmodifier.UseStateForUnknown(),
-						},
-					},
-				},
-			},
 			"model_plot_config": schema.SingleNestedAttribute{
 				MarkdownDescription: "This advanced configuration option stores model information along with the results. It provides a more detailed view into anomaly detection.",
 				Optional:            true,
@@ -591,28 +449,6 @@ func getAnalysisLimitsAttrTypes() map[string]attr.Type {
 
 func getDataDescriptionAttrTypes() map[string]attr.Type {
 	return GetSchema().Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
-func getDatafeedConfigAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["datafeed_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
-func getChunkingConfigAttrTypes() map[string]attr.Type {
-	datafeedConfigAttrs := getDatafeedConfigAttrTypes()
-	chunkingConfigObj := datafeedConfigAttrs["chunking_config"].(types.ObjectType)
-	return chunkingConfigObj.AttrTypes
-}
-
-func getDelayedDataCheckConfigAttrTypes() map[string]attr.Type {
-	datafeedConfigAttrs := getDatafeedConfigAttrTypes()
-	delayedDataCheckConfigObj := datafeedConfigAttrs["delayed_data_check_config"].(types.ObjectType)
-	return delayedDataCheckConfigObj.AttrTypes
-}
-
-func getIndicesOptionsAttrTypes() map[string]attr.Type {
-	datafeedConfigAttrs := getDatafeedConfigAttrTypes()
-	indicesOptionsObj := datafeedConfigAttrs["indices_options"].(types.ObjectType)
-	return indicesOptionsObj.AttrTypes
 }
 
 func getModelPlotConfigAttrTypes() map[string]attr.Type {

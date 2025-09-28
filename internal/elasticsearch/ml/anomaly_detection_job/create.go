@@ -1,4 +1,4 @@
-package anomaly_detector
+package anomaly_detection_job
 
 import (
 	"bytes"
@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectorJobResource) create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *anomalyDetectionJobResource) create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	if !r.resourceReady(&resp.Diagnostics) {
 		return
 	}
 
-	var plan AnomalyDetectorJobTFModel
+	var plan AnomalyDetectionJobTFModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

@@ -1,4 +1,4 @@
-package anomaly_detector
+package anomaly_detection_job
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectorJobResource) read(ctx context.Context, job *AnomalyDetectorJobTFModel) (bool, fwdiags.Diagnostics) {
+func (r *anomalyDetectionJobResource) read(ctx context.Context, job *AnomalyDetectionJobTFModel) (bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
 	if !r.resourceReady(&diags) {
@@ -46,7 +46,7 @@ func (r *anomalyDetectorJobResource) read(ctx context.Context, job *AnomalyDetec
 
 	// Parse the response
 	var response struct {
-		Jobs []AnomalyDetectorJobAPIModel `json:"jobs"`
+		Jobs []AnomalyDetectionJobAPIModel `json:"jobs"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		diags.AddError("Failed to decode job response", err.Error())

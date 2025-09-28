@@ -51,7 +51,7 @@ This resource creates and manages Machine Learning anomaly detection jobs in Ela
 
 ### Basic Count Detector
 ```hcl
-resource "elasticstack_elasticsearch_ml_anomaly_detector" "basic" {
+resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "basic" {
   job_id      = "basic-count-job"
   description = "Basic count anomaly detection"
 
@@ -78,7 +78,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detector" "basic" {
 
 ### Advanced Multi-Detector Job
 ```hcl
-resource "elasticstack_elasticsearch_ml_anomaly_detector" "advanced" {
+resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "advanced" {
   job_id      = "advanced-web-analytics"
   description = "Advanced web analytics anomaly detection"
   groups      = ["web", "analytics"]
@@ -150,7 +150,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detector" "advanced" {
 
 ### Categorization Job
 ```hcl
-resource "elasticstack_elasticsearch_ml_anomaly_detector" "categorization" {
+resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "categorization" {
   job_id      = "log-categorization"
   description = "Log message categorization job"
 
@@ -201,7 +201,7 @@ The resource includes comprehensive validation:
 Existing ML anomaly detection jobs can be imported:
 
 ```bash
-terraform import elasticstack_elasticsearch_ml_anomaly_detector.example existing-job-id
+terraform import elasticstack_elasticsearch_ml_anomaly_detection_job.example existing-job-id
 ```
 
 ## Error Handling

@@ -1,4 +1,4 @@
-package anomaly_detector
+package anomaly_detection_job
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectorJobResource) delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *anomalyDetectionJobResource) delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	if !r.resourceReady(&resp.Diagnostics) {
 		return
 	}

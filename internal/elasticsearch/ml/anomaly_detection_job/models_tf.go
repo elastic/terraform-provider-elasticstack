@@ -1,4 +1,4 @@
-package anomaly_detector
+package anomaly_detection_job
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// AnomalyDetectorJobTFModel represents the Terraform resource model for ML anomaly detection jobs
-type AnomalyDetectorJobTFModel struct {
+// AnomalyDetectionJobTFModel represents the Terraform resource model for ML anomaly detection jobs
+type AnomalyDetectionJobTFModel struct {
 	ID                                   types.String         `tfsdk:"id"`
 	ElasticsearchConnection              types.List           `tfsdk:"elasticsearch_connection"`
 	JobID                                types.String         `tfsdk:"job_id"`
@@ -22,7 +22,6 @@ type AnomalyDetectorJobTFModel struct {
 	AnalysisConfig                       types.Object         `tfsdk:"analysis_config"`
 	AnalysisLimits                       types.Object         `tfsdk:"analysis_limits"`
 	DataDescription                      types.Object         `tfsdk:"data_description"`
-	DatafeedConfig                       types.Object         `tfsdk:"datafeed_config"`
 	ModelPlotConfig                      types.Object         `tfsdk:"model_plot_config"`
 	AllowLazyOpen                        types.Bool           `tfsdk:"allow_lazy_open"`
 	BackgroundPersistInterval            types.String         `tfsdk:"background_persist_interval"`
@@ -95,43 +94,6 @@ type DataDescriptionTFModel struct {
 	TimeFormat     types.String `tfsdk:"time_format"`
 }
 
-// DatafeedConfigTFModel represents datafeed configuration
-type DatafeedConfigTFModel struct {
-	AggregationsConfig     jsontypes.Normalized `tfsdk:"aggregations"`
-	ChunkingConfig         types.Object         `tfsdk:"chunking_config"`
-	DatafeedID             types.String         `tfsdk:"datafeed_id"`
-	DelayedDataCheckConfig types.Object         `tfsdk:"delayed_data_check_config"`
-	Frequency              types.String         `tfsdk:"frequency"`
-	Indices                types.List           `tfsdk:"indices"`
-	IndicesOptions         types.Object         `tfsdk:"indices_options"`
-	MaxEmptySearches       types.Int64          `tfsdk:"max_empty_searches"`
-	Query                  jsontypes.Normalized `tfsdk:"query"`
-	QueryDelay             types.String         `tfsdk:"query_delay"`
-	RuntimeMappings        jsontypes.Normalized `tfsdk:"runtime_mappings"`
-	ScriptFields           jsontypes.Normalized `tfsdk:"script_fields"`
-	ScrollSize             types.Int64          `tfsdk:"scroll_size"`
-}
-
-// ChunkingConfigTFModel represents chunking configuration
-type ChunkingConfigTFModel struct {
-	Mode     types.String `tfsdk:"mode"`
-	TimeSpan types.String `tfsdk:"time_span"`
-}
-
-// DelayedDataCheckConfigTFModel represents delayed data check configuration
-type DelayedDataCheckConfigTFModel struct {
-	CheckWindow types.String `tfsdk:"check_window"`
-	Enabled     types.Bool   `tfsdk:"enabled"`
-}
-
-// IndicesOptionsTFModel represents indices options configuration
-type IndicesOptionsTFModel struct {
-	ExpandWildcards   types.List `tfsdk:"expand_wildcards"`
-	IgnoreUnavailable types.Bool `tfsdk:"ignore_unavailable"`
-	AllowNoIndices    types.Bool `tfsdk:"allow_no_indices"`
-	IgnoreThrottled   types.Bool `tfsdk:"ignore_throttled"`
-}
-
 // ModelPlotConfigTFModel represents model plot configuration
 type ModelPlotConfigTFModel struct {
 	AnnotationsEnabled types.Bool   `tfsdk:"annotations_enabled"`
@@ -145,11 +107,11 @@ type PerPartitionCategorizationTFModel struct {
 	StopOnWarn types.Bool `tfsdk:"stop_on_warn"`
 }
 
-// ToAPIModel converts TF model to AnomalyDetectorJobAPIModel
-func (plan *AnomalyDetectorJobTFModel) toAPIModel(ctx context.Context) (*AnomalyDetectorJobAPIModel, fwdiags.Diagnostics) {
+// ToAPIModel converts TF model to AnomalyDetectionJobAPIModel
+func (plan *AnomalyDetectionJobTFModel) toAPIModel(ctx context.Context) (*AnomalyDetectionJobAPIModel, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	apiModel := &AnomalyDetectorJobAPIModel{
+	apiModel := &AnomalyDetectionJobAPIModel{
 		JobID:       plan.JobID.ValueString(),
 		Description: plan.Description.ValueString(),
 	}
@@ -310,82 +272,11 @@ func (plan *AnomalyDetectorJobTFModel) toAPIModel(ctx context.Context) (*Anomaly
 		}
 	}
 
-	// Convert datafeed_config
-	if utils.IsKnown(plan.DatafeedConfig) {
-		var datafeedConfig DatafeedConfigTFModel
-		d = plan.DatafeedConfig.As(ctx, &datafeedConfig, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-
-		apiDatafeedConfig := &DatafeedConfigAPIModel{
-			DatafeedID: datafeedConfig.DatafeedID.ValueString(),
-			Frequency:  datafeedConfig.Frequency.ValueString(),
-			QueryDelay: datafeedConfig.QueryDelay.ValueString(),
-		}
-
-		// Convert indices
-		if utils.IsKnown(datafeedConfig.Indices) {
-			var indices []string
-			d = datafeedConfig.Indices.ElementsAs(ctx, &indices, false)
-			diags.Append(d...)
-			apiDatafeedConfig.Indices = indices
-		}
-
-		// Convert query
-		if utils.IsKnown(datafeedConfig.Query) {
-			var query map[string]interface{}
-			if err := json.Unmarshal([]byte(datafeedConfig.Query.ValueString()), &query); err != nil {
-				diags.AddError("Failed to parse query", err.Error())
-				return nil, diags
-			}
-			apiDatafeedConfig.Query = query
-		}
-
-		// Convert aggregations
-		if utils.IsKnown(datafeedConfig.AggregationsConfig) {
-			var aggregations map[string]interface{}
-			if err := json.Unmarshal([]byte(datafeedConfig.AggregationsConfig.ValueString()), &aggregations); err != nil {
-				diags.AddError("Failed to parse aggregations", err.Error())
-				return nil, diags
-			}
-			apiDatafeedConfig.Aggregations = aggregations
-		}
-
-		// Convert runtime_mappings
-		if utils.IsKnown(datafeedConfig.RuntimeMappings) {
-			var runtimeMappings map[string]interface{}
-			if err := json.Unmarshal([]byte(datafeedConfig.RuntimeMappings.ValueString()), &runtimeMappings); err != nil {
-				diags.AddError("Failed to parse runtime_mappings", err.Error())
-				return nil, diags
-			}
-			apiDatafeedConfig.RuntimeMappings = runtimeMappings
-		}
-
-		// Convert script_fields
-		if utils.IsKnown(datafeedConfig.ScriptFields) {
-			var scriptFields map[string]interface{}
-			if err := json.Unmarshal([]byte(datafeedConfig.ScriptFields.ValueString()), &scriptFields); err != nil {
-				diags.AddError("Failed to parse script_fields", err.Error())
-				return nil, diags
-			}
-			apiDatafeedConfig.ScriptFields = scriptFields
-		}
-
-		if utils.IsKnown(datafeedConfig.MaxEmptySearches) {
-			apiDatafeedConfig.MaxEmptySearches = utils.Pointer(datafeedConfig.MaxEmptySearches.ValueInt64())
-		}
-
-		if utils.IsKnown(datafeedConfig.ScrollSize) {
-			apiDatafeedConfig.ScrollSize = utils.Pointer(datafeedConfig.ScrollSize.ValueInt64())
-		}
-
-		apiModel.DatafeedConfig = apiDatafeedConfig
-	}
-
 	return apiModel, diags
 }
 
 // FromAPIModel populates the model from an API response.
-func (tfModel *AnomalyDetectorJobTFModel) fromAPIModel(ctx context.Context, apiModel *AnomalyDetectorJobAPIModel) fwdiags.Diagnostics {
+func (tfModel *AnomalyDetectionJobTFModel) fromAPIModel(ctx context.Context, apiModel *AnomalyDetectionJobAPIModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
 	tfModel.JobID = types.StringValue(apiModel.JobID)
@@ -453,17 +344,11 @@ func (tfModel *AnomalyDetectorJobTFModel) fromAPIModel(ctx context.Context, apiM
 	// Convert data_description
 	tfModel.DataDescription = tfModel.convertDataDescriptionFromAPI(ctx, &apiModel.DataDescription, &diags)
 
-	// Convert datafeed_config
-	tfModel.DatafeedConfig = tfModel.convertDatafeedConfigFromAPI(ctx, apiModel.DatafeedConfig, &diags)
-
 	// Convert model_plot_config
 	tfModel.ModelPlotConfig = tfModel.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
 
 	// Convert analysis_limits
 	tfModel.AnalysisLimits = tfModel.convertAnalysisLimitsFromAPI(ctx, apiModel.AnalysisLimits, &diags)
-
-	// Convert datafeed_config
-	tfModel.DatafeedConfig = tfModel.convertDatafeedConfigFromAPI(ctx, apiModel.DatafeedConfig, &diags)
 
 	// Convert model_plot_config
 	tfModel.ModelPlotConfig = tfModel.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
@@ -473,7 +358,7 @@ func (tfModel *AnomalyDetectorJobTFModel) fromAPIModel(ctx context.Context, apiM
 
 // Helper functions for schema attribute types
 // Conversion helper methods
-func (tfModel *AnomalyDetectorJobTFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel, diags *fwdiags.Diagnostics) types.Object {
+func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel, diags *fwdiags.Diagnostics) types.Object {
 	if apiConfig == nil || apiConfig.BucketSpan == "" {
 		return types.ObjectNull(getAnalysisConfigAttrTypes())
 	}
@@ -645,7 +530,7 @@ func (tfModel *AnomalyDetectorJobTFModel) convertAnalysisConfigFromAPI(ctx conte
 	return analysisConfigObjectValue
 }
 
-func (tfModel *AnomalyDetectorJobTFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataDescription *DataDescriptionAPIModel, diags *fwdiags.Diagnostics) types.Object {
+func (tfModel *AnomalyDetectionJobTFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataDescription *DataDescriptionAPIModel, diags *fwdiags.Diagnostics) types.Object {
 	if apiDataDescription == nil {
 		return types.ObjectNull(getDataDescriptionAttrTypes())
 	}
@@ -687,7 +572,7 @@ func (tfModel *AnomalyDetectorJobTFModel) convertDataDescriptionFromAPI(ctx cont
 	return dataDescriptionObjectValue
 }
 
-func (tfModel *AnomalyDetectorJobTFModel) convertAnalysisLimitsFromAPI(ctx context.Context, apiLimits *AnalysisLimitsAPIModel, diags *fwdiags.Diagnostics) types.Object {
+func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisLimitsFromAPI(ctx context.Context, apiLimits *AnalysisLimitsAPIModel, diags *fwdiags.Diagnostics) types.Object {
 	if apiLimits == nil {
 		return types.ObjectNull(getAnalysisLimitsAttrTypes())
 	}
@@ -707,158 +592,7 @@ func (tfModel *AnomalyDetectorJobTFModel) convertAnalysisLimitsFromAPI(ctx conte
 	return analysisLimitsObjectValue
 }
 
-func (tfModel *AnomalyDetectorJobTFModel) convertDatafeedConfigFromAPI(ctx context.Context, apiDatafeedConfig *DatafeedConfigAPIModel, diags *fwdiags.Diagnostics) types.Object {
-	if apiDatafeedConfig == nil {
-		return types.ObjectNull(getDatafeedConfigAttrTypes())
-	}
-
-	datafeedConfigTF := DatafeedConfigTFModel{}
-
-	if apiDatafeedConfig.DatafeedID != "" {
-		datafeedConfigTF.DatafeedID = types.StringValue(apiDatafeedConfig.DatafeedID)
-	} else {
-		datafeedConfigTF.DatafeedID = types.StringNull()
-	}
-
-	if apiDatafeedConfig.Frequency != "" {
-		datafeedConfigTF.Frequency = types.StringValue(apiDatafeedConfig.Frequency)
-	} else {
-		datafeedConfigTF.Frequency = types.StringNull()
-	}
-
-	if apiDatafeedConfig.QueryDelay != "" {
-		datafeedConfigTF.QueryDelay = types.StringValue(apiDatafeedConfig.QueryDelay)
-	} else {
-		datafeedConfigTF.QueryDelay = types.StringNull()
-	}
-
-	// Convert indices
-	if len(apiDatafeedConfig.Indices) > 0 {
-		indicesListValue, d := types.ListValueFrom(ctx, types.StringType, apiDatafeedConfig.Indices)
-		diags.Append(d...)
-		datafeedConfigTF.Indices = indicesListValue
-	} else {
-		datafeedConfigTF.Indices = types.ListNull(types.StringType)
-	}
-
-	// Convert query
-	if apiDatafeedConfig.Query != nil {
-		queryJSON, err := json.Marshal(apiDatafeedConfig.Query)
-		if err != nil {
-			diags.AddError("Failed to marshal query", err.Error())
-			return types.ObjectNull(getDatafeedConfigAttrTypes())
-		}
-		datafeedConfigTF.Query = jsontypes.NewNormalizedValue(string(queryJSON))
-	} else {
-		datafeedConfigTF.Query = jsontypes.NewNormalizedNull()
-	}
-
-	// Convert aggregations
-	if apiDatafeedConfig.Aggregations != nil {
-		aggregationsJSON, err := json.Marshal(apiDatafeedConfig.Aggregations)
-		if err != nil {
-			diags.AddError("Failed to marshal aggregations", err.Error())
-			return types.ObjectNull(getDatafeedConfigAttrTypes())
-		}
-		datafeedConfigTF.AggregationsConfig = jsontypes.NewNormalizedValue(string(aggregationsJSON))
-	} else {
-		datafeedConfigTF.AggregationsConfig = jsontypes.NewNormalizedNull()
-	}
-
-	// Convert runtime_mappings
-	if apiDatafeedConfig.RuntimeMappings != nil {
-		runtimeMappingsJSON, err := json.Marshal(apiDatafeedConfig.RuntimeMappings)
-		if err != nil {
-			diags.AddError("Failed to marshal runtime_mappings", err.Error())
-			return types.ObjectNull(getDatafeedConfigAttrTypes())
-		}
-		datafeedConfigTF.RuntimeMappings = jsontypes.NewNormalizedValue(string(runtimeMappingsJSON))
-	} else {
-		datafeedConfigTF.RuntimeMappings = jsontypes.NewNormalizedNull()
-	}
-
-	// Convert script_fields
-	if apiDatafeedConfig.ScriptFields != nil {
-		scriptFieldsJSON, err := json.Marshal(apiDatafeedConfig.ScriptFields)
-		if err != nil {
-			diags.AddError("Failed to marshal script_fields", err.Error())
-			return types.ObjectNull(getDatafeedConfigAttrTypes())
-		}
-		datafeedConfigTF.ScriptFields = jsontypes.NewNormalizedValue(string(scriptFieldsJSON))
-	} else {
-		datafeedConfigTF.ScriptFields = jsontypes.NewNormalizedNull()
-	}
-
-	// Convert integer fields
-	datafeedConfigTF.MaxEmptySearches = types.Int64PointerValue(apiDatafeedConfig.MaxEmptySearches)
-
-	datafeedConfigTF.ScrollSize = types.Int64PointerValue(apiDatafeedConfig.ScrollSize)
-
-	// Convert chunking_config
-	if apiDatafeedConfig.ChunkingConfig != nil {
-		chunkingConfigTF := ChunkingConfigTFModel{}
-		if apiDatafeedConfig.ChunkingConfig.Mode != "" {
-			chunkingConfigTF.Mode = types.StringValue(apiDatafeedConfig.ChunkingConfig.Mode)
-		} else {
-			chunkingConfigTF.Mode = types.StringNull()
-		}
-		if apiDatafeedConfig.ChunkingConfig.TimeSpan != "" {
-			chunkingConfigTF.TimeSpan = types.StringValue(apiDatafeedConfig.ChunkingConfig.TimeSpan)
-		} else {
-			chunkingConfigTF.TimeSpan = types.StringNull()
-		}
-		chunkingConfigObjectValue, d := types.ObjectValueFrom(ctx, getChunkingConfigAttrTypes(), chunkingConfigTF)
-		diags.Append(d...)
-		datafeedConfigTF.ChunkingConfig = chunkingConfigObjectValue
-	} else {
-		datafeedConfigTF.ChunkingConfig = types.ObjectNull(getChunkingConfigAttrTypes())
-	}
-
-	// Convert delayed_data_check_config
-	if apiDatafeedConfig.DelayedDataCheckConfig != nil {
-		delayedDataCheckConfigTF := DelayedDataCheckConfigTFModel{
-			Enabled: types.BoolValue(apiDatafeedConfig.DelayedDataCheckConfig.Enabled),
-		}
-		if apiDatafeedConfig.DelayedDataCheckConfig.CheckWindow != "" {
-			delayedDataCheckConfigTF.CheckWindow = types.StringValue(apiDatafeedConfig.DelayedDataCheckConfig.CheckWindow)
-		} else {
-			delayedDataCheckConfigTF.CheckWindow = types.StringNull()
-		}
-		delayedDataCheckConfigObjectValue, d := types.ObjectValueFrom(ctx, getDelayedDataCheckConfigAttrTypes(), delayedDataCheckConfigTF)
-		diags.Append(d...)
-		datafeedConfigTF.DelayedDataCheckConfig = delayedDataCheckConfigObjectValue
-	} else {
-		datafeedConfigTF.DelayedDataCheckConfig = types.ObjectNull(getDelayedDataCheckConfigAttrTypes())
-	}
-
-	// Convert indices_options
-	if apiDatafeedConfig.IndicesOptions != nil {
-		indicesOptionsTF := IndicesOptionsTFModel{
-			IgnoreUnavailable: types.BoolPointerValue(apiDatafeedConfig.IndicesOptions.IgnoreUnavailable),
-			AllowNoIndices:    types.BoolPointerValue(apiDatafeedConfig.IndicesOptions.AllowNoIndices),
-			IgnoreThrottled:   types.BoolPointerValue(apiDatafeedConfig.IndicesOptions.IgnoreThrottled),
-		}
-
-		if len(apiDatafeedConfig.IndicesOptions.ExpandWildcards) > 0 {
-			expandWildcardsListValue, d := types.ListValueFrom(ctx, types.StringType, apiDatafeedConfig.IndicesOptions.ExpandWildcards)
-			diags.Append(d...)
-			indicesOptionsTF.ExpandWildcards = expandWildcardsListValue
-		} else {
-			indicesOptionsTF.ExpandWildcards = types.ListNull(types.StringType)
-		}
-		indicesOptionsObjectValue, d := types.ObjectValueFrom(ctx, getIndicesOptionsAttrTypes(), indicesOptionsTF)
-		diags.Append(d...)
-		datafeedConfigTF.IndicesOptions = indicesOptionsObjectValue
-	} else {
-		datafeedConfigTF.IndicesOptions = types.ObjectNull(getIndicesOptionsAttrTypes())
-	}
-
-	datafeedConfigObjectValue, d := types.ObjectValueFrom(ctx, getDatafeedConfigAttrTypes(), datafeedConfigTF)
-	diags.Append(d...)
-	return datafeedConfigObjectValue
-}
-
-func (tfModel *AnomalyDetectorJobTFModel) convertModelPlotConfigFromAPI(ctx context.Context, apiModelPlotConfig *ModelPlotConfigAPIModel, diags *fwdiags.Diagnostics) types.Object {
+func (tfModel *AnomalyDetectionJobTFModel) convertModelPlotConfigFromAPI(ctx context.Context, apiModelPlotConfig *ModelPlotConfigAPIModel, diags *fwdiags.Diagnostics) types.Object {
 	if apiModelPlotConfig == nil {
 		return types.ObjectNull(getModelPlotConfigAttrTypes())
 	}

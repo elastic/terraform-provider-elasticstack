@@ -12,7 +12,7 @@ provider "elasticstack" {
 }
 
 # Basic anomaly detection job
-resource "elasticstack_elasticsearch_ml_anomaly_detector" "example" {
+resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
   job_id      = "example-anomaly-detector"
   description = "Example anomaly detection job for monitoring web traffic"
   groups      = ["web", "monitoring"]
@@ -44,16 +44,6 @@ resource "elasticstack_elasticsearch_ml_anomaly_detector" "example" {
 
   model_plot_config = {
     enabled = true
-  }
-
-  datafeed_config = {
-    datafeed_id = "datafeed-example-anomaly-detector"
-    indices     = ["web-logs-*"]
-    query = jsonencode({
-      match_all = {}
-    })
-    frequency   = "60s"
-    query_delay = "60s"
   }
 
   model_snapshot_retention_days = 30
