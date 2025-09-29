@@ -212,11 +212,7 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	diags.Append(d.updateIndexFromApi(ctx, rule.Index)...)
 
 	// Optional query for saved query rules
-	if rule.Query != nil {
-		d.Query = types.StringValue(*rule.Query)
-	} else {
-		d.Query = types.StringNull()
-	}
+	d.Query = types.StringPointerValue(rule.Query)
 
 	// Language for saved query rules (not a pointer)
 	d.Language = types.StringValue(string(rule.Language))

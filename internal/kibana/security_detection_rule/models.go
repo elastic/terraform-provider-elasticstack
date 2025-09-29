@@ -1180,11 +1180,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 
 	// Convert osquery params
 	paramsModel := ResponseActionParamsModel{}
-	if osqueryAction.Params.Query != nil {
-		paramsModel.Query = types.StringPointerValue(osqueryAction.Params.Query)
-	} else {
-		paramsModel.Query = types.StringNull()
-	}
+	paramsModel.Query = types.StringPointerValue(osqueryAction.Params.Query)
 	if osqueryAction.Params.PackId != nil {
 		paramsModel.PackId = types.StringPointerValue(osqueryAction.Params.PackId)
 	} else {
@@ -1547,23 +1543,23 @@ func (d SecurityDetectionRuleData) alertSuppressionToThresholdApi(ctx context.Co
 	suppression := &kbapi.SecurityDetectionsAPIThresholdAlertSuppression{}
 
 	// Handle duration (required for threshold alert suppression)
-	if utils.IsKnown(model.Duration) {
-		var durationModel AlertSuppressionDurationModel
-		durationDiags := model.Duration.As(ctx, &durationModel, basetypes.ObjectAsOptions{})
-		diags.Append(durationDiags...)
-		if !diags.HasError() {
-			duration := kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
-				Value: int(durationModel.Value.ValueInt64()),
-				Unit:  kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit(durationModel.Unit.ValueString()),
-			}
-			suppression.Duration = duration
-		}
-	} else {
+	if !utils.IsKnown(model.Duration) {
 		diags.AddError(
 			"Duration required for threshold alert suppression",
 			"Threshold alert suppression requires a duration to be specified",
 		)
 		return nil
+	}
+
+	var durationModel AlertSuppressionDurationModel
+	durationDiags := model.Duration.As(ctx, &durationModel, basetypes.ObjectAsOptions{})
+	diags.Append(durationDiags...)
+	if !diags.HasError() {
+		duration := kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
+			Value: int(durationModel.Value.ValueInt64()),
+			Unit:  kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit(durationModel.Unit.ValueString()),
+		}
+		suppression.Duration = duration
 	}
 
 	// Note: Threshold alert suppression only supports duration field.
