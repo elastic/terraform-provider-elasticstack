@@ -1705,7 +1705,7 @@ func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Contex
 		timeout := float32(params.Timeout.ValueInt64())
 		osqueryAction.Params.Timeout = &timeout
 	}
-	if utils.IsKnown(params.EcsMapping) && !params.EcsMapping.IsNull() {
+	if utils.IsKnown(params.EcsMapping) {
 
 		// Convert map to ECS mapping structure
 		ecsMappingElems := make(map[string]basetypes.StringValue)
@@ -1727,7 +1727,7 @@ func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Contex
 			diags.Append(elemDiags...)
 		}
 	}
-	if utils.IsKnown(params.Queries) && !params.Queries.IsNull() {
+	if utils.IsKnown(params.Queries) {
 		queries := make([]OsqueryQueryModel, len(params.Queries.Elements()))
 		queriesDiags := params.Queries.ElementsAs(ctx, &queries, false)
 		if !queriesDiags.HasError() {
@@ -1749,7 +1749,7 @@ func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Contex
 				if utils.IsKnown(query.Snapshot) {
 					apiQuery.Snapshot = query.Snapshot.ValueBoolPointer()
 				}
-				if utils.IsKnown(query.EcsMapping) && !query.EcsMapping.IsNull() {
+				if utils.IsKnown(query.EcsMapping) {
 					// Convert map to ECS mapping structure for queries
 					queryEcsMappingElems := make(map[string]basetypes.StringValue)
 					queryElemDiags := query.EcsMapping.ElementsAs(ctx, &queryEcsMappingElems, false)
