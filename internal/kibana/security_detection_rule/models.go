@@ -1180,11 +1180,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 
 	// Convert osquery params
 	paramsModel := ResponseActionParamsModel{}
-	if osqueryAction.Params.Query != nil {
-		paramsModel.Query = types.StringPointerValue(osqueryAction.Params.Query)
-	} else {
-		paramsModel.Query = types.StringNull()
-	}
+	paramsModel.Query = types.StringPointerValue(osqueryAction.Params.Query)
 	if osqueryAction.Params.PackId != nil {
 		paramsModel.PackId = types.StringPointerValue(osqueryAction.Params.PackId)
 	} else {
