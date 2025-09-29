@@ -831,3 +831,173 @@ func GetSchema() schema.Schema {
 		},
 	}
 }
+
+// func getCardinalityAttrTypes() map[string]attr.Type {
+func getCardinalityAttrTypes() attr.Type {
+	return GetSchema().Attributes["threshold"].(schema.SingleNestedAttribute).Attributes["cardinality"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+// getDurationAttrTypes returns the attribute types for duration objects
+func getDurationAttrTypes() map[string]attr.Type {
+	return GetSchema().Attributes["alert_suppression"].(schema.SingleNestedAttribute).Attributes["duration"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+// getThresholdAttrTypes returns the attribute types for threshold objects
+func getThresholdAttrTypes() map[string]attr.Type {
+	return GetSchema().Attributes["threshold"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+// getAlertSuppressionAttrTypes returns the attribute types for alert suppression objects
+func getAlertSuppressionAttrTypes() map[string]attr.Type {
+	return GetSchema().Attributes["alert_suppression"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+// getThreatElementAttrTypes returns the element type for threat objects (MITRE ATT&CK framework)
+func getThreatElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getThreatMappingElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["threat_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getThreatMappingEntryElementAttrTypes() attr.Type {
+	threatMappingType := GetSchema().Attributes["threat_mapping"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return threatMappingType.AttributeTypes()["entries"].(attr.TypeWithElementType).ElementType()
+}
+
+func getResponseActionElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getResponseActionParamsElementAttrTypes() map[string]attr.Type {
+	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getOsqueryQueryElementAttrTypes() attr.Type {
+	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	paramsType := responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes)
+	return paramsType.AttributeTypes()["queries"].(attr.TypeWithElementType).ElementType()
+}
+
+func getEndpointProcessConfigElementAttrTypes() map[string]attr.Type {
+	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	paramsType := responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes)
+	return paramsType.AttributeTypes()["config"].(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getActionElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["actions"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getActionFrequencyElementAttrTypes() map[string]attr.Type {
+	actionType := GetSchema().Attributes["actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return actionType.AttributeTypes()["frequency"].(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getExceptionsListElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["exceptions_list"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getRiskScoreMappingElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["risk_score_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getRelatedIntegrationElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["related_integrations"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getRequiredFieldElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["required_fields"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getSeverityMappingElementAttrTypes() attr.Type {
+	return GetSchema().Attributes["severity_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+// durationElementType returns the element type for duration objects
+func durationElementType() map[string]attr.Type {
+	return getDurationAttrTypes()
+}
+
+// alertSuppressionElementType returns the element type for alert suppression objects
+func alertSuppressionElementType() map[string]attr.Type {
+	return getAlertSuppressionAttrTypes()
+}
+
+// riskScoreMappingElementType returns the element type for risk score mapping
+func riskScoreMappingElementType() attr.Type {
+	return getRiskScoreMappingElementAttrTypes()
+}
+
+// relatedIntegrationElementType returns the element type for related integrations
+func relatedIntegrationElementType() attr.Type {
+	return getRelatedIntegrationElementAttrTypes()
+}
+
+// requiredFieldElementType returns the element type for required fields
+func requiredFieldElementType() attr.Type {
+	return getRequiredFieldElementAttrTypes()
+}
+
+// severityMappingElementType returns the element type for severity mapping
+func severityMappingElementType() attr.Type {
+	return getSeverityMappingElementAttrTypes()
+}
+
+// exceptionsListElementType returns the element type for exceptions list
+func exceptionsListElementType() attr.Type {
+	return getExceptionsListElementAttrTypes()
+}
+
+// actionFrequencyElementType returns the element type for action frequency
+func actionFrequencyElementType() map[string]attr.Type {
+	return getActionFrequencyElementAttrTypes()
+}
+
+// actionElementType returns the element type for actions
+func actionElementType() attr.Type {
+	return getActionElementAttrTypes()
+}
+
+// threatMappingElementType returns the element type for threat mapping
+func threatMappingElementType() attr.Type {
+	return getThreatMappingElementAttrTypes()
+}
+
+// threatMappingEntryElementType returns the element type for threat mapping entries
+func threatMappingEntryElementType() attr.Type {
+	return getThreatMappingEntryElementAttrTypes()
+}
+
+// thresholdElementType returns the element type for threshold
+func thresholdElementType() map[string]attr.Type {
+	return getThresholdAttrTypes()
+}
+
+// cardinalityElementType returns the element type for cardinality
+func cardinalityElementType() attr.Type {
+	// return types.ObjectType{AttrTypes: getCardinalityAttrTypes()}
+	return getCardinalityAttrTypes()
+}
+
+// responseActionElementType returns the element type for response actions
+func responseActionElementType() attr.Type {
+	return getResponseActionElementAttrTypes()
+}
+
+// responseActionParamsElementType returns the element type for response action params
+func responseActionParamsElementType() types.ObjectType {
+	return types.ObjectType{AttrTypes: getResponseActionParamsElementAttrTypes()}
+}
+
+// osqueryQueryElementType returns the element type for osquery queries
+func osqueryQueryElementType() attr.Type {
+	return getOsqueryQueryElementAttrTypes()
+}
+
+// endpointProcessConfigElementType returns the element type for endpoint process config
+func endpointProcessConfigElementType() types.ObjectType {
+	return types.ObjectType{AttrTypes: getEndpointProcessConfigElementAttrTypes()}
+}

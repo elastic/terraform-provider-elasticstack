@@ -588,8 +588,8 @@ func TestToThresholdRuleCreateProps(t *testing.T) {
 		Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
 			Field:       utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 			Value:       types.Int64Value(5),
-			Cardinality: types.ListNull(CardinalityObjectType),
-		}, ThresholdObjectType.AttrTypes, path.Root("threshold"), &diags),
+			Cardinality: types.ListNull(getCardinalityAttrTypes()),
+		}, thresholdElementType(), path.Root("threshold"), &diags),
 		RiskScore: types.Int64Value(80),
 		Severity:  types.StringValue("high"),
 		Enabled:   types.BoolValue(true),
@@ -641,8 +641,8 @@ func TestThresholdToApi(t *testing.T) {
 				Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
 					Field:       utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 					Value:       types.Int64Value(10),
-					Cardinality: types.ListNull(CardinalityObjectType),
-				}, ThresholdObjectType.AttrTypes, path.Root("threshold"), &diags),
+					Cardinality: types.ListNull(getCardinalityAttrTypes()),
+				}, thresholdElementType(), path.Root("threshold"), &diags),
 			},
 			expectedValue:      10,
 			expectedFieldCount: 1,
@@ -658,8 +658,8 @@ func TestThresholdToApi(t *testing.T) {
 							Field: types.StringValue("destination.ip"),
 							Value: types.Int64Value(2),
 						},
-					}, CardinalityObjectType, path.Root("threshold").AtName("cardinality"), &diags),
-				}, ThresholdObjectType.AttrTypes, path.Root("threshold"), &diags),
+					}, getCardinalityAttrTypes(), path.Root("threshold").AtName("cardinality"), &diags),
+				}, thresholdElementType(), path.Root("threshold"), &diags),
 			},
 			expectedValue:      5,
 			expectedFieldCount: 2,
@@ -712,9 +712,9 @@ func TestAlertSuppressionToApi(t *testing.T) {
 					Duration: utils.ObjectValueFrom(ctx, &AlertSuppressionDurationModel{
 						Value: types.Int64Value(10),
 						Unit:  types.StringValue("m"),
-					}, DurationObjectType.AttrTypes, path.Root("alert_suppression").AtName("duration"), &diags),
+					}, durationElementType(), path.Root("alert_suppression").AtName("duration"), &diags),
 					MissingFieldsStrategy: types.StringValue("suppress"),
-				}, AlertSuppressionObjectType.AttrTypes, path.Root("alert_suppression"), &diags),
+				}, alertSuppressionElementType(), path.Root("alert_suppression"), &diags),
 			},
 			expectedGroupByCount:     2,
 			hasDuration:              true,
@@ -725,9 +725,9 @@ func TestAlertSuppressionToApi(t *testing.T) {
 			data: SecurityDetectionRuleData{
 				AlertSuppression: utils.ObjectValueFrom(ctx, &AlertSuppressionModel{
 					GroupBy:               utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("alert_suppression").AtName("group_by"), &diags),
-					Duration:              types.ObjectNull(DurationObjectType.AttrTypes),
+					Duration:              types.ObjectNull(durationElementType()),
 					MissingFieldsStrategy: types.StringNull(),
-				}, AlertSuppressionObjectType.AttrTypes, path.Root("alert_suppression"), &diags),
+				}, alertSuppressionElementType(), path.Root("alert_suppression"), &diags),
 			},
 			expectedGroupByCount: 1,
 		},
@@ -1761,8 +1761,8 @@ func TestToCreateProps(t *testing.T) {
 					Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
 						Field:       utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 						Value:       types.Int64Value(5),
-						Cardinality: types.ListNull(CardinalityObjectType),
-					}, ThresholdObjectType.AttrTypes, path.Root("threshold"), &diags),
+						Cardinality: types.ListNull(getCardinalityAttrTypes()),
+					}, thresholdElementType(), path.Root("threshold"), &diags),
 					RiskScore: types.Int64Value(75),
 					Severity:  types.StringValue("medium"),
 				}
@@ -2050,8 +2050,8 @@ func TestToUpdateProps(t *testing.T) {
 					Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
 						Field:       utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 						Value:       types.Int64Value(5),
-						Cardinality: types.ListNull(CardinalityObjectType),
-					}, ThresholdObjectType.AttrTypes, path.Root("threshold"), &diags),
+						Cardinality: types.ListNull(getCardinalityAttrTypes()),
+					}, thresholdElementType(), path.Root("threshold"), &diags),
 					RiskScore: types.Int64Value(75),
 					Severity:  types.StringValue("medium"),
 				}
