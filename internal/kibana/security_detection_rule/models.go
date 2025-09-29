@@ -1582,7 +1582,7 @@ func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbap
 
 	apiThreatMapping := make(kbapi.SecurityDetectionsAPIThreatMapping, 0)
 	for _, mapping := range threatMapping {
-		if mapping.Entries.IsNull() || mapping.Entries.IsUnknown() {
+		if !utils.IsKnown(mapping.Entries) {
 			continue
 		}
 
@@ -1639,16 +1639,8 @@ func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, cli
 
 	apiResponseActions := utils.ListTypeToSlice(ctx, d.ResponseActions, path.Root("response_actions"), &diags,
 		func(responseAction ResponseActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIResponseAction {
-			if responseAction.ActionTypeId.IsNull() {
-				return kbapi.SecurityDetectionsAPIResponseAction{}
-			}
 
 			actionTypeId := responseAction.ActionTypeId.ValueString()
-
-			// Extract params using ObjectTypeToStruct
-			if responseAction.Params.IsNull() || responseAction.Params.IsUnknown() {
-				return kbapi.SecurityDetectionsAPIResponseAction{}
-			}
 
 			params := utils.ObjectTypeToStruct(ctx, responseAction.Params, meta.Path.AtName("params"), &diags,
 				func(item ResponseActionParamsModel, meta utils.ObjectMeta) ResponseActionParamsModel {
@@ -1821,7 +1813,7 @@ func (d SecurityDetectionRuleData) buildEndpointResponseAction(ctx context.Conte
 			}
 
 			// Set config if provided
-			if !params.Config.IsNull() && !params.Config.IsUnknown() {
+			if utils.IsKnown(params.Config) {
 				config := utils.ObjectTypeToStruct(ctx, params.Config, path.Root("response_actions").AtName("params").AtName("config"), &diags,
 					func(item EndpointProcessConfigModel, meta utils.ObjectMeta) EndpointProcessConfigModel {
 						return item
@@ -1870,10 +1862,6 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 
 	apiActions := utils.ListTypeToSlice(ctx, d.Actions, path.Root("actions"), &diags,
 		func(action ActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRuleAction {
-			if action.ActionTypeId.IsNull() || action.Id.IsNull() {
-				return kbapi.SecurityDetectionsAPIRuleAction{}
-			}
-
 			apiAction := kbapi.SecurityDetectionsAPIRuleAction{
 				ActionTypeId: action.ActionTypeId.ValueString(),
 				Id:           kbapi.SecurityDetectionsAPIRuleActionId(action.Id.ValueString()),
@@ -2008,7 +1996,7 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 		}
 
 		// Set optional fields
-		action.Group = types.StringPointerValue(string(apiAction.Group))
+		action.Group = types.StringPointerValue(apiAction.Group)
 
 		if apiAction.Uuid != nil {
 			action.Uuid = types.StringValue(string(*apiAction.Uuid))
@@ -2167,9 +2155,6 @@ func (d SecurityDetectionRuleData) exceptionsListToApi(ctx context.Context) ([]k
 
 	apiExceptionsList := utils.ListTypeToSlice(ctx, d.ExceptionsList, path.Root("exceptions_list"), &diags,
 		func(exception ExceptionsListModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRuleExceptionList {
-			if exception.Id.IsNull() || exception.ListId.IsNull() || exception.NamespaceType.IsNull() || exception.Type.IsNull() {
-				return kbapi.SecurityDetectionsAPIRuleExceptionList{}
-			}
 
 			apiException := kbapi.SecurityDetectionsAPIRuleExceptionList{
 				Id:            exception.Id.ValueString(),
@@ -2250,15 +2235,6 @@ func (d SecurityDetectionRuleData) riskScoreMappingToApi(ctx context.Context) (k
 			RiskScore *kbapi.SecurityDetectionsAPIRiskScore               `json:"risk_score,omitempty"`
 			Value     string                                              `json:"value"`
 		} {
-			if mapping.Field.IsNull() || mapping.Operator.IsNull() || mapping.Value.IsNull() {
-				return struct {
-					Field     string                                              `json:"field"`
-					Operator  kbapi.SecurityDetectionsAPIRiskScoreMappingOperator `json:"operator"`
-					RiskScore *kbapi.SecurityDetectionsAPIRiskScore               `json:"risk_score,omitempty"`
-					Value     string                                              `json:"value"`
-				}{}
-			}
-
 			apiMapping := struct {
 				Field     string                                              `json:"field"`
 				Operator  kbapi.SecurityDetectionsAPIRiskScoreMappingOperator `json:"operator"`
@@ -2282,9 +2258,7 @@ func (d SecurityDetectionRuleData) riskScoreMappingToApi(ctx context.Context) (k
 	// Filter out empty mappings (where required fields were null)
 	validMappings := make(kbapi.SecurityDetectionsAPIRiskScoreMapping, 0)
 	for _, mapping := range apiRiskScoreMapping {
-		if mapping.Field != "" && mapping.Operator != "" && mapping.Value != "" {
-			validMappings = append(validMappings, mapping)
-		}
+		validMappings = append(validMappings, mapping)
 	}
 
 	return validMappings, diags
@@ -2406,10 +2380,6 @@ func (d SecurityDetectionRuleData) relatedIntegrationsToApi(ctx context.Context)
 
 	apiRelatedIntegrations := utils.ListTypeToSlice(ctx, d.RelatedIntegrations, path.Root("related_integrations"), &diags,
 		func(integration RelatedIntegrationModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRelatedIntegration {
-			if integration.Package.IsNull() || integration.Version.IsNull() {
-				meta.Diags.AddError("Missing required fields", "Package and version are required for related integrations")
-				return kbapi.SecurityDetectionsAPIRelatedIntegration{}
-			}
 
 			apiIntegration := kbapi.SecurityDetectionsAPIRelatedIntegration{
 				Package: kbapi.SecurityDetectionsAPINonEmptyString(integration.Package.ValueString()),
@@ -2486,10 +2456,6 @@ func (d SecurityDetectionRuleData) requiredFieldsToApi(ctx context.Context) (*[]
 
 	apiRequiredFields := utils.ListTypeToSlice(ctx, d.RequiredFields, path.Root("required_fields"), &diags,
 		func(field RequiredFieldModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRequiredFieldInput {
-			if field.Name.IsNull() || field.Type.IsNull() {
-				meta.Diags.AddError("Missing required fields", "Name and type are required for required fields")
-				return kbapi.SecurityDetectionsAPIRequiredFieldInput{}
-			}
 
 			return kbapi.SecurityDetectionsAPIRequiredFieldInput{
 				Name: field.Name.ValueString(),
@@ -2557,16 +2523,6 @@ func (d SecurityDetectionRuleData) severityMappingToApi(ctx context.Context) (*k
 			Severity kbapi.SecurityDetectionsAPISeverity                `json:"severity"`
 			Value    string                                             `json:"value"`
 		} {
-			if mapping.Field.IsNull() || mapping.Operator.IsNull() || mapping.Value.IsNull() || mapping.Severity.IsNull() {
-				meta.Diags.AddError("Missing required fields", "Field, operator, value, and severity are required for severity mapping")
-				return struct {
-					Field    string                                             `json:"field"`
-					Operator kbapi.SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
-					Severity kbapi.SecurityDetectionsAPISeverity                `json:"severity"`
-					Value    string                                             `json:"value"`
-				}{}
-			}
-
 			return struct {
 				Field    string                                             `json:"field"`
 				Operator kbapi.SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
