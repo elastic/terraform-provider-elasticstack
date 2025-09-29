@@ -831,3 +831,87 @@ func GetSchema() schema.Schema {
 		},
 	}
 }
+
+// func getCardinalityType() map[string]attr.Type {
+func getCardinalityType() attr.Type {
+	return GetSchema().Attributes["threshold"].(schema.SingleNestedAttribute).Attributes["cardinality"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+// getDurationType returns the attribute types for duration objects
+func getDurationType() map[string]attr.Type {
+	return GetSchema().Attributes["alert_suppression"].(schema.SingleNestedAttribute).Attributes["duration"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+// getThresholdType returns the attribute types for threshold objects
+func getThresholdType() map[string]attr.Type {
+	return GetSchema().Attributes["threshold"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+// getAlertSuppressionType returns the attribute types for alert suppression objects
+func getAlertSuppressionType() map[string]attr.Type {
+	return GetSchema().Attributes["alert_suppression"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+// getThreatElementType returns the element type for threat objects (MITRE ATT&CK framework)
+func getThreatElementType() attr.Type {
+	return GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getThreatMappingElementType() attr.Type {
+	return GetSchema().Attributes["threat_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getThreatMappingEntryElementType() attr.Type {
+	threatMappingType := GetSchema().Attributes["threat_mapping"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return threatMappingType.AttributeTypes()["entries"].(attr.TypeWithElementType).ElementType()
+}
+
+func getResponseActionElementType() attr.Type {
+	return GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getResponseActionParamsType() map[string]attr.Type {
+	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getOsqueryQueryElementType() attr.Type {
+	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	paramsType := responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes)
+	return paramsType.AttributeTypes()["queries"].(attr.TypeWithElementType).ElementType()
+}
+
+func getEndpointProcessConfigType() map[string]attr.Type {
+	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	paramsType := responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes)
+	return paramsType.AttributeTypes()["config"].(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getActionElementType() attr.Type {
+	return GetSchema().Attributes["actions"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getActionFrequencyType() map[string]attr.Type {
+	actionType := GetSchema().Attributes["actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return actionType.AttributeTypes()["frequency"].(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getExceptionsListElementType() attr.Type {
+	return GetSchema().Attributes["exceptions_list"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getRiskScoreMappingElementType() attr.Type {
+	return GetSchema().Attributes["risk_score_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getRelatedIntegrationElementType() attr.Type {
+	return GetSchema().Attributes["related_integrations"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getRequiredFieldElementType() attr.Type {
+	return GetSchema().Attributes["required_fields"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getSeverityMappingElementType() attr.Type {
+	return GetSchema().Attributes["severity_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+}

@@ -252,45 +252,6 @@ type SeverityMappingModel struct {
 	Severity types.String `tfsdk:"severity"`
 }
 
-// Named types for complex object structures to avoid repetition
-var (
-	// CardinalityObjectType represents the cardinality object structure
-	CardinalityObjectType = types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"field": types.StringType,
-			"value": types.Int64Type,
-		},
-	}
-
-	// DurationObjectType represents the duration object structure
-	DurationObjectType = types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"value": types.Int64Type,
-			"unit":  types.StringType,
-		},
-	}
-
-	// ThresholdObjectType represents the threshold object structure
-	ThresholdObjectType = types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"value": types.Int64Type,
-			"field": types.ListType{ElemType: types.StringType},
-			"cardinality": types.ListType{
-				ElemType: CardinalityObjectType,
-			},
-		},
-	}
-
-	// AlertSuppressionObjectType represents the alert suppression object structure
-	AlertSuppressionObjectType = types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"group_by":                types.ListType{ElemType: types.StringType},
-			"duration":                DurationObjectType,
-			"missing_fields_strategy": types.StringType,
-		},
-	}
-)
-
 // CommonCreateProps holds all the field pointers for setting common create properties
 type CommonCreateProps struct {
 	Actions                           **[]kbapi.SecurityDetectionsAPIRuleAction
@@ -1015,13 +976,13 @@ func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults(ctx context.Co
 
 	// Initialize new common fields with proper empty lists
 	if !utils.IsKnown(d.RelatedIntegrations) {
-		d.RelatedIntegrations = types.ListNull(relatedIntegrationElementType())
+		d.RelatedIntegrations = types.ListNull(getRelatedIntegrationElementType())
 	}
 	if !utils.IsKnown(d.RequiredFields) {
-		d.RequiredFields = types.ListNull(requiredFieldElementType())
+		d.RequiredFields = types.ListNull(getRequiredFieldElementType())
 	}
 	if !utils.IsKnown(d.SeverityMapping) {
-		d.SeverityMapping = types.ListNull(severityMappingElementType())
+		d.SeverityMapping = types.ListNull(getSeverityMappingElementType())
 	}
 
 	// Initialize building block type to null by default
@@ -1031,12 +992,12 @@ func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults(ctx context.Co
 
 	// Actions field (common across all rule types)
 	if !utils.IsKnown(d.Actions) {
-		d.Actions = types.ListNull(actionElementType())
+		d.Actions = types.ListNull(getActionElementType())
 	}
 
 	// Exceptions list field (common across all rule types)
 	if !utils.IsKnown(d.ExceptionsList) {
-		d.ExceptionsList = types.ListNull(exceptionsListElementType())
+		d.ExceptionsList = types.ListNull(getExceptionsListElementType())
 	}
 
 	// Initialize all type-specific fields to null/empty by default
@@ -1079,19 +1040,7 @@ func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx c
 		d.ThreatQuery = types.StringNull()
 	}
 	if !utils.IsKnown(d.ThreatMapping) {
-		d.ThreatMapping = types.ListNull(types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"entries": types.ListType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"field": types.StringType,
-							"type":  types.StringType,
-							"value": types.StringType,
-						},
-					},
-				},
-			},
-		})
+		d.ThreatMapping = types.ListNull(getThreatMappingElementType())
 	}
 	if !utils.IsKnown(d.ThreatFilters) {
 		d.ThreatFilters = types.ListNull(types.StringType)
@@ -1108,7 +1057,7 @@ func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx c
 
 	// Threshold-specific fields
 	if !utils.IsKnown(d.Threshold) {
-		d.Threshold = types.ObjectNull(ThresholdObjectType.AttrTypes)
+		d.Threshold = types.ObjectNull(getThresholdType())
 	}
 
 	// Timeline fields (common across multiple rule types)
@@ -1121,36 +1070,7 @@ func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx c
 
 	// Threat field (common across multiple rule types) - MITRE ATT&CK framework
 	if !utils.IsKnown(d.Threat) {
-		d.Threat = types.ListNull(types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"framework": types.StringType,
-				"tactic": types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"id":        types.StringType,
-						"name":      types.StringType,
-						"reference": types.StringType,
-					},
-				},
-				"technique": types.ListType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"id":        types.StringType,
-							"name":      types.StringType,
-							"reference": types.StringType,
-							"subtechnique": types.ListType{
-								ElemType: types.ObjectType{
-									AttrTypes: map[string]attr.Type{
-										"id":        types.StringType,
-										"name":      types.StringType,
-										"reference": types.StringType,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		})
+		d.Threat = types.ListNull(getThreatElementType())
 	}
 }
 
@@ -1169,9 +1089,9 @@ func convertThreatMappingToModel(ctx context.Context, apiThreatMappings kbapi.Se
 			})
 		}
 
-		entriesListValue, diags := types.ListValueFrom(ctx, threatMappingEntryElementType(), entries)
+		entriesListValue, diags := types.ListValueFrom(ctx, getThreatMappingEntryElementType(), entries)
 		if diags.HasError() {
-			return types.ListNull(threatMappingElementType()), diags
+			return types.ListNull(getThreatMappingElementType()), diags
 		}
 
 		threatMappings = append(threatMappings, SecurityDetectionRuleTfDataItem{
@@ -1179,7 +1099,7 @@ func convertThreatMappingToModel(ctx context.Context, apiThreatMappings kbapi.Se
 		})
 	}
 
-	listValue, diags := types.ListValueFrom(ctx, threatMappingElementType(), threatMappings)
+	listValue, diags := types.ListValueFrom(ctx, getThreatMappingElementType(), threatMappings)
 	return listValue, diags
 }
 
@@ -1194,7 +1114,7 @@ func (d *SecurityDetectionRuleData) updateResponseActionsFromApi(ctx context.Con
 			d.ResponseActions = responseActionsValue
 		}
 	} else {
-		d.ResponseActions = types.ListNull(responseActionElementType())
+		d.ResponseActions = types.ListNull(getResponseActionElementType())
 	}
 
 	return diags
@@ -1205,7 +1125,7 @@ func convertResponseActionsToModel(ctx context.Context, apiResponseActions *[]kb
 	var diags diag.Diagnostics
 
 	if apiResponseActions == nil || len(*apiResponseActions) == 0 {
-		return types.ListNull(responseActionElementType()), diags
+		return types.ListNull(getResponseActionElementType()), diags
 	}
 
 	var responseActions []ResponseActionModel
@@ -1243,7 +1163,7 @@ func convertResponseActionsToModel(ctx context.Context, apiResponseActions *[]kb
 		responseActions = append(responseActions, responseAction)
 	}
 
-	listValue, listDiags := types.ListValueFrom(ctx, responseActionElementType(), responseActions)
+	listValue, listDiags := types.ListValueFrom(ctx, getResponseActionElementType(), responseActions)
 	if listDiags.HasError() {
 		diags.Append(listDiags...)
 	}
@@ -1353,22 +1273,22 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 			queries = append(queries, query)
 		}
 
-		queriesListValue, queriesDiags := types.ListValueFrom(ctx, osqueryQueryElementType(), queries)
+		queriesListValue, queriesDiags := types.ListValueFrom(ctx, getOsqueryQueryElementType(), queries)
 		if queriesDiags.HasError() {
 			diags.Append(queriesDiags...)
 		} else {
 			paramsModel.Queries = queriesListValue
 		}
 	} else {
-		paramsModel.Queries = types.ListNull(osqueryQueryElementType())
+		paramsModel.Queries = types.ListNull(getOsqueryQueryElementType())
 	}
 
 	// Set remaining fields to null since this is osquery
 	paramsModel.Command = types.StringNull()
 	paramsModel.Comment = types.StringNull()
-	paramsModel.Config = types.ObjectNull(endpointProcessConfigElementType().AttrTypes)
+	paramsModel.Config = types.ObjectNull(getEndpointProcessConfigType())
 
-	paramsObjectValue, paramsDiags := types.ObjectValueFrom(ctx, responseActionParamsElementType().AttrTypes, paramsModel)
+	paramsObjectValue, paramsDiags := types.ObjectValueFrom(ctx, getResponseActionParamsType(), paramsModel)
 	if paramsDiags.HasError() {
 		diags.Append(paramsDiags...)
 	} else {
@@ -1402,7 +1322,7 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 				} else {
 					paramsModel.Comment = types.StringNull()
 				}
-				paramsModel.Config = types.ObjectNull(endpointProcessConfigElementType().AttrTypes)
+				paramsModel.Config = types.ObjectNull(getEndpointProcessConfigType())
 			}
 		case "kill-process", "suspend-process":
 			processesParams, err := endpointAction.Params.AsSecurityDetectionsAPIProcessesParams()
@@ -1426,7 +1346,7 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 					configModel.Overwrite = types.BoolNull()
 				}
 
-				configObjectValue, configDiags := types.ObjectValueFrom(ctx, endpointProcessConfigElementType().AttrTypes, configModel)
+				configObjectValue, configDiags := types.ObjectValueFrom(ctx, getEndpointProcessConfigType(), configModel)
 				if configDiags.HasError() {
 					diags.Append(configDiags...)
 				} else {
@@ -1444,9 +1364,9 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 	paramsModel.SavedQueryId = types.StringNull()
 	paramsModel.Timeout = types.Int64Null()
 	paramsModel.EcsMapping = types.MapNull(types.StringType)
-	paramsModel.Queries = types.ListNull(osqueryQueryElementType())
+	paramsModel.Queries = types.ListNull(getOsqueryQueryElementType())
 
-	paramsObjectValue, paramsDiags := types.ObjectValueFrom(ctx, responseActionParamsElementType().AttrTypes, paramsModel)
+	paramsObjectValue, paramsDiags := types.ObjectValueFrom(ctx, getResponseActionParamsType(), paramsModel)
 	if paramsDiags.HasError() {
 		diags.Append(paramsDiags...)
 	} else {
@@ -1479,7 +1399,7 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 	// Handle cardinality (optional)
 	var cardinalityList types.List
 	if apiThreshold.Cardinality != nil && len(*apiThreshold.Cardinality) > 0 {
-		cardinalityList = utils.SliceToListType(ctx, *apiThreshold.Cardinality, cardinalityElementType(), path.Root("threshold").AtName("cardinality"), &diags,
+		cardinalityList = utils.SliceToListType(ctx, *apiThreshold.Cardinality, getCardinalityType(), path.Root("threshold").AtName("cardinality"), &diags,
 			func(item struct {
 				Field string `json:"field"`
 				Value int    `json:"value"`
@@ -1490,7 +1410,7 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 				}
 			})
 	} else {
-		cardinalityList = types.ListNull(cardinalityElementType())
+		cardinalityList = types.ListNull(getCardinalityType())
 	}
 
 	thresholdModel := ThresholdModel{
@@ -1499,95 +1419,9 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 		Cardinality: cardinalityList,
 	}
 
-	thresholdObject, objDiags := types.ObjectValueFrom(ctx, thresholdElementType(), thresholdModel)
+	thresholdObject, objDiags := types.ObjectValueFrom(ctx, getThresholdType(), thresholdModel)
 	diags.Append(objDiags...)
 	return thresholdObject, diags
-}
-
-// threatMappingElementType returns the element type for threat mapping
-func threatMappingElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"entries": types.ListType{
-				ElemType: threatMappingEntryElementType(),
-			},
-		},
-	}
-}
-
-// threatMappingEntryElementType returns the element type for threat mapping entries
-func threatMappingEntryElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"field": types.StringType,
-			"type":  types.StringType,
-			"value": types.StringType,
-		},
-	}
-}
-
-// thresholdElementType returns the element type for threshold
-func thresholdElementType() map[string]attr.Type {
-	return ThresholdObjectType.AttrTypes
-}
-
-// cardinalityElementType returns the element type for cardinality
-func cardinalityElementType() attr.Type {
-	return CardinalityObjectType
-}
-
-// responseActionElementType returns the element type for response actions
-func responseActionElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"action_type_id": types.StringType,
-			"params":         types.ObjectType{AttrTypes: responseActionParamsElementType().AttrTypes},
-		},
-	}
-}
-
-// responseActionParamsElementType returns the element type for response action params
-func responseActionParamsElementType() types.ObjectType {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			// Osquery params
-			"query":          types.StringType,
-			"pack_id":        types.StringType,
-			"saved_query_id": types.StringType,
-			"timeout":        types.Int64Type,
-			"ecs_mapping":    types.MapType{ElemType: types.StringType},
-			"queries":        types.ListType{ElemType: osqueryQueryElementType()},
-			// Endpoint params
-			"command": types.StringType,
-			"comment": types.StringType,
-			"config":  types.ObjectType{AttrTypes: endpointProcessConfigElementType().AttrTypes},
-		},
-	}
-}
-
-// osqueryQueryElementType returns the element type for osquery queries
-func osqueryQueryElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"id":          types.StringType,
-			"query":       types.StringType,
-			"platform":    types.StringType,
-			"version":     types.StringType,
-			"removed":     types.BoolType,
-			"snapshot":    types.BoolType,
-			"ecs_mapping": types.MapType{ElemType: types.StringType},
-		},
-	}
-}
-
-// endpointProcessConfigElementType returns the element type for endpoint process config
-func endpointProcessConfigElementType() types.ObjectType {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"field":     types.StringType,
-			"overwrite": types.BoolType,
-		},
-	}
 }
 
 // Helper function to process threshold configuration for threshold rules
@@ -1806,7 +1640,6 @@ func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, cli
 			fmt.Sprintf("Response actions require server version %s or higher", MinVersionResponseActions.String()))
 		return nil, diags
 	}
-
 
 	apiResponseActions := utils.ListTypeToSlice(ctx, d.ResponseActions, path.Root("response_actions"), &diags,
 		func(responseAction ResponseActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIResponseAction {
@@ -2152,7 +1985,7 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 	var diags diag.Diagnostics
 
 	if len(apiActions) == 0 {
-		return types.ListNull(actionElementType()), diags
+		return types.ListNull(getActionElementType()), diags
 	}
 
 	actions := make([]ActionModel, 0)
@@ -2220,34 +2053,19 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 				Throttle:   types.StringValue(throttleStr),
 			}
 
-			frequencyObj, frequencyDiags := types.ObjectValueFrom(ctx, actionFrequencyElementType(), frequencyModel)
+			frequencyObj, frequencyDiags := types.ObjectValueFrom(ctx, getActionFrequencyType(), frequencyModel)
 			diags.Append(frequencyDiags...)
 			action.Frequency = frequencyObj
 		} else {
-			action.Frequency = types.ObjectNull(actionFrequencyElementType())
+			action.Frequency = types.ObjectNull(getActionFrequencyType())
 		}
 
 		actions = append(actions, action)
 	}
 
-	listValue, listDiags := types.ListValueFrom(ctx, actionElementType(), actions)
+	listValue, listDiags := types.ListValueFrom(ctx, getActionElementType(), actions)
 	diags.Append(listDiags...)
 	return listValue, diags
-}
-
-// actionElementType returns the element type for actions
-func actionElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"action_type_id": types.StringType,
-			"id":             types.StringType,
-			"params":         types.MapType{ElemType: types.StringType},
-			"group":          types.StringType,
-			"uuid":           types.StringType,
-			"alerts_filter":  types.MapType{ElemType: types.StringType},
-			"frequency":      types.ObjectType{AttrTypes: actionFrequencyElementType()},
-		},
-	}
 }
 
 // Helper function to update actions from API response
@@ -2261,7 +2079,7 @@ func (d *SecurityDetectionRuleData) updateActionsFromApi(ctx context.Context, ac
 			d.Actions = actionsListValue
 		}
 	} else {
-		d.Actions = types.ListNull(actionElementType())
+		d.Actions = types.ListNull(getActionElementType())
 	}
 
 	return diags
@@ -2271,7 +2089,7 @@ func (d *SecurityDetectionRuleData) updateAlertSuppressionFromApi(ctx context.Co
 	var diags diag.Diagnostics
 
 	if apiSuppression == nil {
-		d.AlertSuppression = types.ObjectNull(AlertSuppressionObjectType.AttrTypes)
+		d.AlertSuppression = types.ObjectNull(getAlertSuppressionType())
 		return diags
 	}
 
@@ -2294,11 +2112,11 @@ func (d *SecurityDetectionRuleData) updateAlertSuppressionFromApi(ctx context.Co
 			Value: types.Int64Value(int64(apiSuppression.Duration.Value)),
 			Unit:  types.StringValue(string(apiSuppression.Duration.Unit)),
 		}
-		durationObj, durationDiags := types.ObjectValueFrom(ctx, DurationObjectType.AttrTypes, durationModel)
+		durationObj, durationDiags := types.ObjectValueFrom(ctx, getDurationType(), durationModel)
 		diags.Append(durationDiags...)
 		model.Duration = durationObj
 	} else {
-		model.Duration = types.ObjectNull(DurationObjectType.AttrTypes)
+		model.Duration = types.ObjectNull(getDurationType())
 	}
 
 	// Convert missing_fields_strategy (optional)
@@ -2308,7 +2126,7 @@ func (d *SecurityDetectionRuleData) updateAlertSuppressionFromApi(ctx context.Co
 		model.MissingFieldsStrategy = types.StringNull()
 	}
 
-	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, AlertSuppressionObjectType.AttrTypes, model)
+	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, getAlertSuppressionType(), model)
 	diags.Append(objDiags...)
 
 	d.AlertSuppression = alertSuppressionObj
@@ -2320,7 +2138,7 @@ func (d *SecurityDetectionRuleData) updateThresholdAlertSuppressionFromApi(ctx c
 	var diags diag.Diagnostics
 
 	if apiSuppression == nil {
-		d.AlertSuppression = types.ObjectNull(AlertSuppressionObjectType.AttrTypes)
+		d.AlertSuppression = types.ObjectNull(getAlertSuppressionType())
 		return diags
 	}
 
@@ -2335,25 +2153,16 @@ func (d *SecurityDetectionRuleData) updateThresholdAlertSuppressionFromApi(ctx c
 		Value: types.Int64Value(int64(apiSuppression.Duration.Value)),
 		Unit:  types.StringValue(string(apiSuppression.Duration.Unit)),
 	}
-	durationObj, durationDiags := types.ObjectValueFrom(ctx, DurationObjectType.AttrTypes, durationModel)
+	durationObj, durationDiags := types.ObjectValueFrom(ctx, getDurationType(), durationModel)
 	diags.Append(durationDiags...)
 	model.Duration = durationObj
 
-	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, AlertSuppressionObjectType.AttrTypes, model)
+	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, getAlertSuppressionType(), model)
 	diags.Append(objDiags...)
 
 	d.AlertSuppression = alertSuppressionObj
 
 	return diags
-}
-
-// actionFrequencyElementType returns the element type for action frequency
-func actionFrequencyElementType() map[string]attr.Type {
-	return map[string]attr.Type{
-		"notify_when": types.StringType,
-		"summary":     types.BoolType,
-		"throttle":    types.StringType,
-	}
 }
 
 // Helper function to process exceptions list configuration for all rule types
@@ -2396,7 +2205,7 @@ func convertExceptionsListToModel(ctx context.Context, apiExceptionsList []kbapi
 	var diags diag.Diagnostics
 
 	if len(apiExceptionsList) == 0 {
-		return types.ListNull(exceptionsListElementType()), diags
+		return types.ListNull(getExceptionsListElementType()), diags
 	}
 
 	exceptions := make([]ExceptionsListModel, 0)
@@ -2412,21 +2221,9 @@ func convertExceptionsListToModel(ctx context.Context, apiExceptionsList []kbapi
 		exceptions = append(exceptions, exception)
 	}
 
-	listValue, listDiags := types.ListValueFrom(ctx, exceptionsListElementType(), exceptions)
+	listValue, listDiags := types.ListValueFrom(ctx, getExceptionsListElementType(), exceptions)
 	diags.Append(listDiags...)
 	return listValue, diags
-}
-
-// exceptionsListElementType returns the element type for exceptions list
-func exceptionsListElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"id":             types.StringType,
-			"list_id":        types.StringType,
-			"namespace_type": types.StringType,
-			"type":           types.StringType,
-		},
-	}
 }
 
 // Helper function to update exceptions list from API response
@@ -2440,7 +2237,7 @@ func (d *SecurityDetectionRuleData) updateExceptionsListFromApi(ctx context.Cont
 			d.ExceptionsList = exceptionsListValue
 		}
 	} else {
-		d.ExceptionsList = types.ListNull(exceptionsListElementType())
+		d.ExceptionsList = types.ListNull(getExceptionsListElementType())
 	}
 
 	return diags
@@ -2506,7 +2303,7 @@ func convertRiskScoreMappingToModel(ctx context.Context, apiRiskScoreMapping kba
 	var diags diag.Diagnostics
 
 	if len(apiRiskScoreMapping) == 0 {
-		return types.ListNull(riskScoreMappingElementType()), diags
+		return types.ListNull(getRiskScoreMappingElementType()), diags
 	}
 
 	mappings := make([]RiskScoreMappingModel, 0)
@@ -2528,55 +2325,9 @@ func convertRiskScoreMappingToModel(ctx context.Context, apiRiskScoreMapping kba
 		mappings = append(mappings, mapping)
 	}
 
-	listValue, listDiags := types.ListValueFrom(ctx, riskScoreMappingElementType(), mappings)
+	listValue, listDiags := types.ListValueFrom(ctx, getRiskScoreMappingElementType(), mappings)
 	diags.Append(listDiags...)
 	return listValue, diags
-}
-
-// riskScoreMappingElementType returns the element type for risk score mapping
-func riskScoreMappingElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"field":      types.StringType,
-			"operator":   types.StringType,
-			"value":      types.StringType,
-			"risk_score": types.Int64Type,
-		},
-	}
-}
-
-// relatedIntegrationElementType returns the element type for related integrations
-func relatedIntegrationElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"package":     types.StringType,
-			"version":     types.StringType,
-			"integration": types.StringType,
-		},
-	}
-}
-
-// requiredFieldElementType returns the element type for required fields
-func requiredFieldElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"name": types.StringType,
-			"type": types.StringType,
-			"ecs":  types.BoolType,
-		},
-	}
-}
-
-// severityMappingElementType returns the element type for severity mapping
-func severityMappingElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"field":    types.StringType,
-			"operator": types.StringType,
-			"value":    types.StringType,
-			"severity": types.StringType,
-		},
-	}
 }
 
 // Helper function to update risk score mapping from API response
@@ -2590,7 +2341,7 @@ func (d *SecurityDetectionRuleData) updateRiskScoreMappingFromApi(ctx context.Co
 			d.RiskScoreMapping = riskScoreMappingValue
 		}
 	} else {
-		d.RiskScoreMapping = types.ListNull(riskScoreMappingElementType())
+		d.RiskScoreMapping = types.ListNull(getRiskScoreMappingElementType())
 	}
 
 	return diags
@@ -2690,7 +2441,7 @@ func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegratio
 	var diags diag.Diagnostics
 
 	if apiRelatedIntegrations == nil || len(*apiRelatedIntegrations) == 0 {
-		return types.ListNull(relatedIntegrationElementType()), diags
+		return types.ListNull(getRelatedIntegrationElementType()), diags
 	}
 
 	integrations := make([]RelatedIntegrationModel, 0)
@@ -2711,7 +2462,7 @@ func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegratio
 		integrations = append(integrations, integration)
 	}
 
-	listValue, listDiags := types.ListValueFrom(ctx, relatedIntegrationElementType(), integrations)
+	listValue, listDiags := types.ListValueFrom(ctx, getRelatedIntegrationElementType(), integrations)
 	diags.Append(listDiags...)
 	return listValue, diags
 }
@@ -2727,7 +2478,7 @@ func (d *SecurityDetectionRuleData) updateRelatedIntegrationsFromApi(ctx context
 			d.RelatedIntegrations = relatedIntegrationsValue
 		}
 	} else {
-		d.RelatedIntegrations = types.ListNull(relatedIntegrationElementType())
+		d.RelatedIntegrations = types.ListNull(getRelatedIntegrationElementType())
 	}
 
 	return diags
@@ -2762,7 +2513,7 @@ func convertRequiredFieldsToModel(ctx context.Context, apiRequiredFields *kbapi.
 	var diags diag.Diagnostics
 
 	if apiRequiredFields == nil || len(*apiRequiredFields) == 0 {
-		return types.ListNull(requiredFieldElementType()), diags
+		return types.ListNull(getRequiredFieldElementType()), diags
 	}
 
 	fields := make([]RequiredFieldModel, 0)
@@ -2777,7 +2528,7 @@ func convertRequiredFieldsToModel(ctx context.Context, apiRequiredFields *kbapi.
 		fields = append(fields, field)
 	}
 
-	listValue, listDiags := types.ListValueFrom(ctx, requiredFieldElementType(), fields)
+	listValue, listDiags := types.ListValueFrom(ctx, getRequiredFieldElementType(), fields)
 	diags.Append(listDiags...)
 	return listValue, diags
 }
@@ -2793,7 +2544,7 @@ func (d *SecurityDetectionRuleData) updateRequiredFieldsFromApi(ctx context.Cont
 			d.RequiredFields = requiredFieldsValue
 		}
 	} else {
-		d.RequiredFields = types.ListNull(requiredFieldElementType())
+		d.RequiredFields = types.ListNull(getRequiredFieldElementType())
 	}
 
 	return diags
@@ -2929,7 +2680,7 @@ func convertSeverityMappingToModel(ctx context.Context, apiSeverityMapping *kbap
 	var diags diag.Diagnostics
 
 	if apiSeverityMapping == nil || len(*apiSeverityMapping) == 0 {
-		return types.ListNull(severityMappingElementType()), diags
+		return types.ListNull(getSeverityMappingElementType()), diags
 	}
 
 	mappings := make([]SeverityMappingModel, 0)
@@ -2945,7 +2696,7 @@ func convertSeverityMappingToModel(ctx context.Context, apiSeverityMapping *kbap
 		mappings = append(mappings, mapping)
 	}
 
-	listValue, listDiags := types.ListValueFrom(ctx, severityMappingElementType(), mappings)
+	listValue, listDiags := types.ListValueFrom(ctx, getSeverityMappingElementType(), mappings)
 	diags.Append(listDiags...)
 	return listValue, diags
 }
@@ -2961,7 +2712,7 @@ func (d *SecurityDetectionRuleData) updateSeverityMappingFromApi(ctx context.Con
 			d.SeverityMapping = severityMappingValue
 		}
 	} else {
-		d.SeverityMapping = types.ListNull(severityMappingElementType())
+		d.SeverityMapping = types.ListNull(getSeverityMappingElementType())
 	}
 
 	return diags
