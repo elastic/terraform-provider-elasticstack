@@ -2362,7 +2362,7 @@ func (d *SecurityDetectionRuleData) updateInvestigationFieldsFromApi(ctx context
 	investigationFieldsValue, investigationFieldsDiags := convertInvestigationFieldsToModel(ctx, investigationFields)
 	diags.Append(investigationFieldsDiags...)
 	if diags.HasError() {
-        return diags
+		return diags
 	}
 	d.InvestigationFields = investigationFieldsValue
 
@@ -2622,7 +2622,8 @@ func (d *SecurityDetectionRuleData) updateFiltersFromApi(ctx context.Context, ap
 	// Create a NormalizedValue from the JSON string
 	d.Filters = jsontypes.NewNormalizedValue(string(jsonBytes))
 	return diags
-} 
+}
+
 // convertSeverityMappingToModel converts kbapi.SecurityDetectionsAPISeverityMapping to Terraform model
 func convertSeverityMappingToModel(ctx context.Context, apiSeverityMapping *kbapi.SecurityDetectionsAPISeverityMapping) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -2709,11 +2710,7 @@ func (d *SecurityDetectionRuleData) updateTagsFromApi(ctx context.Context, tags 
 func (d *SecurityDetectionRuleData) updateFalsePositivesFromApi(ctx context.Context, falsePositives []string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if len(falsePositives) > 0 {
-		d.FalsePositives = utils.ListValueFrom(ctx, falsePositives, types.StringType, path.Root("false_positives"), &diags)
-	} else {
-		d.FalsePositives = types.ListValueMust(types.StringType, []attr.Value{})
-	}
+	d.FalsePositives = utils.ListValueFrom(ctx, falsePositives, types.StringType, path.Root("false_positives"), &diags)
 
 	return diags
 }
