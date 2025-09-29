@@ -1547,24 +1547,24 @@ func (d SecurityDetectionRuleData) alertSuppressionToThresholdApi(ctx context.Co
 	suppression := &kbapi.SecurityDetectionsAPIThresholdAlertSuppression{}
 
 	// Handle duration (required for threshold alert suppression)
-	if utils.IsKnown(model.Duration) {
-		var durationModel AlertSuppressionDurationModel
-		durationDiags := model.Duration.As(ctx, &durationModel, basetypes.ObjectAsOptions{})
-		diags.Append(durationDiags...)
-		if !diags.HasError() {
-			duration := kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
-				Value: int(durationModel.Value.ValueInt64()),
-				Unit:  kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit(durationModel.Unit.ValueString()),
-			}
-			suppression.Duration = duration
-		}
-	} else {
+	if !utils.IsKnown(model.Duration) {
 		diags.AddError(
 			"Duration required for threshold alert suppression",
 			"Threshold alert suppression requires a duration to be specified",
 		)
 		return nil
-	}
+    }
+    
+    var durationModel AlertSuppressionDurationModel
+    durationDiags := model.Duration.As(ctx, &durationModel, basetypes.ObjectAsOptions{})
+    diags.Append(durationDiags...)
+    if !diags.HasError() {
+        duration := kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
+            Value: int(durationModel.Value.ValueInt64()),
+            Unit:  kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit(durationModel.Unit.ValueString()),
+        }
+        suppression.Duration = duration
+    }
 
 	// Note: Threshold alert suppression only supports duration field.
 	// GroupBy and MissingFieldsStrategy are not supported for threshold rules.
