@@ -30,24 +30,12 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 	if utils.IsKnown(d.MachineLearningJobId) {
 		jobIds := utils.ListTypeAs[string](ctx, d.MachineLearningJobId, path.Root("machine_learning_job_id"), &diags)
 		if !diags.HasError() {
-			if len(jobIds) == 1 {
-				// Single job ID
-				var mlJobId kbapi.SecurityDetectionsAPIMachineLearningJobId
-				err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId0(jobIds[0])
-				if err != nil {
-					diags.AddError("Error setting ML job ID", err.Error())
-				} else {
-					mlRule.MachineLearningJobId = mlJobId
-				}
-			} else if len(jobIds) > 1 {
-				// Multiple job IDs
-				var mlJobId kbapi.SecurityDetectionsAPIMachineLearningJobId
-				err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId1(jobIds)
-				if err != nil {
-					diags.AddError("Error setting ML job IDs", err.Error())
-				} else {
-					mlRule.MachineLearningJobId = mlJobId
-				}
+			var mlJobId kbapi.SecurityDetectionsAPIMachineLearningJobId
+			err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId1(jobIds)
+			if err != nil {
+				diags.AddError("Error setting ML job IDs", err.Error())
+			} else {
+				mlRule.MachineLearningJobId = mlJobId
 			}
 		}
 	}
@@ -135,24 +123,12 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 	if utils.IsKnown(d.MachineLearningJobId) {
 		jobIds := utils.ListTypeAs[string](ctx, d.MachineLearningJobId, path.Root("machine_learning_job_id"), &diags)
 		if !diags.HasError() {
-			if len(jobIds) == 1 {
-				// Single job ID
-				var mlJobId kbapi.SecurityDetectionsAPIMachineLearningJobId
-				err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId0(jobIds[0])
-				if err != nil {
-					diags.AddError("Error setting ML job ID", err.Error())
-				} else {
-					mlRule.MachineLearningJobId = mlJobId
-				}
-			} else if len(jobIds) > 1 {
-				// Multiple job IDs
-				var mlJobId kbapi.SecurityDetectionsAPIMachineLearningJobId
-				err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId1(jobIds)
-				if err != nil {
-					diags.AddError("Error setting ML job IDs", err.Error())
-				} else {
-					mlRule.MachineLearningJobId = mlJobId
-				}
+			var mlJobId kbapi.SecurityDetectionsAPIMachineLearningJobId
+			err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId1(jobIds)
+			if err != nil {
+				diags.AddError("Error setting ML job IDs", err.Error())
+			} else {
+				mlRule.MachineLearningJobId = mlJobId
 			}
 		}
 	}
@@ -254,13 +230,8 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	// ML-specific fields
 	d.AnomalyThreshold = types.Int64Value(int64(rule.AnomalyThreshold))
 
-	// Handle ML job ID(s) - can be single string or array
-	// Try to extract as single job ID first, then as array
-	if singleJobId, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0(); err == nil {
-		// Single job ID
-		d.MachineLearningJobId = utils.ListValueFrom(ctx, []string{string(singleJobId)}, types.StringType, path.Root("machine_learning_job_id"), &diags)
-	} else if multipleJobIds, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1(); err == nil {
-		// Multiple job IDs
+	// Handle ML job ID(s)
+	if multipleJobIds, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1(); err == nil {
 		jobIdStrings := make([]string, len(multipleJobIds))
 		for i, jobId := range multipleJobIds {
 			jobIdStrings[i] = string(jobId)
