@@ -2361,11 +2361,10 @@ func (d *SecurityDetectionRuleData) updateInvestigationFieldsFromApi(ctx context
 
 	investigationFieldsValue, investigationFieldsDiags := convertInvestigationFieldsToModel(ctx, investigationFields)
 	diags.Append(investigationFieldsDiags...)
-	if !investigationFieldsDiags.HasError() {
-		d.InvestigationFields = investigationFieldsValue
-	} else {
-		d.InvestigationFields = types.ListNull(types.StringType)
+	if diags.HasError() {
+        return diags
 	}
+	d.InvestigationFields = investigationFieldsValue
 
 	return diags
 }
