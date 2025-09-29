@@ -2622,7 +2622,8 @@ func (d *SecurityDetectionRuleData) updateFiltersFromApi(ctx context.Context, ap
 	// Create a NormalizedValue from the JSON string
 	d.Filters = jsontypes.NewNormalizedValue(string(jsonBytes))
 	return diags
-} // convertSeverityMappingToModel converts kbapi.SecurityDetectionsAPISeverityMapping to Terraform model
+} 
+// convertSeverityMappingToModel converts kbapi.SecurityDetectionsAPISeverityMapping to Terraform model
 func convertSeverityMappingToModel(ctx context.Context, apiSeverityMapping *kbapi.SecurityDetectionsAPISeverityMapping) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
