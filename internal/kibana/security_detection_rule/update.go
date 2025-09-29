@@ -54,7 +54,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 
 	// Parse ID to get space_id and rule_id
 	compId, resourceIdDiags := clients.CompositeIdFromStrFw(data.Id.ValueString())
-	diags.Append(resourceIdDiags...)
+	resp.Diagnostics.Append(resourceIdDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
