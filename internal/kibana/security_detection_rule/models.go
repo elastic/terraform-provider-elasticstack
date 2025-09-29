@@ -1792,18 +1792,21 @@ func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, cli
 		return nil, diags
 	}
 
+	if !utils.IsKnown(d.ResponseActions) || len(d.ResponseActions.Elements()) == 0 {
+		return nil, diags
+	}
+
 	// Check version support for response actions
 	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionResponseActions); versionDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
 		return nil, diags
 	} else if !supported {
 		// Version is not supported, return nil without error
+		diags.AddError("Response actions are unsupported",
+			fmt.Sprintf("Response actions require server version %s or higher", MinVersionResponseActions.String()))
 		return nil, diags
 	}
 
-	if !utils.IsKnown(d.ResponseActions) || len(d.ResponseActions.Elements()) == 0 {
-		return nil, diags
-	}
 
 	apiResponseActions := utils.ListTypeToSlice(ctx, d.ResponseActions, path.Root("response_actions"), &diags,
 		func(responseAction ResponseActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIResponseAction {
