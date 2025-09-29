@@ -66,7 +66,7 @@ func getSchemaV1() schema.Schema {
 				ElementType: types.StringType,
 				Optional:    true,
 				Validators: []validator.List{
-					listvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
+					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
 					listvalidator.SizeAtLeast(1),
 				},
 			},

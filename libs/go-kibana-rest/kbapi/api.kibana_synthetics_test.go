@@ -444,6 +444,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 				created, err := pAPI.Create(ctx, cfg)
 
 				assert.NoError(s.T(), err)
+				assert.NotNil(s.T(), created)
 				assert.Equal(s.T(), created.Label, cfg.Label)
 				assert.Equal(s.T(), created.AgentPolicyId, cfg.AgentPolicyId)
 
