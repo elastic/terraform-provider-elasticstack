@@ -5,24 +5,30 @@ import (
 	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
+const CurrentSchemaVersion = 1
+
 //go:embed resource-description.md
 var roleResourceDescription string
 
 func (r *roleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema()
+	resp.Schema = GetSchema(CurrentSchemaVersion)
 }
 
-func GetSchema() schema.Schema {
+func GetSchema(version int64) schema.Schema {
 	return schema.Schema{
+		Version:             version,
 		MarkdownDescription: roleResourceDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
@@ -87,6 +93,10 @@ func GetSchema() schema.Schema {
 						"allow_restricted_indices": schema.BoolAttribute{
 							MarkdownDescription: "Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.",
 							Optional:            true,
+							Computed:            true,
+							PlanModifiers: []planmodifier.Bool{
+								boolplanmodifier.UseStateForUnknown(),
+							},
 						},
 					},
 				},
@@ -94,16 +104,10 @@ func GetSchema() schema.Schema {
 			"remote_indices": schema.SetNestedBlock{
 				MarkdownDescription: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
 				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"clusters": schema.SetAttribute{
-							MarkdownDescription: "A list of cluster aliases to which the permissions in this entry apply.",
-							Required:            true,
-							ElementType:         types.StringType,
-						},
-						"field_security": schema.ListNestedAttribute{
+					Blocks: map[string]schema.Block{
+						"field_security": schema.ListNestedBlock{
 							MarkdownDescription: "The document fields that the owners of the role have read access to.",
-							Optional:            true,
-							NestedObject: schema.NestedAttributeObject{
+							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
 									"grant": schema.SetAttribute{
 										MarkdownDescription: "List of the fields to grant the access to.",
@@ -113,10 +117,21 @@ func GetSchema() schema.Schema {
 									"except": schema.SetAttribute{
 										MarkdownDescription: "List of the fields to which the grants will not be applied.",
 										Optional:            true,
+										Computed:            true,
 										ElementType:         types.StringType,
+										PlanModifiers: []planmodifier.Set{
+											setplanmodifier.UseStateForUnknown(),
+										},
 									},
 								},
 							},
+						},
+					},
+					Attributes: map[string]schema.Attribute{
+						"clusters": schema.SetAttribute{
+							MarkdownDescription: "A list of cluster aliases to which the permissions in this entry apply.",
+							Required:            true,
+							ElementType:         types.StringType,
 						},
 						"query": schema.StringAttribute{
 							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
@@ -176,4 +191,63 @@ func GetSchema() schema.Schema {
 			},
 		},
 	}
+}
+
+// Helper functions to get attribute types from the schema
+func getApplicationAttrTypes() map[string]attr.Type {
+	attrs := GetSchema(CurrentSchemaVersion).Blocks["applications"].(schema.SetNestedBlock).NestedObject.Attributes
+	result := make(map[string]attr.Type)
+	for name, attr := range attrs {
+		result[name] = attr.GetType()
+	}
+	return result
+}
+
+func getFieldSecurityAttrTypes() map[string]attr.Type {
+	attrs := GetSchema(CurrentSchemaVersion).Blocks["indices"].(schema.SetNestedBlock).NestedObject.Attributes["field_security"].(schema.ListNestedAttribute).NestedObject.Attributes
+	result := make(map[string]attr.Type)
+	for name, attr := range attrs {
+		result[name] = attr.GetType()
+	}
+	return result
+}
+
+func getIndexPermsAttrTypes() map[string]attr.Type {
+	nestedObj := GetSchema(CurrentSchemaVersion).Blocks["indices"].(schema.SetNestedBlock).NestedObject
+	result := make(map[string]attr.Type)
+	for name, attr := range nestedObj.Attributes {
+		result[name] = attr.GetType()
+	}
+	return result
+}
+
+func getRemoteIndexPermsAttrTypes() map[string]attr.Type {
+	nestedObj := GetSchema(CurrentSchemaVersion).Blocks["remote_indices"].(schema.SetNestedBlock).NestedObject
+	result := make(map[string]attr.Type)
+	// Add attributes
+	for name, attr := range nestedObj.Attributes {
+		result[name] = attr.GetType()
+	}
+	// Add blocks as attributes (field_security is a block in remote_indices)
+	for name, block := range nestedObj.Blocks {
+		switch b := block.(type) {
+		case schema.ListNestedBlock:
+			// For ListNestedBlock, the type is ListType with ObjectType element
+			blockAttrs := make(map[string]attr.Type)
+			for attrName, attr := range b.NestedObject.Attributes {
+				blockAttrs[attrName] = attr.GetType()
+			}
+			result[name] = types.ListType{ElemType: types.ObjectType{AttrTypes: blockAttrs}}
+		}
+	}
+	return result
+}
+
+func getRemoteFieldSecurityAttrTypes() map[string]attr.Type {
+	attrs := GetSchema(CurrentSchemaVersion).Blocks["remote_indices"].(schema.SetNestedBlock).NestedObject.Blocks["field_security"].(schema.ListNestedBlock).NestedObject.Attributes
+	result := make(map[string]attr.Type)
+	for name, attr := range attrs {
+		result[name] = attr.GetType()
+	}
+	return result
 }

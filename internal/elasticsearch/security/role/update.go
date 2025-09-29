@@ -78,7 +78,18 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	data.Id = types.StringValue(id.String())
-	diags.Append(state.Set(ctx, &data)...)
+	readData, readDiags := r.read(ctx, data)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if readData == nil {
+		diags.AddError("Not Found", fmt.Sprintf("Role %q was not found after update", roleId))
+		return diags
+	}
+
+	diags.Append(state.Set(ctx, readData)...)
 	return diags
 }
 

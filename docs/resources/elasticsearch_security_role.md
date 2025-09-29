@@ -135,10 +135,10 @@ Required:
 
 Optional:
 
-- `field_security` (Attributes List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--remote_indices--field_security))
+- `field_security` (Block List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--remote_indices--field_security))
 - `query` (String) A search query that defines the documents the owners of the role have read access to.
 
-<a id="nestedatt--remote_indices--field_security"></a>
+<a id="nestedblock--remote_indices--field_security"></a>
 ### Nested Schema for `remote_indices.field_security`
 
 Optional:
