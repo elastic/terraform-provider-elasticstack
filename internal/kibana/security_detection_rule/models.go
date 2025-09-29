@@ -2008,11 +2008,7 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 		}
 
 		// Set optional fields
-		if apiAction.Group != nil {
-			action.Group = types.StringValue(string(*apiAction.Group))
-		} else {
-			action.Group = types.StringNull()
-		}
+		action.Group = types.StringPointerValue(string(apiAction.Group))
 
 		if apiAction.Uuid != nil {
 			action.Uuid = types.StringValue(string(*apiAction.Uuid))
