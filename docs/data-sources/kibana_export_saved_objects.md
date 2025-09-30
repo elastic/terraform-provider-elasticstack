@@ -19,15 +19,14 @@ provider "elasticstack" {
 }
 
 data "elasticstack_kibana_export_saved_objects" "example" {
-  space_id                = "default"
   exclude_export_details  = true
   include_references_deep = true
-  objects = jsonencode([
+  objects = [
     {
-      "type" : "dashboard",
-      "id" : "7c5f07ee-7e41-4d50-ae1f-dfe54cc87208"
+      type = "dashboard",
+      id   = "7c5f07ee-7e41-4d50-ae1f-dfe54cc87209"
     }
-  ])
+  ]
 }
 
 output "saved_objects" {
