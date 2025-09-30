@@ -13,7 +13,7 @@ type ruleProcessor interface {
 	HandlesRuleType(t string) bool
 	HandlesAPIRuleResponse(rule any) bool
 	ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics)
-	UpdateFromResponse(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQueryRule, d *SecurityDetectionRuleData) diag.Diagnostics
+	UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics
 }
 
 func getRuleProcessors() []ruleProcessor {
@@ -32,7 +32,7 @@ func (d SecurityDetectionRuleData) processorForType(t string) (ruleProcessor, bo
 	return nil, false
 }
 
-func (d SecurityDetectionRuleData) getProcessorForResponse(resp *kbapi.SecurityDetectionsAPIRuleResponse) (ruleProcessor, diag.Diagnostics) {
+func (d SecurityDetectionRuleData) getProcessorForResponse(resp *kbapi.SecurityDetectionsAPIRuleResponse) (ruleProcessor, interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	respValue, err := resp.ValueByDiscriminator()
 	if err != nil {
@@ -40,16 +40,16 @@ func (d SecurityDetectionRuleData) getProcessorForResponse(resp *kbapi.SecurityD
 			"Error determining rule processor",
 			"Could not determine the processor for the security detection rule from the API response: "+err.Error(),
 		)
-		return nil, diags
+		return nil, nil, diags
 	}
 
 	for _, proc := range getRuleProcessors() {
 		if proc.HandlesAPIRuleResponse(respValue) {
-			return proc, diags
+			return proc, respValue, diags
 		}
 	}
 
-	return nil, diags
+	return nil, nil, diags
 }
 
 func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -70,33 +70,12 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context, client cli
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	rule, err := response.ValueByDiscriminator()
-	if err != nil {
-		diags.AddError(
-			"Error determining rule type",
-			"Could not determine the type of the security detection rule from the API response: "+err.Error(),
-		)
+	// Get the processor for this rule type and use it to update the data
+	processorForType, respValue, responseDiags := d.getProcessorForResponse(response)
+	if responseDiags.HasError() {
+		diags.Append(responseDiags...)
 		return diags
 	}
 
-	// Type assertion to check if rule is a SecurityDetectionsAPIQueryRule
-	if ruleResp, ok := rule.(kbapi.SecurityDetectionsAPIRuleResponse); ok {
-		// Get the processor for this rule type and use it to update the data
-		processorForType, err := d.getProcessorForResponse(&ruleResp)
-		if err != nil {
-			diags.AddError(
-				"Error determining rule processor",
-				"Could not determine the processor for the security detection rule from the API response: "+err.Error(),
-			)
-			return diags
-		}
-
-		return processorForType.UpdateFromResponse(ctx, d, rule)
-	} else {
-		diags.AddError(
-			"Error determining rule type",
-			"Could not determine the type of the security detection rule from the API response"
-		)
-		return diags
-	}
+	return processorForType.UpdateFromResponse(ctx, respValue, d)
 }

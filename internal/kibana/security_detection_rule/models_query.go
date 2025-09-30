@@ -26,8 +26,8 @@ func (q QueryRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
 	return ok
 }
 
-func (q QueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQueryRule, d *SecurityDetectionRuleData) diag.Diagnostics {
-	return updateFromQueryRule(ctx, rule, d)
+func (q QueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+	return updateFromQueryRule(ctx, rule.(*kbapi.SecurityDetectionsAPIQueryRule), d)
 }
 
 func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
