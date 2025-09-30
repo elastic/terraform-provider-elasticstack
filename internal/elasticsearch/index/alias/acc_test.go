@@ -80,25 +80,63 @@ func TestAccResourceAliasDataStream(t *testing.T) {
 
 func testAccResourceAliasCreate(aliasName, indexName string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+# Create index with mappings to avoid alias management
 resource "elasticstack_elasticsearch_index" "test_index" {
-  name = "%s"
+  name                = "%s"
+  deletion_protection = false
+  
+  mappings = jsonencode({
+    properties = {
+      title = {
+        type = "text"
+      }
+    }
+  })
 }
 
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name    = "%s"
   indices = [elasticstack_elasticsearch_index.test_index.name]
+  
+  depends_on = [elasticstack_elasticsearch_index.test_index]
 }
 	`, indexName, aliasName)
 }
 
 func testAccResourceAliasUpdate(aliasName, indexName, indexName2 string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_index" "test_index" {
-  name = "%s"
+  name                = "%s"
+  deletion_protection = false
+  
+  mappings = jsonencode({
+    properties = {
+      title = {
+        type = "text"
+      }
+    }
+  })
 }
 
 resource "elasticstack_elasticsearch_index" "test_index2" {
-  name = "%s"
+  name                = "%s"
+  deletion_protection = false
+  
+  mappings = jsonencode({
+    properties = {
+      title = {
+        type = "text"
+      }
+    }
+  })
 }
 
 resource "elasticstack_elasticsearch_alias" "test_alias" {
@@ -106,14 +144,32 @@ resource "elasticstack_elasticsearch_alias" "test_alias" {
   indices       = [elasticstack_elasticsearch_index.test_index.name, elasticstack_elasticsearch_index.test_index2.name]
   is_write_index = true
   routing        = "test-routing"
+  
+  depends_on = [elasticstack_elasticsearch_index.test_index, elasticstack_elasticsearch_index.test_index2]
 }
 	`, indexName, indexName2, aliasName)
 }
 
 func testAccResourceAliasWithFilter(aliasName, indexName string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_index" "test_index" {
-  name = "%s"
+  name                = "%s"
+  deletion_protection = false
+  
+  mappings = jsonencode({
+    properties = {
+      title = {
+        type = "text"
+      }
+      status = {
+        type = "keyword"
+      }
+    }
+  })
 }
 
 resource "elasticstack_elasticsearch_alias" "test_alias" {
@@ -124,12 +180,18 @@ resource "elasticstack_elasticsearch_alias" "test_alias" {
       status = "published"
     }
   })
+  
+  depends_on = [elasticstack_elasticsearch_index.test_index]
 }
 	`, indexName, aliasName)
 }
 
 func testAccResourceAliasDataStreamCreate(aliasName, dsName string) string {
 	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
   name           = "%s"
   index_patterns = ["%s"]
@@ -160,7 +222,12 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_alias" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		
+		// Handle the case where ID might not be in the expected format
+		aliasName := rs.Primary.ID
+		if compId, err := clients.CompositeIdFromStr(rs.Primary.ID); err == nil {
+			aliasName = compId.ResourceId
+		}
 
 		esClient, err := client.GetESClient()
 		if err != nil {
@@ -168,14 +235,15 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 		}
 		
 		res, err := esClient.Indices.GetAlias(
-			esClient.Indices.GetAlias.WithName(compId.ResourceId),
+			esClient.Indices.GetAlias.WithName(aliasName),
 		)
 		if err != nil {
 			return err
 		}
+		defer res.Body.Close()
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Alias (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Alias (%s) still exists", aliasName)
 		}
 	}
 	return nil

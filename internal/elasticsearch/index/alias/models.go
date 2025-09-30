@@ -33,11 +33,27 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ali
 	}
 	model.Indices = indicesSet
 
-	model.IndexRouting = types.StringValue(aliasData.IndexRouting)
+	// Only set string values if they are not empty
+	if aliasData.IndexRouting != "" {
+		model.IndexRouting = types.StringValue(aliasData.IndexRouting)
+	} else {
+		model.IndexRouting = types.StringNull()
+	}
+	
 	model.IsHidden = types.BoolValue(aliasData.IsHidden)
 	model.IsWriteIndex = types.BoolValue(aliasData.IsWriteIndex)
-	model.Routing = types.StringValue(aliasData.Routing)
-	model.SearchRouting = types.StringValue(aliasData.SearchRouting)
+	
+	if aliasData.Routing != "" {
+		model.Routing = types.StringValue(aliasData.Routing)
+	} else {
+		model.Routing = types.StringNull()
+	}
+	
+	if aliasData.SearchRouting != "" {
+		model.SearchRouting = types.StringValue(aliasData.SearchRouting)
+	} else {
+		model.SearchRouting = types.StringNull()
+	}
 
 	if aliasData.Filter != nil {
 		filterBytes, err := json.Marshal(aliasData.Filter)
@@ -47,6 +63,8 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ali
 			}
 		}
 		model.Filter = jsontypes.NewNormalizedValue(string(filterBytes))
+	} else {
+		model.Filter = jsontypes.NewNormalizedNull()
 	}
 
 	return nil
