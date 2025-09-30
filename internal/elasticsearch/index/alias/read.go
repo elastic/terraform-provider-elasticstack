@@ -26,7 +26,7 @@ func (r *aliasResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	// If no indices returned, the alias doesn't exist
-	if indices == nil || len(indices) == 0 {
+	if len(indices) == 0 {
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -34,7 +34,7 @@ func (r *aliasResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	// Extract indices and alias data from the response
 	var indexNames []string
 	var aliasData *models.IndexAlias
-	
+
 	for indexName, index := range indices {
 		if alias, exists := index.Aliases[aliasName]; exists {
 			indexNames = append(indexNames, indexName)

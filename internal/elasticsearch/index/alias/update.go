@@ -22,7 +22,7 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	aliasName := planModel.Name.ValueString()
-	
+
 	// Get the current indices from state for removal
 	var currentIndices []string
 	resp.Diagnostics.Append(stateModel.Indices.ElementsAs(ctx, &currentIndices, false)...)

@@ -16,7 +16,7 @@ func (r *aliasResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 
 	aliasName := stateModel.Name.ValueString()
-	
+
 	// Get the current indices from state
 	var indices []string
 	resp.Diagnostics.Append(stateModel.Indices.ElementsAs(ctx, &indices, false)...)

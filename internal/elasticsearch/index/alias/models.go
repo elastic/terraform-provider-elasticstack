@@ -39,16 +39,16 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ali
 	} else {
 		model.IndexRouting = types.StringNull()
 	}
-	
+
 	model.IsHidden = types.BoolValue(aliasData.IsHidden)
 	model.IsWriteIndex = types.BoolValue(aliasData.IsWriteIndex)
-	
+
 	if aliasData.Routing != "" {
 		model.Routing = types.StringValue(aliasData.Routing)
 	} else {
 		model.Routing = types.StringNull()
 	}
-	
+
 	if aliasData.SearchRouting != "" {
 		model.SearchRouting = types.StringValue(aliasData.SearchRouting)
 	} else {

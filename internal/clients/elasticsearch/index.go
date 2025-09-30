@@ -640,7 +640,7 @@ func PutAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName strin
 
 		// Only include non-empty optional fields in the add action
 		addActionDetails := addAction["add"].(map[string]interface{})
-		
+
 		if alias.Filter != nil {
 			addActionDetails["filter"] = alias.Filter
 		}
