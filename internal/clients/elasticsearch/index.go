@@ -581,6 +581,152 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient
 	return nil
 }
 
+func GetAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName string) (map[string]models.Index, fwdiags.Diagnostics) {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	res, err := esClient.Indices.GetAlias(
+		esClient.Indices.GetAlias.WithName(aliasName),
+		esClient.Indices.GetAlias.WithContext(ctx),
+	)
+	if err != nil {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get alias '%s'", aliasName))
+	if diagutil.FrameworkDiagsFromSDK(diags).HasError() {
+		return nil, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
+	indices := make(map[string]models.Index)
+	if err := json.NewDecoder(res.Body).Decode(&indices); err != nil {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	return indices, nil
+}
+
+func PutAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName string, indices []string, alias *models.IndexAlias) fwdiags.Diagnostics {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	// Build the request body for index aliases API
+	aliasActions := map[string]interface{}{
+		"actions": []map[string]interface{}{
+			{
+				"add": map[string]interface{}{
+					"indices": indices,
+					"alias":   aliasName,
+					"filter":  alias.Filter,
+				},
+			},
+		},
+	}
+
+	// Only include non-empty optional fields
+	addAction := aliasActions["actions"].([]map[string]interface{})[0]["add"].(map[string]interface{})
+	if alias.IndexRouting != "" {
+		addAction["index_routing"] = alias.IndexRouting
+	}
+	if alias.SearchRouting != "" {
+		addAction["search_routing"] = alias.SearchRouting
+	}
+	if alias.Routing != "" {
+		addAction["routing"] = alias.Routing
+	}
+	if alias.IsHidden {
+		addAction["is_hidden"] = alias.IsHidden
+	}
+	if alias.IsWriteIndex {
+		addAction["is_write_index"] = alias.IsWriteIndex
+	}
+
+	// Remove filter if it's nil or empty
+	if alias.Filter == nil {
+		delete(addAction, "filter")
+	}
+
+	aliasBytes, err := json.Marshal(aliasActions)
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	res, err := esClient.Indices.UpdateAliases(
+		bytes.NewReader(aliasBytes),
+		esClient.Indices.UpdateAliases.WithContext(ctx),
+	)
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+	defer res.Body.Close()
+
+	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create/update alias '%s'", aliasName))
+	return diagutil.FrameworkDiagsFromSDK(diags)
+}
+
+func DeleteAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName string, indices []string) fwdiags.Diagnostics {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	// Use UpdateAliases API for deletion to handle multiple indices
+	aliasActions := map[string]interface{}{
+		"actions": []map[string]interface{}{
+			{
+				"remove": map[string]interface{}{
+					"indices": indices,
+					"alias":   aliasName,
+				},
+			},
+		},
+	}
+
+	aliasBytes, err := json.Marshal(aliasActions)
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	res, err := esClient.Indices.UpdateAliases(
+		bytes.NewReader(aliasBytes),
+		esClient.Indices.UpdateAliases.WithContext(ctx),
+	)
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+	defer res.Body.Close()
+
+	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete alias '%s'", aliasName))
+	return diagutil.FrameworkDiagsFromSDK(diags)
+}
+
 func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline *models.IngestPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 	pipelineBytes, err := json.Marshal(pipeline)
