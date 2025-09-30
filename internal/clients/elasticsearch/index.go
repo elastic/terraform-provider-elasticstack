@@ -628,39 +628,43 @@ func PutAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName strin
 	}
 
 	// Build the request body for index aliases API
-	aliasActions := map[string]interface{}{
-		"actions": []map[string]interface{}{
-			{
-				"add": map[string]interface{}{
-					"indices": indices,
-					"alias":   aliasName,
-					"filter":  alias.Filter,
-				},
+	var actions []map[string]interface{}
+
+	for _, index := range indices {
+		addAction := map[string]interface{}{
+			"add": map[string]interface{}{
+				"index": index,
+				"alias": aliasName,
 			},
-		},
+		}
+
+		// Only include non-empty optional fields in the add action
+		addActionDetails := addAction["add"].(map[string]interface{})
+		
+		if alias.Filter != nil {
+			addActionDetails["filter"] = alias.Filter
+		}
+		if alias.IndexRouting != "" {
+			addActionDetails["index_routing"] = alias.IndexRouting
+		}
+		if alias.SearchRouting != "" {
+			addActionDetails["search_routing"] = alias.SearchRouting
+		}
+		if alias.Routing != "" {
+			addActionDetails["routing"] = alias.Routing
+		}
+		if alias.IsHidden {
+			addActionDetails["is_hidden"] = alias.IsHidden
+		}
+		if alias.IsWriteIndex {
+			addActionDetails["is_write_index"] = alias.IsWriteIndex
+		}
+
+		actions = append(actions, addAction)
 	}
 
-	// Only include non-empty optional fields
-	addAction := aliasActions["actions"].([]map[string]interface{})[0]["add"].(map[string]interface{})
-	if alias.IndexRouting != "" {
-		addAction["index_routing"] = alias.IndexRouting
-	}
-	if alias.SearchRouting != "" {
-		addAction["search_routing"] = alias.SearchRouting
-	}
-	if alias.Routing != "" {
-		addAction["routing"] = alias.Routing
-	}
-	if alias.IsHidden {
-		addAction["is_hidden"] = alias.IsHidden
-	}
-	if alias.IsWriteIndex {
-		addAction["is_write_index"] = alias.IsWriteIndex
-	}
-
-	// Remove filter if it's nil or empty
-	if alias.Filter == nil {
-		delete(addAction, "filter")
+	aliasActions := map[string]interface{}{
+		"actions": actions,
 	}
 
 	aliasBytes, err := json.Marshal(aliasActions)

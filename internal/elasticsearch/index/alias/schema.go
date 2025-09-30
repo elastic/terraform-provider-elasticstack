@@ -46,6 +46,7 @@ func (r *aliasResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Description: "Value used to route indexing operations to a specific shard. " +
 					"If specified, this overwrites the `routing` value for indexing operations.",
 				Optional: true,
+				Computed: true,
 			},
 			"is_hidden": schema.BoolAttribute{
 				Description: "If true, the alias is hidden.",
@@ -67,6 +68,7 @@ func (r *aliasResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Description: "Value used to route search operations to a specific shard. " +
 					"If specified, this overwrites the routing value for search operations.",
 				Optional: true,
+				Computed: true,
 			},
 		},
 	}

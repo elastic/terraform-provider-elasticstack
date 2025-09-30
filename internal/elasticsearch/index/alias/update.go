@@ -37,34 +37,22 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	// Remove the alias from old indices that are not in the new plan
-	var indicesToRemove []string
-	planIndicesMap := make(map[string]bool)
-	for _, idx := range planIndices {
-		planIndicesMap[idx] = true
-	}
-	
-	for _, idx := range currentIndices {
-		if !planIndicesMap[idx] {
-			indicesToRemove = append(indicesToRemove, idx)
-		}
-	}
-
-	if len(indicesToRemove) > 0 {
-		resp.Diagnostics.Append(elasticsearch.DeleteAlias(ctx, r.client, aliasName, indicesToRemove)...)
+	// First, remove the alias from all current indices to ensure clean state
+	if len(currentIndices) > 0 {
+		resp.Diagnostics.Append(elasticsearch.DeleteAlias(ctx, r.client, aliasName, currentIndices)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
-	// Update/create the alias with new configuration
+	// Then add the alias to the new indices with the updated configuration
 	resp.Diagnostics.Append(elasticsearch.PutAlias(ctx, r.client, aliasName, planIndices, &planAliasModel)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read back the alias to ensure state consistency
-	finalModel, diags := readAlias(ctx, r.client, aliasName)
+	// Read back the alias to ensure state consistency, using planned model as input to preserve planned values
+	finalModel, diags := readAliasWithPlan(ctx, r.client, aliasName, &planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
