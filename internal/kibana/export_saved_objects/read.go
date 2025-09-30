@@ -2,13 +2,14 @@ package export_saved_objects
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -36,35 +37,18 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		spaceId = config.SpaceID.ValueString()
 	}
 
-	// Parse objects JSON
-	var objectsList kbapi.PostSavedObjectsExportJSONBodyHasReference1
-	objectsJSON := config.Objects.ValueString()
-
-	var rawObjects []map[string]interface{}
-	if err := json.Unmarshal([]byte(objectsJSON), &rawObjects); err != nil {
-		resp.Diagnostics.AddError("Invalid objects JSON", fmt.Sprintf("Error parsing objects JSON: %v", err))
-		return
-	}
-
-	for _, obj := range rawObjects {
-		id, ok := obj["id"].(string)
-		if !ok {
-			resp.Diagnostics.AddError("Invalid object", "Object missing 'id' field")
-			return
-		}
-		objType, ok := obj["type"].(string)
-		if !ok {
-			resp.Diagnostics.AddError("Invalid object", "Object missing 'type' field")
-			return
-		}
-		objectsList = append(objectsList, struct {
+	objectsList := utils.ListTypeToSlice(ctx, config.Objects, path.Root("objects"), &resp.Diagnostics, func(item objectModel, meta utils.ListMeta) struct {
+		Id   string `json:"id"`
+		Type string `json:"type"`
+	} {
+		return struct {
 			Id   string `json:"id"`
 			Type string `json:"type"`
 		}{
-			Id:   id,
-			Type: objType,
-		})
-	}
+			Id:   item.ID.ValueString(),
+			Type: item.Type.ValueString(),
+		}
+	})
 
 	// Set default values for boolean options
 	excludeExportDetails := true

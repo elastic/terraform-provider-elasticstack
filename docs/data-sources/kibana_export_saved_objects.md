@@ -40,7 +40,7 @@ output "saved_objects" {
 
 ### Required
 
-- `objects` (String) JSON-encoded list of objects to export. Each object should have 'type' and 'id' fields.
+- `objects` (Attributes List) List of objects to export. (see [below for nested schema](#nestedatt--objects))
 
 ### Optional
 
@@ -52,3 +52,11 @@ output "saved_objects" {
 
 - `exported_objects` (String) The exported objects in NDJSON format.
 - `id` (String) Generated ID for the export.
+
+<a id="nestedatt--objects"></a>
+### Nested Schema for `objects`
+
+Required:
+
+- `id` (String) The ID of the saved object.
+- `type` (String) The type of the saved object.

@@ -44,11 +44,11 @@ data "elasticstack_kibana_export_saved_objects" "test" {
   space_id = "default"
   exclude_export_details = true
   include_references_deep = true
-  objects = jsonencode([
+ objects = [
     {
-      "type": "action",
-      "id": elasticstack_kibana_action_connector.test.connector_id
+      type = "action",
+      id = elasticstack_kibana_action_connector.test.connector_id
     }
-  ])
+  ]
 }
 `
