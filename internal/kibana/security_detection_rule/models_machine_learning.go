@@ -230,8 +230,13 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	// ML-specific fields
 	d.AnomalyThreshold = types.Int64Value(int64(rule.AnomalyThreshold))
 
-	// Handle ML job ID(s)
-	if multipleJobIds, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1(); err == nil {
+	// Handle ML job ID(s) - can be single string or array
+	// Try to extract as single job ID first, then as array
+	if singleJobId, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0(); err == nil {
+		// Single job ID
+		d.MachineLearningJobId = utils.ListValueFrom(ctx, []string{string(singleJobId)}, types.StringType, path.Root("machine_learning_job_id"), &diags)
+	} else if multipleJobIds, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1(); err == nil {
+		// Multiple job IDs
 		jobIdStrings := make([]string, len(multipleJobIds))
 		for i, jobId := range multipleJobIds {
 			jobIdStrings[i] = string(jobId)
