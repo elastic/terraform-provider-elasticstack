@@ -320,38 +320,6 @@ type CommonUpdateProps struct {
 	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
 }
 
-func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
-
-	ruleType := d.Type.ValueString()
-
-	switch ruleType {
-	case "query":
-		return d.toQueryRuleCreateProps(ctx, client)
-	case "eql":
-		return d.toEqlRuleCreateProps(ctx, client)
-	case "esql":
-		return d.toEsqlRuleCreateProps(ctx, client)
-	case "machine_learning":
-		return d.toMachineLearningRuleCreateProps(ctx, client)
-	case "new_terms":
-		return d.toNewTermsRuleCreateProps(ctx, client)
-	case "saved_query":
-		return d.toSavedQueryRuleCreateProps(ctx, client)
-	case "threat_match":
-		return d.toThreatMatchRuleCreateProps(ctx, client)
-	case "threshold":
-		return d.toThresholdRuleCreateProps(ctx, client)
-	default:
-		diags.AddError(
-			"Unsupported rule type",
-			fmt.Sprintf("Rule type '%s' is not supported", ruleType),
-		)
-		return createProps, diags
-	}
-}
-
 // Helper function to set common properties across all rule types
 func (d SecurityDetectionRuleData) setCommonCreateProps(
 	ctx context.Context,
@@ -591,6 +559,7 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 	}
 }
 
+// TODO
 func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
@@ -853,44 +822,6 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		if alertSuppression != nil {
 			*props.AlertSuppression = alertSuppression
 		}
-	}
-}
-
-func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	rule, err := response.ValueByDiscriminator()
-	if err != nil {
-		diags.AddError(
-			"Error determining rule type",
-			"Could not determine the type of the security detection rule from the API response: "+err.Error(),
-		)
-		return diags
-	}
-
-	switch r := rule.(type) {
-	case kbapi.SecurityDetectionsAPIQueryRule:
-		return d.updateFromQueryRule(ctx, &r)
-	case kbapi.SecurityDetectionsAPIEqlRule:
-		return d.updateFromEqlRule(ctx, &r)
-	case kbapi.SecurityDetectionsAPIEsqlRule:
-		return d.updateFromEsqlRule(ctx, &r)
-	case kbapi.SecurityDetectionsAPIMachineLearningRule:
-		return d.updateFromMachineLearningRule(ctx, &r)
-	case kbapi.SecurityDetectionsAPINewTermsRule:
-		return d.updateFromNewTermsRule(ctx, &r)
-	case kbapi.SecurityDetectionsAPISavedQueryRule:
-		return d.updateFromSavedQueryRule(ctx, &r)
-	case kbapi.SecurityDetectionsAPIThreatMatchRule:
-		return d.updateFromThreatMatchRule(ctx, &r)
-	case kbapi.SecurityDetectionsAPIThresholdRule:
-		return d.updateFromThresholdRule(ctx, &r)
-	default:
-		diags.AddError(
-			"Unsupported rule type",
-			"Cannot update data from unsupported rule type",
-		)
-		return diags
 	}
 }
 
