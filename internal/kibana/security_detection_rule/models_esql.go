@@ -12,6 +12,52 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type EsqlRuleProcessor struct{}
+
+func (e EsqlRuleProcessor) HandlesRuleType(t string) bool {
+	return t == "esql"
+}
+
+func (e EsqlRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toEsqlRuleCreateProps(ctx, client)
+}
+
+func (e EsqlRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toEsqlRuleUpdateProps(ctx, client)
+}
+
+func (e EsqlRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
+	_, ok := rule.(kbapi.SecurityDetectionsAPIEsqlRule)
+	return ok
+}
+
+func (e EsqlRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+	var diags diag.Diagnostics
+	value, ok := rule.(kbapi.SecurityDetectionsAPIEsqlRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return diags
+	}
+
+	return d.updateFromEsqlRule(ctx, &value)
+}
+
+func (e EsqlRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	value, ok := response.(kbapi.SecurityDetectionsAPIEsqlRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return "", diags
+	}
+	return value.Id.String(), diags
+}
+
 func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps

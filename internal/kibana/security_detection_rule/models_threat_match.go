@@ -13,6 +13,52 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type ThreatMatchRuleProcessor struct{}
+
+func (t ThreatMatchRuleProcessor) HandlesRuleType(ruleType string) bool {
+	return ruleType == "threat_match"
+}
+
+func (t ThreatMatchRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toThreatMatchRuleCreateProps(ctx, client)
+}
+
+func (t ThreatMatchRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toThreatMatchRuleUpdateProps(ctx, client)
+}
+
+func (t ThreatMatchRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
+	_, ok := rule.(kbapi.SecurityDetectionsAPIThreatMatchRule)
+	return ok
+}
+
+func (t ThreatMatchRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+	var diags diag.Diagnostics
+	value, ok := rule.(kbapi.SecurityDetectionsAPIThreatMatchRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return diags
+	}
+
+	return d.updateFromThreatMatchRule(ctx, &value)
+}
+
+func (t ThreatMatchRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	value, ok := response.(kbapi.SecurityDetectionsAPIThreatMatchRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return "", diags
+	}
+	return value.Id.String(), diags
+}
+
 func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
