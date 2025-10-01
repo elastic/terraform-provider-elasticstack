@@ -3,11 +3,10 @@ package alias
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func (r *aliasResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -18,73 +17,52 @@ func (r *aliasResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	aliasModel, indices, diags := planModel.toAPIModel()
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	aliasName := planModel.Name.ValueString()
 
-	// Create the alias
-	resp.Diagnostics.Append(elasticsearch.PutAlias(ctx, r.client, aliasName, indices, &aliasModel)...)
-	if resp.Diagnostics.HasError() {
+	// Set the ID using client.ID
+	id, sdkDiags := r.client.ID(ctx, aliasName)
+	if sdkDiags.HasError() {
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
 	}
+	planModel.ID = basetypes.NewStringValue(id.String())
 
-	// Read back the alias to ensure state consistency, using planned model as input to preserve planned values
-	finalModel, diags := readAliasWithPlan(ctx, r.client, aliasName, &planModel)
+	// Get alias configurations from the plan
+	configs, diags := planModel.toAliasConfigs(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
-}
-
-func readAliasWithPlan(ctx context.Context, client *clients.ApiClient, aliasName string, planModel *tfModel) (*tfModel, diag.Diagnostics) {
-	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	if len(indices) == 0 {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"Alias not found after creation",
-				"The alias was not found after creation, which indicates an error in the Elasticsearch API response.",
-			),
+	// Convert to alias actions
+	var actions []elasticsearch.AliasAction
+	for _, config := range configs {
+		action := elasticsearch.AliasAction{
+			Type:          "add",
+			Index:         config.Name,
+			Alias:         aliasName,
+			IsWriteIndex:  config.IsWriteIndex,
+			Filter:        config.Filter,
+			IndexRouting:  config.IndexRouting,
+			IsHidden:      config.IsHidden,
+			Routing:       config.Routing,
+			SearchRouting: config.SearchRouting,
 		}
+		actions = append(actions, action)
 	}
 
-	// Extract indices and alias data from the response
-	var indexNames []string
-	var aliasData *models.IndexAlias
-
-	for indexName, index := range indices {
-		if alias, exists := index.Aliases[aliasName]; exists {
-			indexNames = append(indexNames, indexName)
-			if aliasData == nil {
-				// Use the first alias definition we find (they should all be the same)
-				aliasData = &alias
-			}
-		}
+	// Create the alias atomically
+	resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, r.client, actions)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	if aliasData == nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"Alias data not found after creation",
-				"The alias data was not found after creation, which indicates an error in the Elasticsearch API response.",
-			),
-		}
+	// Read back the alias to ensure state consistency, updating the current model
+	diags = readAliasIntoModel(ctx, r.client, aliasName, &planModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	finalModel := &tfModel{}
-	diags = finalModel.populateFromAPI(ctx, aliasName, *aliasData, indexNames)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return finalModel, nil
+	resp.Diagnostics.Append(resp.State.Set(ctx, planModel)...)
 }

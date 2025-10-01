@@ -23,40 +23,75 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	aliasName := planModel.Name.ValueString()
 
-	// Get the current indices from state for removal
-	var currentIndices []string
-	resp.Diagnostics.Append(stateModel.Indices.ElementsAs(ctx, &currentIndices, false)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Get the planned indices
-	planAliasModel, planIndices, diags := planModel.toAPIModel()
+	// Get current configuration from state
+	currentConfigs, diags := stateModel.toAliasConfigs(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// First, remove the alias from all current indices to ensure clean state
-	if len(currentIndices) > 0 {
-		resp.Diagnostics.Append(elasticsearch.DeleteAlias(ctx, r.client, aliasName, currentIndices)...)
+	// Get planned configuration
+	plannedConfigs, diags := planModel.toAliasConfigs(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Build atomic actions
+	var actions []elasticsearch.AliasAction
+
+	// Create maps for easy lookup
+	currentIndexMap := make(map[string]AliasIndexConfig)
+	for _, config := range currentConfigs {
+		currentIndexMap[config.Name] = config
+	}
+
+	plannedIndexMap := make(map[string]AliasIndexConfig)
+	for _, config := range plannedConfigs {
+		plannedIndexMap[config.Name] = config
+	}
+
+	// Remove indices that are no longer in the plan
+	for indexName := range currentIndexMap {
+		if _, exists := plannedIndexMap[indexName]; !exists {
+			actions = append(actions, elasticsearch.AliasAction{
+				Type:  "remove",
+				Index: indexName,
+				Alias: aliasName,
+			})
+		}
+	}
+
+	// Add or update indices in the plan
+	for _, config := range plannedConfigs {
+		action := elasticsearch.AliasAction{
+			Type:          "add",
+			Index:         config.Name,
+			Alias:         aliasName,
+			IsWriteIndex:  config.IsWriteIndex,
+			Filter:        config.Filter,
+			IndexRouting:  config.IndexRouting,
+			IsHidden:      config.IsHidden,
+			Routing:       config.Routing,
+			SearchRouting: config.SearchRouting,
+		}
+		actions = append(actions, action)
+	}
+
+	// Apply the atomic changes
+	if len(actions) > 0 {
+		resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, r.client, actions)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
-	// Then add the alias to the new indices with the updated configuration
-	resp.Diagnostics.Append(elasticsearch.PutAlias(ctx, r.client, aliasName, planIndices, &planAliasModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Read back the alias to ensure state consistency, using planned model as input to preserve planned values
-	finalModel, diags := readAliasWithPlan(ctx, r.client, aliasName, &planModel)
+	// Read back the alias to ensure state consistency, updating the current model
+	diags = readAliasIntoModel(ctx, r.client, aliasName, &planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, planModel)...)
 }

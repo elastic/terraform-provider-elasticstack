@@ -2,10 +2,19 @@ package alias
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// Ensure provider defined types fully satisfy framework interfaces
+var _ resource.Resource = &aliasResource{}
+var _ resource.ResourceWithConfigure = &aliasResource{}
+var _ resource.ResourceWithImportState = &aliasResource{}
+var _ resource.ResourceWithValidateConfig = &aliasResource{}
 
 func NewAliasResource() resource.Resource {
 	return &aliasResource{}
@@ -23,4 +32,41 @@ func (r *aliasResource) Configure(_ context.Context, req resource.ConfigureReque
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
+}
+
+func (r *aliasResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Retrieve import ID and save to id attribute
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *aliasResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config tfModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Validate that write_index doesn't appear in read_indices
+	if !config.WriteIndex.IsNull() && !config.ReadIndices.IsNull() {
+		// Get the write index name
+		var writeIndex writeIndexModel
+		if diags := config.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{}); !diags.HasError() {
+			writeIndexName := writeIndex.Name.ValueString()
+
+			// Get all read indices
+			var readIndices []readIndexModel
+			if diags := config.ReadIndices.ElementsAs(ctx, &readIndices, false); !diags.HasError() {
+				for _, readIndex := range readIndices {
+					if readIndex.Name.ValueString() == writeIndexName {
+						resp.Diagnostics.AddError(
+							"Invalid Configuration",
+							fmt.Sprintf("Index '%s' cannot be both a write index and a read index", writeIndexName),
+						)
+						return
+					}
+				}
+			}
+		}
+	}
 }

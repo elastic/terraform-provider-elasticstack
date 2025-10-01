@@ -731,6 +731,95 @@ func DeleteAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName st
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
+// AliasAction represents a single action in an atomic alias update operation
+type AliasAction struct {
+	Type          string // "add" or "remove"
+	Index         string
+	Alias         string
+	IsWriteIndex  bool
+	Filter        map[string]interface{}
+	IndexRouting  string
+	IsHidden      bool
+	Routing       string
+	SearchRouting string
+}
+
+// UpdateAliasesAtomic performs atomic alias updates using multiple actions
+func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, actions []AliasAction) fwdiags.Diagnostics {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	var aliasActions []map[string]interface{}
+
+	for _, action := range actions {
+		if action.Type == "remove" {
+			aliasActions = append(aliasActions, map[string]interface{}{
+				"remove": map[string]interface{}{
+					"index": action.Index,
+					"alias": action.Alias,
+				},
+			})
+		} else if action.Type == "add" {
+			addDetails := map[string]interface{}{
+				"index": action.Index,
+				"alias": action.Alias,
+			}
+
+			if action.IsWriteIndex {
+				addDetails["is_write_index"] = true
+			}
+			if action.Filter != nil {
+				addDetails["filter"] = action.Filter
+			}
+			if action.IndexRouting != "" {
+				addDetails["index_routing"] = action.IndexRouting
+			}
+			if action.SearchRouting != "" {
+				addDetails["search_routing"] = action.SearchRouting
+			}
+			if action.Routing != "" {
+				addDetails["routing"] = action.Routing
+			}
+			if action.IsHidden {
+				addDetails["is_hidden"] = action.IsHidden
+			}
+
+			aliasActions = append(aliasActions, map[string]interface{}{
+				"add": addDetails,
+			})
+		}
+	}
+
+	requestBody := map[string]interface{}{
+		"actions": aliasActions,
+	}
+
+	aliasBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	res, err := esClient.Indices.UpdateAliases(
+		bytes.NewReader(aliasBytes),
+		esClient.Indices.UpdateAliases.WithContext(ctx),
+	)
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+	defer res.Body.Close()
+
+	diags := diagutil.CheckError(res, "Unable to update aliases atomically")
+	return diagutil.FrameworkDiagsFromSDK(diags)
+}
+
 func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline *models.IngestPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 	pipelineBytes, err := json.Marshal(pipeline)
