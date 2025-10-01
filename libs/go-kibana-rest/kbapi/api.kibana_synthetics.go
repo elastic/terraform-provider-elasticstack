@@ -415,6 +415,9 @@ func newKibanaSyntheticsMonitorDeleteFunc(c *resty.Client) KibanaSyntheticsMonit
 		}
 
 		result, err := unmarshal(resp, []MonitorDeleteStatus{})
+		if err != nil {
+			return nil, err
+		}
 		return *result, err
 	}
 }
@@ -481,6 +484,9 @@ func newKibanaSyntheticsParameterDeleteFunc(c *resty.Client) KibanaSyntheticsPar
 		}
 
 		result, err := unmarshal(resp, []ParameterDeleteStatus{})
+		if err != nil {
+			return nil, err
+		}
 		return *result, err
 	}
 }
@@ -503,9 +509,9 @@ func handleKibanaError(err error, resp *resty.Response) error {
 		kibanaErr := KibanaError{}
 		err := json.Unmarshal(resp.Body(), &kibanaErr)
 		if err != nil {
-			return NewAPIError(resp.StatusCode(), resp.Status(), err)
+			return NewAPIError(resp.StatusCode(), "status: %s, err: %s", resp.Status(), err)
 		}
-		return NewAPIError(resp.StatusCode(), kibanaErr.Message, kibanaErr.Error)
+		return NewAPIError(resp.StatusCode(), "message: %s, err: %s", kibanaErr.Message, kibanaErr.Error)
 	}
 	return nil
 }

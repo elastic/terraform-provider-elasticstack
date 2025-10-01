@@ -10,8 +10,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agent_policy"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -142,6 +142,46 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"skip_destroy"},
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionInactivityTimeout),
+				Config:   testAccResourceAgentPolicyCreateWithInactivityTimeout(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Inactivity Timeout"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "inactivity_timeout", "2m"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionUnenrollmentTimeout),
+				Config:   testAccResourceAgentPolicyCreateWithUnenrollmentTimeout(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Unenrollment Timeout"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "unenrollment_timeout", "300s"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionUnenrollmentTimeout),
+				Config:   testAccResourceAgentPolicyUpdateWithTimeouts(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Both Timeouts"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "inactivity_timeout", "120s"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "unenrollment_timeout", "900s"),
+				),
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
@@ -295,6 +335,54 @@ data "elasticstack_fleet_enrollment_tokens" "test_policy" {
 `, fmt.Sprintf("Policy %s", id), skipDestroy)
 }
 
+func testAccResourceAgentPolicyCreateWithInactivityTimeout(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name        = "%s"
+  namespace   = "default"
+  description = "Test Agent Policy with Inactivity Timeout"
+  monitor_logs = true
+  monitor_metrics = false
+  skip_destroy = false
+  inactivity_timeout = "2m"
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+
+`, fmt.Sprintf("Policy %s", id))
+}
+
+func testAccResourceAgentPolicyCreateWithUnenrollmentTimeout(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name        = "%s"
+  namespace   = "default"
+  description = "Test Agent Policy with Unenrollment Timeout"
+  monitor_logs = true
+  monitor_metrics = false
+  skip_destroy = false
+  unenrollment_timeout = "300s"
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+
+`, fmt.Sprintf("Policy %s", id))
+}
+
 func testAccResourceAgentPolicyCreateWithBadGlobalDataTags(id string, skipDestroy bool) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -434,7 +522,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 		}
 		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 		if diags.HasError() {
-			return utils.FwDiagsAsError(diags)
+			return diagutil.FwDiagsAsError(diags)
 		}
 		if policy != nil {
 			return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)
@@ -460,15 +548,40 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		}
 		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
 		if diags.HasError() {
-			return utils.FwDiagsAsError(diags)
+			return diagutil.FwDiagsAsError(diags)
 		}
 		if policy == nil {
 			return fmt.Errorf("agent policy id=%v does not exist, but should still exist when skip_destroy is true", rs.Primary.ID)
 		}
 
 		if diags = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID); diags.HasError() {
-			return utils.FwDiagsAsError(diags)
+			return diagutil.FwDiagsAsError(diags)
 		}
 	}
 	return nil
+}
+
+func testAccResourceAgentPolicyUpdateWithTimeouts(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name        = "%s"
+  namespace   = "default"
+  description = "Test Agent Policy with Both Timeouts"
+  monitor_logs = false
+  monitor_metrics = true
+  skip_destroy = false
+  inactivity_timeout = "120s"
+  unenrollment_timeout = "900s"
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+
+`, fmt.Sprintf("Updated Policy %s", id))
 }

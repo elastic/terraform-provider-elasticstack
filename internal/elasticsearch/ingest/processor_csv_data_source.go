@@ -5,12 +5,17 @@ import (
 	"encoding/json"
 	"strings"
 
+	_ "embed"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+//go:embed processor_csv_data_source.md
+var csvDataSourceDescription string
 
 func DataSourceProcessorCSV() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -102,7 +107,7 @@ func DataSourceProcessorCSV() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Extracts fields from CSV line out of a single text field within a document. Any empty field in CSV will be skipped. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/csv-processor.html",
+		Description: csvDataSourceDescription,
 
 		ReadContext: dataSourceProcessorCSVRead,
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -92,7 +92,7 @@ func doesCurrentVersionSupportRestrictionOnApiKey(ctx context.Context, client *c
 	currentVersion, diags := client.ServerVersion(ctx)
 
 	if diags.HasError() {
-		return false, utils.FrameworkDiagsFromSDK(diags)
+		return false, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	return currentVersion.GreaterThanOrEqual(MinVersionWithRestriction), nil
@@ -102,7 +102,7 @@ func doesCurrentVersionSupportCrossClusterApiKey(ctx context.Context, client *cl
 	currentVersion, diags := client.ServerVersion(ctx)
 
 	if diags.HasError() {
-		return false, utils.FrameworkDiagsFromSDK(diags)
+		return false, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	return currentVersion.GreaterThanOrEqual(MinVersionWithCrossCluster), nil
@@ -141,7 +141,7 @@ func (r *Resource) createCrossClusterApiKey(ctx context.Context, client *clients
 
 	id, sdkDiags := client.ID(ctx, putResponse.Id)
 	if sdkDiags.HasError() {
-		return utils.FrameworkDiagsFromSDK(sdkDiags)
+		return diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	planModel.ID = basetypes.NewStringValue(id.String())
@@ -168,7 +168,7 @@ func (r *Resource) createApiKey(ctx context.Context, client *clients.ApiClient, 
 
 	id, sdkDiags := client.ID(ctx, putResponse.Id)
 	if sdkDiags.HasError() {
-		return utils.FrameworkDiagsFromSDK(sdkDiags)
+		return diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	planModel.ID = basetypes.NewStringValue(id.String())

@@ -5,16 +5,17 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Index** | **string** | The index or index pattern to use | 
-**Filter** | Pointer to **string** | the KQL query to filter the documents with. | [optional] 
-**Good** | **string** | the KQL query used to define the good events. | 
-**Total** | **string** | the KQL query used to define all events. | 
+**DataViewId** | Pointer to **string** | The kibana data view id to use, primarily used to include data view runtime mappings. Make sure to save SLO again if you add/update run time fields to the data view and if those fields are being used in slo queries. | [optional] 
+**Filter** | Pointer to [**KqlWithFilters**](KqlWithFilters.md) |  | [optional] 
+**Good** | [**KqlWithFiltersGood**](KqlWithFiltersGood.md) |  | 
+**Total** | [**KqlWithFiltersTotal**](KqlWithFiltersTotal.md) |  | 
 **TimestampField** | **string** | The timestamp field used in the source indice.  | 
 
 ## Methods
 
 ### NewIndicatorPropertiesCustomKqlParams
 
-`func NewIndicatorPropertiesCustomKqlParams(index string, good string, total string, timestampField string, ) *IndicatorPropertiesCustomKqlParams`
+`func NewIndicatorPropertiesCustomKqlParams(index string, good KqlWithFiltersGood, total KqlWithFiltersTotal, timestampField string, ) *IndicatorPropertiesCustomKqlParams`
 
 NewIndicatorPropertiesCustomKqlParams instantiates a new IndicatorPropertiesCustomKqlParams object
 This constructor will assign default values to properties that have it defined,
@@ -49,22 +50,47 @@ and a boolean to check if the value has been set.
 SetIndex sets Index field to given value.
 
 
+### GetDataViewId
+
+`func (o *IndicatorPropertiesCustomKqlParams) GetDataViewId() string`
+
+GetDataViewId returns the DataViewId field if non-nil, zero value otherwise.
+
+### GetDataViewIdOk
+
+`func (o *IndicatorPropertiesCustomKqlParams) GetDataViewIdOk() (*string, bool)`
+
+GetDataViewIdOk returns a tuple with the DataViewId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDataViewId
+
+`func (o *IndicatorPropertiesCustomKqlParams) SetDataViewId(v string)`
+
+SetDataViewId sets DataViewId field to given value.
+
+### HasDataViewId
+
+`func (o *IndicatorPropertiesCustomKqlParams) HasDataViewId() bool`
+
+HasDataViewId returns a boolean if a field has been set.
+
 ### GetFilter
 
-`func (o *IndicatorPropertiesCustomKqlParams) GetFilter() string`
+`func (o *IndicatorPropertiesCustomKqlParams) GetFilter() KqlWithFilters`
 
 GetFilter returns the Filter field if non-nil, zero value otherwise.
 
 ### GetFilterOk
 
-`func (o *IndicatorPropertiesCustomKqlParams) GetFilterOk() (*string, bool)`
+`func (o *IndicatorPropertiesCustomKqlParams) GetFilterOk() (*KqlWithFilters, bool)`
 
 GetFilterOk returns a tuple with the Filter field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetFilter
 
-`func (o *IndicatorPropertiesCustomKqlParams) SetFilter(v string)`
+`func (o *IndicatorPropertiesCustomKqlParams) SetFilter(v KqlWithFilters)`
 
 SetFilter sets Filter field to given value.
 
@@ -76,40 +102,40 @@ HasFilter returns a boolean if a field has been set.
 
 ### GetGood
 
-`func (o *IndicatorPropertiesCustomKqlParams) GetGood() string`
+`func (o *IndicatorPropertiesCustomKqlParams) GetGood() KqlWithFiltersGood`
 
 GetGood returns the Good field if non-nil, zero value otherwise.
 
 ### GetGoodOk
 
-`func (o *IndicatorPropertiesCustomKqlParams) GetGoodOk() (*string, bool)`
+`func (o *IndicatorPropertiesCustomKqlParams) GetGoodOk() (*KqlWithFiltersGood, bool)`
 
 GetGoodOk returns a tuple with the Good field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetGood
 
-`func (o *IndicatorPropertiesCustomKqlParams) SetGood(v string)`
+`func (o *IndicatorPropertiesCustomKqlParams) SetGood(v KqlWithFiltersGood)`
 
 SetGood sets Good field to given value.
 
 
 ### GetTotal
 
-`func (o *IndicatorPropertiesCustomKqlParams) GetTotal() string`
+`func (o *IndicatorPropertiesCustomKqlParams) GetTotal() KqlWithFiltersTotal`
 
 GetTotal returns the Total field if non-nil, zero value otherwise.
 
 ### GetTotalOk
 
-`func (o *IndicatorPropertiesCustomKqlParams) GetTotalOk() (*string, bool)`
+`func (o *IndicatorPropertiesCustomKqlParams) GetTotalOk() (*KqlWithFiltersTotal, bool)`
 
 GetTotalOk returns a tuple with the Total field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetTotal
 
-`func (o *IndicatorPropertiesCustomKqlParams) SetTotal(v string)`
+`func (o *IndicatorPropertiesCustomKqlParams) SetTotal(v KqlWithFiltersTotal)`
 
 SetTotal sets Total field to given value.
 

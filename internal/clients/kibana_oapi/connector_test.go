@@ -11,7 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +21,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 		spaceId       string
 		response      *kbapi.ConnectorResponse
 		expectedModel *models.KibanaActionConnector
-		expectedError diag.Diagnostics
+		expectedError fwdiag.Diagnostics
 	}
 	tests := []testCase{
 		{
@@ -29,7 +29,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 			spaceId:       "default",
 			response:      nil,
 			expectedModel: nil,
-			expectedError: diag.Errorf("connector response is nil"),
+			expectedError: fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Invalid connector response", "connector response is nil")},
 		},
 		{
 			name:    "should map valid connector response to model",

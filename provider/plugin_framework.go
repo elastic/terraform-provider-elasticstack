@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/apm/agent_configuration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
@@ -20,6 +21,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
@@ -107,12 +109,14 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &synthetics.Resource{} },
 		func() resource.Resource { return &api_key.Resource{} },
 		func() resource.Resource { return &data_stream_lifecycle.Resource{} },
+		func() resource.Resource { return &connectors.Resource{} },
 		agent_policy.NewResource,
 		integration.NewResource,
 		integration_policy.NewResource,
 		output.NewResource,
 		server_host.NewResource,
 		system_user.NewSystemUserResource,
+		script.NewScriptResource,
 		maintenance_window.NewResource,
 		enrich.NewEnrichPolicyResource,
 		role_mapping.NewRoleMappingResource,

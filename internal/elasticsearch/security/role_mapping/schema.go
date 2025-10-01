@@ -25,7 +25,7 @@ func (r *roleMappingResource) Schema(_ context.Context, _ resource.SchemaRequest
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manage role mappings. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html",
+		MarkdownDescription: "Manage role mappings. See the [role mapping API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html) for more details.",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},

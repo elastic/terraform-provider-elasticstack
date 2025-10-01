@@ -86,7 +86,7 @@ func DataSourceProcessorJson() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Converts a JSON string into a structured JSON object. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/json-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a JSON processor. This processor converts a JSON string into a structured JSON object. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/json-processor.html",
 
 		ReadContext: dataSourceProcessorJsonRead,
 

@@ -34,7 +34,7 @@ var _ resource.ResourceWithConfigure = &Resource{}
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Imports saved objects from the referenced file",
+		Description: "Create sets of Kibana saved objects from a file created by the export API. See https://www.elastic.co/guide/en/kibana/current/saved-objects-api-import.html",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,

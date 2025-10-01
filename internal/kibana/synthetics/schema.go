@@ -2,6 +2,7 @@ package synthetics
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -127,9 +128,12 @@ func GetCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
 	return compositeID, dg
 }
 
+//go:embed resource-description.md
+var monitorDescription string
+
 func monitorConfigSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Synthetics monitor config, see https://www.elastic.co/guide/en/kibana/current/add-monitor-api.html for more details. The monitor must have one of the following: http, tcp, icmp or browser.",
+		MarkdownDescription: monitorDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,

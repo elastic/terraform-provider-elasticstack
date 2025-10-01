@@ -75,7 +75,7 @@ func DataSourceProcessorDotExpander() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Expands a field with dots into an object field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/dot-expand-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a dot expander processor. This processor expands a field with dots into an object field. See the [dot expand processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/dot-expand-processor.html) for more details.",
 
 		ReadContext: dataSourceProcessorDotExpanderRead,
 

@@ -8,7 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -149,7 +149,7 @@ func checkResourceFleetServerHostDestroy(s *terraform.State) error {
 		}
 		host, diags := fleet.GetFleetServerHost(context.Background(), fleetClient, rs.Primary.ID)
 		if diags.HasError() {
-			return utils.FwDiagsAsError(diags)
+			return diagutil.FwDiagsAsError(diags)
 		}
 		if host != nil {
 			return fmt.Errorf("fleet server host id=%v still exists, but it should have been removed", rs.Primary.ID)
