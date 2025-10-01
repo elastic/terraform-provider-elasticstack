@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -544,25 +545,10 @@ func GetSchema() schema.Schema {
 						Optional:            true,
 						ElementType:         types.StringType,
 					},
-					"duration": schema.SingleNestedAttribute{
-						MarkdownDescription: "Duration for which alerts are suppressed.",
-						Optional:            true,
-						Attributes: map[string]schema.Attribute{
-							"value": schema.Int64Attribute{
-								MarkdownDescription: "Duration value.",
-								Required:            true,
-								Validators: []validator.Int64{
-									int64validator.AtLeast(1),
-								},
-							},
-							"unit": schema.StringAttribute{
-								MarkdownDescription: "Duration unit (s, m, h).",
-								Required:            true,
-								Validators: []validator.String{
-									stringvalidator.OneOf("s", "m", "h"),
-								},
-							},
-						},
+					"duration": schema.StringAttribute{
+						Description: "Duration for which alerts are suppressed.",
+						Optional:    true,
+						CustomType:  customtypes.DurationType{},
 					},
 					"missing_fields_strategy": schema.StringAttribute{
 						MarkdownDescription: "Strategy for handling missing fields in suppression grouping: 'suppress' - only one alert will be created per suppress by bucket, 'doNotSuppress' - per each document a separate alert will be created.",
@@ -835,11 +821,6 @@ func GetSchema() schema.Schema {
 // func getCardinalityType() map[string]attr.Type {
 func getCardinalityType() attr.Type {
 	return GetSchema().Attributes["threshold"].(schema.SingleNestedAttribute).Attributes["cardinality"].GetType().(attr.TypeWithElementType).ElementType()
-}
-
-// getDurationType returns the attribute types for duration objects
-func getDurationType() map[string]attr.Type {
-	return GetSchema().Attributes["alert_suppression"].(schema.SingleNestedAttribute).Attributes["duration"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getThresholdType returns the attribute types for threshold objects

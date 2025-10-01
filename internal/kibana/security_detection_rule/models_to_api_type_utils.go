@@ -3,11 +3,14 @@ package security_detection_rule
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -294,14 +297,9 @@ func (d SecurityDetectionRuleData) alertSuppressionToApi(ctx context.Context, di
 
 	// Handle duration (optional)
 	if utils.IsKnown(model.Duration) {
-		var durationModel AlertSuppressionDurationModel
-		durationDiags := model.Duration.As(ctx, &durationModel, basetypes.ObjectAsOptions{})
+		duration, durationDiags := parseDurationToApi(model.Duration)
 		diags.Append(durationDiags...)
-		if !diags.HasError() {
-			duration := kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
-				Value: int(durationModel.Value.ValueInt64()),
-				Unit:  kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit(durationModel.Unit.ValueString()),
-			}
+		if !durationDiags.HasError() {
 			suppression.Duration = &duration
 		}
 	}
@@ -339,14 +337,9 @@ func (d SecurityDetectionRuleData) alertSuppressionToThresholdApi(ctx context.Co
 		return nil
 	}
 
-	var durationModel AlertSuppressionDurationModel
-	durationDiags := model.Duration.As(ctx, &durationModel, basetypes.ObjectAsOptions{})
+	duration, durationDiags := parseDurationToApi(model.Duration)
 	diags.Append(durationDiags...)
-	if !diags.HasError() {
-		duration := kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
-			Value: int(durationModel.Value.ValueInt64()),
-			Unit:  kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit(durationModel.Unit.ValueString()),
-		}
+	if !durationDiags.HasError() {
 		suppression.Duration = duration
 	}
 
@@ -641,13 +634,8 @@ func (d SecurityDetectionRuleData) riskScoreMappingToApi(ctx context.Context) (k
 			return apiMapping
 		})
 
-	// Filter out empty mappings (where required fields were null)
-	validMappings := make(kbapi.SecurityDetectionsAPIRiskScoreMapping, 0)
-	for _, mapping := range apiRiskScoreMapping {
-		validMappings = append(validMappings, mapping)
-	}
-
-	return validMappings, diags
+	// Return the mappings (any empty mappings were filtered out during creation)
+	return apiRiskScoreMapping, diags
 }
 
 // Helper function to process investigation fields configuration for all rule types
@@ -797,4 +785,65 @@ func (d SecurityDetectionRuleData) filtersToApi(ctx context.Context) (*kbapi.Sec
 	}
 
 	return &filters, diags
+}
+
+// parseDurationToApi converts a customtypes.Duration to the API structure
+func parseDurationToApi(duration customtypes.Duration) (kbapi.SecurityDetectionsAPIAlertSuppressionDuration, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(duration) {
+		diags.AddError("Duration Parse error", "duration string value is unknown")
+		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
+	}
+
+	// Get the raw duration string (e.g. "5m", "1h", "30s")
+	durationStr := duration.ValueString()
+
+	// Parse the duration string using regex to extract value and unit
+	durationRegex := regexp.MustCompile(`^(\d+)([smhd])$`)
+	matches := durationRegex.FindStringSubmatch(durationStr)
+
+	if len(matches) != 3 {
+		diags.AddError(
+			"Invalid duration format",
+			fmt.Sprintf("Duration '%s' is not in valid format. Expected format: number followed by unit (s, m, h)", durationStr),
+		)
+		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
+	}
+
+	// Parse the numeric value
+	value, err := strconv.Atoi(matches[1])
+	if err != nil {
+		diags.AddError(
+			"Invalid duration value",
+			fmt.Sprintf("Failed to parse duration value '%s': %s", matches[1], err.Error()),
+		)
+		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
+	}
+
+	// Map the unit from the string to the API unit type
+	var unit kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit
+	switch matches[2] {
+	case "s":
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitS
+	case "m":
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitM
+	case "h":
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
+	case "d":
+		// Convert days to hours since API doesn't support days unit
+		value = value * 24
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
+	default:
+		diags.AddError(
+			"Unsupported duration unit",
+			fmt.Sprintf("Unit '%s' is not supported. Supported units: s, m, h", matches[2]),
+		)
+		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
+	}
+
+	return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{
+		Value: value,
+		Unit:  unit,
+	}, diags
 }

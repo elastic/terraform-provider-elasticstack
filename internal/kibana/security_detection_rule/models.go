@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -148,14 +149,9 @@ type ThresholdModel struct {
 }
 
 type AlertSuppressionModel struct {
-	GroupBy               types.List   `tfsdk:"group_by"`
-	Duration              types.Object `tfsdk:"duration"`
-	MissingFieldsStrategy types.String `tfsdk:"missing_fields_strategy"`
-}
-
-type AlertSuppressionDurationModel struct {
-	Value types.Int64  `tfsdk:"value"`
-	Unit  types.String `tfsdk:"unit"`
+	GroupBy               types.List           `tfsdk:"group_by"`
+	Duration              customtypes.Duration `tfsdk:"duration"`
+	MissingFieldsStrategy types.String         `tfsdk:"missing_fields_strategy"`
 }
 
 type CardinalityModel struct {

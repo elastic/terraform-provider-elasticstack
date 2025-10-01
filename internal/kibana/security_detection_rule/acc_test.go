@@ -134,8 +134,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.1", "host.name"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "5"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "m"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "5m"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.missing_fields_strategy", "suppress"),
 
 					// Verify building_block_type is not set by default
@@ -399,8 +398,7 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.0", "process.parent.name"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.1", "host.name"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "45"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "m"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "45m"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.missing_fields_strategy", "doNotSuppress"),
 				),
 			},
@@ -485,8 +483,7 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.1", "user.domain"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "15"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "m"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "15m"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.missing_fields_strategy", "doNotSuppress"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -639,8 +636,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					// Check alert suppression
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.0", "ml.job_id"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "30"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "m"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "30m"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.missing_fields_strategy", "suppress"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -812,8 +808,7 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.1", "user.type"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "20"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "m"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "20m"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.missing_fields_strategy", "doNotSuppress"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -960,8 +955,7 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.0", "event.category"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.1", "event.action"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "8"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "h"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "8h"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.missing_fields_strategy", "suppress"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1142,8 +1136,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.0", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.group_by.1", "source.ip"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "1"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "h"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "1h"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.missing_fields_strategy", "doNotSuppress"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1314,8 +1307,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.event.outcome", "outcome"),
 
 					// Check alert suppression (threshold rules only support duration)
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "30"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "m"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "30m"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
@@ -1400,8 +1392,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Isolate host due to multiple failed login attempts"),
 
 					// Check updated alert suppression (threshold rules only support duration)
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.value", "45"),
-					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration.unit", "h"),
+					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "45h"),
 				),
 			},
 		},
@@ -1568,10 +1559,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
   alert_suppression = {
     group_by = ["user.name", "host.name"]
-    duration = {
-      value = 5
-      unit  = "m"
-    }
+    duration = "5m"
     missing_fields_strategy = "suppress"
   }
 
@@ -1837,10 +1825,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
   alert_suppression = {
     group_by                = ["process.name", "user.name"]
-    duration = {
-      value = 10
-      unit  = "m"
-    }
+    duration = "10m"
     missing_fields_strategy = "suppress"
   }
 
@@ -1945,10 +1930,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
   alert_suppression = {
     group_by = ["process.parent.name", "host.name"] 
-    duration = {
-      value = 45
-      unit  = "m"
-    }
+    duration = "45m"
     missing_fields_strategy = "doNotSuppress"
   }
 
@@ -2039,10 +2021,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
   alert_suppression = {
     group_by                = ["user.name", "user.domain"]
-    duration = {
-      value = 15
-      unit  = "m"
-    }
+    duration = "15m"
     missing_fields_strategy = "doNotSuppress"
   }
 
@@ -2238,10 +2217,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
   alert_suppression = {
     group_by                = ["ml.job_id"]
-    duration = {
-      value = 30
-      unit  = "m"
-    }
+    duration = "30m"
     missing_fields_strategy = "suppress"
   }
 
@@ -2469,10 +2445,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
   alert_suppression = {
     group_by                = ["user.name", "user.type"]
-    duration = {
-      value = 20
-      unit  = "m"
-    }
+    duration = "20m"
     missing_fields_strategy = "doNotSuppress"
   }
 
@@ -2695,10 +2668,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
   alert_suppression = {
     group_by                = ["event.category", "event.action"]
-    duration = {
-      value = 8
-      unit  = "h"
-    }
+    duration = "8h"
     missing_fields_strategy = "suppress"
   }
 
@@ -2942,10 +2912,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
   alert_suppression = {
     group_by                = ["destination.ip", "source.ip"]
-    duration = {
-      value = 1
-      unit  = "h"
-    }
+    duration = "1h"
     missing_fields_strategy = "doNotSuppress"
   }
 
@@ -3204,10 +3171,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   ]
 
   alert_suppression = {
-    duration = {
-      value = 30
-      unit  = "m"
-    }
+    duration = "30m"
   }
 
   response_actions = [
@@ -3328,10 +3292,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   ]
 
   alert_suppression = {
-    duration = {
-      value = 45
-      unit  = "h"
-    }
+    duration = "45h"
   }
 
   response_actions = [

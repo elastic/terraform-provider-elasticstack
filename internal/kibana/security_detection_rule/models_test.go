@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -708,11 +709,8 @@ func TestAlertSuppressionToApi(t *testing.T) {
 			name: "alert suppression with all fields",
 			data: SecurityDetectionRuleData{
 				AlertSuppression: utils.ObjectValueFrom(ctx, &AlertSuppressionModel{
-					GroupBy: utils.ListValueFrom(ctx, []string{"user.name", "source.ip"}, types.StringType, path.Root("alert_suppression").AtName("group_by"), &diags),
-					Duration: utils.ObjectValueFrom(ctx, &AlertSuppressionDurationModel{
-						Value: types.Int64Value(10),
-						Unit:  types.StringValue("m"),
-					}, getDurationType(), path.Root("alert_suppression").AtName("duration"), &diags),
+					GroupBy:               utils.ListValueFrom(ctx, []string{"user.name", "source.ip"}, types.StringType, path.Root("alert_suppression").AtName("group_by"), &diags),
+					Duration:              customtypes.NewDurationValue("10m"),
 					MissingFieldsStrategy: types.StringValue("suppress"),
 				}, getAlertSuppressionType(), path.Root("alert_suppression"), &diags),
 			},
@@ -725,7 +723,7 @@ func TestAlertSuppressionToApi(t *testing.T) {
 			data: SecurityDetectionRuleData{
 				AlertSuppression: utils.ObjectValueFrom(ctx, &AlertSuppressionModel{
 					GroupBy:               utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("alert_suppression").AtName("group_by"), &diags),
-					Duration:              types.ObjectNull(getDurationType()),
+					Duration:              customtypes.NewDurationNull(),
 					MissingFieldsStrategy: types.StringNull(),
 				}, getAlertSuppressionType(), path.Root("alert_suppression"), &diags),
 			},
@@ -2176,6 +2174,97 @@ func TestToUpdateProps(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, "user.name", string(singleField))
 			}
+		})
+	}
+}
+
+func TestParseDurationToApi(t *testing.T) {
+	tests := []struct {
+		name         string
+		duration     customtypes.Duration
+		expectedVal  int
+		expectedUnit kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit
+		expectError  bool
+	}{
+		{
+			name:         "valid seconds",
+			duration:     customtypes.NewDurationValue("30s"),
+			expectedVal:  30,
+			expectedUnit: kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitS,
+			expectError:  false,
+		},
+		{
+			name:         "valid minutes",
+			duration:     customtypes.NewDurationValue("5m"),
+			expectedVal:  5,
+			expectedUnit: kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitM,
+			expectError:  false,
+		},
+		{
+			name:         "valid hours",
+			duration:     customtypes.NewDurationValue("2h"),
+			expectedVal:  2,
+			expectedUnit: kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH,
+			expectError:  false,
+		},
+		{
+			name:         "valid days converted to hours",
+			duration:     customtypes.NewDurationValue("1d"),
+			expectedVal:  24,
+			expectedUnit: kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH,
+			expectError:  false,
+		},
+		{
+			name:         "multiple days converted to hours",
+			duration:     customtypes.NewDurationValue("3d"),
+			expectedVal:  72,
+			expectedUnit: kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH,
+			expectError:  false,
+		},
+		{
+			name:        "invalid format - no unit",
+			duration:    customtypes.NewDurationValue("30"),
+			expectError: true,
+		},
+		{
+			name:        "invalid format - non-numeric value",
+			duration:    customtypes.NewDurationValue("ABCs"),
+			expectError: true,
+		},
+		{
+			name:        "invalid format - unsupported unit",
+			duration:    customtypes.NewDurationValue("30w"),
+			expectError: true,
+		},
+		{
+			name:        "invalid format - empty string",
+			duration:    customtypes.NewDurationValue(""),
+			expectError: true,
+		},
+		{
+			name:        "null duration",
+			duration:    customtypes.NewDurationNull(),
+			expectError: true,
+		},
+		{
+			name:        "unknown duration",
+			duration:    customtypes.NewDurationUnknown(),
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, diags := parseDurationToApi(tt.duration)
+
+			if tt.expectError {
+				require.True(t, diags.HasError(), "Expected error but got none")
+				return
+			}
+
+			require.False(t, diags.HasError(), "Unexpected error: %v", diags)
+			require.Equal(t, tt.expectedVal, result.Value)
+			require.Equal(t, tt.expectedUnit, result.Unit)
 		})
 	}
 }

@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -897,15 +899,9 @@ func (d *SecurityDetectionRuleData) updateAlertSuppressionFromApi(ctx context.Co
 
 	// Convert duration (optional)
 	if apiSuppression.Duration != nil {
-		durationModel := AlertSuppressionDurationModel{
-			Value: types.Int64Value(int64(apiSuppression.Duration.Value)),
-			Unit:  types.StringValue(string(apiSuppression.Duration.Unit)),
-		}
-		durationObj, durationDiags := types.ObjectValueFrom(ctx, getDurationType(), durationModel)
-		diags.Append(durationDiags...)
-		model.Duration = durationObj
+		model.Duration = parseDurationFromApi(*apiSuppression.Duration)
 	} else {
-		model.Duration = types.ObjectNull(getDurationType())
+		model.Duration = customtypes.NewDurationNull()
 	}
 
 	// Convert missing_fields_strategy (optional)
@@ -938,13 +934,7 @@ func (d *SecurityDetectionRuleData) updateThresholdAlertSuppressionFromApi(ctx c
 	model.MissingFieldsStrategy = types.StringNull()
 
 	// Convert duration (always present in threshold alert suppression)
-	durationModel := AlertSuppressionDurationModel{
-		Value: types.Int64Value(int64(apiSuppression.Duration.Value)),
-		Unit:  types.StringValue(string(apiSuppression.Duration.Unit)),
-	}
-	durationObj, durationDiags := types.ObjectValueFrom(ctx, getDurationType(), durationModel)
-	diags.Append(durationDiags...)
-	model.Duration = durationObj
+	model.Duration = parseDurationFromApi(apiSuppression.Duration)
 
 	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, getAlertSuppressionType(), model)
 	diags.Append(objDiags...)
@@ -1017,4 +1007,11 @@ func (d *SecurityDetectionRuleData) updateRequiredFieldsFromApi(ctx context.Cont
 	}
 
 	return diags
+}
+
+// parseDurationFromApi converts an API duration to customtypes.Duration
+func parseDurationFromApi(apiDuration kbapi.SecurityDetectionsAPIAlertSuppressionDuration) customtypes.Duration {
+	// Convert the API's Value + Unit format back to a duration string
+	durationStr := strconv.Itoa(apiDuration.Value) + string(apiDuration.Unit)
+	return customtypes.NewDurationValue(durationStr)
 }
