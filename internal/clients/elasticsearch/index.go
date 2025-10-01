@@ -756,14 +756,15 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, acti
 	var aliasActions []map[string]interface{}
 
 	for _, action := range actions {
-		if action.Type == "remove" {
+		switch action.Type {
+		case "remove":
 			aliasActions = append(aliasActions, map[string]interface{}{
 				"remove": map[string]interface{}{
 					"index": action.Index,
 					"alias": action.Alias,
 				},
 			})
-		} else if action.Type == "add" {
+		case "add":
 			addDetails := map[string]interface{}{
 				"index": action.Index,
 				"alias": action.Alias,

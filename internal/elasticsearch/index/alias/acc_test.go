@@ -6,10 +6,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/config"
 )
 
 func TestAccResourceAlias(t *testing.T) {
@@ -24,7 +24,7 @@ func TestAccResourceAlias(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAliasCreate(),
+				Config: testAccResourceAliasCreate,
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name":  config.StringVariable(indexName),
@@ -38,7 +38,7 @@ func TestAccResourceAlias(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAliasUpdate(),
+				Config: testAccResourceAliasUpdate,
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name":  config.StringVariable(indexName),
@@ -51,7 +51,7 @@ func TestAccResourceAlias(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAliasWithFilter(),
+				Config: testAccResourceAliasWithFilter,
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name":  config.StringVariable(indexName),
@@ -70,7 +70,7 @@ func TestAccResourceAlias(t *testing.T) {
 }
 
 func TestAccResourceAliasWriteIndex(t *testing.T) {
-	// generate random names  
+	// generate random names
 	aliasName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 	indexName1 := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 	indexName2 := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
@@ -83,12 +83,12 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Case 1: Single index with is_write_index=true
 			{
-				Config: testAccResourceAliasWriteIndexSingle(),
+				Config: testAccResourceAliasWriteIndexSingle,
 				ConfigVariables: map[string]config.Variable{
-					"alias_name":   config.StringVariable(aliasName),
-					"index_name1":  config.StringVariable(indexName1),
-					"index_name2":  config.StringVariable(indexName2),
-					"index_name3":  config.StringVariable(indexName3),
+					"alias_name":  config.StringVariable(aliasName),
+					"index_name1": config.StringVariable(indexName1),
+					"index_name2": config.StringVariable(indexName2),
+					"index_name3": config.StringVariable(indexName3),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
@@ -98,12 +98,12 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 			},
 			// Case 2: Add new index with is_write_index=true, existing becomes read index
 			{
-				Config: testAccResourceAliasWriteIndexSwitch(),
+				Config: testAccResourceAliasWriteIndexSwitch,
 				ConfigVariables: map[string]config.Variable{
-					"alias_name":   config.StringVariable(aliasName),
-					"index_name1":  config.StringVariable(indexName1),
-					"index_name2":  config.StringVariable(indexName2),
-					"index_name3":  config.StringVariable(indexName3),
+					"alias_name":  config.StringVariable(aliasName),
+					"index_name1": config.StringVariable(indexName1),
+					"index_name2": config.StringVariable(indexName2),
+					"index_name3": config.StringVariable(indexName3),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
@@ -113,12 +113,12 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 			},
 			// Case 3: Add third index as write index
 			{
-				Config: testAccResourceAliasWriteIndexTriple(),
+				Config: testAccResourceAliasWriteIndexTriple,
 				ConfigVariables: map[string]config.Variable{
-					"alias_name":   config.StringVariable(aliasName),
-					"index_name1":  config.StringVariable(indexName1),
-					"index_name2":  config.StringVariable(indexName2),
-					"index_name3":  config.StringVariable(indexName3),
+					"alias_name":  config.StringVariable(aliasName),
+					"index_name1": config.StringVariable(indexName1),
+					"index_name2": config.StringVariable(indexName2),
+					"index_name3": config.StringVariable(indexName3),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
@@ -128,12 +128,12 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 			},
 			// Case 4: Remove initial index, keep two indices with one as write index
 			{
-				Config: testAccResourceAliasWriteIndexRemoveFirst(),
+				Config: testAccResourceAliasWriteIndexRemoveFirst,
 				ConfigVariables: map[string]config.Variable{
-					"alias_name":   config.StringVariable(aliasName),
-					"index_name1":  config.StringVariable(indexName1),
-					"index_name2":  config.StringVariable(indexName2),
-					"index_name3":  config.StringVariable(indexName3),
+					"alias_name":  config.StringVariable(aliasName),
+					"index_name1": config.StringVariable(indexName1),
+					"index_name2": config.StringVariable(indexName2),
+					"index_name3": config.StringVariable(indexName3),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
@@ -156,7 +156,7 @@ func TestAccResourceAliasDataStream(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAliasDataStreamCreate(),
+				Config: testAccResourceAliasDataStreamCreate,
 				ConfigVariables: map[string]config.Variable{
 					"alias_name": config.StringVariable(aliasName),
 					"ds_name":    config.StringVariable(dsName),
@@ -469,7 +469,7 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_alias" {
 			continue
 		}
-		
+
 		// Handle the case where ID might not be in the expected format
 		aliasName := rs.Primary.ID
 		if compId, err := clients.CompositeIdFromStr(rs.Primary.ID); err == nil {
@@ -480,7 +480,7 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		
+
 		res, err := esClient.Indices.GetAlias(
 			esClient.Indices.GetAlias.WithName(aliasName),
 		)

@@ -18,18 +18,44 @@ Manages an Elasticsearch alias. See, https://www.elastic.co/guide/en/elasticsear
 
 ### Required
 
-- `indices` (Set of String) A set of indices to which the alias should point.
 - `name` (String) The alias name.
 
 ### Optional
 
-- `filter` (String) Query used to limit documents the alias can access.
-- `index_routing` (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.
-- `is_hidden` (Boolean) If true, the alias is hidden.
-- `is_write_index` (Boolean) If true, the index is the write index for the alias.
-- `routing` (String) Value used to route indexing and search operations to a specific shard.
-- `search_routing` (String) Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.
+- `read_indices` (Block Set) Set of read indices for the alias. (see [below for nested schema](#nestedblock--read_indices))
+- `write_index` (Block, Optional) The write index for the alias. Only one write index is allowed per alias. (see [below for nested schema](#nestedblock--write_index))
 
 ### Read-Only
 
 - `id` (String) Generated ID of the alias resource.
+
+<a id="nestedblock--read_indices"></a>
+### Nested Schema for `read_indices`
+
+Required:
+
+- `name` (String) Name of the read index.
+
+Optional:
+
+- `filter` (String) Query used to limit documents the alias can access.
+- `index_routing` (String) Value used to route indexing operations to a specific shard.
+- `is_hidden` (Boolean) If true, the alias is hidden.
+- `routing` (String) Value used to route indexing and search operations to a specific shard.
+- `search_routing` (String) Value used to route search operations to a specific shard.
+
+
+<a id="nestedblock--write_index"></a>
+### Nested Schema for `write_index`
+
+Required:
+
+- `name` (String) Name of the write index.
+
+Optional:
+
+- `filter` (String) Query used to limit documents the alias can access.
+- `index_routing` (String) Value used to route indexing operations to a specific shard.
+- `is_hidden` (Boolean) If true, the alias is hidden.
+- `routing` (String) Value used to route indexing and search operations to a specific shard.
+- `search_routing` (String) Value used to route search operations to a specific shard.
