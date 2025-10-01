@@ -13,16 +13,25 @@ type ruleProcessor interface {
 	HandlesRuleType(t string) bool
 	HandlesAPIRuleResponse(rule any) bool
 	ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics)
+	ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics)
 	UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics
+	ExtractId(response any) (string, diag.Diagnostics)
 }
 
 func getRuleProcessors() []ruleProcessor {
 	return []ruleProcessor{
 		QueryRuleProcessor{},
+		EqlRuleProcessor{},
+		EsqlRuleProcessor{},
+		MachineLearningRuleProcessor{},
+		NewTermsRuleProcessor{},
+		SavedQueryRuleProcessor{},
+		ThreatMatchRuleProcessor{},
+		ThresholdRuleProcessor{},
 	}
 }
 
-func (d SecurityDetectionRuleData) processorForType(t string) (ruleProcessor, bool) {
+func processorForType(t string) (ruleProcessor, bool) {
 	for _, proc := range getRuleProcessors() {
 		if proc.HandlesRuleType(t) {
 			return proc, true
@@ -32,7 +41,7 @@ func (d SecurityDetectionRuleData) processorForType(t string) (ruleProcessor, bo
 	return nil, false
 }
 
-func (d SecurityDetectionRuleData) getProcessorForResponse(resp *kbapi.SecurityDetectionsAPIRuleResponse) (ruleProcessor, interface{}, diag.Diagnostics) {
+func getProcessorForResponse(resp *kbapi.SecurityDetectionsAPIRuleResponse) (ruleProcessor, interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	respValue, err := resp.ValueByDiscriminator()
 	if err != nil {
@@ -49,6 +58,11 @@ func (d SecurityDetectionRuleData) getProcessorForResponse(resp *kbapi.SecurityD
 		}
 	}
 
+	diags.AddError(
+		"Error determining rule processor.",
+		"No processor found for rule",
+	)
+
 	return nil, nil, diags
 }
 
@@ -56,7 +70,7 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context, client cli
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
-	processorForType, ok := d.processorForType(d.Type.ValueString())
+	processorForType, ok := processorForType(d.Type.ValueString())
 	if !ok {
 		diags.AddError(
 			"Unsupported rule type",
@@ -67,15 +81,44 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context, client cli
 	return processorForType.ToCreateProps(ctx, client, d)
 }
 
+func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
+
+	processorForType, ok := processorForType(d.Type.ValueString())
+	if !ok {
+		diags.AddError(
+			"Unsupported rule type",
+			fmt.Sprintf("Rule type '%s' is not supported", d.Type.ValueString()),
+		)
+		return updateProps, diags
+	}
+	return processorForType.ToUpdateProps(ctx, client, d)
+}
+
 func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Get the processor for this rule type and use it to update the data
-	processorForType, respValue, responseDiags := d.getProcessorForResponse(response)
+	processorForType, respValue, responseDiags := getProcessorForResponse(response)
 	if responseDiags.HasError() {
 		diags.Append(responseDiags...)
 		return diags
 	}
 
 	return processorForType.UpdateFromResponse(ctx, respValue, d)
+}
+
+// Helper function to extract rule ID from any rule type
+func extractId(response *kbapi.SecurityDetectionsAPIRuleResponse) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Get the processor for this rule type and use it to update the data
+	processorForType, respValue, responseDiags := getProcessorForResponse(response)
+	if responseDiags.HasError() || processorForType == nil || respValue == nil {
+		diags.Append(responseDiags...)
+		return "", diags
+	}
+
+	return processorForType.ExtractId(respValue)
 }

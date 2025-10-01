@@ -21,13 +21,40 @@ func (q QueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.Mi
 	return toQueryRuleCreateProps(ctx, client, d)
 }
 
+func (q QueryRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return toQueryRuleUpdateProps(ctx, client, d)
+}
+
 func (q QueryRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	_, ok := rule.(*kbapi.SecurityDetectionsAPIQueryRule)
+	_, ok := rule.(kbapi.SecurityDetectionsAPIQueryRule)
 	return ok
 }
 
 func (q QueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
-	return updateFromQueryRule(ctx, rule.(*kbapi.SecurityDetectionsAPIQueryRule), d)
+	var diags diag.Diagnostics
+	value, ok := rule.(kbapi.SecurityDetectionsAPIQueryRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return diags
+	}
+
+	return updateFromQueryRule(ctx, &value, d)
+}
+
+func (q QueryRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	value, ok := response.(kbapi.SecurityDetectionsAPIQueryRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return "", diags
+	}
+	return value.Id.String(), diags
 }
 
 func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -99,7 +126,7 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 	return createProps, diags
 }
 
-func (d SecurityDetectionRuleData) toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 

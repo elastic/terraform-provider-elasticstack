@@ -11,6 +11,52 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type SavedQueryRuleProcessor struct{}
+
+func (s SavedQueryRuleProcessor) HandlesRuleType(t string) bool {
+	return t == "saved_query"
+}
+
+func (s SavedQueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toSavedQueryRuleCreateProps(ctx, client)
+}
+
+func (s SavedQueryRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toSavedQueryRuleUpdateProps(ctx, client)
+}
+
+func (s SavedQueryRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
+	_, ok := rule.(kbapi.SecurityDetectionsAPISavedQueryRule)
+	return ok
+}
+
+func (s SavedQueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+	var diags diag.Diagnostics
+	value, ok := rule.(kbapi.SecurityDetectionsAPISavedQueryRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return diags
+	}
+
+	return d.updateFromSavedQueryRule(ctx, &value)
+}
+
+func (s SavedQueryRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	value, ok := response.(kbapi.SecurityDetectionsAPISavedQueryRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return "", diags
+	}
+	return value.Id.String(), diags
+}
+
 func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps

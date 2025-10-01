@@ -186,7 +186,7 @@ func TestUpdateFromQueryRule(t *testing.T) {
 				SpaceId: types.StringValue(tt.spaceId),
 			}
 
-			diags := data.updateFromQueryRule(ctx, &tt.rule)
+			diags := updateFromQueryRule(ctx, &tt.rule, &data)
 			require.Empty(t, diags)
 
 			// Compare key fields
@@ -272,7 +272,7 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createProps, createDiags := tt.data.toQueryRuleCreateProps(ctx, NewMockApiClient())
+			createProps, createDiags := toQueryRuleCreateProps(ctx, NewMockApiClient(), tt.data)
 
 			if tt.shouldError {
 				require.NotEmpty(t, createDiags)
@@ -323,7 +323,7 @@ func TestToEqlRuleCreateProps(t *testing.T) {
 		TiebreakerField: types.StringValue("@timestamp"),
 	}
 
-	createProps, createDiags := data.toEqlRuleCreateProps(ctx, NewMockApiClient())
+	createProps, createDiags := toEqlRuleCreateProps(ctx, NewMockApiClient(), data)
 	require.Empty(t, createDiags)
 
 	eqlRule, err := createProps.AsSecurityDetectionsAPIEqlRuleCreateProps()
@@ -364,8 +364,8 @@ func TestToMachineLearningRuleCreateProps(t *testing.T) {
 				AnomalyThreshold:     types.Int64Value(50),
 				MachineLearningJobId: utils.ListValueFrom(ctx, []string{"suspicious_activity"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
 			},
-			expectedJobCount: 1,
-			shouldHaveSingle: true,
+			expectedJobCount:   1,
+			shouldHaveMultiple: true,
 		},
 		{
 			name: "multiple ML jobs",
@@ -398,9 +398,9 @@ func TestToMachineLearningRuleCreateProps(t *testing.T) {
 			require.Equal(t, tt.data.AnomalyThreshold.ValueInt64(), int64(mlRule.AnomalyThreshold))
 
 			if tt.shouldHaveSingle {
-				singleJobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0()
+				ingleJobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0()
 				require.NoError(t, err)
-				require.Equal(t, "suspicious_activity", string(singleJobId))
+				require.Equal(t, "suspicious_activity", string(ingleJobId))
 			}
 
 			if tt.shouldHaveMultiple {
@@ -1267,7 +1267,7 @@ func TestUpdateFromRule(t *testing.T) {
 				return &kbapi.SecurityDetectionsAPIRuleResponse{}
 			},
 			expectError:  true,
-			errorMessage: "Error determining rule type",
+			errorMessage: "Error determining rule processor",
 			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
 				// No validation needed for error case
 			},
@@ -1844,9 +1844,9 @@ func TestToCreateProps(t *testing.T) {
 				require.Equal(t, int64(75), int64(mlRule.RiskScore))
 				require.Equal(t, "medium", string(mlRule.Severity))
 				// Verify ML job ID is set correctly
-				singleJobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0()
+				jobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1()
 				require.NoError(t, err)
-				require.Equal(t, "suspicious_activity", string(singleJobId))
+				require.Equal(t, []string{"suspicious_activity"}, jobId)
 			case "new_terms":
 				newTermsRule, err := createProps.AsSecurityDetectionsAPINewTermsRuleCreateProps()
 				require.NoError(t, err)
@@ -2061,7 +2061,7 @@ func TestToUpdateProps(t *testing.T) {
 			name:        "unsupported rule type",
 			ruleType:    "unsupported_type",
 			shouldError: true,
-			errorMsg:    "Rule type 'unsupported_type' is not supported for updates",
+			errorMsg:    "Rule type 'unsupported_type' is not supported",
 			setupData: func() SecurityDetectionRuleData {
 				return SecurityDetectionRuleData{
 					Id:          types.StringValue(validCompositeId),
@@ -2128,9 +2128,9 @@ func TestToUpdateProps(t *testing.T) {
 				require.Equal(t, int64(75), int64(mlRule.RiskScore))
 				require.Equal(t, "medium", string(mlRule.Severity))
 				// Verify ML job ID is set correctly
-				singleJobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0()
+				jobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1()
 				require.NoError(t, err)
-				require.Equal(t, "suspicious_activity", string(singleJobId))
+				require.Equal(t, []string{"suspicious_activity"}, jobId)
 			case "new_terms":
 				newTermsRule, err := updateProps.AsSecurityDetectionsAPINewTermsRuleUpdateProps()
 				require.NoError(t, err)

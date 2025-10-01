@@ -2,7 +2,6 @@ package security_detection_rule
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -559,39 +558,6 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 	}
 }
 
-// TODO
-func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
-
-	ruleType := d.Type.ValueString()
-
-	switch ruleType {
-	case "query":
-		return d.toQueryRuleUpdateProps(ctx, client)
-	case "eql":
-		return d.toEqlRuleUpdateProps(ctx, client)
-	case "esql":
-		return d.toEsqlRuleUpdateProps(ctx, client)
-	case "machine_learning":
-		return d.toMachineLearningRuleUpdateProps(ctx, client)
-	case "new_terms":
-		return d.toNewTermsRuleUpdateProps(ctx, client)
-	case "saved_query":
-		return d.toSavedQueryRuleUpdateProps(ctx, client)
-	case "threat_match":
-		return d.toThreatMatchRuleUpdateProps(ctx, client)
-	case "threshold":
-		return d.toThresholdRuleUpdateProps(ctx, client)
-	default:
-		diags.AddError(
-			"Unsupported rule type",
-			fmt.Sprintf("Rule type '%s' is not supported for updates", ruleType),
-		)
-		return updateProps, diags
-	}
-}
-
 // Helper function to set common update properties across all rule types
 func (d SecurityDetectionRuleData) setCommonUpdateProps(
 	ctx context.Context,
@@ -823,48 +789,6 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 			*props.AlertSuppression = alertSuppression
 		}
 	}
-}
-
-// Helper function to extract rule ID from any rule type
-func extractId(response *kbapi.SecurityDetectionsAPIRuleResponse) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	rule, err := response.ValueByDiscriminator()
-	if err != nil {
-		diags.AddError(
-			"Error determining rule type",
-			"Could not determine the type of the security detection rule from the API response: "+err.Error(),
-		)
-		return "", diags
-	}
-
-	var id string
-	switch r := rule.(type) {
-	case kbapi.SecurityDetectionsAPIQueryRule:
-		id = r.Id.String()
-	case kbapi.SecurityDetectionsAPIEqlRule:
-		id = r.Id.String()
-	case kbapi.SecurityDetectionsAPIEsqlRule:
-		id = r.Id.String()
-	case kbapi.SecurityDetectionsAPIMachineLearningRule:
-		id = r.Id.String()
-	case kbapi.SecurityDetectionsAPINewTermsRule:
-		id = r.Id.String()
-	case kbapi.SecurityDetectionsAPISavedQueryRule:
-		id = r.Id.String()
-	case kbapi.SecurityDetectionsAPIThreatMatchRule:
-		id = r.Id.String()
-	case kbapi.SecurityDetectionsAPIThresholdRule:
-		id = r.Id.String()
-	default:
-		diags.AddError(
-			"Unsupported rule type for ID extraction",
-			fmt.Sprintf("Cannot extract ID from unsupported rule type: %T", r),
-		)
-		return "", diags
-	}
-
-	return id, diags
 }
 
 // Helper function to initialize fields that should be set to default values for all rule types

@@ -11,7 +11,53 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+type EqlRuleProcessor struct{}
+
+func (e EqlRuleProcessor) HandlesRuleType(t string) bool {
+	return t == "eql"
+}
+
+func (e EqlRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return toEqlRuleCreateProps(ctx, client, d)
+}
+
+func (e EqlRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return toEqlRuleUpdateProps(ctx, client, d)
+}
+
+func (e EqlRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
+	_, ok := rule.(kbapi.SecurityDetectionsAPIEqlRule)
+	return ok
+}
+
+func (e EqlRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+	var diags diag.Diagnostics
+	value, ok := rule.(kbapi.SecurityDetectionsAPIEqlRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return diags
+	}
+
+	return updateFromEqlRule(ctx, &value, d)
+}
+
+func (e EqlRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	value, ok := response.(kbapi.SecurityDetectionsAPIEqlRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return "", diags
+	}
+	return value.Id.String(), diags
+}
+
+func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -77,7 +123,7 @@ func (d SecurityDetectionRuleData) toEqlRuleCreateProps(ctx context.Context, cli
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -162,7 +208,7 @@ func (d SecurityDetectionRuleData) toEqlRuleUpdateProps(ctx context.Context, cli
 
 	return updateProps, diags
 }
-func (d *SecurityDetectionRuleData) updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEqlRule) diag.Diagnostics {
+func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEqlRule, d *SecurityDetectionRuleData) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	compId := clients.CompositeId{

@@ -11,6 +11,52 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type ThresholdRuleProcessor struct{}
+
+func (th ThresholdRuleProcessor) HandlesRuleType(t string) bool {
+	return t == "threshold"
+}
+
+func (th ThresholdRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toThresholdRuleCreateProps(ctx, client)
+}
+
+func (th ThresholdRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toThresholdRuleUpdateProps(ctx, client)
+}
+
+func (th ThresholdRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
+	_, ok := rule.(kbapi.SecurityDetectionsAPIThresholdRule)
+	return ok
+}
+
+func (th ThresholdRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+	var diags diag.Diagnostics
+	value, ok := rule.(kbapi.SecurityDetectionsAPIThresholdRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return diags
+	}
+
+	return d.updateFromThresholdRule(ctx, &value)
+}
+
+func (th ThresholdRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	value, ok := response.(kbapi.SecurityDetectionsAPIThresholdRule)
+	if !ok {
+		diags.AddError(
+			"Error extracting rule ID",
+			"Could not extract rule ID from response",
+		)
+		return "", diags
+	}
+	return value.Id.String(), diags
+}
+
 func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
