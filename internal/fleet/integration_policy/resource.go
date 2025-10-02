@@ -5,6 +5,9 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -14,6 +17,10 @@ var (
 	_ resource.ResourceWithConfigure    = &integrationPolicyResource{}
 	_ resource.ResourceWithImportState  = &integrationPolicyResource{}
 	_ resource.ResourceWithUpgradeState = &integrationPolicyResource{}
+)
+
+var (
+	MinVersionPolicyIds = version.Must(version.NewVersion("8.15.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -43,4 +50,15 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 	return map[int64]resource.StateUpgrader{
 		0: {PriorSchema: getSchemaV0(), StateUpgrader: upgradeV0},
 	}
+}
+
+func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features, diag.Diagnostics) {
+	supportsPolicyIds, diags := r.client.EnforceMinVersion(ctx, MinVersionPolicyIds)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
+	return features{
+		SupportsPolicyIds: supportsPolicyIds,
+	}, nil
 }
