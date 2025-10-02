@@ -214,7 +214,7 @@ resource "elasticstack_elasticsearch_data_stream" "test_ds" {
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name = var.alias_name
 
-  write_index {
+  write_index = {
     name = elasticstack_elasticsearch_data_stream.test_ds.name
   }
 }
@@ -313,7 +313,7 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name = var.alias_name
 
-  write_index {
+  write_index = {
     name = var.index_name
   }
 }
@@ -342,13 +342,13 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name = var.alias_name
 
-  write_index {
+  write_index = {
     name = var.index_name2
   }
 
-  read_indices {
+  read_indices = [{
     name = var.index_name
-  }
+  }]
 }
 `
 
@@ -375,7 +375,7 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name = var.alias_name
 
-  write_index {
+  write_index = {
     name    = var.index_name
     index_routing = "write-routing"
     filter = jsonencode({
@@ -385,14 +385,14 @@ resource "elasticstack_elasticsearch_alias" "test_alias" {
     })
   }
 
-  read_indices {
+  read_indices = [{
     name = var.index_name2
     filter = jsonencode({
       term = {
         status = "draft"
       }
     })
-  }
+  }]
 }
 `
 
@@ -424,7 +424,7 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name = var.alias_name
 
-  write_index {
+  write_index = {
     name = var.index_name1
   }
 }
@@ -458,13 +458,13 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name = var.alias_name
 
-  write_index {
+  write_index = {
     name = var.index_name2
   }
 
-  read_indices {
+  read_indices = [{
     name = var.index_name1
-  }
+  }]
 }
 `
 
@@ -496,17 +496,18 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name = var.alias_name
 
-  write_index {
+  write_index = {
     name = var.index_name3
   }
 
-  read_indices {
-    name = var.index_name1
-  }
-
-  read_indices {
-    name = var.index_name2
-  }
+  read_indices = [
+    {
+      name = var.index_name1
+    },
+    {
+      name = var.index_name2
+    }
+  ]
 }
 `
 
@@ -538,12 +539,12 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_alias" "test_alias" {
   name = var.alias_name
 
-  write_index {
+  write_index = {
     name = var.index_name3
   }
 
-  read_indices {
+  read_indices = [{
     name = var.index_name2
-  }
+  }]
 }
 `

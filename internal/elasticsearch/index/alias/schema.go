@@ -31,10 +31,9 @@ func (r *aliasResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"write_index": schema.SingleNestedBlock{
+			"write_index": schema.SingleNestedAttribute{
 				Description: "The write index for the alias. Only one write index is allowed per alias.",
+				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					"name": schema.StringAttribute{
 						Description: "Name of the write index.",
@@ -65,9 +64,10 @@ func (r *aliasResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 					},
 				},
 			},
-			"read_indices": schema.SetNestedBlock{
+			"read_indices": schema.SetNestedAttribute{
 				Description: "Set of read indices for the alias.",
-				NestedObject: schema.NestedBlockObject{
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Description: "Name of the read index.",

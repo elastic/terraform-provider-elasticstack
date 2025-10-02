@@ -22,14 +22,14 @@ Manages an Elasticsearch alias. See, https://www.elastic.co/guide/en/elasticsear
 
 ### Optional
 
-- `read_indices` (Block Set) Set of read indices for the alias. (see [below for nested schema](#nestedblock--read_indices))
-- `write_index` (Block, Optional) The write index for the alias. Only one write index is allowed per alias. (see [below for nested schema](#nestedblock--write_index))
+- `read_indices` (Attributes Set) Set of read indices for the alias. (see [below for nested schema](#nestedatt--read_indices))
+- `write_index` (Attributes) The write index for the alias. Only one write index is allowed per alias. (see [below for nested schema](#nestedatt--write_index))
 
 ### Read-Only
 
 - `id` (String) Generated ID of the alias resource.
 
-<a id="nestedblock--read_indices"></a>
+<a id="nestedatt--read_indices"></a>
 ### Nested Schema for `read_indices`
 
 Required:
@@ -45,7 +45,7 @@ Optional:
 - `search_routing` (String) Value used to route search operations to a specific shard.
 
 
-<a id="nestedblock--write_index"></a>
+<a id="nestedatt--write_index"></a>
 ### Nested Schema for `write_index`
 
 Required:
