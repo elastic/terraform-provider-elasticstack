@@ -6,7 +6,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -61,18 +60,18 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 
 	// Set write index
 	if writeIndex != nil {
-		writeIndexObj, diags := types.ObjectValueFrom(ctx, indexModel{}.attrTypes(), *writeIndex)
+		writeIndexObj, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(), *writeIndex)
 		if diags.HasError() {
 			return diags
 		}
 		model.WriteIndex = writeIndexObj
 	} else {
-		model.WriteIndex = types.ObjectNull(indexModel{}.attrTypes())
+		model.WriteIndex = types.ObjectNull(getIndexAttrTypes())
 	}
 
 	// Set read indices
 	readIndicesSet, diags := types.SetValueFrom(ctx, types.ObjectType{
-		AttrTypes: indexModel{}.attrTypes(),
+		AttrTypes: getIndexAttrTypes(),
 	}, readIndices)
 	if diags.HasError() {
 		return diags
@@ -173,9 +172,4 @@ func indexToConfig(index indexModel, isWriteIndex bool) (AliasIndexConfig, diag.
 	}
 
 	return config, nil
-}
-
-// Helper functions for attribute types
-func (indexModel) attrTypes() map[string]attr.Type {
-	return getIndexAttrTypes()
 }

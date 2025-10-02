@@ -48,8 +48,8 @@ func readAliasIntoModel(ctx context.Context, client *clients.ApiClient, aliasNam
 	// If no indices returned, the alias doesn't exist
 	if len(indices) == 0 {
 		// Set both to null to indicate the alias doesn't exist
-		model.WriteIndex = types.ObjectNull(indexModel{}.attrTypes())
-		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: indexModel{}.attrTypes()})
+		model.WriteIndex = types.ObjectNull(getIndexAttrTypes())
+		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes()})
 		return nil
 	}
 
@@ -63,8 +63,8 @@ func readAliasIntoModel(ctx context.Context, client *clients.ApiClient, aliasNam
 
 	if len(aliasData) == 0 {
 		// Set both to null to indicate the alias doesn't exist
-		model.WriteIndex = types.ObjectNull(indexModel{}.attrTypes())
-		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: indexModel{}.attrTypes()})
+		model.WriteIndex = types.ObjectNull(getIndexAttrTypes())
+		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes()})
 		return nil
 	}
 

@@ -19,7 +19,7 @@ func (r *aliasResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 func getSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Manages an Elasticsearch alias. " +
-			"See the <a href=\"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html\">alias documentation</a> for more details.",
+			"See the [alias documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html) for more details.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
