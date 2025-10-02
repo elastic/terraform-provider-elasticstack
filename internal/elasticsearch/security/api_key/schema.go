@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -77,7 +78,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 			},
 			"role_descriptors": schema.StringAttribute{
 				Description: "Role descriptors for this API key.",
-				CustomType:  RoleDescriptorsType{},
+				CustomType:  customtypes.NewJSONWithDefaultsType(populateRoleDescriptorsDefaults),
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{

@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -32,18 +33,18 @@ type accessModel struct {
 }
 
 type tfModel struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	KeyID                   types.String         `tfsdk:"key_id"`
-	Name                    types.String         `tfsdk:"name"`
-	Type                    types.String         `tfsdk:"type"`
-	RoleDescriptors         RoleDescriptorsValue `tfsdk:"role_descriptors"`
-	Expiration              types.String         `tfsdk:"expiration"`
-	ExpirationTimestamp     types.Int64          `tfsdk:"expiration_timestamp"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	Access                  types.Object         `tfsdk:"access"`
-	APIKey                  types.String         `tfsdk:"api_key"`
-	Encoded                 types.String         `tfsdk:"encoded"`
+	ID                      types.String                                                              `tfsdk:"id"`
+	ElasticsearchConnection types.List                                                                `tfsdk:"elasticsearch_connection"`
+	KeyID                   types.String                                                              `tfsdk:"key_id"`
+	Name                    types.String                                                              `tfsdk:"name"`
+	Type                    types.String                                                              `tfsdk:"type"`
+	RoleDescriptors         customtypes.JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor] `tfsdk:"role_descriptors"`
+	Expiration              types.String                                                              `tfsdk:"expiration"`
+	ExpirationTimestamp     types.Int64                                                               `tfsdk:"expiration_timestamp"`
+	Metadata                jsontypes.Normalized                                                      `tfsdk:"metadata"`
+	Access                  types.Object                                                              `tfsdk:"access"`
+	APIKey                  types.String                                                              `tfsdk:"api_key"`
+	Encoded                 types.String                                                              `tfsdk:"encoded"`
 }
 
 func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
@@ -206,7 +207,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 	model.Metadata = jsontypes.NewNormalizedNull()
 
 	if serverVersion.GreaterThanOrEqual(MinVersionReturningRoleDescriptors) {
-		model.RoleDescriptors = NewRoleDescriptorsNull()
+		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(populateRoleDescriptorsDefaults)
 
 		if apiKey.RolesDescriptors != nil {
 			descriptors, diags := marshalNormalizedJsonValue(apiKey.RolesDescriptors)
@@ -214,7 +215,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 				return diags
 			}
 
-			model.RoleDescriptors = NewRoleDescriptorsValue(descriptors.ValueString())
+			model.RoleDescriptors = customtypes.NewJSONWithDefaultsValue(descriptors.ValueString(), populateRoleDescriptorsDefaults)
 		}
 	}
 

@@ -1,34 +1,36 @@
-package api_key
+package customtypes
 
 import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRoleDescriptorsValue_Type(t *testing.T) {
-	value := RoleDescriptorsValue{}
+	value := NewJSONWithDefaultsNull(testPopulateDefaults)
 	ctx := context.Background()
 
 	attrType := value.Type(ctx)
 
-	assert.IsType(t, RoleDescriptorsType{}, attrType)
+	expectedType := NewJSONWithDefaultsType(testPopulateDefaults)
+	assert.IsType(t, expectedType, attrType)
 }
 
 func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 	tests := []struct {
 		name           string
-		input          RoleDescriptorsValue
-		expectedResult func(t *testing.T, result RoleDescriptorsValue, diags diag.Diagnostics)
+		input          JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]
+		expectedResult func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics)
 		expectError    bool
 	}{
 		{
 			name:  "null value returns same value without error",
-			input: NewRoleDescriptorsNull(),
-			expectedResult: func(t *testing.T, result RoleDescriptorsValue, diags diag.Diagnostics) {
+			input: NewJSONWithDefaultsNull(testPopulateDefaults),
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.True(t, result.IsNull())
 				assert.False(t, diags.HasError())
 			},
@@ -36,8 +38,8 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		},
 		{
 			name:  "unknown value returns same value without error",
-			input: NewRoleDescriptorsUnknown(),
-			expectedResult: func(t *testing.T, result RoleDescriptorsValue, diags diag.Diagnostics) {
+			input: NewJSONWithDefaultsUnknown(testPopulateDefaults),
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.True(t, result.IsUnknown())
 				assert.False(t, diags.HasError())
 			},
@@ -45,8 +47,8 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		},
 		{
 			name:  "valid JSON with missing allow_restricted_indices sets default",
-			input: NewRoleDescriptorsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"]}]}}`),
-			expectedResult: func(t *testing.T, result RoleDescriptorsValue, diags diag.Diagnostics) {
+			input: NewJSONWithDefaultsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"]}]}}`, testPopulateDefaults),
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.False(t, result.IsNull())
 				assert.False(t, result.IsUnknown())
 				assert.False(t, diags.HasError())
@@ -57,8 +59,8 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		},
 		{
 			name:  "valid JSON with existing allow_restricted_indices preserves value",
-			input: NewRoleDescriptorsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"],"allow_restricted_indices":true}]}}`),
-			expectedResult: func(t *testing.T, result RoleDescriptorsValue, diags diag.Diagnostics) {
+			input: NewJSONWithDefaultsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"],"allow_restricted_indices":true}]}}`, testPopulateDefaults),
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.False(t, result.IsNull())
 				assert.False(t, result.IsUnknown())
 				assert.False(t, diags.HasError())
@@ -69,8 +71,8 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		},
 		{
 			name:  "empty role descriptor object",
-			input: NewRoleDescriptorsValue(`{"admin":{}}`),
-			expectedResult: func(t *testing.T, result RoleDescriptorsValue, diags diag.Diagnostics) {
+			input: NewJSONWithDefaultsValue(`{"admin":{}}`, testPopulateDefaults),
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.False(t, result.IsNull())
 				assert.False(t, result.IsUnknown())
 				assert.False(t, diags.HasError())
@@ -79,7 +81,7 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		},
 		{
 			name:        "invalid JSON returns error",
-			input:       NewRoleDescriptorsValue(`{"invalid json"`),
+			input:       NewJSONWithDefaultsValue(`{"invalid json"`, testPopulateDefaults),
 			expectError: true,
 		},
 	}
@@ -104,56 +106,56 @@ func TestRoleDescriptorsValue_StringSemanticEquals(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		value1      RoleDescriptorsValue
+		value1      JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]
 		value2      basetypes.StringValuable
 		expected    bool
 		expectError bool
 	}{
 		{
 			name:        "both null values are equal",
-			value1:      NewRoleDescriptorsNull(),
-			value2:      NewRoleDescriptorsNull(),
+			value1:      NewJSONWithDefaultsNull(testPopulateDefaults),
+			value2:      NewJSONWithDefaultsNull(testPopulateDefaults),
 			expected:    true,
 			expectError: false,
 		},
 		{
 			name:        "both unknown values are equal",
-			value1:      NewRoleDescriptorsUnknown(),
-			value2:      NewRoleDescriptorsUnknown(),
+			value1:      NewJSONWithDefaultsUnknown(testPopulateDefaults),
+			value2:      NewJSONWithDefaultsUnknown(testPopulateDefaults),
 			expected:    true,
 			expectError: false,
 		},
 		{
 			name:        "null vs unknown are not equal",
-			value1:      NewRoleDescriptorsNull(),
-			value2:      NewRoleDescriptorsUnknown(),
+			value1:      NewJSONWithDefaultsNull(testPopulateDefaults),
+			value2:      NewJSONWithDefaultsUnknown(testPopulateDefaults),
 			expected:    false,
 			expectError: false,
 		},
 		{
 			name:        "same JSON content are equal",
-			value1:      NewRoleDescriptorsValue(`{"admin":{"cluster":["read"]}}`),
-			value2:      NewRoleDescriptorsValue(`{"admin":{"cluster":["read"]}}`),
+			value1:      NewJSONWithDefaultsValue(`{"admin":{"cluster":["read"]}}`, testPopulateDefaults),
+			value2:      NewJSONWithDefaultsValue(`{"admin":{"cluster":["read"]}}`, testPopulateDefaults),
 			expected:    true,
 			expectError: false,
 		},
 		{
 			name:        "different JSON content are not equal",
-			value1:      NewRoleDescriptorsValue(`{"admin":{"cluster":["read"]}}`),
-			value2:      NewRoleDescriptorsValue(`{"user":{"cluster":["write"]}}`),
+			value1:      NewJSONWithDefaultsValue(`{"admin":{"cluster":["read"]}}`, testPopulateDefaults),
+			value2:      NewJSONWithDefaultsValue(`{"user":{"cluster":["write"]}}`, testPopulateDefaults),
 			expected:    false,
 			expectError: false,
 		},
 		{
 			name:        "semantic equality with defaults - missing vs explicit false",
-			value1:      NewRoleDescriptorsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"]}]}}`),
-			value2:      NewRoleDescriptorsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"],"allow_restricted_indices":false}]}}`),
+			value1:      NewJSONWithDefaultsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"]}]}}`, testPopulateDefaults),
+			value2:      NewJSONWithDefaultsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"],"allow_restricted_indices":false}]}}`, testPopulateDefaults),
 			expected:    true,
 			expectError: false,
 		},
 		{
 			name:        "wrong type returns error",
-			value1:      NewRoleDescriptorsValue(`{"admin":{}}`),
+			value1:      NewJSONWithDefaultsValue(`{"admin":{}}`, testPopulateDefaults),
 			value2:      basetypes.NewStringValue("not a role descriptors value"),
 			expected:    false,
 			expectError: true,
@@ -191,7 +193,7 @@ func TestRoleDescriptorsValue_WithDefaults_ComplexJSON(t *testing.T) {
 		}
 	}`
 
-	value := NewRoleDescriptorsValue(complexJSON)
+	value := NewJSONWithDefaultsValue(complexJSON, testPopulateDefaults)
 	result, diags := value.WithDefaults()
 
 	assert.False(t, diags.HasError())
