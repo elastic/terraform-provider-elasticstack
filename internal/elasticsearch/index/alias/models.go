@@ -19,16 +19,7 @@ type tfModel struct {
 	ReadIndices types.Set    `tfsdk:"read_indices"`
 }
 
-type writeIndexModel struct {
-	Name          types.String         `tfsdk:"name"`
-	Filter        jsontypes.Normalized `tfsdk:"filter"`
-	IndexRouting  types.String         `tfsdk:"index_routing"`
-	IsHidden      types.Bool           `tfsdk:"is_hidden"`
-	Routing       types.String         `tfsdk:"routing"`
-	SearchRouting types.String         `tfsdk:"search_routing"`
-}
-
-type readIndexModel struct {
+type indexModel struct {
 	Name          types.String         `tfsdk:"name"`
 	Filter        jsontypes.Normalized `tfsdk:"filter"`
 	IndexRouting  types.String         `tfsdk:"index_routing"`
@@ -51,77 +42,37 @@ type AliasIndexConfig struct {
 func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, indices map[string]models.IndexAlias) diag.Diagnostics {
 	model.Name = types.StringValue(aliasName)
 
-	var writeIndex *writeIndexModel
-	var readIndices []readIndexModel
+	var writeIndex *indexModel
+	var readIndices []indexModel
 
 	for indexName, aliasData := range indices {
+		// Convert IndexAlias to indexModel
+		index, err := indexFromAlias(indexName, aliasData)
+		if err != nil {
+			return err
+		}
+
 		if aliasData.IsWriteIndex {
-			writeIndex = &writeIndexModel{
-				Name:     types.StringValue(indexName),
-				IsHidden: types.BoolValue(aliasData.IsHidden),
-			}
-
-			if aliasData.IndexRouting != "" {
-				writeIndex.IndexRouting = types.StringValue(aliasData.IndexRouting)
-			}
-			if aliasData.Routing != "" {
-				writeIndex.Routing = types.StringValue(aliasData.Routing)
-			}
-			if aliasData.SearchRouting != "" {
-				writeIndex.SearchRouting = types.StringValue(aliasData.SearchRouting)
-			}
-			if aliasData.Filter != nil {
-				filterBytes, err := json.Marshal(aliasData.Filter)
-				if err != nil {
-					return diag.Diagnostics{
-						diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
-					}
-				}
-				writeIndex.Filter = jsontypes.NewNormalizedValue(string(filterBytes))
-			}
+			writeIndex = &index
 		} else {
-			readIndex := readIndexModel{
-				Name:     types.StringValue(indexName),
-				IsHidden: types.BoolValue(aliasData.IsHidden),
-			}
-
-			if aliasData.IndexRouting != "" {
-				readIndex.IndexRouting = types.StringValue(aliasData.IndexRouting)
-			}
-			if aliasData.Routing != "" {
-				readIndex.Routing = types.StringValue(aliasData.Routing)
-			}
-			if aliasData.SearchRouting != "" {
-				readIndex.SearchRouting = types.StringValue(aliasData.SearchRouting)
-			}
-			if aliasData.Filter != nil {
-				filterBytes, err := json.Marshal(aliasData.Filter)
-				if err != nil {
-					return diag.Diagnostics{
-						diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
-					}
-				}
-				readIndex.Filter = jsontypes.NewNormalizedValue(string(filterBytes))
-			}
-
-			readIndices = append(readIndices, readIndex)
+			readIndices = append(readIndices, index)
 		}
 	}
 
 	// Set write index
 	if writeIndex != nil {
-		writeIndexObj, diags := types.ObjectValueFrom(ctx, writeIndexModel{}.attrTypes(), *writeIndex)
+		writeIndexObj, diags := types.ObjectValueFrom(ctx, indexModel{}.attrTypes(), *writeIndex)
 		if diags.HasError() {
 			return diags
 		}
 		model.WriteIndex = writeIndexObj
 	} else {
-		model.WriteIndex = types.ObjectNull(writeIndexModel{}.attrTypes())
+		model.WriteIndex = types.ObjectNull(indexModel{}.attrTypes())
 	}
 
 	// Set read indices
 	readIndicesSet, diags := types.SetValueFrom(ctx, types.ObjectType{
-		AttrTypes: readIndexModel{}.attrTypes(),
+		AttrTypes: indexModel{}.attrTypes(),
 	}, readIndices)
 	if diags.HasError() {
 		return diags
@@ -131,71 +82,66 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 	return nil
 }
 
+// indexFromAlias converts a models.IndexAlias to an indexModel
+func indexFromAlias(indexName string, aliasData models.IndexAlias) (indexModel, diag.Diagnostics) {
+	index := indexModel{
+		Name:     types.StringValue(indexName),
+		IsHidden: types.BoolValue(aliasData.IsHidden),
+	}
+
+	if aliasData.IndexRouting != "" {
+		index.IndexRouting = types.StringValue(aliasData.IndexRouting)
+	}
+	if aliasData.Routing != "" {
+		index.Routing = types.StringValue(aliasData.Routing)
+	}
+	if aliasData.SearchRouting != "" {
+		index.SearchRouting = types.StringValue(aliasData.SearchRouting)
+	}
+	if aliasData.Filter != nil {
+		filterBytes, err := json.Marshal(aliasData.Filter)
+		if err != nil {
+			return indexModel{}, diag.Diagnostics{
+				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
+			}
+		}
+		index.Filter = jsontypes.NewNormalizedValue(string(filterBytes))
+	}
+
+	return index, nil
+}
+
 func (model *tfModel) toAliasConfigs(ctx context.Context) ([]AliasIndexConfig, diag.Diagnostics) {
 	var configs []AliasIndexConfig
 
 	// Handle write index
 	if !model.WriteIndex.IsNull() {
-		var writeIndex writeIndexModel
+		var writeIndex indexModel
 		diags := model.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{})
 		if diags.HasError() {
 			return nil, diags
 		}
 
-		config := AliasIndexConfig{
-			Name:         writeIndex.Name.ValueString(),
-			IsWriteIndex: true,
-			IsHidden:     writeIndex.IsHidden.ValueBool(),
+		config, configDiags := indexToConfig(writeIndex, true)
+		if configDiags.HasError() {
+			return nil, configDiags
 		}
-
-		if !writeIndex.IndexRouting.IsNull() {
-			config.IndexRouting = writeIndex.IndexRouting.ValueString()
-		}
-		if !writeIndex.Routing.IsNull() {
-			config.Routing = writeIndex.Routing.ValueString()
-		}
-		if !writeIndex.SearchRouting.IsNull() {
-			config.SearchRouting = writeIndex.SearchRouting.ValueString()
-		}
-		if !writeIndex.Filter.IsNull() {
-			if diags := writeIndex.Filter.Unmarshal(&config.Filter); diags.HasError() {
-				return nil, diags
-			}
-		}
-
 		configs = append(configs, config)
 	}
 
 	// Handle read indices
 	if !model.ReadIndices.IsNull() {
-		var readIndices []readIndexModel
+		var readIndices []indexModel
 		diags := model.ReadIndices.ElementsAs(ctx, &readIndices, false)
 		if diags.HasError() {
 			return nil, diags
 		}
 
 		for _, readIndex := range readIndices {
-			config := AliasIndexConfig{
-				Name:         readIndex.Name.ValueString(),
-				IsWriteIndex: false,
-				IsHidden:     readIndex.IsHidden.ValueBool(),
+			config, configDiags := indexToConfig(readIndex, false)
+			if configDiags.HasError() {
+				return nil, configDiags
 			}
-
-			if !readIndex.IndexRouting.IsNull() {
-				config.IndexRouting = readIndex.IndexRouting.ValueString()
-			}
-			if !readIndex.Routing.IsNull() {
-				config.Routing = readIndex.Routing.ValueString()
-			}
-			if !readIndex.SearchRouting.IsNull() {
-				config.SearchRouting = readIndex.SearchRouting.ValueString()
-			}
-			if !readIndex.Filter.IsNull() {
-				if diags := readIndex.Filter.Unmarshal(&config.Filter); diags.HasError() {
-					return nil, diags
-				}
-			}
-
 			configs = append(configs, config)
 		}
 	}
@@ -203,25 +149,33 @@ func (model *tfModel) toAliasConfigs(ctx context.Context) ([]AliasIndexConfig, d
 	return configs, nil
 }
 
-// Helper functions for attribute types
-func (writeIndexModel) attrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"name":           types.StringType,
-		"filter":         jsontypes.NormalizedType{},
-		"index_routing":  types.StringType,
-		"is_hidden":      types.BoolType,
-		"routing":        types.StringType,
-		"search_routing": types.StringType,
+// indexToConfig converts an indexModel to AliasIndexConfig
+func indexToConfig(index indexModel, isWriteIndex bool) (AliasIndexConfig, diag.Diagnostics) {
+	config := AliasIndexConfig{
+		Name:         index.Name.ValueString(),
+		IsWriteIndex: isWriteIndex,
+		IsHidden:     index.IsHidden.ValueBool(),
 	}
+
+	if !index.IndexRouting.IsNull() {
+		config.IndexRouting = index.IndexRouting.ValueString()
+	}
+	if !index.Routing.IsNull() {
+		config.Routing = index.Routing.ValueString()
+	}
+	if !index.SearchRouting.IsNull() {
+		config.SearchRouting = index.SearchRouting.ValueString()
+	}
+	if !index.Filter.IsNull() {
+		if diags := index.Filter.Unmarshal(&config.Filter); diags.HasError() {
+			return AliasIndexConfig{}, diags
+		}
+	}
+
+	return config, nil
 }
 
-func (readIndexModel) attrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"name":           types.StringType,
-		"filter":         jsontypes.NormalizedType{},
-		"index_routing":  types.StringType,
-		"is_hidden":      types.BoolType,
-		"routing":        types.StringType,
-		"search_routing": types.StringType,
-	}
+// Helper functions for attribute types
+func (indexModel) attrTypes() map[string]attr.Type {
+	return getIndexAttrTypes()
 }

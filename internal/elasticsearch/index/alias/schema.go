@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -12,9 +13,13 @@ import (
 )
 
 func (r *aliasResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = getSchema()
+}
+
+func getSchema() schema.Schema {
+	return schema.Schema{
 		Description: "Manages an Elasticsearch alias. " +
-			"See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html",
+			"See the <a href=\"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html\">alias documentation</a> for more details.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -101,4 +106,8 @@ func (r *aliasResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			},
 		},
 	}
+}
+
+func getIndexAttrTypes() map[string]attr.Type {
+	return getSchema().Attributes["write_index"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

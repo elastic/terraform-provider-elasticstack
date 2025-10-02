@@ -48,28 +48,39 @@ func (r *aliasResource) ValidateConfig(ctx context.Context, req resource.Validat
 	}
 
 	// Validate that write_index doesn't appear in read_indices
-	if !config.WriteIndex.IsNull() && !config.ReadIndices.IsNull() {
-		// Get the write index name
-		var writeIndex writeIndexModel
-		if diags := config.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{}); !diags.HasError() {
-			writeIndexName := writeIndex.Name.ValueString()
+	if config.WriteIndex.IsNull() {
+		return
+	}
 
-			// Only validate if write index name is not empty
-			if writeIndexName != "" {
-				// Get all read indices
-				var readIndices []readIndexModel
-				if diags := config.ReadIndices.ElementsAs(ctx, &readIndices, false); !diags.HasError() {
-					for _, readIndex := range readIndices {
-						readIndexName := readIndex.Name.ValueString()
-						if readIndexName != "" && readIndexName == writeIndexName {
-							resp.Diagnostics.AddError(
-								"Invalid Configuration",
-								fmt.Sprintf("Index '%s' cannot be both a write index and a read index", writeIndexName),
-							)
-							return
-						}
-					}
-				}
+	if config.ReadIndices.IsNull() {
+		return
+	}
+
+	// Get the write index name
+	var writeIndex indexModel
+	diags := config.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	writeIndexName := writeIndex.Name.ValueString()
+
+	// Only validate if write index name is not empty
+	if writeIndexName == "" {
+		return
+	}
+
+	// Get all read indices
+	var readIndices []indexModel
+	if diags := config.ReadIndices.ElementsAs(ctx, &readIndices, false); !diags.HasError() {
+		for _, readIndex := range readIndices {
+			readIndexName := readIndex.Name.ValueString()
+			if readIndexName != "" && readIndexName == writeIndexName {
+				resp.Diagnostics.AddError(
+					"Invalid Configuration",
+					fmt.Sprintf("Index '%s' cannot be both a write index and a read index", writeIndexName),
+				)
+				return
 			}
 		}
 	}

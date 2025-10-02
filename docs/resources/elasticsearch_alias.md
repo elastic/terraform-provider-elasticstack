@@ -4,12 +4,12 @@
 page_title: "elasticstack_elasticsearch_alias Resource - terraform-provider-elasticstack"
 subcategory: "Elasticsearch"
 description: |-
-  Manages an Elasticsearch alias. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html
+  Manages an Elasticsearch alias. See the alias documentation for more details.
 ---
 
 # elasticstack_elasticsearch_alias (Resource)
 
-Manages an Elasticsearch alias. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html
+Manages an Elasticsearch alias. See the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html">alias documentation</a> for more details.
 
 
 

@@ -604,9 +604,9 @@ func GetAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName strin
 		return nil, nil
 	}
 
-	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get alias '%s'", aliasName))
-	if diagutil.FrameworkDiagsFromSDK(diags).HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(diags)
+	diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get alias '%s'", aliasName))
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	indices := make(map[string]models.Index)
@@ -617,118 +617,6 @@ func GetAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName strin
 	}
 
 	return indices, nil
-}
-
-func PutAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName string, indices []string, alias *models.IndexAlias) fwdiags.Diagnostics {
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
-		}
-	}
-
-	// Build the request body for index aliases API
-	var actions []map[string]interface{}
-
-	for _, index := range indices {
-		addAction := map[string]interface{}{
-			"add": map[string]interface{}{
-				"index": index,
-				"alias": aliasName,
-			},
-		}
-
-		// Only include non-empty optional fields in the add action
-		addActionDetails := addAction["add"].(map[string]interface{})
-
-		if alias.Filter != nil {
-			addActionDetails["filter"] = alias.Filter
-		}
-		if alias.IndexRouting != "" {
-			addActionDetails["index_routing"] = alias.IndexRouting
-		}
-		if alias.SearchRouting != "" {
-			addActionDetails["search_routing"] = alias.SearchRouting
-		}
-		if alias.Routing != "" {
-			addActionDetails["routing"] = alias.Routing
-		}
-		if alias.IsHidden {
-			addActionDetails["is_hidden"] = alias.IsHidden
-		}
-		if alias.IsWriteIndex {
-			addActionDetails["is_write_index"] = alias.IsWriteIndex
-		}
-
-		actions = append(actions, addAction)
-	}
-
-	aliasActions := map[string]interface{}{
-		"actions": actions,
-	}
-
-	aliasBytes, err := json.Marshal(aliasActions)
-	if err != nil {
-		return fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
-		}
-	}
-
-	res, err := esClient.Indices.UpdateAliases(
-		bytes.NewReader(aliasBytes),
-		esClient.Indices.UpdateAliases.WithContext(ctx),
-	)
-	if err != nil {
-		return fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
-		}
-	}
-	defer res.Body.Close()
-
-	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create/update alias '%s'", aliasName))
-	return diagutil.FrameworkDiagsFromSDK(diags)
-}
-
-func DeleteAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName string, indices []string) fwdiags.Diagnostics {
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
-		}
-	}
-
-	// Use UpdateAliases API for deletion to handle multiple indices
-	aliasActions := map[string]interface{}{
-		"actions": []map[string]interface{}{
-			{
-				"remove": map[string]interface{}{
-					"indices": indices,
-					"alias":   aliasName,
-				},
-			},
-		},
-	}
-
-	aliasBytes, err := json.Marshal(aliasActions)
-	if err != nil {
-		return fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
-		}
-	}
-
-	res, err := esClient.Indices.UpdateAliases(
-		bytes.NewReader(aliasBytes),
-		esClient.Indices.UpdateAliases.WithContext(ctx),
-	)
-	if err != nil {
-		return fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
-		}
-	}
-	defer res.Body.Close()
-
-	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete alias '%s'", aliasName))
-	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 // AliasAction represents a single action in an atomic alias update operation
@@ -817,8 +705,7 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, acti
 	}
 	defer res.Body.Close()
 
-	diags := diagutil.CheckError(res, "Unable to update aliases atomically")
-	return diagutil.FrameworkDiagsFromSDK(diags)
+	return diagutil.CheckErrorFromFW(res, "Unable to update aliases atomically")
 }
 
 func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline *models.IngestPipeline) diag.Diagnostics {

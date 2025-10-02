@@ -37,8 +37,5 @@ func (r *aliasResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	// Remove the alias from all indices
 	if len(actions) > 0 {
 		resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, r.client, actions)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 }
