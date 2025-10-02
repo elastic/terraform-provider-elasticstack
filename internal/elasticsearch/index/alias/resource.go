@@ -54,16 +54,20 @@ func (r *aliasResource) ValidateConfig(ctx context.Context, req resource.Validat
 		if diags := config.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{}); !diags.HasError() {
 			writeIndexName := writeIndex.Name.ValueString()
 
-			// Get all read indices
-			var readIndices []readIndexModel
-			if diags := config.ReadIndices.ElementsAs(ctx, &readIndices, false); !diags.HasError() {
-				for _, readIndex := range readIndices {
-					if readIndex.Name.ValueString() == writeIndexName {
-						resp.Diagnostics.AddError(
-							"Invalid Configuration",
-							fmt.Sprintf("Index '%s' cannot be both a write index and a read index", writeIndexName),
-						)
-						return
+			// Only validate if write index name is not empty
+			if writeIndexName != "" {
+				// Get all read indices
+				var readIndices []readIndexModel
+				if diags := config.ReadIndices.ElementsAs(ctx, &readIndices, false); !diags.HasError() {
+					for _, readIndex := range readIndices {
+						readIndexName := readIndex.Name.ValueString()
+						if readIndexName != "" && readIndexName == writeIndexName {
+							resp.Diagnostics.AddError(
+								"Invalid Configuration",
+								fmt.Sprintf("Index '%s' cannot be both a write index and a read index", writeIndexName),
+							)
+							return
+						}
 					}
 				}
 			}
