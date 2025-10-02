@@ -49,6 +49,9 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "A stable unique identifier for the rule object. If omitted, a UUID is generated.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "A human-readable name for the rule.",
