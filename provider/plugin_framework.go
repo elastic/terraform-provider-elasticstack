@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/apm/agent_configuration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
@@ -22,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
@@ -89,6 +91,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
+		export_saved_objects.NewDataSource,
 		enrollment_tokens.NewDataSource,
 		integration_ds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
@@ -114,6 +117,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		output.NewResource,
 		server_host.NewResource,
 		system_user.NewSystemUserResource,
+		script.NewScriptResource,
 		maintenance_window.NewResource,
 		enrich.NewEnrichPolicyResource,
 		role_mapping.NewRoleMappingResource,
