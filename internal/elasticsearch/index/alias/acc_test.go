@@ -2,7 +2,6 @@ package alias_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -22,9 +21,6 @@ func TestAccResourceAlias(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			// Create indices directly via API to avoid terraform index resource conflicts
-			createTestIndex(t, indexName)
-			createTestIndex(t, indexName2)
 		},
 		CheckDestroy:             checkResourceAliasDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -37,10 +33,10 @@ func TestAccResourceAlias(t *testing.T) {
 					"index_name2": config.StringVariable(indexName2),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.name", indexName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.is_hidden", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "read_indices.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.is_hidden", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "0"),
 				),
 			},
 			{
@@ -51,9 +47,9 @@ func TestAccResourceAlias(t *testing.T) {
 					"index_name2": config.StringVariable(indexName2),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.name", indexName2),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "read_indices.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName2),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
 				),
 			},
 			{
@@ -64,11 +60,11 @@ func TestAccResourceAlias(t *testing.T) {
 					"index_name2": config.StringVariable(indexName2),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.name", indexName),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_alias.test_alias", "write_index.filter"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.index_routing", "write-routing"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "read_indices.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "write_index.filter"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.index_routing", "write-routing"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
 				),
 			},
 		},
@@ -85,10 +81,6 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			// Create indices directly via API to avoid terraform index resource conflicts
-			createTestIndex(t, indexName1)
-			createTestIndex(t, indexName2)
-			createTestIndex(t, indexName3)
 		},
 		CheckDestroy:             checkResourceAliasDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -103,9 +95,9 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 					"index_name3": config.StringVariable(indexName3),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.name", indexName1),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "read_indices.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName1),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "0"),
 				),
 			},
 			// Case 2: Add new index with is_write_index=true, existing becomes read index
@@ -118,9 +110,9 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 					"index_name3": config.StringVariable(indexName3),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.name", indexName2),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "read_indices.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName2),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
 				),
 			},
 			// Case 3: Add third index as write index
@@ -133,9 +125,9 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 					"index_name3": config.StringVariable(indexName3),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.name", indexName3),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "read_indices.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName3),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "2"),
 				),
 			},
 			// Case 4: Remove initial index, keep two indices with one as write index
@@ -148,9 +140,9 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 					"index_name3": config.StringVariable(indexName3),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.name", indexName3),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "read_indices.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName3),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
 				),
 			},
 		},
@@ -174,9 +166,9 @@ func TestAccResourceAliasDataStream(t *testing.T) {
 					"ds_name":    config.StringVariable(dsName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "name", aliasName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "write_index.name", dsName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_alias.test_alias", "read_indices.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "0"),
 				),
 			},
 		},
@@ -211,7 +203,7 @@ resource "elasticstack_elasticsearch_data_stream" "test_ds" {
   ]
 }
 
-resource "elasticstack_elasticsearch_alias" "test_alias" {
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
@@ -227,7 +219,7 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 	}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_elasticsearch_alias" {
+		if rs.Type != "elasticstack_elasticsearch_index_alias" {
 			continue
 		}
 
@@ -257,39 +249,6 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 	return nil
 }
 
-// createTestIndex creates an index directly via API for testing
-func createTestIndex(t *testing.T, indexName string) {
-	client, err := clients.NewAcceptanceTestingClient()
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	esClient, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("Failed to get ES client: %v", err)
-	}
-
-	// Create index with mappings
-	body := `{
-		"mappings": {
-			"properties": {
-				"title": { "type": "text" },
-				"status": { "type": "keyword" }
-			}
-		}
-	}`
-
-	res, err := esClient.Indices.Create(indexName, esClient.Indices.Create.WithBody(strings.NewReader(body)))
-	if err != nil {
-		t.Fatalf("Failed to create index %s: %v", indexName, err)
-	}
-	defer res.Body.Close()
-
-	if res.IsError() {
-		t.Fatalf("Failed to create index %s: %s", indexName, res.String())
-	}
-}
-
 const testAccResourceAliasCreateDirect = `
 variable "alias_name" {
   description = "The alias name"
@@ -310,11 +269,19 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_alias" "test_alias" {
+resource "elasticstack_elasticsearch_index" "index1" {
+  name = var.index_name
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    name = var.index_name
+    name = elasticstack_elasticsearch_index.index1.name
   }
 }
 `
@@ -339,15 +306,31 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_alias" "test_alias" {
+resource "elasticstack_elasticsearch_index" "index1" {
+  name = var.index_name
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index" "index2" {
+  name = var.index_name2
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    name = var.index_name2
+    name = elasticstack_elasticsearch_index.index2.name
   }
 
   read_indices = [{
-    name = var.index_name
+    name = elasticstack_elasticsearch_index.index1.name
   }]
 }
 `
@@ -372,11 +355,27 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_alias" "test_alias" {
+resource "elasticstack_elasticsearch_index" "index1" {
+  name = var.index_name
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index" "index2" {
+  name = var.index_name2
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    name    = var.index_name
+    name    = elasticstack_elasticsearch_index.index1.name
     index_routing = "write-routing"
     filter = jsonencode({
       term = {
@@ -386,7 +385,7 @@ resource "elasticstack_elasticsearch_alias" "test_alias" {
   }
 
   read_indices = [{
-    name = var.index_name2
+    name = elasticstack_elasticsearch_index.index2.name
     filter = jsonencode({
       term = {
         status = "draft"
@@ -421,11 +420,19 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_alias" "test_alias" {
+resource "elasticstack_elasticsearch_index" "index1" {
+  name = var.index_name1
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    name = var.index_name1
+    name = elasticstack_elasticsearch_index.index1.name
   }
 }
 `
@@ -455,15 +462,31 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_alias" "test_alias" {
+resource "elasticstack_elasticsearch_index" "index1" {
+  name = var.index_name1
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index" "index2" {
+  name = var.index_name2
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    name = var.index_name2
+    name = elasticstack_elasticsearch_index.index2.name
   }
 
   read_indices = [{
-    name = var.index_name1
+    name = elasticstack_elasticsearch_index.index1.name
   }]
 }
 `
@@ -493,19 +516,43 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_alias" "test_alias" {
+resource "elasticstack_elasticsearch_index" "index1" {
+  name = var.index_name1
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index" "index2" {
+  name = var.index_name2
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index" "index3" {
+  name = var.index_name3
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    name = var.index_name3
+    name = elasticstack_elasticsearch_index.index3.name
   }
 
   read_indices = [
     {
-      name = var.index_name1
+      name = elasticstack_elasticsearch_index.index1.name
     },
     {
-      name = var.index_name2
+      name = elasticstack_elasticsearch_index.index2.name
     }
   ]
 }
@@ -536,15 +583,39 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_alias" "test_alias" {
+resource "elasticstack_elasticsearch_index" "index1" {
+  name = var.index_name1
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index" "index2" {
+  name = var.index_name2
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index" "index3" {
+  name = var.index_name3
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    name = var.index_name3
+    name = elasticstack_elasticsearch_index.index3.name
   }
 
   read_indices = [{
-    name = var.index_name2
+    name = elasticstack_elasticsearch_index.index2.name
   }]
 }
 `
