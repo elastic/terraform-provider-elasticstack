@@ -812,6 +812,56 @@ func transformKibanaPaths(schema *Schema) {
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
 
+	schema.Components.Set("schemas.Security_Detections_API_RuleResponse.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRule",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRule",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRule",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRule",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRule",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRule",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRule",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRule",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_RuleCreateProps.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRuleCreateProps",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRuleCreateProps",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRuleCreateProps",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRuleCreateProps",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRuleCreateProps",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRuleCreateProps",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRuleCreateProps",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRuleCreateProps",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_RuleUpdateProps.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRuleUpdateProps",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRuleUpdateProps",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRuleUpdateProps",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRuleUpdateProps",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRuleUpdateProps",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRuleUpdateProps",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRuleUpdateProps",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRuleUpdateProps",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_ResponseAction.discriminator", Map{
+		"mapping": Map{
+			".osquery":  "#/components/schemas/Security_Detections_API_OsqueryResponseAction",
+			".endpoint": "#/components/schemas/Security_Detections_API_EndpointResponseAction",
+		},
+		"propertyName": "action_type_id",
+	})
+
 }
 
 func removeBrokenDiscriminator(schema *Schema) {
@@ -826,10 +876,7 @@ func removeBrokenDiscriminator(schema *Schema) {
 		"Security_AI_Assistant_API_KnowledgeBaseEntryResponse",
 		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateProps",
 		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateRouteProps",
-		"Security_Detections_API_RuleCreateProps",
-		"Security_Detections_API_RuleResponse",
 		"Security_Detections_API_RuleSource",
-		"Security_Detections_API_RuleUpdateProps",
 		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
 		"Security_Exceptions_API_ExceptionListItemEntry",
 	}
