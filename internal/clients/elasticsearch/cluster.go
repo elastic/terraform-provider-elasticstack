@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -234,33 +235,33 @@ func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]
 	return clusterSettings, diags
 }
 
-func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, diag.Diagnostics) {
+func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, fwdiag.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
 	}
 	res, err := esClient.GetScript(id, esClient.GetScript.WithContext(ctx))
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get script", err.Error())}
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
 		return nil, diags
 	}
 	var scriptResponse struct {
 		Script *models.Script `json:"script"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&scriptResponse); err != nil {
-		return nil, diag.FromErr(err)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to decode script response", err.Error())}
 	}
 
 	return scriptResponse.Script, nil
 }
 
-func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) diag.Diagnostics {
+func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) fwdiag.Diagnostics {
 	req := struct {
 		Script *models.Script `json:"script"`
 	}{
@@ -268,34 +269,34 @@ func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models
 	}
 	scriptBytes, err := json.Marshal(req)
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to marshal script", err.Error())}
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
 	}
 	res, err := esClient.PutScript(script.ID, bytes.NewReader(scriptBytes), esClient.PutScript.WithContext(ctx), esClient.PutScript.WithScriptContext(script.Context))
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to put script", err.Error())}
 	}
 	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to put stored script"); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to put stored script"); diags.HasError() {
 		return diags
 	}
 	return nil
 }
 
-func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) diag.Diagnostics {
+func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
 	}
 	res, err := esClient.DeleteScript(id, esClient.DeleteScript.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to delete script", err.Error())}
 	}
 	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete script: %s", id)); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete script: %s", id)); diags.HasError() {
 		return diags
 	}
 	return nil
