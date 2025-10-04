@@ -140,7 +140,6 @@ resource "elasticstack_kibana_security_detection_rule" "advanced" {
 - `license` (String) The rule's license.
 - `machine_learning_job_id` (List of String) Machine learning job ID(s) the rule monitors for anomaly scores. Required for machine_learning rules.
 - `max_signals` (Number) Maximum number of alerts the rule can create during a single run.
-- `meta` (String) Metadata object for the rule as JSON. Supports all JSON types (string, number, boolean, object, array). Note: This field gets overwritten when saving changes through the Kibana UI. Available for all rule types.
 - `namespace` (String) Alerts index namespace. Available for all rule types.
 - `new_terms_fields` (List of String) Field names containing the new terms. Required for new_terms rules.
 - `note` (String) Notes to help investigate alerts produced by the rule.
