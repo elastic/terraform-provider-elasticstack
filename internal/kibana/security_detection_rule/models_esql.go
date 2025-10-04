@@ -103,7 +103,6 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context, cl
 		TimestampOverride:                 &esqlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &esqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &esqlRule.InvestigationFields,
-		Meta:                              &esqlRule.Meta,
 		Filters:                           nil, // ESQL rules don't support this field
 	}, &diags, client)
 
@@ -185,7 +184,6 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context, cl
 		TimestampOverride:                 &esqlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &esqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &esqlRule.InvestigationFields,
-		Meta:                              &esqlRule.Meta,
 		Filters:                           nil, // ESQL rules don't have Filters
 	}, &diags, client)
 
@@ -280,9 +278,6 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
-	// Update meta field
-	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
-	diags.Append(metaDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)

@@ -101,7 +101,6 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		TimestampOverride:                 &savedQueryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &savedQueryRule.InvestigationFields,
-		Meta:                              &savedQueryRule.Meta,
 		Filters:                           &savedQueryRule.Filters,
 	}, &diags, client)
 
@@ -173,7 +172,6 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		License:                           &savedQueryRule.License,
 		Note:                              &savedQueryRule.Note,
 		InvestigationFields:               &savedQueryRule.InvestigationFields,
-		Meta:                              &savedQueryRule.Meta,
 		Setup:                             &savedQueryRule.Setup,
 		MaxSignals:                        &savedQueryRule.MaxSignals,
 		Version:                           &savedQueryRule.Version,
@@ -296,9 +294,6 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
-	// Update meta field
-	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
-	diags.Append(metaDiags...)
 
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)

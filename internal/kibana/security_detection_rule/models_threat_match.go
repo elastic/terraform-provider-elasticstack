@@ -119,7 +119,6 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		TimestampOverride:                 &threatMatchRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &threatMatchRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &threatMatchRule.InvestigationFields,
-		Meta:                              &threatMatchRule.Meta,
 		Filters:                           &threatMatchRule.Filters,
 	}, &diags, client)
 
@@ -226,7 +225,6 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		License:                           &threatMatchRule.License,
 		Note:                              &threatMatchRule.Note,
 		InvestigationFields:               &threatMatchRule.InvestigationFields,
-		Meta:                              &threatMatchRule.Meta,
 		Setup:                             &threatMatchRule.Setup,
 		MaxSignals:                        &threatMatchRule.MaxSignals,
 		Version:                           &threatMatchRule.Version,
@@ -404,9 +402,6 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
-	// Update meta field
-	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
-	diags.Append(metaDiags...)
 
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)

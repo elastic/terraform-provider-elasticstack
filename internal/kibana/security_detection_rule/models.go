@@ -122,9 +122,6 @@ type SecurityDetectionRuleData struct {
 	// Investigation fields (common across all rule types)
 	InvestigationFields types.List `tfsdk:"investigation_fields"`
 
-	// Meta field (common across all rule types) - Metadata object for the rule (gets overwritten when saving changes)
-	Meta jsontypes.Normalized `tfsdk:"meta"`
-
 	// Filters field (common across all rule types) - Query and filter context array to define alert conditions
 	Filters jsontypes.Normalized `tfsdk:"filters"`
 }
@@ -275,7 +272,6 @@ type CommonCreateProps struct {
 	TimestampOverride                 **kbapi.SecurityDetectionsAPITimestampOverride
 	TimestampOverrideFallbackDisabled **kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
 	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
-	Meta                              **kbapi.SecurityDetectionsAPIRuleMetadata
 	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
 }
 
@@ -311,7 +307,6 @@ type CommonUpdateProps struct {
 	TimestampOverride                 **kbapi.SecurityDetectionsAPITimestampOverride
 	TimestampOverrideFallbackDisabled **kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
 	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
-	Meta                              **kbapi.SecurityDetectionsAPIRuleMetadata
 	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
 }
 
@@ -524,15 +519,6 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 		diags.Append(responseActionsDiags...)
 		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
 			*props.ResponseActions = &responseActions
-		}
-	}
-
-	// Set meta
-	if props.Meta != nil && utils.IsKnown(d.Meta) {
-		meta, metaDiags := d.metaToApi(ctx)
-		diags.Append(metaDiags...)
-		if !metaDiags.HasError() && meta != nil {
-			*props.Meta = meta
 		}
 	}
 
@@ -757,15 +743,6 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		diags.Append(responseActionsDiags...)
 		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
 			*props.ResponseActions = &responseActions
-		}
-	}
-
-	// Set meta
-	if props.Meta != nil && utils.IsKnown(d.Meta) {
-		meta, metaDiags := d.metaToApi(ctx)
-		diags.Append(metaDiags...)
-		if !metaDiags.HasError() && meta != nil {
-			*props.Meta = meta
 		}
 	}
 

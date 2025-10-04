@@ -102,7 +102,6 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 		TimestampOverride:                 &queryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &queryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &queryRule.InvestigationFields,
-		Meta:                              &queryRule.Meta,
 		Filters:                           &queryRule.Filters,
 	}, &diags, client)
 
@@ -191,7 +190,6 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		TimestampOverride:                 &queryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &queryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &queryRule.InvestigationFields,
-		Meta:                              &queryRule.Meta,
 		Filters:                           &queryRule.Filters,
 	}, &diags, client)
 
@@ -324,9 +322,6 @@ func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQ
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
-	// Update meta field
-	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
-	diags.Append(metaDiags...)
 
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)

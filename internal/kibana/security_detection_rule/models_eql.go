@@ -102,7 +102,6 @@ func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforcea
 		TimestampOverride:                 &eqlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &eqlRule.InvestigationFields,
-		Meta:                              &eqlRule.Meta,
 		Filters:                           &eqlRule.Filters,
 	}, &diags, client)
 
@@ -187,7 +186,6 @@ func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforcea
 		TimestampOverride:                 &eqlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &eqlRule.InvestigationFields,
-		Meta:                              &eqlRule.Meta,
 		Filters:                           &eqlRule.Filters,
 	}, &diags, client)
 
@@ -292,10 +290,6 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
-
-	// Update meta field
-	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
-	diags.Append(metaDiags...)
 
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)

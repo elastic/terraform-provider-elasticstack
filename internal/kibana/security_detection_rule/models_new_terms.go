@@ -112,7 +112,6 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		TimestampOverride:                 &newTermsRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &newTermsRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &newTermsRule.InvestigationFields,
-		Meta:                              &newTermsRule.Meta,
 		Filters:                           &newTermsRule.Filters,
 	}, &diags, client)
 
@@ -187,7 +186,6 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		License:                           &newTermsRule.License,
 		Note:                              &newTermsRule.Note,
 		InvestigationFields:               &newTermsRule.InvestigationFields,
-		Meta:                              &newTermsRule.Meta,
 		Setup:                             &newTermsRule.Setup,
 		MaxSignals:                        &newTermsRule.MaxSignals,
 		Version:                           &newTermsRule.Version,
@@ -306,9 +304,6 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
-	// Update meta field
-	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
-	diags.Append(metaDiags...)
 
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)

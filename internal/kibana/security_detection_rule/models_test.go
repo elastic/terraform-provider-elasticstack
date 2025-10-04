@@ -842,24 +842,15 @@ func TestActionsToApi(t *testing.T) {
 	require.NotNil(t, action.Frequency)
 }
 
-func TestMetaAndFiltersToApi(t *testing.T) {
+func TestFiltersToApi(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	metaJSON := `{"custom_field": "custom_value", "version": 2}`
 	filtersJSON := `[{"query": {"match": {"field": "value"}}}, {"range": {"timestamp": {"gte": "now-1h"}}}]`
 
 	data := SecurityDetectionRuleData{
-		Meta:    jsontypes.NewNormalizedValue(metaJSON),
 		Filters: jsontypes.NewNormalizedValue(filtersJSON),
 	}
-
-	// Test meta conversion
-	meta, metaDiags := data.metaToApi(ctx)
-	require.Empty(t, metaDiags)
-	require.NotNil(t, meta)
-	require.Contains(t, *meta, "custom_field")
-	require.Equal(t, "custom_value", (*meta)["custom_field"])
 
 	// Test filters conversion
 	filters, filtersDiags := data.filtersToApi(ctx)

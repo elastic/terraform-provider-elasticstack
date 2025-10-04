@@ -106,7 +106,6 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		TimestampOverride:                 &thresholdRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &thresholdRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &thresholdRule.InvestigationFields,
-		Meta:                              &thresholdRule.Meta,
 		Filters:                           &thresholdRule.Filters,
 		AlertSuppression:                  nil, // Handle specially for threshold rule
 	}, &diags, client)
@@ -192,7 +191,6 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		License:                           &thresholdRule.License,
 		Note:                              &thresholdRule.Note,
 		InvestigationFields:               &thresholdRule.InvestigationFields,
-		Meta:                              &thresholdRule.Meta,
 		Setup:                             &thresholdRule.Setup,
 		MaxSignals:                        &thresholdRule.MaxSignals,
 		Version:                           &thresholdRule.Version,
@@ -331,9 +329,6 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
-	// Update meta field
-	metaDiags := d.updateMetaFromApi(ctx, rule.Meta)
-	diags.Append(metaDiags...)
 
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)

@@ -297,11 +297,6 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Array of field names to include in alert investigation. Available for all rule types.",
 				Optional:            true,
 			},
-			"meta": schema.StringAttribute{
-				MarkdownDescription: "Metadata object for the rule as JSON. Supports all JSON types (string, number, boolean, object, array). Note: This field gets overwritten when saving changes through the Kibana UI. Available for all rule types.",
-				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
-			},
 			"filters": schema.StringAttribute{
 				MarkdownDescription: "Query and filter context array to define alert conditions as JSON. Supports complex filter structures including bool queries, term filters, range filters, etc. Available for all rule types.",
 				Optional:            true,

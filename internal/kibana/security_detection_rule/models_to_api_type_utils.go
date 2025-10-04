@@ -747,26 +747,6 @@ func (d SecurityDetectionRuleData) severityMappingToApi(ctx context.Context) (*k
 	return &severityMappingSlice, diags
 }
 
-// metaToApi converts the Terraform meta field to the API type
-func (d SecurityDetectionRuleData) metaToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPIRuleMetadata, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if !utils.IsKnown(d.Meta) {
-		return nil, diags
-	}
-
-	// Unmarshal the JSON string to map[string]interface{}
-	var metadata kbapi.SecurityDetectionsAPIRuleMetadata
-	unmarshalDiags := d.Meta.Unmarshal(&metadata)
-	diags.Append(unmarshalDiags...)
-
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return &metadata, diags
-}
-
 // filtersToApi converts the Terraform filters field to the API type
 func (d SecurityDetectionRuleData) filtersToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPIRuleFilterArray, diag.Diagnostics) {
 	var diags diag.Diagnostics

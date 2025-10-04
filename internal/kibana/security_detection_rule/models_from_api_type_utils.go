@@ -587,27 +587,6 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 	return thresholdObject, diags
 }
 
-// convertMetaFromApi converts the API meta field back to the Terraform type
-func (d *SecurityDetectionRuleData) updateMetaFromApi(ctx context.Context, apiMeta *kbapi.SecurityDetectionsAPIRuleMetadata) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if apiMeta == nil || len(*apiMeta) == 0 {
-		d.Meta = jsontypes.NewNormalizedNull()
-		return diags
-	}
-
-	// Marshal the map[string]interface{} to JSON string
-	jsonBytes, err := json.Marshal(*apiMeta)
-	if err != nil {
-		diags.AddError("Failed to marshal metadata", err.Error())
-		return diags
-	}
-
-	// Create a NormalizedValue from the JSON string
-	d.Meta = jsontypes.NewNormalizedValue(string(jsonBytes))
-	return diags
-}
-
 // convertFiltersFromApi converts the API filters field back to the Terraform type
 func (d *SecurityDetectionRuleData) updateFiltersFromApi(ctx context.Context, apiFilters *kbapi.SecurityDetectionsAPIRuleFilterArray) diag.Diagnostics {
 	var diags diag.Diagnostics
