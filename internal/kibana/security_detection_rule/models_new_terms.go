@@ -304,7 +304,6 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
-
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
