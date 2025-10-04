@@ -91,9 +91,6 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
 
-					// Check meta field
-					checkResourceJSONAttr(resourceName, "meta", `{"custom_field": "test_value", "environment": "testing", "version": "1.0"}`),
-
 					// Check filters field
 					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"must": [{"term": {"event.category": "authentication"}}], "must_not": [{"term": {"event.outcome": "success"}}]}}]`),
 
@@ -172,9 +169,6 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "source.ip"),
-
-					// Check meta field (updated values)
-					checkResourceJSONAttr(resourceName, "meta", `{"custom_field": "updated_value", "environment": "production", "version": "2.0", "team": "security"}`),
 
 					// Check filters field (updated values)
 					checkResourceJSONAttr(resourceName, "filters", `[{"range": {"@timestamp": {"gte": "now-1h", "lte": "now"}}}, {"terms": {"event.action": ["login", "logout", "access"]}}]`),
@@ -294,9 +288,6 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "process.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "process.executable"),
 
-					// Check meta field
-					checkResourceJSONAttr(resourceName, "meta", `{"rule_type": "eql", "process": "monitoring", "severity": "high"}`),
-
 					// Check filters field
 					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"filter": [{"term": {"process.parent.name": "explorer.exe"}}]}}]`),
 
@@ -357,9 +348,6 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "process.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "process.executable"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "process.parent.name"),
-
-					// Check meta field (updated values)
-					checkResourceJSONAttr(resourceName, "meta", `{"rule_type": "eql", "process": "detection", "severity": "critical", "updated": "true"}`),
 
 					// Check filters field (updated values)
 					checkResourceJSONAttr(resourceName, "filters", `[{"exists": {"field": "process.code_signature.trusted"}}, {"term": {"host.os.family": "windows"}}]`),
@@ -443,9 +431,6 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.domain"),
 
-					// Check meta field
-					checkResourceJSONAttr(resourceName, "meta", `{"query_type": "esql", "analytics": "enabled", "phase": "testing"}`),
-
 					// Check related integrations
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "system"),
@@ -516,9 +501,6 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "user.domain"),
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "event.outcome"),
 
-					// Check meta field (updated values)
-					checkResourceJSONAttr(resourceName, "meta", `{"query_type": "esql", "analytics": "enabled", "phase": "production", "updated": "yes"}`),
-
 					// Check related integrations
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.0.package", "system"),
@@ -581,9 +563,6 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "90"),
 					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "75"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
-
-					// Check meta field
-					checkResourceJSONAttr(resourceName, "meta", `{"ml_type": "anomaly_detection", "custom_ml": "test_value", "threshold": "75"}`),
 
 					resource.TestCheckResourceAttr(resourceName, "namespace", "ml-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom ML Rule Name"),
@@ -654,9 +633,6 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "anomaly_threshold", "80"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.0", "test-ml-job"),
 					resource.TestCheckResourceAttr(resourceName, "machine_learning_job_id.1", "test-ml-job-2"),
-
-					// Check meta field (updated values)
-					checkResourceJSONAttr(resourceName, "meta", `{"ml_type": "anomaly_detection", "custom_ml": "updated_value", "threshold": "80", "updated": "yes"}`),
 
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom ML Rule Name"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "ml.anomaly_score"),
@@ -748,9 +724,6 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
 
-					// Check meta field
-					checkResourceJSONAttr(resourceName, "meta", `{"new_terms_type": "user_behavior", "custom_field": "test_value", "detection": "anomaly"}`),
-
 					// Check filters field
 					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"should": [{"wildcard": {"user.domain": "*.internal"}}, {"term": {"user.type": "service_account"}}]}}]`),
 
@@ -829,9 +802,6 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.1", "source.ip"),
 
-					// Check meta field (updated values)
-					checkResourceJSONAttr(resourceName, "meta", `{"new_terms_type": "user_behavior", "custom_field": "updated_value", "detection": "anomaly", "updated": "yes"}`),
-
 					// Check filters field (updated values)
 					checkResourceJSONAttr(resourceName, "filters", `[{"geo_distance": {"distance": "1000km", "source.geo.location": {"lat": 40.12, "lon": -71.34}}}]`),
 
@@ -894,9 +864,6 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "30"),
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id"),
-
-					// Check meta field
-					checkResourceJSONAttr(resourceName, "meta", `{"saved_query_type": "security", "custom_field": "test_value", "query_origin": "saved"}`),
 
 					// Check filters field
 					checkResourceJSONAttr(resourceName, "filters", `[{"prefix": {"event.action": "user_"}}]`),
@@ -972,9 +939,6 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "60"),
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id-updated"),
-
-					// Check meta field (updated values)
-					checkResourceJSONAttr(resourceName, "meta", `{"saved_query_type": "security", "custom_field": "updated_value", "query_origin": "saved", "updated": "yes"}`),
 
 					// Check filters field (updated values)
 					checkResourceJSONAttr(resourceName, "filters", `[{"script": {"script": {"source": "doc['event.severity'].value > 2"}}}]`),
@@ -1080,9 +1044,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.type", "mapping"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.value", "threat.indicator.ip"),
 
-					// Check meta field
-					checkResourceJSONAttr(resourceName, "meta", `{"threat_type": "indicator_match", "custom_field": "test_value", "intelligence": "external"}`),
-
 					// Check filters field
 					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"must_not": [{"term": {"destination.ip": "127.0.0.1"}}]}}]`),
 
@@ -1164,9 +1125,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:(ip OR domain)"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.1.entries.0.field", "source.ip"),
-
-					// Check meta field (updated values)
-					checkResourceJSONAttr(resourceName, "meta", `{"threat_type": "indicator_match", "custom_field": "updated_value", "intelligence": "external", "updated": "yes"}`),
 
 					// Check filters field (updated values)
 					checkResourceJSONAttr(resourceName, "filters", `[{"regexp": {"destination.domain": ".*\\.suspicious\\.com"}}]`),
@@ -1257,9 +1215,6 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "10"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 
-					// Check meta field
-					checkResourceJSONAttr(resourceName, "meta", `{"threshold_type": "count_based", "custom_field": "test_value", "monitoring": "enabled"}`),
-
 					// Check filters field
 					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"filter": [{"range": {"event.ingested": {"gte": "now-24h"}}}]}}]`),
 
@@ -1332,9 +1287,6 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threshold.value", "20"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.1", "source.ip"),
-
-					// Check meta field (updated values)
-					checkResourceJSONAttr(resourceName, "meta", `{"threshold_type": "count_based", "custom_field": "updated_value", "monitoring": "enabled", "updated": "yes"}`),
 
 					// Check filters field (updated values)
 					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"should": [{"match": {"user.roles": "admin"}}, {"term": {"event.severity": "high"}}], "minimum_should_match": 1}}]`),
@@ -1491,12 +1443,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "@timestamp"
   timestamp_override_fallback_disabled = true
 
-  meta = jsonencode({
-    "custom_field" = "test_value"
-    "environment"  = "testing"
-    "version"      = "1.0"
-  })
-
   filters = jsonencode([
     {
       "bool" = {
@@ -1614,13 +1560,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom Query Rule Name"
   timestamp_override = "event.ingested"
   timestamp_override_fallback_disabled = false
-
-  meta = jsonencode({
-    "custom_field" = "updated_value"
-    "environment"  = "production"
-    "version"      = "2.0"
-    "team"         = "security"
-  })
 
   filters = jsonencode([
     {
@@ -1764,12 +1703,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "process.start"
   timestamp_override_fallback_disabled = false
 
-  meta = jsonencode({
-    "rule_type"   = "eql"
-    "process"     = "monitoring"
-    "severity"    = "high"
-  })
-
   filters = jsonencode([
     {
       "bool" = {
@@ -1869,13 +1802,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "process.end"
   timestamp_override_fallback_disabled = true
 
-  meta = jsonencode({
-    "rule_type"   = "eql"
-    "process"     = "detection"
-    "severity"    = "critical"
-    "updated"     = "true"
-  })
-
   filters = jsonencode([
     {
       "exists" = {
@@ -1974,12 +1900,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "event.created"
   timestamp_override_fallback_disabled = true
 
-  meta = jsonencode({
-    "query_type" = "esql"
-    "analytics"  = "enabled"
-    "phase"      = "testing"
-  })
-
   investigation_fields = ["user.name", "user.domain"]
 
   risk_score_mapping = [
@@ -2073,13 +1993,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom ESQL Rule Name"
   timestamp_override = "event.start"
   timestamp_override_fallback_disabled = false
-
-  meta = jsonencode({
-    "query_type" = "esql"
-    "analytics"  = "enabled"
-    "phase"      = "production"
-    "updated"    = "yes"
-  })
   
   investigation_fields = ["user.name", "user.domain", "event.outcome"]
   
@@ -2170,12 +2083,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "ml.job_id"
   timestamp_override_fallback_disabled = false
 
-  meta = jsonencode({
-    "ml_type"    = "anomaly_detection"
-    "custom_ml"  = "test_value"
-    "threshold"  = "75"
-  })
-
   investigation_fields = ["ml.anomaly_score", "ml.job_id"]
 
   risk_score_mapping = [
@@ -2263,13 +2170,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom ML Rule Name"
   timestamp_override = "ml.anomaly_score"
   timestamp_override_fallback_disabled = true
-
-  meta = jsonencode({
-    "ml_type"    = "anomaly_detection"
-    "custom_ml"  = "updated_value"
-    "threshold"  = "80"
-    "updated"    = "yes"
-  })
 
   investigation_fields = ["ml.anomaly_score", "ml.job_id", "ml.is_anomaly"]
 
@@ -2378,12 +2278,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Custom New Terms Rule Name"
   timestamp_override = "user.created"
   timestamp_override_fallback_disabled = true
-
-  meta = jsonencode({
-    "new_terms_type" = "user_behavior"
-    "custom_field"   = "test_value"
-    "detection"      = "anomaly"
-  })
 
   filters = jsonencode([
     {
@@ -2494,13 +2388,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom New Terms Rule Name"
   timestamp_override = "user.last_login"
   timestamp_override_fallback_disabled = false
-
-  meta = jsonencode({
-    "new_terms_type" = "user_behavior"
-    "custom_field"   = "updated_value"
-    "detection"      = "anomaly"
-    "updated"        = "yes"
-  })
 
   filters = jsonencode([
     {
@@ -2613,12 +2500,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override = "event.start"
   timestamp_override_fallback_disabled = false
 
-  meta = jsonencode({
-    "saved_query_type" = "security"
-    "custom_field"     = "test_value"
-    "query_origin"     = "saved"
-  })
-
   filters = jsonencode([
     {
       "prefix" = {
@@ -2717,13 +2598,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom Saved Query Rule Name"
   timestamp_override = "event.end"
   timestamp_override_fallback_disabled = true
-
-  meta = jsonencode({
-    "saved_query_type" = "security"
-    "custom_field"     = "updated_value"
-    "query_origin"     = "saved"
-    "updated"          = "yes"
-  })
 
   filters = jsonencode([
     {
@@ -2838,12 +2712,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   timestamp_override_fallback_disabled = true
   threat_index = ["threat-intel-*"]
   threat_query = "threat.indicator.type:ip"
-  
-  meta = jsonencode({
-    "threat_type"    = "indicator_match"
-    "custom_field"   = "test_value"
-    "intelligence"   = "external"
-  })
 
   filters = jsonencode([
     {
@@ -2970,13 +2838,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom Threat Match Rule Name"
   timestamp_override = "threat.indicator.last_seen"
   timestamp_override_fallback_disabled = false
-  
-  meta = jsonencode({
-    "threat_type"    = "indicator_match"
-    "custom_field"   = "updated_value"
-    "intelligence"   = "external"
-    "updated"        = "yes"
-  })
 
   filters = jsonencode([
     {
@@ -3103,12 +2964,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Custom Threshold Rule Name"
   timestamp_override = "event.created"
   timestamp_override_fallback_disabled = false
-  
-  meta = jsonencode({
-    "threshold_type" = "count_based"
-    "custom_field"   = "test_value"
-    "monitoring"     = "enabled"
-  })
 
   filters = jsonencode([
     {
@@ -3219,13 +3074,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   rule_name_override = "Updated Custom Threshold Rule Name"
   timestamp_override = "event.start"
   timestamp_override_fallback_disabled = true
-  
-  meta = jsonencode({
-    "threshold_type" = "count_based"
-    "custom_field"   = "updated_value"
-    "monitoring"     = "enabled"
-    "updated"        = "yes"
-  })
 
   filters = jsonencode([
     {
@@ -3750,7 +3598,6 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
@@ -3789,7 +3636,6 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
@@ -3912,7 +3758,6 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
@@ -3973,7 +3818,6 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
@@ -4034,7 +3878,6 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
@@ -4099,7 +3942,6 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
@@ -4162,7 +4004,6 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
@@ -4229,7 +4070,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
@@ -4295,7 +4135,6 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
 					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
-					resource.TestCheckNoResourceAttr(resourceName, "meta"),
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
 					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
