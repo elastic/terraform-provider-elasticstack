@@ -356,6 +356,10 @@ func (a *ApiClient) EnforceMinVersion(ctx context.Context, minVersion *version.V
 	return serverVersion.GreaterThanOrEqual(minVersion), nil
 }
 
+type MinVersionEnforceable interface {
+	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
+}
+
 func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
 	if a.elasticsearch != nil {
 		return a.versionFromElasticsearch(ctx)
