@@ -7,7 +7,7 @@ NAME = elasticstack
 BINARY = terraform-provider-${NAME}
 MARCH = "$$(go env GOOS)_$$(go env GOARCH)"
 
-ACCTEST_PARALLELISM ?= 10
+ACCTEST_PARALLELISM ?= 1
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...

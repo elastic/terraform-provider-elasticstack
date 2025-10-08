@@ -31,6 +31,19 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
+
+	// If version is still empty/unknown, get the latest version
+	if version == "" {
+		latestVersion, diags := fleet.GetLatestPackageVersion(ctx, client, name)
+		respDiags.Append(diags...)
+		if respDiags.HasError() {
+			return
+		}
+		version = latestVersion
+		// Update the plan model with the resolved version
+		planModel.Version = types.StringValue(version)
+	}
+
 	force := planModel.Force.ValueBool()
 	diags = fleet.InstallPackage(ctx, client, name, version, force)
 	respDiags.Append(diags...)
@@ -38,7 +51,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		return
 	}
 
-	planModel.ID = types.StringValue(getPackageID(name, version))
+	planModel.ID = types.StringValue(getPackageID(name))
 
 	diags = state.Set(ctx, planModel)
 	respDiags.Append(diags...)

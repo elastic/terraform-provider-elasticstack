@@ -20,6 +20,9 @@ set ` + "`skip_destroy` to `true`."
 		"id": schema.StringAttribute{
 			Description: "The ID of this resource.",
 			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"name": schema.StringAttribute{
 			Description: "The integration package name.",
@@ -29,8 +32,9 @@ set ` + "`skip_destroy` to `true`."
 			},
 		},
 		"version": schema.StringAttribute{
-			Description: "The integration package version.",
-			Required:    true,
+			Description: "The integration package version. If not specified, the latest version will be installed.",
+			Optional:    true,
+			Computed:    true,
 		},
 		"force": schema.BoolAttribute{
 			Description: "Set to true to force the requested action.",

@@ -13,7 +13,7 @@ type integrationModel struct {
 	SkipDestroy types.Bool   `tfsdk:"skip_destroy"`
 }
 
-func getPackageID(name string, version string) string {
-	hash, _ := utils.StringToHash(name + version)
+func getPackageID(name string) string {
+	hash, _ := utils.StringToHash(name)
 	return *hash
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -21,9 +22,45 @@ var (
 	minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
 )
 
+func cleanupInstalledPackage(t *testing.T, pkgName string) {
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+	require.NoError(t, err)
+
+	if unsupported {
+		return
+	}
+
+	t.Cleanup(func() {
+		client, err := clients.NewAcceptanceTestingClient()
+		require.NoError(t, err)
+
+		fleetClient, err := client.GetFleetClient()
+		require.NoError(t, err)
+
+		var version string
+		for {
+			pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, version)
+			require.Empty(t, diags)
+
+			if pkg.Status == nil || *pkg.Status != "installed" {
+				return
+			}
+
+			version = pkg.Version
+			diags = fleet.Uninstall(context.Background(), fleetClient, pkgName, version, true)
+			require.Empty(t, diags)
+
+			time.Sleep(1 * time.Second)
+		}
+	})
+}
+
 func TestAccResourceIntegrationFromSDK(t *testing.T) {
+	cleanupInstalledPackage(t, "tcp")
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
 		Steps: []resource.TestStep{
 			{
 				ExternalProviders: map[string]resource.ExternalProvider{
@@ -53,8 +90,11 @@ func TestAccResourceIntegrationFromSDK(t *testing.T) {
 }
 
 func TestAccResourceIntegration(t *testing.T) {
+	cleanupInstalledPackage(t, "tcp")
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
@@ -78,9 +118,12 @@ func TestAccResourceIntegration(t *testing.T) {
 }
 
 func TestAccResourceIntegrationWithPolicy(t *testing.T) {
+	cleanupInstalledPackage(t, "tcp")
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
@@ -112,8 +155,12 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 }
 
 func TestAccResourceIntegrationDeleted(t *testing.T) {
+	cleanupInstalledPackage(t, "sysmon_linux")
+
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
@@ -147,6 +194,57 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegrationLatestVersion(t *testing.T) {
+	cleanupInstalledPackage(t, "tcp")
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegration,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					// First ensure the package is installed with a specific (non-latest)
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationLatestVersion,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					// Since we don't specify a version, it should be populated with the latest available version
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_integration.test_integration", "version", func(version string) error {
+						client, err := clients.NewAcceptanceTestingClient()
+						if err != nil {
+							return err
+						}
+
+						fleetClient, err := client.GetFleetClient()
+						if err != nil {
+							return err
+						}
+
+						latestVersion, diags := fleet.GetLatestPackageVersion(t.Context(), fleetClient, "tcp")
+						if diags.HasError() {
+							return fmt.Errorf("Failed to get latest package version: %v", diags)
+						}
+
+						if version != latestVersion {
+							return fmt.Errorf("Installed version [%s] was not the latest version [%s]", latestVersion, version)
+						}
+
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
 const testAccResourceIntegration = `
 provider "elasticstack" {
   elasticsearch {}
@@ -156,6 +254,19 @@ provider "elasticstack" {
 resource "elasticstack_fleet_integration" "test_integration" {
   name         = "tcp"
   version      = "1.16.0"
+  force        = true
+  skip_destroy = true
+}
+`
+
+const testAccResourceIntegrationLatestVersion = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration" {
+  name         = "tcp"
   force        = true
   skip_destroy = true
 }

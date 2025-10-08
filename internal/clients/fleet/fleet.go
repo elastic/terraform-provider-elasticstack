@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -334,7 +335,13 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 func GetPackage(ctx context.Context, client *Client, name, version string) (*kbapi.PackageInfo, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}
 
-	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params)
+	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, func(ctx context.Context, req *http.Request) error {
+		if version == "" {
+			req.URL.Path = strings.TrimRight(req.URL.Path, "/")
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -410,4 +417,22 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool) ([]kbapi.
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
+}
+
+// GetLatestPackageVersion gets the latest version of a package by name.
+func GetLatestPackageVersion(ctx context.Context, client *Client, name string) (string, diag.Diagnostics) {
+	pkg, diags := GetPackage(ctx, client, name, "")
+	if diags.HasError() {
+		return "", diags
+	}
+
+	if pkg == nil {
+		return "", diagutil.FrameworkDiagFromError(ErrPackageNotFound)
+	}
+
+	if pkg.LatestVersion != nil {
+		return *pkg.LatestVersion, nil
+	}
+
+	return pkg.Version, nil
 }

@@ -40,12 +40,12 @@ resource "elasticstack_fleet_integration" "test_integration" {
 ### Required
 
 - `name` (String) The integration package name.
-- `version` (String) The integration package version.
 
 ### Optional
 
 - `force` (Boolean) Set to true to force the requested action.
 - `skip_destroy` (Boolean) Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.
+- `version` (String) The integration package version. If not specified, the latest version will be installed.
 
 ### Read-Only
 

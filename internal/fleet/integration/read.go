@@ -24,8 +24,7 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	name := stateModel.Name.ValueString()
-	version := stateModel.Version.ValueString()
-	pkg, diags := fleet.GetPackage(ctx, client, name, version)
+	pkg, diags := fleet.GetPackage(ctx, client, name, "")
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -35,7 +34,8 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	stateModel.ID = types.StringValue(getPackageID(name, version))
+	stateModel.ID = types.StringValue(getPackageID(name))
+	stateModel.Version = types.StringValue(pkg.Version)
 
 	diags = resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
