@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -30,29 +29,29 @@ func cleanupInstalledPackage(t *testing.T, pkgName string) {
 		return
 	}
 
-	t.Cleanup(func() {
-		client, err := clients.NewAcceptanceTestingClient()
-		require.NoError(t, err)
+	// t.Cleanup(func() {
+	// 	client, err := clients.NewAcceptanceTestingClient()
+	// 	require.NoError(t, err)
 
-		fleetClient, err := client.GetFleetClient()
-		require.NoError(t, err)
+	// 	fleetClient, err := client.GetFleetClient()
+	// 	require.NoError(t, err)
 
-		var version string
-		for {
-			pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, version)
-			require.Empty(t, diags)
+	// 	var version string
+	// 	for {
+	// 		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, version)
+	// 		require.Empty(t, diags)
 
-			if pkg.Status == nil || *pkg.Status != "installed" {
-				return
-			}
+	// 		if pkg.Status == nil || *pkg.Status != "installed" {
+	// 			return
+	// 		}
 
-			version = pkg.Version
-			diags = fleet.Uninstall(context.Background(), fleetClient, pkgName, version, true)
-			require.Empty(t, diags)
+	// 		version = pkg.Version
+	// 		diags = fleet.Uninstall(context.Background(), fleetClient, pkgName, version, true)
+	// 		require.Empty(t, diags)
 
-			time.Sleep(1 * time.Second)
-		}
-	})
+	// 		time.Sleep(1 * time.Second)
+	// 	}
+	// })
 }
 
 func TestAccResourceIntegrationFromSDK(t *testing.T) {
