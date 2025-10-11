@@ -65,6 +65,39 @@ func TestAccResourceDataView(t *testing.T) {
 	})
 }
 
+// TestAccResourceDataViewFieldAttrsReproduceIssue reproduces the issue where
+// server-side generated field popularity counts cause forced replacement
+func TestAccResourceDataViewFieldAttrsReproduceIssue(t *testing.T) {
+	indexName := "reproduce-issue-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				Config:   testAccResourceDataViewReproduceIssue(indexName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.reproduce_issue", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.reproduce_issue", "data_view.title", indexName+"*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.reproduce_issue", "data_view.name", "Reproduce Issue Data View"),
+				),
+			},
+			// This step verifies that server-side generated field_attrs don't force replacement
+			// In a real scenario, this would happen after Kibana UI interaction generates counts
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				Config:   testAccResourceDataViewReproduceIssue(indexName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.reproduce_issue", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.reproduce_issue", "data_view.title", indexName+"*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.reproduce_issue", "data_view.name", "Reproduce Issue Data View"),
+				),
+			},
+		},
+	})
+}
+
 func testAccResourceDataViewPre8_8DV(indexName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -150,4 +183,25 @@ resource "elasticstack_kibana_data_view" "dv" {
 		allow_no_index  = true
 	}
 }`, indexName, indexName, indexName)
+}
+
+func testAccResourceDataViewReproduceIssue(indexName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+	elasticsearch {}
+	kibana {}
+}
+
+resource "elasticstack_elasticsearch_index" "reproduce_issue_index" {
+	name                = "%s"
+	deletion_protection = false
+}
+
+resource "elasticstack_kibana_data_view" "reproduce_issue" {
+	data_view = {
+		title = "%s*"
+		name  = "Reproduce Issue Data View"
+		id    = "reproduce-issue-data-view-id"
+	}
+}`, indexName, indexName)
 }

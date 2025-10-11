@@ -202,6 +202,111 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 		},
+		{
+			// Test handling of server-side count updates without existing field_attrs
+			name: "server_side_count_updates_no_existing_attrs",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("default/test-id"),
+				SpaceID: types.StringValue("default"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("test-id"),
+					Title:           types.StringValue("test-title"),
+					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					SourceFilters:   types.ListNull(types.StringType),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      utils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id:    utils.Pointer("test-id"),
+					Title: utils.Pointer("test-title"),
+					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
+						"host.hostname": {
+							Count: utils.Pointer(5),
+						},
+						"event.action": {
+							Count: utils.Pointer(12),
+						},
+					},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("default/test-id"),
+				SpaceID: types.StringValue("default"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:    types.StringValue("test-id"),
+					Title: types.StringValue("test-title"),
+					FieldAttributes: utils.MapValueFrom(ctx, map[string]fieldAttrModel{
+						"host.hostname": {
+							CustomLabel: types.StringNull(),
+							Count:       types.Int64Value(5),
+						},
+						"event.action": {
+							CustomLabel: types.StringNull(),
+							Count:       types.Int64Value(12),
+						},
+					}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      utils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
+		{
+			// Test handling of server-side count updates with existing field_attrs
+			name: "server_side_count_updates_with_existing_attrs",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("default/test-id"),
+				SpaceID: types.StringValue("default"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:    types.StringValue("test-id"),
+					Title: types.StringValue("test-title"),
+					FieldAttributes: utils.MapValueFrom(ctx, map[string]fieldAttrModel{
+						"host.hostname": {
+							CustomLabel: types.StringValue("Host Name"),
+							Count:       types.Int64Null(), // Null count in state
+						},
+					}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      utils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id:    utils.Pointer("test-id"),
+					Title: utils.Pointer("test-title"),
+					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
+						"host.hostname": {
+							CustomLabel: utils.Pointer("Host Name"),
+							Count:       utils.Pointer(15), // Server-side count
+						},
+					},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("default/test-id"),
+				SpaceID: types.StringValue("default"),
+				DataView: utils.ObjectValueFrom(ctx, &innerModel{
+					ID:    types.StringValue("test-id"),
+					Title: types.StringValue("test-title"),
+					FieldAttributes: utils.MapValueFrom(ctx, map[string]fieldAttrModel{
+						"host.hostname": {
+							CustomLabel: types.StringValue("Host Name"),
+							Count:       types.Int64Value(15), // Should accept server-side value
+						},
+					}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					SourceFilters:   types.ListNull(types.StringType),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      utils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
 	}
 
 	require.Empty(t, diags)
