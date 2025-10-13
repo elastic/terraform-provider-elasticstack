@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+- Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
+
+## [0.11.18] - 2025-10-10
+
 - Create `elasticstack_kibana_security_detection_rule` resource. ([#1290](https://github.com/elastic/terraform-provider-elasticstack/pull/1290))
 - Add `elasticstack_kibana_export_saved_objects` data source ([#1293](https://github.com/elastic/terraform-provider-elasticstack/pull/1293))
 - Create `elasticstack_kibana_maintenance_window` resource. ([#1224](https://github.com/elastic/terraform-provider-elasticstack/pull/1224))
@@ -461,7 +465,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...HEAD
+[0.11.18]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...v0.11.18
 [0.11.17]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...v0.11.17
 [0.11.16]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
 [0.11.15]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...v0.11.15
