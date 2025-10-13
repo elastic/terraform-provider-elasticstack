@@ -103,6 +103,7 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 		TimestampOverrideFallbackDisabled: &queryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &queryRule.InvestigationFields,
 		Filters:                           &queryRule.Filters,
+		Threat:                            &queryRule.Threat,
 	}, &diags, client)
 
 	// Set query-specific fields
@@ -191,6 +192,7 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		TimestampOverrideFallbackDisabled: &queryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &queryRule.InvestigationFields,
 		Filters:                           &queryRule.Filters,
+		Threat:                            &queryRule.Threat,
 	}, &diags, client)
 
 	// Set query-specific fields
@@ -263,6 +265,10 @@ func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQ
 	d.UpdatedAt = utils.TimeToStringValue(rule.UpdatedAt)
 	d.UpdatedBy = types.StringValue(rule.UpdatedBy)
 	d.Revision = types.Int64Value(int64(rule.Revision))
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update index patterns
 	indexDiags := d.updateIndexFromApi(ctx, rule.Index)

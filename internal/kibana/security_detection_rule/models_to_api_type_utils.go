@@ -391,6 +391,90 @@ func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbap
 	return apiThreatMapping, diags
 }
 
+// Helper function to convert MITRE ATT&CK threat data from Terraform to API format
+func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.SecurityDetectionsAPIThreatArray, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(d.Threat) || len(d.Threat.Elements()) == 0 {
+		return nil, diags
+	}
+
+	threats := make([]ThreatModel, len(d.Threat.Elements()))
+	threatDiags := d.Threat.ElementsAs(ctx, &threats, false)
+	if threatDiags.HasError() {
+		diags.Append(threatDiags...)
+		return nil, diags
+	}
+
+	apiThreats := make(kbapi.SecurityDetectionsAPIThreatArray, 0)
+	for _, threat := range threats {
+		apiThreat := kbapi.SecurityDetectionsAPIThreat{
+			Framework: threat.Framework.ValueString(),
+		}
+
+		// Convert tactic
+		var tacticModel ThreatTacticModel
+		tacticDiags := threat.Tactic.As(ctx, &tacticModel, basetypes.ObjectAsOptions{})
+		if tacticDiags.HasError() {
+			diags.Append(tacticDiags...)
+			continue
+		}
+
+		apiThreat.Tactic = kbapi.SecurityDetectionsAPIThreatTactic{
+			Id:        tacticModel.Id.ValueString(),
+			Name:      tacticModel.Name.ValueString(),
+			Reference: tacticModel.Reference.ValueString(),
+		}
+
+		// Convert techniques (optional)
+		if utils.IsKnown(threat.Technique) && len(threat.Technique.Elements()) > 0 {
+			techniques := make([]ThreatTechniqueModel, len(threat.Technique.Elements()))
+			techniqueDiags := threat.Technique.ElementsAs(ctx, &techniques, false)
+			if techniqueDiags.HasError() {
+				diags.Append(techniqueDiags...)
+				continue
+			}
+
+			apiTechniques := make([]kbapi.SecurityDetectionsAPIThreatTechnique, 0)
+			for _, technique := range techniques {
+				apiTechnique := kbapi.SecurityDetectionsAPIThreatTechnique{
+					Id:        technique.Id.ValueString(),
+					Name:      technique.Name.ValueString(),
+					Reference: technique.Reference.ValueString(),
+				}
+
+				// Convert subtechniques (optional)
+				if utils.IsKnown(technique.Subtechnique) && len(technique.Subtechnique.Elements()) > 0 {
+					subtechniques := make([]ThreatSubtechniqueModel, len(technique.Subtechnique.Elements()))
+					subtechniqueDiags := technique.Subtechnique.ElementsAs(ctx, &subtechniques, false)
+					if subtechniqueDiags.HasError() {
+						diags.Append(subtechniqueDiags...)
+						continue
+					}
+
+					apiSubtechniques := make([]kbapi.SecurityDetectionsAPIThreatSubtechnique, 0)
+					for _, subtechnique := range subtechniques {
+						apiSubtechnique := kbapi.SecurityDetectionsAPIThreatSubtechnique{
+							Id:        subtechnique.Id.ValueString(),
+							Name:      subtechnique.Name.ValueString(),
+							Reference: subtechnique.Reference.ValueString(),
+						}
+						apiSubtechniques = append(apiSubtechniques, apiSubtechnique)
+					}
+					apiTechnique.Subtechnique = &apiSubtechniques
+				}
+
+				apiTechniques = append(apiTechniques, apiTechnique)
+			}
+			apiThreat.Technique = &apiTechniques
+		}
+
+		apiThreats = append(apiThreats, apiThreat)
+	}
+
+	return apiThreats, diags
+}
+
 // Helper function to process response actions configuration for all rule types
 func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, client clients.MinVersionEnforceable) ([]kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
 	var diags diag.Diagnostics

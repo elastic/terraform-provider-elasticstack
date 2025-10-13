@@ -113,6 +113,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		TimestampOverrideFallbackDisabled: &newTermsRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &newTermsRule.InvestigationFields,
 		Filters:                           &newTermsRule.Filters,
+		Threat:                            &newTermsRule.Threat,
 	}, &diags, client)
 
 	// Set query language
@@ -202,6 +203,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		TimestampOverride:                 &newTermsRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &newTermsRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &newTermsRule.Filters,
+		Threat:                            &newTermsRule.Threat,
 	}, &diags, client)
 
 	// Set query language
@@ -307,6 +309,10 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)

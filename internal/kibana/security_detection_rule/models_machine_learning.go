@@ -117,6 +117,8 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		TimestampOverride:                 &mlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &mlRule.InvestigationFields,
+		Filters:                           nil, // ML rules don't have Filters
+		Threat:                            &mlRule.Threat,
 	}, &diags, client)
 
 	// ML rules don't use index patterns or query
@@ -210,6 +212,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &mlRule.InvestigationFields,
 		Filters:                           nil, // ML rules don't have Filters
+		Threat:                            &mlRule.Threat,
 	}, &diags, client)
 
 	// ML rules don't use index patterns or query
@@ -322,6 +325,10 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)

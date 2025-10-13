@@ -240,6 +240,31 @@ type SeverityMappingModel struct {
 	Severity types.String `tfsdk:"severity"`
 }
 
+type ThreatModel struct {
+	Framework types.String `tfsdk:"framework"`
+	Tactic    types.Object `tfsdk:"tactic"`
+	Technique types.List   `tfsdk:"technique"`
+}
+
+type ThreatTacticModel struct {
+	Id        types.String `tfsdk:"id"`
+	Name      types.String `tfsdk:"name"`
+	Reference types.String `tfsdk:"reference"`
+}
+
+type ThreatTechniqueModel struct {
+	Id           types.String `tfsdk:"id"`
+	Name         types.String `tfsdk:"name"`
+	Reference    types.String `tfsdk:"reference"`
+	Subtechnique types.List   `tfsdk:"subtechnique"`
+}
+
+type ThreatSubtechniqueModel struct {
+	Id        types.String `tfsdk:"id"`
+	Name      types.String `tfsdk:"name"`
+	Reference types.String `tfsdk:"reference"`
+}
+
 // CommonCreateProps holds all the field pointers for setting common create properties
 type CommonCreateProps struct {
 	Actions                           **[]kbapi.SecurityDetectionsAPIRuleAction
@@ -273,6 +298,7 @@ type CommonCreateProps struct {
 	TimestampOverrideFallbackDisabled **kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
 	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
 	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
+	Threat                            **kbapi.SecurityDetectionsAPIThreatArray
 }
 
 // CommonUpdateProps holds all the field pointers for setting common update properties
@@ -308,6 +334,7 @@ type CommonUpdateProps struct {
 	TimestampOverrideFallbackDisabled **kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
 	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
 	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
+	Threat                            **kbapi.SecurityDetectionsAPIThreatArray
 }
 
 // Helper function to set common properties across all rule types
@@ -538,6 +565,15 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 			*props.AlertSuppression = alertSuppression
 		}
 	}
+
+	// Set threat (MITRE ATT&CK framework)
+	if props.Threat != nil && utils.IsKnown(d.Threat) {
+		threat, threatDiags := d.threatToApi(ctx)
+		diags.Append(threatDiags...)
+		if !threatDiags.HasError() && len(threat) > 0 {
+			*props.Threat = &threat
+		}
+	}
 }
 
 // Helper function to set common update properties across all rule types
@@ -760,6 +796,15 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		alertSuppression := d.alertSuppressionToApi(ctx, diags)
 		if alertSuppression != nil {
 			*props.AlertSuppression = alertSuppression
+		}
+	}
+
+	// Set threat (MITRE ATT&CK framework)
+	if props.Threat != nil && utils.IsKnown(d.Threat) {
+		threat, threatDiags := d.threatToApi(ctx)
+		diags.Append(threatDiags...)
+		if !threatDiags.HasError() && len(threat) > 0 {
+			*props.Threat = &threat
 		}
 	}
 }

@@ -894,3 +894,19 @@ func getRequiredFieldElementType() attr.Type {
 func getSeverityMappingElementType() attr.Type {
 	return GetSchema().Attributes["severity_mapping"].GetType().(attr.TypeWithElementType).ElementType()
 }
+
+func getThreatTacticType() map[string]attr.Type {
+	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return threatType.AttributeTypes()["tactic"].(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getThreatTechniqueElementType() attr.Type {
+	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType()
+}
+
+func getThreatSubtechniqueElementType() attr.Type {
+	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	techniqueType := threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return techniqueType.AttributeTypes()["subtechnique"].(attr.TypeWithElementType).ElementType()
+}

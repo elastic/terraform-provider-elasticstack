@@ -104,6 +104,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context, cl
 		TimestampOverrideFallbackDisabled: &esqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &esqlRule.InvestigationFields,
 		Filters:                           nil, // ESQL rules don't support this field
+		Threat:                            &esqlRule.Threat,
 	}, &diags, client)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -185,6 +186,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context, cl
 		TimestampOverrideFallbackDisabled: &esqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &esqlRule.InvestigationFields,
 		Filters:                           nil, // ESQL rules don't have Filters
+		Threat:                            &esqlRule.Threat,
 	}, &diags, client)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -277,6 +279,10 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)

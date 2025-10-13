@@ -102,6 +102,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &savedQueryRule.InvestigationFields,
 		Filters:                           &savedQueryRule.Filters,
+		Threat:                            &savedQueryRule.Threat,
 	}, &diags, client)
 
 	// Set optional query for saved query rules
@@ -188,6 +189,7 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		TimestampOverride:                 &savedQueryRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &savedQueryRule.Filters,
+		Threat:                            &savedQueryRule.Threat,
 	}, &diags, client)
 
 	// Set optional query for saved query rules
@@ -297,6 +299,10 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)

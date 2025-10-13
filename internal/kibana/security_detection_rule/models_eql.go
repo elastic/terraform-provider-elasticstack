@@ -103,6 +103,7 @@ func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforcea
 		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &eqlRule.InvestigationFields,
 		Filters:                           &eqlRule.Filters,
+		Threat:                            &eqlRule.Threat,
 	}, &diags, client)
 
 	// Set EQL-specific fields
@@ -187,6 +188,7 @@ func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforcea
 		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &eqlRule.InvestigationFields,
 		Filters:                           &eqlRule.Filters,
+		Threat:                            &eqlRule.Threat,
 	}, &diags, client)
 
 	// Set EQL-specific fields
@@ -294,6 +296,10 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
