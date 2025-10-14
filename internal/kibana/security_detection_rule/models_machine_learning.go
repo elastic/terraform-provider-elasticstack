@@ -62,7 +62,8 @@ func (m MachineLearningRuleProcessor) ExtractId(response any) (string, diag.Diag
 // applyMachineLearningValidations validates that Machine learning-specific constraints are met
 func (d SecurityDetectionRuleData) applyMachineLearningValidations(diags *diag.Diagnostics) {
 	if !utils.IsKnown(d.AnomalyThreshold) {
-		diags.AddError(
+		diags.AddAttributeError(
+			path.Root("anomaly_threshold"),
 			"Missing attribute 'anomaly_threshold'",
 			"Machine learning rules require an 'anomaly_threshold' attribute.",
 		)
