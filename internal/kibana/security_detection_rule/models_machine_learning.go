@@ -59,9 +59,25 @@ func (m MachineLearningRuleProcessor) ExtractId(response any) (string, diag.Diag
 	return value.Id.String(), diags
 }
 
+// applyMachineLearningValidations validates that Machine learning-specific constraints are met
+func (d SecurityDetectionRuleData) applyMachineLearningValidations(diags *diag.Diagnostics) {
+	if !utils.IsKnown(d.AnomalyThreshold) {
+		diags.AddAttributeError(
+			path.Root("anomaly_threshold"),
+			"Missing attribute 'anomaly_threshold'",
+			"Machine learning rules require an 'anomaly_threshold' attribute.",
+		)
+	}
+}
+
 func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
+
+	d.applyMachineLearningValidations(&diags)
+	if diags.HasError() {
+		return createProps, diags
+	}
 
 	mlRule := kbapi.SecurityDetectionsAPIMachineLearningRuleCreateProps{
 		Name:             kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
@@ -117,6 +133,10 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		TimestampOverride:                 &mlRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &mlRule.InvestigationFields,
+		Filters:                           nil, // ML rules don't have Filters
+		Threat:                            &mlRule.Threat,
+		TimelineId:                        &mlRule.TimelineId,
+		TimelineTitle:                     &mlRule.TimelineTitle,
 	}, &diags, client)
 
 	// ML rules don't use index patterns or query
@@ -135,6 +155,11 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
+
+	d.applyMachineLearningValidations(&diags)
+	if diags.HasError() {
+		return updateProps, diags
+	}
 
 	// Parse ID to get space_id and rule_id
 	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
@@ -210,6 +235,9 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &mlRule.InvestigationFields,
 		Filters:                           nil, // ML rules don't have Filters
+		Threat:                            &mlRule.Threat,
+		TimelineId:                        &mlRule.TimelineId,
+		TimelineTitle:                     &mlRule.TimelineTitle,
 	}, &diags, client)
 
 	// ML rules don't use index patterns or query
@@ -241,6 +269,8 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 
 	// Update common fields (ML doesn't support DataViewId)
 	d.DataViewId = types.StringNull()
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
 	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
 	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)
@@ -322,6 +352,10 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	// Update investigation fields
 	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)

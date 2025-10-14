@@ -93,6 +93,7 @@ func GetSchema() schema.Schema {
 			"query": schema.StringAttribute{
 				MarkdownDescription: "The query language definition.",
 				Optional:            true,
+				Computed:            true,
 			},
 			"language": schema.StringAttribute{
 				MarkdownDescription: "The query language (KQL or Lucene).",
@@ -365,6 +366,7 @@ func GetSchema() schema.Schema {
 						"frequency": schema.SingleNestedAttribute{
 							MarkdownDescription: "The action frequency defines when the action runs.",
 							Optional:            true,
+							Computed:            true,
 							Attributes: map[string]schema.Attribute{
 								"notify_when": schema.StringAttribute{
 									MarkdownDescription: "Defines how often rules run actions. Valid values: onActionGroupChange, onActiveAlert, onThrottleInterval.",
@@ -635,6 +637,7 @@ func GetSchema() schema.Schema {
 			"threat_query": schema.StringAttribute{
 				MarkdownDescription: "Query used to filter threat intelligence data. Optional for threat_match rules.",
 				Optional:            true,
+				Computed:            true,
 			},
 			"threat_mapping": schema.ListNestedAttribute{
 				MarkdownDescription: "Array of threat mappings that specify how to match events with threat intelligence. Required for threat_match rules.",
@@ -893,4 +896,20 @@ func getRequiredFieldElementType() attr.Type {
 
 func getSeverityMappingElementType() attr.Type {
 	return GetSchema().Attributes["severity_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getThreatTacticType() map[string]attr.Type {
+	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return threatType.AttributeTypes()["tactic"].(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getThreatTechniqueElementType() attr.Type {
+	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType()
+}
+
+func getThreatSubtechniqueElementType() attr.Type {
+	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	techniqueType := threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	return techniqueType.AttributeTypes()["subtechnique"].(attr.TypeWithElementType).ElementType()
 }

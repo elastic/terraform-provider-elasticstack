@@ -699,6 +699,32 @@ func (d *SecurityDetectionRuleData) updateDataViewIdFromApi(ctx context.Context,
 	return diags
 }
 
+// Helper function to update timeline ID from API response
+func (d *SecurityDetectionRuleData) updateTimelineIdFromApi(ctx context.Context, timelineId *kbapi.SecurityDetectionsAPITimelineTemplateId) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if timelineId != nil {
+		d.TimelineId = types.StringValue(string(*timelineId))
+	} else {
+		d.TimelineId = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update timeline title from API response
+func (d *SecurityDetectionRuleData) updateTimelineTitleFromApi(ctx context.Context, timelineTitle *kbapi.SecurityDetectionsAPITimelineTemplateTitle) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if timelineTitle != nil {
+		d.TimelineTitle = types.StringValue(string(*timelineTitle))
+	} else {
+		d.TimelineTitle = types.StringNull()
+	}
+
+	return diags
+}
+
 // Helper function to update namespace from API response
 func (d *SecurityDetectionRuleData) updateNamespaceFromApi(ctx context.Context, namespace *kbapi.SecurityDetectionsAPIAlertsIndexNamespace) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -983,6 +1009,105 @@ func (d *SecurityDetectionRuleData) updateRequiredFieldsFromApi(ctx context.Cont
 		}
 	} else {
 		d.RequiredFields = types.ListNull(getRequiredFieldElementType())
+	}
+
+	return diags
+}
+
+// convertThreatToModel converts kbapi.SecurityDetectionsAPIThreatArray to Terraform model
+func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetectionsAPIThreatArray) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if apiThreats == nil || len(*apiThreats) == 0 {
+		return types.ListNull(getThreatElementType()), diags
+	}
+
+	threats := make([]ThreatModel, 0)
+
+	for _, apiThreat := range *apiThreats {
+		threat := ThreatModel{
+			Framework: types.StringValue(apiThreat.Framework),
+		}
+
+		// Convert tactic
+		tacticModel := ThreatTacticModel{
+			Id:        types.StringValue(apiThreat.Tactic.Id),
+			Name:      types.StringValue(apiThreat.Tactic.Name),
+			Reference: types.StringValue(apiThreat.Tactic.Reference),
+		}
+
+		tacticObj, tacticDiags := types.ObjectValueFrom(ctx, getThreatTacticType(), tacticModel)
+		diags.Append(tacticDiags...)
+		if tacticDiags.HasError() {
+			continue
+		}
+		threat.Tactic = tacticObj
+
+		// Convert techniques (optional)
+		if apiThreat.Technique != nil && len(*apiThreat.Technique) > 0 {
+			techniques := make([]ThreatTechniqueModel, 0)
+
+			for _, apiTechnique := range *apiThreat.Technique {
+				technique := ThreatTechniqueModel{
+					Id:        types.StringValue(apiTechnique.Id),
+					Name:      types.StringValue(apiTechnique.Name),
+					Reference: types.StringValue(apiTechnique.Reference),
+				}
+
+				// Convert subtechniques (optional)
+				if apiTechnique.Subtechnique != nil && len(*apiTechnique.Subtechnique) > 0 {
+					subtechniques := make([]ThreatSubtechniqueModel, 0)
+
+					for _, apiSubtechnique := range *apiTechnique.Subtechnique {
+						subtechnique := ThreatSubtechniqueModel{
+							Id:        types.StringValue(apiSubtechnique.Id),
+							Name:      types.StringValue(apiSubtechnique.Name),
+							Reference: types.StringValue(apiSubtechnique.Reference),
+						}
+						subtechniques = append(subtechniques, subtechnique)
+					}
+
+					subtechniquesList, subtechniquesListDiags := types.ListValueFrom(ctx, getThreatSubtechniqueElementType(), subtechniques)
+					diags.Append(subtechniquesListDiags...)
+					if !subtechniquesListDiags.HasError() {
+						technique.Subtechnique = subtechniquesList
+					}
+				} else {
+					technique.Subtechnique = types.ListNull(getThreatSubtechniqueElementType())
+				}
+
+				techniques = append(techniques, technique)
+			}
+
+			techniquesList, techniquesListDiags := types.ListValueFrom(ctx, getThreatTechniqueElementType(), techniques)
+			diags.Append(techniquesListDiags...)
+			if !techniquesListDiags.HasError() {
+				threat.Technique = techniquesList
+			}
+		} else {
+			threat.Technique = types.ListNull(getThreatTechniqueElementType())
+		}
+
+		threats = append(threats, threat)
+	}
+
+	listValue, listDiags := types.ListValueFrom(ctx, getThreatElementType(), threats)
+	diags.Append(listDiags...)
+	return listValue, diags
+}
+
+// Helper function to update threat from API response
+func (d *SecurityDetectionRuleData) updateThreatFromApi(ctx context.Context, threat *kbapi.SecurityDetectionsAPIThreatArray) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if threat != nil && len(*threat) > 0 {
+		threatValue, threatDiags := convertThreatToModel(ctx, threat)
+		diags.Append(threatDiags...)
+		if !threatDiags.HasError() {
+			d.Threat = threatValue
+		}
+	} else {
+		d.Threat = types.ListNull(getThreatElementType())
 	}
 
 	return diags

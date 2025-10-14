@@ -4522,3 +4522,252 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 `, name)
 }
+
+func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_queryWithMitreThreat("test-query-mitre-rule"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-query-mitre-rule"),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "process.parent.name:(EXCEL.EXE OR WINWORD.EXE OR POWERPNT.EXE OR OUTLOOK.EXE)"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Detects processes started by MS Office programs"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "50"),
+					resource.TestCheckResourceAttr(resourceName, "from", "now-70m"),
+					resource.TestCheckResourceAttr(resourceName, "to", "now"),
+					resource.TestCheckResourceAttr(resourceName, "interval", "1h"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "index.1", "winlogbeat-*"),
+					resource.TestCheckResourceAttr(resourceName, "max_signals", "100"),
+
+					// Check tags
+					resource.TestCheckResourceAttr(resourceName, "tags.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "tags.0", "child process"),
+					resource.TestCheckResourceAttr(resourceName, "tags.1", "ms office"),
+					resource.TestCheckResourceAttr(resourceName, "tags.2", "terraform-test"),
+
+					// Check references
+					resource.TestCheckResourceAttr(resourceName, "references.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "references.0", "https://attack.mitre.org/techniques/T1566/001/"),
+
+					// Check false positives
+					resource.TestCheckResourceAttr(resourceName, "false_positives.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "false_positives.0", "Legitimate corporate macros"),
+
+					// Check author
+					resource.TestCheckResourceAttr(resourceName, "author.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "author.0", "Security Team"),
+
+					// Check license
+					resource.TestCheckResourceAttr(resourceName, "license", "Elastic License v2"),
+
+					// Check note
+					resource.TestCheckResourceAttr(resourceName, "note", "Investigate parent process and command line"),
+
+					// Check threat (MITRE ATT&CK)
+					resource.TestCheckResourceAttr(resourceName, "threat.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.framework", "MITRE ATT&CK"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.tactic.id", "TA0009"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.tactic.name", "Collection"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.tactic.reference", "https://attack.mitre.org/tactics/TA0009"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.id", "T1123"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.name", "Audio Capture"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.reference", "https://attack.mitre.org/techniques/T1123"),
+
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_queryWithMitreThreatUpdate("test-query-mitre-rule-updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-query-mitre-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated detection rule for processes started by MS Office programs"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
+					resource.TestCheckResourceAttr(resourceName, "from", "now-2h"),
+					resource.TestCheckResourceAttr(resourceName, "interval", "30m"),
+					resource.TestCheckResourceAttr(resourceName, "max_signals", "200"),
+
+					// Check updated tags
+					resource.TestCheckResourceAttr(resourceName, "tags.#", "4"),
+					resource.TestCheckResourceAttr(resourceName, "tags.0", "child process"),
+					resource.TestCheckResourceAttr(resourceName, "tags.1", "ms office"),
+					resource.TestCheckResourceAttr(resourceName, "tags.2", "terraform-test"),
+					resource.TestCheckResourceAttr(resourceName, "tags.3", "updated"),
+
+					// Check updated references
+					resource.TestCheckResourceAttr(resourceName, "references.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "references.0", "https://attack.mitre.org/techniques/T1566/001/"),
+					resource.TestCheckResourceAttr(resourceName, "references.1", "https://attack.mitre.org/techniques/T1204/002/"),
+
+					// Check updated false positives
+					resource.TestCheckResourceAttr(resourceName, "false_positives.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "false_positives.0", "Legitimate corporate macros"),
+					resource.TestCheckResourceAttr(resourceName, "false_positives.1", "Authorized office automation"),
+
+					// Check updated author
+					resource.TestCheckResourceAttr(resourceName, "author.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "author.0", "Security Team"),
+					resource.TestCheckResourceAttr(resourceName, "author.1", "SOC Team"),
+
+					// Check updated note
+					resource.TestCheckResourceAttr(resourceName, "note", "Investigate parent process and command line. Check for malicious documents."),
+
+					// Check updated threat - multiple techniques
+					resource.TestCheckResourceAttr(resourceName, "threat.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.framework", "MITRE ATT&CK"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.tactic.id", "TA0002"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.tactic.name", "Execution"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.tactic.reference", "https://attack.mitre.org/tactics/TA0002"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.id", "T1566"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.name", "Phishing"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.reference", "https://attack.mitre.org/techniques/T1566"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.subtechnique.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.subtechnique.0.id", "T1566.001"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.subtechnique.0.name", "Spearphishing Attachment"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.subtechnique.0.reference", "https://attack.mitre.org/techniques/T1566/001"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.1.id", "T1204"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.1.name", "User Execution"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.1.reference", "https://attack.mitre.org/techniques/T1204"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.1.subtechnique.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.1.subtechnique.0.id", "T1204.002"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.1.subtechnique.0.name", "Malicious File"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.1.subtechnique.0.reference", "https://attack.mitre.org/techniques/T1204/002"),
+				),
+			},
+		},
+	})
+}
+
+func testAccSecurityDetectionRuleConfig_queryWithMitreThreat(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "query"
+  query       = "process.parent.name:(EXCEL.EXE OR WINWORD.EXE OR POWERPNT.EXE OR OUTLOOK.EXE)"
+  language    = "kuery"
+  enabled     = true
+  description = "Detects processes started by MS Office programs"
+  severity    = "low"
+  risk_score  = 50
+  from        = "now-70m"
+  to          = "now"
+  interval    = "1h"
+  index       = ["logs-*", "winlogbeat-*"]
+  
+  tags            = ["child process", "ms office", "terraform-test"]
+  references      = ["https://attack.mitre.org/techniques/T1566/001/"]
+  false_positives = ["Legitimate corporate macros"]
+  author          = ["Security Team"]
+  license         = "Elastic License v2"
+  note            = "Investigate parent process and command line"
+  max_signals     = 100
+  
+  threat = [
+    {
+      framework = "MITRE ATT&CK"
+      tactic = {
+        id        = "TA0009"
+        name      = "Collection"
+        reference = "https://attack.mitre.org/tactics/TA0009"
+      }
+      technique = [
+        {
+          id        = "T1123"
+          name      = "Audio Capture"
+          reference = "https://attack.mitre.org/techniques/T1123"
+        }
+      ]
+    }
+  ]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_queryWithMitreThreatUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "query"
+  query       = "process.parent.name:(EXCEL.EXE OR WINWORD.EXE OR POWERPNT.EXE OR OUTLOOK.EXE)"
+  language    = "kuery"
+  enabled     = true
+  description = "Updated detection rule for processes started by MS Office programs"
+  severity    = "medium"
+  risk_score  = 75
+  from        = "now-2h"
+  to          = "now"
+  interval    = "30m"
+  index       = ["logs-*", "winlogbeat-*", "sysmon-*"]
+  
+  tags            = ["child process", "ms office", "terraform-test", "updated"]
+  references      = ["https://attack.mitre.org/techniques/T1566/001/", "https://attack.mitre.org/techniques/T1204/002/"]
+  false_positives = ["Legitimate corporate macros", "Authorized office automation"]
+  author          = ["Security Team", "SOC Team"]
+  license         = "Elastic License v2"
+  note            = "Investigate parent process and command line. Check for malicious documents."
+  max_signals     = 200
+  
+  threat = [
+    {
+      framework = "MITRE ATT&CK"
+      tactic = {
+        id        = "TA0002"
+        name      = "Execution"
+        reference = "https://attack.mitre.org/tactics/TA0002"
+      }
+      technique = [
+        {
+          id        = "T1566"
+          name      = "Phishing"
+          reference = "https://attack.mitre.org/techniques/T1566"
+          subtechnique = [
+            {
+              id        = "T1566.001"
+              name      = "Spearphishing Attachment"
+              reference = "https://attack.mitre.org/techniques/T1566/001"
+            }
+          ]
+        },
+        {
+          id        = "T1204"
+          name      = "User Execution"
+          reference = "https://attack.mitre.org/techniques/T1204"
+          subtechnique = [
+            {
+              id        = "T1204.002"
+              name      = "Malicious File"
+              reference = "https://attack.mitre.org/techniques/T1204/002"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+`, name)
+}
