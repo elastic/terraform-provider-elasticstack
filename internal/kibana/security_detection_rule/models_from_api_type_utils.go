@@ -699,6 +699,32 @@ func (d *SecurityDetectionRuleData) updateDataViewIdFromApi(ctx context.Context,
 	return diags
 }
 
+// Helper function to update timeline ID from API response
+func (d *SecurityDetectionRuleData) updateTimelineIdFromApi(ctx context.Context, timelineId *kbapi.SecurityDetectionsAPITimelineTemplateId) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if timelineId != nil {
+		d.TimelineId = types.StringValue(string(*timelineId))
+	} else {
+		d.TimelineId = types.StringNull()
+	}
+
+	return diags
+}
+
+// Helper function to update timeline title from API response
+func (d *SecurityDetectionRuleData) updateTimelineTitleFromApi(ctx context.Context, timelineTitle *kbapi.SecurityDetectionsAPITimelineTemplateTitle) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if timelineTitle != nil {
+		d.TimelineTitle = types.StringValue(string(*timelineTitle))
+	} else {
+		d.TimelineTitle = types.StringNull()
+	}
+
+	return diags
+}
+
 // Helper function to update namespace from API response
 func (d *SecurityDetectionRuleData) updateNamespaceFromApi(ctx context.Context, namespace *kbapi.SecurityDetectionsAPIAlertsIndexNamespace) diag.Diagnostics {
 	var diags diag.Diagnostics

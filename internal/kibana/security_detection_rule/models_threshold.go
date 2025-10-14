@@ -109,6 +109,8 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		Filters:                           &thresholdRule.Filters,
 		Threat:                            &thresholdRule.Threat,
 		AlertSuppression:                  nil, // Handle specially for threshold rule
+		TimelineId:                        &thresholdRule.TimelineId,
+		TimelineTitle:                     &thresholdRule.TimelineTitle,
 	}, &diags, client)
 
 	// Handle threshold-specific alert suppression
@@ -209,6 +211,8 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		Filters:                           &thresholdRule.Filters,
 		Threat:                            &thresholdRule.Threat,
 		AlertSuppression:                  nil, // Handle specially for threshold rule
+		TimelineId:                        &thresholdRule.TimelineId,
+		TimelineTitle:                     &thresholdRule.TimelineTitle,
 	}, &diags, client)
 
 	// Handle threshold-specific alert suppression
@@ -253,6 +257,8 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	diags.Append(d.updateDataViewIdFromApi(ctx, rule.DataViewId)...)
 	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
 	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)

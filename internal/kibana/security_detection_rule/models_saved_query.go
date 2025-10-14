@@ -103,6 +103,8 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleCreateProps(ctx context.Conte
 		InvestigationFields:               &savedQueryRule.InvestigationFields,
 		Filters:                           &savedQueryRule.Filters,
 		Threat:                            &savedQueryRule.Threat,
+		TimelineId:                        &savedQueryRule.TimelineId,
+		TimelineTitle:                     &savedQueryRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set optional query for saved query rules
@@ -190,6 +192,8 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &savedQueryRule.Filters,
 		Threat:                            &savedQueryRule.Threat,
+		TimelineId:                        &savedQueryRule.TimelineId,
+		TimelineTitle:                     &savedQueryRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set optional query for saved query rules
@@ -227,6 +231,8 @@ func (d *SecurityDetectionRuleData) updateFromSavedQueryRule(ctx context.Context
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	diags.Append(d.updateDataViewIdFromApi(ctx, rule.DataViewId)...)
 	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
 	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)

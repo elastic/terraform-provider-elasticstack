@@ -104,6 +104,8 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 		InvestigationFields:               &queryRule.InvestigationFields,
 		Filters:                           &queryRule.Filters,
 		Threat:                            &queryRule.Threat,
+		TimelineId:                        &queryRule.TimelineId,
+		TimelineTitle:                     &queryRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set query-specific fields
@@ -193,6 +195,8 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		InvestigationFields:               &queryRule.InvestigationFields,
 		Filters:                           &queryRule.Filters,
 		Threat:                            &queryRule.Threat,
+		TimelineId:                        &queryRule.TimelineId,
+		TimelineTitle:                     &queryRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set query-specific fields
@@ -228,6 +232,8 @@ func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQ
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	dataViewIdDiags := d.updateDataViewIdFromApi(ctx, rule.DataViewId)
 	diags.Append(dataViewIdDiags...)
 

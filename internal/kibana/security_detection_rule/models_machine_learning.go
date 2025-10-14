@@ -134,6 +134,8 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		InvestigationFields:               &mlRule.InvestigationFields,
 		Filters:                           nil, // ML rules don't have Filters
 		Threat:                            &mlRule.Threat,
+		TimelineId:                        &mlRule.TimelineId,
+		TimelineTitle:                     &mlRule.TimelineTitle,
 	}, &diags, client)
 
 	// ML rules don't use index patterns or query
@@ -233,6 +235,8 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		InvestigationFields:               &mlRule.InvestigationFields,
 		Filters:                           nil, // ML rules don't have Filters
 		Threat:                            &mlRule.Threat,
+		TimelineId:                        &mlRule.TimelineId,
+		TimelineTitle:                     &mlRule.TimelineTitle,
 	}, &diags, client)
 
 	// ML rules don't use index patterns or query
@@ -264,6 +268,8 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 
 	// Update common fields (ML doesn't support DataViewId)
 	d.DataViewId = types.StringNull()
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
 	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
 	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)

@@ -299,6 +299,8 @@ type CommonCreateProps struct {
 	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
 	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
 	Threat                            **kbapi.SecurityDetectionsAPIThreatArray
+	TimelineId                        **kbapi.SecurityDetectionsAPITimelineTemplateId
+	TimelineTitle                     **kbapi.SecurityDetectionsAPITimelineTemplateTitle
 }
 
 // CommonUpdateProps holds all the field pointers for setting common update properties
@@ -335,6 +337,8 @@ type CommonUpdateProps struct {
 	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
 	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
 	Threat                            **kbapi.SecurityDetectionsAPIThreatArray
+	TimelineId                        **kbapi.SecurityDetectionsAPITimelineTemplateId
+	TimelineTitle                     **kbapi.SecurityDetectionsAPITimelineTemplateTitle
 }
 
 // Helper function to set common properties across all rule types
@@ -574,6 +578,18 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 			*props.Threat = &threat
 		}
 	}
+
+	// Set timeline ID
+	if props.TimelineId != nil && utils.IsKnown(d.TimelineId) {
+		timelineId := kbapi.SecurityDetectionsAPITimelineTemplateId(d.TimelineId.ValueString())
+		*props.TimelineId = &timelineId
+	}
+
+	// Set timeline title
+	if props.TimelineTitle != nil && utils.IsKnown(d.TimelineTitle) {
+		timelineTitle := kbapi.SecurityDetectionsAPITimelineTemplateTitle(d.TimelineTitle.ValueString())
+		*props.TimelineTitle = &timelineTitle
+	}
 }
 
 // Helper function to set common update properties across all rule types
@@ -806,6 +822,18 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 		if !threatDiags.HasError() && len(threat) > 0 {
 			*props.Threat = &threat
 		}
+	}
+
+	// Set timeline ID
+	if props.TimelineId != nil && utils.IsKnown(d.TimelineId) {
+		timelineId := kbapi.SecurityDetectionsAPITimelineTemplateId(d.TimelineId.ValueString())
+		*props.TimelineId = &timelineId
+	}
+
+	// Set timeline title
+	if props.TimelineTitle != nil && utils.IsKnown(d.TimelineTitle) {
+		timelineTitle := kbapi.SecurityDetectionsAPITimelineTemplateTitle(d.TimelineTitle.ValueString())
+		*props.TimelineTitle = &timelineTitle
 	}
 }
 

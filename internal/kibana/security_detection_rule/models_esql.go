@@ -128,6 +128,8 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context, cl
 		InvestigationFields:               &esqlRule.InvestigationFields,
 		Filters:                           nil, // ESQL rules don't support this field
 		Threat:                            &esqlRule.Threat,
+		TimelineId:                        &esqlRule.TimelineId,
+		TimelineTitle:                     &esqlRule.TimelineTitle,
 	}, &diags, client)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -216,6 +218,8 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context, cl
 		InvestigationFields:               &esqlRule.InvestigationFields,
 		Filters:                           nil, // ESQL rules don't have Filters
 		Threat:                            &esqlRule.Threat,
+		TimelineId:                        &esqlRule.TimelineId,
+		TimelineTitle:                     &esqlRule.TimelineTitle,
 	}, &diags, client)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
@@ -246,6 +250,8 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 
 	// Update common fields (ESQL doesn't support DataViewId)
 	d.DataViewId = types.StringNull()
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
 	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
 	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)
