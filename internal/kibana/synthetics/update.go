@@ -22,6 +22,11 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
+	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, r.client)...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
 	input, diags := plan.toKibanaAPIRequest(ctx)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {

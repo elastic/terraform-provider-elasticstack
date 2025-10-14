@@ -9,6 +9,11 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
   locations = ["us_west"]
   enabled   = false
   tags      = ["tag"]
+  labels = {
+    environment = "production"
+    team        = "platform"
+    service     = "web-app"
+  }
   alert = {
     status = {
       enabled = true
