@@ -59,9 +59,24 @@ func (m MachineLearningRuleProcessor) ExtractId(response any) (string, diag.Diag
 	return value.Id.String(), diags
 }
 
+// applyMachineLearningValidations validates that Machine learning-specific constraints are met
+func (d SecurityDetectionRuleData) applyMachineLearningValidations(diags *diag.Diagnostics) {
+	if !utils.IsKnown(d.AnomalyThreshold) {
+		diags.AddError(
+			"Missing attribute 'anomaly_threshold'",
+			"Machine learning rules require an 'anomaly_threshold' attribute.",
+		)
+	}
+}
+
 func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
+
+	d.applyMachineLearningValidations(&diags)
+	if diags.HasError() {
+		return createProps, diags
+	}
 
 	mlRule := kbapi.SecurityDetectionsAPIMachineLearningRuleCreateProps{
 		Name:             kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
@@ -137,6 +152,11 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
+
+	d.applyMachineLearningValidations(&diags)
+	if diags.HasError() {
+		return updateProps, diags
+	}
 
 	// Parse ID to get space_id and rule_id
 	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
