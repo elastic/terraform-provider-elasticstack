@@ -430,8 +430,8 @@ func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.Secur
 		if utils.IsKnown(threat.Technique) && len(threat.Technique.Elements()) > 0 {
 			techniques := make([]ThreatTechniqueModel, len(threat.Technique.Elements()))
 			techniqueDiags := threat.Technique.ElementsAs(ctx, &techniques, false)
+			diags.Append(techniqueDiags...)
 			if techniqueDiags.HasError() {
-				diags.Append(techniqueDiags...)
 				continue
 			}
 
