@@ -637,6 +637,7 @@ func GetSchema() schema.Schema {
 			"threat_query": schema.StringAttribute{
 				MarkdownDescription: "Query used to filter threat intelligence data. Optional for threat_match rules.",
 				Optional:            true,
+				Computed:            true,
 			},
 			"threat_mapping": schema.ListNestedAttribute{
 				MarkdownDescription: "Array of threat mappings that specify how to match events with threat intelligence. Required for threat_match rules.",
