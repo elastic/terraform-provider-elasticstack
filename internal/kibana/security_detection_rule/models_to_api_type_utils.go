@@ -401,8 +401,8 @@ func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.Secur
 
 	threats := make([]ThreatModel, len(d.Threat.Elements()))
 	threatDiags := d.Threat.ElementsAs(ctx, &threats, false)
+	diags.Append(threatDiags...)
 	if threatDiags.HasError() {
-		diags.Append(threatDiags...)
 		return nil, diags
 	}
 
