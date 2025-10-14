@@ -61,7 +61,8 @@ func (e EsqlRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
 // applyEsqlValidations validates that ESQL-specific constraints are met
 func (d SecurityDetectionRuleData) applyEsqlValidations(diags *diag.Diagnostics) {
 	if utils.IsKnown(d.Index) {
-		diags.AddError(
+		diags.AddAttributeError(
+			path.Root("index"),
 			"Invalid attribute 'index'",
 			"ESQL rules do not use index patterns. Please remove the 'index' attribute.",
 		)
