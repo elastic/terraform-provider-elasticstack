@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.12.0] - 2025-10-15
+
 - Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
 - Fixes provider crash with `elasticstack_kibana_slo` when using `kql_custom_indicator` with no `filter` set.
 - Updates for Security Detection Rules
@@ -474,7 +476,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.0...HEAD
+[0.11.18]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.12.0
 [0.11.18]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...v0.11.18
 [0.11.17]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...v0.11.17
 [0.11.16]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
