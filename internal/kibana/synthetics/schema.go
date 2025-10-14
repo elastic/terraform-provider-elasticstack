@@ -10,6 +10,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -1100,4 +1101,25 @@ func (v tfStatusConfigV0) toTfStatusConfigV0() *kbapi.SyntheticsStatusConfig {
 	return &kbapi.SyntheticsStatusConfig{
 		Enabled: v.Enabled.ValueBoolPointer(),
 	}
+}
+
+func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *clients.ApiClient) diag.Diagnostics {
+	if utils.IsKnown(v.Labels) {
+		isSupported, sdkDiags := client.EnforceMinVersion(ctx, MinLabelsVersion)
+		diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
+		if diags.HasError() {
+			return diags
+		}
+
+		if !isSupported {
+			diags.AddAttributeError(
+				path.Root("labels"),
+				"Unsupported version for `labels` attribute",
+				fmt.Sprintf("The `labels` attribute requires server version %s or higher. Either remove the `labels` attribute or upgrade your Elastic Stack installation.", MinLabelsVersion.String()),
+			)
+			return diags
+		}
+	}
+
+	return nil
 }

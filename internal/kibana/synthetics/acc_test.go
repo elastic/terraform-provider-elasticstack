@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -881,7 +882,7 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read monitor with labels
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(synthetics.MinLabelsVersion),
 				Config:   labelsConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),
@@ -895,7 +896,7 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(synthetics.MinLabelsVersion),
 				ResourceName:      labelsMonitorId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -903,7 +904,7 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			},
 			// Update labels - change values but keep same keys
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(synthetics.MinLabelsVersion),
 				Config:   labelsConfigUpdated,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),
@@ -916,7 +917,7 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			},
 			// Remove all labels - this tests the round-trip consistency fix
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(synthetics.MinLabelsVersion),
 				Config:   labelsConfigRemoved,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),

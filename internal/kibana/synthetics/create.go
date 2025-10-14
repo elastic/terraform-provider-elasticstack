@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/go-version"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
+var MinLabelsVersion = version.Must(version.NewVersion("8.16.0"))
 
+func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
 	kibanaClient := GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
@@ -17,6 +20,11 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	plan := new(tfModelV0)
 	diags := request.Plan.Get(ctx, plan)
 	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, r.client)...)
 	if response.Diagnostics.HasError() {
 		return
 	}
