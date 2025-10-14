@@ -415,8 +415,8 @@ func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.Secur
 		// Convert tactic
 		var tacticModel ThreatTacticModel
 		tacticDiags := threat.Tactic.As(ctx, &tacticModel, basetypes.ObjectAsOptions{})
+		diags.Append(tacticDiags...)
 		if tacticDiags.HasError() {
-			diags.Append(tacticDiags...)
 			continue
 		}
 
