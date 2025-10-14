@@ -366,6 +366,7 @@ func GetSchema() schema.Schema {
 						"frequency": schema.SingleNestedAttribute{
 							MarkdownDescription: "The action frequency defines when the action runs.",
 							Optional:            true,
+							Computed:            true,
 							Attributes: map[string]schema.Attribute{
 								"notify_when": schema.StringAttribute{
 									MarkdownDescription: "Defines how often rules run actions. Valid values: onActionGroupChange, onActiveAlert, onThrottleInterval.",
