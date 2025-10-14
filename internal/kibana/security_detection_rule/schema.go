@@ -93,6 +93,7 @@ func GetSchema() schema.Schema {
 			"query": schema.StringAttribute{
 				MarkdownDescription: "The query language definition.",
 				Optional:            true,
+				Computed:            true,
 			},
 			"language": schema.StringAttribute{
 				MarkdownDescription: "The query language (KQL or Lucene).",
