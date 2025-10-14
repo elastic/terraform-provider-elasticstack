@@ -340,6 +340,46 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	}
 }
 `
+
+	httpMonitorLabelsConfig = `
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorLabels - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	labels = {
+		environment = "production"
+		team = "platform"
+		service = "web-app"
+	}
+	http = {
+		url = "http://localhost:5601"
+	}
+}
+`
+
+	httpMonitorLabelsUpdated = `
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorLabels Updated - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	labels = {
+		environment = "staging"
+		team = "platform-updated"
+		service = "web-app-v2"
+	}
+	http = {
+		url = "http://localhost:5601"
+	}
+}
+`
+
+	httpMonitorLabelsRemoved = `
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitorLabels Removed - %s"
+	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
+	http = {
+		url = "http://localhost:5601"
+	}
+}
+`
 )
 
 func TestSyntheticMonitorHTTPResource(t *testing.T) {
@@ -824,6 +864,71 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 			},
 			// Delete testing automatically occurs in TestCase
 
+		},
+	})
+}
+
+func TestSyntheticMonitorLabelsResource(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	id := "http-monitor-labels"
+	labelsMonitorId, labelsConfig := testMonitorConfig(id, httpMonitorLabelsConfig, name)
+	_, labelsConfigUpdated := testMonitorConfig(id, httpMonitorLabelsUpdated, name)
+	_, labelsConfigRemoved := testMonitorConfig(id, httpMonitorLabelsRemoved, name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			// Create and Read monitor with labels
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   labelsConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "name", "TestHttpMonitorLabels - "+name),
+					resource.TestCheckResourceAttr(labelsMonitorId, "labels.%", "3"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "labels.environment", "production"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "labels.team", "platform"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "labels.service", "web-app"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "http.url", "http://localhost:5601"),
+				),
+			},
+			// ImportState testing
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:      labelsMonitorId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            labelsConfig,
+			},
+			// Update labels - change values but keep same keys
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   labelsConfigUpdated,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "name", "TestHttpMonitorLabels Updated - "+name),
+					resource.TestCheckResourceAttr(labelsMonitorId, "labels.%", "3"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "labels.environment", "staging"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "labels.team", "platform-updated"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "labels.service", "web-app-v2"),
+				),
+			},
+			// Remove all labels - this tests the round-trip consistency fix
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   labelsConfigRemoved,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),
+					resource.TestCheckResourceAttr(labelsMonitorId, "name", "TestHttpMonitorLabels Removed - "+name),
+					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.%"),
+					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.environment"),
+					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.team"),
+					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.service"),
+					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.version"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
 		},
 	})
 }

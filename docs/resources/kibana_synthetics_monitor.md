@@ -41,6 +41,11 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
   locations = ["us_west"]
   enabled   = false
   tags      = ["tag"]
+  labels = {
+    environment = "production"
+    team        = "platform"
+    service     = "web-app"
+  }
   alert = {
     status = {
       enabled = true
@@ -77,6 +82,7 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
 - `enabled` (Boolean) Whether the monitor is enabled. Default: `true`
 - `http` (Attributes) HTTP Monitor specific fields (see [below for nested schema](#nestedatt--http))
 - `icmp` (Attributes) ICMP Monitor specific fields (see [below for nested schema](#nestedatt--icmp))
+- `labels` (Map of String) Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
 - `locations` (List of String) Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
 - `namespace` (String) The data stream namespace. Note: if you change its value, kibana creates new datastream. A user needs permissions for new/old datastream in update case to be able to see full monitor history. The `namespace` field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \, /, ?, ", <, >, |, whitespace, ,, #, :, or -. Default: `default`
 - `params` (String) Monitor parameters. Raw JSON object, use `jsonencode` function to represent JSON

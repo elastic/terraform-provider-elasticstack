@@ -107,6 +107,7 @@ type tfModelV0 struct {
 	PrivateLocations []types.String            `tfsdk:"private_locations"`
 	Enabled          types.Bool                `tfsdk:"enabled"`
 	Tags             []types.String            `tfsdk:"tags"`
+	Labels           types.Map                 `tfsdk:"labels"`
 	Alert            types.Object              `tfsdk:"alert"` //tfAlertConfigV0
 	APMServiceName   types.String              `tfsdk:"service_name"`
 	TimeoutSeconds   types.Int64               `tfsdk:"timeout"`
@@ -216,6 +217,11 @@ func monitorConfigSchema() schema.Schema {
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "An array of tags.",
+			},
+			"labels": schema.MapAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.",
 			},
 			"alert": monitorAlertConfigSchema(),
 			"service_name": schema.StringAttribute{
@@ -557,6 +563,31 @@ func StringSliceValue(v []string) []types.String {
 	return res
 }
 
+func MapStringValue(v map[string]string) types.Map {
+	if len(v) == 0 {
+		return types.MapNull(types.StringType)
+	}
+	elements := make(map[string]attr.Value)
+	for k, val := range v {
+		elements[k] = types.StringValue(val)
+	}
+	mapValue, _ := types.MapValue(types.StringType, elements)
+	return mapValue
+}
+
+func ValueStringMap(v types.Map) map[string]string {
+	if v.IsNull() || v.IsUnknown() {
+		return make(map[string]string)
+	}
+	result := make(map[string]string)
+	for k, val := range v.Elements() {
+		if strVal, ok := val.(types.String); ok {
+			result[k] = strVal.ValueString()
+		}
+	}
+	return result
+}
+
 func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
 	res, err := json.Marshal(jsObj)
 	if err != nil {
@@ -679,6 +710,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		PrivateLocations: StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
 		Tags:             StringSliceValue(api.Tags),
+		Labels:           MapStringValue(api.Labels),
 		Alert:            alertV0,
 		APMServiceName:   types.StringValue(api.APMServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
@@ -901,6 +933,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		PrivateLocations: ValueStringSlice(v.PrivateLocations),
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Tags:             ValueStringSlice(v.Tags),
+		Labels:           ValueStringMap(v.Labels),
 		Alert:            toTFAlertConfig(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),

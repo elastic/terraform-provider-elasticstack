@@ -2,6 +2,7 @@
 
 - Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
 - Fixes provider crash with `elasticstack_kibana_slo` when using `kql_custom_indicator` with no `filter` set.
+- Added `labels` field to `elasticstack_kibana_synthetics_monitor` resource for associating key-value pairs with monitors ([#1360](https://github.com/elastic/terraform-provider-elasticstack/pull/1360))
 
 ## [0.11.18] - 2025-10-10
 
