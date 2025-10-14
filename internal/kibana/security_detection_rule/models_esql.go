@@ -69,7 +69,8 @@ func (d SecurityDetectionRuleData) applyEsqlValidations(diags *diag.Diagnostics)
 	}
 
 	if utils.IsKnown(d.Filters) {
-		diags.AddError(
+		diags.AddAttributeError(
+			path.Root("filters"),
 			"Invalid attribute 'filters'",
 			"ESQL rules do not support filters. Please remove the 'filters' attribute.",
 		)
