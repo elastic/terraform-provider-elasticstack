@@ -58,9 +58,32 @@ func (e EsqlRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
 	return value.Id.String(), diags
 }
 
+// applyEsqlValidations validates that ESQL-specific constraints are met
+func (d SecurityDetectionRuleData) applyEsqlValidations(diags *diag.Diagnostics) {
+	if utils.IsKnown(d.Index) {
+		diags.AddError(
+			"Invalid attribute 'index'",
+			"ESQL rules do not use index patterns. Please remove the 'index' attribute.",
+		)
+	}
+
+	if utils.IsKnown(d.Filters) {
+		diags.AddError(
+			"Invalid attribute 'filters'",
+			"ESQL rules do not support filters. Please remove the 'filters' attribute.",
+		)
+	}
+}
+
 func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
+
+	// Apply ESQL-specific validations
+	d.applyEsqlValidations(&diags)
+	if diags.HasError() {
+		return createProps, diags
+	}
 
 	esqlRule := kbapi.SecurityDetectionsAPIEsqlRuleCreateProps{
 		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
@@ -124,6 +147,12 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context, cl
 func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
+
+	// Apply ESQL-specific validations
+	d.applyEsqlValidations(&diags)
+	if diags.HasError() {
+		return updateProps, diags
+	}
 
 	// Parse ID to get space_id and rule_id
 	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
