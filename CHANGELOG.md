@@ -1,9 +1,37 @@
 ## [Unreleased]
 
 - Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
-- Fixes provider crash with `elasticstack_kibana_slo` when using `kql_custom_indicator` with no `filter` set.
+- Fixes provider crash with `elasticstack_kibana_slo` when using `kql_custom_indicator` with no `filter` set. ([#1354](https://github.com/elastic/terraform-provider-elasticstack/pull/1354))
 
 ## [0.11.18] - 2025-10-10
+
+### Breaking changes
+
+The `ssl` field on the `elasticstack_fleet_output` resource has been changes from a block to an attribute. This change ensures ongoing consistency within the resource schema for this resource, and aligns with Terraform best practices. 
+
+Existing `elasticstack_fleet_output` resources defining `ssl` will have to update the declaration to an attribute style. For example: 
+
+```hcl
+resource "elasticstack_fleet_output" "output" {
+  ...
+  ssl {
+    ...
+  }
+}
+```
+
+becomes 
+
+```hcl
+resource "elasticstack_fleet_output" "output" {
+  ...
+  ssl = {  # Note the equals sign here. 
+    ...
+  }
+}
+```
+
+### Changes
 
 - Create `elasticstack_kibana_security_detection_rule` resource. ([#1290](https://github.com/elastic/terraform-provider-elasticstack/pull/1290))
 - Add `elasticstack_kibana_export_saved_objects` data source ([#1293](https://github.com/elastic/terraform-provider-elasticstack/pull/1293))
