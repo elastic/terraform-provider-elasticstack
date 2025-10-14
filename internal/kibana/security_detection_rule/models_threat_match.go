@@ -120,6 +120,9 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		TimestampOverrideFallbackDisabled: &threatMatchRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &threatMatchRule.InvestigationFields,
 		Filters:                           &threatMatchRule.Filters,
+		Threat:                            &threatMatchRule.Threat,
+		TimelineId:                        &threatMatchRule.TimelineId,
+		TimelineTitle:                     &threatMatchRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set threat-specific fields
@@ -241,6 +244,9 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		TimestampOverride:                 &threatMatchRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &threatMatchRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &threatMatchRule.Filters,
+		Threat:                            &threatMatchRule.Threat,
+		TimelineId:                        &threatMatchRule.TimelineId,
+		TimelineTitle:                     &threatMatchRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set threat-specific fields
@@ -297,6 +303,8 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	diags.Append(d.updateDataViewIdFromApi(ctx, rule.DataViewId)...)
 	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
 	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
@@ -323,6 +331,10 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	d.UpdatedAt = types.StringValue(rule.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
 	d.UpdatedBy = types.StringValue(rule.UpdatedBy)
 	d.Revision = types.Int64Value(int64(rule.Revision))
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update index patterns
 	diags.Append(d.updateIndexFromApi(ctx, rule.Index)...)

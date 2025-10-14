@@ -2,6 +2,14 @@
 
 - Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
 - Fixes provider crash with `elasticstack_kibana_slo` when using `kql_custom_indicator` with no `filter` set. ([#1354](https://github.com/elastic/terraform-provider-elasticstack/pull/1354))
+- Updates for Security Detection Rules ([#1361](https://github.com/elastic/terraform-provider-elasticstack/pull/1361)
+  - Add support for `threat` property
+  - Gracefully support `query` property not being set
+  - Add esql specific validations to reject unsupported fields `index` and `filters`
+  - Gracefully handle response action with no provided `frequency`
+  - Add validation for required `anomaly_threshold` field in anomaly detection rules
+  - Add support for `timeline_id` / `timeline_title` fields
+  - Gracefully handle `threat_query` not being provided for `threat_match` ule
 
 ## [0.11.18] - 2025-10-10
 
