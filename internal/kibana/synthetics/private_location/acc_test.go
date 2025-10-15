@@ -1,4 +1,4 @@
-package synthetics_test
+package private_location_test
 
 // this test is in synthetics_test package, because of https://github.com/elastic/kibana/issues/190801
 // having both tests in same package allows to use mutex in kibana API client and workaround the issue
