@@ -1,5 +1,5 @@
 agents:
-  image: "golang:1.25.1@sha256:d7098379b7da665ab25b99795465ec320b1ca9d4addb9f77409c4827dc904211"
+  image: "docker.elastic.co/ci-agent-images/mis-terraform"
   cpu: "8"
   memory: "8G"
 steps:
