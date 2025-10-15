@@ -1,0 +1,1030 @@
+package monitor
+
+import (
+	"context"
+	_ "embed"
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"strconv"
+
+	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
+type kibanaAPIRequest struct {
+	fields kbapi.MonitorFields
+	config kbapi.SyntheticsMonitorConfig
+}
+
+type tfStatusConfigV0 struct {
+	Enabled types.Bool `tfsdk:"enabled"`
+}
+
+type tfAlertConfigV0 struct {
+	Status *tfStatusConfigV0 `tfsdk:"status"`
+	TLS    *tfStatusConfigV0 `tfsdk:"tls"`
+}
+
+type tfSSLConfig struct {
+	SslVerificationMode       types.String   `tfsdk:"ssl_verification_mode"`
+	SslSupportedProtocols     types.List     `tfsdk:"ssl_supported_protocols"`
+	SslCertificateAuthorities []types.String `tfsdk:"ssl_certificate_authorities"`
+	SslCertificate            types.String   `tfsdk:"ssl_certificate"`
+	SslKey                    types.String   `tfsdk:"ssl_key"`
+	SslKeyPassphrase          types.String   `tfsdk:"ssl_key_passphrase"`
+}
+
+type tfHTTPMonitorFieldsV0 struct {
+	URL          types.String         `tfsdk:"url"`
+	MaxRedirects types.Int64          `tfsdk:"max_redirects"`
+	Mode         types.String         `tfsdk:"mode"`
+	IPv4         types.Bool           `tfsdk:"ipv4"`
+	IPv6         types.Bool           `tfsdk:"ipv6"`
+	ProxyURL     types.String         `tfsdk:"proxy_url"`
+	ProxyHeader  jsontypes.Normalized `tfsdk:"proxy_header"`
+	Username     types.String         `tfsdk:"username"`
+	Password     types.String         `tfsdk:"password"`
+	Response     jsontypes.Normalized `tfsdk:"response"`
+	Check        jsontypes.Normalized `tfsdk:"check"`
+
+	tfSSLConfig
+}
+
+type tfTCPMonitorFieldsV0 struct {
+	Host                  types.String `tfsdk:"host"`
+	CheckSend             types.String `tfsdk:"check_send"`
+	CheckReceive          types.String `tfsdk:"check_receive"`
+	ProxyURL              types.String `tfsdk:"proxy_url"`
+	ProxyUseLocalResolver types.Bool   `tfsdk:"proxy_use_local_resolver"`
+
+	tfSSLConfig
+}
+
+type tfICMPMonitorFieldsV0 struct {
+	Host types.String `tfsdk:"host"`
+	Wait types.Int64  `tfsdk:"wait"`
+}
+
+type tfBrowserMonitorFieldsV0 struct {
+	InlineScript      types.String         `tfsdk:"inline_script"`
+	Screenshots       types.String         `tfsdk:"screenshots"`
+	SyntheticsArgs    []types.String       `tfsdk:"synthetics_args"`
+	IgnoreHttpsErrors types.Bool           `tfsdk:"ignore_https_errors"`
+	PlaywrightOptions jsontypes.Normalized `tfsdk:"playwright_options"`
+}
+
+type tfModelV0 struct {
+	ID               types.String              `tfsdk:"id"`
+	Name             types.String              `tfsdk:"name"`
+	SpaceID          types.String              `tfsdk:"space_id"`
+	Namespace        types.String              `tfsdk:"namespace"`
+	Schedule         types.Int64               `tfsdk:"schedule"`
+	Locations        []types.String            `tfsdk:"locations"`
+	PrivateLocations []types.String            `tfsdk:"private_locations"`
+	Enabled          types.Bool                `tfsdk:"enabled"`
+	Tags             []types.String            `tfsdk:"tags"`
+	Labels           types.Map                 `tfsdk:"labels"`
+	Alert            types.Object              `tfsdk:"alert"` //tfAlertConfigV0
+	APMServiceName   types.String              `tfsdk:"service_name"`
+	TimeoutSeconds   types.Int64               `tfsdk:"timeout"`
+	HTTP             *tfHTTPMonitorFieldsV0    `tfsdk:"http"`
+	TCP              *tfTCPMonitorFieldsV0     `tfsdk:"tcp"`
+	ICMP             *tfICMPMonitorFieldsV0    `tfsdk:"icmp"`
+	Browser          *tfBrowserMonitorFieldsV0 `tfsdk:"browser"`
+	Params           jsontypes.Normalized      `tfsdk:"params"`
+	RetestOnFailure  types.Bool                `tfsdk:"retest_on_failure"`
+}
+
+//go:embed resource-description.md
+var monitorDescription string
+
+func monitorConfigSchema() schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: monitorDescription,
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "Generated identifier for the monitor",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"name": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "The monitor's name.",
+			},
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "Kibana space. The space ID that is part of the Kibana URL when inside the space. Space IDs are limited to lowercase alphanumeric, underscore, and hyphen characters (a-z, 0-9, _, and -). You are cannot change the ID with the update operation.",
+				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+				Computed: true,
+			},
+			"namespace": schema.StringAttribute{
+				MarkdownDescription: "The data stream namespace. Note: if you change its value, kibana creates new datastream. A user needs permissions for new/old datastream in update case to be able to see full monitor history. The `namespace` field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
+				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				Computed: true,
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[^*\\/?\"<>|\s,#:-]*$`),
+						"namespace must not contain any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -",
+					),
+				},
+			},
+			"schedule": schema.Int64Attribute{
+				Optional:            true,
+				MarkdownDescription: "The monitor's schedule in minutes. Supported values are 1, 3, 5, 10, 15, 30, 60, 120 and 240.",
+				Validators: []validator.Int64{
+					int64validator.OneOf(1, 3, 5, 10, 15, 30, 60, 120, 240),
+				},
+				Computed:      true,
+				PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+			},
+			"locations": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.",
+				Validators: []validator.List{
+					listvalidator.ValueStringsAre(
+						stringvalidator.OneOf(
+							"japan",
+							"india",
+							"singapore",
+							"australia_east",
+							"united_kingdom",
+							"germany",
+							"canada_east",
+							"brazil",
+							"us_east",
+							"us_west",
+						),
+					),
+				},
+			},
+			"private_locations": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "These Private Locations refer to locations hosted and managed by you, whereas locations are hosted by Elastic. You can specify a Private Location using the location's name.",
+			},
+			"enabled": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Whether the monitor is enabled. Default: `true`",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+			},
+			"tags": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "An array of tags.",
+			},
+			"labels": schema.MapAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.",
+			},
+			"alert": monitorAlertConfigSchema(),
+			"service_name": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The APM service name.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"timeout": schema.Int64Attribute{
+				Optional:            true,
+				MarkdownDescription: "The monitor timeout in seconds, monitor will fail if it doesn't complete within this time. Default: `16`",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+			},
+			"params":  jsonObjectSchema("Monitor parameters"),
+			"http":    httpMonitorFieldsSchema(),
+			"tcp":     tcpMonitorFieldsSchema(),
+			"icmp":    icmpMonitorFieldsSchema(),
+			"browser": browserMonitorFieldsSchema(),
+			"retest_on_failure": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from \"up\" to \"down\". If the result of the retest is also \"down\", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.",
+			},
+		},
+	}
+}
+
+func browserMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Browser Monitor specific fields",
+		Attributes: map[string]schema.Attribute{
+			"inline_script": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "The inline script.",
+			},
+			"screenshots": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Controls the behavior of the screenshots feature.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("on", "off", "only-on-failure"),
+				},
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"synthetics_args": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Synthetics agent CLI arguments.",
+			},
+			"ignore_https_errors": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Whether to ignore HTTPS errors.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+			},
+			"playwright_options": jsonObjectSchema("Playwright options."),
+		},
+	}
+}
+
+func icmpMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "ICMP Monitor specific fields",
+		Attributes: map[string]schema.Attribute{
+			"host": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "Host to ping; it can be an IP address or a hostname.",
+			},
+			"wait": schema.Int64Attribute{
+				Optional:            true,
+				MarkdownDescription: " Wait time in seconds. Default: `1`",
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+				Computed:            true,
+			},
+		},
+	}
+}
+
+func jsonObjectSchema(doc string) schema.Attribute {
+	return schema.StringAttribute{
+		Optional:            true,
+		MarkdownDescription: fmt.Sprintf("%s. Raw JSON object, use `jsonencode` function to represent JSON", doc),
+		CustomType:          jsontypes.NormalizedType{},
+	}
+}
+
+func statusConfigSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional: true,
+		Attributes: map[string]schema.Attribute{
+			"enabled": schema.BoolAttribute{
+				Optional:      true,
+				Computed:      true,
+				PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+			},
+		},
+	}
+}
+
+func monitorAlertConfigSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Alert configuration. Default: `{ status: { enabled: true }, tls: { enabled: true } }`.",
+		Attributes: map[string]schema.Attribute{
+			"status": statusConfigSchema(),
+			"tls":    statusConfigSchema(),
+		},
+		Computed:      true,
+		PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()},
+	}
+}
+
+func httpMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "HTTP Monitor specific fields",
+		Attributes: map[string]schema.Attribute{
+			"url": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "URL to monitor.",
+			},
+			"ssl_verification_mode": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Controls the verification of server certificates. ",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_supported_protocols": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "List of allowed SSL/TLS versions.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.List{listplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_certificate_authorities": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "The list of root certificates for verifications is required.",
+			},
+			"ssl_certificate": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_key": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate key.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
+			},
+			"ssl_key_passphrase": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Key passphrase.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
+			},
+			"max_redirects": schema.Int64Attribute{
+				Optional:            true,
+				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+				Computed:            true,
+			},
+			"mode": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The mode of the monitor. Can be \"all\" or \"any\". If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, you should use all.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("any", "all"),
+				},
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"ipv4": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Whether to ping using the ipv4 protocol.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+			},
+			"ipv6": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Whether to ping using the ipv6 protocol.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+			},
+			"username": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The username for authenticating with the server. The credentials are passed with the request.",
+			},
+			"password": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The password for authenticating with the server. The credentials are passed with the request.",
+			},
+			"proxy_header": jsonObjectSchema("Additional headers to send to proxies during CONNECT requests."),
+			"proxy_url": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The URL of the proxy to use for this monitor.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"response": jsonObjectSchema("Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field."),
+			"check":    jsonObjectSchema("The check request settings."),
+		},
+	}
+}
+
+func tcpMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "TCP Monitor specific fields",
+		Attributes: map[string]schema.Attribute{
+			"host": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "The host to monitor; it can be an IP address or a hostname. The host can include the port using a colon (e.g., \"example.com:9200\").",
+			},
+			"ssl_verification_mode": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Controls the verification of server certificates. ",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_supported_protocols": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "List of allowed SSL/TLS versions.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.List{listplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_certificate_authorities": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "The list of root certificates for verifications is required.",
+			},
+			"ssl_certificate": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"ssl_key": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Certificate key.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
+			},
+			"ssl_key_passphrase": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Key passphrase.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
+			},
+			"check_send": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "An optional payload string to send to the remote host.",
+			},
+			"check_receive": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The expected answer. ",
+			},
+			"proxy_url": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"proxy_use_local_resolver": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: " A Boolean value that determines whether hostnames are resolved locally instead of being resolved on the proxy server. The default value is false, which means that name resolution occurs on the proxy server.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+			},
+		},
+	}
+}
+
+func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
+	res, err := json.Marshal(jsObj)
+	if err != nil {
+		return jsontypes.NewNormalizedUnknown(), err
+	}
+	return jsontypes.NewNormalizedValue(string(res)), nil
+}
+
+func toJsonObject(v jsontypes.Normalized) (kbapi.JsonObject, diag.Diagnostics) {
+	if v.IsNull() {
+		return nil, diag.Diagnostics{}
+	}
+	var res kbapi.JsonObject
+	dg := v.Unmarshal(&res)
+	if dg.HasError() {
+		return nil, dg
+	}
+	return res, diag.Diagnostics{}
+}
+
+func stringToInt64(v string) (int64, error) {
+	var res int64
+	var err error
+	if v != "" {
+		res, err = strconv.ParseInt(v, 10, 64)
+	}
+	return res, err
+}
+
+func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
+	var schedule int64
+	var err error
+	dg := diag.Diagnostics{}
+	if api.Schedule != nil {
+		schedule, err = stringToInt64(api.Schedule.Number)
+		if err != nil {
+			dg.AddError("Failed to convert schedule to int64", err.Error())
+			return nil, dg
+		}
+	}
+
+	var privateLocLabels []string
+	for _, l := range api.Locations {
+		if !l.IsServiceManaged {
+			privateLocLabels = append(privateLocLabels, l.Label)
+		}
+	}
+
+	timeout, err := stringToInt64(string(api.Timeout))
+	if err != nil {
+		dg.AddError("Failed to convert timeout to int64", err.Error())
+		return nil, dg
+	}
+
+	var http *tfHTTPMonitorFieldsV0
+	var tcp *tfTCPMonitorFieldsV0
+	var icmp *tfICMPMonitorFieldsV0
+	var browser *tfBrowserMonitorFieldsV0
+
+	switch mType := api.Type; mType {
+	case kbapi.Http:
+		http = &tfHTTPMonitorFieldsV0{}
+		if v.HTTP != nil {
+			http = v.HTTP
+		}
+		http = http.toTfHTTPMonitorFieldsV0(ctx, dg, api)
+	case kbapi.Tcp:
+		tcp = &tfTCPMonitorFieldsV0{}
+		if v.TCP != nil {
+			tcp = v.TCP
+		}
+		tcp = tcp.toTfTCPMonitorFieldsV0(ctx, dg, api)
+	case kbapi.Icmp:
+		icmp = &tfICMPMonitorFieldsV0{}
+		if v.ICMP != nil {
+			icmp = v.ICMP
+		}
+		icmp, err = icmp.toTfICMPMonitorFieldsV0(api)
+	case kbapi.Browser:
+		browser = &tfBrowserMonitorFieldsV0{}
+		if v.Browser != nil {
+			browser = v.Browser
+		}
+		browser, err = browser.toTfBrowserMonitorFieldsV0(api)
+	default:
+		err = fmt.Errorf("unsupported monitor type: %s", mType)
+	}
+
+	if err != nil {
+		dg.AddError("Failed to convert monitor fields", err.Error())
+		return nil, dg
+	}
+
+	params := v.Params
+	if api.Params != nil {
+		params, err = toNormalizedValue(api.Params)
+		if err != nil {
+			dg.AddError("Failed to parse params", err.Error())
+			return nil, dg
+		}
+	}
+
+	resourceID := clients.CompositeId{
+		ClusterId:  space,
+		ResourceId: string(api.Id),
+	}
+
+	alertV0, dg := toTfAlertConfigV0(ctx, api.Alert)
+	if dg.HasError() {
+		return nil, dg
+	}
+
+	return &tfModelV0{
+		ID:               types.StringValue(resourceID.String()),
+		Name:             types.StringValue(api.Name),
+		SpaceID:          types.StringValue(space),
+		Namespace:        types.StringValue(api.Namespace),
+		Schedule:         types.Int64Value(schedule),
+		Locations:        v.Locations,
+		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
+		Enabled:          types.BoolPointerValue(api.Enabled),
+		Tags:             synthetics.StringSliceValue(api.Tags),
+		Labels:           synthetics.MapStringValue(api.Labels),
+		Alert:            alertV0,
+		APMServiceName:   types.StringValue(api.APMServiceName),
+		TimeoutSeconds:   types.Int64Value(timeout),
+		Params:           params,
+		HTTP:             http,
+		TCP:              tcp,
+		ICMP:             icmp,
+		Browser:          browser,
+		RetestOnFailure:  v.RetestOnFailure,
+	}, dg
+}
+
+func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfTCPMonitorFieldsV0 {
+	checkSend := v.CheckSend
+	if api.CheckSend != "" {
+		checkSend = types.StringValue(api.CheckSend)
+	}
+	checkReceive := v.CheckReceive
+	if api.CheckReceive != "" {
+		checkReceive = types.StringValue(api.CheckReceive)
+	}
+	sslCfg, dg := toTFSSLConfig(ctx, dg, api, "tcp")
+
+	if dg.HasError() {
+		return nil
+	}
+	return &tfTCPMonitorFieldsV0{
+		Host:                  types.StringValue(api.Host),
+		CheckSend:             checkSend,
+		CheckReceive:          checkReceive,
+		ProxyURL:              types.StringValue(api.ProxyUrl),
+		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
+		tfSSLConfig:           sslCfg,
+	}
+}
+
+func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfICMPMonitorFieldsV0, error) {
+	wait, err := stringToInt64(string(api.Wait))
+	if err != nil {
+		return nil, err
+	}
+	return &tfICMPMonitorFieldsV0{
+		Host: types.StringValue(api.Host),
+		Wait: types.Int64Value(wait),
+	}, nil
+}
+
+func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
+
+	var err error
+	playwrightOptions := v.PlaywrightOptions
+	if api.PlaywrightOptions != nil {
+		playwrightOptions, err = toNormalizedValue(api.PlaywrightOptions)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	syntheticsArgs := v.SyntheticsArgs
+	if api.SyntheticsArgs != nil {
+		syntheticsArgs = synthetics.StringSliceValue(api.SyntheticsArgs)
+	}
+
+	inlineScript := v.InlineScript
+	if api.InlineScript != "" {
+		inlineScript = types.StringValue(api.InlineScript)
+	}
+
+	return &tfBrowserMonitorFieldsV0{
+		InlineScript:      inlineScript,
+		Screenshots:       types.StringValue(api.Screenshots),
+		SyntheticsArgs:    syntheticsArgs,
+		IgnoreHttpsErrors: types.BoolPointerValue(api.IgnoreHttpsErrors),
+		PlaywrightOptions: playwrightOptions,
+	}, nil
+}
+
+func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfHTTPMonitorFieldsV0 {
+
+	var err error
+	proxyHeaders := v.ProxyHeader
+	if api.ProxyHeaders != nil {
+		proxyHeaders, err = toNormalizedValue(api.ProxyHeaders)
+		if err != nil {
+			dg.AddError("Failed to parse proxy_headers", err.Error())
+			return nil
+		}
+	}
+
+	username := v.Username
+	if api.Username != "" {
+		username = types.StringValue(api.Username)
+	}
+	password := v.Password
+	if api.Password != "" {
+		password = types.StringValue(api.Password)
+	}
+
+	maxRedirects, err := stringToInt64(api.MaxRedirects)
+	if err != nil {
+		dg.AddError("Failed to parse max_redirects", err.Error())
+		return nil
+	}
+
+	sslCfg, dg := toTFSSLConfig(ctx, dg, api, "http")
+	if dg.HasError() {
+		return nil
+	}
+	return &tfHTTPMonitorFieldsV0{
+		URL:          types.StringValue(api.Url),
+		MaxRedirects: types.Int64Value(maxRedirects),
+		Mode:         types.StringValue(string(api.Mode)),
+		IPv4:         types.BoolPointerValue(api.Ipv4),
+		IPv6:         types.BoolPointerValue(api.Ipv6),
+		Username:     username,
+		Password:     password,
+		ProxyHeader:  proxyHeaders,
+		ProxyURL:     types.StringValue(api.ProxyUrl),
+		Check:        v.Check,
+		Response:     v.Response,
+		tfSSLConfig:  sslCfg,
+	}
+}
+
+func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor, p string) (tfSSLConfig, diag.Diagnostics) {
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
+	return tfSSLConfig{
+		SslVerificationMode:       types.StringValue(api.SslVerificationMode),
+		SslSupportedProtocols:     sslSupportedProtocols,
+		SslCertificateAuthorities: synthetics.StringSliceValue(api.SslCertificateAuthorities),
+		SslCertificate:            types.StringValue(api.SslCertificate),
+		SslKey:                    types.StringValue(api.SslKey),
+		SslKeyPassphrase:          types.StringValue(api.SslKeyPassphrase),
+	}, dg
+}
+
+func toTfAlertConfigV0(ctx context.Context, alert *kbapi.MonitorAlertConfig) (basetypes.ObjectValue, diag.Diagnostics) {
+
+	dg := diag.Diagnostics{}
+
+	alertAttributes := monitorAlertConfigSchema().GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	var emptyAttr = map[string]attr.Type(nil)
+
+	if alert == nil {
+		return basetypes.NewObjectNull(emptyAttr), dg
+	}
+
+	tfAlertConfig := tfAlertConfigV0{
+		Status: toTfStatusConfigV0(alert.Status),
+		TLS:    toTfStatusConfigV0(alert.Tls),
+	}
+
+	return types.ObjectValueFrom(ctx, alertAttributes, &tfAlertConfig)
+}
+
+func toTfStatusConfigV0(status *kbapi.SyntheticsStatusConfig) *tfStatusConfigV0 {
+	if status == nil {
+		return nil
+	}
+	return &tfStatusConfigV0{
+		Enabled: types.BoolPointerValue(status.Enabled),
+	}
+}
+
+func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaAPIRequest, diag.Diagnostics) {
+
+	fields, dg := v.toMonitorFields(ctx)
+	if dg.HasError() {
+		return nil, dg
+	}
+	config, dg := v.toSyntheticsMonitorConfig(ctx)
+	if dg.HasError() {
+		return nil, dg
+	}
+	return &kibanaAPIRequest{
+		fields: fields,
+		config: *config,
+	}, dg
+}
+
+func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
+	dg := diag.Diagnostics{}
+
+	if v.HTTP != nil {
+		return v.toHttpMonitorFields(ctx)
+	} else if v.TCP != nil {
+		return v.toTCPMonitorFields(ctx)
+	} else if v.ICMP != nil {
+		return v.toICMPMonitorFields(), dg
+	} else if v.Browser != nil {
+		return v.toBrowserMonitorFields()
+	}
+
+	dg.AddError("Unsupported monitor type config", "one of http,tcp monitor fields is required")
+	return nil, dg
+}
+
+func toTFAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kbapi.MonitorAlertConfig {
+	var alert *kbapi.MonitorAlertConfig
+	if !v.IsNull() && !v.IsUnknown() {
+		tfAlert := tfAlertConfigV0{}
+		tfsdk.ValueAs(ctx, v, &tfAlert)
+		alert = tfAlert.toTfAlertConfigV0()
+	}
+	return alert
+}
+
+func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
+	locations := Map[types.String, kbapi.MonitorLocation](v.Locations, func(s types.String) kbapi.MonitorLocation { return kbapi.MonitorLocation(s.ValueString()) })
+	params, dg := toJsonObject(v.Params)
+	if dg.HasError() {
+		return nil, dg
+	}
+
+	return &kbapi.SyntheticsMonitorConfig{
+		Name:             v.Name.ValueString(),
+		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueInt64()),
+		Locations:        locations,
+		PrivateLocations: synthetics.ValueStringSlice(v.PrivateLocations),
+		Enabled:          v.Enabled.ValueBoolPointer(),
+		Tags:             synthetics.ValueStringSlice(v.Tags),
+		Labels:           synthetics.ValueStringMap(v.Labels),
+		Alert:            toTFAlertConfig(ctx, v.Alert),
+		APMServiceName:   v.APMServiceName.ValueString(),
+		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
+		Namespace:        v.Namespace.ValueString(),
+		Params:           params,
+		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
+	}, diag.Diagnostics{} //dg
+}
+
+func tfInt64ToString(v types.Int64) string {
+	res := ""
+	if !v.IsUnknown() && !v.IsNull() { // handle omitempty case
+		return strconv.FormatInt(v.ValueInt64(), 10)
+	}
+	return res
+}
+
+func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p string) (*kbapi.SSLConfig, diag.Diagnostics) {
+
+	var ssl *kbapi.SSLConfig
+	if !v.SslSupportedProtocols.IsNull() && !v.SslSupportedProtocols.IsUnknown() {
+		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
+		if dg.HasError() {
+			return nil, dg
+		}
+		ssl = &kbapi.SSLConfig{}
+		ssl.SupportedProtocols = sslSupportedProtocols
+	}
+
+	if !v.SslVerificationMode.IsNull() && !v.SslVerificationMode.IsUnknown() {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.VerificationMode = v.SslVerificationMode.ValueString()
+	}
+
+	certAuths := synthetics.ValueStringSlice(v.SslCertificateAuthorities)
+	if len(certAuths) > 0 {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.CertificateAuthorities = certAuths
+	}
+
+	if !v.SslCertificate.IsUnknown() && !v.SslCertificate.IsNull() {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.Certificate = v.SslCertificate.ValueString()
+	}
+
+	if !v.SslKey.IsUnknown() && !v.SslKey.IsNull() {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.Key = v.SslKey.ValueString()
+	}
+
+	if !v.SslKeyPassphrase.IsUnknown() && !v.SslKeyPassphrase.IsNull() {
+		if ssl == nil {
+			ssl = &kbapi.SSLConfig{}
+		}
+		ssl.KeyPassphrase = v.SslKeyPassphrase.ValueString()
+	}
+	return ssl, dg
+}
+
+func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
+	http := v.HTTP
+	proxyHeaders, dg := toJsonObject(http.ProxyHeader)
+	if dg.HasError() {
+		return nil, dg
+	}
+	response, dg := toJsonObject(http.Response)
+	if dg.HasError() {
+		return nil, dg
+	}
+	check, dg := toJsonObject(http.Check)
+	if dg.HasError() {
+		return nil, dg
+	}
+
+	ssl, dg := toSSLConfig(ctx, dg, http.tfSSLConfig, "http")
+
+	maxRedirects := tfInt64ToString(http.MaxRedirects)
+	return kbapi.HTTPMonitorFields{
+		Url:          http.URL.ValueString(),
+		Ssl:          ssl,
+		MaxRedirects: maxRedirects,
+		Mode:         kbapi.HttpMonitorMode(http.Mode.ValueString()),
+		Ipv4:         http.IPv4.ValueBoolPointer(),
+		Ipv6:         http.IPv6.ValueBoolPointer(),
+		Username:     http.Username.ValueString(),
+		Password:     http.Password.ValueString(),
+		ProxyHeader:  proxyHeaders,
+		ProxyUrl:     http.ProxyURL.ValueString(),
+		Response:     response,
+		Check:        check,
+	}, dg
+}
+
+func (v *tfModelV0) toTCPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
+
+	tcp := v.TCP
+
+	dg := diag.Diagnostics{}
+	ssl, dg := toSSLConfig(ctx, dg, tcp.tfSSLConfig, "tcp")
+
+	return kbapi.TCPMonitorFields{
+		Host:                  tcp.Host.ValueString(),
+		CheckSend:             tcp.CheckSend.ValueString(),
+		CheckReceive:          tcp.CheckReceive.ValueString(),
+		ProxyUrl:              tcp.ProxyURL.ValueString(),
+		ProxyUseLocalResolver: tcp.ProxyUseLocalResolver.ValueBoolPointer(),
+		Ssl:                   ssl,
+	}, dg
+}
+
+func (v *tfModelV0) toICMPMonitorFields() kbapi.MonitorFields {
+	return kbapi.ICMPMonitorFields{
+		Host: v.ICMP.Host.ValueString(),
+		Wait: tfInt64ToString(v.ICMP.Wait),
+	}
+}
+
+func (v *tfModelV0) toBrowserMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
+	playwrightOptions, dg := toJsonObject(v.Browser.PlaywrightOptions)
+	if dg.HasError() {
+		return nil, dg
+	}
+	return kbapi.BrowserMonitorFields{
+		InlineScript:      v.Browser.InlineScript.ValueString(),
+		Screenshots:       kbapi.ScreenshotOption(v.Browser.Screenshots.ValueString()),
+		SyntheticsArgs:    synthetics.ValueStringSlice(v.Browser.SyntheticsArgs),
+		IgnoreHttpsErrors: v.Browser.IgnoreHttpsErrors.ValueBoolPointer(),
+		PlaywrightOptions: playwrightOptions,
+	}, diag.Diagnostics{} //dg
+}
+
+func Map[T, U any](ts []T, f func(T) U) []U {
+	var us []U
+	for _, v := range ts {
+		us = append(us, f(v))
+	}
+	return us
+}
+
+func (v tfAlertConfigV0) toTfAlertConfigV0() *kbapi.MonitorAlertConfig {
+	var status *kbapi.SyntheticsStatusConfig
+	if v.Status != nil {
+		status = v.Status.toTfStatusConfigV0()
+	}
+	var tls *kbapi.SyntheticsStatusConfig
+	if v.TLS != nil {
+		tls = v.TLS.toTfStatusConfigV0()
+	}
+	return &kbapi.MonitorAlertConfig{
+		Status: status,
+		Tls:    tls,
+	}
+}
+
+func (v tfStatusConfigV0) toTfStatusConfigV0() *kbapi.SyntheticsStatusConfig {
+	return &kbapi.SyntheticsStatusConfig{
+		Enabled: v.Enabled.ValueBoolPointer(),
+	}
+}
+
+func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *clients.ApiClient) diag.Diagnostics {
+	if utils.IsKnown(v.Labels) {
+		isSupported, sdkDiags := client.EnforceMinVersion(ctx, MinLabelsVersion)
+		diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
+		if diags.HasError() {
+			return diags
+		}
+
+		if !isSupported {
+			diags.AddAttributeError(
+				path.Root("labels"),
+				"Unsupported version for `labels` attribute",
+				fmt.Sprintf("The `labels` attribute requires server version %s or higher. Either remove the `labels` attribute or upgrade your Elastic Stack installation.", MinLabelsVersion.String()),
+			)
+			return diags
+		}
+	}
+
+	return nil
+}

@@ -1,10 +1,11 @@
-package synthetics
+package monitor
 
 import (
 	"context"
 	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
@@ -60,7 +61,7 @@ func TestMapStringValue(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := MapStringValue(tc.input)
+			result := synthetics.MapStringValue(tc.input)
 			assert.Equal(t, tc.expected, result)
 		})
 	}
@@ -109,7 +110,7 @@ func TestValueStringMap(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := ValueStringMap(tc.input)
+			result := synthetics.ValueStringMap(tc.input)
 			assert.Equal(t, tc.expected, result)
 		})
 	}
