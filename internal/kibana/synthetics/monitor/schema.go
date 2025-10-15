@@ -616,7 +616,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
 		Tags:             synthetics.StringSliceValue(api.Tags),
-		Labels:           synthetics.MapStringValue(api.Labels),
+		Labels:           utils.MapValueFrom(ctx, api.Labels, types.StringType, path.Root("labels"), &dg),
 		Alert:            alertV0,
 		APMServiceName:   types.StringValue(api.APMServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
@@ -832,6 +832,15 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		return nil, dg
 	}
 
+	labels := utils.MapTypeAs[string](ctx, v.Labels, path.Root("labels"), &dg)
+	if dg.HasError() {
+		return nil, dg
+	}
+
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
 	return &kbapi.SyntheticsMonitorConfig{
 		Name:             v.Name.ValueString(),
 		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueInt64()),
@@ -839,14 +848,14 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 		PrivateLocations: synthetics.ValueStringSlice(v.PrivateLocations),
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Tags:             synthetics.ValueStringSlice(v.Tags),
-		Labels:           synthetics.ValueStringMap(v.Labels),
+		Labels:           labels,
 		Alert:            toTFAlertConfig(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
 		Namespace:        v.Namespace.ValueString(),
 		Params:           params,
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
-	}, diag.Diagnostics{} //dg
+	}, dg
 }
 
 func tfInt64ToString(v types.Int64) string {
