@@ -62,6 +62,9 @@ spec:
       pipeline_file: ".buildkite/update-kibana-client.yml"
       provider_settings:
         build_branches: false
+        build_pull_requests: false
+        build_pull_request_labels_changed: false
+        build_pull_request_ready_for_review: false
         build_pull_request_forks: false
         build_tags: false
       teams:
