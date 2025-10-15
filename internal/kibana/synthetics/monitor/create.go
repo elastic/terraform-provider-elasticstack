@@ -1,18 +1,18 @@
-package synthetics
+package monitor
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/go-version"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var MinLabelsVersion = version.Must(version.NewVersion("8.16.0"))
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	kibanaClient := GetKibanaClient(r, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}

@@ -1,4 +1,4 @@
-package synthetics
+package monitor
 
 import (
 	"context"
@@ -25,96 +25,6 @@ func boolPointer(v bool) *bool {
 	return res
 }
 
-func TestMapStringValue(t *testing.T) {
-	testcases := []struct {
-		name     string
-		input    map[string]string
-		expected types.Map
-	}{
-		{
-			name:     "nil map",
-			input:    nil,
-			expected: types.MapNull(types.StringType),
-		},
-		{
-			name:     "empty map",
-			input:    map[string]string{},
-			expected: types.MapNull(types.StringType),
-		},
-		{
-			name: "map with values",
-			input: map[string]string{
-				"environment": "production",
-				"team":        "platform",
-			},
-			expected: func() types.Map {
-				elements := map[string]attr.Value{
-					"environment": types.StringValue("production"),
-					"team":        types.StringValue("platform"),
-				}
-				mapValue, _ := types.MapValue(types.StringType, elements)
-				return mapValue
-			}(),
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := MapStringValue(tc.input)
-			assert.Equal(t, tc.expected, result)
-		})
-	}
-}
-
-func TestValueStringMap(t *testing.T) {
-	testcases := []struct {
-		name     string
-		input    types.Map
-		expected map[string]string
-	}{
-		{
-			name:     "null map",
-			input:    types.MapNull(types.StringType),
-			expected: map[string]string{},
-		},
-		{
-			name:     "unknown map",
-			input:    types.MapUnknown(types.StringType),
-			expected: map[string]string{},
-		},
-		{
-			name: "empty map",
-			input: func() types.Map {
-				mapValue, _ := types.MapValue(types.StringType, map[string]attr.Value{})
-				return mapValue
-			}(),
-			expected: map[string]string{},
-		},
-		{
-			name: "map with values",
-			input: func() types.Map {
-				elements := map[string]attr.Value{
-					"environment": types.StringValue("production"),
-					"team":        types.StringValue("platform"),
-				}
-				mapValue, _ := types.MapValue(types.StringType, elements)
-				return mapValue
-			}(),
-			expected: map[string]string{
-				"environment": "production",
-				"team":        "platform",
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := ValueStringMap(tc.input)
-			assert.Equal(t, tc.expected, result)
-		})
-	}
-}
-
 func TestLabelsFieldConversion(t *testing.T) {
 	testcases := []struct {
 		name     string
@@ -135,7 +45,7 @@ func TestLabelsFieldConversion(t *testing.T) {
 				Type:   kbapi.Http,
 				Labels: map[string]string{},
 			},
-			expected: types.MapNull(types.StringType),
+			expected: types.MapValueMust(types.StringType, map[string]attr.Value{}),
 		},
 		{
 			name: "monitor with labels",
@@ -147,15 +57,11 @@ func TestLabelsFieldConversion(t *testing.T) {
 					"service":     "web-app",
 				},
 			},
-			expected: func() types.Map {
-				elements := map[string]attr.Value{
-					"environment": types.StringValue("production"),
-					"team":        types.StringValue("platform"),
-					"service":     types.StringValue("web-app"),
-				}
-				mapValue, _ := types.MapValue(types.StringType, elements)
-				return mapValue
-			}(),
+			expected: types.MapValueMust(types.StringType, map[string]attr.Value{
+				"environment": types.StringValue("production"),
+				"team":        types.StringValue("platform"),
+				"service":     types.StringValue("web-app"),
+			}),
 		},
 	}
 

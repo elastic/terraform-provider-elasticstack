@@ -1,4 +1,4 @@
-package synthetics
+package monitor
 
 import (
 	"context"
@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-
-	kibanaClient := GetKibanaClient(r, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
@@ -23,7 +23,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	compositeId, dg := GetCompositeId(state.ID.ValueString())
+	compositeId, dg := synthetics.GetCompositeId(state.ID.ValueString())
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return
