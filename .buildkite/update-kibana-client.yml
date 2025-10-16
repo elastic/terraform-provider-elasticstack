@@ -1,5 +1,5 @@
 agents:
-  image: "docker.elastic.co/ci-agent-images/mis-terraform"
+  image: "docker.elastic.co/ci-agent-images/mis-terraform:latest@sha256:2fae26c0719ed8491746dda29c23ceb2dbd86fa5469ae11b81eb6f7337fb61fd"
   cpu: "8"
   memory: "8G"
 steps:
