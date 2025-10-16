@@ -7,3 +7,4 @@ steps:
     command:
       - "make -C generated/kbapi all"
       - "make build"
+      - "make test"
