@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
+
 ## [0.12.0] - 2025-10-15
 
 - Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
