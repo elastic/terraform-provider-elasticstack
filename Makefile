@@ -54,7 +54,7 @@ build: lint build-ci ## build the terraform provider
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
-	TF_ACC=1 go test -v ./... -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=3 --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: test
 test: ## Run unit tests
