@@ -6,7 +6,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["/^generated/kbapi/Makefile$/"],
+      "fileMatch": ["^generated/kbapi/Makefile$"],
       "matchStrings": ["github_ref \\?= (?<currentDigest>.*?)\\n"],
       "currentValueTemplate": "main",
       "depNameTemplate": "kibana-openapi-spec",
