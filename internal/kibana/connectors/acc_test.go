@@ -329,3 +329,59 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+      name              = "%s"
+      connector_type_id = ".slack"
+      secrets = jsonencode({
+        webhookUrl = "https://example.com/webhook"
+      })
+    }`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceKibanaConnectorDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create the connector with the last provider version where the connector resource was built on the SDK
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.11.17",
+					},
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".slack"),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "config", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:                   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".slack"),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "config", `{"__tf_provider_connector_type_id":".slack"}`),
+				),
+			},
+		},
+	})
+}

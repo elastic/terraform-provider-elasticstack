@@ -736,6 +736,58 @@ func TestAccResourceSloValidation(t *testing.T) {
 	})
 }
 
+func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				Config: fmt.Sprintf(`
+					provider "elasticstack" {
+						elasticsearch {}
+						kibana {}
+					}
+
+					resource "elasticstack_elasticsearch_index" "my_index" {
+						name = "my-index-%s"
+						deletion_protection = false
+					}
+                    resource "elasticstack_kibana_slo" "test_slo" {
+						name        = "%s"
+						description = "basic kql indicator"
+		                kql_custom_indicator {
+		                	index = "my-index-%s"
+		                	good = "latency < 300"
+		                	total = "*"
+		                	timestamp_field = "custom_timestamp"
+		                }
+						budgeting_method = "timeslices"
+						objective {
+							target           = 0.95
+							timeslice_target = 0.95
+							timeslice_window = "5m"
+						}
+						time_window {
+							duration = "7d"
+							type     = "rolling"
+						}
+						depends_on = [elasticstack_elasticsearch_index.my_index]
+					}
+				`, sloName, sloName, sloName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.total", "*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
+				),
+			},
+		},
+	})
+}
+
 func TestSloIdValidation(t *testing.T) {
 	resource := kibanaresource.ResourceSlo()
 	sloIdSchema := resource.Schema["slo_id"]

@@ -71,9 +71,21 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 	}
 
 	handleVar := func(key string, mval map[string]any, vars map[string]any) {
-		refID := mval["id"].(string)
-		if original, ok := secrets[refID]; ok {
-			vars[key] = original
+		if refID, ok := mval["id"]; ok {
+			if original, ok := secrets[refID.(string)]; ok {
+				vars[key] = original
+			}
+		} else if ids, ok := mval["ids"]; ok {
+			values := []any{}
+			for _, id := range ids.([]any) {
+				if original, ok := secrets[id.(string)]; ok {
+					values = append(values, original)
+				}
+			}
+
+			if len(values) > 0 {
+				vars[key] = values
+			}
 		}
 	}
 
@@ -136,8 +148,22 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 				}
 			}
 
-			refID := mval["id"].(string)
-			secrets[refID] = original
+			if refID, ok := mval["id"]; ok {
+				secrets[refID.(string)] = original
+			} else if ids, ok := mval["ids"]; ok {
+				originals, ok := original.([]any)
+				if !ok || len(originals) != len(ids.([]any)) {
+					diags.AddError("mismatched secret ref ids and original values", "the number of secret ref ids does not match the number of original values")
+					return
+				}
+
+				// Map each id to the corresponding original value by position.
+				// The API does not return the original value with the id,
+				// so we have to assume the order is preserved.
+				for i, id := range ids.([]any) {
+					secrets[id.(string)] = originals[i]
+				}
+			}
 		}
 	}
 

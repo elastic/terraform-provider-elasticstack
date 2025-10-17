@@ -1,0 +1,1 @@
+terraform import elasticstack_kibana_security_detection_rule.example default/12345678-1234-1234-1234-123456789abc

@@ -63,7 +63,7 @@ func newKibanaShortenURLCreateFunc(c *resty.Client) KibanaShortenURLCreate {
 
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 
 		shortenURLResponse := &ShortenURLResponse{}
