@@ -5,8 +5,8 @@ import (
 )
 
 type defaultDataViewModel struct {
-	ID          types.String `tfsdk:"id"`
-	DataViewID  types.String `tfsdk:"data_view_id"`
-	Force       types.Bool   `tfsdk:"force"`
-	SkipDelete  types.Bool   `tfsdk:"skip_delete"`
+	ID         types.String `tfsdk:"id"`
+	DataViewID types.String `tfsdk:"data_view_id"`
+	Force      types.Bool   `tfsdk:"force"`
+	SkipDelete types.Bool   `tfsdk:"skip_delete"`
 }
