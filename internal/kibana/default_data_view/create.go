@@ -2,7 +2,6 @@ package default_data_view
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
@@ -38,8 +37,8 @@ func (r *DefaultDataViewResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	// Set the ID to the data view ID for state tracking
-	plan.ID = types.StringValue(fmt.Sprintf("default-data-view:%s", dataViewID))
+	// Set a static ID since there's only one default data view setting
+	plan.ID = types.StringValue("default")
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
