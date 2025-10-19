@@ -87,3 +87,36 @@ func DeleteDataView(ctx context.Context, client *Client, spaceID string, viewID 
 		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
+
+// GetDefaultDataView reads the default data view from the API.
+func GetDefaultDataView(ctx context.Context, client *Client) (*string, diag.Diagnostics) {
+	resp, err := client.API.GetDefaultDataViewDefaultWithResponse(ctx)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		if resp.JSON200 != nil && resp.JSON200.DataViewId != nil {
+			return resp.JSON200.DataViewId, nil
+		}
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// SetDefaultDataView sets the default data view.
+func SetDefaultDataView(ctx context.Context, client *Client, req kbapi.SetDefaultDatailViewDefaultJSONRequestBody) diag.Diagnostics {
+	resp, err := client.API.SetDefaultDatailViewDefaultWithResponse(ctx, req)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
