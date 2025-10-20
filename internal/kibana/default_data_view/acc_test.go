@@ -1,17 +1,30 @@
 package default_data_view_test
 
 import (
-	"fmt"
+	"embed"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+//go:embed test_data/*.tf
+var testDataFS embed.FS
+
 var minDataViewAPISupport = version.Must(version.NewVersion("8.1.0"))
+
+// loadTestData reads and returns the content of a test data file
+func loadTestData(filename string) string {
+	data, err := testDataFS.ReadFile("test_data/" + filename)
+	if err != nil {
+		panic("Failed to load test data file: " + filename + " - " + err.Error())
+	}
+	return string(data)
+}
 
 func TestAccResourceDefaultDataView(t *testing.T) {
 	indexName1 := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
@@ -23,7 +36,10 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   testAccResourceDefaultDataViewBasic(indexName1),
+				Config:   loadTestData("basic.tf"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName1),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_default_data_view.test", "data_view_id"),
@@ -34,10 +50,27 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   testAccResourceDefaultDataViewUpdate(indexName1, indexName2),
+				Config:   loadTestData("update.tf"),
+				ConfigVariables: config.Variables{
+					"index_name1": config.StringVariable(indexName1),
+					"index_name2": config.StringVariable(indexName2),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_default_data_view.test", "data_view_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "space_id", "default"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
+				Config:   loadTestData("unset.tf"),
+				ConfigVariables: config.Variables{
+					"index_name1": config.StringVariable(indexName1),
+					"index_name2": config.StringVariable(indexName2),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_default_data_view.test", "data_view_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "space_id", "default"),
 				),
 			},
@@ -54,7 +87,10 @@ func TestAccResourceDefaultDataViewWithSkipDelete(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   testAccResourceDefaultDataViewWithSkipDelete(indexName),
+				Config:   loadTestData("skip_delete.tf"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "skip_delete", "true"),
@@ -75,7 +111,11 @@ func TestAccResourceDefaultDataViewWithCustomSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   testAccResourceDefaultDataViewWithCustomSpace(indexName, spaceID),
+				Config:   loadTestData("custom_space.tf"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+					"space_id":   config.StringVariable(spaceID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", spaceID),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_default_data_view.test", "data_view_id"),
@@ -86,129 +126,4 @@ func TestAccResourceDefaultDataViewWithCustomSpace(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceDefaultDataViewBasic(indexName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {}
-}
-
-resource "elasticstack_elasticsearch_index" "my_index" {
-	name                = "%s"
-	deletion_protection = false
-}
-
-resource "elasticstack_kibana_data_view" "dv" {
-	data_view = {
-		title = "%s*"
-	}
-	depends_on = [elasticstack_elasticsearch_index.my_index]
-}
-
-resource "elasticstack_kibana_default_data_view" "test" {
-	data_view_id = elasticstack_kibana_data_view.dv.data_view.id
-	force        = true
-}
-`, indexName, indexName)
-}
-
-func testAccResourceDefaultDataViewUpdate(indexName1, indexName2 string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {}
-}
-
-resource "elasticstack_elasticsearch_index" "my_index" {
-	name                = "%s"
-	deletion_protection = false
-}
-
-resource "elasticstack_elasticsearch_index" "my_other_index" {
-	name                = "%s"
-	deletion_protection = false
-}
-
-resource "elasticstack_kibana_data_view" "dv" {
-	data_view = {
-		title = "%s*"
-	}
-	depends_on = [elasticstack_elasticsearch_index.my_index]
-}
-
-resource "elasticstack_kibana_data_view" "dv2" {
-	data_view = {
-		title = "%s*"
-	}
-	depends_on = [elasticstack_elasticsearch_index.my_other_index]
-}
-
-resource "elasticstack_kibana_default_data_view" "test" {
-	data_view_id = elasticstack_kibana_data_view.dv2.data_view.id
-	force        = true
-}
-`, indexName1, indexName2, indexName1, indexName2)
-}
-
-func testAccResourceDefaultDataViewWithSkipDelete(indexName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {}
-}
-
-resource "elasticstack_elasticsearch_index" "my_index" {
-	name                = "%s"
-	deletion_protection = false
-}
-
-resource "elasticstack_kibana_data_view" "dv" {
-	data_view = {
-		title = "%s*"
-	}
-	depends_on = [elasticstack_elasticsearch_index.my_index]
-}
-
-resource "elasticstack_kibana_default_data_view" "test" {
-	data_view_id = elasticstack_kibana_data_view.dv.data_view.id
-	force        = true
-	skip_delete  = true
-}
-`, indexName, indexName)
-}
-
-func testAccResourceDefaultDataViewWithCustomSpace(indexName, spaceID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {}
-}
-
-resource "elasticstack_kibana_space" "test_space" {
-	space_id    = "%s"
-	name        = "Test Space %s"
-	description = "Test space for default data view"
-}
-
-resource "elasticstack_elasticsearch_index" "my_index" {
-	name                = "%s"
-	deletion_protection = false
-}
-
-resource "elasticstack_kibana_data_view" "dv" {
-	space_id = elasticstack_kibana_space.test_space.space_id
-	data_view = {
-		title = "%s*"
-	}
-	depends_on = [elasticstack_elasticsearch_index.my_index]
-}
-
-resource "elasticstack_kibana_default_data_view" "test" {
-	space_id     = elasticstack_kibana_space.test_space.space_id
-	data_view_id = elasticstack_kibana_data_view.dv.data_view.id
-	force        = true
-}
-`, spaceID, spaceID, indexName, indexName)
 }

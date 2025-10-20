@@ -23,28 +23,17 @@ func (r *DefaultDataViewResource) Read(ctx context.Context, req resource.ReadReq
 	}
 
 	spaceID := state.SpaceID.ValueString()
-	if spaceID == "" {
-		spaceID = "default"
-	}
-
 	defaultDataViewID, diags := kibana_oapi.GetDefaultDataView(ctx, client, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// If no default data view is set, remove from state
-	if defaultDataViewID == nil || *defaultDataViewID == "" {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
 	// Update state with current default data view
-	state.DataViewID = types.StringValue(*defaultDataViewID)
+	state.DataViewID = types.StringPointerValue(defaultDataViewID)
+
 	// Use the space_id as the resource ID
-	if state.ID.IsNull() || state.ID.IsUnknown() {
-		state.ID = types.StringValue(spaceID)
-	}
+	state.ID = types.StringValue(spaceID)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)

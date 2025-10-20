@@ -29,8 +29,8 @@ func getSchema() schema.Schema {
 				},
 			},
 			"data_view_id": schema.StringAttribute{
-				MarkdownDescription: "The data view identifier to set as default. NOTE: The API does not validate whether it is a valid identifier. Use `null` to unset the default data view.",
-				Required:            true,
+				MarkdownDescription: "The data view identifier to set as default. NOTE: The API does not validate whether it is a valid identifier. Leave this unset (or explicitly `null`) to unset the default data view.",
+				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},

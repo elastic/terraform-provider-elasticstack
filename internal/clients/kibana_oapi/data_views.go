@@ -97,7 +97,7 @@ func GetDefaultDataView(ctx context.Context, client *Client, spaceID string) (*s
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 != nil && resp.JSON200.DataViewId != nil {
+		if resp.JSON200 != nil && resp.JSON200.DataViewId != nil && *resp.JSON200.DataViewId != "" {
 			return resp.JSON200.DataViewId, nil
 		}
 		return nil, nil

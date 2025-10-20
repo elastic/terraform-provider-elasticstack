@@ -29,9 +29,6 @@ func (r *DefaultDataViewResource) Delete(ctx context.Context, req resource.Delet
 	}
 
 	spaceID := state.SpaceID.ValueString()
-	if spaceID == "" {
-		spaceID = "default"
-	}
 
 	// Unset the default data view by setting it to null
 	setReq := kbapi.SetDefaultDatailViewDefaultJSONRequestBody{

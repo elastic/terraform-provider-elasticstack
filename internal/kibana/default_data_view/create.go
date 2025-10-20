@@ -29,11 +29,11 @@ func (r *DefaultDataViewResource) setDefaultDataView(ctx context.Context, plan t
 		return diags
 	}
 
-	dataViewID := model.DataViewID.ValueString()
+	dataViewID := model.DataViewID.ValueStringPointer()
 	force := model.Force.ValueBool()
 	spaceID := model.SpaceID.ValueString()
 	setReq := kbapi.SetDefaultDatailViewDefaultJSONRequestBody{
-		DataViewId: &dataViewID,
+		DataViewId: dataViewID,
 		Force:      &force,
 	}
 
