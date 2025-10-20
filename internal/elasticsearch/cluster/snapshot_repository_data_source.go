@@ -111,7 +111,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Computed:    true,
 		},
 		"location_mode": {
-			Description: "Location mode. `primary_only` or `secondary_only`. See: https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy",
+			Description: "Location mode. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},

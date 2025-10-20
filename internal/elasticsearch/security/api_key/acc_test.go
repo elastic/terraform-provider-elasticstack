@@ -18,9 +18,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccResourceSecurityApiKey(t *testing.T) {
@@ -258,9 +258,8 @@ func TestAccResourceSecurityApiKeyFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.9",
 					},
 				},
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
-				Config:                   testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
+				Config:   testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "role_descriptors"),
@@ -449,4 +448,175 @@ func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func TestAccResourceSecurityApiKeyCrossCluster(t *testing.T) {
+	// generate a random name
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithCrossCluster),
+				Config:   testAccResourceSecurityApiKeyCrossClusterCreate(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "type", "cross_cluster"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.0", "logs-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.1", "metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.replication.0.names.0", "archive-*"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithCrossCluster),
+				Config:   testAccResourceSecurityApiKeyCrossClusterUpdate(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "type", "cross_cluster"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.0", "log-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.1", "metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.replication.0.names.0", "archives-*"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceSecurityApiKeyCrossClusterCreate(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+  type = "cross_cluster"
+
+  access = {
+    search = [
+      {
+        names = ["logs-*", "metrics-*"]
+      }
+    ]
+    replication = [
+      {
+        names = ["archive-*"]
+      }
+    ]
+  }
+
+  expiration = "30d"
+
+  metadata = jsonencode({
+    description = "Cross-cluster test key"
+    environment = "test"
+  })
+}
+	`, apiKeyName)
+}
+
+func testAccResourceSecurityApiKeyCrossClusterUpdate(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+  type = "cross_cluster"
+
+  access = {
+    search = [
+      {
+        names = ["log-*", "metrics-*"]
+      }
+    ]
+    replication = [
+      {
+        names = ["archives-*"]
+      }
+    ]
+  }
+
+  expiration = "30d"
+
+  metadata = jsonencode({
+    description = "Cross-cluster test key"
+    environment = "test"
+  })
+}
+	`, apiKeyName)
+}
+
+func TestAccResourceSecurityApiKeyWithDefaultAllowRestrictedIndices(t *testing.T) {
+	// generate a random name
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
+				Config:   testAccResourceSecurityApiKeyWithoutAllowRestrictedIndices(apiKeyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
+						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
+							return err
+						}
+
+						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+							"role-default": {
+								Cluster: []string{"monitor"},
+								Indices: []models.IndexPerms{{
+									Names:      []string{"logs-*", "metrics-*"},
+									Privileges: []string{"read", "view_index_metadata"},
+								}},
+							},
+						}
+
+						if !reflect.DeepEqual(testRoleDescriptor, expectedRoleDescriptor) {
+							return fmt.Errorf("role descriptor mismatch:\nexpected: %+v\nactual: %+v", expectedRoleDescriptor, testRoleDescriptor)
+						}
+
+						return nil
+					}),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceSecurityApiKeyWithoutAllowRestrictedIndices(apiKeyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s"
+
+  role_descriptors = jsonencode({
+    role-default = {
+      cluster = ["monitor"]
+      indices = [{
+        names = ["logs-*", "metrics-*"]
+        privileges = ["read", "view_index_metadata"]
+        # Note: allow_restricted_indices is NOT specified here - should default to false
+      }]
+    }
+  })
+
+  expiration = "2d"
+}
+	`, apiKeyName)
 }

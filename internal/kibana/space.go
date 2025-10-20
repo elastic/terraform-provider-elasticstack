@@ -6,10 +6,13 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var SpaceSolutionMinVersion = version.Must(version.NewVersion("8.18.0"))
 
 func ResourceSpace() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -38,6 +41,7 @@ func ResourceSpace() *schema.Resource {
 			Description: "The list of disabled features for the space. To get a list of available feature IDs, use the Features API (https://www.elastic.co/guide/en/kibana/master/features-api-get.html).",
 			Type:        schema.TypeSet,
 			Optional:    true,
+			Computed:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
@@ -61,10 +65,17 @@ func ResourceSpace() *schema.Resource {
 			Optional:     true,
 			ValidateFunc: validation.StringMatch(regexp.MustCompile("^data:image/"), "must be a valid data-URL encoded image"),
 		},
+		"solution": {
+			Description:  "The solution view for the space. Valid options are `security`, `oblt`, `es`, or `classic`.",
+			Type:         schema.TypeString,
+			Optional:     true,
+			Computed:     true,
+			ValidateFunc: validation.StringInSlice([]string{"security", "oblt", "es", "classic"}, false),
+		},
 	}
 
 	return &schema.Resource{
-		Description: "Creates a Kibana space. See, https://www.elastic.co/guide/en/kibana/master/spaces-api-post.html",
+		Description: "Creates a Kibana space. See the [spaces API documentation](https://www.elastic.co/guide/en/kibana/master/spaces-api-post.html) for more details.",
 
 		CreateContext: resourceSpaceUpsert,
 		UpdateContext: resourceSpaceUpsert,
@@ -88,6 +99,18 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 	kibana, err := client.GetKibanaClient()
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Check version compatibility for solution field
+	if solution, ok := d.GetOk("solution"); ok && solution.(string) != "" {
+		serverVersion, diags := client.ServerVersion(ctx)
+		if diags.HasError() {
+			return diags
+		}
+
+		if !serverVersion.GreaterThanOrEqual(SpaceSolutionMinVersion) {
+			return diag.Errorf("solution field is not supported in this version of the Elastic Stack. Solution field requires %s or higher", SpaceSolutionMinVersion)
+		}
 	}
 
 	space := kbapi.KibanaSpace{
@@ -118,6 +141,10 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 
 	if imageUrl, ok := d.GetOk("image_url"); ok {
 		space.ImageURL = imageUrl.(string)
+	}
+
+	if solution, ok := d.GetOk("solution"); ok {
+		space.Solution = solution.(string)
 	}
 
 	var spaceResponse *kbapi.KibanaSpace
@@ -180,6 +207,9 @@ func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interfa
 		return diag.FromErr(err)
 	}
 	if err := d.Set("color", space.Color); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("solution", space.Solution); err != nil {
 		return diag.FromErr(err)
 	}
 

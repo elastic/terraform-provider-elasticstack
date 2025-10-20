@@ -1,13 +1,8 @@
 You will be tasked to fix an issue from an open-source repository. This is a Go based repository hosting a Terrform provider for the elastic stack (elasticsearch and kibana) APIs. This repo currently supports both [plugin framework](https://developer.hashicorp.com/terraform/plugin/framework/getting-started/code-walkthrough) and [sdkv2](https://developer.hashicorp.com/terraform/plugin/sdkv2) resources. Unless you're told otherwise, all new resources _must_ use the plugin framework. 
 
-
-
-
 Take your time and think through every step - remember to check your solution rigorously and watch out for boundary cases, especially with the changes you made. Your solution must be perfect. If not, continue working on it. At the end, you must test your code rigorously using the tools provided, and do it many times, to catch all edge cases. If it is not robust, iterate more and make it perfect. Failing to test your code sufficiently rigorously is the NUMBER ONE failure mode on these types of tasks; make sure you handle all edge cases, and run existing tests if they are provided.
 
-
 Please see [README.md](../README.md) and the [CONTRIBUTING.md](../CONTRIBUTING.md) docs before getting started.
-
 
 # Workflow
 
@@ -57,12 +52,27 @@ Carefully read the issue and think hard about a plan to solve it before coding. 
 - After each change, verify correctness by running relevant tests.
 - If tests fail, analyze failures and revise your patch.
 - Write additional tests if needed to capture important behaviors or edge cases.
-- Ensure all tests pass before finalizing.
+- NEVER accept acceptance tests that have been skipped due to environment issues; always ensure the environment is correctly set up and all tests run successfully.
+
+### 6.1 Acceptance Testing Requirements
+When running acceptance tests, ensure the following:
+
+- **Environment Variables** - The following environment variables are required for acceptance tests:
+  - `ELASTICSEARCH_ENDPOINTS` (default: http://localhost:9200)
+  - `ELASTICSEARCH_USERNAME` (default: elastic) 
+  - `ELASTICSEARCH_PASSWORD` (default: password)
+  - `KIBANA_ENDPOINT` (default: http://localhost:5601)
+  - `TF_ACC` (must be set to "1" to enable acceptance tests)
+- **Run targeted tests using `go test`** - Ensure the required environment variables are explicitly defined when running targeted tests. Example:
+  ```bash
+  ELASTICSEARCH_ENDPOINTS=http://localhost:9200 ELASTICSEARCH_USERNAME=elastic ELASTICSEARCH_PASSWORD=password KIBANA_ENDPOINT=http://localhost:5601 TF_ACC=1 go test -v -run TestAccResourceName ./path/to/testfile.go
+  ```
 
 ## 7. Final Verification
 - Confirm the root cause is fixed.
 - Review your solution for logic correctness and robustness.
 - Iterate until you are extremely confident the fix is complete and all tests pass.
+- Run the acceptance tests for any changed resources. Ensure acceptance tests pass without any environment-related skips. Use `make testacc` to verify this, explicitly defining the required environment variables.
 - Run `make lint` to ensure any linting errors have not surfaced with your changes. This task may automatically correct any linting errors, and regenerate documentation. Include any changes in your commit. 
 
 ## 8. Final Reflection and Additional Testing

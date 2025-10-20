@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -54,7 +54,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, policyNa
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested EnrichPolicy: %s", policyName)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested EnrichPolicy: %s", policyName)); diags.HasError() {
 		return nil, diags
 	}
 
@@ -131,7 +131,7 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, policy *
 	}
 	defer res.Body.Close()
 
-	if diags := utils.CheckError(res, "Unable to create enrich policy"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create enrich policy"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -149,7 +149,7 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ApiClient, polic
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete enrich policy: %s", policyName)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete enrich policy: %s", policyName)); diags.HasError() {
 		return diags
 	}
 

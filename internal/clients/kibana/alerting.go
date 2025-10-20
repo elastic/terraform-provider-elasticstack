@@ -7,8 +7,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -203,7 +203,7 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 
 	defer res.Body.Close()
 
-	diags := utils.CheckHttpError(res, "Unable to create alerting rule")
+	diags := diagutil.CheckHttpError(res, "Unable to create alerting rule")
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -261,7 +261,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 
 	defer res.Body.Close()
 
-	if diags := utils.CheckHttpError(res, "Unable to update alerting rule"); diags.HasError() {
+	if diags := diagutil.CheckHttpError(res, "Unable to update alerting rule"); diags.HasError() {
 		return nil, diags
 	}
 
@@ -283,7 +283,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 			return nil, diag.FromErr(err)
 		}
 
-		if diags := utils.CheckHttpError(res, "Unable to enable alerting rule"); diags.HasError() {
+		if diags := diagutil.CheckHttpError(res, "Unable to enable alerting rule"); diags.HasError() {
 			return nil, diag.FromErr(err)
 		}
 	}
@@ -294,7 +294,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 			return nil, diag.FromErr(err)
 		}
 
-		if diags := utils.CheckHttpError(res, "Unable to disable alerting rule"); diags.HasError() {
+		if diags := diagutil.CheckHttpError(res, "Unable to disable alerting rule"); diags.HasError() {
 			return nil, diag.FromErr(err)
 		}
 	}
@@ -319,7 +319,7 @@ func GetAlertingRule(ctx context.Context, apiClient *clients.ApiClient, id, spac
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	return ruleResponseToModel(spaceID, ruleRes), utils.CheckHttpError(res, "Unable to get alerting rule")
+	return ruleResponseToModel(spaceID, ruleRes), diagutil.CheckHttpError(res, "Unable to get alerting rule")
 }
 
 func DeleteAlertingRule(ctx context.Context, apiClient *clients.ApiClient, ruleId string, spaceId string) diag.Diagnostics {
@@ -336,5 +336,5 @@ func DeleteAlertingRule(ctx context.Context, apiClient *clients.ApiClient, ruleI
 	}
 
 	defer res.Body.Close()
-	return utils.CheckHttpError(res, "Unable to delete alerting rule")
+	return diagutil.CheckHttpError(res, "Unable to delete alerting rule")
 }

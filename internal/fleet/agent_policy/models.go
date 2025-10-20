@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -15,8 +17,10 @@ import (
 )
 
 type features struct {
-	SupportsGlobalDataTags    bool
-	SupportsSupportsAgentless bool
+	SupportsGlobalDataTags      bool
+	SupportsSupportsAgentless   bool
+	SupportsInactivityTimeout   bool
+	SupportsUnenrollmentTimeout bool
 }
 
 type globalDataTagsItemModel struct {
@@ -25,21 +29,23 @@ type globalDataTagsItemModel struct {
 }
 
 type agentPolicyModel struct {
-	ID                 types.String `tfsdk:"id"`
-	PolicyID           types.String `tfsdk:"policy_id"`
-	Name               types.String `tfsdk:"name"`
-	Namespace          types.String `tfsdk:"namespace"`
-	Description        types.String `tfsdk:"description"`
-	DataOutputId       types.String `tfsdk:"data_output_id"`
-	MonitoringOutputId types.String `tfsdk:"monitoring_output_id"`
-	FleetServerHostId  types.String `tfsdk:"fleet_server_host_id"`
-	DownloadSourceId   types.String `tfsdk:"download_source_id"`
-	MonitorLogs        types.Bool   `tfsdk:"monitor_logs"`
-	MonitorMetrics     types.Bool   `tfsdk:"monitor_metrics"`
-	SysMonitoring      types.Bool   `tfsdk:"sys_monitoring"`
-	SkipDestroy        types.Bool   `tfsdk:"skip_destroy"`
-	SupportsAgentless  types.Bool   `tfsdk:"supports_agentless"`
-	GlobalDataTags     types.Map    `tfsdk:"global_data_tags"` //> globalDataTagsModel
+	ID                  types.String         `tfsdk:"id"`
+	PolicyID            types.String         `tfsdk:"policy_id"`
+	Name                types.String         `tfsdk:"name"`
+	Namespace           types.String         `tfsdk:"namespace"`
+	Description         types.String         `tfsdk:"description"`
+	DataOutputId        types.String         `tfsdk:"data_output_id"`
+	MonitoringOutputId  types.String         `tfsdk:"monitoring_output_id"`
+	FleetServerHostId   types.String         `tfsdk:"fleet_server_host_id"`
+	DownloadSourceId    types.String         `tfsdk:"download_source_id"`
+	MonitorLogs         types.Bool           `tfsdk:"monitor_logs"`
+	MonitorMetrics      types.Bool           `tfsdk:"monitor_metrics"`
+	SysMonitoring       types.Bool           `tfsdk:"sys_monitoring"`
+	SkipDestroy         types.Bool           `tfsdk:"skip_destroy"`
+	SupportsAgentless   types.Bool           `tfsdk:"supports_agentless"`
+	InactivityTimeout   customtypes.Duration `tfsdk:"inactivity_timeout"`
+	UnenrollmentTimeout customtypes.Duration `tfsdk:"unenrollment_timeout"`
+	GlobalDataTags      types.Map            `tfsdk:"global_data_tags"` //> globalDataTagsModel
 }
 
 func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
@@ -73,6 +79,22 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
 	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
+	if data.InactivityTimeout != nil {
+		// Convert seconds to duration string
+		seconds := int64(*data.InactivityTimeout)
+		d := time.Duration(seconds) * time.Second
+		model.InactivityTimeout = customtypes.NewDurationValue(d.Truncate(time.Second).String())
+	} else {
+		model.InactivityTimeout = customtypes.NewDurationNull()
+	}
+	if data.UnenrollTimeout != nil {
+		// Convert seconds to duration string
+		seconds := int64(*data.UnenrollTimeout)
+		d := time.Duration(seconds) * time.Second
+		model.UnenrollmentTimeout = customtypes.NewDurationValue(d.Truncate(time.Second).String())
+	} else {
+		model.UnenrollmentTimeout = customtypes.NewDurationNull()
+	}
 	if utils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
 		var map0 = make(map[string]globalDataTagsItemModel)
@@ -162,16 +184,6 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledMetrics)
 	}
 
-	if utils.IsKnown(model.SupportsAgentless) && !feat.SupportsSupportsAgentless {
-		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-			diag.NewAttributeErrorDiagnostic(
-				path.Root("supports_agentless"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-			),
-		}
-	}
-
 	body := kbapi.PostFleetAgentPoliciesJSONRequestBody{
 		DataOutputId:       model.DataOutputId.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
@@ -182,7 +194,55 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
-		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
+	}
+
+	if utils.IsKnown(model.SupportsAgentless) {
+		if !feat.SupportsSupportsAgentless {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("supports_agentless"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+				),
+			}
+		}
+		body.SupportsAgentless = model.SupportsAgentless.ValueBoolPointer()
+	}
+
+	if utils.IsKnown(model.InactivityTimeout) {
+		if !feat.SupportsInactivityTimeout {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("inactivity_timeout"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
+				),
+			}
+		}
+		duration, diags := model.InactivityTimeout.Parse()
+		if diags.HasError() {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
+		}
+		seconds := float32(duration.Seconds())
+		body.InactivityTimeout = &seconds
+	}
+
+	if utils.IsKnown(model.UnenrollmentTimeout) {
+		if !feat.SupportsUnenrollmentTimeout {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("unenrollment_timeout"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
+				),
+			}
+		}
+		duration, diags := model.UnenrollmentTimeout.Parse()
+		if diags.HasError() {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
+		}
+		seconds := float32(duration.Seconds())
+		body.UnenrollTimeout = &seconds
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
@@ -197,20 +257,10 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat features) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.Logs)
+		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.Metrics)
-	}
-
-	if utils.IsKnown(model.SupportsAgentless) && !feat.SupportsSupportsAgentless {
-		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-			diag.NewAttributeErrorDiagnostic(
-				path.Root("supports_agentless"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-			),
-		}
+		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledMetrics)
 	}
 
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
@@ -222,7 +272,55 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 		MonitoringOutputId: model.MonitoringOutputId.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
-		SupportsAgentless:  model.SupportsAgentless.ValueBoolPointer(),
+	}
+
+	if utils.IsKnown(model.SupportsAgentless) {
+		if !feat.SupportsSupportsAgentless {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("supports_agentless"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+				),
+			}
+		}
+		body.SupportsAgentless = model.SupportsAgentless.ValueBoolPointer()
+	}
+
+	if utils.IsKnown(model.InactivityTimeout) {
+		if !feat.SupportsInactivityTimeout {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("inactivity_timeout"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
+				),
+			}
+		}
+		duration, diags := model.InactivityTimeout.Parse()
+		if diags.HasError() {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
+		}
+		seconds := float32(duration.Seconds())
+		body.InactivityTimeout = &seconds
+	}
+
+	if utils.IsKnown(model.UnenrollmentTimeout) {
+		if !feat.SupportsUnenrollmentTimeout {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("unenrollment_timeout"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
+				),
+			}
+		}
+		duration, diags := model.UnenrollmentTimeout.Parse()
+		if diags.HasError() {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
+		}
+		seconds := float32(duration.Seconds())
+		body.UnenrollTimeout = &seconds
 	}
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)

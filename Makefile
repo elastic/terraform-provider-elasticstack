@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.11.17
+VERSION ?= 0.12.0
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -15,7 +15,7 @@ SWAGGER_VERSION ?= 8.7
 
 GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
 
-STACK_VERSION ?= 9.0.3
+STACK_VERSION ?= 9.1.3
 
 ELASTICSEARCH_NAME ?= terraform-elasticstack-es
 ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
@@ -51,7 +51,6 @@ build-ci: ## build the terraform provider
 
 .PHONY: build
 build: lint build-ci ## build the terraform provider
-
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
@@ -225,7 +224,7 @@ docker-clean: ## Try to remove provisioned nodes and assigned network
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
 
 .PHONY: gen
@@ -246,7 +245,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.4.0
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.5.0
 
 .PHONY: golangci-lint
 golangci-lint:
@@ -254,7 +253,10 @@ golangci-lint:
 
 
 .PHONY: lint
-lint: setup golangci-lint check-fmt check-docs ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
+
+.PHONY: check-lint
+check-lint: setup golangci-lint check-fmt check-docs
 
 .PHONY: fmt
 fmt: ## Format code
@@ -350,7 +352,7 @@ generate-slo-client: tools ## generate Kibana slo client
 		-o /local/generated/slo \
 		 --type-mappings=float32=float64
 	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
-	@ go fmt ./generated/...
+	@ go fmt ./generated/slo/...
 
 .PHONY: generate-clients
 generate-clients: generate-alerting-client generate-slo-client generate-connectors-client ## generate all clients

@@ -11,11 +11,11 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
-	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -25,7 +25,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/securityprovider"
 )
 
 type CompositeId struct {
@@ -55,7 +54,7 @@ func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
 
 func CompositeIdFromStrFw(id string) (*CompositeId, fwdiags.Diagnostics) {
 	composite, diags := CompositeIdFromStr(id)
-	return composite, utils.FrameworkDiagsFromSDK(diags)
+	return composite, diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
@@ -76,7 +75,6 @@ type ApiClient struct {
 	kibana                   *kibana.Client
 	kibanaOapi               *kibana_oapi.Client
 	alerting                 alerting.AlertingAPI
-	connectors               *connectors.Client
 	slo                      slo.SloAPI
 	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
@@ -105,11 +103,6 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 
 	kibanaHttpClient := kib.Client.GetClient()
 
-	actionConnectors, err := buildConnectorsClient(cfg, kibanaHttpClient)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create Kibana action connectors client: [%w]", err)
-	}
-
 	kibOapi, err := kibana_oapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
 		return nil, err
@@ -126,7 +119,6 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 			kibanaOapi:    kibOapi,
 			alerting:      buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI,
 			slo:           buildSloClient(cfg, kibanaHttpClient).SloAPI,
-			connectors:    actionConnectors,
 			kibanaConfig:  *cfg.Kibana,
 			fleet:         fleetClient,
 			version:       version,
@@ -262,14 +254,6 @@ func (a *ApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
 	return a.alerting, nil
 }
 
-func (a *ApiClient) GetKibanaConnectorsClient(ctx context.Context) (*connectors.Client, error) {
-	if a.connectors == nil {
-		return nil, errors.New("kibana action connector client not found")
-	}
-
-	return a.connectors, nil
-}
-
 func (a *ApiClient) GetSloClient() (slo.SloAPI, error) {
 	if a.slo == nil {
 		return nil, errors.New("slo client not found")
@@ -340,7 +324,7 @@ func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.D
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
 		return nil, diags
 	}
 
@@ -370,6 +354,10 @@ func (a *ApiClient) EnforceMinVersion(ctx context.Context, minVersion *version.V
 	}
 
 	return serverVersion.GreaterThanOrEqual(minVersion), nil
+}
+
+type MinVersionEnforceable interface {
+	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
 }
 
 func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
@@ -551,33 +539,6 @@ func buildAlertingClient(cfg config.Client, httpClient *http.Client) *alerting.A
 	return alerting.NewAPIClient(&alertingConfig)
 }
 
-func buildConnectorsClient(cfg config.Client, httpClient *http.Client) (*connectors.Client, error) {
-	var authInterceptor connectors.ClientOption
-	if cfg.Kibana.ApiKey != "" {
-		apiKeyProvider, err := securityprovider.NewSecurityProviderApiKey(
-			"header",
-			"Authorization",
-			"ApiKey "+cfg.Kibana.ApiKey,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create api key auth provider: %w", err)
-		}
-		authInterceptor = connectors.WithRequestEditorFn(apiKeyProvider.Intercept)
-	} else {
-		basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(cfg.Kibana.Username, cfg.Kibana.Password)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create basic auth provider: %w", err)
-		}
-		authInterceptor = connectors.WithRequestEditorFn(basicAuthProvider.Intercept)
-	}
-
-	return connectors.NewClient(
-		cfg.Kibana.Address,
-		authInterceptor,
-		connectors.WithHTTPClient(httpClient),
-	)
-}
-
 func buildSloClient(cfg config.Client, httpClient *http.Client) *slo.APIClient {
 	sloConfig := slo.Configuration{
 		Debug:     logging.IsDebugOrHigher(),
@@ -643,14 +604,9 @@ func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, erro
 		client.kibanaOapi = kibanaOapiClient
 
 		kibanaHttpClient := kibanaClient.Client.GetClient()
-		connectorsClient, err := buildConnectorsClient(cfg, kibanaHttpClient)
-		if err != nil {
-			return nil, fmt.Errorf("cannot create Kibana connectors client: [%w]", err)
-		}
 
 		client.alerting = buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI
 		client.slo = buildSloClient(cfg, kibanaHttpClient).SloAPI
-		client.connectors = connectorsClient
 	}
 
 	if cfg.Fleet != nil {

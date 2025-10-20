@@ -3,7 +3,6 @@ package provider
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
@@ -74,38 +73,32 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_ingest_processor_uri_parts":         ingest.DataSourceProcessorUriParts(),
 			"elasticstack_elasticsearch_ingest_processor_user_agent":        ingest.DataSourceProcessorUserAgent(),
 			"elasticstack_elasticsearch_security_role":                      security.DataSourceRole(),
-			"elasticstack_elasticsearch_security_role_mapping":              security.DataSourceRoleMapping(),
 			"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
 			"elasticstack_elasticsearch_snapshot_repository":                cluster.DataSourceSnapshotRespository(),
 			"elasticstack_elasticsearch_info":                               cluster.DataSourceClusterInfo(),
-			"elasticstack_elasticsearch_enrich_policy":                      enrich.DataSourceEnrichPolicy(),
 
 			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
 			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"elasticstack_elasticsearch_cluster_settings":      cluster.ResourceSettings(),
-			"elasticstack_elasticsearch_component_template":    index.ResourceComponentTemplate(),
-			"elasticstack_elasticsearch_data_stream":           index.ResourceDataStream(),
-			"elasticstack_elasticsearch_index_lifecycle":       index.ResourceIlm(),
-			"elasticstack_elasticsearch_index_template":        index.ResourceTemplate(),
-			"elasticstack_elasticsearch_ingest_pipeline":       ingest.ResourceIngestPipeline(),
-			"elasticstack_elasticsearch_logstash_pipeline":     logstash.ResourceLogstashPipeline(),
-			"elasticstack_elasticsearch_security_role":         security.ResourceRole(),
-			"elasticstack_elasticsearch_security_role_mapping": security.ResourceRoleMapping(),
-			"elasticstack_elasticsearch_security_user":         security.ResourceUser(),
-			"elasticstack_elasticsearch_snapshot_lifecycle":    cluster.ResourceSlm(),
-			"elasticstack_elasticsearch_snapshot_repository":   cluster.ResourceSnapshotRepository(),
-			"elasticstack_elasticsearch_script":                cluster.ResourceScript(),
-			"elasticstack_elasticsearch_enrich_policy":         enrich.ResourceEnrichPolicy(),
-			"elasticstack_elasticsearch_transform":             transform.ResourceTransform(),
-			"elasticstack_elasticsearch_watch":                 watcher.ResourceWatch(),
+			"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
+			"elasticstack_elasticsearch_component_template":  index.ResourceComponentTemplate(),
+			"elasticstack_elasticsearch_data_stream":         index.ResourceDataStream(),
+			"elasticstack_elasticsearch_index_lifecycle":     index.ResourceIlm(),
+			"elasticstack_elasticsearch_index_template":      index.ResourceTemplate(),
+			"elasticstack_elasticsearch_ingest_pipeline":     ingest.ResourceIngestPipeline(),
+			"elasticstack_elasticsearch_logstash_pipeline":   logstash.ResourceLogstashPipeline(),
+			"elasticstack_elasticsearch_security_role":       security.ResourceRole(),
+			"elasticstack_elasticsearch_security_user":       security.ResourceUser(),
+			"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),
+			"elasticstack_elasticsearch_snapshot_repository": cluster.ResourceSnapshotRepository(),
+			"elasticstack_elasticsearch_transform":           transform.ResourceTransform(),
+			"elasticstack_elasticsearch_watch":               watcher.ResourceWatch(),
 
-			"elasticstack_kibana_alerting_rule":    kibana.ResourceAlertingRule(),
-			"elasticstack_kibana_space":            kibana.ResourceSpace(),
-			"elasticstack_kibana_action_connector": kibana.ResourceActionConnector(),
-			"elasticstack_kibana_security_role":    kibana.ResourceRole(),
-			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
+			"elasticstack_kibana_alerting_rule": kibana.ResourceAlertingRule(),
+			"elasticstack_kibana_space":         kibana.ResourceSpace(),
+			"elasticstack_kibana_security_role": kibana.ResourceRole(),
+			"elasticstack_kibana_slo":           kibana.ResourceSlo(),
 		},
 	}
 

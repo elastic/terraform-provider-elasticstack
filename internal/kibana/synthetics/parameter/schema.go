@@ -1,6 +1,7 @@
 package parameter
 
 import (
+	_ "embed"
 	"slices"
 	"strings"
 
@@ -21,6 +22,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+//go:embed resource-description.md
+var syntheticsParameterDescription string
+
 type tfModelV0 struct {
 	ID                types.String   `tfsdk:"id"`
 	Key               types.String   `tfsdk:"key"`
@@ -32,7 +36,7 @@ type tfModelV0 struct {
 
 func parameterSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Synthetics parameter config, see https://www.elastic.co/docs/api/doc/kibana/group/endpoint-synthetics for more details",
+		MarkdownDescription: syntheticsParameterDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,

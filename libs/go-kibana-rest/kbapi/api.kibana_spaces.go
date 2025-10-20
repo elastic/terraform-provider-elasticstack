@@ -23,6 +23,7 @@ type KibanaSpace struct {
 	Initials         string   `json:"initials,omitempty"`
 	Color            string   `json:"color,omitempty"`
 	ImageURL         string   `json:"imageUrl,omitempty"`
+	Solution         string   `json:"solution,omitempty"`
 }
 
 // KibanaSpaces is the list of KibanaSpace object
@@ -86,7 +87,7 @@ func newKibanaSpaceGetFunc(c *resty.Client) KibanaSpaceGet {
 			if resp.StatusCode() == 404 {
 				return nil, nil
 			}
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 
 		}
 		kibanaSpace := &KibanaSpace{}
@@ -112,7 +113,7 @@ func newKibanaSpaceListFunc(c *resty.Client) KibanaSpaceList {
 		}
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		kibanaSpaces := make(KibanaSpaces, 0, 1)
 		err = json.Unmarshal(resp.Body(), &kibanaSpaces)
@@ -147,7 +148,7 @@ func newKibanaSpaceCreateFunc(c *resty.Client) KibanaSpaceCreate {
 
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		kibanaSpace = &KibanaSpace{}
 		err = json.Unmarshal(resp.Body(), kibanaSpace)
@@ -188,7 +189,7 @@ func newKibanaSpaceCopySavedObjectsFunc(c *resty.Client) KibanaSpaceCopySavedObj
 
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return NewAPIError(resp.StatusCode(), resp.Status())
+			return NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		data := make(map[string]interface{})
 		err = json.Unmarshal(resp.Body(), &data)
@@ -204,7 +205,7 @@ func newKibanaSpaceCopySavedObjectsFunc(c *resty.Client) KibanaSpaceCopySavedObj
 			}
 		}
 		if len(errors) > 0 {
-			return NewAPIError(500, strings.Join(errors, "\n"))
+			return NewAPIError(500, "%s", strings.Join(errors, "\n"))
 		}
 
 		return nil
@@ -230,7 +231,7 @@ func newKibanaSpaceDeleteFunc(c *resty.Client) KibanaSpaceDelete {
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
 
-			return NewAPIError(resp.StatusCode(), resp.Status())
+			return NewAPIError(resp.StatusCode(), "%s", resp.Status())
 
 		}
 
@@ -260,7 +261,7 @@ func newKibanaSpaceUpdateFunc(c *resty.Client) KibanaSpaceUpdate {
 
 		log.Debug("Response: ", resp)
 		if resp.StatusCode() >= 300 {
-			return nil, NewAPIError(resp.StatusCode(), resp.Status())
+			return nil, NewAPIError(resp.StatusCode(), "%s", resp.Status())
 		}
 		kibanaSpace = &KibanaSpace{}
 		err = json.Unmarshal(resp.Body(), kibanaSpace)

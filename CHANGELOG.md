@@ -1,8 +1,75 @@
 ## [Unreleased]
 
+- Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
+
+## [0.12.0] - 2025-10-15
+
+- Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
+- Added `labels` field to `elasticstack_kibana_synthetics_monitor` resource for associating key-value pairs with monitors ([#1360](https://github.com/elastic/terraform-provider-elasticstack/pull/1360))
+- Fixes provider crash with `elasticstack_kibana_slo` when using `kql_custom_indicator` with no `filter` set. ([#1354](https://github.com/elastic/terraform-provider-elasticstack/pull/1354))
+- Updates for Security Detection Rules ([#1361](https://github.com/elastic/terraform-provider-elasticstack/pull/1361)
+  - Add support for `threat` property
+  - Gracefully support `query` property not being set
+  - Add esql specific validations to reject unsupported fields `index` and `filters`
+  - Gracefully handle response action with no provided `frequency`
+  - Add validation for required `anomaly_threshold` field in anomaly detection rules
+  - Add support for `timeline_id` / `timeline_title` fields
+  - Gracefully handle `threat_query` not being provided for `threat_match` ule
+
+## [0.11.18] - 2025-10-10
+
+### Breaking changes
+
+The `ssl` field on the `elasticstack_fleet_output` resource has been changes from a block to an attribute. This change ensures ongoing consistency within the resource schema for this resource, and aligns with Terraform best practices. 
+
+Existing `elasticstack_fleet_output` resources defining `ssl` will have to update the declaration to an attribute style. For example: 
+
+```hcl
+resource "elasticstack_fleet_output" "output" {
+  ...
+  ssl {
+    ...
+  }
+}
+```
+
+becomes 
+
+```hcl
+resource "elasticstack_fleet_output" "output" {
+  ...
+  ssl = {  # Note the equals sign here. 
+    ...
+  }
+}
+```
+
+### Changes
+
+- Create `elasticstack_kibana_security_detection_rule` resource. ([#1290](https://github.com/elastic/terraform-provider-elasticstack/pull/1290))
+- Add `elasticstack_kibana_export_saved_objects` data source ([#1293](https://github.com/elastic/terraform-provider-elasticstack/pull/1293))
+- Create `elasticstack_kibana_maintenance_window` resource. ([#1224](https://github.com/elastic/terraform-provider-elasticstack/pull/1224))
+- Add support for `solution` field in `elasticstack_kibana_space` resource and data source ([#1102](https://github.com/elastic/terraform-provider-elasticstack/issues/1102))
 - Add `slo_id` validation to `elasticstack_kibana_slo` ([#1221](https://github.com/elastic/terraform-provider-elasticstack/pull/1221))
 - Add `ignore_missing_component_templates` to `elasticstack_elasticsearch_index_template` ([#1206](https://github.com/elastic/terraform-provider-elasticstack/pull/1206))
+- Migrate `elasticstack_elasticsearch_enrich_policy` resource and data source to Terraform Plugin Framework ([#1220](https://github.com/elastic/terraform-provider-elasticstack/pull/1220))
 - Prevent provider panic when a script exists in state, but not in Elasticsearch ([#1218](https://github.com/elastic/terraform-provider-elasticstack/pull/1218))
+- Add support for managing cross_cluster API keys in `elasticstack_elasticsearch_security_api_key` ([#1252](https://github.com/elastic/terraform-provider-elasticstack/pull/1252))
+- Allow version changes without a destroy/create cycle with `elasticstack_fleet_integration` ([#1255](https://github.com/elastic/terraform-provider-elasticstack/pull/1255)). This fixes an issue where it was impossible to upgrade integrations which are used by an integration policy.
+- Add `namespace` attribute to `elasticstack_kibana_synthetics_monitor` resource to support setting data stream namespace independently from `space_id` ([#1247](https://github.com/elastic/terraform-provider-elasticstack/pull/1247))
+- Support setting an explit `connector_id` in `elasticstack_kibana_action_connector`. This attribute already existed, but was being ignored by the provider. Setting the attribute will return an error in Elastic Stack v8.8 and lower since creating a connector with an explicit ID is not supported. ([1260](https://github.com/elastic/terraform-provider-elasticstack/pull/1260))
+- Migrate `elasticstack_kibana_action_connector` to the Terraform plugin framework ([#1269](https://github.com/elastic/terraform-provider-elasticstack/pull/1269))
+- Migrate `elasticstack_elasticsearch_security_role_mapping` resource and data source to Terraform Plugin Framework ([#1279](https://github.com/elastic/terraform-provider-elasticstack/pull/1279))
+- Add support for `inactivity_timeout` in `elasticstack_fleet_agent_policy` ([#641](https://github.com/elastic/terraform-provider-elasticstack/issues/641))
+- Migrate `elasticstack_elasticsearch_script` resource to Terraform Plugin Framework ([#1297](https://github.com/elastic/terraform-provider-elasticstack/pull/1297))
+- Add support for `kafka` output types in `elasticstack_fleet_output` ([#1302](https://github.com/elastic/terraform-provider-elasticstack/pull/1302))
+- Add support for `prevent_initial_backfill` to `elasticstack_kibana_slo` ([#1071](https://github.com/elastic/terraform-provider-elasticstack/pull/1071))
+- [Refactor] Regenerate the SLO client using the current OpenAPI spec ([#1303](https://github.com/elastic/terraform-provider-elasticstack/pull/1303))
+- Add support for `data_view_id` in the `elasticstack_kibana_slo` resource ([#1305](https://github.com/elastic/terraform-provider-elasticstack/pull/1305))
+- Add support for `unenrollment_timeout` in `elasticstack_fleet_agent_policy` ([#1169](https://github.com/elastic/terraform-provider-elasticstack/issues/1169))
+- Handle default value for `allow_restricted_indices` in `elasticstack_elasticsearch_security_api_key` ([#1315](https://github.com/elastic/terraform-provider-elasticstack/pull/1315))
+- Fixed `nil` reference in kibana synthetics API client in case of response errors ([#1320](https://github.com/elastic/terraform-provider-elasticstack/pull/1320))
+- Add support for `agent_policy_ids` in `elasticstack_fleet_integration_policy` ([#1131](https://github.com/elastic/terraform-provider-elasticstack/pull/1311))
 
 ## [0.11.17] - 2025-07-21
 
@@ -440,7 +507,9 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.0...HEAD
+[0.11.18]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.12.0
+[0.11.18]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...v0.11.18
 [0.11.17]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...v0.11.17
 [0.11.16]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
 [0.11.15]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.14...v0.11.15

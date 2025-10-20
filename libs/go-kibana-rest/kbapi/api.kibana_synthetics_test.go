@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
@@ -12,22 +13,22 @@ import (
 )
 
 var (
-	spaces = []string{"", "default", "testacc"}
+	spaces = []string{"", "default", "testacc", "sample-with-dash"}
 )
 
-func testWithPolicy(t *testing.T, client *resty.Client, namespace string, f func(policyId string)) {
+func testWithPolicy(t *testing.T, client *resty.Client, space_id string, f func(policyId string)) {
 
 	policyName := uuid.New().String()
-	path := namespaceBasesPath(namespace, "/api/fleet", "/agent_policies")
+	path := spaceBasesPath(space_id, "/api/fleet", "/agent_policies")
 
-	if namespace == "" {
-		namespace = "default"
+	if space_id == "" {
+		space_id = "default"
 	}
 
 	policyResponse, err := client.R().SetBody(map[string]interface{}{
 		"name":               fmt.Sprintf("Test synthetics monitor policy %s", policyName),
 		"description":        "test policy for synthetics API",
-		"namespace":          namespace,
+		"namespace":          strings.Replace(space_id, "-", "_", -1),
 		"monitoring_enabled": []string{"logs", "metrics"},
 	}).Post(path)
 	assert.NoError(t, err)
@@ -64,6 +65,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 	for _, n := range spaces {
 		testUuid := uuid.New().String()
 		space := n
+		namespace := strings.Replace(n, "-", "_", -1)
 		syntheticsAPI := s.API.KibanaSynthetics
 
 		testWithPolicy(s.T(), s.client, space, func(policyId string) {
@@ -138,7 +140,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							},
 							APMServiceName: "APMServiceName",
 							TimeoutSeconds: 42,
-							Namespace:      space,
+							Namespace:      namespace,
 							Params: map[string]interface{}{
 								"param1": "some-params",
 								"my_url": "http://localhost:8080",
@@ -212,7 +214,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							},
 							APMServiceName: "APMServiceName",
 							TimeoutSeconds: 42,
-							Namespace:      space,
+							Namespace:      namespace,
 							Params: map[string]interface{}{
 								"param1": "some-params",
 								"my_url": "http://localhost:8080",
@@ -280,7 +282,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							},
 							APMServiceName: "APMServiceName",
 							TimeoutSeconds: 42,
-							Namespace:      space,
+							Namespace:      namespace,
 							Params: map[string]interface{}{
 								"param1": "some-params",
 								"my_url": "http://localhost:8080",
@@ -338,7 +340,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 							},
 							APMServiceName: "APMServiceName",
 							TimeoutSeconds: 42,
-							Namespace:      space,
+							Namespace:      namespace,
 							Params: map[string]interface{}{
 								"param1": "some-params",
 								"my_url": "http://localhost:8080",
@@ -424,11 +426,11 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 
 	for _, n := range spaces {
 		testUuid := uuid.New().String()
-		namespace := n
+		space_id := n
 		pAPI := s.API.KibanaSynthetics.PrivateLocation
 
 		s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI - %s", n), func() {
-			testWithPolicy(s.T(), s.client, namespace, func(policyId string) {
+			testWithPolicy(s.T(), s.client, space_id, func(policyId string) {
 
 				cfg := PrivateLocationConfig{
 					Label:         fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI-%s", testUuid),
@@ -442,6 +444,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 				created, err := pAPI.Create(ctx, cfg)
 
 				assert.NoError(s.T(), err)
+				assert.NotNil(s.T(), created)
 				assert.Equal(s.T(), created.Label, cfg.Label)
 				assert.Equal(s.T(), created.AgentPolicyId, cfg.AgentPolicyId)
 

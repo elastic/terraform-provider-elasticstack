@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -15,11 +15,13 @@ import (
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
 var _ resource.ResourceWithUpgradeState = &Resource{}
+
 var (
 	MinVersion                         = version.Must(version.NewVersion("8.0.0")) // Enabled in 8.0
 	MinVersionWithUpdate               = version.Must(version.NewVersion("8.4.0"))
 	MinVersionReturningRoleDescriptors = version.Must(version.NewVersion("8.5.0"))
-	MinVersionWithRestriction          = version.Must(version.NewVersion("8.9.0")) // Enabled in 8.0
+	MinVersionWithRestriction          = version.Must(version.NewVersion("8.9.0"))  // Enabled in 8.0
+	MinVersionWithCrossCluster         = version.Must(version.NewVersion("8.10.0")) // Cross-cluster API keys enabled in 8.10
 )
 
 type Resource struct {
@@ -74,7 +76,7 @@ type clusterVersionPrivateData struct {
 
 func (r *Resource) saveClusterVersion(ctx context.Context, client *clients.ApiClient, priv privateData) diag.Diagnostics {
 	version, sdkDiags := client.ServerVersion(ctx)
-	diags := utils.FrameworkDiagsFromSDK(sdkDiags)
+	diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	if diags.HasError() {
 		return diags
 	}

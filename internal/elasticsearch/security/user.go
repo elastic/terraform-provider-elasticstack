@@ -25,7 +25,7 @@ func ResourceUser() *schema.Resource {
 			Computed:    true,
 		},
 		"username": {
-			Description: "An identifier for the user (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params).",
+			Description: "An identifier for the user see the [security API put user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params) for more details.",
 			Type:        schema.TypeString,
 			Required:    true,
 			ForceNew:    true,
@@ -90,7 +90,7 @@ func ResourceUser() *schema.Resource {
 	utils.AddConnectionSchema(userSchema)
 
 	return &schema.Resource{
-		Description: "Adds and updates users in the native realm. These users are commonly referred to as native users. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html",
+		Description: "Adds and updates users in the native realm. These users are commonly referred to as native users. See the [security user API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html) for more details.",
 
 		CreateContext: resourceSecurityUserPut,
 		UpdateContext: resourceSecurityUserPut,

@@ -1,330 +1,171 @@
-package output_test
+package output
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
-	"github.com/hashicorp/go-version"
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
+func TestOutputResourceUpgradeState(t *testing.T) {
+	t.Parallel()
 
-func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
-	policyName := sdkacctest.RandString(22)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceOutputDestroy,
-		Steps: []resource.TestStep{
-			{
-				ExternalProviders: map[string]resource.ExternalProvider{
-					"elasticstack": {
-						Source:            "elastic/elasticstack",
-						VersionConstraint: "0.11.7",
+	tests := []struct {
+		name          string
+		rawState      map[string]interface{}
+		expectedState map[string]interface{}
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "successful upgrade - ssl list to object",
+			rawState: map[string]interface{}{
+				"id":   "test-output",
+				"name": "Test Output",
+				"type": "elasticsearch",
+				"ssl": []interface{}{
+					map[string]interface{}{
+						"certificate":             "cert-content",
+						"key":                     "key-content",
+						"certificate_authorities": []interface{}{"ca1", "ca2"},
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreateElasticsearch(policyName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Elasticsearch Output %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-elasticsearch-output", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
-				),
+				"hosts": []interface{}{"https://localhost:9200"},
 			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:                   testAccResourceOutputCreateElasticsearch(policyName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Elasticsearch Output %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-elasticsearch-output", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccResourceOutputElasticsearch(t *testing.T) {
-	policyName := sdkacctest.RandString(22)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceOutputDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreateElasticsearch(policyName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Elasticsearch Output %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-elasticsearch-output", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
-				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputUpdateElasticsearch(policyName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Elasticsearch Output %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-elasticsearch-output", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
-				),
-			},
-			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:            testAccResourceOutputUpdateElasticsearch(policyName),
-				ResourceName:      "elasticstack_fleet_output.test_output",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
-	policyName := sdkacctest.RandString(22)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceOutputDestroy,
-		Steps: []resource.TestStep{
-			{
-				ExternalProviders: map[string]resource.ExternalProvider{
-					"elasticstack": {
-						Source:            "elastic/elasticstack",
-						VersionConstraint: "0.11.7",
-					},
+			expectedState: map[string]interface{}{
+				"id":   "test-output",
+				"name": "Test Output",
+				"type": "elasticsearch",
+				"ssl": map[string]interface{}{
+					"certificate":             "cert-content",
+					"key":                     "key-content",
+					"certificate_authorities": []interface{}{"ca1", "ca2"},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreateLogstash(policyName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate_authorities.0", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.key", "placeholder"),
-				),
+				"hosts": []interface{}{"https://localhost:9200"},
 			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:                   testAccResourceOutputCreateLogstash(policyName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate_authorities.0", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.key", "placeholder"),
-				),
-			},
+			expectError: false,
 		},
-	})
-}
-
-func TestAccResourceOutputLogstash(t *testing.T) {
-	policyName := sdkacctest.RandString(22)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceOutputDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreateLogstash(policyName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate_authorities.0", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.key", "placeholder"),
-				),
+		{
+			name: "no ssl field - no changes",
+			rawState: map[string]interface{}{
+				"id":    "test-output",
+				"name":  "Test Output",
+				"type":  "elasticsearch",
+				"hosts": []interface{}{"https://localhost:9200"},
 			},
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputUpdateLogstash(policyName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Logstash Output %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "config_yaml", "\"ssl.verification_mode\": \"none\"\n"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate_authorities.0", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.certificate", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.0.key", "placeholder"),
-				),
+			expectedState: map[string]interface{}{
+				"id":    "test-output",
+				"name":  "Test Output",
+				"type":  "elasticsearch",
+				"hosts": []interface{}{"https://localhost:9200"},
 			},
+			expectError: false,
 		},
-	})
-}
-
-func testAccResourceOutputCreateElasticsearch(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Elasticsearch Output %s"
-  output_id            = "%s-elasticsearch-output"
-  type                 = "elasticsearch"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "https://elasticsearch:9200"
-  ]
-}
-`, id, id)
-}
-
-func testAccResourceOutputUpdateElasticsearch(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Updated Elasticsearch Output %s"
-  output_id            = "%s-elasticsearch-output"
-  type                 = "elasticsearch"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "https://elasticsearch:9200"
-  ]
-}
-`, id, id)
-}
-
-func testAccResourceOutputCreateLogstash(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Logstash Output %s"
-  type                 = "logstash"
-  output_id            = "%s-logstash-output"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "logstash:5044"
-  ]
-  ssl {
-	certificate_authorities = ["placeholder"]
-	certificate             = "placeholder"
-	key                     = "placeholder"
-  }
-}
-`, id, id)
-}
-
-func testAccResourceOutputUpdateLogstash(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Updated Logstash Output %s"
-  output_id            = "%s-logstash-output"
-  type                 = "logstash"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "logstash:5044"
-  ]
-  ssl {
-	certificate_authorities = ["placeholder"]
-	certificate             = "placeholder"
-	key                     = "placeholder"
-  }
-}
-`, id, id)
-}
-
-func checkResourceOutputDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
-	if err != nil {
-		return err
+		{
+			name: "empty ssl list - removes ssl field",
+			rawState: map[string]interface{}{
+				"id":    "test-output",
+				"name":  "Test Output",
+				"type":  "elasticsearch",
+				"ssl":   []interface{}{},
+				"hosts": []interface{}{"https://localhost:9200"},
+			},
+			expectedState: map[string]interface{}{
+				"id":    "test-output",
+				"name":  "Test Output",
+				"type":  "elasticsearch",
+				"hosts": []interface{}{"https://localhost:9200"},
+			},
+			expectError: false,
+		},
+		{
+			name: "ssl not an array - returns error",
+			rawState: map[string]interface{}{
+				"id":    "test-output",
+				"name":  "Test Output",
+				"type":  "elasticsearch",
+				"ssl":   "invalid-type",
+				"hosts": []interface{}{"https://localhost:9200"},
+			},
+			expectedState: nil,
+			expectError:   true,
+			errorContains: "Unexpected type for legacy ssl attribute",
+		},
+		{
+			name: "multiple ssl items - takes first item",
+			rawState: map[string]interface{}{
+				"id":   "test-output",
+				"name": "Test Output",
+				"type": "elasticsearch",
+				"ssl": []interface{}{
+					map[string]interface{}{"certificate": "cert1"},
+					map[string]interface{}{"certificate": "cert2"},
+				},
+				"hosts": []interface{}{"https://localhost:9200"},
+			},
+			expectedState: map[string]interface{}{
+				"id":    "test-output",
+				"name":  "Test Output",
+				"type":  "elasticsearch",
+				"ssl":   map[string]interface{}{"certificate": "cert1"},
+				"hosts": []interface{}{"https://localhost:9200"},
+			},
+			expectError: false,
+		},
 	}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_fleet_output" {
-			continue
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		fleetClient, err := client.GetFleetClient()
-		if err != nil {
-			return err
-		}
-		output, diags := fleet.GetOutput(context.Background(), fleetClient, rs.Primary.ID)
-		if diags.HasError() {
-			return utils.FwDiagsAsError(diags)
-		}
-		if output != nil {
-			return fmt.Errorf("output id=%v still exists, but it should have been removed", rs.Primary.ID)
-		}
+			// Marshal the raw state to JSON
+			rawStateJSON, err := json.Marshal(tt.rawState)
+			require.NoError(t, err)
+
+			// Create the upgrade request
+			req := resource.UpgradeStateRequest{
+				RawState: &tfprotov6.RawState{
+					JSON: rawStateJSON,
+				},
+			}
+
+			// Create a response
+			resp := &resource.UpgradeStateResponse{}
+
+			// Create the resource and call UpgradeState
+			r := &outputResource{}
+			upgraders := r.UpgradeState(context.Background())
+			upgrader := upgraders[0]
+			upgrader.StateUpgrader(context.Background(), req, resp)
+
+			if tt.expectError {
+				require.True(t, resp.Diagnostics.HasError(), "Expected error but got none")
+				if tt.errorContains != "" {
+					errorSummary := ""
+					for _, diag := range resp.Diagnostics.Errors() {
+						errorSummary += diag.Summary() + " " + diag.Detail()
+					}
+					assert.Contains(t, errorSummary, tt.errorContains)
+				}
+				return
+			}
+
+			// Check no errors occurred
+			require.False(t, resp.Diagnostics.HasError(), "Unexpected error: %v", resp.Diagnostics.Errors())
+
+			// Check that a DynamicValue is always returned
+			require.NotNil(t, resp.DynamicValue, "DynamicValue should always be returned")
+
+			// Unmarshal the upgraded state to compare
+			var actualState map[string]interface{}
+			err = json.Unmarshal(resp.DynamicValue.JSON, &actualState)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expectedState, actualState)
+		})
 	}
-	return nil
 }

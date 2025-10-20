@@ -11,8 +11,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -65,7 +65,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 	}
 
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create transform: %s", transform.Name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create transform: %s", transform.Name)); diags.HasError() {
 		return diags
 	}
 
@@ -104,7 +104,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *strin
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); diags.HasError() {
 		return nil, diags
 	}
 
@@ -152,7 +152,7 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ApiClient, name *
 	}
 
 	defer statsRes.Body.Close()
-	if diags := utils.CheckError(statsRes, fmt.Sprintf("Unable to get transform stats: %s", *name)); diags.HasError() {
+	if diags := diagutil.CheckError(statsRes, fmt.Sprintf("Unable to get transform stats: %s", *name)); diags.HasError() {
 		return nil, diags
 	}
 
@@ -225,7 +225,7 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 	}
 
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to update transform: %s", transform.Name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to update transform: %s", transform.Name)); diags.HasError() {
 		return diags
 	}
 
@@ -264,7 +264,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ApiClient, name *st
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete transform: %s", *name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete transform: %s", *name)); diags.HasError() {
 		return diags
 	}
 
@@ -288,7 +288,7 @@ func startTransform(ctx context.Context, esClient *elasticsearch.Client, transfo
 	}
 
 	defer startRes.Body.Close()
-	if diags := utils.CheckError(startRes, fmt.Sprintf("Unable to start transform: %s", transformName)); diags.HasError() {
+	if diags := diagutil.CheckError(startRes, fmt.Sprintf("Unable to start transform: %s", transformName)); diags.HasError() {
 		return diags
 	}
 
@@ -312,7 +312,7 @@ func stopTransform(ctx context.Context, esClient *elasticsearch.Client, transfor
 	}
 
 	defer startRes.Body.Close()
-	if diags := utils.CheckError(startRes, fmt.Sprintf("Unable to stop transform: %s", transformName)); diags.HasError() {
+	if diags := diagutil.CheckError(startRes, fmt.Sprintf("Unable to stop transform: %s", transformName)); diags.HasError() {
 		return diags
 	}
 

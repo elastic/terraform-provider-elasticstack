@@ -12,6 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+type Elementable interface {
+	attr.Value
+	ElementsAs(ctx context.Context, target interface{}, allowUnhandled bool) diag.Diagnostics
+}
+
 type ListMeta struct {
 	Context context.Context
 	Index   int
@@ -47,6 +52,22 @@ func ValueStringPointer(value types.String) *string {
 }
 
 // ================
+// ==== Generic ===
+// ================
+
+// MapTypeAs converts a types.Map into a tfsdk aware map[string]T.
+func elementsAs[T any](ctx context.Context, value Elementable, p path.Path, diags *diag.Diagnostics) T {
+	var result T
+	if !IsKnown(value) {
+		return result
+	}
+
+	d := value.ElementsAs(ctx, &result, false)
+	diags.Append(convertToAttrDiags(d, p)...)
+	return result
+}
+
+// ================
 // ===== Maps =====
 // ================
 
@@ -72,7 +93,7 @@ func NormalizedTypeToMap[T any](value jsontypes.Normalized, p path.Path, diags *
 
 	var dest map[string]T
 	d := value.Unmarshal(&dest)
-	diags.Append(ConvertToAttrDiags(d, p)...)
+	diags.Append(convertToAttrDiags(d, p)...)
 	return dest
 }
 
@@ -85,7 +106,7 @@ func MapToMapType[T1 any, T2 any](ctx context.Context, value map[string]T1, elem
 
 	elems := TransformMap(ctx, value, p, diags, iteratee)
 	mapping, d := types.MapValueFrom(ctx, elemType, elems)
-	diags.Append(ConvertToAttrDiags(d, p)...)
+	diags.Append(convertToAttrDiags(d, p)...)
 
 	return mapping
 }
@@ -107,20 +128,13 @@ func MapTypeToMap[T1 any, T2 any](ctx context.Context, value types.Map, p path.P
 
 // MapTypeAs converts a types.Map into a tfsdk aware map[string]T.
 func MapTypeAs[T any](ctx context.Context, value types.Map, p path.Path, diags *diag.Diagnostics) map[string]T {
-	if !IsKnown(value) {
-		return nil
-	}
-
-	var items map[string]T
-	d := value.ElementsAs(ctx, &items, false)
-	diags.Append(ConvertToAttrDiags(d, p)...)
-	return items
+	return elementsAs[map[string]T](ctx, value, p, diags)
 }
 
 // MapValueFrom converts a tfsdk aware map[string]T to a types.Map.
 func MapValueFrom[T any](ctx context.Context, value map[string]T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.Map {
 	mapping, d := types.MapValueFrom(ctx, elemType, value)
-	diags.Append(ConvertToAttrDiags(d, p)...)
+	diags.Append(convertToAttrDiags(d, p)...)
 	return mapping
 }
 
@@ -137,7 +151,7 @@ func SliceToListType[T1 any, T2 any](ctx context.Context, value []T1, elemType a
 
 	elems := TransformSlice(ctx, value, p, diags, iteratee)
 	list, nd := types.ListValueFrom(ctx, elemType, elems)
-	diags.Append(ConvertToAttrDiags(nd, p)...)
+	diags.Append(convertToAttrDiags(nd, p)...)
 
 	return list
 }
@@ -145,10 +159,7 @@ func SliceToListType[T1 any, T2 any](ctx context.Context, value []T1, elemType a
 // SliceToListType_String converts a tfsdk naive []string into a types.List.
 // This is a shorthand SliceToListType helper for strings.
 func SliceToListType_String(ctx context.Context, value []string, p path.Path, diags *diag.Diagnostics) types.List {
-	return SliceToListType(ctx, value, types.StringType, p, diags,
-		func(item string, meta ListMeta) types.String {
-			return types.StringValue(item)
-		})
+	return ListValueFrom(ctx, value, types.StringType, p, diags)
 }
 
 // ListTypeToMap converts a types.List first into a tfsdk aware map[string]T1
@@ -184,27 +195,33 @@ func ListTypeToSlice[T1 any, T2 any](ctx context.Context, value types.List, p pa
 // ListTypeToSlice_String converts a types.List into a []string.
 // This is a shorthand ListTypeToSlice helper for strings.
 func ListTypeToSlice_String(ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics) []string {
-	return ListTypeToSlice(ctx, value, p, diags, func(item types.String, meta ListMeta) string {
-		return item.ValueString()
-	})
+	return ListTypeAs[string](ctx, value, p, diags)
 }
 
 // ListTypeAs converts a types.List into a tfsdk aware []T.
 func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics) []T {
-	if !IsKnown(value) {
-		return nil
-	}
-
-	var items []T
-	nd := value.ElementsAs(ctx, &items, false)
-	diags.Append(ConvertToAttrDiags(nd, p)...)
-	return items
+	return elementsAs[[]T](ctx, value, p, diags)
 }
 
 // ListValueFrom converts a tfsdk aware []T to a types.List.
 func ListValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.List {
 	list, d := types.ListValueFrom(ctx, elemType, value)
-	diags.Append(ConvertToAttrDiags(d, p)...)
+	diags.Append(convertToAttrDiags(d, p)...)
+	return list
+}
+
+// ===================
+// ===== Sets =====
+// ===================
+
+// SetTypeAs converts a types.Set into a tfsdk aware []T.
+func SetTypeAs[T any](ctx context.Context, value types.Set, p path.Path, diags *diag.Diagnostics) []T {
+	return elementsAs[[]T](ctx, value, p, diags)
+}
+
+func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.Set {
+	list, d := types.SetValueFrom(ctx, elemType, value)
+	diags.Append(convertToAttrDiags(d, p)...)
 	return list
 }
 
@@ -220,7 +237,7 @@ func StructToObjectType[T1 any, T2 any](ctx context.Context, value *T1, attrType
 
 	item := TransformObject(ctx, value, p, diags, transformee)
 	obj, d := types.ObjectValueFrom(ctx, attrTypes, item)
-	diags.Append(ConvertToAttrDiags(d, p)...)
+	diags.Append(convertToAttrDiags(d, p)...)
 
 	return obj
 }
@@ -248,14 +265,14 @@ func ObjectTypeAs[T any](ctx context.Context, value types.Object, p path.Path, d
 
 	var item T
 	d := value.As(ctx, &item, basetypes.ObjectAsOptions{})
-	diags.Append(ConvertToAttrDiags(d, p)...)
+	diags.Append(convertToAttrDiags(d, p)...)
 	return &item
 }
 
 // ObjectValueFrom converts a tfsdk aware T to a types.Object.
 func ObjectValueFrom[T any](ctx context.Context, value *T, attrTypes map[string]attr.Type, p path.Path, diags *diag.Diagnostics) types.Object {
 	obj, d := types.ObjectValueFrom(ctx, attrTypes, value)
-	diags.Append(ConvertToAttrDiags(d, p)...)
+	diags.Append(convertToAttrDiags(d, p)...)
 	return obj
 }
 
@@ -329,4 +346,19 @@ func TransformMapToSlice[T1 any, T2 any](ctx context.Context, value map[string]T
 	}
 
 	return elems
+}
+
+// convertToAttrDiags wraps an existing collection of diagnostics with an attribute path.
+func convertToAttrDiags(diags diag.Diagnostics, path path.Path) diag.Diagnostics {
+	var nd diag.Diagnostics
+	for _, d := range diags {
+		if d.Severity() == diag.SeverityError {
+			nd.AddAttributeError(path, d.Summary(), d.Detail())
+		} else if d.Severity() == diag.SeverityWarning {
+			nd.AddAttributeWarning(path, d.Summary(), d.Detail())
+		} else {
+			nd.Append(d)
+		}
+	}
+	return nd
 }

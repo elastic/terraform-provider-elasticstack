@@ -2,15 +2,24 @@ package integration_policy
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+//go:embed resource-description.md
+var integrationPolicyDescription string
 
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchemaV1()
@@ -19,7 +28,7 @@ func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.Sch
 func getSchemaV1() schema.Schema {
 	return schema.Schema{
 		Version:     1,
-		Description: "Creates a new Fleet Integration Policy. See https://www.elastic.co/guide/en/fleet/current/add-integration-to-policy.html",
+		Description: integrationPolicyDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of this resource.",
@@ -47,7 +56,19 @@ func getSchemaV1() schema.Schema {
 			},
 			"agent_policy_id": schema.StringAttribute{
 				Description: "ID of the agent policy.",
-				Required:    true,
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
+				},
+			},
+			"agent_policy_ids": schema.ListAttribute{
+				Description: "List of agent policy IDs.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
+					listvalidator.SizeAtLeast(1),
+				},
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the integration policy.",

@@ -1,7 +1,7 @@
 steps:
   - label: Release
     agents:
-      image: "golang:1.25.0@sha256:9e56f0d0f043a68bb8c47c819e47dc29f6e8f5129b8885bed9d43f058f7f3ed6"
+      image: "golang:1.25.3@sha256:6ea52a02734dd15e943286b048278da1e04eca196a564578d718c7720433dbbe"
       cpu: "16"
       memory: "24G"
       ephemeralStorage: "20G"

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	_ "embed"
+
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -19,6 +21,9 @@ var (
 	minSupportedRemoteIndicesVersion = version.Must(version.NewVersion("8.10.0"))
 	minSupportedDescriptionVersion   = version.Must(version.NewVersion("8.15.0"))
 )
+
+//go:embed role.md
+var roleDescription string
 
 func ResourceRole() *schema.Resource {
 	roleSchema := map[string]*schema.Schema{
@@ -243,7 +248,7 @@ func ResourceRole() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Creates a Kibana role. See, https://www.elastic.co/guide/en/kibana/master/role-management-api-put.html",
+		Description: roleDescription,
 
 		CreateContext: resourceRoleUpsert,
 		UpdateContext: resourceRoleUpsert,

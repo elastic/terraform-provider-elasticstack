@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"strings"
 
@@ -11,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+//go:embed processor_foreach_data_source.md
+var foreachDataSourceDescription string
 
 func DataSourceProcessorForeach() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -77,7 +81,7 @@ func DataSourceProcessorForeach() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Runs an ingest processor on each element of an array or object. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/foreach-processor.html",
+		Description: foreachDataSourceDescription,
 
 		ReadContext: dataSourceProcessorForeachRead,
 

@@ -10,10 +10,8 @@ import (
 	"time"
 
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -207,39 +205,6 @@ func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {
 	return inv
 }
 
-func SdkDiagsAsError(diags sdkdiag.Diagnostics) error {
-	for _, diag := range diags {
-		if diag.Severity == sdkdiag.Error {
-			return fmt.Errorf("%s: %s", diag.Summary, diag.Detail)
-		}
-	}
-	return nil
-}
-
-func FwDiagsAsError(diags fwdiag.Diagnostics) error {
-	for _, diag := range diags {
-		if diag.Severity() == fwdiag.SeverityError {
-			return fmt.Errorf("%s: %s", diag.Summary(), diag.Detail())
-		}
-	}
-	return nil
-}
-
-// ConvertToAttrDiags wraps an existing collection of diagnostics with an attribute path.
-func ConvertToAttrDiags(diags fwdiag.Diagnostics, path path.Path) fwdiag.Diagnostics {
-	var nd fwdiag.Diagnostics
-	for _, d := range diags {
-		if d.Severity() == fwdiag.SeverityError {
-			nd.AddAttributeError(path, d.Summary(), d.Detail())
-		} else if d.Severity() == fwdiag.SeverityWarning {
-			nd.AddAttributeWarning(path, d.Summary(), d.Detail())
-		} else {
-			nd.Append(d)
-		}
-	}
-	return nd
-}
-
 func DefaultIfNil[T any](value *T) T {
 	var result T
 
@@ -259,4 +224,10 @@ func NonNilSlice[T any](s []T) []T {
 	}
 
 	return s
+}
+
+// TimeToStringValue formats a time.Time to ISO 8601 format and returns a types.StringValue.
+// This is a convenience function that combines FormatStrictDateTime and types.StringValue.
+func TimeToStringValue(t time.Time) types.String {
+	return types.StringValue(FormatStrictDateTime(t))
 }

@@ -108,6 +108,7 @@ func (s Schema) MustGetPath(path string) *Path {
 type Path struct {
 	Parameters []Map `yaml:"parameters,omitempty"`
 	Get        Map   `yaml:"get,omitempty"`
+	Patch      Map   `yaml:"patch,omitempty"`
 	Post       Map   `yaml:"post,omitempty"`
 	Put        Map   `yaml:"put,omitempty"`
 	Delete     Map   `yaml:"delete,omitempty"`
@@ -115,16 +116,29 @@ type Path struct {
 
 func (p Path) Endpoints(yield func(key string, endpoint Map) bool) {
 	if p.Get != nil {
-		yield("get", p.Get)
+		if !yield("get", p.Get) {
+			return
+		}
 	}
 	if p.Post != nil {
-		yield("post", p.Post)
+		if !yield("post", p.Post) {
+			return
+		}
 	}
 	if p.Put != nil {
-		yield("put", p.Put)
+		if !yield("put", p.Put) {
+			return
+		}
+	}
+	if p.Patch != nil {
+		if !yield("patch", p.Patch) {
+			return
+		}
 	}
 	if p.Delete != nil {
-		yield("delete", p.Delete)
+		if !yield("delete", p.Delete) {
+			return
+		}
 	}
 }
 
@@ -136,6 +150,8 @@ func (p Path) GetEndpoint(method string) Map {
 		return p.Post
 	case "put":
 		return p.Put
+	case "patch":
+		return p.Patch
 	case "delete":
 		return p.Delete
 	default:
@@ -160,6 +176,8 @@ func (p *Path) SetEndpoint(method string, endpoint Map) {
 		p.Post = endpoint
 	case "put":
 		p.Put = endpoint
+	case "patch":
+		p.Patch = endpoint
 	case "delete":
 		p.Delete = endpoint
 	default:
@@ -538,69 +556,20 @@ func (s Slice) atoi(key string) int {
 type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
-	transformFilterPaths,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
 	transformAddMisingDescriptions,
 	transformKibanaPaths,
 	transformFleetPaths,
+	removeBrokenDiscriminator,
+	fixPutSecurityRoleName,
+	fixGetSpacesParams,
+	fixGetSyntheticsMonitorsParams,
+	fixGetMaintenanceWindowFindParams,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
-}
-
-// transformFilterPaths filters the paths in a schema down to a specified list
-// of endpoints and methods.
-func transformFilterPaths(schema *Schema) {
-	var includePaths = map[string][]string{
-		"/api/data_views":                                {"get"},
-		"/api/data_views/data_view":                      {"post"},
-		"/api/data_views/data_view/{viewId}":             {"get", "post", "delete"},
-		"/api/fleet/agent_policies":                      {"get", "post"},
-		"/api/fleet/agent_policies/delete":               {"post"},
-		"/api/fleet/agent_policies/{agentPolicyId}":      {"get", "put"},
-		"/api/fleet/enrollment_api_keys":                 {"get"},
-		"/api/fleet/epm/packages":                        {"get", "post"},
-		"/api/fleet/epm/packages/{pkgName}/{pkgVersion}": {"get", "post", "delete"},
-		"/api/fleet/fleet_server_hosts":                  {"get", "post"},
-		"/api/fleet/fleet_server_hosts/{itemId}":         {"get", "put", "delete"},
-		"/api/fleet/outputs":                             {"get", "post"},
-		"/api/fleet/outputs/{outputId}":                  {"get", "put", "delete"},
-		"/api/fleet/package_policies":                    {"get", "post"},
-		"/api/fleet/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
-		"/api/synthetics/params":                         {"post"},
-		"/api/synthetics/params/{id}":                    {"get", "put", "delete"},
-		"/api/apm/settings/agent-configuration":          {"get", "put", "delete"},
-	}
-
-	for path, pathInfo := range schema.Paths {
-		if allowedMethods, ok := includePaths[path]; ok {
-			// Filter out endpoints not if filter list
-			for method := range pathInfo.Endpoints {
-				if !slices.Contains(allowedMethods, method) {
-					pathInfo.SetEndpoint(method, nil)
-				}
-			}
-		} else {
-			// Remove paths not in filter list.
-			delete(schema.Paths, path)
-		}
-	}
-
-	// Go through again, verify each entry exists
-	for path, methods := range includePaths {
-		pathInfo := schema.GetPath(path)
-		if pathInfo == nil {
-			log.Panicf("Missing path %q", path)
-		}
-
-		for _, method := range methods {
-			endpoint := pathInfo.GetEndpoint(method)
-			if endpoint == nil {
-				log.Panicf("Missing method %q of %q", method, path)
-			}
-		}
-	}
+	transformOmitEmptyNullable,
 }
 
 // transformRemoveKbnXsrf removes the kbn-xsrf header as it	is already applied
@@ -697,7 +666,7 @@ func transformAddMisingDescriptions(schema *Schema) {
 		for _, endpoint := range pathInfo.Endpoints {
 			responses, ok := endpoint.GetMap("responses")
 			if !ok {
-				return
+				continue
 			}
 
 			for code := range responses {
@@ -717,6 +686,10 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/data_views",
 		"/api/data_views/data_view",
 		"/api/data_views/data_view/{viewId}",
+		"/api/maintenance_window",
+		"/api/maintenance_window/{id}",
+		"/api/actions/connector/{id}",
+		"/api/actions/connectors",
 	}
 
 	// Add a spaceId parameter if not already present
@@ -747,6 +720,25 @@ func transformKibanaPaths(schema *Schema) {
 			}
 		}
 	}
+
+	// Connectors
+	// Can be removed when https://github.com/elastic/kibana/issues/230149 is addressed.
+	connectorPath := schema.MustGetPath("/s/{spaceId}/api/actions/connector/{id}")
+	connectorsPath := schema.MustGetPath("/s/{spaceId}/api/actions/connectors")
+
+	connectorPath.Post.CreateRef(schema, "create_connector_config", "requestBody.content.application/json.schema.properties.config")
+	connectorPath.Post.CreateRef(schema, "create_connector_secrets", "requestBody.content.application/json.schema.properties.secrets")
+
+	connectorPath.Put.CreateRef(schema, "update_connector_config", "requestBody.content.application/json.schema.properties.config")
+	connectorPath.Put.CreateRef(schema, "update_connector_secrets", "requestBody.content.application/json.schema.properties.secrets")
+
+	connectorPath.Get.CreateRef(schema, "connector_response", "responses.200.content.application/json.schema")
+	connectorsPath.Get.Set("responses.200.content.application/json.schema", Map{
+		"type": "array",
+		"items": Map{
+			"$ref": "#/components/schemas/connector_response",
+		},
+	})
 
 	// Data views
 	// https://github.com/elastic/kibana/blob/main/src/plugins/data_views/server/rest_api_routes/schema.ts
@@ -820,6 +812,106 @@ func transformKibanaPaths(schema *Schema) {
 
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
+
+	schema.Components.Set("schemas.Security_Detections_API_RuleResponse.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRule",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRule",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRule",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRule",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRule",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRule",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRule",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRule",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_RuleCreateProps.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRuleCreateProps",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRuleCreateProps",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRuleCreateProps",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRuleCreateProps",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRuleCreateProps",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRuleCreateProps",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRuleCreateProps",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRuleCreateProps",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_RuleUpdateProps.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRuleUpdateProps",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRuleUpdateProps",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRuleUpdateProps",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRuleUpdateProps",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRuleUpdateProps",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRuleUpdateProps",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRuleUpdateProps",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRuleUpdateProps",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_ResponseAction.discriminator", Map{
+		"mapping": Map{
+			".osquery":  "#/components/schemas/Security_Detections_API_OsqueryResponseAction",
+			".endpoint": "#/components/schemas/Security_Detections_API_EndpointResponseAction",
+		},
+		"propertyName": "action_type_id",
+	})
+
+}
+
+func removeBrokenDiscriminator(schema *Schema) {
+	brokenDiscriminatorPaths := map[string]string{
+		"/api/detection_engine/rules/preview": "post",
+		"/api/synthetics/monitors":            "post",
+		"/api/synthetics/monitors/{id}":       "put",
+	}
+
+	brokenDiscriminatorComponents := []string{
+		"Security_AI_Assistant_API_KnowledgeBaseEntryCreateProps",
+		"Security_AI_Assistant_API_KnowledgeBaseEntryResponse",
+		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateProps",
+		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateRouteProps",
+		"Security_Detections_API_RuleSource",
+		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
+		"Security_Exceptions_API_ExceptionListItemEntry",
+	}
+
+	for _, component := range brokenDiscriminatorComponents {
+		schema.Components.Delete(fmt.Sprintf("schemas.%s.discriminator", component))
+	}
+
+	for path, method := range brokenDiscriminatorPaths {
+		schema.MustGetPath(path).MustGetEndpoint(method).Delete("requestBody.content.application/json.schema.discriminator")
+	}
+}
+
+func fixPutSecurityRoleName(schema *Schema) {
+	putEndpoint := schema.MustGetPath("/api/security/role/{name}").MustGetEndpoint("put")
+	putEndpoint.Delete("requestBody.content.application/json.schema.properties.kibana.items.properties.base.anyOf")
+	putEndpoint.Move("requestBody.content.application/json.schema.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.kibana.items.properties.spaces")
+
+	postEndpoint := schema.MustGetPath("/api/security/roles").MustGetEndpoint("post")
+	postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.additionalProperties", "requestBody.content.application/json.schema.properties.roles")
+	postEndpoint.Delete("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.base.anyOf")
+	postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces")
+}
+
+func fixGetSpacesParams(schema *Schema) {
+	schema.MustGetPath("/api/spaces/space").MustGetEndpoint("get").Delete("parameters.1.schema.anyOf")
+}
+
+func fixGetSyntheticsMonitorsParams(schema *Schema) {
+	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Move("parameters.12.schema.oneOf.1", "parameters.12.schema")
+}
+
+func fixGetMaintenanceWindowFindParams(schema *Schema) {
+	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
 }
 
 // transformFleetPaths fixes the fleet paths.
@@ -835,16 +927,6 @@ func transformFleetPaths(schema *Schema) {
 	agentPoliciesPath.Post.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
 	agentPolicyPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
 	agentPolicyPath.Put.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
-
-	// See: https://github.com/elastic/kibana/issues/197155
-	// [request body.keep_monitoring_alive]: expected value of type [boolean] but got [null]
-	// [request body.supports_agentless]: expected value of type [boolean] but got [null]
-	// [request body.overrides]: expected value of type [boolean] but got [null]
-	// [request body.required_versions]: definition for this key is missing"}
-	for _, key := range []string{"keep_monitoring_alive", "supports_agentless", "overrides", "required_versions"} {
-		agentPoliciesPath.Post.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
-		agentPolicyPath.Put.Set(fmt.Sprintf("requestBody.content.application/json.schema.properties.%s.x-omitempty", key), true)
-	}
 
 	schema.Components.CreateRef(schema, "agent_policy_global_data_tags_item", "schemas.agent_policy.properties.global_data_tags.items")
 
@@ -880,14 +962,6 @@ func transformFleetPaths(schema *Schema) {
 	hostPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
 	hostPath.Put.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
 
-	// 8.6.2 regression
-	// [request body.proxy_id]: definition for this key is missing
-	// See: https://github.com/elastic/kibana/issues/197155
-	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
-	hostPath.Put.Set("requestBody.content.application/json.schema.properties.proxy_id.x-omitempty", true)
-	hostsPath.Post.Set("requestBody.content.application/json.schema.properties.ssl.x-omitempty", true)
-	hostPath.Put.Set("requestBody.content.application/json.schema.properties.ssl.x-omitempty", true)
-
 	// Outputs
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/output.ts
@@ -904,10 +978,11 @@ func transformFleetPaths(schema *Schema) {
 
 	for _, name := range []string{"output", "new_output", "update_output"} {
 		// Ref each index in the anyOf union
+		kafkaComponent := fmt.Sprintf("%s_kafka", name)
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.0", name))
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_remote_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.1", name))
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_kafka", name), fmt.Sprintf("schemas.%s_union.anyOf.3", name))
+		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
 		// Extract child structs
 		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
@@ -932,10 +1007,24 @@ func transformFleetPaths(schema *Schema) {
 			  - not: {}
 		*/
 
-		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s_kafka.properties", name))
-		for _, key := range []string{"compression_level", "connection_type", "password", "username"} {
-			props.Set(key, Map{})
+		// https://github.com/elastic/kibana/issues/197153
+		kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
+		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
+		required := schema.Components.MustGetSlice(kafkaRequiredName)
+		for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
+			props.Set(key, Map{
+				"type": apiType,
+			})
+			required = slices.DeleteFunc(required, func(item any) bool {
+				itemStr, ok := item.(string)
+				if !ok {
+					return false
+				}
+
+				return itemStr == key
+			})
 		}
+		schema.Components.Set(kafkaRequiredName, required)
 	}
 
 	// Add the missing discriminator to the response union
@@ -949,32 +1038,6 @@ func transformFleetPaths(schema *Schema) {
 			"kafka":                "#/components/schemas/output_kafka",
 		},
 	})
-
-	for _, name := range []string{"new_output", "update_output"} {
-		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-			// [request body.1.ca_sha256]: expected value of type [string] but got [null]"
-			// See: https://github.com/elastic/kibana/issues/197155
-			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.ca_sha256.x-omitempty", name, typ), true)
-
-			// [request body.1.ca_trusted_fingerprint]: expected value of type [string] but got [null]
-			// See: https://github.com/elastic/kibana/issues/197155
-			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.ca_trusted_fingerprint.x-omitempty", name, typ), true)
-
-			// 8.6.2 regression
-			// [request body.proxy_id]: definition for this key is missing"
-			// See: https://github.com/elastic/kibana/issues/197155
-			schema.Components.Set(fmt.Sprintf("schemas.%s_%s.properties.proxy_id.x-omitempty", name, typ), true)
-		}
-
-		// [request body.1.shipper]: expected a plain object value, but found [null] instead
-		// See: https://github.com/elastic/kibana/issues/197155
-		schema.Components.Set(fmt.Sprintf("schemas.%s_shipper.x-omitempty", name), true)
-
-		// [request body.1.ssl]: expected a plain object value, but found [null] instead
-		// See: https://github.com/elastic/kibana/issues/197155
-		schema.Components.Set(fmt.Sprintf("schemas.%s_ssl.x-omitempty", name), true)
-
-	}
 
 	for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
 		// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
@@ -1017,13 +1080,35 @@ func transformFleetPaths(schema *Schema) {
 	schema.Components.Set("schemas.package_policy_request.properties.vars", Map{"type": "object"})
 	schema.Components.Set("schemas.package_policy_request_input.properties.vars", Map{"type": "object"})
 	schema.Components.Set("schemas.package_policy_request_input_stream.properties.vars", Map{"type": "object"})
+}
 
-	// [request body.0.output_id]: expected value of type [string] but got [null]
-	// [request body.1.output_id]: definition for this key is missing"
-	// See: https://github.com/elastic/kibana/issues/197155
-	schema.Components.Set("schemas.package_policy_request.properties.output_id.x-omitempty", true)
-	schema.Components.Set("schemas.package_policy_request.properties.additional_datastreams_permissions.x-omitempty", true)
-	schema.Components.Set("schemas.package_policy_request.properties.supports_agentless.x-omitempty", true)
+func setAllXOmitEmpty(key string, node Map) {
+	maybeNullable, hasNullable := node.Get("nullable")
+	isNullable, ok := maybeNullable.(bool)
+	if hasNullable && ok && isNullable {
+		node.Set("x-omitempty", true)
+	}
+
+	properties, hasProperties := node.GetMap("properties")
+	if !hasProperties {
+		return
+	}
+
+	properties.Iterate(setAllXOmitEmpty)
+}
+
+func transformOmitEmptyNullable(schema *Schema) {
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(setAllXOmitEmpty)
+
+	for _, pathInfo := range schema.Paths {
+		for _, methInfo := range pathInfo.Endpoints {
+			requestBody, ok := methInfo.GetMap("requestBody.content.application/json.schema.properties")
+			if ok {
+				requestBody.Iterate(setAllXOmitEmpty)
+			}
+		}
+	}
 }
 
 // transformRemoveExamples removes all examples.

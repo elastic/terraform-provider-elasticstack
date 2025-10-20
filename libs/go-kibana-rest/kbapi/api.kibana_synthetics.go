@@ -153,6 +153,7 @@ type SyntheticsMonitorConfig struct {
 	PrivateLocations []string            `json:"private_locations,omitempty"`
 	Enabled          *bool               `json:"enabled,omitempty"`
 	Tags             []string            `json:"tags,omitempty"`
+	Labels           map[string]string   `json:"labels"`
 	Alert            *MonitorAlertConfig `json:"alert,omitempty"`
 	APMServiceName   string              `json:"service.name,omitempty"`
 	TimeoutSeconds   int                 `json:"timeout,omitempty"`
@@ -208,6 +209,7 @@ type SyntheticsMonitor struct {
 	Alert          *MonitorAlertConfig     `json:"alert,omitempty"`
 	Schedule       *MonitorScheduleConfig  `json:"schedule,omitempty"`
 	Tags           []string                `json:"tags,omitempty"`
+	Labels         map[string]string       `json:"labels,omitempty"`
 	APMServiceName string                  `json:"service.name,omitempty"`
 	Timeout        json.Number             `json:"timeout,omitempty"`
 	Locations      []MonitorLocationConfig `json:"locations,omitempty"`
@@ -326,13 +328,13 @@ func (f BrowserMonitorFields) APIRequest(config SyntheticsMonitorConfig) interfa
 	}
 }
 
-type KibanaSyntheticsMonitorAdd func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
+type KibanaSyntheticsMonitorAdd func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, space string) (*SyntheticsMonitor, error)
 
-type KibanaSyntheticsMonitorUpdate func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
+type KibanaSyntheticsMonitorUpdate func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, space string) (*SyntheticsMonitor, error)
 
-type KibanaSyntheticsMonitorGet func(ctx context.Context, id MonitorID, namespace string) (*SyntheticsMonitor, error)
+type KibanaSyntheticsMonitorGet func(ctx context.Context, id MonitorID, space string) (*SyntheticsMonitor, error)
 
-type KibanaSyntheticsMonitorDelete func(ctx context.Context, namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
+type KibanaSyntheticsMonitorDelete func(ctx context.Context, space string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
 
 type KibanaSyntheticsPrivateLocationCreate func(ctx context.Context, pLoc PrivateLocationConfig) (*PrivateLocation, error)
 
@@ -390,8 +392,8 @@ func newKibanaSyntheticsPrivateLocationDeleteFunc(c *resty.Client) KibanaSynthet
 }
 
 func newKibanaSyntheticsMonitorGetFunc(c *resty.Client) KibanaSyntheticsMonitorGet {
-	return func(ctx context.Context, id MonitorID, namespace string) (*SyntheticsMonitor, error) {
-		path := basePathWithId(namespace, monitorsSuffix, id)
+	return func(ctx context.Context, id MonitorID, space string) (*SyntheticsMonitor, error) {
+		path := basePathWithId(space, monitorsSuffix, id)
 		log.Debugf("URL to get monitor: %s", path)
 
 		resp, err := c.R().SetContext(ctx).Get(path)
@@ -403,8 +405,8 @@ func newKibanaSyntheticsMonitorGetFunc(c *resty.Client) KibanaSyntheticsMonitorG
 }
 
 func newKibanaSyntheticsMonitorDeleteFunc(c *resty.Client) KibanaSyntheticsMonitorDelete {
-	return func(ctx context.Context, namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error) {
-		path := basePath(namespace, monitorsSuffix)
+	return func(ctx context.Context, space string, ids ...MonitorID) ([]MonitorDeleteStatus, error) {
+		path := basePath(space, monitorsSuffix)
 		log.Debugf("URL to delete monitors: %s", path)
 
 		resp, err := c.R().SetContext(ctx).SetBody(map[string]interface{}{
@@ -415,14 +417,17 @@ func newKibanaSyntheticsMonitorDeleteFunc(c *resty.Client) KibanaSyntheticsMonit
 		}
 
 		result, err := unmarshal(resp, []MonitorDeleteStatus{})
+		if err != nil {
+			return nil, err
+		}
 		return *result, err
 	}
 }
 
 func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonitorUpdate {
-	return func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
+	return func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, space string) (*SyntheticsMonitor, error) {
 
-		path := basePathWithId(namespace, monitorsSuffix, id)
+		path := basePathWithId(space, monitorsSuffix, id)
 		log.Debugf("URL to update monitor: %s", path)
 		data := fields.APIRequest(config)
 		resp, err := c.R().SetContext(ctx).SetBody(data).Put(path)
@@ -434,9 +439,9 @@ func newKibanaSyntheticsMonitorUpdateFunc(c *resty.Client) KibanaSyntheticsMonit
 }
 
 func newKibanaSyntheticsMonitorAddFunc(c *resty.Client) KibanaSyntheticsMonitorAdd {
-	return func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error) {
+	return func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, space string) (*SyntheticsMonitor, error) {
 
-		path := basePath(namespace, monitorsSuffix)
+		path := basePath(space, monitorsSuffix)
 		log.Debugf("URL to create monitor: %s", path)
 		data := fields.APIRequest(config)
 		resp, err := c.R().SetContext(ctx).SetBody(data).Post(path)
@@ -481,6 +486,9 @@ func newKibanaSyntheticsParameterDeleteFunc(c *resty.Client) KibanaSyntheticsPar
 		}
 
 		result, err := unmarshal(resp, []ParameterDeleteStatus{})
+		if err != nil {
+			return nil, err
+		}
 		return *result, err
 	}
 }
@@ -503,25 +511,25 @@ func handleKibanaError(err error, resp *resty.Response) error {
 		kibanaErr := KibanaError{}
 		err := json.Unmarshal(resp.Body(), &kibanaErr)
 		if err != nil {
-			return NewAPIError(resp.StatusCode(), resp.Status(), err)
+			return NewAPIError(resp.StatusCode(), "status: %s, err: %s", resp.Status(), err)
 		}
-		return NewAPIError(resp.StatusCode(), kibanaErr.Message, kibanaErr.Error)
+		return NewAPIError(resp.StatusCode(), "message: %s, err: %s", kibanaErr.Message, kibanaErr.Error)
 	}
 	return nil
 }
 
-func basePathWithId(namespace, suffix string, id any) string {
-	return fmt.Sprintf("%s/%s", basePath(namespace, suffix), id)
+func basePathWithId(space, suffix string, id any) string {
+	return fmt.Sprintf("%s/%s", basePath(space, suffix), id)
 }
 
-func basePath(namespace, suffix string) string {
-	return namespaceBasesPath(namespace, basePathKibanaSynthetics, suffix)
+func basePath(space, suffix string) string {
+	return spaceBasesPath(space, basePathKibanaSynthetics, suffix)
 }
 
-func namespaceBasesPath(namespace, basePath, suffix string) string {
-	if namespace == "" || namespace == "default" {
+func spaceBasesPath(space, basePath, suffix string) string {
+	if space == "" || space == "default" {
 		return fmt.Sprintf("%s%s", basePath, suffix)
 	}
 
-	return fmt.Sprintf("/s/%s%s%s", namespace, basePath, suffix)
+	return fmt.Sprintf("/s/%s%s%s", space, basePath, suffix)
 }

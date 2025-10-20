@@ -7,8 +7,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -28,12 +28,14 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 		return nil, nil
 	}
 	if err != nil {
-		return nil, diag.FromErr(err)
+		diags := diag.FromErr(err)
+		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+id)...)
+		return nil, diags
 	}
 
 	defer res.Body.Close()
 
-	return sloResponseToModel(spaceID, sloRes), utils.CheckHttpError(res, "Unable to get slo with ID "+string(id))
+	return sloResponseToModel(spaceID, sloRes), diagutil.CheckHttpError(res, "Unable to get slo with ID "+string(id))
 }
 
 func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, spaceId string) diag.Diagnostics {
@@ -46,11 +48,13 @@ func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, 
 	req := client.DeleteSloOp(ctxWithAuth, sloId, spaceId).KbnXsrf("true")
 	res, err := req.Execute()
 	if err != nil && res == nil {
-		return diag.FromErr(err)
+		diags := diag.FromErr(err)
+		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+sloId)...)
+		return diags
 	}
 
 	defer res.Body.Close()
-	return utils.CheckHttpError(res, "Unable to delete slo with ID "+string(sloId))
+	return diagutil.CheckHttpError(res, "Unable to delete slo with ID "+string(sloId))
 }
 
 func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
@@ -77,18 +81,20 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 	}
 
 	req := client.UpdateSloOp(ctxWithAuth, s.SpaceID, s.SloID).KbnXsrf("true").UpdateSloRequest(reqModel)
-	slo, res, err := req.Execute()
+	_, res, err := req.Execute()
 
 	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
-	defer res.Body.Close()
-	if diags := utils.CheckHttpError(res, "unable to update slo with id "+s.SloID); diags.HasError() {
+		diags := diag.FromErr(err)
+		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
 		return nil, diags
 	}
 
-	return sloResponseToModel(s.SpaceID, slo), diag.Diagnostics{}
+	defer res.Body.Close()
+	if diags := diagutil.CheckHttpError(res, "unable to update slo with id "+s.SloID); diags.HasError() {
+		return nil, diags
+	}
+
+	return &s, diag.Diagnostics{}
 }
 
 func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
@@ -122,11 +128,13 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 	req := client.CreateSloOp(ctxWithAuth, s.SpaceID).KbnXsrf("true").CreateSloRequest(reqModel)
 	sloRes, res, err := req.Execute()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		diags := diag.FromErr(err)
+		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+		return nil, diags
 	}
 	defer res.Body.Close()
 
-	if diags := utils.CheckHttpError(res, "unable to create slo with id "+s.SloID); diags.HasError() {
+	if diags := diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID); diags.HasError() {
 		return nil, diags
 	}
 
@@ -135,7 +143,7 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 	return &s, diag.Diagnostics{}
 }
 
-func responseIndicatorToCreateSloRequestIndicator(s slo.SloResponseIndicator) (slo.CreateSloRequestIndicator, error) {
+func responseIndicatorToCreateSloRequestIndicator(s slo.SloWithSummaryResponseIndicator) (slo.CreateSloRequestIndicator, error) {
 	var ret slo.CreateSloRequestIndicator
 
 	ind := s.GetActualInstance()
@@ -166,7 +174,7 @@ func responseIndicatorToCreateSloRequestIndicator(s slo.SloResponseIndicator) (s
 	return ret, nil
 }
 
-func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
+func sloResponseToModel(spaceID string, res *slo.SloWithSummaryResponse) *models.Slo {
 	if res == nil {
 		return nil
 	}
@@ -186,21 +194,21 @@ func sloResponseToModel(spaceID string, res *slo.SloResponse) *models.Slo {
 	}
 }
 
-func transformGroupBy(groupBy []string, supportsGroupByList bool) *slo.SloResponseGroupBy {
+func transformGroupBy(groupBy []string, supportsGroupByList bool) *slo.GroupBy {
 	if groupBy == nil {
 		return nil
 	}
 
 	if !supportsGroupByList && len(groupBy) > 0 {
-		return &slo.SloResponseGroupBy{
+		return &slo.GroupBy{
 			String: &groupBy[0],
 		}
 	}
 
-	return &slo.SloResponseGroupBy{ArrayOfString: &groupBy}
+	return &slo.GroupBy{ArrayOfString: &groupBy}
 }
 
-func transformGroupByFromResponse(groupBy slo.SloResponseGroupBy) []string {
+func transformGroupByFromResponse(groupBy slo.GroupBy) []string {
 	if groupBy.String != nil {
 		return []string{*groupBy.String}
 	}

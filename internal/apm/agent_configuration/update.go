@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -51,7 +51,7 @@ func (r *resourceAgentConfiguration) Update(ctx context.Context, req resource.Up
 	}
 	defer apiResp.Body.Close()
 
-	if diags := utils.CheckHttpErrorFromFW(apiResp, "Failed to update APM agent configuration"); diags.HasError() {
+	if diags := diagutil.CheckHttpErrorFromFW(apiResp, "Failed to update APM agent configuration"); diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}
