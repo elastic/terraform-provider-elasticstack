@@ -18,6 +18,7 @@ import (
 type conditionalRequirement struct {
 	dependentPath path.Path
 	allowedValues []string
+	requireValue  bool
 }
 
 // Description describes the validation in plain text formatting.
@@ -34,13 +35,27 @@ func (v conditionalRequirement) MarkdownDescription(ctx context.Context) string 
 }
 
 func (v conditionalRequirement) validate(ctx context.Context, config tfsdk.Config, val attr.Value, p path.Path) diag.Diagnostics {
-	if val.IsNull() || val.IsUnknown() {
-		return nil
-	}
 
 	// Get the value at the dependent path
 	var dependentValue types.String
 	diags := config.GetAttribute(ctx, v.dependentPath, &dependentValue)
+
+	isEmpty := val.IsNull() || val.IsUnknown()
+	if isEmpty && v.requireValue {
+		diags.AddAttributeError(p, "Invalid Configuration",
+			fmt.Sprintf("Attribute %s must be set when %s equals %q",
+				p,
+				v.dependentPath,
+				v.allowedValues[0],
+			),
+		)
+		return diags
+	}
+
+	if isEmpty {
+		return nil
+	}
+
 	if diags.HasError() {
 		return diags
 	}
@@ -131,14 +146,19 @@ func StringConditionalRequirementSingle(dependentPath path.Path, requiredValue s
 	return StringConditionalRequirement(dependentPath, []string{requiredValue})
 }
 
-func Int64ConditionalRequirement(dependentPath path.Path, allowedValues []string) validator.Int64 {
+func Int64ConditionalRequirement(dependentPath path.Path, allowedValues []string, requireValue bool) validator.Int64 {
 	return conditionalRequirement{
 		dependentPath: dependentPath,
 		allowedValues: allowedValues,
+		requireValue:  requireValue,
 	}
 }
 
 // Int64ConditionalRequirementSingle is a convenience function for when there's only one allowed value.
 func Int64ConditionalRequirementSingle(dependentPath path.Path, requiredValue string) validator.Int64 {
-	return Int64ConditionalRequirement(dependentPath, []string{requiredValue})
+	return Int64ConditionalRequirement(dependentPath, []string{requiredValue}, false)
+}
+
+func Int64ConditionalRequirementInclusionSingle(dependentPath path.Path, requiredValue string) validator.Int64 {
+	return Int64ConditionalRequirement(dependentPath, []string{requiredValue}, true)
 }
