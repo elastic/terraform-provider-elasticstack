@@ -5,41 +5,47 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *DefaultDataViewResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan defaultDataViewModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	resp.Diagnostics.Append(r.setDefaultDataView(ctx, req.Plan, &resp.State)...)
+}
+
+// setDefaultDataView is a helper method that contains the core logic for setting the default data view.
+func (r *DefaultDataViewResource) setDefaultDataView(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
+	var model defaultDataViewModel
+	diags := plan.Get(ctx, &model)
+	if diags.HasError() {
+		return diags
 	}
 
 	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("unable to get kibana client", err.Error())
-		return
+		diags.AddError("unable to get kibana client", err.Error())
+		return diags
 	}
 
-	dataViewID := plan.DataViewID.ValueString()
-	force := plan.Force.ValueBool()
-
+	dataViewID := model.DataViewID.ValueString()
+	force := model.Force.ValueBool()
+	spaceID := model.SpaceID.ValueString()
 	setReq := kbapi.SetDefaultDatailViewDefaultJSONRequestBody{
 		DataViewId: &dataViewID,
 		Force:      &force,
 	}
 
-	diags = kibana_oapi.SetDefaultDataView(ctx, client, setReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	apiDiags := kibana_oapi.SetDefaultDataView(ctx, client, spaceID, setReq)
+	diags.Append(apiDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	// Set a static ID since there's only one default data view setting
-	plan.ID = types.StringValue("default")
+	// Use the space_id as the resource ID
+	model.ID = types.StringValue(spaceID)
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	diags = state.Set(ctx, model)
+	return diags
 }

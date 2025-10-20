@@ -89,8 +89,8 @@ func DeleteDataView(ctx context.Context, client *Client, spaceID string, viewID 
 }
 
 // GetDefaultDataView reads the default data view from the API.
-func GetDefaultDataView(ctx context.Context, client *Client) (*string, diag.Diagnostics) {
-	resp, err := client.API.GetDefaultDataViewDefaultWithResponse(ctx)
+func GetDefaultDataView(ctx context.Context, client *Client, spaceID string) (*string, diag.Diagnostics) {
+	resp, err := client.API.GetDefaultDataViewDefaultWithResponse(ctx, spaceID)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -107,8 +107,8 @@ func GetDefaultDataView(ctx context.Context, client *Client) (*string, diag.Diag
 }
 
 // SetDefaultDataView sets the default data view.
-func SetDefaultDataView(ctx context.Context, client *Client, req kbapi.SetDefaultDatailViewDefaultJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.SetDefaultDatailViewDefaultWithResponse(ctx, req)
+func SetDefaultDataView(ctx context.Context, client *Client, spaceID string, req kbapi.SetDefaultDatailViewDefaultJSONRequestBody) diag.Diagnostics {
+	resp, err := client.API.SetDefaultDatailViewDefaultWithResponse(ctx, spaceID, req)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -37,14 +38,21 @@ func getSchema() schema.Schema {
 			"force": schema.BoolAttribute{
 				MarkdownDescription: "Update an existing default data view identifier. If set to false and a default data view already exists, the operation will fail.",
 				Optional:            true,
-				Computed:            true,
-				Default:             booldefault.StaticBool(true),
 			},
 			"skip_delete": schema.BoolAttribute{
 				MarkdownDescription: "If set to true, the default data view will not be unset when the resource is destroyed. The existing default data view will remain unchanged.",
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
+			},
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "The Kibana space ID to set the default data view in. Defaults to `default`.",
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("default"),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}

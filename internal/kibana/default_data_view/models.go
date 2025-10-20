@@ -9,4 +9,5 @@ type defaultDataViewModel struct {
 	DataViewID types.String `tfsdk:"data_view_id"`
 	Force      types.Bool   `tfsdk:"force"`
 	SkipDelete types.Bool   `tfsdk:"skip_delete"`
+	SpaceID    types.String `tfsdk:"space_id"`
 }

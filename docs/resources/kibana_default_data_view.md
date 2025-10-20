@@ -45,6 +45,7 @@ resource "elasticstack_kibana_default_data_view" "default" {
 
 - `force` (Boolean) Update an existing default data view identifier. If set to false and a default data view already exists, the operation will fail.
 - `skip_delete` (Boolean) If set to true, the default data view will not be unset when the resource is destroyed. The existing default data view will remain unchanged.
+- `space_id` (String) The Kibana space ID to set the default data view in. Defaults to `default`.
 
 ### Read-Only
 
