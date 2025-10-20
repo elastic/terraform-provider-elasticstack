@@ -38,9 +38,9 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Create and Read testing
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("testacc", "test_policy", randomSuffix) + `
+				Config: testConfig("testacc", "test_policy", randomSuffix) + fmt.Sprintf(`
 resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label"
+	label = "pl-test-label-%s"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
 	tags = ["a", "b"]
 	geo = {
@@ -48,9 +48,9 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 		lon = -42.42
 	}
 }
-`,
+`, randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label"),
+					resource.TestCheckResourceAttr(resourceId, "label", fmt.Sprintf("pl-test-label-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceId, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "tags.0", "a"),
@@ -65,9 +65,9 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config: testConfig("testacc", "test_policy", randomSuffix) + `
+				Config: testConfig("testacc", "test_policy", randomSuffix) + fmt.Sprintf(`
 resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label"
+	label = "pl-test-label-%s"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
 	tags = ["a", "b"]
 	geo = {
@@ -75,14 +75,14 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 		lon = -42.42
 	}
 }
-`,
+`, randomSuffix),
 			},
 			// Update and Read testing
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("default", "test_policy_default", randomSuffix) + `
+				Config: testConfig("default", "test_policy_default", randomSuffix) + fmt.Sprintf(`
 resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-2"
+	label = "pl-test-label-2-%s"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 	tags = ["c", "d", "e"]
 	geo = {
@@ -90,9 +90,9 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 		lon = -33.21
 	}
 }
-`,
+`, randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label-2"),
+					resource.TestCheckResourceAttr(resourceId, "label", fmt.Sprintf("pl-test-label-2-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceId, "tags.#", "3"),
 					resource.TestCheckResourceAttr(resourceId, "tags.0", "c"),
@@ -105,14 +105,14 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			// Update and Read testing
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("default", "test_policy_default", randomSuffix) + `
+				Config: testConfig("default", "test_policy_default", randomSuffix) + fmt.Sprintf(`
 resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-2"
+	label = "pl-test-label-2-%s"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 }
-`,
+`, randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label-2"),
+					resource.TestCheckResourceAttr(resourceId, "label", fmt.Sprintf("pl-test-label-2-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckNoResourceAttr(resourceId, "tags"),
 					resource.TestCheckNoResourceAttr(resourceId, "geo"),
@@ -121,15 +121,15 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			// Update and Read testing
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("default", "test_policy_default", randomSuffix) + `
+				Config: testConfig("default", "test_policy_default", randomSuffix) + fmt.Sprintf(`
 resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-2"
+	label = "pl-test-label-2-%s"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 	tags = ["c", "d", "e"]
 }
-`,
+`, randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label-2"),
+					resource.TestCheckResourceAttr(resourceId, "label", fmt.Sprintf("pl-test-label-2-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceId, "tags.#", "3"),
 					resource.TestCheckResourceAttr(resourceId, "tags.0", "c"),
@@ -141,18 +141,18 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			// Update and Read testing
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("default", "test_policy_default", randomSuffix) + `
+				Config: testConfig("default", "test_policy_default", randomSuffix) + fmt.Sprintf(`
 resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-2"
+	label = "pl-test-label-2-%s"
 	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
 	geo = {
 		lat = -33.21
 		lon = -33.21
 	}
 }
-`,
+`, randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "label", "pl-test-label-2"),
+					resource.TestCheckResourceAttr(resourceId, "label", fmt.Sprintf("pl-test-label-2-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceId, "agent_policy_id"),
 					resource.TestCheckNoResourceAttr(resourceId, "tags"),
 					resource.TestCheckResourceAttr(resourceId, "geo.lat", "-33.21"),
