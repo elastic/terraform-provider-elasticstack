@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
+- Add schema validations to require either (but not both) `index` and `data_view_id` is set for relevant Security Detection Rules
 
 ## [0.12.0] - 2025-10-15
 
