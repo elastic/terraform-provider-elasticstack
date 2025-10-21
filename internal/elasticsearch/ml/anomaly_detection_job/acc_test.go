@@ -19,7 +19,7 @@ func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          config.TestStepDirectory(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"job_id": config.StringVariable(jobID),
 				},
@@ -36,7 +36,7 @@ func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          config.TestStepDirectory(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"job_id": config.StringVariable(jobID),
 				},
@@ -68,7 +68,7 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          config.TestStepDirectory(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"job_id": config.StringVariable(jobID),
 				},
@@ -107,7 +107,7 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          config.TestStepDirectory(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"job_id": config.StringVariable(jobID),
 				},
