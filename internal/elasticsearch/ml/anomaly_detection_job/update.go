@@ -161,7 +161,7 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 	// Read the updated job to get the current state
 	found, diags := r.read(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError().HasError() {
+	if resp.Diagnostics.HasError() {
 		return
 	}
 	if !found {

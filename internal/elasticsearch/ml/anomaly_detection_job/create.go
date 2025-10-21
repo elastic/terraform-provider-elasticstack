@@ -55,8 +55,8 @@ func (r *anomalyDetectionJobResource) create(ctx context.Context, req resource.C
 		return
 	}
 	defer res.Body.Close()
-	
-	diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML anomaly detection job: %s", jobID))
+
+	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML anomaly detection job: %s", jobID))
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
