@@ -152,10 +152,7 @@ func getSchema() schema.Schema {
 							int64planmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.Int64{
-							validators.Int64ConditionalRequirement(
-								path.Root("kafka").AtName("compression"),
-								[]string{"gzip"},
-							),
+							validators.Int64ConditionalAllowance(path.Root("kafka").AtName("compression"), []string{"gzip"}),
 						},
 					},
 					"connection_type": schema.StringAttribute{
@@ -163,7 +160,7 @@ func getSchema() schema.Schema {
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("plaintext", "encryption"),
-							validators.StringConditionalRequirementSingle(
+							validators.StringConditionalAllowanceSingle(
 								path.Root("kafka").AtName("auth_type"),
 								"none",
 							),
