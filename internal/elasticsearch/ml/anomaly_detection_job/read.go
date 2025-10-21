@@ -39,8 +39,9 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *AnomalyDete
 		return false, nil
 	}
 
-	if d := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML anomaly detection job: %s", jobID)); d.HasError() {
-		diags.Append(d...)
+	getDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML anomaly detection job: %s", jobID))
+	diags.Append(getDiags...)
+	if diags.HasError() {
 		return false, diags
 	}
 

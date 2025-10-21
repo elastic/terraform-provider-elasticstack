@@ -53,8 +53,9 @@ func (r *anomalyDetectionJobResource) delete(ctx context.Context, req resource.D
 	}
 	defer res.Body.Close()
 
-	if diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML anomaly detection job: %s", jobID)); diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML anomaly detection job: %s", jobID))
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

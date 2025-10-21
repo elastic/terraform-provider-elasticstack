@@ -152,15 +152,16 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 	}
 	defer res.Body.Close()
 
-	if diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML anomaly detection job: %s", jobID)); diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML anomaly detection job: %s", jobID))
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the updated job to get the current state
 	found, diags := r.read(ctx, &plan)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError().HasError() {
 		return
 	}
 	if !found {
